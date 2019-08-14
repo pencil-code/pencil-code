@@ -91,6 +91,17 @@ class DataCube(object):
         self.dx = 1.
         self.dy = 1.
         self.dz = 1.
+        self.x = None
+        self.y = None
+        self.z = None
+        self.f = None
+        self.l1 = None
+        self.l2 = None
+        self.m1 = None
+        self.m2 = None
+        self.n1 = None
+        self.n2 = None
+        self.magic = None
 
 
     def read(self, var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
@@ -173,10 +184,10 @@ class DataCube(object):
             else:
                 if dim.ny == 1:
                     f = np.zeros((total_vars, dim.mz, dim.mx),
-                                   dtype=precision)
+                                 dtype=precision)
                 else:
                     f = np.zeros((total_vars, dim.my, dim.mx),
-                                   dtype=precision)
+                                 dtype=precision)
 
             if not var_file:
                 if ivar < 0:
@@ -185,16 +196,16 @@ class DataCube(object):
                     var_file = 'VAR' + str(ivar) + '.h5'
 
             file_name = os.path.join(datadir, 'allprocs', var_file)
-            with h5py.File(file_name,'r') as tmp:
+            with h5py.File(file_name, 'r') as tmp:
                 for key in tmp['data'].keys():
-                    f[index.__getattribute__(key)-1,:]=tmp['data/'+key][:]
-                t=tmp['time'][()]
-                x=tmp['grid/x'][()]
-                y=tmp['grid/y'][()]
-                z=tmp['grid/z'][()]
-                dx=tmp['grid/dx'][()]
-                dy=tmp['grid/dy'][()]
-                dz=tmp['grid/dz'][()]
+                    f[index.__getattribute__(key)-1, :] = tmp['data/'+key][:]
+                t = tmp['time'][()]
+                x = tmp['grid/x'][()]
+                y = tmp['grid/y'][()]
+                z = tmp['grid/z'][()]
+                dx = tmp['grid/dx'][()]
+                dy = tmp['grid/dy'][()]
+                dz = tmp['grid/dz'][()]
                 if param.lshear:
                     deltay = tmp['persist/shear_delta_y'][(0)]
         else:
@@ -213,8 +224,8 @@ class DataCube(object):
 
             if proc < 0:
                 proc_dirs = self.__natural_sort(
-                            filter(lambda s: s.startswith('proc'),
-                            os.listdir(datadir)))
+                    filter(lambda s: s.startswith('proc'),
+                           os.listdir(datadir)))
                 # Check if IO_COLLECT is being used.
                 if param.lcollective_io:
                     if param.io_strategy == 'collect':
@@ -231,10 +242,10 @@ class DataCube(object):
             else:
                 if dim.ny == 1:
                     f = np.zeros((total_vars, dim.mz, dim.mx),
-                                  dtype=precision)
+                                 dtype=precision)
                 else:
                     f = np.zeros((total_vars, dim.my, dim.mx),
-                                  dtype=precision)
+                                 dtype=precision)
 
             x = np.zeros(dim.mx, dtype=precision)
             y = np.zeros(dim.my, dtype=precision)
@@ -348,7 +359,7 @@ class DataCube(object):
                     if not run2D:
                         f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
                             f_loc[:, i0zloc:i1zloc,
-                                     i0yloc:i1yloc, i0xloc:i1xloc]
+                                  i0yloc:i1yloc, i0xloc:i1xloc]
                     else:
                         if dim.ny == 1:
                             f[:, i0z:i1z, i0x:i1x] = \
@@ -366,25 +377,24 @@ class DataCube(object):
             if 'bb' in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
-                # TODO: Specify coordinate system.
-                self.bb = curl(aa, dx, dy, dz, run2D=run2D)
+                self.bb = curl(aa, dx, dy, dz, run2D=run2D,
+                               coordinate_system=param.coord_system)
                 if trimall:
                     self.bb = self.bb[:, dim.n1:dim.n2+1,
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'jj' in magic:
                 # Compute the electric current field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
-                # TODO: Specify coordinate system.
-                self.jj = curl2(aa, dx, dy, dz)
+                self.jj = curl2(aa, dx, dy, dz,
+                                coordinate_system=param.coord_system)
                 if trimall:
                     self.jj = self.jj[:, dim.n1:dim.n2+1,
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'vort' in magic:
                 # Compute the vorticity field before doing trimall.
                 uu = f[index.ux-1:index.uz, ...]
-                # TODO: Specify coordinate system.
-                # WL: The curl subroutine should take care of it.
-                self.vort = curl(uu, dx, dy, dz, run2D=run2D)
+                self.vort = curl(uu, dx, dy, dz, run2D=run2D,
+                                 coordinate_system=param.coord_system)
                 if trimall:
                     if run2D:
                         if dim.nz == 1:
@@ -405,7 +415,7 @@ class DataCube(object):
             self.z = z[dim.n1:dim.n2+1]
             if not run2D:
                 self.f = f[:, dim.n1:dim.n2+1,
-                              dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                           dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             else:
                 if dim.ny == 1:
                     self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
