@@ -1462,80 +1462,96 @@ module Energy
           if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0) then
             call get_AIA_tab_resp('094',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA94mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA94mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA94mxy)
             endif
             if (idiag_EmAIA94mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA94mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA94mxz)
             endif
           endif
 !
           if (idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0) then
             call get_AIA_tab_resp('131',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA131mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA131mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA131mxy)
             endif
             if (idiag_EmAIA131mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA131mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA131mxz)
             endif
           endif
 !
           if (idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0) then
             call get_AIA_tab_resp('171',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA171mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA171mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA171mxy)
             endif
             if (idiag_EmAIA171mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA171mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA171mxz)
             endif
           endif
 !
           if (idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0) then
             call get_AIA_tab_resp('193',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA193mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA193mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA193mxy)
             endif
             if (idiag_EmAIA193mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA193mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA193mxz)
             endif
           endif
 !
           if (idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0) then
             call get_AIA_tab_resp('211',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA211mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA211mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA211mxy)
             endif
             if (idiag_EmAIA211mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA211mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA211mxz)
             endif
           endif
 !
           if (idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0) then
             call get_AIA_tab_resp('304',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA304mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA304mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA304mxy)
             endif
             if (idiag_EmAIA304mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA304mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA304mxz)
             endif
           endif
 !
           if (idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0) then
             call get_AIA_tab_resp('335',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA335mxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA335mxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmAIA335mxy)
             endif
             if (idiag_EmAIA335mxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA335mxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmAIA335mxz)
             endif
           endif
 !
           if (idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0) then
             call get_AIA_tab_resp('XRT',logT_resp,NN2_resp,resp)
             if (idiag_EmXRTmxy/=0) then
-              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmXRTmxy)
+              resp = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp,idiag_EmXRTmxy)
             endif
             if (idiag_EmXRTmxz/=0) then
-              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmXRTmxz)
+              resp = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp,idiag_EmXRTmxz)
             endif
           endif
 !
