@@ -23,6 +23,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     from os.path import join, abspath, exists, split, isfile
     from pencilnew.math import is_number, is_float, is_int
     from pencilnew.io import timestamp, debug_breakpoint, mkdir
+    import re
 
     def string_to_tuple(s):
         q = s.split(',')
@@ -104,15 +105,26 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     ######## find line in file which quantity in
     line_matches = []
     # scan through file for differently for different files
-    if filename.endswith('.in') or 'cparam.local' in filename :
+    if filename.endswith('.in') or 'cparam.local' or 'Makefile.local' in filename :
         FILE_IS = 'IN_LOCAL'
         SYM_COMMENT = '!'
         SYM_ASSIGN = '='
         SYM_SEPARATOR = ','
 
         for ii, line in enumerate(data_raw):
-            if line.strip().startswith('&'): continue                           # filter out lines with &something, e.g. &density_run_pars
-            if quantity in line.split(SYM_COMMENT)[0]: line_matches.append(ii)
+            if line.strip().startswith('&'):
+                continue       # filter out lines with &something, e.g. &density_run_pars
+            quantity_match_tmp = re.search('[^0-9a-zA-Z_]*{0}[^0-9a-zA-Z_]'.format(quantity),
+                                           line.split(SYM_COMMENT)[0])
+            # Check if this substring occurs as a string.
+            if quantity_match_tmp:
+                quantity_match = quantity_match_tmp
+                if str.count(line[0:quantity_match.start()], "'") % 2 == 0 and \
+                   str.count(line[0:quantity_match.start()], '"') % 2 == 0:            
+                    if line_matches:
+                        line_matches[0] = ii
+                    else:
+                        line_matches.append(ii)
 
     elif filename.startswith('submit') and filename.split('.')[-1] in ['csh', 'sh']:
         FILE_IS = 'SUBMIT'
@@ -121,8 +133,15 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
         SYM_SEPARATOR = ','
 
         for ii, line in enumerate(data_raw):
-            if line.replace(' ', '').startswith('#@') and quantity in line: line_matches.append(ii)
-
+            if line.replace(' ', '').startswith('#@') and quantity in line:
+                quantity_match_tmp = re.search('[^0-9a-zA-Z_]*{0}[^0-9a-zA-Z_]'.format(quantity),
+                                               line.split(SYM_COMMENT)[0])
+                if quantity_match_tmp:
+                    quantity_match = quantity_match_tmp
+                    if line_matches:
+                        line_matches[0] = ii
+                    else:
+                        line_matches.append(ii)
     else:
         print('! ERROR: Filename unknown! No parsing possible! Please enhance this function to work with '+filename)
 
@@ -137,8 +156,6 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     ######## get line with quantity inside
     line = data_raw[line_matches[0]]
 
-
-
     ######## do separation of quantity from rest of line, i.e. get rid of comments and other quantities defined in this line
     comment = ''
     if SYM_COMMENT:
@@ -146,16 +163,27 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
         line = tmp[0]
         if tmp[-1] != '': comment = SYM_COMMENT+tmp[-1]                         # and store for later
 
-    line = line.replace(' ','').replace('\n', '')                               # do cleanup in this line
+#    line = line.replace(' ','').replace('\n', '')                               # do cleanup in this line
 
-    qs = line.partition(quantity+SYM_ASSIGN)
-    if SYM_ASSIGN in qs[-1]:
-        qs = qs[:2]+qs[-1].partition(SYM_ASSIGN)
-        #qs = qs[:2]+qs[-1].partition(SYM_ASSIGN)
-        qs = qs[:2]+qs[2].rpartition(',')+qs[3:]
-
-    qs = list(qs)
-    q = qs[2]
+    # Find the position where the quantity is stored.
+    pos_equal_sign_left = quantity_match.end() + str.find(line[quantity_match.end()-1:], '=')
+    pos_equal_sign_right = pos_equal_sign_left + str.find(line[pos_equal_sign_left:], ', *[0-9a-zA-Z][0-9a-zA-Z]* *=')
+    if pos_equal_sign_right < pos_equal_sign_left:
+        pos_equal_sign_right = -1
+    print("left = {0}, right = {1}".format(pos_equal_sign_left, pos_equal_sign_right))
+    print('string contaiting the value = {0}'.format(line[pos_equal_sign_left:pos_equal_sign_right]))
+    print('line[pos_equal_sign_left:] = {0}'.format(line[pos_equal_sign_left:]))
+    
+    # Change the quantity in the line string.
+    q = line[pos_equal_sign_left:pos_equal_sign_right]
+#    qs = line.partition(quantity+SYM_ASSIGN)
+#    if SYM_ASSIGN in qs[-1]:
+#        qs = qs[:2]+qs[-1].partition(SYM_ASSIGN)
+#        #qs = qs[:2]+qs[-1].partition(SYM_ASSIGN)
+#        qs = qs[:2]+qs[2].rpartition(',')+qs[3:]
+#
+#    qs = list(qs)
+#    q = qs[2]
 
     while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment                  # take care of trailing tabulator
     while q.endswith(','): q = q[:-1]                                           # remove trailing ,
@@ -241,14 +269,18 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
                         else:
                             print('! ERROR: There is something deeply wrong here! change_quantity_to['+str(ii)+'] should be bool or string representation, but it is '+str(change_quantity_to[ii]))
                             debug_breakpoint(); return None
+            if q_type.endswith('FLOAT'):
+                change_quantity_to = str(change_quantity_to)[1:-1]
 
             change_quantity_to = ','.join([str(t) for t in change_quantity_to])
 
         if DEBUG: print('~ DEBUG: Would change quantity '+quantity+' from '+str(q)+' to '+str(change_quantity_to))
-        qs[2] = str(change_quantity_to)
+        q = str(change_quantity_to)
 
         ######## further formatting
-        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t'+comment    # create new line and add comment stripped away before
+        new_line = line[:pos_equal_sign_left] + q + line[pos_equal_sign_right:]+'\t'+comment    # create new line and add comment stripped away before
+        print('new_line = {0}'.format(new_line))
+#        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t'+comment    # create new line and add comment stripped away before
         if not (FILE_IS == 'SUBMIT' or filename == 'cparam.local'): new_line = '  '+new_line
         new_line = new_line.rstrip()    # clean empty spaces on the right, no one needs that...
         if new_line[-1] != '\n': new_line = new_line+'\n'
