@@ -5,6 +5,8 @@
 # Authors: Wladimir Lyra (wlyra@caltech.edu)
 #          Simon Candelaresi (iomsn1@gmail.com)
 #          Callum Reid (apollocreid@gmail.com)
+#
+# TODO: Include non-equidistant coordinates.
 """
 Compute the divergence, gradient and curl.
 """
