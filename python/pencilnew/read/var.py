@@ -226,12 +226,11 @@ class DataCube(object):
                 proc_dirs = self.__natural_sort(
                     filter(lambda s: s.startswith('proc'),
                            os.listdir(datadir)))
-                # Check if IO_COLLECT is being used.
                 if param.lcollective_io:
-                    if param.io_strategy == 'collect':
-                        proc_dirs = ['allprocs']
-                    if param.io_stategy == 'dist':
-                        proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
+                    # A collective IO strategy is being used
+                    proc_dirs = ['allprocs']
+                else:
+                    proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
             else:
                 proc_dirs = ['proc' + str(proc)]
 
@@ -261,17 +260,16 @@ class DataCube(object):
                     print("Reading data from processor"+
                           " {0} of {1} ...".format(proc, len(proc_dirs)))
 
-                # Check if IO_COLLECT is being used.
                 if param.lcollective_io:
-                    if param.io_strategy == 'collect':
-                        procdim = dim
-                    if param.io_stategy == 'dist':
-                        procdim.mx = dim.mx
-                        procdim.my = dim.my
-                        procdim.nx = dim.nx
-                        procdim.ny = dim.ny
-                        procdim.ipx = dim.ipx
-                        procdim.ipy = dim.ipy
+                    # A collective IO strategy is being used
+                    procdim = dim
+                else:
+                    procdim.mx = dim.mx
+                    procdim.my = dim.my
+                    procdim.nx = dim.nx
+                    procdim.ny = dim.ny
+                    procdim.ipx = dim.ipx
+                    procdim.ipy = dim.ipy
 
                 mxloc = procdim.mx
                 myloc = procdim.my
