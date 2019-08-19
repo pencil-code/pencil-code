@@ -139,7 +139,7 @@ module Hydro
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
-  real :: max_uu = 0.
+  real :: max_uu = 0., delta_u=1
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
@@ -185,7 +185,7 @@ module Hydro
   real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
-  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0., delta_u=1.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
