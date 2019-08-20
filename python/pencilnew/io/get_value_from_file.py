@@ -275,6 +275,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
                 change_quantity_to = ','.join([str(t) for t in change_quantity_to])
             if q_type.endswith('FLOAT'):
                 change_quantity_to = str(list(change_quantity_to))[1:-1]
+            if q_type.endswith('STRING'):
+                change_quantity_to = str(list(change_quantity_to))[1:-1]
 
         if DEBUG: print('~ DEBUG: Would change quantity '+quantity+' from '+str(q)+' to '+str(change_quantity_to))
         q = str(change_quantity_to)
