@@ -24,6 +24,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     from pencilnew.math import is_number, is_float, is_int
     from pencilnew.io import timestamp, debug_breakpoint, mkdir
     import re
+    import copy
 
     def string_to_tuple(s):
         q = s.split(',')
@@ -167,15 +168,16 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
 
     # Find the position where the quantity is stored.
     pos_equal_sign_left = quantity_match.end() + str.find(line[quantity_match.end()-1:], '=')
-    pos_equal_sign_right = pos_equal_sign_left + str.find(line[pos_equal_sign_left:], ', *[0-9a-zA-Z][0-9a-zA-Z]* *=')
+#    pos_equal_sign_right = pos_equal_sign_left + str.find(line[pos_equal_sign_left:], ', *[0-9a-zA-Z][0-9a-zA-Z]* *= *[0-9a-zA-Z][0-9a-zA-Z]*')
+    pos_equal_sign_right = pos_equal_sign_left + str.find(line[pos_equal_sign_left:], '=')
     if pos_equal_sign_right < pos_equal_sign_left:
         pos_equal_sign_right = -1
-    print("left = {0}, right = {1}".format(pos_equal_sign_left, pos_equal_sign_right))
-    print('string contaiting the value = {0}'.format(line[pos_equal_sign_left:pos_equal_sign_right]))
-    print('line[pos_equal_sign_left:] = {0}'.format(line[pos_equal_sign_left:]))
+        pos_right_comma = -1
+    else:
+        pos_right_comma = str.rfind(line[:pos_equal_sign_right], ',')
     
     # Change the quantity in the line string.
-    q = line[pos_equal_sign_left:pos_equal_sign_right]
+    q = copy.copy(line[pos_equal_sign_left:pos_right_comma])
 #    qs = line.partition(quantity+SYM_ASSIGN)
 #    if SYM_ASSIGN in qs[-1]:
 #        qs = qs[:2]+qs[-1].partition(SYM_ASSIGN)
@@ -211,6 +213,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     except:
         if type(q) == type('string') and ',' in q:
             q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
+            print('q = {0}, q_type = {1}'.format(q, q_type))
 
         if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
             q = False
@@ -269,19 +272,16 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
                         else:
                             print('! ERROR: There is something deeply wrong here! change_quantity_to['+str(ii)+'] should be bool or string representation, but it is '+str(change_quantity_to[ii]))
                             debug_breakpoint(); return None
+                change_quantity_to = ','.join([str(t) for t in change_quantity_to])
             if q_type.endswith('FLOAT'):
-                change_quantity_to = str(change_quantity_to)[1:-1]
-
-            change_quantity_to = ','.join([str(t) for t in change_quantity_to])
+                change_quantity_to = str(list(change_quantity_to))[1:-1]
 
         if DEBUG: print('~ DEBUG: Would change quantity '+quantity+' from '+str(q)+' to '+str(change_quantity_to))
         q = str(change_quantity_to)
 
         ######## further formatting
-        new_line = line[:pos_equal_sign_left] + q + line[pos_equal_sign_right:]+'\t'+comment    # create new line and add comment stripped away before
-        print('new_line = {0}'.format(new_line))
+        new_line = line[:pos_equal_sign_left] + q + line[pos_right_comma:] + '\t'+comment    # create new line and add comment stripped away before
 #        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t'+comment    # create new line and add comment stripped away before
-        if not (FILE_IS == 'SUBMIT' or filename == 'cparam.local'): new_line = '  '+new_line
         new_line = new_line.rstrip()    # clean empty spaces on the right, no one needs that...
         if new_line[-1] != '\n': new_line = new_line+'\n'
         if FILE_IS=='SUBMIT': new_line = new_line.replace('#@', '#@ ').replace('=', ' = ')    # optimizing format of submit script
