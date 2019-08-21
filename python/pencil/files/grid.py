@@ -41,6 +41,8 @@ class Grid(object):
         if proc < 0:
             procdirs = list(filter(lambda s:s.startswith('proc'),
                                    os.listdir(datadir)))
+            if (param.io_strategy == 'MPI-IO|collect' or param.io_strategy == 'collect'):
+            	procdirs = ['allprocs']
         else:
             procdirs = ['proc'+str(proc)]
 
@@ -56,7 +58,8 @@ class Grid(object):
         dz_tilde = N.zeros(dim.mz, dtype=precision)
 
         for directory in procdirs:
-            proc = int(directory[4:])
+	    if directory != 'allprocs':
+            	proc = int(directory[4:])
             procdim = read_dim(datadir, proc, down=down)
             if not quiet:
                 #print "reading data from processor %i of %i ..." \ # Python 2

@@ -151,9 +151,8 @@ class DataCube(object):
         y = np.zeros(dim.my, dtype=precision)
         z = np.zeros(dim.mz, dtype=precision)
 
-        if (param.io_strategy != 'MPI-IO'):
+        if (param.io_strategy != 'MPI-IO' and param.io_strategy !='collect'):
             for directory in procdirs:
-
                 proc = int(directory[4:])
                 procdim = read_dim(datadir,proc,down=ldownsampled)
                 if (not quiet):

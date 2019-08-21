@@ -212,9 +212,9 @@ module Io
 !
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz
+      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=676
-      integer :: pz, pa, io_len, alloc_err, z_start, z_end
+      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
@@ -223,11 +223,21 @@ module Io
       if (present (mode)) lwrite_add = (mode == 1)
 !
       if (lroot) then
-        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        if (lwrite_2d) then
+          allocate (buffer1D(mxgrid), stat=alloc_err)
+        else
+          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
+        endif
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+        if (lwrite_2d) then
+          io_size=mxgrid*io_len
+        else
+          io_size=mxgrid*mygrid*io_len
+        endif
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=io_size)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -241,12 +251,21 @@ module Io
           do pa = 1, nv
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
-              buffer = ga(:,:,iz,pa)
-              write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+              if (lwrite_2d) then
+                buffer1D = ga(:,m1,iz,pa)
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
+              else
+                buffer = ga(:,:,iz,pa)
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+              endif
             enddo
           enddo
         enddo
-        deallocate (ga, buffer)
+        if (lwrite_2d) then
+          deallocate (ga, buffer1D)
+        else
+          deallocate (ga, buffer)
+        endif
 !
       else
         z_start = n1
@@ -382,9 +401,9 @@ module Io
 !
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz
+      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, z_start, io_len, alloc_err
+      integer :: pz, pa, z_start, io_len, alloc_err, io_size
       integer(kind=8) :: rec_len
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -392,11 +411,21 @@ module Io
       if (present (mode)) lread_add = (mode == 1)
 !
       if (lroot) then
-        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        if (lwrite_2d) then
+          allocate (buffer1D(mxgrid), stat=alloc_err)
+        else
+          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
+        endif
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,buffer', .true.)
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=mxgrid*mygrid*io_len, status='old')
+        if (lwrite_2d) then
+          io_size=mxgrid*io_len
+        else
+          io_size=mxgrid*mygrid*io_len
+        endif
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=io_size, status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
@@ -412,14 +441,23 @@ module Io
           do pa = 1, nv
             ! iterate through xy-planes and read each plane separately
             do iz = z_start, mz
-              read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
-              ga(:,:,iz,pa) = buffer
+              if (lwrite_2d) then
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
+                ga(:,m1,iz,pa) = buffer1D
+              else
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+                ga(:,:,iz,pa) = buffer
+              endif
             enddo
           enddo
           ! distribute data in the xy-plane of the pz-layer
           call localize_xy (a, ga, dest_pz=pz)
         enddo
-        deallocate (ga, buffer)
+        if (lwrite_2d) then
+          deallocate (ga, buffer1D)
+        else
+          deallocate (ga, buffer)
+        endif
 !
       else
         ! receive data from root processor
