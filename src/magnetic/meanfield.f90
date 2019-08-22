@@ -83,8 +83,9 @@ module Magnetic_meanfield
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0, qp_aniso_factor=1.0
   real, dimension(3) :: alpha_aniso=0.
-  real, dimension(3,3) :: alpha_tensor=0.
+  real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(my,3,3) :: alpha_tensor_y=0.
+  real, dimension(nz,2,2) :: alpha_tensor_z=0., eta_tensor_z=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
@@ -93,16 +94,19 @@ module Magnetic_meanfield
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
-  logical :: ldelta_profile=.false., lalpha_tensor=.false.
+  logical :: ldelta_profile=.false., lalpha_tensor=.false., leta_tensor=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
   logical :: lNEMPI_correction_qp_profile=.true.
   logical :: lqp_aniso_factor=.false.
+  logical :: lread_alpha_tensor_z=.false.
+  logical :: lread_eta_tensor_z=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
       gamma_effect, gamma_quenching, &
-      alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
+      alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
+      alpha_tensor, eta_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
       x_surface, x_surface2, z_surface, &
@@ -128,7 +132,7 @@ module Magnetic_meanfield
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
-      Omega_rmax,Omega_rwidth
+      Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -185,7 +189,7 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
 !      character (len=linelen) :: dummy
-      integer :: ierr
+      integer :: ierr, i, j
 !
 !  check for alpha profile
 !
@@ -218,11 +222,50 @@ module Magnetic_meanfield
           alpha_tensor_y(:,2,2)=-alpha_zz*sin(y)**2
           alpha_tensor_y(:,1,2)=+alpha_zz*sin(y)*cos(y)
           alpha_tensor_y(:,2,1)=alpha_tensor_y(:,1,2)
+        elseif (lread_alpha_tensor_z) then
+!
+!  Read in alpha tensor (z-dependent, and only 2x2)
+!
+          open(1,file='alpha_tensor_z.dat',form='unformatted')
+          read(1) alpha_tensor_z
+          close(1)
+!
+!  Each component can be scaled separately.
+!  Conversely, they must all be turned on separately.
+!
+          do i=1,2; do j=1,2
+            alpha_tensor_z(:,i,j)=alpha_tensor(i,j)*alpha_tensor_z(:,i,j)
+          enddo; enddo
         endif
       else
         lalpha_tensor=.false.
       endif
       if (lroot) print*,'lalpha_tensor=',lalpha_tensor
+!
+!  check for (slightly less-simple minded) anisotropy
+!  Put alpha_zz=1 to get alpha_ij = delta_ij - OiOj.
+!
+      if (any(eta_tensor/=0.)) then
+        leta_tensor=.true.
+        if (lread_eta_tensor_z) then
+!
+!  Read in eta tensor (z-dependent, and only 2x2)
+!
+          open(1,file='eta_tensor_z.dat',form='unformatted')
+          read(1) eta_tensor_z
+          close(1)
+!
+!  Each component can be scaled separately.
+!  Conversely, they must all be turned on separately.
+!
+          do i=1,2; do j=1,2
+            eta_tensor_z(:,i,j)=eta_tensor(i,j)*eta_tensor_z(:,i,j)
+          enddo; enddo
+        endif
+      else
+        leta_tensor=.false.
+      endif
+      if (lroot) print*,'leta_tensor=',leta_tensor
 !
 !  write profile (uncomment for debugging)
 !
@@ -577,6 +620,14 @@ module Magnetic_meanfield
           gamma_effect/=0.0 ) &
           lpenc_requested(i_mf_EMF)=.true.
       if (delta_effect/=0.0) lpenc_requested(i_oxJ)=.true.
+!
+!  J is needed when the eta tensor is invoked.
+!  (But there should be other such requests that have apparently
+!  not yet caused pencil checks to fail yet...)
+!
+      if (leta_tensor) then
+        lpenc_requested(i_jj)=.true.
+      endif
 !
       if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
@@ -1033,6 +1084,11 @@ module Magnetic_meanfield
               if (alpha_zz /= 0.) then
                 p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
                   *(alpha_tensor(i,j)+alpha_tensor_y(m,i,j))*p%bb(:,j)
+              elseif (lread_alpha_tensor_z) then
+                if (i<=2.and.j<=2) then
+                  p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
+                      *alpha_tensor_z(n-n1+1,i,j)*p%bb(:,j)
+                endif
               else
                 p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total*alpha_tensor(i,j)*p%bb(:,j)
               endif
@@ -1054,6 +1110,19 @@ module Magnetic_meanfield
             call fatal_error("calc_pencils_magn_mf: ", &
               "lalpha_Omega_approx not implemented for this case")
           endif
+        endif
+!
+!  Apply eta tensor, but subtract part from etat for stability reasons.
+!  In other words, any constant meanfield_etat should have formally no
+!  effect, but is always needed because the pure Weyl gauge is unstable.
+!
+        if (leta_tensor) then
+          do i=1,2
+            do j=1,2
+              p%mf_EMF(:,i)=p%mf_EMF(:,i)-eta_tensor_z(n-n1+1,i,j)*p%jj(:,j)
+            enddo
+            p%mf_EMF(:,i)=p%mf_EMF(:,i)+meanfield_etat*p%jj(:,i)
+          enddo
         endif
 !
 !  Add possible delta x J effect and turbulent diffusion to EMF.
