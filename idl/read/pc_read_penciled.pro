@@ -49,8 +49,6 @@ datadir = pc_get_datadir(datadir)
     found = where (strmid (quantities, 0, 4) eq 'data', num_quantities)
     if (num_quantities eq 0) then message, "pc_read_penciled: ERROR: no valid quantities found!"
     quantities = quantities[found]
-help, quantities
-print, quantities
     field = pc_read (quantities)
     h5_close_file
     return
