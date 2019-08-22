@@ -17,7 +17,7 @@ default, qquiet, 0
 if n_elements(ivar) eq 1 then begin
   default,varfile_,'QVAR'
   varfile=varfile_+strcompress(string(ivar),/remove_all)
-  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+  if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
 endif else begin
   default_varfile = 'qvar.dat'
   if (file_test (datadir+'/allprocs/qvar.h5')) then default_varfile = 'qvar.h5'

@@ -34,7 +34,7 @@ objout = not arg_present(array)
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
   varfile=varfile_+strcompress(string(ivar),/remove_all)
-  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+  if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
 endif else begin
   default_varfile = 'pvar.dat'
   if (file_test (datadir+'/allprocs/pvar.h5')) then default_varfile = 'pvar.h5'
