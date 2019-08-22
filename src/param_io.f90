@@ -822,7 +822,7 @@ module Param_IO
 !
       use Particles_main, only: write_all_particles_run_pars
       use Syscalls, only: system_cmd
-      use File_io, only: file_exists,delete_file
+      use File_io, only: file_exists,delete_file,flush_file
 !
       character (len=*), optional :: file
 !
@@ -909,6 +909,8 @@ module Param_IO
           call write_implicit_diff_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
+          if (unit /= 6) close(unit)
+
         else                                    ! output in params.log, stdout or other file
           ! Add separator, comment, and time.
           call date_time_string(date)
@@ -916,6 +918,8 @@ module Param_IO
           write(unit,'(A,A)') ' ! ', trim(line)
           write(unit,'(A,A)') ' ! Date: ', trim(date)
           write(unit,*) '! t=', t
+          call flush_file(unit)
+          if (unit /= 6) close(unit)
 !
 !  Diff to old param2.nml.
 !
@@ -925,8 +929,6 @@ module Param_IO
             call delete_file('data/param2.nml.sv')
           endif
         endif
-!
-        if (unit /= 6) close(unit)
 !
       endif
 !

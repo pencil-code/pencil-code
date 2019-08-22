@@ -143,6 +143,16 @@ module File_io
     endsubroutine find_namelist
     !endfunction find_namelist
 !***********************************************************************
+    subroutine flush_file(unit)
+
+      use General, only: keep_compiler_quiet
+
+      integer, intent(IN) :: unit
+
+      call keep_compiler_quiet(unit)
+
+    endsubroutine flush_file
+!***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that allows   **

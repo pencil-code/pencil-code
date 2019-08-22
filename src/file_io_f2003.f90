@@ -19,7 +19,7 @@ module File_io
 !
   !character(len=:), dimension(:), allocatable, protected :: parallel_unit                ! gfortran v4.9.2 will not compile correctly with this line
   character(len=:),                          allocatable, protected :: parallel_unit      ! gfortran v4.8.4 will not compile this line
-  ! Temporary replacement code for the preceding linei(has some other consequences):
+  ! Temporary replacement code for the preceding line(has some other consequences):
   !character(len=36000), protected :: parallel_unit
   integer, parameter :: fixed_buflen=128
   character(len=fixed_buflen), dimension(:), allocatable, protected :: parallel_unit_vec
@@ -237,17 +237,21 @@ module File_io
       integer :: pos, len, max_len
 !
       if (lroot) then
+!print*, 'name=', name
         lfound = .false.
         len = len_trim (name) + 1
         ! need to subtract two chars for the end marker of an empty namelist
         max_len = len_trim (parallel_unit) - len + 1 - 2
         do pos = 1, max_len
           if ('&'//lower_case (trim (name)) == lower_case (parallel_unit(pos:pos+len-1))) then
+!print*, 'line=',parallel_unit(pos:pos+len-1) 
             if (parallel_unit(pos+len:pos+len) .in. (/ ' ', '!', comment_char /)) then
               if (pos == 1) then
+!print*, 'line=',pos,'#'//parallel_unit(pos+len:pos+len)//'#' 
                 lfound = .true.
                 exit
               elseif (parallel_unit(pos-1:pos-1) .eq. ' ') then
+!print*, 'line=',pos,'#'//parallel_unit(pos-1:pos-1)//'#' 
                 lfound = .true.
                 exit
               endif
@@ -261,6 +265,14 @@ module File_io
 !
     !endfunction find_namelist
     endsubroutine find_namelist
+!***********************************************************************
+    subroutine flush_file(unit)
+
+      integer, intent(IN) :: unit
+
+      flush(unit)
+
+    endsubroutine flush_file
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
