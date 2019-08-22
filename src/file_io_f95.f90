@@ -116,7 +116,8 @@ module File_io
         pos = scan(filename, '/')
       enddo
       tmp_prefix = get_tmp_prefix()
-      tmp_prefix = 'data/'
+      !tmp_prefix = 'data/'
+
       write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc_world
 !
       ! Write temporary file into local RAM disk (/tmp).
