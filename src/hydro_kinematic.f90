@@ -240,6 +240,8 @@ module Hydro
             open(1,file='uu.dat',form='unformatted')
             read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
             close(1)
+            if (ampl_kinflow/=1.) f(l1:l2,m1:m2,n1:n2,iux:iuz) &
+                    =ampl_kinflow*f(l1:l2,m1:m2,n1:n2,iux:iuz)
             if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
           endif
         else
@@ -692,11 +694,14 @@ module Hydro
 ! divu
         if (lpenc_loc(i_divu)) p%divu= 0.
 !
-!  Roberts I flow with positive helicity
+!  Roberts I flow with positive helicity.
+!  For relhel_uukin=1, we have the normal Roberts flow.
+!  For relhel_uukin=0., the flow is purely in closed circles.
+!  For relhel_uukin=2., the flow is purely along the z direction.
 !
       case ('poshel-roberts')
         if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
-        fac=ampl_kinflow
+        fac =ampl_kinflow*(2.-relhel_uukin)
         fac2=ampl_kinflow*relhel_uukin
         eps1=1.-eps_kinflow
 ! uu
