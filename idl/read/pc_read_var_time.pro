@@ -65,7 +65,6 @@ COMPILE_OPT IDL2,HIDDEN
     if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
     default, varfile_, default_varfile
     varfile = varfile_
-    ivar = -1
   endelse
 ;
 ; Load HDF5 varfile if requested or available.
