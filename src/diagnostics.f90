@@ -143,26 +143,25 @@ module Diagnostics
         dVol_rel1=1./box_volume
       elseif (lspherical_coords) then
 !
-!
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
 !
         if (nxgrid/=1) then
-          intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
+          intdr_rel = (xyz1(1)**3-xyz0(1)**3)/(3.*dx)
         else
-          intdr_rel     =  1.0
+          intdr_rel = 1.
         endif
 !
         if (nygrid/=1) then
-          intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
+          intdtheta_rel = -(cos(xyz1(2))-cos(xyz0(2)))/dy
         else
-          intdtheta_rel=   1.0
+          intdtheta_rel = 1.
         endif
 !
-        if (nzgrid/=1.0) then
-          intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+        if (nzgrid/=1) then
+          intdphi_rel = (xyz1(3) - xyz0(3))/dz
         else
-          intdphi_rel   =  1.0
+          intdphi_rel = 1.
         endif
 !
         dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
@@ -172,22 +171,21 @@ module Diagnostics
 !  Prevent zeros from less than 3-dimensional runs
 !
         if (nxgrid/=1) then
-          intdr_rel     =  (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
+          intdr_rel = (xyz1(1)**2 - xyz0(1)**2)/(2.*dx)
         else
-          intdr_rel     =  1.0
+          intdr_rel = 1.
         endif
 !
         if (nygrid/=1) then
-          intdtheta_rel =  (xyz1(2)   -    xyz0(2)) /dy
+          intdphi_rel = (xyz1(2) - xyz0(2))/dy
         else
-          intdtheta_rel=   1.0
+          intdphi_rel = 1.
         endif
 !
-        if (nzgrid/=1.0) then
-          intdphi_rel   =  (xyz1(3)   -    xyz0(3)) /dz
-
+        if (nzgrid/=1) then
+          intdz_rel = (xyz1(3) - xyz0(3))/dz
         else
-          intdphi_rel   =  1.0
+          intdz_rel = 1.
         endif
 !
         dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
@@ -2476,6 +2474,7 @@ module Diagnostics
       real,    dimension(:), optional, intent(in) :: scal
       logical,               optional, intent(in) :: lint
 !
+      if (iname==0) return
       if (loptest(lint)) then
 !
 !  Mulitply with scale factor for integration.
@@ -2646,11 +2645,7 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname,n_nghost,ir
 !
-      if (iname == 0) then
-!
-!  Nothing to be done (this variable was never asked for)
-!
-      else
+      if (iname /= 0) then
 !
 !  Initialize to zero, including other parts of the rz-array
 !  which are later merged with an mpi reduce command.
