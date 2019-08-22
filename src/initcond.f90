@@ -1549,19 +1549,21 @@ module Initcond
 !
     endsubroutine beltrami_old
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma)
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width)
 !
 !  Beltrami field (as initial condition)
 !
 !  19-jun-02/axel: coded
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
 !
+      use Sub, only: cubic_step
+!
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
-      real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma
+      real, dimension (mz) :: sfuncz,cfuncz,zprof
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
       real :: ampl,k=1.,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
@@ -1580,6 +1582,20 @@ module Initcond
         sig=sigma
       else
         sig=1.
+      endif
+!
+!  possibility of envelope profile
+!
+      if (present(z0)) then
+        if (.not.present(width)) call fatal_error('beltrami','width?')
+        if (lroot) print*,'Beltrami: z0,width=',z0,width
+        if (z0>0.) then
+          zprof=cubic_step(z,-z0,width)-cubic_step(z,z0,width)
+        else
+          zprof=1.
+        endif
+      else
+        zprof=1.
       endif
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
@@ -1631,8 +1647,8 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncz=ampl*cos(k*z+ph)
-        sfuncz=ampl*sin(k*z+ph)
+        cfuncz=ampl*cos(k*z+ph)*zprof
+        sfuncz=ampl*sin(k*z+ph)*zprof
         if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
