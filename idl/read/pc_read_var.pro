@@ -148,7 +148,6 @@ COMPILE_OPT IDL2,HIDDEN
       if (file_test (datadir+'/allprocs/ogvar.h5')) then default_varfile = 'ogvar.h5'
       default, varfile_, default_varfile
       varfile=varfile_
-      ivar=-1
     endelse
   endif else begin
     if (n_elements(ivar) eq 1) then begin
@@ -160,7 +159,6 @@ COMPILE_OPT IDL2,HIDDEN
       if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
       default, varfile_, default_varfile
       varfile=varfile_
-      ivar=-1
     endelse
   endelse
 ;
