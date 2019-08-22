@@ -15,14 +15,14 @@ default, quiet, 0
 default, qquiet, 0
 
 if n_elements(ivar) eq 1 then begin
-  default,varfile_,'QVAR'
-  varfile=varfile_+strcompress(string(ivar),/remove_all)
+  default, varfile_, 'QVAR'
+  varfile = varfile_ + strcompress (string (ivar), /remove_all)
   if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
 endif else begin
   default_varfile = 'qvar.dat'
   if (file_test (datadir+'/allprocs/qvar.h5')) then default_varfile = 'qvar.h5'
   default, varfile_, default_varfile
-  varfile=varfile_
+  varfile = varfile_
 endelse
 ;
 ; Load HDF5 varfile if requested or available.
