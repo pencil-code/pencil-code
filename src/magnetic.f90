@@ -218,7 +218,8 @@ module Magnetic
   logical :: lscale_tobox=.true.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
+      x0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
@@ -1826,7 +1827,8 @@ module Magnetic
         case ('Beltrami-y')
                call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j),sigma=relhel_aa)
         case ('Beltrami-z')
-               call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j),sigma=relhel_aa)
+               call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j), &
+                   sigma=relhel_aa,z0=z0aa,width=widthaa)
         case ('bihelical-z')
                call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
         case ('bihelical-z-sym')
