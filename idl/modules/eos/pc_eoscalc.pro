@@ -56,11 +56,19 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
     if (keyword_set(lnrho_lnTT)) then begin
 
       if keyword_set(pp) then begin
-       ;result = fn of  where var1,var2 = lnrho, lnTT
-       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
+       if (param.ldensity_nolog)     then rho = var1 else rho = exp (var1)
+       if (param.ltemperature_nolog) then TT = var2 else TT = exp (var2)
+       gamma = param.gamma
+       gamma_m1 = gamma - 1.
+       cp = param.cp
+       result = cp * (gamma - 1.0) / gamma * rho * TT
       endif else if keyword_set(ee) then begin
-       ;result = fn of  where var1,var2 = lnrho, lnTT
-       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
+       if (param.ldensity_nolog)     then rho = var1 else rho = exp (var1)
+       if (param.ltemperature_nolog) then TT = var2 else TT = exp (var2)
+       gamma = param.gamma
+       gamma_m1 = gamma - 1.
+       cp = param.cp
+       result = cp / gamma * rho * TT
       endif else if keyword_set(ss) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        if (param.ldensity_nolog)     then lnrho=alog(var1) else lnrho=var1
