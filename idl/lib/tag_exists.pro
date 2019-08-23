@@ -1,7 +1,7 @@
-   function tag_exists, struct, field
+   function tag_exists, struct, tag
 ;
-;  Tests whether structure struct has an element named field.
+;  Tests whether a structure has a given tag name.
 ;
-     return, (where(tag_names(struct) eq field))(0) ne -1
+     return, ((where(strupcase (tag_names(struct)) eq strupcase (tag)))[0] ge 0)
 
    end
