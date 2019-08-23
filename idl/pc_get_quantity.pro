@@ -25,7 +25,7 @@
 ;   log_rho          decatic logarithm of density
 ;   ln_rho           natural logarithm of density
 ;   n_rho            particle density
-;   P                thermal pressure
+;   P_therm          thermal pressure
 ;   HR_ohm           volumetric Ohmic heating rate
 ;   HR_viscous       volumetric viscous heating rate
 ;   B_z              magnetic field z-component
@@ -181,15 +181,15 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (strcmp (quantity, 'E_therm', /fold_case)) then begin
-		; Thermal energy [J]
+		; Thermal energy in one unit volume [J] = specific thermal energy [J/m^3]
 		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
 		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
-		return, rho * Temp * cp_SI / gamma * unit.energy
+		return, rho * Temp * cp_SI / gamma
 	end
-	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
-		; Kinetic energy density [J/m^3]
+	if (strcmp (quantity, 'E_kin', /fold_case)) then begin
+		; Kinetic energy in one unit volume [J] = kinetic energy density [J/m^3]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
 		return, 0.5 * dot2 (uu)^2 * rho
