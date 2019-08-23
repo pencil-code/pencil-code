@@ -25,6 +25,8 @@
 ;       Az = pc_read ('az', processor=2) ;; read data of processor 2
 ;       ux = pc_read ('ux', start=[47,11,13], count=[16,8,4]) ;; read subvolume
 ;       aa = pc_read ('aa') ;; read all three components of a vector-field
+;       xp = pc_read ('part/xp', file='pvar.h5') ;; get x position of particles
+;       ID = pc_read ('stalker/ID', file='PSTALK0.h5') ;; stalker particle IDs
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
