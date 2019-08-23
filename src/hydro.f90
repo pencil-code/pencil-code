@@ -2389,7 +2389,10 @@ module Hydro
 ! uij
       if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
-        if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
+!
+!  if gradu is to be stored as auxiliary then we store it now
+!
+        if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
           jk=0
           do jj=1,3; do kk=1,3
             f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
@@ -2400,18 +2403,6 @@ module Hydro
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
-!
-!  if gradu is to be stored as auxiliary the we store it now
-!
-      if (lgradu_as_aux) then
-        ij=igradu-1
-        do i=1,3
-          do j=1,3
-            ij=ij+1
-            f(l1:l2,m,n,ij) = p%uij(:,i,j)
-          enddo
-        enddo
-      endif
 ! divu
       if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij
@@ -2439,9 +2430,7 @@ module Hydro
         if (outest<(-1.0d-8))then
           write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
-        else
         endif
-      else
       endif
 ! ugu
       if (lpenc_loc(i_ugu)) then

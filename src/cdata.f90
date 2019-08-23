@@ -294,7 +294,6 @@ module Cdata
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
-  integer :: igradu=0
   integer :: igradu11=0,igradu12=0,igradu13=0
   integer :: igradu21=0,igradu22=0,igradu23=0
   integer :: igradu31=0,igradu32=0,igradu33=0

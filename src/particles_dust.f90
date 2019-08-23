@@ -6903,7 +6903,7 @@ module Particles
 !
 !
       if (lparticles_grad) then
-        if (igradu  /=  0) then
+        if (iguij  /=  0) then
           call set_periodic_boundcond_on_aux(f,igradu11)
           call set_periodic_boundcond_on_aux(f,igradu12)
           call set_periodic_boundcond_on_aux(f,igradu13)
@@ -6914,7 +6914,7 @@ module Particles
           call set_periodic_boundcond_on_aux(f,igradu32)
           call set_periodic_boundcond_on_aux(f,igradu33)
         else
-          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands iguij ne 0')
         endif
       endif
 !

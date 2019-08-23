@@ -54,7 +54,7 @@ module Particles_grad
 !
     endsubroutine pencil_criteria_par_grad
 !***********************************************************************
-    subroutine set_particle_grad(f,fp,npar_low,npar_high,init)
+    subroutine set_particle_grad(f,fp,npar_low,npar_high,ineargrid,init)
 !
 !  Set radius of new particles.
 !
@@ -65,6 +65,7 @@ module Particles_grad
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer :: npar_low,npar_high
+      integer, dimension(mpar_loc,3) :: ineargrid
       logical, optional :: init
 !
       call keep_compiler_quiet(f)
