@@ -180,7 +180,7 @@ COMPILE_OPT IDL2,HIDDEN
       object = create_struct (object, quantities[pos], pc_read (quantities[pos], trimall=trimall, processor=proc, dim=dim))
     end
     h5_close_file
-    pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param, run_param=par2
+    pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
     return
   end
 ;
