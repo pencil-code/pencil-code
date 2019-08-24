@@ -104,7 +104,7 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0
+  real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0, ABCaa=1., widthaa=0.5
   real, dimension(3) :: B1_ext, B_ext_inv
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3=0.0
@@ -116,7 +116,7 @@ module Magnetic
   real, dimension(nz) :: zmask_mag
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
-  real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
+  real :: radius=0.1, epsilonaa=0.01, x0aa=0.0, y0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
@@ -219,7 +219,7 @@ module Magnetic
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
-      x0aa, z0aa, widthaa, &
+      ABCaa, x0aa, y0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
@@ -1806,6 +1806,11 @@ module Magnetic
           tmp=amplaa(1)*0.5*(tanh((z-znoise_int)/0.05)-tanh((z-znoise_ext)/0.05))
           call gaunoise(tmp,f,iax,iaz)
 !
+!  ABC field (includes Beltrami fields when only one coefficient /= 0)
+!
+        case ('ABC_field')
+          call ABC_field(f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),ABCaa,x0aa,y0aa,z0aa,widthaa)
+!
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
         case ('Beltrami-general')
@@ -1828,7 +1833,7 @@ module Magnetic
                call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j),sigma=relhel_aa)
         case ('Beltrami-z')
                call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j), &
-                   sigma=relhel_aa,z0=z0aa,width=widthaa)
+                   sigma=relhel_aa,z0=z0aa,width=widthaa(1))
         case ('bihelical-z')
                call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
         case ('bihelical-z-sym')
@@ -1854,10 +1859,10 @@ module Magnetic
                                      center1_y,center1_z)
         case ('hor-tube_erf'); call htube_erf(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_z,fluxtube_border_width)
-        case ('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa)
-        case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa)
+        case ('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa(1))
+        case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa(1))
         case ('hor-fluxlayer-y-theta'); call hfluxlayer_y_theta(amplaa(j),f,iaa)
-        case ('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa)
+        case ('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa(1))
         case ('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
         case ('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
         case ('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
@@ -1875,7 +1880,7 @@ module Magnetic
         case ('bipolar'); call bipolar(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('bipolar_restzero'); call bipolar_restzero(amplaa(j),f,iaa,kx_aa(j),ky_aa(j))
         case ('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
-        case ('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
+        case ('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa(1),'x')
         case ('x-point_xy'); call xpoint(amplaa(j),f,iaz,center1_x,center1_y)
         case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
         case ('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
@@ -1918,7 +1923,7 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=0. 
              f(l1:l2,m,n,iay)=0.
-             f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa) - amplaa(j)
+             f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa(1)) - amplaa(j)
           enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
