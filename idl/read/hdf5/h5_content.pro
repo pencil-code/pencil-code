@@ -17,6 +17,7 @@ function h5_content, group, number=number, maximum=maximum
 	if (strupcase (object.type) ne 'GROUP') then return, [ '' ]
 
 	num = h5g_get_nmembers (file_id, group)
+	if (num eq 0) then return, strarr (1)
 	number = num
 	if (keyword_set (maximum)) then num = num < (maximum > 1)
 	list = strarr (num)
