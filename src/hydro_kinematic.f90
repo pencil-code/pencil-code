@@ -80,7 +80,7 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp,gamma_dg11=0.4, relhel_uukin=1.
+  real :: rp,gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
@@ -91,7 +91,7 @@ module Hydro
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow, relhel_uukin, &
+      ampl_kinflow, relhel_uukin, chi_uukin, del_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
@@ -497,7 +497,7 @@ module Hydro
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
 !      real :: random_r_pt, random_p_pt
-      real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
+      real :: fac, fac2, argy, argz, cxt, cyt, czt, omt, del
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha, ABC_A1, ABC_B1, ABC_C1
@@ -700,15 +700,16 @@ module Hydro
 !  For relhel_uukin=2., the flow is purely along the z direction.
 !
       case ('poshel-roberts')
-        if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
-        fac =ampl_kinflow*(2.-relhel_uukin)
-        fac2=ampl_kinflow*relhel_uukin
-        eps1=1.-eps_kinflow
+        if (headtt) print*,'Pos Helicity Roberts flow; chi_uukin=',chi_uukin
+        fac =ampl_kinflow*cos(chi_uukin*dtor)*sqrt(2.)
+        fac2=ampl_kinflow*sin(chi_uukin*dtor)*2.
+        del =                 del_uukin*dtor
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
-          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
-          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
+          p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2)    )*sin(ky_uukin*y(m)    )
+          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)    )*cos(ky_uukin*y(m)    )
+          !p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2)+del)*cos(ky_uukin*y(m)+del)
+          p%uu(:,3)=fac2*sin(kx_uukin*x(l1:l2)+del)*sin(ky_uukin*y(m)+del)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
