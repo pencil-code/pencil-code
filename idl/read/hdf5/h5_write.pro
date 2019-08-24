@@ -1,8 +1,8 @@
-pro h5_write, label, data, transpose=transpose, filename=filename, close=close, close=close
+pro h5_write, label, data, transpose=transpose, filename=filename, truncate=truncate, close=close
 
 	common h5_file_info, file_id, file_name, group_name, group_content
 
-	if (size (filename, /type) eq 7) then h5_open_file, filename, /write
+	if (size (filename, /type) eq 7) then h5_open_file, filename, /write, truncate=truncate
 
 	exists = h5_contains (label, group=group, name=name)
 
