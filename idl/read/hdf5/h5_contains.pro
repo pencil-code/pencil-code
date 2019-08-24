@@ -10,14 +10,17 @@ function h5_contains, label, group=group, name=name
 		return, !Values.D_NaN
 	end
 
+	if (strmid (label, 0, 1) eq '/') then label = strmid (label, 1)
+
 	if (label eq '/') then return, (label eq '')
 	pos = strpos (label, '/', /reverse_search)
 	if (pos lt 0) then begin
 		group = '/'
 		name = label
 	end else begin
-		group = strmid (label, 0, pos+1)
+		group = strmid (label, 0, pos)
 		name = strmid (label, pos+1)
+help, label, group, name
 		exists = h5_contains (group)
 		if (not exists) then return, exists
 	end
