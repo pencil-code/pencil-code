@@ -24,7 +24,8 @@ module Initcond
   public :: sph_constb,tanh_hyperbola
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
+  public :: gaussian, gaussian3d, gaussianpos
+  public :: ABC_field, beltrami, bessel_x, bessel_az_x
   public :: beltrami_general, beltrami_complex, beltrami_old, bhyperz, bihelical
   public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
@@ -1473,6 +1474,10 @@ module Initcond
       real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
 !
+!  This routine should be removed by 2020
+!
+      call fatal_error('beltrami_old','email Axel if you need this routine')
+!
 !  possibility of shifting the Beltrami wave by phase ph
 !
       if (present(phase)) then
@@ -1548,6 +1553,80 @@ module Initcond
       endif
 !
     endsubroutine beltrami_old
+!***********************************************************************
+    subroutine ABC_field(f,i,kx,ky,kz,ABC,x0,y0,z0,width)
+!
+!  ABC field (as initial condition)
+!
+!  24-aug-19/axel: coded
+!
+      use Sub, only: cubic_step
+!
+      integer :: i,j,l,m,n
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: sfuncx,cfuncx,xprof
+      real, dimension (my) :: sfuncy,cfuncy,yprof
+      real, dimension (mz) :: sfuncz,cfuncz,zprof
+      real, dimension (3) :: ABC, width
+      real :: kx,ky,kz, x0,y0,z0, prof
+!
+!  Envelope profile (can turn it off by setting x0=0.).
+!
+      if (lroot) print*,'ABC_field: x0,width=',x0,width(1)
+      if (x0>0.) then
+        xprof=cubic_step(x,-x0,width(1))-cubic_step(x,x0,width(1))
+        if (lroot) print*,'xprof=',xprof
+      else
+        xprof=1.
+      endif
+!
+!  Envelope profile (can turn it off by setting y0=0.).
+!
+      if (lroot) print*,'ABC_field: y0,width=',y0,width(2)
+      if (y0>0.) then
+        yprof=cubic_step(y,-y0,width(2))-cubic_step(y,y0,width(2))
+        if (lroot) print*,'yprof=',yprof
+      else
+        yprof=1.
+      endif
+!
+!  Envelope profile (can turn it off by setting z0=0.).
+!
+      if (lroot) print*,'ABC_field: z0,width=',z0,width(3)
+      if (z0>0.) then
+        zprof=cubic_step(z,-z0,width(3))-cubic_step(z,z0,width(3))
+        if (lroot) print*,'zprof=',zprof
+      else
+        zprof=1.
+      endif
+!
+!  Set x-dependent part of ABC field.
+!
+      sfuncx=ABC(2)*sin(kx*x)*xprof
+      cfuncx=ABC(2)*cos(kx*x)*xprof
+!
+!  Set y-dependent part of ABC field.
+!
+      sfuncy=ABC(3)*sin(ky*y)*yprof
+      cfuncy=ABC(3)*cos(ky*y)*yprof
+!
+!  Set z-dependent part of ABC field.
+!
+      sfuncz=ABC(1)*sin(kz*z)*zprof
+      cfuncz=ABC(1)*cos(kz*z)*zprof
+!
+      do n=n1,n2
+      do m=m1,m2
+      do l=l1,l2
+        prof=xprof(l)*yprof(m)*zprof(n)
+        j=i  ; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncz(n)+cfuncy(m))
+        j=i+1; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncx(l)+cfuncz(n))
+        j=i+2; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncy(m)+cfuncx(l))
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine ABC_field
 !***********************************************************************
     subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width)
 !
