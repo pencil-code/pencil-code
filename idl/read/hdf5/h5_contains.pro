@@ -20,7 +20,6 @@ function h5_contains, label, group=group, name=name
 	end else begin
 		group = strmid (label, 0, pos)
 		name = strmid (label, pos+1)
-help, label, group, name
 		exists = h5_contains (group)
 		if (not exists) then return, exists
 	end
