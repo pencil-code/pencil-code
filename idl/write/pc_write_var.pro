@@ -35,13 +35,13 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, datadir=datad
 
 	num_content = n_elements (labels)
 	for i = 0, num_content-1 do begin
+		label = labels[i]
 		if (is_structure) then begin
-			if (labels[i] eq 'dummy') then continue
+			if (label eq 'dummy') then continue
 		end else begin
 			if (size (tags.(i), /n_dimensions) ne 0) then continue
 			if (label eq 'time') then continue
 		end
-		label = labels[i]
 		for j = 0, num_replace-1 do begin
 			if (label eq search[j]) then label = replace.(j)
 		end
