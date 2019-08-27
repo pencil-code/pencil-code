@@ -382,6 +382,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_notestfield) then
         print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
+        print*,'read old snapshot file (but without testfield),ntestfield=',ntestfield
         call input_snap(chsnap,f,msnap-ntestfield,mode)
         if (lpersist) call input_persistent()
         call input_snap_finalize()
@@ -542,6 +543,7 @@ module Snapshot
         if (GWs_spec) call powerGWs(f,'GWs')
         if (GWh_spec) call powerGWs(f,'GWh')
         if (GWm_spec) call powerGWs(f,'GWm')
+        if (SCL_spec) call powerGWs(f,'SCL')
         if (GWd_spec) call powerhel(f,'GWd')
         if (GWe_spec) call powerhel(f,'GWe')
         if (GWf_spec) call powerhel(f,'GWf')
