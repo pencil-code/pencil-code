@@ -177,6 +177,12 @@ varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
 ;
+default, ivpx_cart, 0
+varcontent[ivpx_cart].variable = 'Particle velocity cartesian (vvp_cart)'
+varcontent[ivpx_cart].idlvar   = 'vv_cart'
+varcontent[ivpx_cart].idlinit  = INIT_3VECTOR
+varcontent[ivpx_cart].skip     = 2
+;
 default, idXp1, 0
 varcontent[idXp1].variable = 'Particle Separation (dXp)'
 varcontent[idXp1].idlvar   = 'dXp'
