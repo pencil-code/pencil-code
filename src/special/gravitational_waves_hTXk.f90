@@ -106,10 +106,10 @@ module Special
 !  Do this here because shared variables for this array doesn't work on Beskow.
 !
   integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
+  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr, specSCL
   real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
   public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel
+  public :: specStr, specStrhel, specSCL
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -618,7 +618,7 @@ module Special
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
+      real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (3) :: e1, e2
 !     real, dimension(nk) :: specGWs   ,specGWh   ,specStr
 !     real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
@@ -629,6 +629,7 @@ module Special
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, om12, om1, om, omt1
+      real :: SCALij_re, SCALij_im
       intent(inout) :: f
       character (len=2) :: label
 !
@@ -683,6 +684,15 @@ module Special
       if (lscale_tobox1) kscale_factor=2*pi/Lz
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*kscale_factor
 !
+!  set delta_ij
+!
+      delij(1)=1.
+      delij(2)=1.
+      delij(3)=1.
+      delij(4)=0.
+      delij(5)=0.
+      delij(6)=0.
+!
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
@@ -713,6 +723,7 @@ module Special
       specGWh=0.; specGWhhel=0.
       specGWm=0.; specGWmhel=0.
       specStr=0.; specStrhel=0.
+      specSCL=0.
 !
 !  P11, P22, P33, P12, P23, P31
 !
@@ -819,6 +830,16 @@ module Special
               Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikz,ikx,iky,pq)
             enddo
             enddo
+            enddo
+            enddo
+!
+            SCALij_im=0.
+            SCALij_re=0.
+            do q=1,3
+            do p=1,3
+              pq=ij_table(p,q)
+              SCALij_re=SCALij_re+(Pij(pq)-delij(pq))*Tpq_re(ikz,ikx,iky,pq)
+              SCALij_im=SCALij_im+(Pij(pq)-delij(pq))*Tpq_im(ikz,ikx,iky,pq)
             enddo
             enddo
 !
@@ -988,6 +1009,13 @@ module Special
                      -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
                      *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
                 endif
+!
+!  Stress spectrum computed from SCAL
+!
+                if (SCL_spec) then
+                  specSCL(ik)=specSCL(ik)+(SCALij_re**2+SCALij_im**2)
+                endif
+!
               endif
 !
 !  end of lspec
