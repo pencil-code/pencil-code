@@ -52,15 +52,18 @@ mqvar =qdim.mqvar
 nqpar =qdim.nqpar
 ;mqpar =0L
 ;
-;  Read variable indices from index.pro
+;  Read qvar indices from qvarname.dat
 ;
 datadir = pc_get_datadir(datadir)
-openr, lun, datadir+'/index.pro', /get_lun
-line=''
+openr, lun, datadir+'/qvarname.dat', /get_lun
 while (not eof(lun)) do begin
+  line=''
   readf, lun, line, format='(a)'
-  if (execute(line) ne 1) then $
-      message, 'There was a problem with index.pro', /INF
+  found = strsplit (line, /extract)
+  if (n_elements (found) ge 2) then begin
+    line = strtrim (found[1], 2) + '=' + str (found[0])
+    if (execute (line) ne 1) then message, 'There was a problem with "qvarname.dat" ('+line+')', /INF
+  end
 endwhile
 close, lun
 free_lun, lun
