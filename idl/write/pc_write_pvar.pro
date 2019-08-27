@@ -9,7 +9,7 @@ pro pc_write_pvar, varfile, obj, tags=tags, group=group, time=time, datadir=data
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 
 	; case-insensitve replacements for dataset names
-	replace = { t:'', x:'', y:'', z:'', dx:'', dy:'', dz:'', distribution:'', npar_found:'', ipar:'ID', xx:'_p', vv:'vp_' }
+	replace = { t:'', x:'', y:'', z:'', dx:'', dy:'', dz:'', distribution:'', npar_found:'', ipar:'ID', xx:'_p', vv:'vp_', vv_cart:'vp__cart' }
 	search = strlowcase (tag_names (replace))
 	num_replace = n_elements (search)
 
