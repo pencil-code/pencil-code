@@ -1,6 +1,6 @@
 ; Writes a data snapshot in the HDF5 format
 
-pro pc_write_pvar, varfile, obj, tags=tags, group=group, time=time, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param, quiet=quiet
+pro pc_write_pvar, varfile, obj, tags=tags, group=group, time=time, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, quiet=quiet
 
 	datadir = pc_get_datadir (datadir)
 	default, group, 'part'
@@ -21,7 +21,6 @@ pro pc_write_pvar, varfile, obj, tags=tags, group=group, time=time, datadir=data
 
 	; write from pvar structure (pc_read_pvar)
 	labels = strlowcase (tag_names (obj))
-	labels = labels[where (labels ne 'dummy')]
 	tags = labels
 
 	num_content = n_elements (labels)
