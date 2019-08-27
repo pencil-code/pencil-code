@@ -41,7 +41,22 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		varfile = varfiles[pos]
 		if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
 		pc_read_pvar, obj=data, varfile=varfile, datadir=datadir
-		pc_write_pvar, varfile, data, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param
+		pc_write_pvar, varfile, data, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param
+	end
+
+	; qvar snapshots
+	varfiles = 'qvar.dat'
+	if (keyword_set (old) and not keyword_set (all)) then varfiles = 'QVAR[0-9]*'
+	if (keyword_set (all)) then varfiles = [ varfiles, 'QVAR[0-9]*' ]
+	varfiles = file_search (procdir+varfiles)
+	varfiles = strmid (varfiles, strlen (procdir))
+
+	num_files = n_elements (varfiles)
+	for pos = 0, num_files-1 do begin
+		varfile = varfiles[pos]
+		if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
+		pc_read_qvar, obj=data, varfile=varfile, datadir=datadir
+		pc_write_qvar, varfile, data, datadir=datadir
 	end
 
 	; grid file
