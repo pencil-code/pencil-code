@@ -530,7 +530,7 @@ module Cdata
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.
-  logical :: SCL_spec=.false.
+  logical :: SCL_spec=.false., VCT_spec=.false., Tpq_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
