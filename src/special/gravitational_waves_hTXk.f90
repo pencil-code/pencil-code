@@ -626,11 +626,11 @@ module Special
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       logical :: lscale_tobox1=.true.
       real :: kscale_factor, fact, sign_switch
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      real :: ksqr, one_over_k2, one_over_k4, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, om12, om1, om, omt1
-      real :: SCLij_re, SCLij_im
+      real :: SCL_re, SCL_im
       intent(inout) :: f
       character (len=2) :: label
 !
@@ -783,6 +783,7 @@ module Special
               Pij(5)=-k2*k3*one_over_k2
               Pij(6)=-k3*k1*one_over_k2
             endif
+            one_over_k4=one_over_k2**2
 !
 !  set k vector
 !
@@ -840,19 +841,19 @@ module Special
             enddo
             enddo
 !
-            SCLij_re=0.
-            SCLij_im=0.
+            SCL_re=0.
+            SCL_im=0.
             do q=1,3
             do p=1,3
               pq=ij_table(p,q)
-              SCLij_re=SCLij_re+(Pij(pq)-delij(pq))*Tpq_re(ikz,ikx,iky,pq)
-              SCLij_im=SCLij_im+(Pij(pq)-delij(pq))*Tpq_im(ikz,ikx,iky,pq)
+              SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
+              SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
             enddo
             enddo
 !
             do q=1,3
-              VCT_re(q)=+twothird*kvec(q)*SCLij_im
-              VCT_im(q)=-twothird*kvec(q)*SCLij_re
+              VCT_re(q)=+twothird*kvec(q)*SCL_im
+              VCT_im(q)=-twothird*kvec(q)*SCL_re
               do p=1,3
                 pq=ij_table(p,q)
                 VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
@@ -1031,7 +1032,7 @@ module Special
 !  Stress spectrum computed from the scalar mode, SCL.
 !
                 if (SCL_spec) then
-                  specSCL(ik)=specSCL(ik)+.5*(SCLij_re**2+SCLij_im**2)
+                  specSCL(ik)=specSCL(ik)+.5*(SCL_re**2+SCL_im**2)
                 endif
 !
 !  Spectrum computed from the vector modes...
