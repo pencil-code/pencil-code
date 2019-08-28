@@ -1820,7 +1820,8 @@ module power_spectrum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
     use Special, only: specGWs, specGWshel, specGWh, specGWhhel, &
-                       specGWm, specGWmhel, specStr, specStrhel, specSCL
+                       specGWm, specGWmhel, specStr, specStrhel, &
+                       specSCL, specTpq
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
@@ -1876,6 +1877,12 @@ module power_spectrum
     if (sp=='SCL') then
 !     call get_shared_variable('specSCL   ', specSCL   , caller='powerGWs')
       spectrum   =specSCL
+      spectrumhel=0.
+    endif
+    if (sp=='Tpq') then
+!     call get_shared_variable('specTpq   ', specTpq   , caller='powerGWs')
+      spectrum   =specTpq
+      spectrumhel=0.
     endif
   else
 !
