@@ -112,10 +112,11 @@ module Special
 !  Do this here because shared variables for this array doesn't work on Beskow.
 !
   integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs=0   ,specGWh=0   ,specGWm=0   ,specStr=0, specSCL=0
+  real, dimension(nk) :: specSCL=0   ,specVCT=0   ,specTpq=0
+  real, dimension(nk) :: specGWs=0   ,specGWh=0   ,specGWm=0   ,specStr=0
   real, dimension(nk) :: specGWshel=0,specGWhhel=0,specGWmhel=0,specStrhel=0
   public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel, specSCL
+  public :: specStr, specStrhel, specSCL, specVCT, specTpq
 !
 ! input parameters
   namelist /special_init_pars/ &

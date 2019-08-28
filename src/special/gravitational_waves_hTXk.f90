@@ -106,10 +106,11 @@ module Special
 !  Do this here because shared variables for this array doesn't work on Beskow.
 !
   integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr, specSCL
+  real, dimension(nk) :: specSCL, specVCT, specTpq
+  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
   real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
   public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel, specSCL
+  public :: specStr, specStrhel, specSCL, specVCT, specTpq
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -619,7 +620,7 @@ module Special
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
-      real, dimension (3) :: e1, e2
+      real, dimension (3) :: e1, e2, kvec, VCT_re, VCT_im
 !     real, dimension(nk) :: specGWs   ,specGWh   ,specStr
 !     real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
@@ -629,7 +630,7 @@ module Special
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, om12, om1, om, omt1
-      real :: SCALij_re, SCALij_im
+      real :: SCLij_re, SCLij_im
       intent(inout) :: f
       character (len=2) :: label
 !
@@ -723,7 +724,7 @@ module Special
       specGWh=0.; specGWhhel=0.
       specGWm=0.; specGWmhel=0.
       specStr=0.; specStrhel=0.
-      specSCL=0.
+      specSCL=0.; specVCT=0.; specTpq=0.
 !
 !  P11, P22, P33, P12, P23, P31
 !
@@ -783,6 +784,12 @@ module Special
               Pij(6)=-k3*k1*one_over_k2
             endif
 !
+!  set k vector
+!
+            kvec(1)=k1
+            kvec(2)=k2
+            kvec(3)=k3
+!
 !  compute e_T and e_X
 !
             do j=1,3
@@ -833,14 +840,24 @@ module Special
             enddo
             enddo
 !
-            SCALij_im=0.
-            SCALij_re=0.
+            SCLij_re=0.
+            SCLij_im=0.
             do q=1,3
             do p=1,3
               pq=ij_table(p,q)
-              SCALij_re=SCALij_re+(Pij(pq)-delij(pq))*Tpq_re(ikz,ikx,iky,pq)
-              SCALij_im=SCALij_im+(Pij(pq)-delij(pq))*Tpq_im(ikz,ikx,iky,pq)
+              SCLij_re=SCLij_re+(Pij(pq)-delij(pq))*Tpq_re(ikz,ikx,iky,pq)
+              SCLij_im=SCLij_im+(Pij(pq)-delij(pq))*Tpq_im(ikz,ikx,iky,pq)
             enddo
+            enddo
+!
+            do q=1,3
+              VCT_re(q)=+twothird*kvec(q)*SCLij_im
+              VCT_im(q)=-twothird*kvec(q)*SCLij_re
+              do p=1,3
+                pq=ij_table(p,q)
+                VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
+                VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
+              enddo
             enddo
 !
 !  Compute S_T and S_X. Loop over all i and j for simplicity to avoid
@@ -996,24 +1013,44 @@ module Special
                 endif
 !
 !  Stress spectrum computed from Str
+!  ?not used currently
 !
                 if (Str_spec) then
                   specStr(ik)=specStr(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
                   specStrhel(ik)=specStrhel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
                 endif
 !
-!  Stress spectrum computed from SCAL
+!  Stress spectrum computed from the scalar mode, SCL.
 !
                 if (SCL_spec) then
-                  specSCL(ik)=specSCL(ik)+(SCALij_re**2+SCALij_im**2)
+                  specSCL(ik)=specSCL(ik)+.5*(SCLij_re**2+SCLij_im**2)
+                endif
+!
+!  Spectrum computed from the vector modes...
+!
+                if (VCT_spec) then
+                  do q=1,3
+                    specVCT(ik)=specVCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
+                  enddo
+                endif
+!
+!  Spectrum computed from the total unprojected stress
+!
+                if (Tpq_spec) then
+                  do q=1,3
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    specTpq(ik)=specTpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
+                  enddo
+                  enddo
                 endif
 !
               endif
