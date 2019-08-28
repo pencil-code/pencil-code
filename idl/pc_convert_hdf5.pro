@@ -60,7 +60,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	end
 
 	; stalker particle snapshots
-	if (keyword_set (old) or keyword_set (all)) then begin
+	varfile = 'particles_stalker.dat'
+	if ((keyword_set (old) or keyword_set (all)) and file_test (procdir+varfile)) then begin
 		pc_read_pstalk, obj=data, datadir=datadir
 		num_files = n_elements (data.t)
 		num_particles = n_elements (data.ipar)
