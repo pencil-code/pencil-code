@@ -333,7 +333,7 @@ if keyword_set(fail) then fail=1
 return
 ;
 data_file_missing:
-print, 'No data file slice_"'+field+'.'+tag+'" found in "'+readdir+'"!!!'
+print, 'No data file "slice_'+field+'.'+tag+'" found in "'+readdir+'"!!!'
 if keyword_set(fail) then fail=1
 ;
 end
