@@ -29,7 +29,7 @@
 ! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
-! PENCILS PROVIDED gamma_A2; clight2; gva(3)
+! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
 !***************************************************************
 module Magnetic
 !
@@ -110,8 +110,6 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3=0.0
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
-  real, dimension(nx,3) :: uxbb
-  real, dimension(nx) :: eta_BB, Rmmz
   real, dimension(nx) :: xmask_mag
   real, dimension(nz) :: zmask_mag
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
@@ -246,7 +244,7 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
-  real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0, eta_tdep_toffset=0.0
+  real :: eta_tdep_exponent=0.0, eta_tdep_t0=0.0, eta_tdep_toffset=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
           eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
@@ -878,9 +876,11 @@ module Magnetic
 !
 ! Module Variables
 !
-  real, dimension(nx) :: diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
+  real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax=0.,dAmax=0.,ss0=0., &
+                         diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
+  real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid = 0.0
-  real :: eta_shock_jump1
+  real :: eta_shock_jump1,eta_tdep
 !
   contains
 !***********************************************************************
@@ -2501,6 +2501,8 @@ module Magnetic
         lpenc_requested(i_ugu)=.true.
       endif
 !
+      if (lmagneto_friction.and.(.not.lhydro)) lpenc_requested(i_vmagfric)=.true.
+!
 !  ua pencil if lua_as_aux
 !
       if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
@@ -2937,6 +2939,13 @@ module Magnetic
         lpencil_in(i_clight2)=.true.
       endif
 !
+! For magnetic friction
+!
+      if (lpencil_in(i_vmagfric)) then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_jxb)=.true.
+      endif
+!
 ! The dependence of diva or bb on aa relies on if aij is requested above.
 !
       if ((lpencil_in(i_diva) .or. (lpencil_in(i_bb) .and. .not. lbb_as_comaux)) .and. &
@@ -3076,7 +3085,6 @@ module Magnetic
 !  20-jun-16/fred: added derivative tensor option and streamlined gij_etc
 !
       use Sub
-      use Diagnostics, only: sum_mn_name
       use EquationOfState, only: rho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -3084,7 +3092,7 @@ module Magnetic
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
@@ -3177,7 +3185,7 @@ module Magnetic
       endif
       if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
-! rho=(rho0/10+B^2)
+! rho=(rho0/10+B^2) !!!MR: below it is /100!
 !
       if (lmagneto_friction.and.lpenc_loc(i_rho1)) then
         p%rho=rho0*1.0e-2+p%b2
@@ -3534,6 +3542,13 @@ module Magnetic
       if (lpenc_loc(i_sj)) call multmm_sc(p%sij,p%jij,p%sj)
 ! ss12
       if (lpenc_loc(i_ss12)) p%ss12=sqrt(abs(p%sj))
+! vmagfric
+      if (lpenc_loc(i_vmagfric).and.numag/=0.0) then
+        tmp1=mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2))
+        do i=1,3
+          p%vmagfric(:,i)=abs(p%jxb(:,i))*tmp1
+        enddo
+      endif
 !
 !  Store bb, jj or jxb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
@@ -3658,11 +3673,11 @@ module Magnetic
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
-      use Diagnostics
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
       use General, only: transform_thph_yy, notanumber
+      use Diagnostics, only: save_name_sound
       use Slices_methods, only: store_slices
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3672,24 +3687,17 @@ module Magnetic
       intent(in)   :: p
       intent(inout):: f,df
 !
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
-      real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
-      real, dimension (nx,3) :: magfric,vmagfric ! currently unused: baroclinic
+      real, dimension (nx,3) :: aa_xyaver
+      real, dimension (nx,3) :: geta,uxb_upw,tmp2
       real, dimension (nx,3) :: dAdt, gradeta_shock
-      real, dimension (nx) :: Fmax, dAmax, ftot, dAtot, ss0
-      real, dimension (nx) :: exabot,exatop, peta_shock
-      real, dimension (nx) :: jxb_dotB0,uxb_dotB0
-      real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: uj,aj,phi,dub,dob,jdel2a
-      real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
-      real, dimension (nx) :: sign_jo,rho1_jxb
-      real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
-      real, dimension (nx) :: b2t,bjt,jbt
-      real, dimension (nx) :: eta_mn,eta_smag,etatotal
-      real, dimension (nx) :: fres2,etaSS
-      real, dimension (nx) :: vdrift, epsAD
-      real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa,advec_va2
+      real, dimension (nx) :: ftot, dAtot
+      real, dimension (nx) :: peta_shock
+      real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
+      real, dimension (nx) :: eta_mn,etaSS,phi
+      real, dimension (nx) :: vdrift
+      real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
+      real, dimension(nx) :: eta_BB
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3777,8 +3785,8 @@ module Magnetic
 !
       if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
-      fres=0.0
-      etatotal=0.0
+      fres=0.
+      etatotal=0.
       diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
@@ -4358,9 +4366,8 @@ module Magnetic
 ! with the width no_ohmic_heat_zwidth
 ! for reduction, width has to tbe negative.
 !
-      if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
+      if (lno_ohmic_heat_bound_z.and.lohmic_heat) &
          etatotal=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
-      endif
 
 !
 !  Add Ohmic heat to entropy or temperature equation.
@@ -4586,16 +4593,11 @@ module Magnetic
 !AB: Piyali, I think the mu01 should be removed
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
-         B0_magfric=B0_magfric/unit_magnetic**2
+         tmp1=mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2))
          do i=1,3
-            magfric(:,i)=p%jxbxb(:,i)*mu01/(numag*(B0_magfric+p%b2))
-            vmagfric(:,i)=abs(p%jxb(:,i))*mu01/(numag*(B0_magfric+p%b2))
+           dAdt(:,i) = dAdt(:,i) + p%jxbxb(:,i)*tmp1
          enddo
-         if (.not. linduction) then
-           dAdt = dAdt + magfric +fres
-         else
-           dAdt = dAdt + magfric
-         endif
+         if (.not. linduction) dAdt = dAdt + fres
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
@@ -4720,7 +4722,7 @@ module Magnetic
         if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
         advec2=advec2+advec_va2
         if (lmagneto_friction) then
-          call dot2(vmagfric,tmp1)
+          call dot2(p%vmagfric,tmp1)
           advec2=advec2 + tmp1
         endif
       endif
@@ -4787,548 +4789,6 @@ module Magnetic
 !
       endif
 !
-!  Calculate diagnostic quantities.
-!
-      if (ldiagnos) then
-        if (lrhs_max) then
-          if (idiag_dtHr/=0) call max_mn_name(ss0*p%cv1/cdts,idiag_dtHr,l_dt=.true.)
-          if (idiag_dtFr/=0) call max_mn_name(Fmax/cdts,idiag_dtFr,l_dt=.true.)
-          if (idiag_dtBr/=0) call max_mn_name(dAmax/cdts,idiag_dtBr,l_dt=.true.)
-        endif
-        if (idiag_eta_tdep/=0) call sum_mn_name(spread(eta_tdep,1,nx),idiag_eta_tdep)
-        if (idiag_beta1m/=0) call sum_mn_name(p%beta1,idiag_beta1m)
-        if (idiag_beta1max/=0) call max_mn_name(p%beta1,idiag_beta1max)
-        if (idiag_betam /= 0) call sum_mn_name(p%beta, idiag_betam)
-        if (idiag_betamax /= 0) call max_mn_name(p%beta, idiag_betamax)
-        if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_b2tm/=0) then
-          if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
-          call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
-          call sum_mn_name(b2t,idiag_b2tm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_jbtm/=0) then
-          if (ibbt==0) call stop_it("Cannot calculate jbtm if ibbt==0")
-          call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
-          call sum_mn_name(jbt,idiag_jbtm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_bjtm/=0) then
-          if (ijjt==0) call stop_it("Cannot calculate bjtm if ijjt==0")
-          call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
-          call sum_mn_name(bjt,idiag_bjtm)
-        endif
-!
-!  Contributions to vertical Poynting vector. Consider them here
-!  separately, because the contribution b^2*uz may be a good indicator
-!  of magnetic buoyancy.
-!
-        if (idiag_b2ruzm/=0) call sum_mn_name(p%b2*p%rho*p%uu(:,3),idiag_b2ruzm)
-        if (idiag_b2uzm/=0) call sum_mn_name(p%b2*p%uu(:,3),idiag_b2uzm)
-        if (idiag_ubbzm/=0) call sum_mn_name(p%ub*p%bb(:,3),idiag_ubbzm)
-!
-!  Mean squared and maximum squared magnetic field.
-!
-        if (idiag_b1m/=0) call sum_mn_name(sqrt(p%b2),idiag_b1m)
-        if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
-        if (idiag_EEM/=0) call sum_mn_name(.5*p%b2,idiag_EEM)
-        if (idiag_b4m/=0) call sum_mn_name(p%b2**2,idiag_b4m)
-        if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
-        if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
-        if (idiag_bfrms/=0) call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
-        if (idiag_bf2m/=0) call sum_mn_name(p%bf2,idiag_bf2m)
-        if (idiag_bf4m/=0) call sum_mn_name(p%bf2**2,idiag_bf4m)
-        if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
-        if (idiag_brmsh/=0) then
-          if (lequatory) call sum_mn_name_halfy(p%b2,idiag_brmsh)
-          if (lequatorz) call sum_mn_name_halfz(p%b2,idiag_brmsh)
-          fname(idiag_brmsn)=fname_half(idiag_brmsh,1)
-          fname(idiag_brmss)=fname_half(idiag_brmsh,2)
-          itype_name(idiag_brmsn)=ilabel_sum_sqrt
-          itype_name(idiag_brmss)=ilabel_sum_sqrt
-        endif
-        if (idiag_brmsx/=0) call sum_mn_name(p%b2*xmask_mag,idiag_brmsx,lsqrt=.true.)
-        if (idiag_brmsz/=0) call sum_mn_name(p%b2*zmask_mag(n-n1+1),idiag_brmsz,lsqrt=.true.)
-        if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
-        if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
-        if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
-        if (idiag_bzmin/=0) call max_mn_name(-p%bb(:,3),idiag_bzmin,lneg=.true.)
-        if (idiag_bxmax/=0) call max_mn_name(p%bb(:,1),idiag_bxmax)
-        if (idiag_bymax/=0) call max_mn_name(p%bb(:,2),idiag_bymax)
-        if (idiag_bzmax/=0) call max_mn_name(p%bb(:,3),idiag_bzmax)
-        if (idiag_bbxmax/=0) call max_mn_name(abs(p%bbb(:,1)),idiag_bbxmax)
-        if (idiag_bbymax/=0) call max_mn_name(abs(p%bbb(:,2)),idiag_bbymax)
-        if (idiag_bbzmax/=0) call max_mn_name(abs(p%bbb(:,3)),idiag_bbzmax)
-        if (idiag_jxmax/=0) call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
-        if (idiag_jymax/=0) call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
-        if (idiag_jzmax/=0) call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
-        if (idiag_aybym2/=0) &
-            call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
-        if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
-        if (idiag_abumx/=0) call sum_mn_name(p%uu(:,1)*p%ab,idiag_abumx)
-        if (idiag_abumy/=0) call sum_mn_name(p%uu(:,2)*p%ab,idiag_abumy)
-        if (idiag_abumz/=0) call sum_mn_name(p%uu(:,3)*p%ab,idiag_abumz)
-        if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
-        if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
-!
-!  Hemispheric magnetic helicity of total field.
-!  North means 1 and south means 2.
-!
-        if (idiag_abmh/=0) then
-          if (lequatory) call sum_mn_name_halfy(p%ab,idiag_abmh)
-          if (lequatorz) call sum_mn_name_halfz(p%ab,idiag_abmh)
-          fname(idiag_abmn)=fname_half(idiag_abmh,1)
-          fname(idiag_abms)=fname_half(idiag_abmh,2)
-          itype_name(idiag_abmn)=ilabel_sum
-          itype_name(idiag_abms)=ilabel_sum
-        endif
-!
-!  Hemispheric current helicity of total field.
-!  North means 1 and south means 2.
-!
-        if (idiag_jbmh/=0) then
-          if (lequatory) call sum_mn_name_halfy(p%jb,idiag_jbmh)
-          if (lequatorz) call sum_mn_name_halfz(p%jb,idiag_jbmh)
-          fname(idiag_jbmn)=fname_half(idiag_jbmh,1)
-          fname(idiag_jbms)=fname_half(idiag_jbmh,2)
-          itype_name(idiag_jbmn)=ilabel_sum
-          itype_name(idiag_jbms)=ilabel_sum
-        endif
-!
-!  Mean dot product of forcing and magnetic field, <f.b>.
-!
-        if (idiag_fbm/=0) then
-          call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,fb)
-          call sum_mn_name(fb,idiag_fbm)
-        endif
-!
-        if (idiag_fxbxm/=0) then
-          fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
-          call sum_mn_name(fxbx,idiag_fxbxm)
-        endif
-!
-!  Cross helicity (linkage between vortex tubes and flux tubes).
-!
-        if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
-        if (idiag_uxbxm/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,1),idiag_uxbxm)
-        if (idiag_uybxm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,1),idiag_uybxm)
-        if (idiag_uzbxm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,1),idiag_uzbxm)
-        if (idiag_uxbym/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,2),idiag_uxbym)
-        if (idiag_uybym/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,2),idiag_uybym)
-        if (idiag_uzbym/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,2),idiag_uzbym)
-        if (idiag_uxbzm/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,3),idiag_uxbzm)
-        if (idiag_uybzm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,3),idiag_uybzm)
-        if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
-        if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
-
-!
-!  Current helicity tensor (components)
-!
-        !if (idiag_jbm/=0) call sum_mn_name(p%ub,idiag_ubm)
-        if (idiag_jxbxm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,1),idiag_jxbxm)
-        if (idiag_jybxm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,1),idiag_jybxm)
-        if (idiag_jzbxm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,1),idiag_jzbxm)
-        if (idiag_jxbym/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,2),idiag_jxbym)
-        if (idiag_jybym/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,2),idiag_jybym)
-        if (idiag_jzbym/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,2),idiag_jzbym)
-        if (idiag_jxbzm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,3),idiag_jxbzm)
-        if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
-        if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
-!
-!  compute rms value of difference between u and b
-!
-        if (idiag_dubrms/=0) then
-          call dot2(p%uu-p%bb,dub)
-          call sum_mn_name(dub,idiag_dubrms,lsqrt=.true.)
-        endif
-!
-!  compute rms value of difference between u and b
-!
-        if (idiag_dobrms/=0) then
-          call dot2(p%oo-p%bb,dob)
-          call sum_mn_name(dob,idiag_dobrms,lsqrt=.true.)
-        endif
-!
-!  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
-!
-        if (idiag_uam/=0) call sum_mn_name(p%ua,idiag_uam)
-!
-!  Current-vortex cross helicity (linkage between vortex and current tubes).
-!
-        if (idiag_ujm/=0) then
-          call dot (p%uu,p%jj,uj)
-          call sum_mn_name(uj,idiag_ujm)
-        endif
-!
-!  Mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
-!  Note that this quantity does not include any imposed field!
-!
-        if (idiag_bxm/=0) call sum_mn_name(p%bbb(:,1),idiag_bxm)
-        if (idiag_bym/=0) call sum_mn_name(p%bbb(:,2),idiag_bym)
-        if (idiag_bzm/=0) call sum_mn_name(p%bbb(:,3),idiag_bzm)
-        if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
-        if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
-        if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
-        if (idiag_bx4m/=0) call sum_mn_name(p%bbb(:,1)**4,idiag_bx4m)
-        if (idiag_by4m/=0) call sum_mn_name(p%bbb(:,2)**4,idiag_by4m)
-        if (idiag_bz4m/=0) call sum_mn_name(p%bbb(:,3)**4,idiag_bz4m)
-        if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
-        if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
-        if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
-        if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
-!
-!  Calculate B*sin(phi) = -<Bx*sinkz> + <By*coskz>.
-!
-        if (idiag_bsinphz/=0) call sum_mn_name(-p%bbb(:,1)*sinkz(n)+p%bbb(:,2)*coskz(n),idiag_bsinphz)
-!
-!  Calculate B*cos(phi) = <Bx*coskz> + <By*sinkz>.
-!
-        if (idiag_bcosphz/=0) call sum_mn_name(+p%bbb(:,1)*coskz(n)+p%bbb(:,2)*sinkz(n),idiag_bcosphz)
-!
-!  v_A = |B|/sqrt(rho); in units where mu_0=1
-!
-        if (idiag_vA2m/=0)  call sum_mn_name(p%va2,idiag_vA2m)
-        if (idiag_vArms/=0)  call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
-        if (idiag_vAmax/=0) call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
-        if (idiag_dtb/=0) &
-            call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
-!
-!  Lorentz force.
-!
-        if (idiag_jxbrxm/=0) call sum_mn_name(p%jxbr(:,1),idiag_jxbrxm)
-        if (idiag_jxbrym/=0) call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
-        if (idiag_jxbrzm/=0) call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
-        if (idiag_jxbr2m/=0) call sum_mn_name(p%jxbr2,idiag_jxbr2m)
-        if (idiag_jxbrmax/=0) call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
-!
-!  <J.A> for calculating k_effective, for example.
-!
-        if (idiag_ajm/=0) then
-          call dot (p%aa,p%jj,aj)
-          call sum_mn_name(aj,idiag_ajm)
-        endif
-!
-!  Output kx_aa for calculating k_effective.
-!
-        if (idiag_kx_aa/=0) call save_name(kx_aa(1),idiag_kx_aa)
-!
-!  Helicity integrals.
-!
-        if (idiag_ab_int/=0) call integrate_mn_name(p%ab,idiag_ab_int)
-        if (idiag_jb_int/=0) call integrate_mn_name(p%jb,idiag_jb_int)
-!
-! <J.B>
-!
-        if (idiag_jbm/=0) call sum_mn_name(p%jb,idiag_jbm)
-        if (idiag_hjbm/=0) call sum_mn_name(p%hjb,idiag_hjbm)
-        if (idiag_j2m/=0) call sum_mn_name(p%j2,idiag_j2m)
-        if (idiag_jm2/=0) call max_mn_name(p%j2,idiag_jm2)
-        if (idiag_jrms/=0) call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
-        if (idiag_hjrms/=0) call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
-        if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
-        if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
-        if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-        if (idiag_cosjbm/=0) call sum_mn_name(p%cosjb,idiag_cosjbm)
-        if (idiag_coshjbm/=0) call sum_mn_name(p%coshjb,idiag_coshjbm)
-        if (idiag_jparallelm/=0) call sum_mn_name(p%jparallel,idiag_jparallelm)
-        if (idiag_jperpm/=0) call sum_mn_name(p%jperp,idiag_jperpm)
-        if (idiag_hjparallelm/=0) &
-            call sum_mn_name(p%hjparallel,idiag_hjparallelm)
-        if (idiag_hjperpm/=0) &
-            call sum_mn_name(p%hjperp,idiag_hjperpm)
-!
-!  Resistivity.
-!
-        if (idiag_etasmagm/=0)   call sum_mn_name(eta_smag,idiag_etasmagm)
-        if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
-        if (idiag_etasmagmax/=0) call max_mn_name(eta_smag,idiag_etasmagmax)
-        if (idiag_etavamax/=0) call max_mn_name(p%etava,idiag_etavamax)
-        if (idiag_etajmax/=0) call max_mn_name(p%etaj,idiag_etajmax)
-        if (idiag_etaj2max/=0) call max_mn_name(p%etaj2,idiag_etaj2max)
-        if (idiag_etajrhomax/=0) call max_mn_name(p%etajrho,idiag_etajrhomax)
-!
-!  Not correct for hyperresistivity:
-!
-        if (idiag_epsM/=0) call sum_mn_name(etatotal*mu0*p%j2,idiag_epsM)
-!
-!  Heating by ion-neutrals friction.
-!
-        if (idiag_epsAD/=0) then
-          if (lambipolar_strong_coupling.and.tauAD/=0.0) then
-            call dot(p%jj,p%jxbxb,epsAD)
-            call sum_mn_name(-tauAD*epsAD,idiag_epsAD)
-          else
-            call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
-          endif
-        endif
-!
-!  <A>'s, <A^2> and A^2|max
-!
-        if (idiag_axm/=0) call sum_mn_name(p%aa(:,1),idiag_axm)
-        if (idiag_aym/=0) call sum_mn_name(p%aa(:,2),idiag_aym)
-        if (idiag_azm/=0) call sum_mn_name(p%aa(:,3),idiag_azm)
-        if (idiag_a2m/=0) call sum_mn_name(p%a2,idiag_a2m)
-        if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
-        if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
-!
-!  Divergence of A
-!
-        if (idiag_divarms /= 0) call sum_mn_name(p%diva**2, idiag_divarms, lsqrt=.true.)
-!
-!  Calculate surface integral <2ExA>*dS.
-!
-        if (idiag_exaym2/=0) call helflux(p%aa,p%uxb,p%jj)
-!
-!  Calculate surface integral <2ExJ>*dS.
-!
-        if (idiag_exjm2/=0) call curflux(p%uxb,p%jj)
-!--     if (idiag_exjm2/=0) call curflux_dS(p%uxb,p%jj)
-!
-!  Calculate emf for alpha effect (for imposed field).
-!  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
-!
-        if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
-            .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
-            .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
-            .or. idiag_uxbmz/=0) then
-          if (idiag_uxbm/=0) then
-            call dot(B_ext_inv,p%uxb,uxb_dotB0)
-            call sum_mn_name(uxb_dotB0,idiag_uxbm)
-          endif
-          call sum_mn_name(uxbb(:,1),idiag_uxbmx)
-          call sum_mn_name(uxbb(:,2),idiag_uxbmy)
-          call sum_mn_name(uxbb(:,3),idiag_uxbmz)
-          if (idiag_uxbcmx/=0) call sum_mn_name(uxbb(:,1)*coskz(n),idiag_uxbcmx)
-          if (idiag_uxbcmy/=0) call sum_mn_name(uxbb(:,2)*coskz(n),idiag_uxbcmy)
-          if (idiag_uxbsmx/=0) call sum_mn_name(uxbb(:,1)*sinkz(n),idiag_uxbsmx)
-          if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
-        endif
-!
-!  Calculate part I of magnetic helicity flux (ExA contribution).
-!
-        if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
-            idiag_exatop/=0 .or. idiag_exabot/=0) then
-          call sum_mn_name(p%exa(:,1),idiag_examx)
-          call sum_mn_name(p%exa(:,2),idiag_examy)
-          call sum_mn_name(p%exa(:,3),idiag_examz)
-!
-          if (idiag_exabot/=0) then
-            if (z(n)==xyz0(3)) then
-              exabot=p%exa(:,3)
-            else
-              exabot=0.
-            endif
-            call integrate_mn_name(exabot,idiag_exabot)
-          endif
-!
-          if (idiag_exatop/=0) then
-            if (z(n)==xyz1(3)) then
-              exatop=p%exa(:,3)
-            else
-              exatop=0.
-            endif
-            call integrate_mn_name(exatop,idiag_exatop)
-          endif
-!
-        endif
-!
-!  Calculate part II of magnetic helicity flux (phi*B contribution).
-!
-        if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0) then
-          if (lweyl_gauge) then
-            phi=0.
-          elseif (ladvective_gauge) then
-            phi=p%ua
-          else
-            phi=eta*p%diva
-          endif
-          call multvs(p%bb,phi,phib)
-          if (idiag_phibmx/=0) call sum_mn_name(phib(:,1),idiag_phibmx)
-          if (idiag_phibmy/=0) call sum_mn_name(phib(:,2),idiag_phibmy)
-          if (idiag_phibmz/=0) call sum_mn_name(phib(:,3),idiag_phibmz)
-        endif
-!
-!  Calculate part I of current helicity flux (for imposed field).
-!
-        if (idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0) then
-          call cross_mn(-p%uxb+eta*p%jj,p%jj,exj)
-          if (idiag_exjmx/=0) call sum_mn_name(exj(:,1),idiag_exjmx)
-          if (idiag_exjmy/=0) call sum_mn_name(exj(:,2),idiag_exjmy)
-          if (idiag_exjmz/=0) call sum_mn_name(exj(:,3),idiag_exjmz)
-        endif
-!
-!  Calculate part II of current helicity flux (for imposed field).
-!  < curlE x B >|_i  =  < B_{j,i} E_j >
-!  Use the full B (with B_ext)
-!
-        if (idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0) then
-          call multmv_transp(p%bij,-p%uxb+eta*p%jj,dexb)
-          if (idiag_dexbmx/=0) call sum_mn_name(dexb(:,1),idiag_dexbmx)
-          if (idiag_dexbmy/=0) call sum_mn_name(dexb(:,2),idiag_dexbmy)
-          if (idiag_dexbmz/=0) call sum_mn_name(dexb(:,3),idiag_dexbmz)
-        endif
-!
-!  Calculate <uxj>.B0/B0^2.
-!
-        if (idiag_uxjm/=0) then
-          call dot(B_ext_inv,p%uxj,uxj_dotB0)
-          call sum_mn_name(uxj_dotB0,idiag_uxjm)
-        endif
-!
-!  Calculate <u x B>_rms, <resistive terms>_rms, <ratio ~ Rm>_rms.
-!
-        if (idiag_uxBrms/=0) call sum_mn_name(p%uxb2,idiag_uxBrms,lsqrt=.true.)
-        if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
-          call dot2_mn(fres,fres2)
-          if (idiag_Bresrms/=0) &
-              call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
-          if (idiag_Rmrms/=0) &
-              call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
-        endif
-!
-!  Calculate <b^2*divu>, which is part of <u.(jxb)>.
-!  Note that <u.(jxb)>=1/2*<b^2*divu>+<u.bgradb>.
-!
-        if (idiag_b2divum/=0) call sum_mn_name(p%b2*p%divu,idiag_b2divum)
-!
-!  Calculate <J.del2a>.
-!
-        call dot(p%jj,p%del2a,jdel2a)
-        if (idiag_jdel2am/=0) call sum_mn_name(jdel2a,idiag_jdel2am)
-!
-!  Calculate <u.(jxb)>.
-!
-        if (idiag_ujxbm/=0) call sum_mn_name(p%ujxb,idiag_ujxbm)
-!
-!  Calculate <jxb>.B_0/B_0^2.
-!
-        if (idiag_jxbm/=0) then
-          call dot(B_ext_inv,p%jxb,jxb_dotB0)
-          call sum_mn_name(jxb_dotB0,idiag_jxbm)
-        endif
-        if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
-          call cross_mn(p%jj,p%bbb,jxbb)
-          if (idiag_jxbmx/=0) call sum_mn_name(jxbb(:,1),idiag_jxbmx)
-          if (idiag_jxbmy/=0) call sum_mn_name(jxbb(:,2),idiag_jxbmy)
-          if (idiag_jxbmz/=0) call sum_mn_name(jxbb(:,3),idiag_jxbmz)
-        endif
-        if (idiag_vmagfricmax/=0) then
-          call max_mn_name(vmagfric,idiag_vmagfricmax)
-        endif
-        if (idiag_vmagfricrms/=0) then
-          call dot2_mn(vmagfric,tmp1)
-          call sum_mn_name(tmp1,idiag_vmagfricrms,lsqrt=.true.)
-        endif
-!
-!  Magnetic triple correlation term (for imposed field).
-!
-        if (idiag_jxbxbm/=0) then
-          call dot(B_ext_inv,p%jxbxb,jxbxb_dotB0)
-          call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
-        endif
-!
-!  Triple correlation from Reynolds tensor (for imposed field).
-!
-        if (idiag_oxuxbm/=0) then
-          call dot(B_ext_inv,p%oxuxb,oxuxb_dotB0)
-          call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
-        endif
-!
-!  Triple correlation from pressure gradient (for imposed field).
-!  (assume cs2=1, and that no entropy evolution is included)
-!  This is ok for all applications currently under consideration.
-!
-        if (idiag_gpxbm/=0) then
-          call dot_mn_sv(B1_ext,p%glnrhoxb,B1dot_glnrhoxb)
-          call sum_mn_name(B1dot_glnrhoxb,idiag_gpxbm)
-        endif
-!
-!  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
-!   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
-!     < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
-!     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
-!
-        if (idiag_uxDxuxbm/=0) then
-          uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
-          uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
-          uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
-          call dot(B_ext_inv,uxDxuxb,uxDxuxb_dotB0)
-          call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
-        endif
-!
-!  alpM11=<b3*b2,1>
-!
-        if (idiag_b3b21m/=0) then
-          b3b21=p%bb(:,3)*p%bij(:,2,1)
-          call sum_mn_name(b3b21,idiag_b3b21m)
-        endif
-!
-!  alpM11=<b3*b1,2>
-!
-        if (idiag_b3b12m/=0) then
-          b3b12=p%bb(:,3)*p%bij(:,1,2)
-          call sum_mn_name(b3b12,idiag_b3b12m)
-        endif
-!
-!  alpM22=<b1*b3,2>
-!
-        if (idiag_b1b32m/=0) then
-          b1b32=p%bb(:,1)*p%bij(:,3,2)
-          call sum_mn_name(b1b32,idiag_b1b32m)
-        endif
-!
-!  alpM22=<b1*b2,3>
-!
-        if (idiag_b1b23m/=0) then
-          b1b23=p%bb(:,1)*p%bij(:,2,3)
-          call sum_mn_name(b1b23,idiag_b1b23m)
-        endif
-!
-!  alpM33=<b2*b1,3>
-!
-        if (idiag_b2b13m/=0) then
-          b2b13=p%bb(:,2)*p%bij(:,1,3)
-          call sum_mn_name(b2b13,idiag_b2b13m)
-        endif
-!
-!  alpM33=<b2*b3,1>
-!
-        if (idiag_b2b31m/=0) then
-          b2b31=p%bb(:,2)*p%bij(:,3,1)
-          call sum_mn_name(b2b31,idiag_b2b31m)
-        endif
-!
-!  current density components at one point (=pt).
-!
-        if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
-          if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
-          if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
-          if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
-          if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
-          if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
-        endif
-!
-!  current density components at point 2 (=p2).
-!
-        if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_bxp2/=0) call save_name(p%bb(lpoint2-nghost,1),idiag_bxp2)
-          if (idiag_byp2/=0) call save_name(p%bb(lpoint2-nghost,2),idiag_byp2)
-          if (idiag_bzp2/=0) call save_name(p%bb(lpoint2-nghost,3),idiag_bzp2)
-          if (idiag_jxp2/=0) call save_name(p%jj(lpoint2-nghost,1),idiag_jxp2)
-          if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
-          if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
-        endif
-!
-      endif ! endif (ldiagnos)
-!
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
 ! the desired sound output location occur in the subdomain in this processor.
@@ -5359,10 +4819,622 @@ module Magnetic
           endif
         enddo
       endif
+
+      call calc_diagnostics_magnetic(f,p)
+!
+!  Debug output.
+!
+      if (headtt .and. lfirst .and. ip<=4) then
+        call output_pencil('aa.dat',p%aa,3)
+        call output_pencil('bb.dat',p%bb,3)
+        call output_pencil('jj.dat',p%jj,3)
+        call output_pencil('del2A.dat',p%del2a,3)
+        call output_pencil('JxBr.dat',p%jxbr,3)
+        call output_pencil('JxB.dat',p%jxb,3)
+        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
+      endif
+!
+!  Write B-slices for output in wvid in run.f90.
+!  Note: ix_loc is the index with respect to array with ghost zones.
+!
+      if (lvideo.and.lfirst) then
+!
+        if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
+        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+        if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
+        if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+        if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
+        if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
+        if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
+                                             beta1_xy3,beta1_xy4,beta1_xz2)
+        if (bthresh_per_brms/=0) call calc_bthresh
+        call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+!
+        if (ivid_poynting/=0) then
+          call cross(p%uxb,p%bb,uxbxb)
+          do j=1,3
+            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
+          enddo
+          call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
+                            poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2)
+        endif
+      endif
+      call timing('daa_dt','finished',mnloop=.true.)
+!
+    endsubroutine daa_dt
+!******************************************************************************
+    subroutine calc_diagnostics_magnetic(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+
+      call calc_2d_diagnostics_magnetic(p)
+      call calc_1d_diagnostics_magnetic(p)
+      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
+
+    endsubroutine calc_diagnostics_magnetic
+!******************************************************************************
+    subroutine calc_0d_diagnostics_magnetic(f,p)
+!
+!  Calculate diagnostic quantities.
+!
+      use Diagnostics
+      use Sub, only: dot, dot2, multvs,cross_mn, multmv_transp,dot2_mn,cross_mn, dot2_mn, dot_mn_sv
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+
+      real, dimension (nx,3) :: exj,dexb,phib,jxbb,uxDxuxb
+      real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
+      real, dimension (nx) :: jxb_dotB0,uxb_dotB0
+      real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
+      real, dimension (nx) :: aj,tmp1,fres2
+      real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
+      real, dimension (nx) :: b2t,bjt,jbt
+      real, dimension (nx) :: uj,phi,dub,dob,jdel2a,epsAD
+
+      if (lrhs_max) then
+        if (idiag_dtHr/=0) call max_mn_name(ss0*p%cv1/cdts,idiag_dtHr,l_dt=.true.)
+        if (idiag_dtFr/=0) call max_mn_name(Fmax/cdts,idiag_dtFr,l_dt=.true.)
+        if (idiag_dtBr/=0) call max_mn_name(dAmax/cdts,idiag_dtBr,l_dt=.true.)
+      endif
+      if (idiag_eta_tdep/=0) call sum_mn_name(spread(eta_tdep,1,nx),idiag_eta_tdep) ! better save_name?
+      call sum_mn_name(p%beta1,idiag_beta1m)
+      call max_mn_name(p%beta1,idiag_beta1max)
+      call sum_mn_name(p%beta, idiag_betam)
+      call max_mn_name(p%beta, idiag_betamax)
+      if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_b2tm/=0) then
+        if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
+        call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
+        call sum_mn_name(b2t,idiag_b2tm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_jbtm/=0) then
+        if (ibbt==0) call stop_it("Cannot calculate jbtm if ibbt==0")
+        call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
+        call sum_mn_name(jbt,idiag_jbtm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_bjtm/=0) then
+        if (ijjt==0) call stop_it("Cannot calculate bjtm if ijjt==0")
+        call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
+        call sum_mn_name(bjt,idiag_bjtm)
+      endif
+!
+!  Contributions to vertical Poynting vector. Consider them here
+!  separately, because the contribution b^2*uz may be a good indicator
+!  of magnetic buoyancy.
+!
+      if (idiag_b2ruzm/=0) call sum_mn_name(p%b2*p%rho*p%uu(:,3),idiag_b2ruzm)
+      if (idiag_b2uzm/=0) call sum_mn_name(p%b2*p%uu(:,3),idiag_b2uzm)
+      if (idiag_ubbzm/=0) call sum_mn_name(p%ub*p%bb(:,3),idiag_ubbzm)
+!
+!  Mean squared and maximum squared magnetic field.
+!
+      if (idiag_b1m/=0) call sum_mn_name(sqrt(p%b2),idiag_b1m)
+      call sum_mn_name(p%b2,idiag_b2m)
+      if (idiag_EEM/=0) call sum_mn_name(.5*p%b2,idiag_EEM)
+      if (idiag_b4m/=0) call sum_mn_name(p%b2**2,idiag_b4m)
+      call max_mn_name(p%b2,idiag_bm2)
+      call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+      call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
+      call sum_mn_name(p%bf2,idiag_bf2m)
+      if (idiag_bf4m/=0) call sum_mn_name(p%bf2**2,idiag_bf4m)
+      if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
+      if (idiag_brmsh/=0) then
+        if (lequatory) call sum_mn_name_halfy(p%b2,idiag_brmsh)
+        if (lequatorz) call sum_mn_name_halfz(p%b2,idiag_brmsh)
+        fname(idiag_brmsn)=fname_half(idiag_brmsh,1)
+        fname(idiag_brmss)=fname_half(idiag_brmsh,2)
+        itype_name(idiag_brmsn)=ilabel_sum_sqrt
+        itype_name(idiag_brmss)=ilabel_sum_sqrt
+      endif
+      if (idiag_brmsx/=0) call sum_mn_name(p%b2*xmask_mag,idiag_brmsx,lsqrt=.true.)
+      if (idiag_brmsz/=0) call sum_mn_name(p%b2*zmask_mag(n-n1+1),idiag_brmsz,lsqrt=.true.)
+      call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
+      if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
+      if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
+      if (idiag_bzmin/=0) call max_mn_name(-p%bb(:,3),idiag_bzmin,lneg=.true.)
+      call max_mn_name(p%bb(:,1),idiag_bxmax)
+      call max_mn_name(p%bb(:,2),idiag_bymax)
+      call max_mn_name(p%bb(:,3),idiag_bzmax)
+      call max_mn_name(abs(p%bbb(:,1)),idiag_bbxmax)
+      call max_mn_name(abs(p%bbb(:,2)),idiag_bbymax)
+      call max_mn_name(abs(p%bbb(:,3)),idiag_bbzmax)
+      call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
+      call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
+      call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
+      if (idiag_aybym2/=0) &
+          call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
+      call sum_mn_name(p%ab,idiag_abm)
+      if (idiag_abumx/=0) call sum_mn_name(p%uu(:,1)*p%ab,idiag_abumx)
+      if (idiag_abumy/=0) call sum_mn_name(p%uu(:,2)*p%ab,idiag_abumy)
+      if (idiag_abumz/=0) call sum_mn_name(p%uu(:,3)*p%ab,idiag_abumz)
+      if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
+      if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
+!
+!  Hemispheric magnetic helicity of total field.
+!  North means 1 and south means 2.
+!
+      if (idiag_abmh/=0) then
+        if (lequatory) call sum_mn_name_halfy(p%ab,idiag_abmh)
+        if (lequatorz) call sum_mn_name_halfz(p%ab,idiag_abmh)
+        fname(idiag_abmn)=fname_half(idiag_abmh,1)
+        fname(idiag_abms)=fname_half(idiag_abmh,2)
+        itype_name(idiag_abmn)=ilabel_sum
+        itype_name(idiag_abms)=ilabel_sum
+      endif
+!
+!  Hemispheric current helicity of total field.
+!  North means 1 and south means 2.
+!
+      if (idiag_jbmh/=0) then
+        if (lequatory) call sum_mn_name_halfy(p%jb,idiag_jbmh)
+        if (lequatorz) call sum_mn_name_halfz(p%jb,idiag_jbmh)
+        fname(idiag_jbmn)=fname_half(idiag_jbmh,1)
+        fname(idiag_jbms)=fname_half(idiag_jbmh,2)
+        itype_name(idiag_jbmn)=ilabel_sum
+        itype_name(idiag_jbms)=ilabel_sum
+      endif
+!
+!  Mean dot product of forcing and magnetic field, <f.b>.
+!
+      if (idiag_fbm/=0) then
+        call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,fb)
+        call sum_mn_name(fb,idiag_fbm)
+      endif
+!
+      if (idiag_fxbxm/=0) then
+        fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
+        call sum_mn_name(fxbx,idiag_fxbxm)
+      endif
+!
+!  Cross helicity (linkage between vortex tubes and flux tubes).
+!
+      call sum_mn_name(p%ub,idiag_ubm)
+      if (idiag_uxbxm/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,1),idiag_uxbxm)
+      if (idiag_uybxm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,1),idiag_uybxm)
+      if (idiag_uzbxm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,1),idiag_uzbxm)
+      if (idiag_uxbym/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,2),idiag_uxbym)
+      if (idiag_uybym/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,2),idiag_uybym)
+      if (idiag_uzbym/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,2),idiag_uzbym)
+      if (idiag_uxbzm/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,3),idiag_uxbzm)
+      if (idiag_uybzm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,3),idiag_uybzm)
+      if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
+      call sum_mn_name(p%cosub,idiag_cosubm)
+!
+!  Current helicity tensor (components)
+!
+      !if (idiag_jbm/=0) call sum_mn_name(p%ub,idiag_ubm)
+      if (idiag_jxbxm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,1),idiag_jxbxm)
+      if (idiag_jybxm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,1),idiag_jybxm)
+      if (idiag_jzbxm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,1),idiag_jzbxm)
+      if (idiag_jxbym/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,2),idiag_jxbym)
+      if (idiag_jybym/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,2),idiag_jybym)
+      if (idiag_jzbym/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,2),idiag_jzbym)
+      if (idiag_jxbzm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,3),idiag_jxbzm)
+      if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
+      if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
+!
+!  compute rms value of difference between u and b    !!!MR: units?
+!
+      if (idiag_dubrms/=0) then
+        call dot2(p%uu-p%bb,dub)
+        call sum_mn_name(dub,idiag_dubrms,lsqrt=.true.)
+      endif
+!
+!  compute rms value of difference between u and b
+!
+      if (idiag_dobrms/=0) then
+        call dot2(p%oo-p%bb,dob)
+        call sum_mn_name(dob,idiag_dobrms,lsqrt=.true.)
+      endif
+!
+!  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
+!
+      call sum_mn_name(p%ua,idiag_uam)
+!
+!  Current-vortex cross helicity (linkage between vortex and current tubes).
+!
+      if (idiag_ujm/=0) then
+        call dot(p%uu,p%jj,uj)
+        call sum_mn_name(uj,idiag_ujm)
+      endif
+!
+!  Mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
+!  Note that this quantity does not include any imposed field!
+!
+      call sum_mn_name(p%bbb(:,1),idiag_bxm)
+      call sum_mn_name(p%bbb(:,2),idiag_bym)
+      call sum_mn_name(p%bbb(:,3),idiag_bzm)
+      if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
+      if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
+      if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
+      if (idiag_bx4m/=0) call sum_mn_name(p%bbb(:,1)**4,idiag_bx4m)
+      if (idiag_by4m/=0) call sum_mn_name(p%bbb(:,2)**4,idiag_by4m)
+      if (idiag_bz4m/=0) call sum_mn_name(p%bbb(:,3)**4,idiag_bz4m)
+      if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
+      if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
+      if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
+      call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
+!
+!  Calculate B*sin(phi) = -<Bx*sinkz> + <By*coskz>.
+!
+      if (idiag_bsinphz/=0) call sum_mn_name(-p%bbb(:,1)*sinkz(n)+p%bbb(:,2)*coskz(n),idiag_bsinphz)
+!
+!  Calculate B*cos(phi) = <Bx*coskz> + <By*sinkz>.
+!
+      if (idiag_bcosphz/=0) call sum_mn_name(+p%bbb(:,1)*coskz(n)+p%bbb(:,2)*sinkz(n),idiag_bcosphz)
+!
+!  v_A = |B|/sqrt(rho); in units where mu_0=1
+!
+      call sum_mn_name(p%va2,idiag_vA2m)
+      call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
+      call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
+      if (idiag_dtb/=0) &
+          call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
+!
+!  Lorentz force.
+!
+      call sum_mn_name(p%jxbr(:,1),idiag_jxbrxm)
+      call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
+      call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
+      call sum_mn_name(p%jxbr2,idiag_jxbr2m)
+      call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
+!
+!  <J.A> for calculating k_effective, for example.
+!
+      if (idiag_ajm/=0) then
+        call dot(p%aa,p%jj,aj)
+        call sum_mn_name(aj,idiag_ajm)
+      endif
+!
+!  Output kx_aa for calculating k_effective.
+!
+      call save_name(kx_aa(1),idiag_kx_aa)
+!
+!  Helicity integrals.
+!
+      call integrate_mn_name(p%ab,idiag_ab_int)
+      call integrate_mn_name(p%jb,idiag_jb_int)
+!
+! <J.B>
+!
+      call sum_mn_name(p%jb,idiag_jbm)
+      call sum_mn_name(p%hjb,idiag_hjbm)
+      call sum_mn_name(p%j2,idiag_j2m)
+      call max_mn_name(p%j2,idiag_jm2)
+      call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
+      call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
+      call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
+      if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
+      if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+      call sum_mn_name(p%cosjb,idiag_cosjbm)
+      call sum_mn_name(p%coshjb,idiag_coshjbm)
+      call sum_mn_name(p%jparallel,idiag_jparallelm)
+      call sum_mn_name(p%jperp,idiag_jperpm)
+      call sum_mn_name(p%hjparallel,idiag_hjparallelm)
+      call sum_mn_name(p%hjperp,idiag_hjperpm)
+!
+!  Resistivity.
+!
+      call sum_mn_name(eta_smag,idiag_etasmagm)
+      if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
+      call max_mn_name(eta_smag,idiag_etasmagmax)
+      call max_mn_name(p%etava,idiag_etavamax)
+      call max_mn_name(p%etaj,idiag_etajmax)
+      call max_mn_name(p%etaj2,idiag_etaj2max)
+      call max_mn_name(p%etajrho,idiag_etajrhomax)
+!
+!  Not correct for hyperresistivity:
+!
+      if (idiag_epsM/=0) call sum_mn_name(etatotal*mu0*p%j2,idiag_epsM)
+!
+!  Heating by ion-neutrals friction.
+!
+      if (idiag_epsAD/=0) then
+        if (lambipolar_strong_coupling.and.tauAD/=0.0) then
+          call dot(p%jj,p%jxbxb,epsAD)
+          call sum_mn_name(-tauAD*epsAD,idiag_epsAD)
+        else
+          call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
+        endif
+      endif
+!
+!  <A>'s, <A^2> and A^2|max
+!
+      call sum_mn_name(p%aa(:,1),idiag_axm)
+      call sum_mn_name(p%aa(:,2),idiag_aym)
+      call sum_mn_name(p%aa(:,3),idiag_azm)
+      call sum_mn_name(p%a2,idiag_a2m)
+      call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
+      call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
+!
+!  Divergence of A
+!
+      if (idiag_divarms /= 0) call sum_mn_name(p%diva**2, idiag_divarms, lsqrt=.true.)
+!
+!  Calculate surface integral <2ExA>*dS.
+!
+      if (idiag_exaym2/=0) call helflux(p%aa,p%uxb,p%jj)
+!
+!  Calculate surface integral <2ExJ>*dS.
+!
+      if (idiag_exjm2/=0) call curflux(p%uxb,p%jj)
+!--     if (idiag_exjm2/=0) call curflux_dS(p%uxb,p%jj)
+!
+!  Calculate emf for alpha effect (for imposed field).
+!  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
+!
+      if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
+          .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
+          .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
+          .or. idiag_uxbmz/=0) then
+        if (idiag_uxbm/=0) then
+          call dot(B_ext_inv,p%uxb,uxb_dotB0)
+          call sum_mn_name(uxb_dotB0,idiag_uxbm)
+        endif
+        call sum_mn_name(uxbb(:,1),idiag_uxbmx)
+        call sum_mn_name(uxbb(:,2),idiag_uxbmy)
+        call sum_mn_name(uxbb(:,3),idiag_uxbmz)
+        if (idiag_uxbcmx/=0) call sum_mn_name(uxbb(:,1)*coskz(n),idiag_uxbcmx)
+        if (idiag_uxbcmy/=0) call sum_mn_name(uxbb(:,2)*coskz(n),idiag_uxbcmy)
+        if (idiag_uxbsmx/=0) call sum_mn_name(uxbb(:,1)*sinkz(n),idiag_uxbsmx)
+        if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
+      endif
+!
+!  Calculate part I of magnetic helicity flux (ExA contribution).
+!
+      if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
+          idiag_exatop/=0 .or. idiag_exabot/=0) then
+        call sum_mn_name(p%exa(:,1),idiag_examx)
+        call sum_mn_name(p%exa(:,2),idiag_examy)
+        call sum_mn_name(p%exa(:,3),idiag_examz)
+!
+        if (idiag_exabot/=0) then
+          if (n==n1) call integrate_mn_name(p%exa(:,3),idiag_exabot)
+        endif
+!
+        if (idiag_exatop/=0) then
+          if (n==n2) call integrate_mn_name(p%exa(:,3),idiag_exatop)
+        endif
+!
+      endif
+!
+!  Calculate part II of magnetic helicity flux (phi*B contribution).
+!
+      if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0) then
+        if (lweyl_gauge) then
+          phi=0.
+        elseif (ladvective_gauge) then
+          phi=p%ua
+        else
+          phi=eta*p%diva
+        endif
+        call multvs(p%bb,phi,phib)
+        call sum_mn_name(phib(:,1),idiag_phibmx)
+        call sum_mn_name(phib(:,2),idiag_phibmy)
+        call sum_mn_name(phib(:,3),idiag_phibmz)
+      endif
+!
+!  Calculate part I of current helicity flux (for imposed field).
+!
+      if (idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0) then
+        call cross_mn(-p%uxb+eta*p%jj,p%jj,exj)
+        call sum_mn_name(exj(:,1),idiag_exjmx)
+        call sum_mn_name(exj(:,2),idiag_exjmy)
+        call sum_mn_name(exj(:,3),idiag_exjmz)
+      endif
+!
+!  Calculate part II of current helicity flux (for imposed field).
+!  < curlE x B >|_i  =  < B_{j,i} E_j >
+!  Use the full B (with B_ext)
+!
+      if (idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0) then
+        call multmv_transp(p%bij,-p%uxb+eta*p%jj,dexb)
+        call sum_mn_name(dexb(:,1),idiag_dexbmx)
+        call sum_mn_name(dexb(:,2),idiag_dexbmy)
+        call sum_mn_name(dexb(:,3),idiag_dexbmz)
+      endif
+!
+!  Calculate <uxj>.B0/B0^2.
+!
+      if (idiag_uxjm/=0) then
+        call dot(B_ext_inv,p%uxj,uxj_dotB0)
+        call sum_mn_name(uxj_dotB0,idiag_uxjm)
+      endif
+!
+!  Calculate <u x B>_rms, <resistive terms>_rms, <ratio ~ Rm>_rms.
+!
+      call sum_mn_name(p%uxb2,idiag_uxBrms,lsqrt=.true.)
+      if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
+        call dot2_mn(fres,fres2)
+        call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
+        if (idiag_Rmrms/=0) &
+            call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
+      endif
+!
+!  Calculate <b^2*divu>, which is part of <u.(jxb)>.
+!  Note that <u.(jxb)>=1/2*<b^2*divu>+<u.bgradb>.
+!
+      if (idiag_b2divum/=0) call sum_mn_name(p%b2*p%divu,idiag_b2divum)
+!
+!  Calculate <J.del2a>.
+!
+      if (idiag_jdel2am/=0) then
+        call dot(p%jj,p%del2a,jdel2a)
+        call sum_mn_name(jdel2a,idiag_jdel2am)
+      endif
+!
+!  Calculate <u.(jxb)>.
+!
+      call sum_mn_name(p%ujxb,idiag_ujxbm)
+!
+!  Calculate <jxb>.B_0/B_0^2.
+!
+      if (idiag_jxbm/=0) then
+        call dot(B_ext_inv,p%jxb,jxb_dotB0)
+        call sum_mn_name(jxb_dotB0,idiag_jxbm)
+      endif
+      if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
+        call cross_mn(p%jj,p%bbb,jxbb)
+        call sum_mn_name(jxbb(:,1),idiag_jxbmx)
+        call sum_mn_name(jxbb(:,2),idiag_jxbmy)
+        call sum_mn_name(jxbb(:,3),idiag_jxbmz)
+      endif
+      call max_mn_name(p%vmagfric,idiag_vmagfricmax)
+      if (idiag_vmagfricrms/=0) then
+        call dot2_mn(p%vmagfric,tmp1)
+        call sum_mn_name(tmp1,idiag_vmagfricrms,lsqrt=.true.)
+      endif
+!
+!  Magnetic triple correlation term (for imposed field).
+!
+      if (idiag_jxbxbm/=0) then
+        call dot(B_ext_inv,p%jxbxb,jxbxb_dotB0)
+        call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
+      endif
+!
+!  Triple correlation from Reynolds tensor (for imposed field).
+!
+      if (idiag_oxuxbm/=0) then
+        call dot(B_ext_inv,p%oxuxb,oxuxb_dotB0)
+        call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
+      endif
+!
+!  Triple correlation from pressure gradient (for imposed field).
+!  (assume cs2=1, and that no entropy evolution is included)
+!  This is ok for all applications currently under consideration.
+!
+      if (idiag_gpxbm/=0) then
+        call dot_mn_sv(B1_ext,p%glnrhoxb,B1dot_glnrhoxb)
+        call sum_mn_name(B1dot_glnrhoxb,idiag_gpxbm)
+      endif
+!
+!  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
+!   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
+!     < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
+!     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
+!
+      if (idiag_uxDxuxbm/=0) then
+        uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
+        uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
+        uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
+        call dot(B_ext_inv,uxDxuxb,uxDxuxb_dotB0)
+        call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
+      endif
+!
+!  alpM11=<b3*b2,1>
+!
+      if (idiag_b3b21m/=0) then
+        b3b21=p%bb(:,3)*p%bij(:,2,1)
+        call sum_mn_name(b3b21,idiag_b3b21m)
+      endif
+!
+!  alpM11=<b3*b1,2>
+!
+      if (idiag_b3b12m/=0) then
+        b3b12=p%bb(:,3)*p%bij(:,1,2)
+        call sum_mn_name(b3b12,idiag_b3b12m)
+      endif
+!
+!  alpM22=<b1*b3,2>
+!
+      if (idiag_b1b32m/=0) then
+        b1b32=p%bb(:,1)*p%bij(:,3,2)
+        call sum_mn_name(b1b32,idiag_b1b32m)
+      endif
+!
+!  alpM22=<b1*b2,3>
+!
+      if (idiag_b1b23m/=0) then
+        b1b23=p%bb(:,1)*p%bij(:,2,3)
+        call sum_mn_name(b1b23,idiag_b1b23m)
+      endif
+!
+!  alpM33=<b2*b1,3>
+!
+      if (idiag_b2b13m/=0) then
+        b2b13=p%bb(:,2)*p%bij(:,1,3)
+        call sum_mn_name(b2b13,idiag_b2b13m)
+      endif
+!
+!  alpM33=<b2*b3,1>
+!
+      if (idiag_b2b31m/=0) then
+        b2b31=p%bb(:,2)*p%bij(:,3,1)
+        call sum_mn_name(b2b31,idiag_b2b31m)
+      endif
+!
+!  current density components at one point (=pt).
+!
+      if (lroot.and.m==mpoint.and.n==npoint) then
+        if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
+        if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
+        if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
+        if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
+        if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
+        if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
+      endif
+!
+!  current density components at point 2 (=p2).
+!
+      if (lroot.and.m==mpoint2.and.n==npoint2) then
+        if (idiag_bxp2/=0) call save_name(p%bb(lpoint2-nghost,1),idiag_bxp2)
+        if (idiag_byp2/=0) call save_name(p%bb(lpoint2-nghost,2),idiag_byp2)
+        if (idiag_bzp2/=0) call save_name(p%bb(lpoint2-nghost,3),idiag_bzp2)
+        if (idiag_jxp2/=0) call save_name(p%jj(lpoint2-nghost,1),idiag_jxp2)
+        if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
+        if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
+      endif
+!
+    endsubroutine calc_0d_diagnostics_magnetic
+!******************************************************************************
+    subroutine calc_1d_diagnostics_magnetic(p)
+!
+!  2-D averages.
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      use Diagnostics
+      use Sub, only: dot2_mn
+
+      type(pencil_case) :: p
+
+      real, dimension(nx) :: fres2, tmp1, Rmmz 
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+
         call yzsum_mn_name_x(p%b2, idiag_b2mx)
         call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
@@ -5432,8 +5504,8 @@ module Magnetic
         if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
         if (idiag_epsMmz/=0) call xysum_mn_name_z(etatotal*mu0*p%j2,idiag_epsMmz)
         if (idiag_vmagfricmz/=0) then
-          call dot2_mn(vmagfric,tmp1)
-          call xysum_mn_name_z(tmp1,idiag_epsMmz)
+          call dot2_mn(p%vmagfric,tmp1)
+          call xysum_mn_name_z(tmp1,idiag_vmagfricmz)
         endif
         call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
         call xysum_mn_name_z(etatotal,idiag_etatotalmz)
@@ -5472,25 +5544,20 @@ module Magnetic
         call xysum_mn_name_z(p%j2,idiag_j2mz)
         if (idiag_poynzmz/=0) call xysum_mn_name_z(etatotal*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
-        if (idiag_b2mr/=0) call phizsum_mn_name_r(p%b2,idiag_b2mr)
+        call phizsum_mn_name_r(p%b2,idiag_b2mr)
         if (idiag_brmr/=0)   &
              call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
         if (idiag_bpmr/=0)   &
              call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
-        if (idiag_bzmr/=0)   &
-             call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
+        call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
         if (idiag_armr/=0)   &
              call phizsum_mn_name_r(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armr)
         if (idiag_apmr/=0)   &
              call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
-        if (idiag_azmr/=0)   &
-             call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
-        if (idiag_mflux_x/=0) &
-          call yzintegrate_mn_name_x(p%bb(:,1),idiag_mflux_x)
-        if (idiag_mflux_y/=0) &
-          call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
-        if (idiag_mflux_z/=0) &
-          call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
+        call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
+        call yzintegrate_mn_name_x(p%bb(:,1),idiag_mflux_x)
+        call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
+        call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
         if (idiag_Rmmz/=0) then
           call dot2_mn(fres,fres2)
           Rmmz=sqrt(p%uxb2/fres2)
@@ -5498,10 +5565,20 @@ module Magnetic
           call xysum_mn_name_z(Rmmz,idiag_Rmmz)
         endif
       endif
+
+    endsubroutine calc_1d_diagnostics_magnetic
+!***********************************************************************
+    subroutine calc_2d_diagnostics_magnetic(p)
 !
 !  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
+      use Diagnostics
+
+      type(pencil_case) :: p
+
+      real, dimension(nx,3) :: tmp2
+
       if (l2davgfirst) then
         if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,&
                                                     idiag_brmphi)
@@ -5513,31 +5590,31 @@ module Magnetic
                                                     idiag_bpmphi)
         call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
         call phisum_mn_name_rz(p%b2,idiag_b2mphi)
-        if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
+        call phisum_mn_name_rz(p%jb,idiag_jbmphi)
         if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
-          call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
-          call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
+          if (idiag_uxbrmphi/=0) call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
+          if (idiag_uxbpmphi/=0) call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
+          call phisum_mn_name_rz(p%uxb(:,3),idiag_uxbzmphi)
         endif
         if (any((/idiag_jxbrmphi,idiag_jxbpmphi,idiag_jxbzmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
-          call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
-          call phisum_mn_name_rz(p%jxb(:,3)                         ,idiag_jxbzmphi)
+          if (idiag_jxbrmphi/=0) call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
+          if (idiag_jxbpmphi/=0) call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
+          call phisum_mn_name_rz(p%jxb(:,3),idiag_jxbzmphi)
         endif
         if (any((/idiag_armphi,idiag_apmphi,idiag_azmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armphi)
-          call phisum_mn_name_rz(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmphi)
-          call phisum_mn_name_rz(p%aa(:,3)                        ,idiag_azmphi)
+          if (idiag_armphi/=0) call phisum_mn_name_rz(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armphi)
+          if (idiag_apmphi/=0) call phisum_mn_name_rz(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmphi)
+          call phisum_mn_name_rz(p%aa(:,3),idiag_azmphi)
         endif
-        if (idiag_bxmxy/=0)  call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
-        if (idiag_bymxy/=0)  call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
-        if (idiag_bzmxy/=0)  call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
-        if (idiag_jxmxy/=0)  call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
-        if (idiag_jymxy/=0)  call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
-        if (idiag_jzmxy/=0)  call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
-        if (idiag_axmxy/=0)  call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
-        if (idiag_aymxy/=0)  call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
-        if (idiag_azmxy/=0)  call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
+        call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
+        call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
+        call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
+        call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
+        call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
+        call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
         if (lcovariant_magnetic) then
           if (idiag_dbxdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,1)+p%bij_cov_corr(:,1,1),idiag_dbxdxmxy)
           if (idiag_dbxdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2),idiag_dbxdymxy)
@@ -5568,42 +5645,42 @@ module Magnetic
           !  call zsum_mn_name_xy(p%bijtilde(:,3,3)+p%bij_cov_corr(:,3,3)-p%bij(:,3,3),idiag_dbzdzmxy)
 
         else
-          if (idiag_dbxdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,1),idiag_dbxdxmxy)
-          if (idiag_dbxdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,2),idiag_dbxdymxy)
-          if (idiag_dbydxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,1),idiag_dbydxmxy)
-          if (idiag_dbydymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,2),idiag_dbydymxy)
-          if (idiag_dbzdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,1),idiag_dbzdxmxy)
-          if (idiag_dbzdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,2),idiag_dbzdymxy)
+          call zsum_mn_name_xy(p%bijtilde(:,1,1),idiag_dbxdxmxy)
+          call zsum_mn_name_xy(p%bijtilde(:,1,2),idiag_dbxdymxy)
+          call zsum_mn_name_xy(p%bijtilde(:,2,1),idiag_dbydxmxy)
+          call zsum_mn_name_xy(p%bijtilde(:,2,2),idiag_dbydymxy)
+          call zsum_mn_name_xy(p%bijtilde(:,3,1),idiag_dbzdxmxy)
+          call zsum_mn_name_xy(p%bijtilde(:,3,2),idiag_dbzdymxy)
         endif
 !
-        if (idiag_b2mxz/=0)  call ysum_mn_name_xz(p%b2,idiag_b2mxz)
-        if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
-        if (idiag_aymxz/=0)  call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
-        if (idiag_azmxz/=0)  call ysum_mn_name_xz(p%aa(:,3),idiag_azmxz)
+        call ysum_mn_name_xz(p%b2,idiag_b2mxz)
+        call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
+        call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
+        call ysum_mn_name_xz(p%aa(:,3),idiag_azmxz)
         if (idiag_bx1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,1)),idiag_bx1mxz)
         if (idiag_by1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,2)),idiag_by1mxz)
         if (idiag_bz1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,3)),idiag_bz1mxz)
-        if (idiag_bxmxz/=0)  call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
-        if (idiag_bymxz/=0)  call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
-        if (idiag_bzmxz/=0)  call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
-        if (idiag_jxmxz/=0)  call ysum_mn_name_xz(p%jj(:,1),idiag_jxmxz)
-        if (idiag_jymxz/=0)  call ysum_mn_name_xz(p%jj(:,2),idiag_jymxz)
-        if (idiag_jzmxz/=0)  call ysum_mn_name_xz(p%jj(:,3),idiag_jzmxz)
+        call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
+        call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
+        call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
+        call ysum_mn_name_xz(p%jj(:,1),idiag_jxmxz)
+        call ysum_mn_name_xz(p%jj(:,2),idiag_jymxz)
+        call ysum_mn_name_xz(p%jj(:,3),idiag_jzmxz)
         if (idiag_bx2mxz/=0) call ysum_mn_name_xz(p%bb(:,1)**2,idiag_bx2mxz)
         if (idiag_by2mxz/=0) call ysum_mn_name_xz(p%bb(:,2)**2,idiag_by2mxz)
         if (idiag_bz2mxz/=0) call ysum_mn_name_xz(p%bb(:,3)**2,idiag_bz2mxz)
 !
         if (idiag_bx2mxy/=0) call zsum_mn_name_xy(p%bb(:,1)**2,idiag_bx2mxy)
-        if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb,idiag_by2mxy,(/0,2,0/))
-        if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb,idiag_bz2mxy,(/0,0,2/))
-        if (idiag_jbmxy/=0)  call zsum_mn_name_xy(p%jb,idiag_jbmxy)
-        if (idiag_abmxy/=0)  call zsum_mn_name_xy(p%ab,idiag_abmxy)
-        if (idiag_examxy1/=0) call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
-        if (idiag_examxy2/=0) call zsum_mn_name_xy(p%exa,idiag_examxy2,(/0,1,0/))
-        if (idiag_examxy3/=0) call zsum_mn_name_xy(p%exa,idiag_examxy3,(/0,0,1/))
-        if (idiag_Exmxy/=0) call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
-        if (idiag_Eymxy/=0) call zsum_mn_name_xy(p%uxb,idiag_Eymxy,(/0,1,0/))
-        if (idiag_Ezmxy/=0) call zsum_mn_name_xy(p%uxb,idiag_Ezmxy,(/0,0,1/))
+        call zsum_mn_name_xy(p%bb,idiag_by2mxy,(/0,2,0/))
+        call zsum_mn_name_xy(p%bb,idiag_bz2mxy,(/0,0,2/))
+        call zsum_mn_name_xy(p%jb,idiag_jbmxy)
+        call zsum_mn_name_xy(p%ab,idiag_abmxy)
+        call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
+        call zsum_mn_name_xy(p%exa,idiag_examxy2,(/0,1,0/))
+        call zsum_mn_name_xy(p%exa,idiag_examxy3,(/0,0,1/))
+        call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
+        call zsum_mn_name_xy(p%uxb,idiag_Eymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%uxb,idiag_Ezmxy,(/0,0,1/))
         if (idiag_poynxmxy/=0) &
             call zsum_mn_name_xy(etatotal*p%jxb(:,1)-mu01* &
             (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
@@ -5611,26 +5688,21 @@ module Magnetic
           tmp2(:,1)=0.
           tmp2(:,2)=etatotal*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
           tmp2(:,3)=etatotal*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
-          if (idiag_poynymxy/=0) &
-            call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
-          if (idiag_poynzmxy/=0) &
-            call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
+          call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
+          call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
         endif
-        if (idiag_beta1mxy/=0) call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
+        call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
 !
 ! Stokes parameters correct for Yin-Yang?
 !
-        if (idiag_StokesImxy/=0) call zsum_mn_name_xy(p%StokesI,idiag_StokesImxy)
-        if (idiag_StokesQmxy/=0) call zsum_mn_name_xy(p%StokesQ,idiag_StokesQmxy)
-        if (idiag_StokesUmxy/=0) call zsum_mn_name_xy(p%StokesU,idiag_StokesUmxy)
-        if (idiag_StokesQ1mxy/=0) call zsum_mn_name_xy(p%StokesQ1,idiag_StokesQ1mxy)
-        if (idiag_StokesU1mxy/=0) call zsum_mn_name_xy(p%StokesU1,idiag_StokesU1mxy)
-        if (idiag_bxbymxy/=0) &
-            call zsum_mn_name_xy(p%bb,idiag_bxbymxy,(/1,1,0/))
-        if (idiag_bxbzmxy/=0) &
-            call zsum_mn_name_xy(p%bb,idiag_bxbzmxy,(/1,0,1/))
-        if (idiag_bybzmxy/=0) &
-            call zsum_mn_name_xy(p%bb,idiag_bybzmxy,(/0,1,1/))
+        call zsum_mn_name_xy(p%StokesI,idiag_StokesImxy)
+        call zsum_mn_name_xy(p%StokesQ,idiag_StokesQmxy)
+        call zsum_mn_name_xy(p%StokesU,idiag_StokesUmxy)
+        call zsum_mn_name_xy(p%StokesQ1,idiag_StokesQ1mxy)
+        call zsum_mn_name_xy(p%StokesU1,idiag_StokesU1mxy)
+        call zsum_mn_name_xy(p%bb,idiag_bxbymxy,(/1,1,0/))
+        call zsum_mn_name_xy(p%bb,idiag_bxbzmxy,(/1,0,1/))
+        call zsum_mn_name_xy(p%bb,idiag_bybzmxy,(/0,1,1/))
 !
         if (idiag_bxbymxz/=0) &
             call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,2),idiag_bxbymxz)
@@ -5642,11 +5714,11 @@ module Magnetic
             call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,1),idiag_uybxmxz)
         if (idiag_uybzmxz/=0) &
             call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,3),idiag_uybzmxz)
-        if (idiag_Exmxz/=0) call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
-        if (idiag_Eymxz/=0) call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
-        if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
-        if (idiag_vAmxz/=0) call ysum_mn_name_xz(p%va2(:),idiag_vAmxz)
-      else
+        call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
+        call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
+        call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
+        call ysum_mn_name_xz(p%va2,idiag_vAmxz)
+      else  !MR: Why else?
 !
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
 !  ldiagnos and idiag_bmx and/or idiag_bmy, so
@@ -5655,56 +5727,16 @@ module Magnetic
 !  if condition was messing up calculation of bmxy_rms
 !
         if (ldiagnos) then
-          if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
-          if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
-          if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
-          if (idiag_jxmxy/=0) call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
-          if (idiag_jymxy/=0) call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
-          if (idiag_jzmxy/=0) call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
+          call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
+          call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
+          call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
+          call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
+          call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
+          call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
         endif
       endif
-!
-!  Debug output.
-!
-      if (headtt .and. lfirst .and. ip<=4) then
-        call output_pencil('aa.dat',p%aa,3)
-        call output_pencil('bb.dat',p%bb,3)
-        call output_pencil('jj.dat',p%jj,3)
-        call output_pencil('del2A.dat',p%del2a,3)
-        call output_pencil('JxBr.dat',p%jxbr,3)
-        call output_pencil('JxB.dat',p%jxb,3)
-        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
-      endif
-!
-!  Write B-slices for output in wvid in run.f90.
-!  Note: ix_loc is the index with respect to array with ghost zones.
-!
-      if (lvideo.and.lfirst) then
-!
-        if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
-        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
-        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
-        if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
-        if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
-        if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
-        if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
-        if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
-                                             beta1_xy3,beta1_xy4,beta1_xz2)
-        if (bthresh_per_brms/=0) call calc_bthresh
-        call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
-!
-        if (ivid_poynting/=0) then
-          call cross(p%uxb,p%bb,uxbxb)
-          do j=1,3
-            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
-          enddo
-          call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
-                            poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2)
-        endif
-      endif
-      call timing('daa_dt','finished',mnloop=.true.)
-!
-    endsubroutine daa_dt
+    
+    endsubroutine calc_2d_diagnostics_magnetic
 !***********************************************************************
     subroutine time_integrals_magnetic(f,p)
 !
@@ -6198,8 +6230,8 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FH=FHx(nx)-FHx(1)
-      if (lfirst_proc_z .and.n==n1) FH=FH-sum(FHz)
-      if (llast_proc_z.and.n==n2) FH=FH+sum(FHz)
+      if (lfirst_proc_z.and.n==n1) FH=FH-sum(FHz)
+      if (llast_proc_z .and.n==n2) FH=FH+sum(FHz)
       call surf_mn_name(FH,idiag_exaym2)
 !
     endsubroutine helflux
@@ -6229,8 +6261,8 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FC=FCx(nx)-FCx(1)
-      if (lfirst_proc_z .and.n==n1) FC=FC-sum(FCz)
-      if (llast_proc_z.and.n==n2) FC=FC+sum(FCz)
+      if (lfirst_proc_z.and.n==n1) FC=FC-sum(FCz)
+      if (llast_proc_z .and.n==n2) FC=FC+sum(FCz)
       call surf_mn_name(FC,idiag_exjm2)
 !
     endsubroutine curflux_dS
@@ -8784,6 +8816,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'hjparallelm',idiag_hjparallelm)
         call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
       enddo
+!
+      if (.not.lfirst_proc_z) idiag_exabot=0
+      if (.not.llast_proc_z) idiag_exatop=0
 !
 !  Quantities which are averaged over half (north-south) the box.
 !

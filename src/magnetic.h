@@ -28,6 +28,7 @@
   public :: update_char_vel_magnetic
   public :: magnetic_after_timestep
   public :: pushpars2c, pushdiags2c
+  public :: calc_diagnostics_magnetic
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
