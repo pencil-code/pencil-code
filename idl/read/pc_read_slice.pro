@@ -20,7 +20,8 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
   default, first, 1
   default, last, last_slice
   default, skip, 0
-  num = 1 + (last - first) / (skip + 1)
+  step = skip + 1
+  num = 1 + (last - first) / step
 
   data = reform (dblarr ([ h5_get_size ('1/data'), num ]))
   time = reform (dblarr (num))
@@ -28,8 +29,8 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
   pos = reform (lonarr (num))
 
   ; iterate over slices
-  for slice = first, last, skip do begin
-    index = (slice - first) / (skip + 1)
+  for slice = first, last, step do begin
+    index = (slice - first) / step
     group = strtrim (slice, 2)
     data[*,*,index] = pc_read (group+'/data')
     time[index] = pc_read (group+'/time')
