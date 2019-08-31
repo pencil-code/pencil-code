@@ -51,7 +51,7 @@ COMPILE_OPT IDL2,HIDDEN
       quantity = quantities[pos]
       if (quantity eq 'dummy') then continue
       if (quantity eq 'gg') then begin
-        quantity = [ 'global_gx', 'global_gy', 'global_gz' ]
+        quantity = [ 'global_ggx', 'global_ggy', 'global_ggz' ]
       end else if (quantity eq 'glnTT') then begin
         quantity = [ 'glnTx', 'glnTy', 'glnTz' ]
       end
