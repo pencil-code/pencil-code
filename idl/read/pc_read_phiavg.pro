@@ -100,6 +100,8 @@ function pc_read_phiavg, file, datadir=datadir, $
         'VARS keyword (for selecting only certain vars) not yet implemented'
   endif
 
+  if (strpos (file, 'averages/') eq -1) then file = datadir + '/averages/' + file
+
   get_lun, lun
   close, lun
   openr, lun, file, /F77
