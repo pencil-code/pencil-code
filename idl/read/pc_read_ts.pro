@@ -69,7 +69,7 @@ end
 pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
-    num=num, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
+    num=num, it=it, time=time, dt=dt, cdt=cdt, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
     movingaverage=movingaverage, monotone=monotone, njump=njump, sepminus=sepminus
 COMPILE_OPT IDL2,HIDDEN
@@ -79,7 +79,7 @@ COMPILE_OPT IDL2,HIDDEN
   if ( keyword_set(help) ) then begin
     print, "Usage: "
     print, ""
-    print, "pc_read_ts,  t=t,"
+    print, "pc_read_ts,  time=time,"
     print, "             object=object," 
     print, "             filename=filename," 
     print, "             movingaverage=maverage," 
@@ -101,9 +101,9 @@ COMPILE_OPT IDL2,HIDDEN
     print, "                                                                  "
     print, "      num: number of entries (valid - not commented out)    [long]"
     print, "       it: array of time step numbers                    [long(n)]"
-    print, "        t: array containing time in code units          [float(n)]"
+    print, "     time: array containing time in code units          [float(n)]"
     print, "       dt: array of time step sizes                     [float(n)]"
-    print, "      dtc: time step limit by CFL condition             [float(n)]"
+    print, "      cdt: time step limit by CFL condition             [float(n)]"
     print, "     urms: RMS velocity                                 [float(n)]"
     print, "     ekin: total kinetic energy                         [float(n)]"
     print, "      eth: total thermal energy                         [float(n)]"
@@ -168,7 +168,7 @@ COMPILE_OPT IDL2,HIDDEN
   it=0L
   t=0.
   dt=0.
-  dtc=0.
+  cdt=0.
   urms=0.
   ekin=0.
   eth=0.
@@ -376,9 +376,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Unwrap and quantities that may have been separately requested from object.
 ;
   num = (size(data))[1]
-  if (in_list('t',full_labels))    then t = object.t
+  if (in_list('t',full_labels))    then time = object.t
   if (in_list('dt',full_labels))   then dt = object.dt
-  if (in_list('dtc',full_labels))  then dtc = object.dtc
+  if (in_list('dtc',full_labels))  then cdt = object.dtc
   if (in_list('urms',full_labels)) then urms = object.urms
   if (in_list('ekin',full_labels)) then ekin = object.ekin
   if (in_list('eth',full_labels))  then eth = object.eth
