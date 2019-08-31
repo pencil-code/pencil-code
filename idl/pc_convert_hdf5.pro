@@ -146,5 +146,54 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	h5_write, 'unit/velocity', unit.velocity
 	h5_close_file
 
+	; video files
+	varfiles = file_search (datadir+'/proc*/slice_*.*')
+	if (keyword_set (varfiles) and (keyword_set (old) or keyword_set (all))) then begin
+		if (not file_test ('src/read_all_videofiles.x')) then spawn, 'pc_build "read_all_videofiles"'
+		if (not file_test ('src/read_all_videofiles.x')) then message, 'Can not build "read_all_videofiles"!'
+		spawn, 'src/read_all_videofiles.x'
+		if (size (run_param, /type) eq 0) then pc_read_param, obj=run_param, /run_param
+		varfiles = strmid (varfiles, transpose (strpos (varfiles, '/slice_', /reverse_search) + 7))
+		varfiles = varfiles[sort (varfiles)]
+		num_files = n_elements (varfiles)
+		last = ''
+		last_field = ''
+		for pos = 0, num_files-1 do begin
+			varfile = varfiles[pos]
+			if ((varfile eq last) or (varfile eq 'position.dat')) then continue
+			last = varfile
+			field = strmid (varfile, 0, strpos (varfile, '.'))
+			plane = strmid (varfile, strpos (varfile, '.')+1)
+			if (field ne last_field) then begin
+				pc_read_video, obj=obj, field=field, /old_format
+				num_steps = n_elements (obj.t)
+			end
+			case (plane) of
+				'xy': begin & index = run_param.iz & coord = grid.z[index-1] & end
+				'xy2': begin & index = run_param.iz2 & coord = grid.z[index-1] & end
+				'xy3': begin & index = run_param.iz3 & coord = grid.z[index-1] & end
+				'xy4': begin & index = run_param.iz4 & coord = grid.z[index-1] & end
+				'xz': begin & index = run_param.iy & coord = grid.y[index-1] & end
+				'yz': begin & index = run_param.ix & coord = grid.x[index-1] & end
+				else: begin & message, 'Unknown plane "'+plane+'"!' & end
+			end
+			last_field = field
+			if (not file_test (datadir+'/slices', /directory)) then file_mkdir, datadir+'/slices'
+			h5_open_file, datadir+'/slices/'+field+'_'+plane+'.h5', /write, /truncate
+			for step = 1, num_steps do begin
+				plane_pos = where (plane eq strlowcase (tag_names (obj)))
+				if (plane_pos[0] eq -1) then begin & help, obj, /str & print, (strlowcase (tag_names (obj))+'|') & message, 'Plane "'+plane+'" not found!' & end
+				group = str (step)
+				h5_create_group, group
+				h5_write, group+'/time', obj.t[step-1]
+				h5_write, group+'/data', reform ((obj.(plane_pos))[*,*,step-1])
+				h5_write, group+'/coordinate', index
+				h5_write, group+'/position', coord
+			end
+			h5_write, 'last', num_steps
+			h5_close_file
+		end
+	end
+
 END
 
