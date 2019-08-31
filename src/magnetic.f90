@@ -2489,9 +2489,9 @@ module Magnetic
 !
       if (lhydro .and. llorentzforce) then
         if (iphiuu==0) then
-          lpenc_requested(i_b2)=.true.
-        else
           lpenc_requested(i_jxbr)=.true.
+        else
+          lpenc_requested(i_b2)=.true.
         endif
       endif
 !
