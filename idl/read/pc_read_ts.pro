@@ -161,6 +161,10 @@ COMPILE_OPT IDL2,HIDDEN
     end
     h5_close_file
     object = create_struct (object, { last:last, step:step })
+    num = n_elements (labels)
+    it = object.it
+    if (tag_exists (object, 't')) then time = object.t
+    if (tag_exists (object, 'dt')) then dt = object.dt
     return
   end
 ;
