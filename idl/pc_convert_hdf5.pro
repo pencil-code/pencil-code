@@ -146,6 +146,26 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	h5_write, 'unit/velocity', unit.velocity
 	h5_close_file
 
+	; time series
+	varfile = datadir+'/time_series.dat'
+	if (file_test (varfile)) then begin
+		pc_read_ts, obj=obj, datadir=datadir, it=iterations, time=time, dt=dt, num=num_labels, labels=labels
+		h5_open_file, datadir+'/time_series.h5', /write, /truncate
+		num_iterations = n_elements (iterations)
+		for pos = 0, num_labels-1 do begin
+			label = labels[pos]
+			if (label eq 'it') then continue
+			h5_create_group, label
+			for pos_it = 0, num_iterations-1 do begin
+				it = str (iterations[pos_it])
+				h5_write, label+'/'+it, (obj.(pos))[pos_it]
+			end
+		end
+		h5_write, 'last', iterations[num_iterations-1]
+		h5_write, 'step', run_param.it1
+		h5_close_file
+	end
+
 	; video files
 	varfiles = file_search (datadir+'/proc*/slice_*.*')
 	if (keyword_set (varfiles) and (keyword_set (old) or keyword_set (all))) then begin
