@@ -19,7 +19,7 @@
 pro pc_read_video, field=field, object=object, nt=nt, njump=njump, $
     dim=dim, datadir=datadir, proc=proc, swap_endian=swap_endian, $
     xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, $
-    xz2read=xz2read, print=print, mask=mask, fail=fail
+    xz2read=xz2read, print=print, mask=mask, fail=fail, old_format=old_format
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -42,7 +42,7 @@ default, print, 1
 ;
 ; Load HDF5 data, if available
 ;
-  if (file_test (datadir+'/slices', /directory)) then begin
+  if (not keyword_set (old_format) and file_test (datadir+'/slices', /directory)) then begin
     num_planes = n_elements (planes)
     default, mask, replicate (1B, num_planes)
     mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read ]
