@@ -376,6 +376,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Unwrap and quantities that may have been separately requested from object.
 ;
   num = (size(data))[1]
+  if (in_list('it',full_labels))   then it = object.it
   if (in_list('t',full_labels))    then time = object.t
   if (in_list('dt',full_labels))   then dt = object.dt
   if (in_list('dtc',full_labels))  then cdt = object.dtc
