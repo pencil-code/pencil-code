@@ -2483,7 +2483,18 @@ module Magnetic
       endif
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
-      if (lhydro .and. llorentzforce) lpenc_requested(i_jxbr)=.true.
+!
+!  Take care of Lorentz force for potential flows.
+!  In that case, use only the magnetic pressure.
+!
+      if (lhydro .and. llorentzforce) then
+        if (iphiuu==0) then
+          lpenc_requested(i_b2)=.true.
+        else
+          lpenc_requested(i_jxbr)=.true.
+        endif
+      endif
+!
       if (lresi_smagorinsky_cross) lpenc_requested(i_oo)=.true.
 !
       if (dipole_moment/=0.0) lpenc_requested(i_r_mn1)=.true.
@@ -3761,7 +3772,11 @@ module Magnetic
                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+.75*p%jxbr
               else
-                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                if (iphiuu==0) then
+                  df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                else
+                  df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)-.5*(p%b2-B_ext2)
+                endif
               endif
             endif
           endif
@@ -4463,7 +4478,6 @@ module Magnetic
               dAdt = dAdt-p%uuadvec_gaa+ajiuj+fres
             endif
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
-!
 !
 !  ladvective_gauge2
 !
