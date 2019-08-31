@@ -17,6 +17,7 @@
   public :: update_char_vel_density
   public :: density_after_timestep
   public :: pushpars2c, pushdiags2c
+  public :: calc_diagnostics_density
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

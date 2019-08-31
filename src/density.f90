@@ -242,7 +242,8 @@ module Density
 !  module auxiliaries
 !
   logical :: lupdate_mass_source
-!
+  real, dimension(nx) :: diffus_diffrho
+
   contains
 !***********************************************************************
     subroutine register_density
@@ -2338,7 +2339,6 @@ module Density
 !                  to all fdiff if lmassdiff_fix=T
 !
       use Deriv, only: der6
-      use Diagnostics
       use Special, only: special_calc_density
       use Sub
 !
@@ -2350,10 +2350,9 @@ module Density
       intent(inout) :: df,f
 !
       real, dimension (nx) :: fdiff, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
-      real, dimension (nx) :: tmp                                       !GPU := p%aux
+      real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx), parameter :: unitpencil=1.
-      real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3,advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs,diffus_diffrho3,advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
 !
@@ -2683,58 +2682,101 @@ module Density
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_density(f,df,p)
+
+      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      call calc_diagnostics_density(p)
+      call timing('dlnrho_dt','finished',mnloop=.true.)
+!
+    endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine calc_diagnostics_density(p)
+
+      type(pencil_case) :: p
+
+      call calc_2d_diagnostics_density(p)
+      call calc_1d_diagnostics_density(p)
+      call calc_0d_diagnostics_density(p)
+
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
+    subroutine calc_2d_diagnostics_density(p)
 !
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
-      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      use Diagnostics
+
+      type(pencil_case) :: p
+
       if (l2davgfirst) then
-        if (idiag_lnrhomphi/=0) call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
-        if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
-        if (idiag_rhomxz/=0)    call ysum_mn_name_xz(p%rho,idiag_rhomxz)
-        if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
-        if (idiag_sigma/=0)     call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
+        call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
+        call phisum_mn_name_rz(p%rho,idiag_rhomphi)
+        call ysum_mn_name_xz(p%rho,idiag_rhomxz)
+        call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
       endif
+
+    endsubroutine calc_2d_diagnostics_density
+!***********************************************************************
+    subroutine calc_1d_diagnostics_density(p)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
+      use Diagnostics
+
+      type(pencil_case) :: p
+
       if (l1davgfirst) then
-        if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
+        call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
-        call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
+        if (idiag_rho2mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
         call xysum_mn_name_z(p%glnrho(:,3),idiag_gzlnrhomz)
         call xysum_mn_name_z(p%uglnrho,idiag_uglnrhomz)
         call xysum_mn_name_z(p%ugrho,idiag_ugrhomz)
-        call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
-        call xysum_mn_name_z(p%uu(:,3)*p%glnrho(:,2),idiag_uzgylnrhomz)
+        if (idiag_uygzlnrhomz/=0) call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
+        if (idiag_uzgylnrhomz/=0) call xysum_mn_name_z(p%uu(:,3)*p%glnrho(:,2),idiag_uzgylnrhomz)
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
-        call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
+        if (idiag_rho2mx/=0) call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
       endif
+
+    endsubroutine calc_1d_diagnostics_density
+!***********************************************************************
+    subroutine calc_0d_diagnostics_density(p)  
 !
 !  Calculate density diagnostics
 !
+      use Diagnostics
+
+      use Sub,only: dot2
+      use General
+
+      type(pencil_case) :: p
+
+      real, dimension(nx), parameter :: unitpencil=1.
+      real, dimension(nx) :: tmp
+
       if (ldiagnos) then
-        if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
+        call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
         if (idiag_rhomzmask/=0)call sum_mn_name(p%rho*zmask_den(n-n1+1),idiag_rhomzmask)
-        if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
-        if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
+        call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
+        call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_inertiaxx/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*cos(z(n))**2,idiag_inertiaxx)
         if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
         if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(z(n))**2,idiag_inertiazz)
-        if (idiag_vol/=0)      call integrate_mn_name(unitpencil,idiag_vol)
+        call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
-        if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
+        call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
-        if (idiag_lnrhomax/=0) call max_mn_name(p%lnrho,idiag_lnrhomax)
+        call max_mn_name(p%lnrho,idiag_lnrhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
-        if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
-        if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
+        call sum_mn_name(p%ugrho,idiag_ugrhom)
+        call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
         if (idiag_grhomax/=0) then
@@ -2742,9 +2784,8 @@ module Density
           call max_mn_name(sqrt(tmp),idiag_grhomax)
         endif
       endif
-      call timing('dlnrho_dt','finished',mnloop=.true.)
-!
-    endsubroutine dlnrho_dt
+
+    endsubroutine calc_0d_diagnostics_density
 !***********************************************************************
     subroutine split_update_density(f)
 !

@@ -526,6 +526,14 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
+    subroutine calc_diagnostics_density(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
     subroutine split_update_density(f)
 !
 !  Integrate operator split terms and/or perform post-time-step
