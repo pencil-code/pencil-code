@@ -137,12 +137,14 @@ COMPILE_OPT IDL2,HIDDEN
   if (strmid (filename, strlen(filename)-3) eq '.h5') then begin
     last = pc_read ('last', file=filename, datadir=datadir)
     step = pc_read ('step')
+    labels = [ 'it' ]
     quantities = h5_content ('/')
     object = { it:lindgen(last/step+1)*step }
     num_quantities = n_elements (quantities)
     for pos = 0L, num_quantities-1 do begin
       label = quantities[pos]
       if (any (label eq [ '', 'it', 'last', 'step' ])) then continue
+      labels = [ labels, label ]
       elements = h5_content (label)
       idl_type = h5_get_type (label+'/'+elements[0], /exists)
       empty = round (!Values.F_NaN)
