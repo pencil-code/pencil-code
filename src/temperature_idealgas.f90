@@ -2521,7 +2521,7 @@ module Energy
            idiag_EmAIA211mxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA304mxy', &
            idiag_EmAIA304mxy)
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA1335mxy', &
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA335mxy', &
            idiag_EmAIA335mxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmXRTmxy', &
            idiag_EmXRTmxy)
