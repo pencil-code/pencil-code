@@ -75,7 +75,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			pc_read_pvar, obj=data, varfile=varfile, datadir=datadir
 			pc_write_pvar, varfile, data, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param
 		end
-		if (keyword_set (delete)) then file_delete, varfile
+		if (keyword_set (delete)) then file_delete, datadir+'/*proc*/'+varfile
 	end
 
 	; qvar snapshots
