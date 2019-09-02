@@ -25,7 +25,8 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write, single=single
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, $
+    write=write, single=single, dim=dim, grid=grid
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -90,10 +91,11 @@ COMPILE_OPT IDL2,HIDDEN
   default, xtitle, 'x'
   default, ytitle, dir eq 'y' ? 'z' : 'y'
 ;
+  if (size (grid, /type) eq 0) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+;
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+dir+'.h5')) then begin
     message, "pc_read_2d_aver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
     last = pc_read ('last', filename=dir+'.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
     times = pc_read (groups+'/time')
@@ -149,12 +151,12 @@ COMPILE_OPT IDL2,HIDDEN
       if (par.lyinyang) then yinyang=1
   endif
   if (readgrid or (xshift ne 0)) then begin
-    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
-    xax=grid.x
-    if (dir eq 'y') then $
-      yax=grid.z $
-    else $
-      yax=grid.y
+    xax = grid.x[dim.l1:dim.l2]
+    if (dir eq 'y') then begin
+      yax = grid.z[dim.n1:dim.n2]
+    end else begin
+      yax = grid.y[dim.m1:dim.m2]
+    end
   endif
 ;
 ;  Some z-averages are erroneously calculated together with time series
