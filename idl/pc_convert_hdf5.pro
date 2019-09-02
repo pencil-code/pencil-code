@@ -33,7 +33,11 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		varfile = varfiles[pos]
 		if (keyword_set (delete) and (varfile ne 'var.dat')) then begin
 			list_file = datadir+'/allprocs/varN.list'
-			if (varfile eq 'VAR0') then file_delete, list_file, /allow_nonexistent
+			if (varfile eq 'VAR0') then begin
+				file_delete, list_file, /allow_nonexistent
+				list = file_search (datadir+'/*proc*/'+'varN.list')
+				if (keyword_set (list)) then file_delete, list
+			end
 			openw, lun, list_file, /get_lun, /append
 			printf, lun, varfile
 			close, lun
@@ -419,7 +423,11 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			h5_close_file
 			if (keyword_set (delete) and (varfile ne 'timeavg.dat')) then begin
 				list_file = datadir+'/averages/tavgN.list'
-				if (varfile eq 'TAVG1') then file_delete, list_file, /allow_nonexistent
+				if (varfile eq 'TAVG1') then begin
+					file_delete, list_file, /allow_nonexistent
+					list = file_search (datadir+'/*proc*/'+'tavgN.list')
+					if (keyword_set (list)) then file_delete, list
+				end
 				openw, lun, list_file, /get_lun, /append
 				printf, lun, varfile
 				close, lun
