@@ -2746,6 +2746,8 @@ module Density
 !
 !  Calculate density diagnostics
 !
+!  21-dec-18/felipe: added inertiaxx - inertiazz for Applegate mechanism
+!
       use Diagnostics
 
       use Sub,only: dot2
@@ -2755,7 +2757,11 @@ module Density
 
       real, dimension(nx), parameter :: unitpencil=1.
       real, dimension(nx) :: tmp
-
+!
+!  The inertiaxx - inertiazz terms are needed for computing the star's
+!  quadrupole moment, relevant for the Applegate mechanism; see
+!  Navarrete et al. (MNRAS 2019).
+!
       if (ldiagnos) then
         call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
