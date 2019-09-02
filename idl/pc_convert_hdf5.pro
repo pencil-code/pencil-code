@@ -23,12 +23,21 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (keyword_set (all)) then varfiles = [ varfiles, 'VAR[0-9]*' ]
 	varfiles = file_search (procdir+varfiles)
 	varfiles = strmid (varfiles, strlen (procdir))
+	varfiles = varfiles[sort (varfiles)]
 	num_files = n_elements (varfiles)
 	for pos = 0, num_files-1 do begin
 		varfile = varfiles[pos]
 		if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
 		pc_read_var_raw, obj=data, tags=tags, varfile=varfile, time=time, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 		pc_write_var, varfile, data, tags=tags, time=time, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param
+		if (keyword_set (delete) and (varfile ne 'var.dat')) then begin
+			list_file = datadir+'/allprocs/varN.list'
+			if (varfile eq 'VAR0') then file_delete, list_file, /allow_nonexistent
+			openw, lun, list_file, /get_lun, /append
+			printf, lun, varfile
+			close, lun
+			free_lun, lun
+		end
 		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
@@ -366,6 +375,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	varfiles = file_search (procdir+varfiles)
 	if (keyword_set (varfiles)) then begin
 		varfiles = strmid (varfiles, strlen (procdir))
+		varfiles = varfiles[sort (varfiles)]
 		num_files = n_elements (varfiles)
 		tavg_vc = pc_varcontent (datadir=datadir, dim=dim, param=start_param, par2=run_param)
 		fields = read_ascii (procdir+'tavgN.list')
@@ -406,6 +416,14 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			end
 			h5_write, 'time', time
 			h5_close_file
+			if (keyword_set (delete) and (varfile ne 'timeavg.dat')) then begin
+				list_file = datadir+'/averages/tavgN.list'
+				if (varfile eq 'TAVG1') then file_delete, list_file, /allow_nonexistent
+				openw, lun, list_file, /get_lun, /append
+				printf, lun, varfile
+				close, lun
+				free_lun, lun
+			end
 			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 		end
 	end
