@@ -40,7 +40,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		for pos = 0, num_labels-1 do begin
 			label = labels[pos]
 			dims = size (data.(pos), /dimensions)
-			num_dims = size (data.(pos), /n_dimensions)
+			num_dims = n_elements (dims)
 			if (num_dims eq 4) then begin
 				if (dims[3] eq 3) then begin
 					components = [ 'x', 'y', 'z' ]
