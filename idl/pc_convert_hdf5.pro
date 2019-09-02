@@ -30,7 +30,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	end
 
 	; global variables
-	if (file_test (procdir+'global.dat')) then begin
+	varfile = procdir+'global.dat'
+	if (file_test (varfile)) then begin
 		pc_read_var_time, time=time, datadir=datadir, param=start_param
 		pc_read_global, obj=data, datadir=datadir, dim=dim, grid=grid, param=start_param
 		labels = strlowcase (tag_names (data))
@@ -244,8 +245,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	end
 
 	; averages
-	if (file_test (datadir+'/averages/PHIAVG[0-9]*')) then begin
-		varfiles = file_search (datadir+'/averages/PHIAVG[0-9]*')
+	varfiles = file_search (datadir+'/averages/PHIAVG[0-9]*')
+	if (keyword_set (varfiles)) then begin
 		num_files = n_elements (varfiles)
 		numbers = long (strmid (varfiles, strlen (datadir+'/averages/PHIAVG')))
 		varfiles = varfiles[sort (numbers)]
