@@ -20,7 +20,6 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (keyword_set (all)) then varfiles = [ varfiles, 'VAR[0-9]*' ]
 	varfiles = file_search (procdir+varfiles)
 	varfiles = strmid (varfiles, strlen (procdir))
-
 	num_files = n_elements (varfiles)
 	for pos = 0, num_files-1 do begin
 		varfile = varfiles[pos]
@@ -138,7 +137,6 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	h5_write, 'grid/dx_tilde', grid.dx_tilde
 	h5_write, 'grid/dy_tilde', grid.dy_tilde
 	h5_write, 'grid/dz_tilde', grid.dz_tilde
-
 	h5_create_group, 'settings'
 	h5_write, 'settings/l1', dim.l1
 	h5_write, 'settings/l2', dim.l2
@@ -161,7 +159,6 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	h5_write, 'settings/mglobal', dim.mglobal
 	h5_write, 'settings/precision', dim.precision
 	h5_write, 'settings/version', 0
-
 	h5_create_group, 'unit'
 	h5_write, 'unit/density', unit.density
 	h5_write, 'unit/energy', unit.energy
