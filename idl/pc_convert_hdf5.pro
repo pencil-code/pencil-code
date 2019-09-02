@@ -27,7 +27,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
 		pc_read_var_raw, obj=data, tags=tags, varfile=varfile, time=time, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 		pc_write_var, varfile, data, tags=tags, time=time, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*/'+varfile)
+		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
 	; global variables
@@ -92,7 +92,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			pc_read_qvar, obj=data, varfile=varfile, datadir=datadir
 			pc_write_qvar, varfile, data, datadir=datadir
 		end
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*/'+varfile)
+		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
 	; stalker particle snapshots
@@ -125,7 +125,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			h5_write, 'stalker/zp', reform (data.zp[*,pos])
 			h5_close_file
 		end
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*/'+varfile)
+		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
 	; grid file
@@ -202,7 +202,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	end
 
 	; video files
-	varfiles = file_search (datadir+'/proc*/slice_*.*')
+	varfiles = file_search (datadir+'/*proc*/slice_*.*')
 	if (keyword_set (varfiles) and (keyword_set (old) or keyword_set (all))) then begin
 		if (not file_test ('src/read_all_videofiles.x')) then spawn, 'pc_build "read_all_videofiles"'
 		if (not file_test ('src/read_all_videofiles.x')) then message, 'Can not build "read_all_videofiles"!'
@@ -247,7 +247,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			h5_write, 'last', num_steps
 			h5_close_file
 		end
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/proc*/slice_*.*')
+		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/slice_*.*')
 	end
 
 	; phi averages
@@ -336,6 +336,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	for aver = 0, num_aver-1 do begin
 		varfile = procdir+averages[aver]+'averages.dat'
 		if (not file_test (varfile)) then continue
+		varfile = strmid (varfile, strlen (procdir))
 		pc_read_2d_aver, averages[aver], obj=data, datadir=datadir, dim=dim, grid=grid, /quiet
 		num_files = n_elements (data.t)
 		h5_open_file, datadir+'/averages/'+averages[aver]+'.h5', /write, /truncate
@@ -353,7 +354,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		end
 		h5_write, 'last', num_files-1
 		h5_close_file
-		if (keyword_set (delete)) then file_delete, varfile
+		if (keyword_set (delete)) then file_delete, datadir+'/*proc*/'+varfile
 	end
 
 	; time averages
@@ -403,7 +404,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			end
 			h5_write, 'time', time
 			h5_close_file
-			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*/'+varfile)
+			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 		end
 	end
 
