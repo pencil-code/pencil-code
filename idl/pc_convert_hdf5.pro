@@ -9,6 +9,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, /run_param, quiet=quiet
 
+	if (keyword_set (all)) then old = all
+
 	if (file_test (datadir+'/allprocs/var.dat')) then begin
 		procdir = datadir+'/allprocs/'
 	end else begin
