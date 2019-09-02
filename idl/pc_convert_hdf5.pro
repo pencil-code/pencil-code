@@ -347,5 +347,55 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		h5_close_file
 	end
 
+	; time averages
+	varfiles = 'timeavg.dat'
+	if (keyword_set (old) and not keyword_set (all)) then varfiles = 'TAVG[0-9]*'
+	if (keyword_set (all)) then varfiles = [ varfiles, 'TAVG[0-9]*' ]
+	varfiles = file_search (procdir+varfiles)
+	if (keyword_set (varfiles)) then begin
+		varfiles = strmid (varfiles, strlen (procdir))
+		num_files = n_elements (varfiles)
+		tavg_vc = pc_varcontent (datadir=datadir, dim=dim, param=start_param, par2=run_param)
+		fields = read_ascii (procdir+'tavgN.list')
+		times = reform (fields.field1[1,*])
+		num_times = n_elements (times)
+		for file = 0, num_files-1 do begin
+			varfile = varfiles[file]
+			if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
+			pc_read_global, obj=data, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=start_param, varcontent=tavg_vc, /quiet
+			if (varfile eq 'timeavg.dat') then begin
+				h5_file = 'timeavg.h5'
+				pc_read_var_time, time=time, datadir=datadir, param=start_param
+			end else begin
+				h5_file = varfile+'.h5'
+				time = times[long (strmid (varfile, 4)) - 1]
+			end
+			h5_open_file, datadir+'/averages/'+h5_file, /write, /truncate
+			labels = strlowcase (tag_names (data))
+			num_labels = n_elements (labels)
+			h5_create_group, 'data'
+			for pos = 0, num_labels-1 do begin
+				label = labels[pos]
+				dims = size (data.(pos), /dimensions)
+				num_dims = n_elements (dims)
+				if (num_dims eq 4) then begin
+					if (dims[3] eq 3) then begin
+						label = strmid (label, 0, strlen (label)-1)
+						components = [ 'x', 'y', 'z' ]
+					end else begin
+						components = str (lindgen (dims[3]+1))
+					end
+					for comp = 0, dims[3]-1 do begin
+						h5_write, 'data/'+label+components[comp], reform (data.(pos)[*,*,*,comp], dims[0:2])
+					end
+				end else begin
+					h5_write, 'data/'+label, data.(pos)
+				end
+			end
+			h5_write, 'time', time
+			h5_close_file
+		end
+	end
+
 END
 
