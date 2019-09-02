@@ -6,7 +6,7 @@
 pro pc_read_global,                                                  $
     object=object, varfile=varfile, variables=variables, tags=tags,  $
     validate_variables=validate_variables, trimall=trimall,          $
-    nameobject=nameobject, allprocs=allprocs,                        $
+    nameobject=nameobject, allprocs=allprocs, old_format=old_format, $
     dim=dim, grid=grid, param=param, datadir=datadir, proc=proc,     $
     stats=stats, nostats=nostats, quiet=quiet, help=help,            $
     swap_endian=swap_endian, varcontent=varcontent,                  $
@@ -40,7 +40,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Load HDF5 varfile if requested or available.
 ;
-  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+  if (not keyword_set (old_format) and strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "pc_read_global: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     if (size (varcontent, /type) eq 0) then begin
       varcontent = pc_varcontent_global (datadir=datadir, dim=dim, param=param, quiet=quiet, scalar=scalar, run2D=run2D)
