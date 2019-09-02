@@ -311,7 +311,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		h5_write, 'r', data.rcyl
 		h5_write, 'last', num_files-1
 		h5_close_file
-		if (keyword_set (delete)) then file_delete, datadir+varfile
+		if (keyword_set (delete)) then file_delete, varfile
 	end
 
 	; 1D averages
