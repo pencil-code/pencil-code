@@ -244,7 +244,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		end
 	end
 
-	; averages
+	; phi averages
 	varfiles = file_search (datadir+'/averages/PHIAVG[0-9]*')
 	if (keyword_set (varfiles)) then begin
 		num_files = n_elements (varfiles)
@@ -266,9 +266,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 				h5_write, group+'/'+label, data.(pos)
 			end
 		end
-		dr = data.rcyl[1] - data.rcyl[0]
 		h5_write, 'r', data.rcyl
-		h5_write, 'dr', dr
+		h5_write, 'dr', 2 * run_param.xyz1[0] / dim.nxgrid
 		h5_write, 'last', num_files-1
 		h5_close_file
 	end
