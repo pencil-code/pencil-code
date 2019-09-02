@@ -7,6 +7,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
+	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, /run_param, quiet=quiet
 
 	if (file_test (datadir+'/allprocs/var.dat')) then begin
 		procdir = datadir+'/allprocs/'
@@ -198,7 +199,6 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		if (not file_test ('src/read_all_videofiles.x')) then spawn, 'pc_build "read_all_videofiles"'
 		if (not file_test ('src/read_all_videofiles.x')) then message, 'Can not build "read_all_videofiles"!'
 		spawn, 'src/read_all_videofiles.x'
-		if (size (run_param, /type) eq 0) then pc_read_param, obj=run_param, /run_param
 		varfiles = strmid (varfiles, transpose (strpos (varfiles, '/slice_', /reverse_search) + 7))
 		varfiles = varfiles[sort (varfiles)]
 		num_files = n_elements (varfiles)
