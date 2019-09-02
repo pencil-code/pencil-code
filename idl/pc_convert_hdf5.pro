@@ -272,5 +272,29 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		h5_close_file
 	end
 
+	; phi-z averages
+	varfile = datadir+'/phizaverages.dat'
+	if (file_test (varfile)) then begin
+		pc_read_phizaver, obj=data, datadir=datadir
+		num_files = n_elements (data.t)
+		h5_open_file, datadir+'/averages/phi_z.h5', /write, /truncate
+		labels = strlowcase (tag_names (data))
+		num_labels = n_elements (labels)
+		for file = 0, num_files-1 do begin
+			group = str (file)
+			h5_create_group, group
+			h5_write, group+'/time', reform (data.t[file])
+			for pos = 0, num_labels-1 do begin
+				label = labels[pos]
+				if (any (label eq [ 't', 'rcyl', 'last', 'pos', 'nvars', 'labels' ])) then continue
+				h5_write, group+'/'+label, reform (data.(pos)[*,file])
+			end
+		end
+		h5_write, 'r', data.rcyl
+		h5_write, 'last', num_files-1
+		h5_close_file
+		if (keyword_set (delete)) then file_delete, datadir+varfile
+	end
+
 END
 
