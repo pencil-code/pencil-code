@@ -48,10 +48,10 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 					components = str (lindgen (dims[3]+1))
 				end
 				for comp = 0, dims[3]-1 do begin
-					h5_write, 'data/global_'+label[pos]+components[comp], reform (data.(pos)[*,*,*,comp], dims[0:2])
+					h5_write, 'data/global_'+label+components[comp], reform (data.(pos)[*,*,*,comp], dims[0:2])
 				end
 			end else begin
-				h5_write, 'data/global_'+label[pos], data.(pos)
+				h5_write, 'data/global_'+label, data.(pos)
 			end
 		end
 		h5_write, 'time', time
