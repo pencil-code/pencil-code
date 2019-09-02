@@ -365,7 +365,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		end
 		h5_write, 'last', num_files-1
 		h5_close_file
-		if (keyword_set (delete)) then file_delete, datadir+'/*proc*/'+varfile
+		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
 	; time averages
