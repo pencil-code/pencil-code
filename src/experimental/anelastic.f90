@@ -1362,4 +1362,12 @@ module Density
 !
     endfunction mean_density
 !***********************************************************************
+    subroutine calc_diagnostics_density(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
 endmodule Density
