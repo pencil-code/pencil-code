@@ -777,6 +777,14 @@ module Density
 
     endsubroutine impose_density_ceiling
 !***********************************************************************
+    subroutine calc_diagnostics_density(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
     subroutine push2c(p_par)
 
       integer, parameter :: npars=1
