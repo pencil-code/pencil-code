@@ -1130,7 +1130,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
-      real, dimension (nx) :: NN2_resp, logT_resp, resp
+      real, dimension (nx) :: NN2_resp, logT_resp, resp, resp2
       real :: fradtop, fradbot
       integer, dimension (nx) :: idx_resp
       integer :: j
@@ -1462,102 +1462,101 @@ module Energy
           if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0) then
             call get_AIA_tab_resp('094',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA94mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA94mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA94mxy)
             endif
             if (idiag_EmAIA94mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA94mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA94mxz)
             endif
           endif
 !
           if (idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0) then
             call get_AIA_tab_resp('131',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA131mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA131mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA131mxy)
             endif
             if (idiag_EmAIA131mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA131mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA131mxz)
             endif
           endif
 !
           if (idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0) then
             call get_AIA_tab_resp('171',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA171mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA171mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA171mxy)
             endif
             if (idiag_EmAIA171mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA171mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA171mxz)
             endif
           endif
 !
           if (idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0) then
             call get_AIA_tab_resp('193',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA193mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA193mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA193mxy)
             endif
             if (idiag_EmAIA193mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA193mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA193mxz)
             endif
           endif
 !
           if (idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0) then
             call get_AIA_tab_resp('211',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA211mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA211mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA211mxy)
             endif
             if (idiag_EmAIA211mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA211mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA211mxz)
             endif
           endif
 !
           if (idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0) then
             call get_AIA_tab_resp('304',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA304mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA304mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA304mxy)
             endif
             if (idiag_EmAIA304mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA304mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA304mxz)
             endif
           endif
 !
           if (idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0) then
             call get_AIA_tab_resp('335',logT_resp,NN2_resp,resp)
             if (idiag_EmAIA335mxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmAIA335mxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmAIA335mxy)
             endif
             if (idiag_EmAIA335mxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmAIA335mxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmAIA335mxz)
             endif
           endif
 !
           if (idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0) then
             call get_AIA_tab_resp('XRT',logT_resp,NN2_resp,resp)
             if (idiag_EmXRTmxy/=0) then
-              resp = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp,idiag_EmXRTmxy)
+              resp2 = resp*Lz*unit_length/1e6
+              call zsum_mn_name_xy(resp2,idiag_EmXRTmxy)
             endif
             if (idiag_EmXRTmxz/=0) then
-              resp = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp,idiag_EmXRTmxz)
+              resp2 = resp*Ly*unit_length/1e6
+              call ysum_mn_name_xz(resp2,idiag_EmXRTmxz)
             endif
           endif
 !
         endif
       endif
-
 !
       if (lvideo.and.lfirst) then
         if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
