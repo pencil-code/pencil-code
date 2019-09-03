@@ -263,7 +263,9 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			h5_write, 'last', num_steps
 			h5_close_file
 		end
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/slice_*.*')
+		if (keyword_set (delete)) then begin
+			file_delete, file_search (datadir+[ '/*proc*', '' ]+'/slice_*.*')
+		end
 	end
 
 	; phi averages
@@ -292,7 +294,9 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		h5_write, 'dr', 2 * run_param.xyz1[0] / dim.nxgrid
 		h5_write, 'last', num_files-1
 		h5_close_file
-		if (keyword_set (delete)) then file_delete, file_search (datadir+'/averages/PHIAVG[0-9]*')
+		if (keyword_set (delete)) then begin
+			file_delete, file_search (datadir+'/averages/'+[ 'PHIAVG[0-9]*', 'phiavg.files', 'phiavg.list' ])
+		end
 	end
 
 	; phi-z averages
@@ -435,6 +439,14 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 			end
 			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 		end
+	end
+
+	; cleanup datadir
+	if (keyword_set (delete)) then begin
+		if (file_test (datadir+'/proc0')) then file_delete, file_search (datadir+'/proc[0-9]*'), /recursive
+		file_delete, datadir+'/allprocs/grid.dat', /allow_nonexistent
+		file_delete, datadir+'/dim.dat', /allow_nonexistent
+		file_delete, datadir+'/reduced', /allow_nonexistent, /recursive
 	end
 
 END
