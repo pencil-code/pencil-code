@@ -39,14 +39,15 @@ module InitialCondition
 !
 ! inFile = Initial condition file from externally created field.
 !
-  real :: ampl = 1.0
+  real :: ampl = 1.0, B0 = 0.0
   integer :: n_blobs = 0
   real, dimension (9) :: xc, yc, zc, kappa, l_blob, a_blob
   integer :: configuration = 0
   character (len=50) :: inFilePrefix='out'
 !
   namelist /initial_condition_pars/ &
-    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix
+    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,&
+    B0
 !
   contains
 !***********************************************************************
@@ -99,27 +100,6 @@ module InitialCondition
 
     f(:,:,:,iux:iuz) = ampl*uu
 !
-!     if (n_blobs > 0) then
-!       do j=1,n_blobs
-!         ! Shift the origin for xc, yc and zc.
-!         xc(j) = xc(j) + xyz0(1) + (xyz1(1)-xyz0(1))/2
-!         ! Transform the center of the rotation.
-!         rc(j) = sqrt(xc(j)**2 + yc(j)**2)
-!         theta_c(j) = atan2(yc(j),xc(j))
-!         do l=1,mx
-!           do m=1,my
-!             do n=1,mz
-!               if (configuration == 0) then
-!                 f(l,m,n,iuz) = f(l,m,n,iuz) + ampl*kappa(j) * exp(-1/a_blob(j)**2 * (x(l)**2 - &
-!                       2*rc(j)*x(l)*(cos(theta_c(j))*cos(y(m))+sin(theta_c(j))*sin(y(m))) + &
-!                       rc(j)**2) - ((z(n)-zc(j))/l_blob(j))**2)
-!               endif
-!             enddo
-!           enddo
-!         enddo
-!       enddo
-!     endif
-!
   endsubroutine initial_condition_uu
 !***********************************************************************
   subroutine initial_condition_lnrho(f)
@@ -135,6 +115,24 @@ module InitialCondition
     call keep_compiler_quiet(f)
 !
   endsubroutine initial_condition_lnrho
+!***********************************************************************
+  subroutine initial_condition_aa(f)
+!
+!  Initialize the magnetic vector potential.
+!
+!  04-september-19/simon: coded
+!
+!  Homogeneous magnetic field compatible with periodic y-boundarier.
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+!        
+    do m=m1,m2
+        do n=n1,n2
+            f(:,m,n,iay) = B0*x
+        enddo
+    enddo
+!
+  endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
