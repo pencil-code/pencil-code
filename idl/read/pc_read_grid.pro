@@ -180,12 +180,26 @@ pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Initialize / set default returns for ALL variables
 ;
-t=zero
-x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
-dx=zero & dy=zero & dz=zero
-Lx=zero & Ly=zero & Lz=zero
-dx_1=fltarr(mx)*one & dy_1=fltarr(my)*one & dz_1=fltarr(mz)*one
-dx_tilde=fltarr(mx)*one & dy_tilde=fltarr(my)*one & dz_tilde=fltarr(mz)*one
+NaN = !Values.F_NaN * one
+t = NaN
+x = replicate (NaN, mx)
+y = replicate (NaN, my)
+z = replicate (NaN, mz)
+dx = NaN
+dy = NaN
+dz = NaN
+Lx = NaN
+Ly = NaN
+Lz = NaN
+Ox = NaN
+Oy = NaN
+Oz = NaN
+dx_1 = replicate (NaN, mx)
+dy_1 = replicate (NaN, my)
+dz_1 = replicate (NaN, mz)
+dx_tilde = replicate (NaN, mx)
+dy_tilde = replicate (NaN, my)
+dz_tilde = replicate (NaN, mz)
 ;
 ; Get a unit number
 ;
@@ -204,15 +218,15 @@ for i=0,ncpus-1 do begin
     filename=datadir+'/proc'+str(i)+'/'+gridfile
     ; Read processor box dimensions
     pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET, down=down
-    xloc=fltarr(procdim.mx)*one
-    yloc=fltarr(procdim.my)*one
-    zloc=fltarr(procdim.mz)*one
-    dx_1loc=fltarr(procdim.mx)*one
-    dy_1loc=fltarr(procdim.my)*one
-    dz_1loc=fltarr(procdim.mz)*one
-    dx_tildeloc=fltarr(procdim.mx)*one
-    dy_tildeloc=fltarr(procdim.my)*one
-    dz_tildeloc=fltarr(procdim.mz)*one
+    xloc = replicate (NaN, procdim.mx)
+    yloc = replicate (NaN, procdim.my)
+    zloc = replicate (NaN, procdim.mz)
+    dx_1loc = replicate (NaN, procdim.mx)
+    dy_1loc = replicate (NaN, procdim.my)
+    dz_1loc = replicate (NaN, procdim.mz)
+    dx_tildeloc = replicate (NaN, procdim.mx)
+    dy_tildeloc = replicate (NaN, procdim.my)
+    dz_tildeloc = replicate (NaN, procdim.mz)
   endelse
   ; Check for existence and read the data
   if (not file_test(filename)) then begin
@@ -233,18 +247,17 @@ for i=0,ncpus-1 do begin
   openr,file,filename,/F77,SWAP_ENDIAN=swap_endian
 
   if ((allprocs gt 0) or allprocs_exists or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
-    readu,file, t,x,y,z
-    readu,file, dx,dy,dz
-    found_Lxyz=0
-    found_grid_der=0
+    readu, file, t, x, y, z
+    readu, file, dx, dy, dz
     on_ioerror, missing
-    found_Lxyz=1
-    readu,file, Lx,Ly,Lz
-    readu,file, dx_1,dy_1,dz_1
-    readu,file, dx_tilde,dy_tilde,dz_tilde
+    readu, file, Lx, Ly, Lz
+    found_Lxyz = 1
+    readu, file, dx_1, dy_1, dz_1
+    readu, file, dx_tilde, dy_tilde, dz_tilde
+    found_grid_der = 1
   endif else begin
-    readu,file, t,xloc,yloc,zloc
-    if (procdim.ipy eq 0 and procdim.ipz eq 0) then begin
+    readu, file, t, xloc, yloc, zloc
+    if ((procdim.ipy eq 0) and (procdim.ipz eq 0)) then begin
     ;
     ;  Don't overwrite ghost zones of processor to the left (and
     ;  accordingly in y and z direction makes a difference on the
@@ -292,24 +305,21 @@ for i=0,ncpus-1 do begin
       z[i0z:i1z] = zloc[i0zloc:i1zloc]
     endif
 
-    readu,file, dx,dy,dz
-    found_Lxyz=0
-    found_grid_der=0
+    readu, file, dx, dy, dz
     on_ioerror, missing
-    found_Lxyz=1
-    readu,file, Lx,Ly,Lz
+    readu, file, Lx, Ly, Lz
+    found_Lxyz = 1
 
-    readu,file,xloc,yloc,zloc
+    readu, file, xloc, yloc, zloc
     if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
     if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
     if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
-
-    readu,file,xloc,yloc,zloc
+    readu, file, xloc, yloc, zloc
     if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
     if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
     if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
+    found_grid_der = 1
   endelse
-  found_grid_der=1
 
 missing:
   on_ioerror, Null
@@ -321,65 +331,63 @@ free_lun,file
 ;
   end
 ;
-;  Check for degenerated case.
+;  Add missing parameters for backwards compatibility.
 ;
-if (ldegenerated[0]) then dx_1[*] = 1.0/dx
-if (ldegenerated[1]) then dy_1[*] = 1.0/dy
-if (ldegenerated[2]) then dz_1[*] = 1.0/dz
+if (not keyword_set (found_Lxyz)) then begin
+  Lx = param.xyz0[0]
+  Ly = param.xyz0[1]
+  Lz = param.xyz0[2]
+  found_Lxyz = 1
+end
+;
+if (not keyword_set (found_grid_der)) then begin
+  if (not any (ldegenerated)) then message, "WARNING: no grid derivatives - please update your run!", /info
+  ; replacements for degenerated cases
+  if (ldegenerated[0]) then dx_1[*] = 1.0 / dx
+  if (ldegenerated[1]) then dy_1[*] = 1.0 / dy
+  if (ldegenerated[2]) then dz_1[*] = 1.0 / dz
+  if (ldegenerated[0]) then dx_tilde[*] = -0.0
+  if (ldegenerated[1]) then dy_tilde[*] = -0.0
+  if (ldegenerated[2]) then dz_tilde[*] = -0.0
+end
 ;
 ;  Trim ghost zones of coordinate arrays.
 ;
-if (keyword_set(trimxyz)) then begin
-  x=x[l1:l2]
-  y=y[m1:m2]
-  z=z[n1:n2]
-  dx_1=dx_1[l1:l2]
-  dy_1=dy_1[m1:m2]
-  dz_1=dz_1[n1:n2]
-  dx_tilde=dx_tilde[l1:l2]
-  dy_tilde=dy_tilde[m1:m2]
-  dz_tilde=dz_tilde[n1:n2]
+if (keyword_set (trimxyz)) then begin
+  x = x[l1:l2]
+  y = y[m1:m2]
+  z = z[n1:n2]
+  dx_1 = dx_1[l1:l2]
+  dy_1 = dy_1[m1:m2]
+  dz_1 = dz_1[n1:n2]
+  dx_tilde = dx_tilde[l1:l2]
+  dy_tilde = dy_tilde[m1:m2]
+  dz_tilde = dz_tilde[n1:n2]
 endif
+;
+;  Construct box origin.
+;
+if (keyword_set (trimxyz)) then begin
+  Ox = x[0] - lperi[0] * 0.5 / dx_1[0]
+  Oy = y[0] - lperi[1] * 0.5 / dy_1[0]
+  Oz = z[0] - lperi[2] * 0.5 / dz_1[0]
+end else begin
+  Ox = x[nghostx] - lperi[0] * 0.5 / dx_1[nghostx]
+  Oy = y[nghosty] - lperi[1] * 0.5 / dy_1[nghosty]
+  Oz = z[nghostz] - lperi[2] * 0.5 / dz_1[nghostz]
+end
 ;
 ;  Build structure of all the variables
 ;
-if (found_Lxyz and found_grid_der) then begin
-  if (keyword_set(trimxyz)) then begin
-    Ox = x[0] - lperi[0] * 0.5 / dx_1[0]
-    Oy = y[0] - lperi[1] * 0.5 / dy_1[0]
-    Oz = z[0] - lperi[2] * 0.5 / dz_1[0]
-  endif else begin
-    Ox = x[nghostx] - lperi[0] * 0.5 / dx_1[nghostx]
-    Oy = y[nghosty] - lperi[1] * 0.5 / dy_1[nghosty]
-    Oz = z[nghostz] - lperi[2] * 0.5 / dz_1[nghostz]
-  endelse
-  object = create_struct(name="pc_read_grid_" + $
-      str((size(x))[1]) + '_' + $
-      str((size(y))[1]) + '_' + $
-      str((size(z))[1]), $
-      ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
-       'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
-       'lequidist','lperi','ldegenerated'], $
-      t,x,y,z,dx,dy,dz,Ox,Oy,Oz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
-        lequidist,lperi,ldegenerated)
-endif else if (found_Lxyz) then begin
-  object = create_struct(name="pc_read_grid_" + $
-      str((size(x))[1]) + '_' + $
-      str((size(y))[1]) + '_' + $
-      str((size(z))[1]), $
-      ['t','x','y','z','dx','dy','dz','Lx','Ly','Lz'], $
-      t,x,y,z,dx,dy,dz,Lx,Ly,Lz)
-  dx_1=zero  & dy_1=zero  & dz_1=zero
-  dx_tilde=zero & dy_tilde=zero & dz_tilde=zero
-endif else if (found_grid_der) then begin
-  object = create_struct(name="pc_read_grid_" + $
-      str((size(x))[1]) + '_' + $
-      str((size(y))[1]) + '_' + $
-      str((size(z))[1]), $
-      ['t','x','y','z','dx','dy','dz','dx_1','dy_1','dz_1', $
-       'dx_tilde','dy_tilde','dz_tilde'], $
-      t,x,y,z,dx,dy,dz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
-endif
+object = create_struct(name="pc_read_grid_" + $
+    str((size(x))[1]) + '_' + $
+    str((size(y))[1]) + '_' + $
+    str((size(z))[1]), $
+    ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
+     'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
+     'lequidist','lperi','ldegenerated'], $
+    t,x,y,z,dx,dy,dz,Ox,Oy,Oz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
+      lequidist,lperi,ldegenerated)
 ;
 ; If requested print a summary
 ;
