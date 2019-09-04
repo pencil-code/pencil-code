@@ -54,6 +54,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
   if (file_test (datadir+'/grid.h5')) then begin
     ; HDF5
+    if (size (param, /type) eq 0) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET
     if (size (dim, /type) eq 0) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
     start = [ 0, 0, 0 ]
     count = [ dim.mx, dim.my, dim.mz ]
@@ -63,6 +64,15 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     Lx = pc_read ('grid/Lx', file='grid.h5', datadir=datadir)
     Ly = pc_read ('grid/Ly')
     Lz = pc_read ('grid/Lz')
+    if (h5_contains ('grid/Ox')) then begin
+      Ox = pc_read ('grid/Ox')
+      Oy = pc_read ('grid/Oy')
+      Oz = pc_read ('grid/Oz')
+    end else begin
+      Ox = param.xyz0[0]
+      Oy = param.xyz0[1]
+      Oz = param.xyz0[2]
+    end
     x = pc_read ('grid/x', start=start[0], count=count[0])
     y = pc_read ('grid/y', start=start[1], count=count[1])
     z = pc_read ('grid/z', start=start[2], count=count[2])
@@ -96,7 +106,6 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     nghosty = dim.nghosty
     nghostz = dim.nghostz
 
-    if (size (param, /type) eq 0) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET
     lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
     lperi = (param.lperi ne 0)
     ldegenerated = ([ nx, ny, nz ] eq 1)
