@@ -263,13 +263,13 @@ class DataCube(object):
                 if param.lcollective_io:
                     # A collective IO strategy is being used
                     procdim = dim
-                else:
-                    procdim.mx = dim.mx
-                    procdim.my = dim.my
-                    procdim.nx = dim.nx
-                    procdim.ny = dim.ny
-                    procdim.ipx = dim.ipx
-                    procdim.ipy = dim.ipy
+#                else:
+#                    procdim.mx = dim.mx
+#                    procdim.my = dim.my
+#                    procdim.nx = dim.nx
+#                    procdim.ny = dim.ny
+#                    procdim.ipx = dim.ipx
+#                    procdim.ipy = dim.ipy
 
                 mxloc = procdim.mx
                 myloc = procdim.my
