@@ -5,8 +5,8 @@ pro pc_write_pstalk, obj, datadir=datadir, dim=dim, quiet=quiet
 	datadir = pc_get_datadir (datadir)
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 
-	num_files = n_elements (data.t)
-	num_particles = n_elements (data.ipar)
+	num_files = n_elements (obj.t)
+	num_particles = n_elements (obj.ipar)
 	num_procs = dim.nprocx * dim.nprocy * dim.nprocz
 	distribution = replicate (num_particles / num_procs, num_procs)
 	if (num_procs ge 2) then distribution[num_procs-1] += num_particles - total (distribution)
