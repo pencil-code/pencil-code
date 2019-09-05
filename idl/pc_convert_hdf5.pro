@@ -60,7 +60,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		for pos = 0, num_files-1 do begin
 			varfile = varfiles[pos]
 			if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
-			pc_read_pvar, obj=data, varfile=varfile, datadir=datadir
+			pc_read_pvar, obj=data, varfile=varfile, datadir=datadir, quiet=quiet
 			pc_write_pvar, varfile, data, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param
 		end
 		if (keyword_set (delete)) then file_delete, datadir+'/*proc*/'+varfile
@@ -77,7 +77,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		for pos = 0, num_files-1 do begin
 			varfile = varfiles[pos]
 			if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
-			pc_read_qvar, obj=data, varfile=varfile, datadir=datadir
+			pc_read_qvar, obj=data, varfile=varfile, datadir=datadir, quiet=quiet
 			pc_write_qvar, varfile, data, datadir=datadir
 		end
 		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
@@ -86,7 +86,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	; stalker particle snapshots
 	varfile = 'particles_stalker.dat'
 	if ((keyword_set (old) or keyword_set (all)) and file_test (procdir+varfile)) then begin
-		pc_read_pstalk, obj=data, datadir=datadir
+		pc_read_pstalk, obj=data, datadir=datadir, quiet=quiet
 		num_files = n_elements (data.t)
 		num_particles = n_elements (data.ipar)
 		num_procs = dim.nprocx * dim.nprocy * dim.nprocz
@@ -172,7 +172,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	; time series
 	varfile = datadir+'/time_series.dat'
 	if (file_test (varfile)) then begin
-		pc_read_ts, obj=obj, datadir=datadir, it=iterations, time=time, dt=dt, num=num_labels, labels=labels
+		pc_read_ts, obj=obj, datadir=datadir, it=iterations, time=time, dt=dt, num=num_labels, labels=labels, quiet=quiet
 		h5_open_file, datadir+'/time_series.h5', /write, /truncate
 		num_iterations = n_elements (iterations)
 		for pos = 0, num_labels-1 do begin
@@ -276,7 +276,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	; phi-z averages
 	varfile = datadir+'/phizaverages.dat'
 	if (file_test (varfile)) then begin
-		pc_read_phizaver, obj=data, datadir=datadir
+		pc_read_phizaver, obj=data, datadir=datadir, quiet=quiet
 		num_files = n_elements (data.t)
 		h5_open_file, datadir+'/averages/phi_z.h5', /write, /truncate
 		labels = strlowcase (tag_names (data))
@@ -304,7 +304,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	for aver = 0, num_aver-1 do begin
 		varfile = datadir+'/'+averages[aver]+'averages.dat'
 		if (not file_test (varfile)) then continue
-		pc_read_1d_aver, directions[aver], obj=data, datadir=datadir, dim=dim, grid=grid
+		pc_read_1d_aver, directions[aver], obj=data, datadir=datadir, dim=dim, grid=grid, quiet=quiet
 		num_files = n_elements (data.t)
 		h5_open_file, datadir+'/averages/'+averages[aver]+'.h5', /write, /truncate
 		labels = strlowcase (tag_names (data))
@@ -331,7 +331,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		varfile = procdir+averages[aver]+'averages.dat'
 		if (not file_test (varfile)) then continue
 		varfile = strmid (varfile, strlen (procdir))
-		pc_read_2d_aver, averages[aver], obj=data, datadir=datadir, dim=dim, grid=grid, /quiet
+		pc_read_2d_aver, averages[aver], obj=data, datadir=datadir, dim=dim, grid=grid, quiet=quiet
 		num_files = n_elements (data.t)
 		h5_open_file, datadir+'/averages/'+averages[aver]+'.h5', /write, /truncate
 		labels = strlowcase (tag_names (data))
@@ -367,10 +367,10 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		for file = 0, num_files-1 do begin
 			varfile = varfiles[file]
 			if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
-			pc_read_global, obj=data, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=start_param, varcontent=tavg_vc, /quiet
+			pc_read_global, obj=data, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=start_param, varcontent=tavg_vc, quiet=quiet
 			if (varfile eq 'timeavg.dat') then begin
 				h5_file = 'timeavg.h5'
-				pc_read_var_time, time=time, datadir=datadir, param=start_param
+				pc_read_var_time, time=time, datadir=datadir, param=start_param, quiet=quiet
 			end else begin
 				h5_file = varfile+'.h5'
 				time = times[long (strmid (varfile, 4)) - 1]
