@@ -30,7 +30,7 @@ pro pc_write_global, varfile, obj, time=time, group=group, datadir=datadir, dim=
 			h5_write, group+'/global_'+label, obj.(pos)
 		end
 	end
-	h5_write, 'time', time
+	if (size (time, /type) eq 0) then h5_write, 'time', time
 	h5_close_file
 
 end
