@@ -36,6 +36,9 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 	h5_write, 'time', time
 	h5_close_file
 
+	; update list file
+	list_file = datadir+'/averages/tavgN.list'
+
 	if (keyword_set (truncate_list)) then begin
 		file_delete, list_file, /allow_nonexistent
 		lists = file_search (datadir+'/*proc*/'+'tavgN.list')
@@ -43,7 +46,6 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 	end
 
 	if (keyword_set (append_list) and (filename ne 'timeavg.h5')) then begin
-		list_file = datadir+'/averages/tavgN.list'
 		openw, lun, list_file, /get_lun, /append
 		printf, lun, filename
 		close, lun

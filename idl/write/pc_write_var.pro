@@ -78,6 +78,9 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 	pc_write_grid, grid=grid, filename='allprocs/'+filename, /append, datadir=datadir, dim=dim, unit=unit, start_param=start_param, quiet=quiet
 	h5_close_file
 
+	; update list file
+	list_file = datadir+'/allprocs/varN.list'
+
 	if (keyword_set (truncate_list)) then begin
 		file_delete, list_file, /allow_nonexistent
 		lists = file_search (datadir+'/*proc*/'+'varN.list')
@@ -85,7 +88,6 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 	end
 
 	if (keyword_set (append_list) and (filename ne 'var.h5')) then begin
-		list_file = datadir+'/allprocs/varN.list'
 		openw, lun, list_file, /get_lun, /append
 		printf, lun, filename
 		close, lun
