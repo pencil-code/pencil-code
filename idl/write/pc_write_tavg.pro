@@ -1,6 +1,6 @@
 ; Writes a time-averages snapshot in the HDF5 format
 
-pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_list=truncate_list, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
+pro pc_write_tavg, varfile, obj, time=time, group=group, append_list=append_list, truncate_list=truncate_list, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 
 	datadir = pc_get_datadir (datadir)
 	default, group, 'data'
@@ -11,6 +11,7 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 	if (not file_test (datadir+'/averages', /directory)) then file_mkdir, datadir+'/averages'
 	if (strmid (filename, strlen (filename)-4) eq '.dat') then filename = strmid (filename, 0, strlen (filename)-4)
 	if (strmid (filename, strlen (filename)-3) ne '.h5') then filename += '.h5'
+
 	h5_open_file, datadir+'/averages/'+filename, /write, /truncate
 	labels = strlowcase (tag_names (obj))
 	num_labels = n_elements (labels)
@@ -33,7 +34,8 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 			h5_write, group+'/'+label, obj.(pos)
 		end
 	end
-	h5_write, 'time', time
+
+	if (size (time, /type) ne 0) then h5_write, 'time', time
 	h5_close_file
 
 	; update list file
