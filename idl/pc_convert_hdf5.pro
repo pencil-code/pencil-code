@@ -228,6 +228,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		num_files = n_elements (varfiles)
 		last = ''
 		last_field = ''
+		indices = round (reform ((read_ascii (datadir+'/slice_position.dat')).field1[1,*]))
 		for pos = 0, num_files-1 do begin
 			varfile = varfiles[pos]
 			if ((varfile eq last) or (varfile eq 'position.dat')) then continue
@@ -239,13 +240,14 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 				num_steps = n_elements (obj.t)
 			end
 			case (plane) of
-				'xy': begin & index = run_param.iz & coord = grid.z[index-1] & end
-				'xy2': begin & index = run_param.iz2 & coord = grid.z[index-1] & end
-				'xy3': begin & index = run_param.iz3 & coord = grid.z[index-1] & end
-				'xy4': begin & index = run_param.iz4 & coord = grid.z[index-1] & end
-				'xz': begin & index = run_param.iy & coord = grid.y[index-1] & end
-				'yz': begin & index = run_param.ix & coord = grid.x[index-1] & end
-				else: begin & message, 'Unknown plane "'+plane+'"!' & end
+				'xy' : begin & index = indices[0] & coord = grid.z[index-1] & end
+				'xy2': begin & index = indices[1] & coord = grid.z[index-1] & end
+				'xy3': begin & index = indices[2] & coord = grid.z[index-1] & end
+				'xy4': begin & index = indices[3] & coord = grid.z[index-1] & end
+				'xz' : begin & index = indices[4] & coord = grid.y[index-1] & end
+				'xz2': begin & index = indices[5] & coord = grid.y[index-1] & end
+				'yz' : begin & index = indices[6] & coord = grid.x[index-1] & end
+				else : begin & message, 'Unknown plane "'+plane+'"!' & end
 			end
 			last_field = field
 			if (not file_test (datadir+'/slices', /directory)) then file_mkdir, datadir+'/slices'
