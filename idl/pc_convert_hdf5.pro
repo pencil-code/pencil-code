@@ -421,7 +421,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		file_delete, datadir+'/allprocs/grid.dat', /allow_nonexistent
 		file_delete, datadir+'/allprocs/dim.dat', /allow_nonexistent
 		file_delete, datadir+'/dim.dat', /allow_nonexistent
-		file_delete, datadir+'/reduced', /allow_nonexistent, /recursive
+		;file_delete, datadir+'/reduced', /allow_nonexistent, /recursive
 	end
 
 END
