@@ -375,42 +375,8 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 				h5_file = varfile+'.h5'
 				time = times[long (strmid (varfile, 4)) - 1]
 			end
-			h5_open_file, datadir+'/averages/'+h5_file, /write, /truncate
-			labels = strlowcase (tag_names (data))
-			num_labels = n_elements (labels)
-			h5_create_group, 'data'
-			for pos = 0, num_labels-1 do begin
-				label = labels[pos]
-				dims = size (data.(pos), /dimensions)
-				num_dims = n_elements (dims)
-				if (num_dims eq 4) then begin
-					if (dims[3] eq 3) then begin
-						label = strmid (label, 0, strlen (label)-1)
-						components = [ 'x', 'y', 'z' ]
-					end else begin
-						components = str (lindgen (dims[3]+1))
-					end
-					for comp = 0, dims[3]-1 do begin
-						h5_write, 'data/'+label+components[comp], reform (data.(pos)[*,*,*,comp], dims[0:2])
-					end
-				end else begin
-					h5_write, 'data/'+label, data.(pos)
-				end
-			end
-			h5_write, 'time', time
-			h5_close_file
-			if (keyword_set (delete) and (varfile ne 'timeavg.dat')) then begin
-				list_file = datadir+'/averages/tavgN.list'
-				if (varfile eq 'TAVG1') then begin
-					file_delete, list_file, /allow_nonexistent
-					list = file_search (datadir+'/*proc*/'+'tavgN.list')
-					if (keyword_set (list)) then file_delete, list
-				end
-				openw, lun, list_file, /get_lun, /append
-				printf, lun, varfile
-				close, lun
-				free_lun, lun
-			end
+			truncate = keyword_set (delete) and (varfile eq 'TAVG1')
+			pc_write_tavg, h5_file, data, append=delete, truncate=truncate, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 		end
 	end
