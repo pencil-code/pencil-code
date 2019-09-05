@@ -33,21 +33,10 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	for pos = 0, num_files-1 do begin
 		varfile = varfiles[pos]
 		if ((varfile eq '') or (strmid (varfile, strlen (varfile)-3) eq '.h5')) then continue
-		pc_read_var_raw, obj=data, tags=tags, varfile=varfile, time=time, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param
-		pc_write_var, varfile, data, tags=tags, time=time, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param
+		pc_read_var_raw, obj=data, tags=tags, varfile=varfile, time=time, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param, quiet=quiet
+		truncate = keyword_set (delete) and (varfile eq 'VAR0')
+		pc_write_var, varfile, data, tags=tags, time=time, append=delete, truncate=truncate, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param, quiet=quiet
 		varfile = varfiles[pos]
-		if (keyword_set (delete) and (varfile ne 'var.dat')) then begin
-			list_file = datadir+'/allprocs/varN.list'
-			if (varfile eq 'VAR0') then begin
-				file_delete, list_file, /allow_nonexistent
-				list = file_search (datadir+'/*proc*/'+'varN.list')
-				if (keyword_set (list)) then file_delete, list
-			end
-			openw, lun, list_file, /get_lun, /append
-			printf, lun, varfile
-			close, lun
-			free_lun, lun
-		end
 		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
