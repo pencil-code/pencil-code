@@ -46,8 +46,7 @@ module InitialCondition
   character (len=50) :: inFilePrefix='out'
 !
   namelist /initial_condition_pars/ &
-    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,&
-    B0
+    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,B0
 !
   contains
 !***********************************************************************
@@ -128,7 +127,7 @@ module InitialCondition
 !        
     do m=m1,m2
         do n=n1,n2
-            f(:,m,n,iay) = B0*x
+            f(l1:l2,m,n,iaa+1) = B0*x(l1:l2)/2
         enddo
     enddo
 !
