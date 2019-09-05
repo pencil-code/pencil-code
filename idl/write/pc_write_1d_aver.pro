@@ -9,7 +9,7 @@ pro pc_write_1d_aver, varfile, obj, datadir=datadir, dim=dim, grid=grid, start_p
 	if (not file_test (datadir+'/averages', /directory)) then file_mkdir, datadir+'/averages'
 
 	num_files = n_elements (obj.t)
-	h5_open_file, datadir+'/averages/'+averages[aver]+'.h5', /write, /truncate
+	h5_open_file, datadir+'/averages/'+varfile, /write, /truncate
 	labels = strlowcase (tag_names (obj))
 	num_labels = n_elements (labels)
 	for file = 0, num_files-1 do begin
