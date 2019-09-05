@@ -419,6 +419,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (keyword_set (delete)) then begin
 		if (file_test (datadir+'/proc0')) then file_delete, file_search (datadir+'/proc[0-9]*'), /recursive
 		file_delete, datadir+'/allprocs/grid.dat', /allow_nonexistent
+		file_delete, datadir+'/allprocs/dim.dat', /allow_nonexistent
 		file_delete, datadir+'/dim.dat', /allow_nonexistent
 		file_delete, datadir+'/reduced', /allow_nonexistent, /recursive
 	end
