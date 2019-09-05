@@ -43,31 +43,9 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	; global variables
 	varfile = procdir+'global.dat'
 	if (file_test (varfile)) then begin
-		pc_read_var_time, time=time, datadir=datadir, param=start_param
-		pc_read_global, obj=data, datadir=datadir, dim=dim, grid=grid, param=start_param
-		labels = strlowcase (tag_names (data))
-		num_labels = n_elements (labels)
-		h5_open_file, datadir+'/global.h5', /write, /truncate
-		h5_create_group, 'data'
-		for pos = 0, num_labels-1 do begin
-			label = labels[pos]
-			dims = size (data.(pos), /dimensions)
-			num_dims = n_elements (dims)
-			if (num_dims eq 4) then begin
-				if (dims[3] eq 3) then begin
-					components = [ 'x', 'y', 'z' ]
-				end else begin
-					components = str (lindgen (dims[3]+1))
-				end
-				for comp = 0, dims[3]-1 do begin
-					h5_write, 'data/global_'+label+components[comp], reform (data.(pos)[*,*,*,comp], dims[0:2])
-				end
-			end else begin
-				h5_write, 'data/global_'+label, data.(pos)
-			end
-		end
-		h5_write, 'time', time
-		h5_close_file
+		pc_read_var_time, time=time, datadir=datadir, param=start_param, quiet=quiet
+		pc_read_global, obj=data, datadir=datadir, dim=dim, grid=grid, param=start_param, quiet=quiet
+		pc_write_global, 'global.h5', data, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 		if (keyword_set (delete)) then file_delete, varfile
 	end
 
