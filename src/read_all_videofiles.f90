@@ -28,6 +28,12 @@ program rvid_box
       integer :: ipx1 = -1
       integer :: ipy1 = -1, ipy2 = -1
       integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
+      integer :: pos_x1 = -1
+      integer :: pos_y1 = -1, pos_y2 = -1
+      integer :: pos_z1 = -1, pos_z2 = -1, pos_z3 = -1, pos_z4 = -1
+      integer :: ind_x1 = -1
+      integer :: ind_y1 = -1, ind_y2 = -1
+      integer :: ind_z1 = -1, ind_z2 = -1, ind_z3 = -1, ind_z4 = -1
       integer :: lun_pos=33, lun_video=34, i
       integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
@@ -99,33 +105,61 @@ program rvid_box
               STOP 1
             endif
             open(lun_pos,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
-            read(lun_pos,'(l5,i5)') lread_slice_xy,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_xy2,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_xy3,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_xy4,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_xz,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_xz2,idummy
-            read(lun_pos,'(l5,i5)') lread_slice_yz,idummy
+            read(lun_pos,'(l5,i5)') lread_slice_xy, ind_z1
+            read(lun_pos,'(l5,i5)') lread_slice_xy2, ind_z2
+            read(lun_pos,'(l5,i5)') lread_slice_xy3, ind_z4
+            read(lun_pos,'(l5,i5)') lread_slice_xy4, ind_z4
+            read(lun_pos,'(l5,i5)') lread_slice_xz, ind_y1
+            read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
+            read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
             close(lun_pos)
-            if (lread_slice_xy) ipz1=ipz
-            if (lread_slice_xy2) ipz2=ipz
-            if (lread_slice_xy3) ipz3=ipz
-            if (lread_slice_xy4) ipz4=ipz
-            if (lread_slice_xz) ipy1=ipy
-            if (lread_slice_xz2) ipy2=ipy
-            if (lread_slice_yz) ipx1=ipx
+            if (lread_slice_xy) then
+              ipz1 = ipz
+              ind_z1 = ind_z1 + ipz * nz
+              if (pos_z1 < ind_z1) pos_z1 = ind_z1
+            endif
+            if (lread_slice_xy2) then
+              ipz2 = ipz
+              ind_z2 = ind_z2 + ipz * nz
+              if (pos_z2 < ind_z2) pos_z2 = ind_z2
+            endif
+            if (lread_slice_xy3) then
+              ipz3 = ipz
+              ind_z3 = ind_z3 + ipz * nz
+              if (pos_z3 < ind_z3) pos_z3 = ind_z3
+            endif
+            if (lread_slice_xy4) then
+              ipz4 = ipz
+              ind_z4 = ind_z4 + ipz * nz
+              if (pos_z4 < ind_z4) pos_z4 = ind_z4
+            endif
+            if (lread_slice_xz) then
+              ipy1 = ipy
+              ind_y1 = ind_y1 + ipy * ny
+              if (pos_y1 < ind_y1) pos_y1 = ind_y1
+            endif
+            if (lread_slice_xz2) then
+              ipy2 = ipy
+              ind_y2 = ind_y2 + ipy * ny
+              if (pos_y2 < ind_y2) pos_y2 = ind_y2
+            endif
+            if (lread_slice_yz) then
+              ipx1 = ipx
+              ind_x1 = ind_x1 + ipx * nx
+              if (pos_x1 < ind_x1) pos_x1 = ind_x1
+            endif
           enddo
         enddo
       enddo
 !
       open (lun_pos,file=trim(datadir)//'/slice_position.dat',form='formatted',STATUS='replace')
-      write(lun_pos,*) trufal(min(ipz1,0))
-      write(lun_pos,*) trufal(min(ipz2,0))
-      write(lun_pos,*) trufal(min(ipz3,0))
-      write(lun_pos,*) trufal(min(ipz4,0))
-      write(lun_pos,*) trufal(min(ipy1,0))
-      write(lun_pos,*) trufal(min(ipy2,0))
-      write(lun_pos,*) trufal(min(ipx1,0))
+      write(lun_pos,*) trufal(min(ipz1,0)), pos_z1
+      write(lun_pos,*) trufal(min(ipz2,0)), pos_z2
+      write(lun_pos,*) trufal(min(ipz3,0)), pos_z3
+      write(lun_pos,*) trufal(min(ipz4,0)), pos_z4
+      write(lun_pos,*) trufal(min(ipy1,0)), pos_y1
+      write(lun_pos,*) trufal(min(ipy2,0)), pos_y2
+      write(lun_pos,*) trufal(min(ipx1,0)), pos_x1
       close(lun_pos)
 !
 !  Need to reset     MR: Why?
