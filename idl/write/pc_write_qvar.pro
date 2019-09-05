@@ -4,6 +4,7 @@ pro pc_write_qvar, varfile, obj, tags=tags, group=group, time=time, datadir=data
 
 	datadir = pc_get_datadir (datadir)
 	default, group, 'points'
+	filename = varfile
 
 	; case-insensitve replacements for dataset names
 	replace = { t:'', xx:'_', vv:'v_' }
@@ -11,9 +12,9 @@ pro pc_write_qvar, varfile, obj, tags=tags, group=group, time=time, datadir=data
 	num_replace = n_elements (search)
 
 	if (strmid (group, strlen (group)-1) eq '/') then group = strmid (group, 0, strlen (group)-1)
-	if (strmid (varfile, strlen (varfile)-4) eq '.dat') then varfile = strmid (varfile, 0, strlen (varfile)-4)
-	if (strmid (varfile, strlen (varfile)-3) ne '.h5') then varfile += '.h5'
-	h5_open_file, datadir+'/allprocs/'+varfile, /write, /truncate
+	if (strmid (filename, strlen (filename)-4) eq '.dat') then filename = strmid (filename, 0, strlen (filename)-4)
+	if (strmid (filename, strlen (filename)-3) ne '.h5') then filename += '.h5'
+	h5_open_file, datadir+'/allprocs/'+filename, /write, /truncate
 	h5_write, 'number', n_elements (obj.mass)
 	if (keyword_set (group)) then h5_create_group, group
 
