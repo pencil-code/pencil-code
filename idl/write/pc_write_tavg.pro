@@ -6,10 +6,12 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 	default, group, 'data'
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
+	filename = varfile
 
 	if (not file_test (datadir+'/averages', /directory)) then file_mkdir, datadir+'/averages'
-
-	h5_open_file, datadir+'/averages/'+varfile, /write, /truncate
+	if (strmid (filename, strlen (filename)-4) eq '.dat') then filename = strmid (filename, 0, strlen (filename)-4)
+	if (strmid (filename, strlen (filename)-3) ne '.h5') then filename += '.h5'
+	h5_open_file, datadir+'/averages/'+filename, /write, /truncate
 	labels = strlowcase (tag_names (obj))
 	num_labels = n_elements (labels)
 	h5_create_group, group
@@ -40,10 +42,10 @@ pro pc_write_tavg, varfile, obj, group=group, append_list=append_list, truncate_
 		if (keyword_set (lists)) then file_delete, lists
 	end
 
-	if (keyword_set (append_list) and (varfile ne 'timeavg.dat')) then begin
+	if (keyword_set (append_list) and (filename ne 'timeavg.h5')) then begin
 		list_file = datadir+'/averages/tavgN.list'
 		openw, lun, list_file, /get_lun, /append
-		printf, lun, varfile
+		printf, lun, filename
 		close, lun
 		free_lun, lun
 	end
