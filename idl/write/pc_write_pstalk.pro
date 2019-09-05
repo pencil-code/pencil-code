@@ -12,7 +12,8 @@ pro pc_write_pstalk, obj, datadir=datadir, dim=dim, quiet=quiet
 	if (num_procs ge 2) then distribution[num_procs-1] += num_particles - total (distribution)
 
 	for pos = 0, num_files-1 do begin
-		h5_open_file, datadir+'/allprocs/PSTALK'+str(pos)+'.h5', /write, /truncate
+		varfile = 'PSTALK'+str (pos)+'.h5'
+		h5_open_file, datadir+'/allprocs/'+varfile, /write, /truncate
 		h5_write, 'time', obj.t[pos]
 
 		h5_create_group, 'proc'
