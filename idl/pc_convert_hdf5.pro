@@ -87,32 +87,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	varfile = 'particles_stalker.dat'
 	if ((keyword_set (old) or keyword_set (all)) and file_test (procdir+varfile)) then begin
 		pc_read_pstalk, obj=data, datadir=datadir, quiet=quiet
-		num_files = n_elements (data.t)
-		num_particles = n_elements (data.ipar)
-		num_procs = dim.nprocx * dim.nprocy * dim.nprocz
-		distribution = replicate (num_particles / num_procs, num_procs)
-		if (num_procs ge 2) then distribution[num_procs-1] += num_particles - total (distribution)
-		for pos = 0, num_files-1 do begin
-			h5_open_file, datadir+'/allprocs/PSTALK'+str(pos)+'.h5', /write, /truncate
-			h5_write, 'time', data.t[pos]
-			h5_create_group, 'proc'
-			h5_write, 'proc/distribution', distribution
-			h5_create_group, 'stalker'
-			h5_write, 'stalker/ID', data.ipar
-			h5_write, 'stalker/ap', reform (data.ap[*,pos])
-			h5_write, 'stalker/npswarm', reform (data.npswarm[*,pos])
-			h5_write, 'stalker/rho', reform (data.rho[*,pos])
-			h5_write, 'stalker/ux', reform (data.ux[*,pos])
-			h5_write, 'stalker/uy', reform (data.uy[*,pos])
-			h5_write, 'stalker/uz', reform (data.uz[*,pos])
-			h5_write, 'stalker/vpx', reform (data.vpx[*,pos])
-			h5_write, 'stalker/vpy', reform (data.vpy[*,pos])
-			h5_write, 'stalker/vpz', reform (data.vpz[*,pos])
-			h5_write, 'stalker/xp', reform (data.xp[*,pos])
-			h5_write, 'stalker/yp', reform (data.yp[*,pos])
-			h5_write, 'stalker/zp', reform (data.zp[*,pos])
-			h5_close_file
-		end
+		pc_write_pstalk, data, datadir=datadir, dim=dim, quiet=quiet
 		if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 	end
 
