@@ -7,6 +7,7 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
+	filename = varfile
 
 	; case-insensitve replacements for dataset names
 	replace = { lntt:'lnTT', tt:'TT' }
@@ -16,9 +17,9 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 	is_structure = (size (obj, /type) eq 8)
 
 	if (strmid (group, strlen (group)-1) eq '/') then group = strmid (group, 0, strlen (group)-1)
-	if (strmid (varfile, strlen (varfile)-4) eq '.dat') then varfile = strmid (varfile, 0, strlen (varfile)-4)
-	if (strmid (varfile, strlen (varfile)-3) ne '.h5') then varfile += '.h5'
-	h5_open_file, datadir+'/allprocs/'+varfile, /write, /truncate
+	if (strmid (filename, strlen (filename)-4) eq '.dat') then filename = strmid (filename, 0, strlen (filename)-4)
+	if (strmid (filename, strlen (filename)-3) ne '.h5') then filename += '.h5'
+	h5_open_file, datadir+'/allprocs/'+filename, /write, /truncate
 	if (keyword_set (group)) then h5_create_group, group
 
 	if (is_structure) then begin
@@ -76,7 +77,7 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 
 	h5_close_file
 
-	pc_write_grid, grid=grid, filename='allprocs/'+varfile, /append, datadir=datadir, dim=dim, unit=unit, start_param=start_param, quiet=quiet
+	pc_write_grid, grid=grid, filename='allprocs/'+filename, /append, datadir=datadir, dim=dim, unit=unit, start_param=start_param, quiet=quiet
 
 	if (keyword_set (truncate_list)) then begin
 		file_delete, list_file, /allow_nonexistent
@@ -84,10 +85,10 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 		if (keyword_set (lists)) then file_delete, lists
 	end
 
-	if (keyword_set (append_list) and (varfile ne 'var.dat')) then begin
+	if (keyword_set (append_list) and (filename ne 'var.h5')) then begin
 		list_file = datadir+'/allprocs/varN.list'
 		openw, lun, list_file, /get_lun, /append
-		printf, lun, varfile
+		printf, lun, filename
 		close, lun
 		free_lun, lun
 	end
