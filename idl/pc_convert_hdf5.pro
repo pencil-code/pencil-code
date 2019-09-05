@@ -17,6 +17,11 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		procdir = datadir+'/proc0/'
 	end
 
+	; create necessary directories
+	if (not file_test (datadir+'/allprocs', /directory)) then file_mkdir, datadir+'/allprocs'
+	if (not file_test (datadir+'/averages', /directory)) then file_mkdir, datadir+'/averages'
+	if (not file_test (datadir+'/slices', /directory)) then file_mkdir, datadir+'/slices'
+
 	; MHD snapshots
 	varfiles = 'var.dat'
 	if (keyword_set (old) and not keyword_set (all)) then varfiles = 'VAR[0-9]*'
@@ -251,7 +256,6 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 				else : begin & message, 'Unknown plane "'+plane+'"!' & end
 			end
 			last_field = field
-			if (not file_test (datadir+'/slices', /directory)) then file_mkdir, datadir+'/slices'
 			h5_open_file, datadir+'/slices/'+field+'_'+plane+'.h5', /write, /truncate
 			for step = 1, num_steps do begin
 				plane_pos = where (plane eq strlowcase (tag_names (obj)))
