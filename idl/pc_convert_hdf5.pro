@@ -176,7 +176,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		numbers = numbers[sort (numbers)]
 		for file = 0, num_files-1 do begin
 			varfile = varfiles[file]
-			data = pc_read_phiavg (varfile, datadir=datadir, /old_format)
+			data = pc_read_phiaver (varfile, datadir=datadir, /old_format)
 			pc_write_phiavg, data, numbers[file]-1, truncate=(file eq 0), last=(num_files-1), datadir=datadir, dim=dim, run_param=run_param, quiet=quiet
 		end
 		if (keyword_set (delete)) then begin
