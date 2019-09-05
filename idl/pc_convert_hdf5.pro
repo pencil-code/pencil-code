@@ -305,22 +305,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		varfile = datadir+'/'+averages[aver]+'averages.dat'
 		if (not file_test (varfile)) then continue
 		pc_read_1d_aver, directions[aver], obj=data, datadir=datadir, dim=dim, grid=grid, quiet=quiet
-		num_files = n_elements (data.t)
-		h5_open_file, datadir+'/averages/'+averages[aver]+'.h5', /write, /truncate
-		labels = strlowcase (tag_names (data))
-		num_labels = n_elements (labels)
-		for file = 0, num_files-1 do begin
-			group = str (file)
-			h5_create_group, group
-			h5_write, group+'/time', reform (data.t[file])
-			for pos = 0, num_labels-1 do begin
-				label = labels[pos]
-				if (any (label eq [ 't', 'last', 'pos', 'num_quantities', 'labels', 'x', 'y', 'z' ])) then continue
-				h5_write, group+'/'+label, reform (data.(pos)[*,file])
-			end
-		end
-		h5_write, 'last', num_files-1
-		h5_close_file
+		pc_write_1d_aver, averages[aver]+'.h5', data, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 		if (keyword_set (delete)) then file_delete, varfile
 	end
 
