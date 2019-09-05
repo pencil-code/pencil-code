@@ -80,9 +80,8 @@ pro pc_write_pvar, varfile, obj, tags=tags, group=group, time=time, datadir=data
 	h5_write, 'proc/bounds_z', bounds_z
 	h5_write, 'proc/distribution', distribution
 
-	h5_close_file
-
 	pc_write_grid, grid=grid, filename='allprocs/'+filename, /append, datadir=datadir, dim=dim, unit=unit, start_param=start_param, quiet=quiet
+	h5_close_file
 
 end
 

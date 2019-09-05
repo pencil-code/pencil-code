@@ -75,9 +75,8 @@ pro pc_write_var, varfile, obj, tags=tags, group=group, time=time, append_list=a
 
 	if (size (time, /type) ne 0) then h5_write, 'time', time
 
-	h5_close_file
-
 	pc_write_grid, grid=grid, filename='allprocs/'+filename, /append, datadir=datadir, dim=dim, unit=unit, start_param=start_param, quiet=quiet
+	h5_close_file
 
 	if (keyword_set (truncate_list)) then begin
 		file_delete, list_file, /allow_nonexistent

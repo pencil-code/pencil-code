@@ -8,7 +8,7 @@ pro pc_write_grid, grid=grid, filename=filename, append=append, datadir=datadir,
 	if (not keyword_set (grid)) then pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 
-	h5_open_file, datadir+'/'+filename, /write, truncate=(not keyword_set (append))
+	if (not keyword_set (append)) then h5_open_file, datadir+'/'+filename, /write, /truncate
 
 	h5_create_group, 'grid'
 	h5_write, 'grid/Lx', grid.Lx
@@ -65,7 +65,7 @@ pro pc_write_grid, grid=grid, filename=filename, append=append, datadir=datadir,
 	h5_write, 'unit/time', unit.time
 	h5_write, 'unit/velocity', unit.velocity
 
-	h5_close_file
+	if (not keyword_set (append)) then h5_close_file
 
 end
 
