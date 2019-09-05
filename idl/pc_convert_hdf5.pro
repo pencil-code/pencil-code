@@ -249,25 +249,11 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 		numbers = long (strmid (varfiles, strlen (datadir+'/averages/PHIAVG')))
 		varfiles = varfiles[sort (numbers)]
 		numbers = numbers[sort (numbers)]
-		h5_open_file, datadir+'/averages/phi.h5', /write, /truncate
 		for file = 0, num_files-1 do begin
 			varfile = varfiles[file]
 			data = pc_read_phiavg (varfile, datadir=datadir, /old_format)
-			labels = strlowcase (tag_names (data))
-			num_labels = n_elements (labels)
-			group = str (numbers[file]-1)
-			h5_create_group, group
-			h5_write, group+'/time', data.t
-			for pos = 0, num_labels-1 do begin
-				label = labels[pos]
-				if (any (label eq [ 't', 'nvars', 'z', 'labels' ])) then continue
-				h5_write, group+'/'+label, data.(pos)
-			end
+			pc_write_phiavg, data, numbers[file]-1, truncate=(file eq 0), last=(num_files-1), datadir=datadir, dim=dim, run_param=run_param, quiet=quiet
 		end
-		h5_write, 'r', data.rcyl
-		h5_write, 'dr', 2 * run_param.xyz1[0] / dim.nxgrid
-		h5_write, 'last', num_files-1
-		h5_close_file
 		if (keyword_set (delete)) then begin
 			file_delete, file_search (datadir+'/averages/'+[ 'PHIAVG[0-9]*', 'phiavg.files', 'phiavg.list' ])
 		end
