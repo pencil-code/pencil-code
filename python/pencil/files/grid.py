@@ -58,8 +58,8 @@ class Grid(object):
         dz_tilde = N.zeros(dim.mz, dtype=precision)
 
         for directory in procdirs:
-	    if directory != 'allprocs':
-            	proc = int(directory[4:])
+            if directory != 'allprocs':
+                proc = int(directory[4:])
             procdim = read_dim(datadir, proc, down=down)
             if not quiet:
                 #print "reading data from processor %i of %i ..." \ # Python 2
