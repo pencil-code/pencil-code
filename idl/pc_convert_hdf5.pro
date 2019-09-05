@@ -45,7 +45,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 	if (file_test (varfile)) then begin
 		pc_read_var_time, time=time, datadir=datadir, param=start_param, quiet=quiet
 		pc_read_global, obj=data, datadir=datadir, dim=dim, grid=grid, param=start_param, quiet=quiet
-		pc_write_global, 'global.h5', data, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
+		pc_write_global, 'global.h5', data, time=time, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 		if (keyword_set (delete)) then file_delete, varfile
 	end
 
