@@ -1,4 +1,15 @@
 ; Converts all snapshots of a run to the HDF5 format
+;
+; Calling:
+; pc_convert_hdf5 : converts all currently used files ('var.dat', 'pvar.dat', etc.)
+;
+; Optional:
+; /old : converts only old files that currently not used ('VAR0', 'PVAR0', etc.)
+; /all : converts all files, including old ones, see above
+; /delete : deletes the binray files after conversion
+;
+; History:
+; 05-Sep-2019 [PABourdin]: coded, working
 
 pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param, quiet=quiet
 
