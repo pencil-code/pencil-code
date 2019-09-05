@@ -7,7 +7,8 @@ pro pc_write_phiaver, obj, iteration, truncate=truncate, last=last, datadir=data
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, /run_param, quiet=quiet
 
-	h5_open_file, datadir+'/averages/phi.h5', /write, truncate=truncate
+	varfile = 'phi.h5'
+	h5_open_file, datadir+'/averages/'+varfile, /write, truncate=truncate
 
 	labels = strlowcase (tag_names (obj))
 	num_labels = n_elements (labels)

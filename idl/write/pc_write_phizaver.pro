@@ -4,8 +4,9 @@ pro pc_write_phizaver, obj, datadir=datadir, quiet=quiet
 
 	datadir = pc_get_datadir (datadir)
 
+	varfile = 'phi_z.h5'
+	h5_open_file, datadir+'/averages/'+varfile, /write, /truncate
 	num_files = n_elements (obj.t)
-	h5_open_file, datadir+'/averages/phi_z.h5', /write, /truncate
 	labels = strlowcase (tag_names (obj))
 	num_labels = n_elements (labels)
 	for file = 0, num_files-1 do begin
