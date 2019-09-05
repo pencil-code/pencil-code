@@ -241,7 +241,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 				time = times[long (strmid (varfile, 4)) - 1]
 			end
 			truncate = keyword_set (delete) and (varfile eq 'TAVG1')
-			pc_write_tavg, h5_file, data, append=delete, truncate=truncate, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
+			pc_write_tavg, h5_file, data, time=time, append=delete, truncate=truncate, datadir=datadir, dim=dim, grid=grid, start_param=start_param, quiet=quiet
 			if (keyword_set (delete)) then file_delete, file_search (datadir+'/*proc*/'+varfile)
 		end
 	end
