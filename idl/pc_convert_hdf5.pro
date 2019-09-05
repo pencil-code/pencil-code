@@ -1,6 +1,6 @@
 ; Converts all snapshots of a run to the HDF5 format
 
-pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param
+pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, grid=grid, unit=unit, start_param=start_param, run_param=run_param, quiet=quiet
 
 	datadir = pc_get_datadir (datadir)
 
