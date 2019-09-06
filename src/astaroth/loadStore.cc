@@ -15,13 +15,11 @@
 using namespace std;
 
 #include "astaroth.h"
-//#include "submodule/src/core/math_utils.h"
-//#include "../cparam_c.h"
-//#include "../cdata_c.h"
 
 const int mxy=mx*my;
-static int halo_yz_size=0;
+extern int halo_yz_size;
 static AcReal *halo_yz_buffer; 
+extern Node node;
 
 const int BOT=0, TOP=1, TOT=2;
 int halo_widths_x[3]={nghost,nghost,2*nghost};    // bottom and top halo width and sum of them
@@ -64,32 +62,32 @@ void finalLoadStore()
 }
 /****************************************************************************************************************/
 
-void loadOuterFront(AcMesh& mesh)
+void loadOuterFront(AcMesh& mesh, Stream stream)
 {
         int3 src={0,0,0};
         int num_vertices=mxy*halo_widths_z[BOT];
-        acLoadWithOffset(mesh, src, num_vertices);
+        acNodeLoadMeshWithOffset(node, stream, mesh, src, src, num_vertices);
 
 //printf("front:num_vertices= %d \n",num_vertices);
         //!!!cudaHostRegister(mesh, size, cudaHostRegisterDefault);    // time-critical!
 }
 
-void loadOuterBack(AcMesh& mesh)
+void loadOuterBack(AcMesh& mesh, Stream stream)
 {
         int3 src={0,0,m2-halo_widths_z[TOP]};      // index from m2-halo_widths_z[TOP] to m2-1
         int num_vertices=mxy*halo_widths_z[TOP];
-        acLoadWithOffset(mesh, src, num_vertices);
+        acNodeLoadMeshWithOffset(node, stream, mesh, src, src, num_vertices);
 
 //printf("back:num_vertices= %d \n",num_vertices);
         //!!!cudaHostRegister(mesh, size, cudaHostRegisterDefault);    // time-critical!
 }
  
-void loadOuterBot(AcMesh& mesh)
+void loadOuterBot(AcMesh& mesh, Stream stream)
 {
         int3 src={0,0,halo_widths_z[BOT]};
         int num_vertices=mx*halo_widths_y[BOT];
         for (int i=0; i<nz; i++) {
-            acLoadWithOffset(mesh, src, num_vertices);
+            acNodeLoadMeshWithOffset(node, stream, mesh, src, src, num_vertices);
             src.z++;
 
 //printf("back:num_vertices= %d \n",num_vertices);
@@ -97,12 +95,12 @@ void loadOuterBot(AcMesh& mesh)
         }
 }
 
-void loadOuterTop(AcMesh& mesh)
+void loadOuterTop(AcMesh& mesh, Stream stream)
 {
         int3 src={0,my-halo_widths_y[TOP],halo_widths_z[BOT]};
         int num_vertices=mx*halo_widths_y[TOP];
         for (int i=0; i<nz; i++) {
-            acLoadWithOffset(mesh, src, num_vertices);
+            acNodeLoadMeshWithOffset(node, stream, mesh, src, src, num_vertices);
             src.z++;
 
 //printf("back:num_vertices= %d \n",num_vertices);
@@ -110,7 +108,7 @@ void loadOuterTop(AcMesh& mesh)
         }
 }
 
-void loadOuterLeft(AcMesh& mesh)
+void loadOuterLeft(AcMesh& mesh, Stream stream)
 {
     int3 start={0,halo_widths_y[BOT],halo_widths_z[BOT]};
     int3 end={halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1};
@@ -118,7 +116,7 @@ void loadOuterLeft(AcMesh& mesh)
     acLoadYZPlate(start, end, &mesh, halo_yz_buffer);
 }
 
-void loadOuterRight(AcMesh& mesh)
+void loadOuterRight(AcMesh& mesh, Stream stream)
 {
     int3 start={mx-halo_widths_x[TOP],halo_widths_y[BOT],halo_widths_z[BOT]};
     int3 end={mx-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1};

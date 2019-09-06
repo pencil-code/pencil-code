@@ -1,10 +1,16 @@
+<<<<<<< HEAD
 CUSOURCES = #$(wildcard submodule/src/core/*.cu)  
 CCSOURCES = loadStore.cc #submodule/src/standalone/config_loader.cc
+=======
+ACSOURCES = $(wildcard submodule/src/core/*.cu) submodule/src/standalone/config_loader.cc
+ACHEADERS = $(wildcard submodule/*.h) $(wildcard submodule/src/core/kernels/*.cuh)
+CCSOURCES = loadStore.cc 
+>>>>>>> MR: adaptations for use of forcing and concurrency
 MAIN_SRC = gpu_astaroth.cc
 MAIN_OBJ = gpu_astaroth.o
 
-OBJECTS = $(CUSOURCES:.cu=.o) $(CCSOURCES:.cc=.o) 
-
+OBJECTS = $(CCSOURCES:.cc=.o) 
+ACOBJECTS = $(ACSOURCES:.cu=.o) $(ACSOURCES:.cc=.o)
 # Settings for taito-gpu
 CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
 #-gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
@@ -43,10 +49,11 @@ endif
 PCHEADER_DIR=.
 export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 
-astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
-	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -DSHARED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -I../../.. -j VERBOSE=1 # Build the core Astaroth library
+astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS) submodule/build/src/core/libastaroth_core.so
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
-	cp -f astaroth_$(PREC).so ..
+
+submodule/build/src/core/libastaroth_core.so: $(ACSOURCES) $(ACHEADERS)
+	mkdir -p submodule/build && cd submodule/build && cmake -DAUTO_OPTIMIZATION=OFF -DMULTIGPU_ENABLED=OFF -DBUILD_DEBUG=ON -DBUILD_SHARED=ON -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF -DVERBOSE_PRINTING=OFF .. && make -I../../.. -j VERBOSE=1 # Build the core Astaroth library
 
 include Makefile.depend
 include Makefile.extern

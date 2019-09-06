@@ -404,14 +404,14 @@ LIBGPU =
 GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
   FFLAGS_GENERAL += -mcmodel=medium
-  LDFLAGS_MAIN += -dynamic  -L astaroth/submodule/build/src/core -lastaroth_core
   GPU_INTERFACE = gpu_astaroth_ansi.o
-  GPU_DEPS = gpu_preps
+  GPU_DEPS = gpu_preps astaroth/submodule/build/src/core/libastaroth_core.so
   ifeq ($(REAL_PRECISION),double)
     LIBGPU = astaroth_dbl.so
   else
     LIBGPU = astaroth_sgl.so
   endif
+  LDFLAGS_MAIN += -dynamic -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
 else
   GPU_INTERFACE=
 endif
@@ -2466,11 +2466,11 @@ run=$(physics) $(technical) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pe
 #
 start.o: $(start) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
-	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+	$(LD) $(start) start.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS) $(IO_ALT_DEPS)
-	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) $(LIBGPU) -o run.x
+	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
@@ -2764,7 +2764,7 @@ debug:
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x
+	$(LD) $(start) start.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x
 #
 #  Use sloppier compiler for a few files that use F77 syntax.

@@ -23,6 +23,8 @@ s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *, *parameter *::/const FINT /
 s/logical *, *parameter *::/const int /
 s/real *, *parameter *::/const REAL /
+s/\([^0-9a-zA-Z_]\)min(/\1MIN(/g
+s/\([^0-9a-zA-Z_]\)max(/\1MAX(/g
 s/double  *precision *, *parameter *::/const double /
 /,kind=ikind8/ d
 s/\.true\./true/g

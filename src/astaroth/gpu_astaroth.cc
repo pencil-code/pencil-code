@@ -12,28 +12,43 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
-using namespace std;
+#include <stdio.h>
+//using namespace std;
+
+#define CUDA_ERRCHK(X)
+#include "submodule/src/core/math_utils.h"
 #include "submodule/include/astaroth.h"
 
 //PC interface
 #define real AcReal
-#define CUDA_ERRCHK(ans) {}             // suppress calls not needed at the moment
+#define EXTERN 
+#define FINT int
+
 #include "../sub_c.h"                   // provides set_dt
-#include "../boundcond_c.h"             // provides boundconds[xyz] etc.
+//#include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrecv_bdry
 //#include "diagnostics/diagnostics.h"
 #include "loadStore.h"
-#define EXTERN 
+#if LFORCING
+  #include "forcing.h"
+#endif
+
 #include "PC_module_parfuncs.h"
 
 static AcMesh mesh;
-static Node *node_handle;
-//static ForcingParams forcing_params;
-
+Node node;
+DeviceConfiguration devConfig;
+int halo_yz_size=0;
+#if LFORCING
+static ForcingParams forcing_params;
+#endif
 /***********************************************************************************************/
 AcReal max_advec()
 {
-        AcReal uxmax, uymax, uzmax, maxadvec_=0.;
+        AcReal maxadvec_=0.;
+#if LHYDRO
+        AcReal umax=acReduceVec(RTYPE_MAX,VTXBUF_UUX,VTXBUF_UUY,VTXBUF_UUZ);
+#endif
         return maxadvec_;
 }
 /***********************************************************************************************/
@@ -44,23 +59,22 @@ AcReal max_diffus()
         maxdiffus_=nu*dxyz_2[nghost];
 #endif
 #if LMAGNETIC
-        maxdiffus_=max(maxdiffus_,eta*dxyz_2[nghost]);
+        maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost]);
 #endif
         return maxdiffus_;
 }
 /***********************************************************************************************/
 //Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries
-//TODO: note, isubstep starts from 0 on the GPU side (i.e. rk3 does substeps 0, 1, 2)
 //
 extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=false)
 {
 #if LFORCING
     //Update forcing params
     if (isubstep == itorder) { 
-        // forcing_params.Update();    	                // calculate on CPU // %JP: TODO not available in astaroth.h yet
-        // GPUUpdateForcingCoefs(&forcing_params);		// load into GPU    // %JP: TODO not available in astaroth.h yet
+         forcing_params.Update();  // calculate on CPU
+         forcing_params.Load();    // load into GPU
     }
-#endif  
+#endif
     if (lfirst && ldt) {
          AcReal dt1_advec  = max_advec()/cdt;
          AcReal dt1_diffus = max_diffus()/cdtv;
@@ -86,43 +100,43 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
           //loadOuterHalos(mesh);
           acLoad(mesh);
       }
+      acSynchronizeMesh();
       acIntegrateStep(isubstep-1, dt);
 
     } else {
     // MPI communication has not yet finished, hence only the inner domain can be advanced.
 
-      int3 start=(int3){l1i,m1i,n1i}, end=(int3){l2i,m2i,n2i};
+      int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1;   // -1 shift because of C indexing convention
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
-  
-      acSynchronize();
+ 
+      int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
+       
+      //if (finalize_isendrcv_bdry) printf("function correct \n");
+      finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
 
-      finalize_isendrcv_bdry((AcReal*)mesh.vertex_buffer[0]);
-
-  // TODO: call for update of ghosts!
-
-      loadOuterFront(mesh);
-      start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i-1};     // front plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      loadOuterFront(mesh,STREAM_0);
+      start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i+1};     // integrate inner front plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_0, isubstep-1, start, end, dt);
+ 
+      loadOuterBack(mesh,STREAM_1);
+      start=(int3){l1,m1,n2i-1}; end=(int3){l2,m2,n2};     // integrate inner back plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_1, isubstep-1, start, end, dt);
   
-      loadOuterBack(mesh);
-      start=(int3){l1,m1,n2i+1}; end=(int3){l2,m2,n2};     // back plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      loadOuterBot(mesh,STREAM_2);
+      start=(int3){l1,m1,n1i+2}; end=(int3){l2,m1i+1,n2i-2};   // integrate inner bottom plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_2, isubstep-1, start, end, dt);
   
-      loadOuterBot(mesh);
-      start=(int3){l1,m1,n1i}; end=(int3){l2,m1i-1,n2i};   // bottom plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      loadOuterTop(mesh,STREAM_3);
+      start=(int3){l1,m2i-1,n1i+2}; end=(int3){l2,m2,n2i-2};   // integrate inner top plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_3, isubstep-1, start, end, dt);
   
-      loadOuterTop(mesh);
-      start=(int3){l1,m2i+1,n1i}; end=(int3){l2,m2,n2i};   // top plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      loadOuterLeft(mesh,STREAM_4);
+      start=(int3){l1,m1i+2,n1i+2}; end=(int3){l1i+1,m2i-2,n2i-2};   // integrate inner left plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_4, isubstep-1, start, end, dt);
   
-      loadOuterLeft(mesh);
-      start=(int3){l1,m1i,n1i}; end=(int3){l1i-1,m2i,n2i};   // left plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
-  
-      loadOuterRight(mesh);
-      start=(int3){l2i+1,m1i,n1i}; end=(int3){l2,m2i,n2i};   // right plate
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      loadOuterRight(mesh,STREAM_5);
+      start=(int3){l2i-1,m1i+2,n1i+2}; end=(int3){l2,m2i-2,n2i-2};   // integrate inner right plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_5, isubstep-1, start, end, dt);
   
       acSynchronize();
     }
@@ -130,52 +144,82 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     //storeInnerHalos(mesh);
     acStore(&mesh);
 }
-/* ---------------------------------------------------------------------- */
-extern "C" void registerGPU(AcMesh& mesh, AcReal* farray)
+/***********************************************************************************************/
+extern "C" void registerGPU(AcReal* farray)
 {
-    long long offset=0;
-//printf("farray-address = %d \n", (long)(farray));
+    size_t offset=0;
+
     for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i) {
-//printf("farray-address offset,i= %d %d \n", offset, (long)((AcReal*)farray+offset));
-        mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)farray+offset;
+        //mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)farray+offset;
+        mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
         offset+=mw;
     }
 }
-/* ---------------------------------------------------------------------- */
-//Setup the GPUs in the node to be ready for computation
+/***********************************************************************************************/
 extern "C" void initGPU()
 {
+<<<<<<< HEAD
     //Initialize GPUs in the node
     AcResult res=acCheckDeviceAvailability();
+=======
+    //Check GPU availability
+    AcResult res = acCheckDeviceAvailability();
+>>>>>>> MR: adaptations for use of forcing and concurrency
 }
+/***********************************************************************************************/
 void setupConfig(AcMeshInfo & config){
+
+//printf("it, iproc, lcartesian_coords= %d \n", iproc);   //lcartesian_coords);  //iproc); //it, isubstep);
      config.int_params[AC_nx]=nx;
      config.int_params[AC_ny]=ny;
      config.int_params[AC_nz]=nz;
 
+     config.int_params[AC_mx] = mx;
+     config.int_params[AC_my] = my;
+     config.int_params[AC_mz] = mz;
+     config.int_params[AC_nx_min] = l1;
+     config.int_params[AC_nx_max] = l2;
+     config.int_params[AC_ny_min] = m1;
+     config.int_params[AC_ny_max] = m2;
+     config.int_params[AC_nz_min] = n1;
+     config.int_params[AC_nz_max] = n2;
+     config.int_params[AC_mxy]  = mx*my;
+     config.int_params[AC_nxy]  = nx*ny;
+     config.int_params[AC_nxyz] = nw;
+     config.int_params[AC_yz_plate_bufsize] = halo_yz_size;
+
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;
      config.real_params[AC_dsz]=dz;
-//printf("nx etc. %d %d %d %f %f %f \n",nx,ny,nz,dx,dy,dz);
+printf("nx etc. %d %d %d %f %f %f \n",nx,ny,nz,dx,dy,dz);
+printf("dxmin, dxmax= %f %f \n", dxmin,dxmax); //it, isubstep);
+     config.real_params[AC_inv_dsx] = 1./dx;
+     config.real_params[AC_inv_dsy] = 1./dy;
+     config.real_params[AC_inv_dsz] = 1./dz;
+     config.real_params[AC_dsmin]   = std::min(dx,std::min(dy,dz));
      config.real_params[AC_xlen]=lxyz[0];
      config.real_params[AC_ylen]=lxyz[1];
      config.real_params[AC_zlen]=lxyz[2];
      config.real_params[AC_xorig]=xyz0[0];
      config.real_params[AC_yorig]=xyz0[1];
      config.real_params[AC_zorig]=xyz0[2];
-//printf("lxyz etc. %f %f %f %f %f %f \n",lxyz[0],lxyz[1],lxyz[2],xyz0[0],xyz0[1],xyz0[2]);
+printf("lxyz etc. %f %f %f %f %f %f \n",lxyz[0],lxyz[1],lxyz[2],xyz0[0],xyz0[1],xyz0[2]);
      config.real_params[AC_unit_density]=unit_density;
      config.real_params[AC_unit_velocity]=unit_velocity;
      config.real_params[AC_unit_length]=unit_length;
-//printf("units etc. %f %f %f \n", unit_density, unit_velocity, unit_length);
+printf("units etc. %lf %lf %lf \n", unit_density, unit_velocity, unit_length);
+
+#include "PC_modulepars.h"
 #if LVISCOSITY
 #include "../viscosity_pars_c.h"
      config.real_params[AC_nu_visc]=nu;
      config.real_params[AC_zeta]=zeta;
-//printf("nu etc. %f %f \n", nu, zeta);
+printf("nu etc. %f %f \n", nu, zeta);
 #endif
 #if LMAGNETIC
+#include "../magnetic_pars_c.h"
      config.real_params[AC_eta]=eta;
+printf("eta etc. %f \n", eta);
 #endif
      config.real_params[AC_mu0]=mu0;
 #include "../equationofstate_pars_c.h"
@@ -185,15 +229,26 @@ void setupConfig(AcMeshInfo & config){
      config.real_params[AC_cp_sound]=cp;
      config.real_params[AC_lnT0]=lntt0;
      config.real_params[AC_lnrho0]=lnrho0;
-//printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lnt0,lnrho0);
+printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lntt0,lnrho0);
+#if LENTROPY
+#include "../energy_pars_c.h"
+     config.real_params[AC_chi]=chi;
+printf("chi %f \n", chi);
+#endif
+#if LFORCING
+#include "../forcing_pars_c.h"
+     config.int_params[AC_iforcing_zsym]=iforcing_zsym;
+     config.real_params[AC_k1_ff]=k1_ff;
+#endif
 }
 extern "C" void initializeGPU()
 {
     //Setup configurations used for initializing and running the GPU code
 
     	setupConfig(mesh.info);
-        AcResult res=acInit(mesh.info);         //Allocs memory on the GPU and loads device constants
-        res=acNodeCreate(iproc, mesh.info, node_handle);
+        AcResult res=acInit(mesh.info);
+        res=acGetNode(&node);
+        acNodeQueryDeviceConfiguration(node, &devConfig);
         initLoadStore();
 
     // initialize diagnostics
@@ -205,10 +260,10 @@ extern "C" void copyFarray()
        AcResult res=acStore(&mesh);
 }
 /***********************************************************************************************/
-//Destroy the GPUs in the node (not literally hehe)
 extern "C" void finalizeGPU()
 {
        finalLoadStore();
+
     //Deallocate everything on the GPUs and reset
        AcResult res=acQuit();
 }

@@ -1,9 +1,9 @@
 void initLoadStore();
 void finalLoadStore();
-void loadOuterFront(AcMesh& mesh);
-void loadOuterBack(AcMesh& mesh);
-void loadOuterBot(AcMesh& mesh);
-void loadOuterTop(AcMesh& mesh);
-void loadOuterLeft(AcMesh& mesh);
-void loadOuterRight(AcMesh& mesh);
+void loadOuterFront(AcMesh& mesh, Stream stream);
+void loadOuterBack(AcMesh& mesh, Stream stream);
+void loadOuterBot(AcMesh& mesh, Stream stream);
+void loadOuterTop(AcMesh& mesh, Stream stream);
+void loadOuterLeft(AcMesh& mesh, Stream stream);
+void loadOuterRight(AcMesh& mesh, Stream stream);
 

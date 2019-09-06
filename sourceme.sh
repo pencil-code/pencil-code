@@ -69,9 +69,9 @@ if [ -z $_sourceme ]; then	# called for the first time?
     fi
     #  Set library path for linker
     if [ -z $LD_LIBRARY_PATH ]; then
-      LD_LIBRARY_PATH="./src"
+      LD_LIBRARY_PATH="./src:./src/astaroth:./src/astaroth/submodule/build/src/core"
     else
-      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src"
+      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core"
     fi
 
     # Remember that sourceme has been successfully run
