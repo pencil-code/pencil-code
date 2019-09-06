@@ -527,7 +527,7 @@ module Solid_Cells
 !  XX-feb-17/Jorgen: Coded
 !
       use Initcond, only: gaunoise
-      use IO,       only: wdim
+      use HDF5_IO,  only: wdim
       use Sub,      only: control_file_exists
       use EquationOfState, only: imass, species_constants, lpres_grad
 !
