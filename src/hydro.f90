@@ -2767,25 +2767,25 @@ module Hydro
 !
 !  Calculate the vorticity field if required.
 !
-      getoo: if (ioo /= 0) then
-        nloop: do n = n1, n2
-          mloop: do m = m1, m2
+      if (ioo /= 0) then
+        do n = n1, n2
+          do m = m1, m2
             call curl(f, iux, pv)
             f(l1:l2,m,n,iox:ioz) = pv
-          enddo mloop
-        enddo nloop
-      endif getoo
+          enddo 
+        enddo
+      endif
 !
 !  For FARGO (orbital advection) algorithm.
 !  Calculate the average velocity at the first sub-timestep.
 !
       if (lfargo_advection.and.lfirst) then
 !
-!  Pre-calculate the average large scale speed of the flow
+!  Pre-calculate the average large scale (= phi-averaged) speed of the flow
 !
         if (lcylindrical_coords) then
           fsum_tmp_cyl=0.
-          nygrid1=1.0/nygrid
+          nygrid1=1./nygrid
           do n=n1,n2
             do m=m1,m2
               nnghost=n-nghost
@@ -2802,7 +2802,8 @@ module Hydro
                (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
-          nzgrid1=1.0/nzgrid
+          nzgrid1=1./nzgrid
+          fsum_tmp_sph=0.
           do n=n1,n2
             do m=m1,m2
               mnghost=m-nghost
@@ -3108,13 +3109,14 @@ module Hydro
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
       real :: kx
       integer :: k
+      logical, save :: lcorr_zero_dt=.false.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
       call timing('calc_0d_diagnostics_hydro','before ldiagnos',mnloop=.true.)
 
       if (ldiagnos) then
-        if (headtt.or.ldebug) print*,'calc_0d_diagnostics_hydro: Calculate 0d diagnostics (maxima and rms valueso etc.)'
+        if (headtt.or.ldebug) print*,'calc_0d_diagnostics_hydro: Calculate 0d diagnostics (maxima, rms values etc.)'
         if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
@@ -3430,17 +3432,34 @@ module Hydro
             !phidot=uu_average_cyl(:,nnghost)*rcyl_mn1
             !nshift=phidot*dt*dy_1(m)
             !call max_mn_name(nshift,idiag_nshift)
-            call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+            if (dt==0.) then
+              lcorr_zero_dt=.true.
+              call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dy_1(m),idiag_nshift)
+            else
+              call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+            endif
           elseif (lspherical_coords) then
             !mnghost=m-nghost
             !phidot=uu_average_sph(:,nnghost)*rcyl_mn1  ! rcyl = r*sinth(m)
             !nshift=phidot*dt*dz_1(n)
             !call max_mn_name(nshift,idiag_nshift)
-            call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
+            if (dt==0.) then
+              lcorr_zero_dt=.true.
+              call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dz_1(n),idiag_nshift)
+            else
+              call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
+            endif
           endif
         endif
 
-      endif
+      elseif (lcorr_zero_dt) then
+!
+!  Here all quantities should be updated the calculation of which requires dt which
+!  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
+! 
+        lcorr_zero_dt=.false.
+        if (lroot) fname(idiag_nshift)=fname(idiag_nshift)*dt
+      endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
 !*******************************************************************************
