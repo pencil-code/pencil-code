@@ -1606,6 +1606,16 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_linearized
 !***********************************************************************
+    subroutine calc_diagnostics_hydro(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_hydro
+!***********************************************************************
     subroutine hydro_before_boundary(f)
 !
 !  Actions to take before boundary conditions are set.

@@ -343,6 +343,16 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
+    subroutine calc_diagnostics_hydro(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_hydro
+!***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !
 !   1-jul-08/axel: dummy
