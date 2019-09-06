@@ -304,10 +304,7 @@ module Equ
 !  MR+joern+axel, 8.10.2015
 !
       call timing('pde','before hydro_after_boundary')
-!DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
-! hydro_after_boundary etc.
-!AB: yes, we should rename these step by step
-!AB: so calc_polymer_after_boundary -> polymer_after_boundary
+!
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call magnetic_after_boundary(f)
@@ -335,6 +332,11 @@ module Equ
 !
       if (lgpu) then
         call rhs_gpu(f,ioptest(itsub,0),early_finalize)
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+          call copy_farray_from_GPU(f)
+          call calc_all_pencils(f,p)
+          call calc_all_module_diagnostics(f,p)
+        endif
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
@@ -594,7 +596,7 @@ module Equ
 !
       if (notanumber(dt1_advec)) then
         print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
-        if (lenergy)          print*, 'advec_cs2  =',advec_cs2
+        if (lenergy) print*, 'advec_cs2  =',advec_cs2
         call fatal_error_local('pde','')
       endif
 !
@@ -660,6 +662,126 @@ module Equ
       lwrite_prof=.false.
 !
     endsubroutine pde
+!****************************************************************************
+    subroutine calc_all_module_diagnostics(f,p)
+
+      use Density, only: calc_diagnostics_density
+      !use Energy, only: calc_diagnostics_energy
+      use Hydro, only: calc_diagnostics_hydro
+      use Magnetic, only: calc_diagnostics_magnetic
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+
+      call calc_diagnostics_density(p)
+      !call calc_diagnostics_energy(p)
+      call calc_diagnostics_hydro(f,p)
+      call calc_diagnostics_magnetic(f,p)
+
+    endsubroutine calc_all_module_diagnostics
+!****************************************************************************
+    subroutine calc_all_pencils(f,p)
+
+      use Diagnostics, only: calc_phiavg_profile
+      use BorderProfiles, only: calc_pencils_borderprofiles
+      use Chiral
+      use Chemistry
+      use Cosmicray
+      use CosmicrayFlux
+      use Density
+      use Dustvelocity
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: calc_pencils_forcing
+      use Gravity
+      use Heatflux
+      use Hydro
+      use Lorenz_gauge
+      use Magnetic
+      use NeutralDensity
+      use NeutralVelocity
+      use Particles_main
+      use Pscalar
+      use PointMasses
+      use Polymer
+      use Radiation
+      use Selfgravity
+      use Shear
+      use Shock, only: calc_pencils_shock, calc_shock_profile, &
+                       calc_shock_profile_simple
+      use Solid_Cells, only: update_solid_cells_pencil
+      use Special, only: calc_pencils_special, dspecial_dt
+      use Ascalar
+      use Testfield
+      use Testflow
+      use Testscalar
+      use Viscosity, only: calc_pencils_viscosity
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+!
+!  The solid cells may have to be updated at the beginning of every
+!  pencil calculation.
+!
+        call update_solid_cells_pencil(f)
+!
+!  Grid spacing. In case of equidistant grid and cartesian coordinates
+!  this is calculated before the (m,n) loop.
+!
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+!
+!  Calculate grid/geometry related pencils.
+!
+        call calc_pencils_grid(f,p)
+!
+!  Calculate profile for phi-averages if needed.
+!
+        if ((l2davgfirst.and.lwrite_phiaverages )  .or. &
+            (l1dphiavg  .and.lwrite_phizaverages))  &
+            call calc_phiavg_profile(p)
+!
+!  Calculate pencils for the pencil_case.
+!  Note: some no-modules (e.g. nohydro) also calculate some pencils,
+!  so it would be wrong to check for lhydro etc in such cases.
+! DM : in the formulation of lambda effect due to Kitchanov and Olemski,
+! DM : we need to have dsdr to calculate lambda. Hence, the way it is done now,
+! DM : we need to have energy pencils calculated before viscosity pencils.
+! DM : This is *bad* practice and must be corrected later.
+! To check ghost cell consistency, please uncomment the following 2 lines:
+!       if (.not. lpencil_check_at_work .and. necessary(imn)) &
+!       call check_ghosts_consistency (f, 'before calc_pencils_*')
+                              call calc_pencils_hydro(f,p)
+                              call calc_pencils_density(f,p)
+        if (lpscalar)         call calc_pencils_pscalar(f,p)
+        if (lascalar)         call calc_pencils_ascalar(f,p)
+                              call calc_pencils_eos(f,p)
+        if (lshock)           call calc_pencils_shock(f,p)
+        if (lchemistry)       call calc_pencils_chemistry(f,p)
+                              call calc_pencils_energy(f,p)
+        if (lviscosity)       call calc_pencils_viscosity(f,p)
+        if (lforcing_cont)    call calc_pencils_forcing(f,p)
+        if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
+        if (lmagnetic)        call calc_pencils_magnetic(f,p)
+        if (lpolymer)         call calc_pencils_polymer(f,p)
+        if (lgrav)            call calc_pencils_gravity(f,p)
+        if (lselfgravity)     call calc_pencils_selfgravity(f,p)
+        if (ldustvelocity)    call calc_pencils_dustvelocity(f,p)
+        if (ldustdensity)     call calc_pencils_dustdensity(f,p)
+        if (lneutralvelocity) call calc_pencils_neutralvelocity(f,p)
+        if (lneutraldensity)  call calc_pencils_neutraldensity(f,p)
+        if (lcosmicray)       call calc_pencils_cosmicray(f,p)
+        if (lcosmicrayflux)   call calc_pencils_cosmicrayflux(f,p)
+        if (lchiral)          call calc_pencils_chiral(f,p)
+        if (lradiation)       call calc_pencils_radiation(f,p)
+        if (lshear)           call calc_pencils_shear(f,p)
+        if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
+        if (lpointmasses)     call calc_pencils_pointmasses(f,p)
+        if (lparticles)       call particles_calc_pencils(f,p)
+        if (lspecial)         call calc_pencils_special(f,p)
+        if (lheatflux)        call calc_pencils_heatflux(f,p)
+
+    endsubroutine calc_all_pencils
 !***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
@@ -746,11 +868,6 @@ module Equ
         endif
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
-!  The solid cells may have to be updated at the beginning of every
-!  pencil calculation.
-!
-        call update_solid_cells_pencil(f)
-!
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
@@ -770,61 +887,8 @@ module Equ
           maxdiffus3=0.
           maxsrc=0.
         endif
-!
-!  Grid spacing. In case of equidistant grid and cartesian coordinates
-!  this is calculated before the (m,n) loop.
-!
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
-!
-!  Calculate grid/geometry related pencils.
-!
-        call calc_pencils_grid(f,p)
-!
-!  Calculate profile for phi-averages if needed.
-!
-        if ((l2davgfirst.and.lwrite_phiaverages )  .or. &
-            (l1dphiavg  .and.lwrite_phizaverages))  &
-            call calc_phiavg_profile(p)
-!
-!  Calculate pencils for the pencil_case.
-!  Note: some no-modules (e.g. nohydro) also calculate some pencils,
-!  so it would be wrong to check for lhydro etc in such cases.
-! DM : in the formulation of lambda effect due to Kitchanov and Olemski,
-! DM : we need to have dsdr to calculate lambda. Hence, the way it is done now,
-! DM : we need to have energy pencils calculated before viscosity pencils.
-! DM : This is *bad* practice and must be corrected later.
-! To check ghost cell consistency, please uncomment the following 2 lines:
-!       if (.not. lpencil_check_at_work .and. necessary(imn)) &
-!       call check_ghosts_consistency (f, 'before calc_pencils_*')
-                              call calc_pencils_hydro(f,p)
-                              call calc_pencils_density(f,p)
-        if (lpscalar)         call calc_pencils_pscalar(f,p)
-        if (lascalar)        call calc_pencils_ascalar(f,p)
-                              call calc_pencils_eos(f,p)
-        if (lshock)           call calc_pencils_shock(f,p)
-        if (lchemistry)       call calc_pencils_chemistry(f,p)
-                              call calc_pencils_energy(f,p)
-        if (lviscosity)       call calc_pencils_viscosity(f,p)
-        if (lforcing_cont)    call calc_pencils_forcing(f,p)
-        if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
-        if (lmagnetic)        call calc_pencils_magnetic(f,p)
-        if (lpolymer)         call calc_pencils_polymer(f,p)
-        if (lgrav)            call calc_pencils_gravity(f,p)
-        if (lselfgravity)     call calc_pencils_selfgravity(f,p)
-        if (ldustvelocity)    call calc_pencils_dustvelocity(f,p)
-        if (ldustdensity)     call calc_pencils_dustdensity(f,p)
-        if (lneutralvelocity) call calc_pencils_neutralvelocity(f,p)
-        if (lneutraldensity)  call calc_pencils_neutraldensity(f,p)
-        if (lcosmicray)       call calc_pencils_cosmicray(f,p)
-        if (lcosmicrayflux)   call calc_pencils_cosmicrayflux(f,p)
-        if (lchiral)          call calc_pencils_chiral(f,p)
-        if (lradiation)       call calc_pencils_radiation(f,p)
-        if (lshear)           call calc_pencils_shear(f,p)
-        if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
-        if (lpointmasses)     call calc_pencils_pointmasses(f,p)
-        if (lparticles)       call particles_calc_pencils(f,p)
-        if (lspecial)         call calc_pencils_special(f,p)
-        if (lheatflux)        call calc_pencils_heatflux(f,p)
+
+        call calc_all_pencils(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
