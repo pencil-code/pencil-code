@@ -786,6 +786,15 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
+#--------------------------------------------------
+else if (($hn =~ r0*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
+  echo "Puhti - CSC, Kajaani, Finland"
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
 #----------------------------------------------
 else if (($hn =~ s*) && ($USER =~ pr*)) then
   echo "MareNostrum - BSC, Barcelona, Spain"
