@@ -115,27 +115,27 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
 
       loadOuterFront(mesh,STREAM_0);
-      start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i+1};     // integrate inner front plate
+      start=(int3){l1i+2,m1i+2,n1}; end=(int3){l2i-2,m2i-2,n1i+1};     // integrate inner front plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_0, isubstep-1, start, end, dt);
  
       loadOuterBack(mesh,STREAM_1);
-      start=(int3){l1,m1,n2i-1}; end=(int3){l2,m2,n2};     // integrate inner back plate
+      start=(int3){l1i+2,m1i+2,n2i-1}; end=(int3){l2i-2,m2i-2,n2};     // integrate inner back plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_1, isubstep-1, start, end, dt);
   
       loadOuterBot(mesh,STREAM_2);
-      start=(int3){l1,m1,n1i+2}; end=(int3){l2,m1i+1,n2i-2};   // integrate inner bottom plate
+      start=(int3){l1i+2,m1,n1}; end=(int3){l2i-2,m1i+1,n2};   // integrate inner bottom plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_2, isubstep-1, start, end, dt);
   
       loadOuterTop(mesh,STREAM_3);
-      start=(int3){l1,m2i-1,n1i+2}; end=(int3){l2,m2,n2i-2};   // integrate inner top plate
+      start=(int3){l1i+2,m2i-1,n1}; end=(int3){l2i-2,m2,n2};   // integrate inner top plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_3, isubstep-1, start, end, dt);
   
       loadOuterLeft(mesh,STREAM_4);
-      start=(int3){l1,m1i+2,n1i+2}; end=(int3){l1i+1,m2i-2,n2i-2};   // integrate inner left plate
+      start=(int3){l1,m1,n1}; end=(int3){l1i+1,m2,n2};   // integrate inner left plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_4, isubstep-1, start, end, dt);
   
       loadOuterRight(mesh,STREAM_5);
-      start=(int3){l2i-1,m1i+2,n1i+2}; end=(int3){l2,m2i-2,n2i-2};   // integrate inner right plate
+      start=(int3){l2i-1,m1,n1}; end=(int3){l2,m2,n2};   // integrate inner right plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_5, isubstep-1, start, end, dt);
   
       acSynchronize();

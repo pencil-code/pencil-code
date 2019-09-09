@@ -74,15 +74,6 @@ module Forcing
 !
     endsubroutine forcing_cont_after_boundary
 !***********************************************************************
-    subroutine forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
-
-      real, dimension(:) :: coef1,coef2,coef3,fx,fy,fz,fda
-
-      call keep_compiler_quiet(coef1,coef2,coef3,fda)
-      call keep_compiler_quiet(fx,fy,fz)
-     
-    endsubroutine forcing_coefs_hel
-!***********************************************************************
     subroutine pencil_criteria_forcing
 !
 !  Dummy routine
