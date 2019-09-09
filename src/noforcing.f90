@@ -174,6 +174,23 @@ module Forcing
 
     endsubroutine rprint_forcing
 !***********************************************************************
+    subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+!
+      use General, only: keep_compiler_quiet
+!
+      real,                   intent(in ) :: force_fact,kav
+      integer,                intent(in ) :: nk
+      real,    dimension (nk),intent(in ) :: kkx,kky,kkz
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3,kk,fda
+      real,                   intent(out) :: phase,fact
+
+      call keep_compiler_quiet(force_fact,kav,phase,fact)
+      call keep_compiler_quiet(kkx,kky,kkz,fda)
+      call keep_compiler_quiet(coef1,coef2,coef3,kk)
+      call keep_compiler_quiet(nk)
+
+    endsubroutine fconst_coefs_hel
+!***********************************************************************
     subroutine forcing_clean_up
 !
 !   12-aug-09/dhruba: coded
