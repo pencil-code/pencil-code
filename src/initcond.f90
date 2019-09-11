@@ -5991,11 +5991,14 @@ module Initcond
         ! read A components for each ipz layer
         do comp = 1, 3
           do pz = 0, nprocz-1
-            read (unit, rec=pz+nprocz*(comp-1)) A_global
+            read (unit, rec=1+pz+nprocz*(comp-1)) A_global
             ! distribute A component
             if (pz == ipz) then
               call distribute_xy(A_local, A_global)
-              f(l1:l2,m1:m2,:,comp) = A_local
+              f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
+              if (iglobal_ax_ext/=0 .and. comp == 1) f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+              if (iglobal_ay_ext/=0 .and. comp == 2) f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+              if (iglobal_az_ext/=0 .and. comp == 3) f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
             else
               partner = ipx + ipy*nprocx + pz*nprocxy
               call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
@@ -6009,11 +6012,14 @@ module Initcond
           if (lfirst_proc_xy) then
             partner = ipx + ipy*nprocx
             call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
-            call distribute_xy(A_global, A_local)
+            call distribute_xy(A_local, A_global)
           else
             call distribute_xy(A_local)
           endif
-          f(l1:l2,m1:m2,:,comp) = A_local
+          f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
+          if (iglobal_ax_ext/=0 .and. comp == 1) f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+          if (iglobal_ay_ext/=0 .and. comp == 2) f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+          if (iglobal_az_ext/=0 .and. comp == 3) f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
         enddo
       endif
 !
