@@ -1475,7 +1475,7 @@ module Magnetic
         case('aa_from_global')
         if (lroot) print*, &
              'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
-          if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) & 
+          if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) &
           A_relprof(:,:,:,1:3)=amp_relprof*f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext:iglobal_az_ext)
         endselect
       endif
@@ -2111,6 +2111,7 @@ module Magnetic
           close(1)
           f(l1:l2,m1:m2,n1,iax)=ax*amplaa(1)
           f(l1:l2,m1:m2,n1,iay)=ay*amplaa(1)
+!
         case ('B_ext_from_file')
           allocate(ap(mx,my,mz,6))
           call input_snap('ap.dat',ap,6,0)
