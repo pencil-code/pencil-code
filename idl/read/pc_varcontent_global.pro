@@ -111,6 +111,33 @@ if (iglobal_bz_ext gt 0) then begin
   varcontent[iglobal_bz_ext].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+if (iglobal_ax_ext gt 0) then begin
+  iglobal_ax_ext=iglobal_ax_ext-dim.mvar-dim.maux
+  varcontent[iglobal_ax_ext].variable   = 'Magnetic vector potential (ax_ext)'
+  varcontent[iglobal_ax_ext].idlvar     = 'ax_ext'
+  varcontent[iglobal_ax_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_ax_ext].idlvarloc  = 'ax_ext_loc'
+  varcontent[iglobal_ax_ext].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+if (iglobal_ay_ext gt 0) then begin
+  iglobal_ay_ext=iglobal_ay_ext-dim.mvar-dim.maux
+  varcontent[iglobal_ay_ext].variable   = 'Magnetic vector potential (ay_ext)'
+  varcontent[iglobal_ay_ext].idlvar     = 'ay_ext'
+  varcontent[iglobal_ay_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_ay_ext].idlvarloc  = 'ax_ext_loc'
+  varcontent[iglobal_ay_ext].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+if (iglobal_az_ext gt 0) then begin
+  iglobal_az_ext=iglobal_az_ext-dim.mvar-dim.maux
+  varcontent[iglobal_az_ext].variable   = 'Magnetic vector potential (az_ext)'
+  varcontent[iglobal_az_ext].idlvar     = 'az_ext'
+  varcontent[iglobal_az_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_az_ext].idlvarloc  = 'az_ext_loc'
+  varcontent[iglobal_az_ext].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, iglobal_jx_ext, 0
 if (iglobal_jx_ext gt 0) then begin
   iglobal_jx_ext=iglobal_jx_ext-dim.mvar-dim.maux
