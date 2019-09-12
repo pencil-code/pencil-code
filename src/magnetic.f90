@@ -295,6 +295,7 @@ module Magnetic
   logical :: lremove_meanaz=.false., lremove_meanax=.false., &
              lremove_meanaxy=.false.,lremove_meanaxz=.false.
   logical :: ladd_efield=.false.
+  logical :: lA_relprof_global=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
   logical :: lnoinduction=.false.
@@ -356,7 +357,7 @@ module Magnetic
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
-      lnoinduction
+      lnoinduction, lA_relprof_global
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4658,7 +4659,14 @@ module Magnetic
 ! Piyali: The above is not right as dimension of A_relprof(nx,ny,nz,3), 
 ! so m,n indices should be the following:
 !
-        dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
+        if (lA_relprof_global) then
+!
+!  use the directly the global external vector potential
+!
+          dAdt= dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
+        else
+          dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
+        endif
       endif
 !
 !  Add ``va^2/dx^2'' contribution to timestep.
