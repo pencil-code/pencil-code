@@ -794,8 +794,8 @@ module Interstellar
 !
 !  Scale rho^2 to gas number density^2 with mu^2
 !
-      if (.not. lcooling_revert) then
-        lnmu2 = 2*log(mu)
+      if (lcooling_revert) then
+        lnmu2 = 2*log(mu/0.62)
       else
         lnmu2 = 0.
       endif
