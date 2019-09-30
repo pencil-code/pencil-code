@@ -122,6 +122,15 @@ module Hydro
   integer :: idiag_divum=0
 !
   logical :: lupdate_aux=.false.
+!
+  type foreign_setup
+    real :: dt_out=0., t_last_out=0.
+  endtype foreign_setup
+  
+  type(foreign_setup) :: frgn_setup
+  integer :: peer_foreign=-1, irecv_from_foreign
+  real, dimension(:,:,:,:), allocatable :: uu_2
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -161,13 +170,19 @@ module Hydro
       use Sub, only: erfunc, ylm, ylm_other
       use Boundcond, only: update_ghosts
       use General
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: exp_kinflow1, sph, sph_har_der
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (:,:), allocatable :: yz
-      integer :: iyz
+      integer :: iyz, root_foreign
+      logical :: lok
+      character(LEN=128) :: messg
+      integer, dimension(3) :: intbuf
+      real, dimension(2) :: floatbuf
+      integer :: j
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -246,11 +261,11 @@ module Hydro
           endif
         else
 ! set the initial velocity to zero
-          if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
+          if (kinematic_flow/='from-snap'.or.kinematic_flow/='from-foreign-snap') f(:,:,:,iux:iuz) = 0.
           if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
           call farray_index_append('iuu',iuu,3)
         endif
-
+        
         if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
           if (.not.lspherical_coords) call inevitably_fatal_error("init_uu", &
               '"spher-harm-poloidal" only meaningful for spherical coordinates')
@@ -298,6 +313,52 @@ module Hydro
         endif
       endif
 !
+      if (kinematic_flow=='from-foreign-snap') then
+   
+        root_foreign=ncpus
+        peer_foreign=iproc+ncpus
+
+        if (lroot) then
+          lok=.true.; messg=''
+          call mpirecv_int(intbuf,3,root_foreign,MPI_ANY_TAG)
+          if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
+            messg="foreign proc numbers don't match;"
+            lok=.false.
+          endif
+
+          call mpirecv_int(intbuf,3,root_foreign,MPI_ANY_TAG)
+          if (any(intbuf/=(/nx,ny,nz/))) then
+            messg=trim(messg)//" foreign grid sizes don't match;"
+            lok=.false.
+          endif
+ 
+          do j=1,3
+            call mpirecv_real(floatbuf,2,root_foreign,MPI_ANY_TAG)
+            if (any(floatbuf/=(/xyz0(j),xyz1(j)/))) then
+              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
+              lok=.false.
+            endif
+          enddo
+
+          call mpirecv_real(frgn_setup%dt_out,root_foreign,MPI_ANY_TAG)
+          if (frgn_setup%dt_out==0.) then
+            messg=trim(messg)//' foreign output step=0'
+            lok=.false.
+          endif
+ 
+          call mpisend_logical(lok,root_foreign,MPI_ANY_TAG)
+          if (.not.lok) call fatal_error('initialize_hydro',messg)
+        endif
+
+        call mpibcast_real(frgn_setup%dt_out)                 ! should synchronize 
+        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+       
+        frgn_setup%t_last_out=t
+        call mpirecv_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG)
+        call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+
+      endif
+
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
@@ -482,6 +543,7 @@ module Hydro
       use Diagnostics
       use General
       use Sub
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
@@ -2008,7 +2070,8 @@ module Hydro
 !
 ! flow from snapshot.
 !
-      case ('from-snap')
+      case ('from-snap','from-foreign-snap')
+
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
@@ -2106,9 +2169,26 @@ module Hydro
 !
 !   16-dec-10/bing: coded
 !
+      use Mpicomm, only: mpiwait, mpirecv_nonblock_real, MPI_ANY_TAG
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+      real :: fac
+
+      if (kinematic_flow=='from-foreign-snap') then
+
+        if (lfirst) then
+          if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
+            call mpiwait(irecv_from_foreign)
+            frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
+            call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+          endif
+        endif
+
+        fac=dt/(frgn_setup%dt_out-t+dt)
+        f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
+
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
