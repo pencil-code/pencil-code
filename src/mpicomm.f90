@@ -2804,7 +2804,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
-    subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id,comm,noblock)
+    subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive real scalar from other processor.
 !
