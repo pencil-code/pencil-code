@@ -2804,21 +2804,29 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
-    subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id,comm,noblock)
 !
 !  Receive real scalar from other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       real :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
-!
-      call MPI_RECV(bcast_array, 1, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_GRID, stat, mpierr)
-!
+      integer, optional :: comm, nonblock
+
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, 1, MPI_REAL, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, 1, MPI_REAL, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
+ !
     endsubroutine mpirecv_real_scl
 !***********************************************************************
     subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id,comm, nonblock)
@@ -4792,8 +4800,6 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
-!      mpiwtime = 0
-      !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
 !***********************************************************************
@@ -4803,7 +4809,6 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
       mpiwtick = MPI_WTICK()
-!      mpiwtick = 0
 !
     endfunction mpiwtick
 !***********************************************************************
