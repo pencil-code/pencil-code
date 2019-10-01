@@ -127,7 +127,7 @@ module Hydro
     real :: dt_out=0., t_last_out=0.
   endtype foreign_setup
   
-  type(foreign_setup) :: frgn_setup
+  type(foreign_setup), save :: frgn_setup
   integer :: peer_foreign=-1, irecv_from_foreign
   real, dimension(:,:,:,:), allocatable :: uu_2
 
