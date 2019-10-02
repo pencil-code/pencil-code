@@ -69,7 +69,7 @@ def var(*args, **kwargs):
     if not started:
         if 'ivar' in kwargs:
             if kwargs['ivar'] != 0:
-                print('ERROR: Simulation has not jet started. There are no var files.')
+                print('ERROR: Simulation has not yet started. There are no var files.')
                 return False
 
     var_tmp = DataCube()
@@ -478,7 +478,7 @@ class DataCube(object):
                 if hasattr(self, 'lnrho'):
                     setattr(self, 'rho', np.exp(self.lnrho))
                 else:
-                    sys.exit("pb in magic!")
+                    sys.exit("Problem in magic: lnrho is missing")
 
             if field == 'tt' and not hasattr(self, 'tt'):
                 if hasattr(self, 'lnTT'):
@@ -491,7 +491,7 @@ class DataCube(object):
                         elif hasattr(self, 'rho'):
                             lnrho = np.log(self.rho)
                         else:
-                            sys.exit("pb in magic: missing rho or"+
+                            sys.exit("Problem in magic: missing rho or"+
                                      " lnrho variable")
                         cp = param.cp
                         gamma = param.gamma
@@ -502,7 +502,7 @@ class DataCube(object):
                                (lnrho-lnrho0)
                         setattr(self, 'tt', np.exp(lnTT))
                     else:
-                        sys.exit("pb in magic!")
+                        sys.exit("Problem in magic: ss is missing ")
 
             if field == 'ss' and not hasattr(self, 'ss'):
                 cp = param.cp
@@ -517,7 +517,7 @@ class DataCube(object):
                     setattr(self, 'ss', cp/gamma*(np.log(self.tt)- \
                             lnTT0-(gamma-1.)*(self.lnrho-lnrho0)))
                 else:
-                    sys.exit("pb in magic!")
+                    sys.exit("Problem in magic: missing lnTT or tt")
 
             if field == 'pp' and not hasattr(self, 'pp'):
                 cp = param.cp
@@ -536,4 +536,4 @@ class DataCube(object):
                 elif hasattr(self, 'tt'):
                     setattr(self, 'pp', (cp-cv)*self.tt*np.exp(lnrho))
                 else:
-                    sys.exit("pb in magic!")
+                    sys.exit("Problem in magic: missing ss or lntt or tt")
