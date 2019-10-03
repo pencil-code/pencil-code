@@ -150,7 +150,7 @@ module InitialCondition
         eps0 = eps0 / zp0
       else rhop
 !      Unstratified case
-        rhopj = eps0 * rho0
+        rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
         call dragforce_equi_multispecies(npar_species, taus, eps0, eta_vK, vpx, vpy, ux, uy)
       endif rhop
       if (lroot) print *, "initial_condition_vvp: rhopj = ", rhopj
