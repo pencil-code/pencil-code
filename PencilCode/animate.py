@@ -178,7 +178,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
         anim.save(fname, writer=writer)
         print("Saved the animation in {}. ".format(fname))
     else:
-        plt.show()
+        plt.show(block=True)
 #=======================================================================
 def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
     """Determines the data range to be plotted.
@@ -307,7 +307,7 @@ def _slices1d(field, t, slices, dim, par, grid, ylog=False, **kwarg):
     """
     # Author: Chao-Chin Yang
     # Created: 2018-06-05
-    # Last Modified: 2018-06-17
+    # Last Modified: 2019-10-03
     from matplotlib.animation import FuncAnimation
     import matplotlib.pyplot as plt
 
@@ -359,7 +359,7 @@ def _slices1d(field, t, slices, dim, par, grid, ylog=False, **kwarg):
     # Define the animator.
     anim = FuncAnimation(fig, update, frames=len(s), interval=40, repeat=False)
 
-    plt.show()
+    plt.show(block=True)
 #=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 2D model.
