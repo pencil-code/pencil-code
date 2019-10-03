@@ -118,7 +118,9 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-10-06
+    # Author: Chao-Chin Yang
+    # Created: 2015-04-22
+    # Last Modified: 2019-10-03
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation, writers
     from matplotlib.colors import LogNorm, Normalize
@@ -158,7 +160,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
     def update(i):
         print("\rAnimating ({:6.1%})......".format((i+1)/len(t)),
               end='', flush=True)
-        text = ax.set_title(time_template.format(t[i]))
+        ax.set_title(time_template.format(t[i]))
         pc.set_array(c[i].ravel(order='F'))
         if vmin_dynamic and vmax_dynamic:
             pc.set_clim(vmin[i], vmax[i])
@@ -166,7 +168,6 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
             pc.set_clim(vmin=vmin[i])
         elif vmax_dynamic:
             pc.set_clim(vmax=vmax[i])
-        return text, pc
     # Save or show the animation.
     anim = FuncAnimation(fig, update, len(t), interval=40, repeat=False)
     if save:
