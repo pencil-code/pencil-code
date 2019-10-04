@@ -31,12 +31,12 @@ module InitialCondition
 ! Input Parameters
 !
   real :: logtausmin = -4.0, logtausmax = -1.0
-  real :: dn_dtaus = -4.0
+  real :: dlnndlntaus = -4.0
   real :: dlnrhodlnr = -0.1
   real :: zp0 = 0.0
 !
   namelist /initial_condition_pars/ &
-    logtausmin, logtausmax, dn_dtaus, dlnrhodlnr, zp0
+    logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, zp0
 !
   contains
 !***********************************************************************
@@ -91,7 +91,7 @@ module InitialCondition
 !
 ! Find the mid-plane density for each species.
 !
-      eps0 = taus**(4.0 + dn_dtaus)
+      eps0 = taus**(4.0 + dlnndlntaus)
       eps0 = eps_dtog / sum(eps0) * eps0
       if (zp0 > 0.0) eps0 = eps0 / zp0
 !
@@ -138,7 +138,7 @@ module InitialCondition
 !
 !  Find the solid-to-gas mass ratio for each species.
 !
-      eps0 = taus**(4.0 + dn_dtaus)
+      eps0 = taus**(4.0 + dlnndlntaus)
       eps0 = eps_dtog / sum(eps0) * eps0
 !
 !  Find the mass of each particle.
