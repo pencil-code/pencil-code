@@ -78,7 +78,7 @@ module InitialCondition
 !
 !  Initialize the velocity field.
 !
-!  01-oct-19/ccyang: coded
+!  03-oct-19/ccyang: coded
 !
       use EquationOfState, only: cs0, rho0
 !
@@ -111,6 +111,10 @@ module InitialCondition
         call dragforce_equi_multispecies(npar_species, taus, eps0, eta_vK, vpx, vpy, ux, uy)
         f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux) + ux
         f(l1:l2,m1:m2,n1:n2,iuy) = f(l1:l2,m1:m2,n1:n2,iuy) + uy
+!       Save the equilibrium velocities to a file.
+        open(10, file="data/multisp_drag_eq.dat", form="unformatted", action="write")
+        write(10) ux, uy, vpx, vpy
+        close(10)
       endif ueq
 !
     endsubroutine initial_condition_uu
