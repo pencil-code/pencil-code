@@ -57,7 +57,6 @@ module Special
 !
       call keep_compiler_quiet(f)
       if (lstart) return
-      print *, "initialize_special: hello world! "
 !
 !  Read the equilibrium velocities from the initial conditions.
 !
