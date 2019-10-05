@@ -39,6 +39,12 @@ module Special
   integer :: idiag_ruzduxm = 0
   integer :: idiag_ruzduym = 0
 !
+  integer :: idiag_rhopdvpxm = 0
+  integer :: idiag_rhopdvpym = 0
+  integer :: idiag_rhopdvpx2m = 0
+  integer :: idiag_rhopdvpy2m = 0
+  integer :: idiag_rhopvpz2m = 0
+!
   contains
 !****************************************************************************
     subroutine initialize_special(f)
@@ -107,7 +113,6 @@ module Special
       real, dimension(nx) :: dux, duy
 !
       call keep_compiler_quiet(f, df)
-      call keep_compiler_quiet(p)
 !
 !  Identify module and boundary conditions.
 !
@@ -128,6 +133,52 @@ module Special
       endif diag
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine special_calc_particles(f, df, fp, dfp, ineargrid)
+!
+!  Called before the loop, in case some particle value is needed
+!  for the special density/hydro/magnetic/entropy.
+!
+!  04-oct-19/ccyang: coded
+!
+      use Particles_sub, only: sum_par_name
+      use Particles_cdata, only: ipar, npar_loc, ivpx, ivpy, ivpz, irhopswarm
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(in) :: df
+      real, dimension(:,:), intent(in) :: fp, dfp
+      integer, dimension(:,:), intent(in) :: ineargrid
+!
+      real, dimension(npar_loc) :: dvpx, dvpy
+      integer :: k, jspec
+!
+      call keep_compiler_quiet(f, df)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+      diag: if (ldiagnos) then
+!
+!  Compute the deviation from the equilibrium velocities.
+!
+        vpeq: do k = 1, npar_loc
+          jspec = npar_species * (ipar(k) - 1) / npar + 1
+          dvpx(k) = fp(k,ivpx) - vpx0(jspec)
+          dvpy(k) = fp(k,ivpy) - vpy0(jspec)
+        enddo vpeq
+!
+!  Compute the diagnostics
+!
+        rhop: if (lparticles_density) then
+          if (idiag_rhopdvpxm /= 0) call sum_par_name(fp(1:npar_loc,irhopswarm) * dvpx, idiag_rhopdvpxm)
+          if (idiag_rhopdvpym /= 0) call sum_par_name(fp(1:npar_loc,irhopswarm) * dvpy, idiag_rhopdvpym)
+          if (idiag_rhopdvpx2m /= 0) call sum_par_name(fp(1:npar_loc,irhopswarm) * dvpx**2, idiag_rhopdvpx2m)
+          if (idiag_rhopdvpy2m /= 0) call sum_par_name(fp(1:npar_loc,irhopswarm) * dvpy**2, idiag_rhopdvpy2m)
+          if (idiag_rhopvpz2m /= 0) call sum_par_name(fp(1:npar_loc,irhopswarm) * fp(1:npar_loc,ivpz)**2, idiag_rhopvpz2m)
+        endif rhop
+!
+      endif diag
+!
+    endsubroutine special_calc_particles
 !***********************************************************************
     subroutine rprint_special(lreset, lwrite)
 !
@@ -157,6 +208,12 @@ module Special
         idiag_rduxduym = 0
         idiag_ruzduxm = 0
         idiag_ruzduym = 0
+!
+        idiag_rhopdvpxm = 0
+        idiag_rhopdvpym = 0
+        idiag_rhopdvpx2m = 0
+        idiag_rhopdvpy2m = 0
+        idiag_rhopvpz2m = 0
       endif reset
 !
 !  Turn on requested diagnostics.
@@ -169,6 +226,12 @@ module Special
         call parse_name(iname, cname(iname), cform(iname), "rduxduym", idiag_rduxduym)
         call parse_name(iname, cname(iname), cform(iname), "ruzduxm", idiag_ruzduxm)
         call parse_name(iname, cname(iname), cform(iname), "ruzduym", idiag_ruzduym)
+!
+        call parse_name(iname, cname(iname), cform(iname), "rhopdvpxm", idiag_rhopdvpxm)
+        call parse_name(iname, cname(iname), cform(iname), "rhopdvpym", idiag_rhopdvpym)
+        call parse_name(iname, cname(iname), cform(iname), "rhopdvpx2m", idiag_rhopdvpx2m)
+        call parse_name(iname, cname(iname), cform(iname), "rhopdvpy2m", idiag_rhopdvpy2m)
+        call parse_name(iname, cname(iname), cform(iname), "rhopvpz2m", idiag_rhopvpz2m)
       enddo diag
 !
 !  Write column where which magnetic variable is stored
@@ -181,6 +244,12 @@ module Special
         call farray_index_append("idiag_rduxduym", idiag_rduxduym)
         call farray_index_append("idiag_ruzduxm", idiag_ruzduxm)
         call farray_index_append("idiag_ruzduym", idiag_ruzduym)
+!
+        call farray_index_append("idiag_rhopdvpxm", idiag_rhopdvpxm)
+        call farray_index_append("idiag_rhopdvpym", idiag_rhopdvpym)
+        call farray_index_append("idiag_rhopdvpx2m", idiag_rhopdvpx2m)
+        call farray_index_append("idiag_rhopdvpy2m", idiag_rhopdvpy2m)
+        call farray_index_append("idiag_rhopvpz2m", idiag_rhopvpz2m)
       endif wr
 !
     endsubroutine rprint_special
