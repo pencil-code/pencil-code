@@ -118,9 +118,9 @@ program start
 !
   call initialize_messages
 !
-!  Initialize use of multiple special modules
+!  Initialize use of multiple special modules if relevant.
 !
-!  call initialize_mult_special
+  call initialize_mult_special
 !
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit

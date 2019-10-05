@@ -133,9 +133,9 @@ program run
 !
   call initialize_messages
 !
-!  Initialize use of multiple special modules.
+!  Initialize use of multiple special modules if relevant.
 !
-!  call initialize_mult_special
+  call initialize_mult_special
 !
 !  Define the lenergy logical
 !
