@@ -52,7 +52,7 @@
     integer, parameter :: n_special_modules_max=5
 !
     integer :: n_special_modules
-    character(LEN=256) :: special_modules_list = 'gravitational_waves_hij6 chiral_mhd'
+    character(LEN=256) :: special_modules_list = ' '
     character(LEN=29), dimension(n_subroutines) :: special_subroutines=(/ &
                            'register_special            ', &
                            'register_particles_special  ', &
