@@ -11,6 +11,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
@@ -46,26 +47,41 @@ void FTNIZE(file_size_c)
   *bytes = fileStat.st_size;
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(caller)
-     (void (*func)(float* par1, ... ), FINT* npar, ... )
+void FTNIZE(caller2)
+     (void (**func)(void*,void*), void* par1, void* par2)
 {
-  float **arg=(float**)&npar;
+  (*func)(par1,par2);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(caller3)
+     (void (**func)(void*,void*,void*), void* par1, void* par2, void* par3)
+{
+  (*func)(par1,par2,par3);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(caller)
+     (void (**func)(void*, ... ), FINT* npar, ... )
+{
+  va_list ap;
+  va_start(ap, npar);
 
   switch(*npar)
   {
-  case 1: func(*(arg+1));
-  case 2: func(*(arg+1),*(arg+2));
-  case 3: func(*(arg+1),*(arg+2),*(arg+3));
-  case 4: func(*(arg+1),*(arg+2),*(arg+3),*(arg+4));
-  case 5: func(*(arg+1),*(arg+2),*(arg+3),*(arg+4),*(arg+5));
+  case 1: (*func)(va_arg(ap,void*)); break;
+  case 2: (*func)(va_arg(ap,void*),va_arg(ap,void*)); break;
+  //case 2: printf("f,p: %p %p \n",va_arg(ap,void*),va_arg(ap,void*)); break;
+  case 3: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
+  case 4: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
+  case 5: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
   default: return;
   }
+  va_end(ap);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(caller0)
-     (void (*func)(void))
+     (void (**func)(void))
 {
-   func(); 
+   (*func)(); 
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
@@ -75,16 +91,14 @@ void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
  void *p1;
  char *name;
 
-printf("library = %s\n", filename);
+ dlerror();
+ pointer = dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); //RTLD_LAZY); 
+//printf("pointer = %d\n", pointer);
+ if (pointer==NULL) printf("error = %s\n", dlerror());
 
+ return pointer;  //dlopen(filename, RTLD_LAZY); 
  if (*flag==ALLNOW)
  {
-/*   pointer = dlopen(filename, RTLD_LAZY); 
-printf("pointer = %d\n", pointer);
-   name = "fargo_mp_initialize_special_";
-   p1 = dlsym(pointer,name);
-printf("handlel = %d\n", p1);
-*/
    //return dlopen(filename, RTLD_NOW); 
  }
  else
@@ -92,16 +106,15 @@ printf("handlel = %d\n", p1);
  return NULL;
 }
 /* ---------------------------------------------------------------------- */
-void *FTNIZE(dlsym_c)(void *handle, const char *symbol)
+void *FTNIZE(dlsym_c)(void **handle, const char *symbol)
 {
-//printf("handlel = %d\n", handle);
-//printf("symbol = %s\n", symbol);
- return dlsym(handle, symbol); 
+//printf("symbol address= %p\n", dlsym(*handle, symbol));
+ return dlsym(*handle, symbol); 
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(dlclose_c)(void *handle)
+void FTNIZE(dlclose_c)(void **handle)
 {
- dlclose(handle);
+ dlclose(*handle);
 }
 /* ---------------------------------------------------------------------- */
 char* FTNIZE(dlerror_c)(void)

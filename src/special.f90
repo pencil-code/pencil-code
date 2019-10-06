@@ -12,11 +12,10 @@
 
     use Cparam
 
-    external caller
-    external caller0
-    integer, external :: dlopen_c
-    integer, external :: dlsym_c
-    character(LEN=128), external :: dlerror_c
+    implicit none
+
+    external caller, caller0, caller2, caller3
+    integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 
     integer, parameter :: I_REGISTER_SPECIAL=1,  &
@@ -41,19 +40,19 @@
                           I_SPECIAL_CALC_MAGNETIC=20, &
                           I_SPECIAL_CALC_PSCALAR=21, &
                           I_SPECIAL_CALC_PARTICLES=22, &
-                          I_SPECIAL_CALC_PARTICLES_BFRE_BDARY=23,  &
-                          I_SPECIAL_CALC_CHEMISTRY=24, &
-                          I_SPECIAL_BOUNDCONDS=25,  &
-                          I_SPECIAL_BEFORE_BOUNDARY=26,  &
+                          I_SPECIAL_CALC_CHEMISTRY=23, &
+                          I_SPECIAL_BOUNDCONDS=24,  &
+                          I_SPECIAL_BEFORE_BOUNDARY=25,  &
+                          I_SPECIAL_PARTICLES_BFRE_BDARY=26,  &
                           I_SPECIAL_AFTER_BOUNDARY=27,  &
                           I_SPECIAL_AFTER_TIMESTEP=28,  &
                           I_SET_INIT_PARAMETERS=29  
     
     integer, parameter :: n_subroutines=29
-    integer, parameter :: n_special_modules_max=50
+    integer, parameter :: n_special_modules_max=5
 !
     integer :: n_special_modules
-    character(LEN=256) :: special_modules_list = ' '
+    character(LEN=256) :: special_modules_list = 'gravitational_waves_hij6 chiral_mhd'
     character(LEN=29), dimension(n_subroutines) :: special_subroutines=(/ &
                            'register_special            ', &
                            'register_particles_special  ', &
@@ -77,10 +76,10 @@
                            'special_calc_magnetic       ', &
                            'special_calc_pscalar        ', &
                            'special_calc_particles      ', &
-                           'special_particles_bfre_bdary', &
                            'special_calc_chemistry      ', &
                            'special_boundconds          ', &
                            'special_before_boundary     ', &
+                           'special_particles_bfre_bdary', &
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
                            'set_init_parameters         '    /)
@@ -95,28 +94,31 @@
     use General, only: parser
     use Messages, only: fatal_error
 
-    integer, parameter :: unit=11
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=0  !!!
 
     character(LEN=128) :: line
-    integer :: istart,i,j
+    integer :: i,j
     character(LEN=40), dimension(n_special_modules_max) :: special_modules
-    character(LEN=128) :: error
+    character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
+    integer(KIND=ikind8) :: sub_handle
 
     n_special_modules=parser(special_modules_list,special_modules,' ')
 
-    libhandle=dlopen_c('special.dll',RTLD_NOW)
-    if (handle==0) &
-      call fatal_error('setup_mult_special',dlerror_c())
-    
-    error=dlerror_c()
+    libhandle=dlopen_c('src/special.so'//char(0),RTLD_NOW)
+
+    if (libhandle==0) &
+      call fatal_error('setup_mult_special','library src/special.so could not be opened')
+
+    call getenv("MODULE_PREFIX", mod_prefix)
+    call getenv("MODULE_INFIX", mod_infix)
+    call getenv("MODULE_SUFFIX", mod_suffix)
 
     do i=1,n_special_modules
       do j=1,n_subroutines
-        sub_handle=dlsym_c(handle,trim(special_modules(i)//'_mp_'//trim(special_subroutines(j))//'_'//char(0)))
-        if (handle==0) &
+        sub_handle=dlsym_c(libhandle,trim(mod_prefix)//trim(special_modules(i))//trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)//char(0))
+        if (sub_handle==0) &
           call fatal_error('setup_mult_special','Error for symbol '// &
-          trim(special_subroutines(j))//' in module '//trim(special_modules(i)//dlerror_c()))                                                                                               
+          trim(special_subroutines(j))//' in module '//trim(special_modules(i))) 
         special_sub_handles(i,j) = sub_handle
       enddo
     enddo
@@ -238,7 +240,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_CALC_PENCILS_SPECIAL),2,f,p)
+        !call caller(special_sub_handles(i,I_CALC_PENCILS_SPECIAL),2,f,p)
+        call caller2(special_sub_handles(i,I_CALC_PENCILS_SPECIAL),f,p)
       enddo
 !
     endsubroutine calc_pencils_special
@@ -260,10 +263,8 @@
 !
       integer :: i
 !
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_DSPECIAL_DT),3,f,df,p)
-      enddo
-!
+      call special_calc_3par(f,df,p,I_DSPECIAL_DT)
+
     endsubroutine dspecial_dt
 !****************************************************************************
     subroutine register_particles_special(npvar)
@@ -374,7 +375,7 @@
 !
     endsubroutine get_slices_special
 !*********************************************************************** 
-    subroutine special_calc_hydro(f,df,p)
+    subroutine special_calc_3par(f,df,p,modind)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  momentum equation.
@@ -387,13 +388,31 @@
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      integer, intent(in) :: modind
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_HYDRO),3,f,df,p)
+        !call caller(special_sub_handles(i,modind),3,f,df,p)
+        call caller3(special_sub_handles(i,modind),f,df,p)
       enddo
 !
+    endsubroutine special_calc_3par
+!*********************************************************************** 
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  momentum equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_HYDRO)
+
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
@@ -408,11 +427,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_DENSITY),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_DENSITY)
 !
     endsubroutine special_calc_density
 !*********************************************************************** 
@@ -430,9 +445,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_DUSTDENSITY),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_DUSTDENSITY)
 !
     endsubroutine special_calc_dustdensity
 !***********************************************************************
@@ -450,11 +463,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_ENERGY),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_ENERGY)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -472,11 +481,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_MAGNETIC),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_MAGNETIC)
 !
     endsubroutine special_calc_magnetic
 !*********************************************************************** 
@@ -494,11 +499,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_PSCALAR),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_PSCALAR)
 !
     endsubroutine special_calc_pscalar
 !*********************************************************************** 
@@ -554,11 +555,7 @@
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_CHEMISTRY),3,f,df,p)
-      enddo
+      call special_calc_3par(f,df,p,I_SPECIAL_CALC_CHEMISTRY)
 !
     endsubroutine special_calc_chemistry
 !***********************************************************************
