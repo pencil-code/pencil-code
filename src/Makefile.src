@@ -2472,7 +2472,7 @@ run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS) $(IO_ALT_DEPS)
 #
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
-	@sed -e 's/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
+	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
              -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' \
              -e "s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" \
              -e "s/namelist *\/[a-zA-Z0-9_]*[a-zA-Z0-9]_\([ir][a-z]*_pars\)/namelist \/special_\1/" \
@@ -2480,7 +2480,7 @@ ifneq ($(SPECIAL_MULT),1)
 	@if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then mv -f special.tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f special.tmp; fi
 else
 	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > special.tmp; mv -f special.tmp $(PENCIL_HOME)/src/special.f90
-	@for file in $(SPECIAL_MODULES); do sed -e"s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
+	@for file in $(SPECIAL_MODULES); do sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
                                                 -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$${file#*/}_\1/" \
