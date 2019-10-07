@@ -157,9 +157,9 @@ def distribute_fort(
     else:
         prec=np.float32
         intp=np.int32
-    nx=(farray.x.size-2*nghosts)/dim.nprocx
-    ny=(farray.y.size-2*nghosts)/dim.nprocy
-    nz=(farray.z.size-2*nghosts)/dim.nprocz
+    nx=int((farray.x.size-2*nghosts)/dim.nprocx)
+    ny=int((farray.y.size-2*nghosts)/dim.nprocy)
+    nz=int((farray.z.size-2*nghosts)/dim.nprocz)
     if hasattr(farray,'deltay'):
         tmp_arr=np.zeros(nx+ny+nz+6*nghosts+5)
     else:
