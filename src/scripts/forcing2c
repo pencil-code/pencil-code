@@ -1,7 +1,7 @@
 rm -f forcing_c.h
 echo '#pragma once' > forcing_c.h
 echo '#include "headers_c.h"' >> forcing_c.h
-echo '#define forcing_coefs_hel_pars '$MODULE_PREFIX'forcing'$MODULE_INFIX'forcing_coefs_hel_pars'$MODULE_SUFFIX >> forcing_c.h
+echo '#define forcing_pars_hel '$MODULE_PREFIX'forcing'$MODULE_INFIX'forcing_pars_hel'$MODULE_SUFFIX >> forcing_c.h
 
-echo 'extern "C" void *'$MODULE_PREFIX'forcing'$MODULE_INFIX'forcing_coefs_hel_pars'$MODULE_SUFFIX'(REAL coef1[3], REAL coef2[3], REAL coef3[3], REAL fda[3], REAL kk[3], REAL *phase, REAL *fact);' >> forcing_c.h
+echo 'extern "C" void *'$MODULE_PREFIX'forcing'$MODULE_INFIX'forcing_pars_hel'$MODULE_SUFFIX'(REAL coef1[3], REAL coef2[3], REAL coef3[3], REAL fda[3], REAL kk[3], REAL *phase, REAL *fact);' >> forcing_c.h
 

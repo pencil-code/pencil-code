@@ -468,10 +468,10 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           fac=dz_1(n)**2
-          df2=fac*( der2_coef0* f(l1:l2,m,n    ,k) &
+          df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
           if (.not.loptest(lwo_line_elem)) then
             if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           endif

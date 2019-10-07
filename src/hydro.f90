@@ -3116,7 +3116,7 @@ module Hydro
       call timing('calc_0d_diagnostics_hydro','before ldiagnos',mnloop=.true.)
 
       if (ldiagnos) then
-        if (headtt.or.ldebug) print*,'calc_0d_diagnostics_hydro: Calculate 0d diagnostics (maxima, rms values etc.)'
+        if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))

@@ -174,7 +174,7 @@ module Forcing
 
     endsubroutine rprint_forcing
 !***********************************************************************
-    subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+    subroutine forcing_pars_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 !
       use General, only: keep_compiler_quiet
 !
@@ -189,7 +189,7 @@ module Forcing
       call keep_compiler_quiet(coef1,coef2,coef3,kk)
       call keep_compiler_quiet(nk)
 
-    endsubroutine fconst_coefs_hel
+    endsubroutine forcing_pars_hel
 !***********************************************************************
     subroutine forcing_clean_up
 !

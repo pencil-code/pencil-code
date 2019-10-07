@@ -150,7 +150,7 @@ module Equ
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
                      lslope_limit_diff .or. lvisc_smag .or. &
-                     lyinyang .or.lgpu
+                     lyinyang !!!.or.lgpu
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -334,7 +334,6 @@ module Equ
         call rhs_gpu(f,ioptest(itsub,0),early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           call copy_farray_from_GPU(f)
-          call calc_all_pencils(f,p)
           call calc_all_module_diagnostics(f,p)
         endif
       else
@@ -664,7 +663,11 @@ module Equ
     endsubroutine pde
 !****************************************************************************
     subroutine calc_all_module_diagnostics(f,p)
-
+!
+!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
+!
+!  10-sep-2019/MR: coded
+!
       use Density, only: calc_diagnostics_density
       !use Energy, only: calc_diagnostics_energy
       use Hydro, only: calc_diagnostics_hydro
@@ -673,10 +676,24 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
 
-      call calc_diagnostics_density(p)
-      !call calc_diagnostics_energy(p)
-      call calc_diagnostics_hydro(f,p)
-      call calc_diagnostics_magnetic(f,p)
+      integer :: nyz, imn
+
+      nyz=ny*nz
+      do imn=1,nyz
+
+        n=nn(imn)
+        m=mm(imn)
+
+        lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
+        llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
+
+        call calc_all_pencils(f,p)
+        call calc_diagnostics_density(p)
+        !call calc_diagnostics_energy(p)
+        call calc_diagnostics_hydro(f,p)
+        call calc_diagnostics_magnetic(f,p)
+
+      enddo
 
     endsubroutine calc_all_module_diagnostics
 !****************************************************************************

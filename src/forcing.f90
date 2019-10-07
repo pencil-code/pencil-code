@@ -204,6 +204,9 @@ module Forcing
 !  18-dec-2015/MR: minimal wavevectors k1xyz moved here from grid
 !  14-Jun-2016/MR+NS: added forcing sinx*exp(-z^2)
 !  11-May-2017/NS: added forcing Aycont_z
+!  08-Aug-2019/MR: moved reading of k.dat, k_double.dat from individual subroutines
+!                  -> nk, kav, kk[xyz] and nk2, kav2, kk2[xyz], respectively, now module 
+!                  variables.
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -1349,6 +1352,22 @@ module Forcing
 
     endsubroutine forcing_coefs_hel
 !***********************************************************************
+    subroutine forcing_pars_hel(coef1,coef2,coef3,fda,kk,phase,fact)
+!
+!  Calculates position-independent and 1D coefficients for helical forcing.
+!
+!  4-oct-17/MR: outsourced from forcing_hel.
+!               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined
+!                            - needs to be fixed
+      use Sub
+!
+      real, dimension (3), intent(out) :: coef1,coef2,coef3,fda,kk
+      real, intent(out) :: phase, fact 
+
+      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+
+    endsubroutine forcing_pars_hel
+!***********************************************************************
     subroutine forcing_coefs_hel2(coef1,coef2,coef3,fda,fx,fy,fz)
 !
 !  Modified copy of forcing_coefs_hel
@@ -1376,6 +1395,8 @@ module Forcing
 !  This routine is can be called with any values of kkx,kky,kkz
 !  to produce coef1,coef2,coef3,kk,phase,fact and fda.
 !
+!  08-aug-19/MR: modified to provide kk,phase,fact instead of fx,fy,fz
+! 
       use General, only: random_number_wrapper
       use Sub
       use Mpicomm, only: stop_it
@@ -1583,6 +1604,9 @@ module Forcing
 !***********************************************************************
     subroutine fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
 !
+!  08-aug-19/MR: carved out to produce fx,fy,fz from the other parameters.
+! 
+
       use Mpicomm, only: stop_it
 
       real,    dimension (3), intent(in ) :: kk,coef1,coef2,coef3,fda
