@@ -8,7 +8,7 @@
 !
 !***************************************************************
 !
-  module special
+  module Special
 
     use Cparam
 
@@ -339,9 +339,10 @@
 !
       use General, only: loptest
 
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
       integer :: i
+      logical :: lwr
 !
       lwr = loptest(lwrite)
 !
@@ -353,7 +354,7 @@
       endif
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_RPRINT_SPECIAL),2,lreset,lwrite)
+        call caller(special_sub_handles(i,I_RPRINT_SPECIAL),2,lreset,lwr)
       enddo
 !
     endsubroutine rprint_special
@@ -653,4 +654,4 @@
 !
     endsubroutine set_init_parameters
 !*********************************************************************** 
-  end module
+  endmodule Special
