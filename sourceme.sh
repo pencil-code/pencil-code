@@ -49,6 +49,11 @@ if [ -z $_sourceme ]; then	# called for the first time?
     # PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/remesh/bin
     PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 
+    if ([ -d $PENCIL_HOME/src/astaroth/submodule/scripts ]); then
+      export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
+      export PATH=${PATH}:$AC_HOME/scripts/
+    fi
+
     #  Set path for DX macros
     DXMACROS="${PENCIL_HOME}/dx/macros${DXMACROS:+:$DXMACROS}"
 
