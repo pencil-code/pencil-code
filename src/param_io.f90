@@ -1036,6 +1036,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " ldensity=", ldensity, ","
       write(unit,'(A,L1,A)') " lentropy=", lentropy, ","
       write(unit,'(A,L1,A)') " ltemperature=", ltemperature, ","
+      write(unit,'(A,L1,A)') " lgrav=", lgrav, ","
       write(unit,'(A,L1,A)') " lshock=", lshock, ","
       write(unit,'(A,L1,A)') " lmagnetic=", lmagnetic, ","
       write(unit,'(A,L1,A)') " lforcing=", lforcing, ","
