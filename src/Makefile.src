@@ -409,7 +409,7 @@ ifeq ($(GPU),gpu_astaroth)
   else
     LIBGPU = astaroth_sgl.so
   endif
-  LDFLAGS_MAIN += -dynamic -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
+  LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
 else
   GPU_INTERFACE=
 endif
@@ -2377,7 +2377,7 @@ LD=$(FC)
 #
 ifneq ($(IO_ALT),)
   IO_ALT_DEPS = io_alt.so
-  LDFLAGS_MAIN += -dynamic
+  LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic
   FFLAGS += $(DLL_FFLAGS)
 else
   IO_ALT_DEPS =
