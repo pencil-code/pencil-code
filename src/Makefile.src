@@ -390,7 +390,7 @@ special_message:
     SPECIAL_MODULES := $(strip $(SPECIAL))
     SPECIAL_DEPS = special_preps
     ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
-      LDFLAGS_MAIN += -Bdynamic -Wl,-export-dynamic
+      LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic
       SPECIAL_DEPS += special.so
       SPECIAL = special
       SPECIAL_MULT = 1
