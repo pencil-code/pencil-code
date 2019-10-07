@@ -71,8 +71,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 #if LFORCING
     //Update forcing params
     if (isubstep == itorder) { 
-         forcing_params.Update();  // calculate on CPU
-         forcing_params.Load();    // load into GPU
+         forcing_params.Update();  // calculate on CPU and load into GPU
     }
 #endif
     if (lfirst && ldt) {
@@ -94,6 +93,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     //NOTE: In Astaroth, isubstep is {0,1,2}, in PC it is {1,2,3}
 
     if (early_finalize) {
+    //if (1) {
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
       {
@@ -107,11 +107,10 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     // MPI communication has not yet finished, hence only the inner domain can be advanced.
 
       int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1;   // -1 shift because of C indexing convention
-      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1,dt,start,end);
+      acSynchronize();
  
       int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
-       
-      //if (finalize_isendrcv_bdry) printf("function correct \n");
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
 
       loadOuterFront(mesh,STREAM_0);
@@ -152,24 +151,19 @@ extern "C" void registerGPU(AcReal* farray)
     for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i) {
         //mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)farray+offset;
         mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
+//printf("&farray[offset]= %d \n", (size_t)&farray[offset]);
         offset+=mw;
     }
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
 {
-<<<<<<< HEAD
     //Initialize GPUs in the node
     AcResult res=acCheckDeviceAvailability();
-=======
-    //Check GPU availability
-    AcResult res = acCheckDeviceAvailability();
->>>>>>> MR: adaptations for use of forcing and concurrency
 }
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo & config){
 
-//printf("it, iproc, lcartesian_coords= %d \n", iproc);   //lcartesian_coords);  //iproc); //it, isubstep);
      config.int_params[AC_nx]=nx;
      config.int_params[AC_ny]=ny;
      config.int_params[AC_nz]=nz;
@@ -235,21 +229,34 @@ printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lntt0,lnrho0);
      config.real_params[AC_chi]=chi;
 printf("chi %f \n", chi);
 #endif
+}
+
+#define PUT(ptr,n_elem) \
+  acDeviceLoadScalarArray(devConfig.devices[0], STREAM_DEFAULT, AC_##ptr, 0, ptr, n_elem);
+
+void loadProfiles(AcMeshInfo & config){
 #if LFORCING
 #include "../forcing_pars_c.h"
      config.int_params[AC_iforcing_zsym]=iforcing_zsym;
      config.real_params[AC_k1_ff]=k1_ff;
+     printf("profx_ampl, val= %d %lf %lf\n", profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
+     PUT(profx_ampl,nx)
+     PUT(profy_ampl,my)
+     PUT(profz_ampl,mz)
+     PUT(profx_hel,nx)
+     PUT(profy_hel,my)
+     PUT(profz_hel,mz)
 #endif
 }
 extern "C" void initializeGPU()
 {
     //Setup configurations used for initializing and running the GPU code
-
     	setupConfig(mesh.info);
         AcResult res=acInit(mesh.info);
         res=acGetNode(&node);
         acNodeQueryDeviceConfiguration(node, &devConfig);
         initLoadStore();
+        loadProfiles(mesh.info);
 
     // initialize diagnostics
        //init_diagnostics();

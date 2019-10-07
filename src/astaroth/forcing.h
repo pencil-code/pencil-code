@@ -6,17 +6,17 @@
 #define TOVEC3(type,arr) ((type){arr[0],arr[1],arr[2]})
 #define TOACREAL3(arr) TOVEC3(AcReal3,arr)
 
-// contains parameters returned by PC routine forcing_const_coefs_hel_pars
+// contains parameters returned by PC routine forcing_pars_hel
 typedef struct {
 
     real coef1[3], coef2[3], coef3[3], fda[3], kk[3];
     real phase, fact;
 
     void Update(){
-      forcing_coefs_hel_pars(&coef1[0],&coef2[0],&coef3[0],&fda[0],&kk[0],&phase,&fact);
-    };
-    void Load(){
-      acLoadDeviceConstant(AC_forcing_phase, phase);
+
+      forcing_pars_hel(coef1,coef2,coef3,fda,kk,&phase,&fact);
+//printf("phase,fact,kk= %f %f %f %f %f\n", phase, fact, kk[0],kk[1],kk[2]);
+      acLoadDeviceConstant(AC_phase, phase);
       acLoadDeviceConstant(AC_fact, fact);
       acLoadVectorConstant(AC_coef1, TOACREAL3(coef1));
       acLoadVectorConstant(AC_coef2, TOACREAL3(coef2));
