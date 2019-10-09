@@ -359,7 +359,7 @@ else if (($hn =~ Xcomp*) || ($masterhost =~ andromeda)) then
   echo "..for multiprecossor jobs. "
   echo " ******************************"
   source ${HOME}/.cshrc
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #------------------------------------------
 else if ($hn =~ p*.hpc2n.umu.se ) then
   echo "HPC2N cluster (akka) - Umea"
@@ -377,7 +377,7 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
   #
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #------------------------------------------
 else if ($hn =~ t*.hpc2n.umu.se ) then
   echo "HPC2N cluster (abisko) - Umea"
@@ -419,9 +419,9 @@ echo $nnode
 echo $nprocpernode
 echo $npops
 echo "AXEL2"
-  #set $mpirun=/usr/local/mpich2/bin/mpirun
-  #set $mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
-  #set $mpirun=mpirun
+  #set mpirun=/usr/local/mpich2/bin/mpirun
+  #set mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
+  #set mpirun=mpirun
 
 #------------------------------------------
 else if ($hn =~ scylla* ) then
@@ -464,10 +464,10 @@ else if ($hn =~ compute-*.local ) then
   #
   #setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
  #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #  set mpirunops="-hostfile $PBS_NODEFILE"
 #  cp $PBS_NODEFILE machines
-#  set $datadir='data'
+#  set datadir='data'
 #  uniq machines > mpd.hosts
 #  set myprocpernode = 8
 #  echo $ncpus
@@ -478,33 +478,34 @@ else if ($hn =~ compute-*.local ) then
 else if ($hn =~ meera*)  then
   echo "******************************"
   echo "Meera : Dhruba's laptop"
-  echo " ******************************"
+  echo "******************************"
   source ${HOME}/.cshrc
-  set $mpirun=${HOME}/Library/bin/mpirun
+  set mpirun=${HOME}/Library/bin/mpirun
 #------------------------------------------------
 else if ($hn =~ norlx51*) then
   echo "******************************"
   echo "NORDITA cluster"
-  echo " ******************************"
+  echo "******************************"
   if (-r ${HOME}/.cshrc) then
     source ${HOME}/.cshrc
-    set $mpirun=mpirun
+    set mpirun=mpirun
+    set npops = "-n $ncpus"
   endif
 #------------------------------------------------
 else if ($hn =~ norlx5*) then
   echo "******************************"
   echo "NORDITA cluster"
-  echo " ******************************"
+  echo "******************************"
   if (-r ${HOME}/.cshrc) then
     source ${HOME}/.cshrc
-    set $mpirun=${HOME}/Library/bin/mpirun
+    set mpirun=${HOME}/Library/bin/mpirun
   endif
 #------------------------------------------------
 else if ($hn =~ lakshmi) then
   echo "******************************"
   echo "Dhruba's mac (2012)"
-  echo " ******************************"
-  set $mpirun='/opt/local/lib/openmpi/bin/mpirun'
+  echo "******************************"
+  set mpirun='/opt/local/lib/openmpi/bin/mpirun'
 #------------------------------------------------
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
@@ -2083,7 +2084,7 @@ endif
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
 set subdirs = ("allprocs" "reduced" "averages" "idl")
-set HDF5=`grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`
+set HDF5=`grep -Ec '^ *IO *= *io_hdf5' src/Makefile.local`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "slices" "averages" "idl")
