@@ -33,10 +33,11 @@ module InitialCondition
   real :: logtausmin = -4.0, logtausmax = -1.0
   real :: dlnndlntaus = -4.0
   real :: dlnrhodlnr = -0.1
+  real :: dxxp = 0.0
   real :: zp0 = 0.0
 !
   namelist /initial_condition_pars/ &
-    logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, zp0
+    logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, dxxp, zp0
 !
   contains
 !***********************************************************************
@@ -118,6 +119,39 @@ module InitialCondition
       endif ueq
 !
     endsubroutine initial_condition_uu
+!***********************************************************************
+    subroutine initial_condition_xxp(f, fp)
+!
+!  Initialize particles' positions.
+!
+!  08-oct-19/ccyang: coded
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(:,:), intent(inout) :: fp
+!
+      integer :: k
+      real :: r, p, amp
+!
+      call keep_compiler_quiet(f)
+!
+!  Add small perturbations to particle positions.
+!
+      xxnoise: if (dxxp > 0.0) then
+        amp = dxxp * (cs0 / omega)
+        ploop: do k = 1, npar_loc
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          r = amp * sqrt(-2.0 * log(r))
+          p = twopi * p
+          fp(k,ixp) = fp(k,ixp) + r * sin(p)
+          fp(k,izp) = fp(k,izp) + r * cos(p)
+        enddo ploop
+      endif xxnoise
+!
+    endsubroutine initial_condition_xxp
 !***********************************************************************
     subroutine initial_condition_vvp(f, fp)
 !
