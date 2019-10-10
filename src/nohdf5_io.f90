@@ -538,7 +538,7 @@ module HDF5_IO
 !  'data/procN/slice_position.dat' is distributed, but may not be synchronized
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
 !
-!  27-Oct-2018/PABourdin: cleaned up
+!  24-May-2019/MR: cloned from output_slice_position
 !
       character(LEN=*) :: directory
       integer, intent(out) :: ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_
