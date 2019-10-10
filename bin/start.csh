@@ -112,7 +112,7 @@ if (! -e NOERASE) then
   if (-e $datadir/time_series.h5 && ! -z $datadir/time_series.h5) \
       mv $datadir/time_series.h5 $datadir/time_series.`timestr`.h5
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
-        $datadir/averages/* >& /dev/null
+        $datadir/averages/* $datadir/slices/* >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
   rm -f ioerrors.log >& /dev/null
 endif
