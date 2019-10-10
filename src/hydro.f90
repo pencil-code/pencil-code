@@ -4616,6 +4616,7 @@ module Hydro
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
       use General, only: itoa
+      use Mpicomm, only: stop_it
 !
       integer :: k
       character (len=intlen) :: smode
