@@ -3117,15 +3117,17 @@ module Hydro
 
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'calc_0d_diagnostics_hydro: Calculate 0d diagnostics (maxima, rms values etc.)'
-        if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
-        if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
-        if ((idiag_taufmin/=0).and.lcdt_tauf) &
-          call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+        if (.not.lgpu) then
+          if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+          if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
+          if ((idiag_taufmin/=0).and.lcdt_tauf) &
+            call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+        endif
 ! urlm
 ! This is being always calculated but written out only when asked.
 ! It should not be done this way, but calculated only is must be written out.
@@ -3401,29 +3403,28 @@ module Hydro
             call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
 !
         endif
+        if (.not.lgpu) then
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-        if (idiag_u2tm/=0) then
-          if (iuut==0) call fatal_error("calc_0d_diagnostics_hydro","Cannot calculate u2tm if iuut==0")
-          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
-          call sum_mn_name(u2t,idiag_u2tm)
-        endif
+          if (idiag_u2tm/=0) then
+            call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
+            call sum_mn_name(u2t,idiag_u2tm)
+          endif
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-        if (idiag_outm/=0) then
-          if (iuut==0) call fatal_error("calc_0d_diagnostics_hydro","Cannot calculate outm if iuut==0")
-          call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
-          call sum_mn_name(out,idiag_outm)
-        endif
+          if (idiag_outm/=0) then
+            call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
+            call sum_mn_name(out,idiag_outm)
+          endif
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-        if (idiag_uotm/=0) then
-          if (ioot==0) call fatal_error("calc_0d_diagnostics_hydro","Cannot calculate uotm if ioot==0")
-          call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
-          call sum_mn_name(uot,idiag_uotm)
+          if (idiag_uotm/=0) then
+            call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
+            call sum_mn_name(uot,idiag_uotm)
+          endif
         endif
 !
         if (lfargo_advection.and.idiag_nshift/=0) then
@@ -5095,6 +5096,19 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
       enddo
+
+      if (idiag_u2tm/=0) then
+        if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
+        idiag_u2tm=0
+      endif
+      if (idiag_outm/=0) then
+        if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
+        idiag_outm=0
+      endif
+      if (idiag_uotm/=0) then
+        if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
+        idiag_uotm=0
+      endif
 !
 !  Loop over dust species (for species-dependent diagnostics).
 !
