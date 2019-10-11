@@ -929,8 +929,10 @@ module Io
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
+      id = -1
       lexists = exists_in_hdf5('persist')
       if (lexists) lexists = exists_in_hdf5('persist/'//lower_case (label))
+      if (lexists) id = 0
       if (lcatch_error .and. .not. lexists) id = -max_int
 !
       read_persist_id = .false.
