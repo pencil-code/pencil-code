@@ -969,6 +969,9 @@ module Io
 !
       integer, dimension(size (value)) :: value_int
 !
+      read_persist_logical_1D = .true.
+      if (.not. persist_exists (label)) return
+!
       call input_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
       value = .false.
       where (value_int > 0) value = .true.
@@ -1004,6 +1007,9 @@ module Io
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
+      read_persist_int_1D = .true.
+      if (.not. persist_exists (label)) return
+!
       call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       read_persist_int_1D = .false.
@@ -1036,6 +1042,9 @@ module Io
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
+!
+      read_persist_real_1D = .true.
+      if (.not. persist_exists (label)) return
 !
       call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
