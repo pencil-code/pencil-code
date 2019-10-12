@@ -51,6 +51,8 @@ module Io
 !
   character (len=fnlen) :: last_snapshot = ""
   logical :: persist_initialized = .false.
+  logical :: lread_add
+  character (len=fnlen) :: varfile_name
 !
   contains
 !***********************************************************************
@@ -526,7 +528,6 @@ module Io
 !  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -534,20 +535,17 @@ module Io
       integer, optional, intent(in) :: mode
       character (len=*), optional :: label
 !
-      real :: time
-      character (len=fnlen) :: filename, dataset
-      real, dimension (:), allocatable :: gx, gy, gz
-      integer :: pos, alloc_err
-      logical :: lread_add
+      character (len=fnlen) :: dataset
+      integer :: pos
 !
-      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+      varfile_name = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
       if (dataset == 'globals') then
         if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
-          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+          varfile_name = trim(datadir)//'/averages/'//trim(file)//'.h5'
         else
-          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+          varfile_name = trim(datadir_snap)//'/'//trim(file)//'.h5'
         endif
       endif
 !
@@ -555,7 +553,7 @@ module Io
       if (present (mode)) lread_add = (mode == 1)
 !
       ! open existing HDF5 file and read data
-      call file_open_hdf5 (filename, read_only=.true.)
+      call file_open_hdf5 (varfile_name, read_only=.true.)
       if (dataset == 'f') then
         ! read components of f-array
         do pos=1, nv
@@ -572,11 +570,27 @@ module Io
         ! read other type of data array
         call input_hdf5 (dataset, a, nv)
       endif
+!
+    endsubroutine input_snap
+!***********************************************************************
+    subroutine input_snap_finalize
+!
+!  Close snapshot file.
+!
+!  12-Oct-2019/PABourdin: moved code from 'input_snap'
+!
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+!
+      real :: time
+      real, dimension (:), allocatable :: gx, gy, gz
+      integer :: alloc_err
+!
       call file_close_hdf5
+      persist_initialized = .false.
 !
       ! read additional data
       if (lread_add .and. lomit_add_data) then
-        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
         call input_hdf5 ('time', time)
         call file_close_hdf5
 !
@@ -590,7 +604,7 @@ module Io
         endif
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
         call input_hdf5 ('time', time)
         call input_hdf5 ('grid/x', gx, mxgrid)
         call input_hdf5 ('grid/y', gy, mygrid)
@@ -621,19 +635,6 @@ module Io
         call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
         call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
         call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
-      endif
-!
-    endsubroutine input_snap
-!***********************************************************************
-    subroutine input_snap_finalize
-!
-!  Close snapshot file.
-!
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      if (persist_initialized) then
-        call file_close_hdf5
-        persist_initialized = .false.
       endif
 !
     endsubroutine input_snap_finalize
@@ -901,6 +902,7 @@ module Io
       init_read_persist = .true.
 !
       if (present (file)) then
+        call file_close_hdf5
         filename = trim (directory_snap)//'/'//trim (file)//'.h5'
         init_read_persist = .not. parallel_file_exists (filename)
         if (init_read_persist) return
@@ -911,6 +913,21 @@ module Io
       persist_initialized = .true.
 !
     endfunction init_read_persist
+!***********************************************************************
+    logical function persist_exists(label)
+!
+!  Check if a persistent variable exists.
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      use General, only: lower_case
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = exists_in_hdf5('persist')
+      if (persist_exists) persist_exists = exists_in_hdf5('persist/'//lower_case (label))
+!
+    endfunction persist_exists
 !***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !

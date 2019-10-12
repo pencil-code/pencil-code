@@ -933,6 +933,18 @@ module Io
 !
     endfunction init_read_persist
 !***********************************************************************
+    logical function persist_exists(label)
+!
+!  Dummy routine
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = .false.
+!
+    endfunction persist_exists
+!***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
