@@ -3,7 +3,6 @@
 !
 ! functions
   public :: register_hydro, initialize_hydro
-  public :: input_persistent_hydro, output_persistent_hydro
   public :: read_hydro_init_pars, write_hydro_init_pars
   public :: read_hydro_run_pars,  write_hydro_run_pars
   public :: rprint_hydro
