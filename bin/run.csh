@@ -156,21 +156,22 @@ date
 touch pc_commands.log
 echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-if ( $# >= 1 ) then
-  if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' ) then
-# launch a second executable simultaneously with PC
-    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
-    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
-    time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
-  else
-    echo Error: launching an additional executable requires mpirun or mpiexec instead of $mpirun !
-    exit
-  endif
-else
+# "$#" does not work on ubuntu LTS, csh just says: "Illegal variable name".
+#if ( $# >= 1 ) then
+#  if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' ) then
+## launch a second executable simultaneously with PC
+#    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
+#    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
+#    time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
+#  else
+#    echo Error: launching an additional executable requires mpirun or mpiexec instead of $mpirun !
+#    exit
+#  endif
+#else
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
-endif
+#endif
 set run_status=$status          # save for exit
 date
 
