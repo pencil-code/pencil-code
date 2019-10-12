@@ -26,6 +26,11 @@ module Persist
 !
   include 'record_types.h'
 !
+  interface input_persistent_general
+     module procedure input_persist_general_by_id
+     module procedure input_persist_general_by_label
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine input_persistent(file)
@@ -36,7 +41,7 @@ module Persist
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added input_persistent_magnetic
 !
-      use IO, only: init_read_persist, read_persist_id
+      use IO, only: init_read_persist, read_persist_id, IO_strategy
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
       use Magnetic, only: input_persistent_magnetic
@@ -47,6 +52,15 @@ module Persist
       logical :: done
 !
       if (lroot .and. (ip <= 8)) print *, 'input_persistent: START '//trim (file)
+!
+      if (IO_strategy == 'HDF5') then
+        if (.not. read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) return
+        call input_persistent_general
+        call input_persistent_interstellar
+        call input_persistent_forcing
+        call input_persistent_magnetic
+        return
+      endif
 !
       if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
         if (.not. present (file)) return
@@ -115,7 +129,7 @@ module Persist
 !
     endsubroutine output_persistent
 !***********************************************************************
-    subroutine input_persistent_general(id,done)
+    subroutine input_persist_general_by_id(id,done)
 !
 !  Reads seed from a snapshot.
 !
@@ -139,7 +153,29 @@ module Persist
           done = .true.
       endselect
 !
-    endsubroutine input_persistent_general
+    endsubroutine input_persist_general_by_id
+!***********************************************************************
+    subroutine input_persist_general_by_label()
+!
+!  Reads seed from a snapshot.
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!
+      use Cdata, only: seed, nseed
+      use General, only: random_seed_wrapper
+      use IO, only: persist_exists, read_persist
+!
+      logical :: error
+!
+      if (persist_exists ('RANDOM_SEEDS')) then
+        call random_seed_wrapper (GET=seed)
+        error = read_persist ('RANDOM_SEEDS', seed(1:nseed))
+        if (.not. error) call random_seed_wrapper (PUT=seed)
+      endif
+!
+      error = read_persist ('SHEAR_DELTA_Y', deltay)
+!
+    endsubroutine input_persist_general_by_label
 !***********************************************************************
     logical function output_persistent_general()
 !
