@@ -24,7 +24,7 @@ module Forcing
 !
   implicit none
 !
-  logical :: lhydro_forcing=.false.,ltestflow_forcing=.false.
+  logical :: lhydro_forcing=.false., ltestflow_forcing=.false.
 
   include 'forcing.h'
 !
@@ -143,11 +143,11 @@ module Forcing
 !
 !  Read in the stored time of the next SNI
 !
-      integer :: id
-      logical :: done
+      integer, optional :: id
+      logical, optional :: done
 !
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(done)
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************

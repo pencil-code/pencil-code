@@ -47,6 +47,11 @@ module Magnetic
   include 'record_types.h'
   include 'magnetic.h'
 !
+  interface input_persistent_magnetic
+     module procedure input_persist_magnetic_id
+     module procedure input_persist_magnetic
+  endinterface
+!
 ! Slice precalculation buffers
 !
   real, target, dimension (:,:,:), allocatable :: bb_xy, jj_xy, poynting_xy
@@ -8400,7 +8405,7 @@ module Magnetic
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
-    subroutine input_persistent_magnetic(id,done)
+    subroutine input_persist_magnetic_id(id,done)
 !
 !  Read in the stored phase and amplitude for the correction of the Beltrami
 !  wave forcing.
@@ -8416,15 +8421,34 @@ module Magnetic
       select case (id)
         case (id_record_MAGNETIC_PHASE)
           if (read_persist ('MAGNETIC_PHASE', phase_beltrami)) return
-          if (lroot) print *, 'input_persistent_magnetic: ', phase_beltrami
+          if (lroot) print *, 'input_persist_magnetic: ', phase_beltrami
           done = .true.
         case (id_record_MAGNETIC_AMPL)
           if (read_persist ('MAGNETIC_AMPL', ampl_beltrami)) return
-          if (lroot) print *, 'input_persistent_magnetic: ', ampl_beltrami
+          if (lroot) print *, 'input_persist_magnetic: ', ampl_beltrami
           done = .true.
       endselect
 !
-    endsubroutine input_persistent_magnetic
+    endsubroutine input_persist_magnetic_id
+!***********************************************************************
+    subroutine input_persist_magnetic()
+!
+!  Read in the stored phase and amplitude for the correction of the Beltrami
+!  wave forcing.
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('MAGNETIC_PHASE', phase_beltrami)
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ', phase_beltrami
+!
+      error = read_persist ('MAGNETIC_AMPL', ampl_beltrami)
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ', ampl_beltrami
+!
+    endsubroutine input_persist_magnetic
 !***********************************************************************
     logical function output_persistent_magnetic()
 !

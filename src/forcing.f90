@@ -25,8 +25,13 @@ module Forcing
 !
   implicit none
 !
-  include 'record_types.h'
   include 'forcing.h'
+  include 'record_types.h'
+!
+  interface input_persistent_forcing
+     module procedure input_persist_forcing_id
+     module procedure input_persist_forcing
+  endinterface
 !
   real :: force=0.,force2=0., force_double=0., force1_scl=1., force2_scl=1.
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
@@ -5439,7 +5444,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine write_forcing_run_pars
 !***********************************************************************
-    subroutine input_persistent_forcing(id,done)
+    subroutine input_persist_forcing_id(id,done)
 !
 !  Read in the stored time of the next SNI
 !
@@ -5460,9 +5465,27 @@ call fatal_error('hel_vec','radial profile should be quenched')
           done = .true.
       endselect
 !
-      if (lroot) print *, 'input_persistent_forcing: ', location, tsforce
+      if (lroot) print *, 'input_persist_forcing: ', location, tsforce
 !
-    endsubroutine input_persistent_forcing
+    endsubroutine input_persist_forcing_id
+!***********************************************************************
+    subroutine input_persist_forcing()
+!
+!  Read in the persistent forcing variables.
+!
+!  11-Oct-2019/PABourdin: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('FORCING_LOCATION', location)
+      if (lroot .and. .not. error) print *, 'input_persist_forcing: location: ', location
+!
+      error = read_persist ('FORCING_TSFORCE', tsforce)
+      if (lroot .and. .not. error) print *, 'input_persist_forcing: tsforce: ', tsforce
+!
+    endsubroutine input_persist_forcing
 !***********************************************************************
     logical function output_persistent_forcing()
 !
