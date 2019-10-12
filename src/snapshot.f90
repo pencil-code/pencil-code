@@ -417,9 +417,6 @@ module Snapshot
         call input_snap_finalize()
       endif
 !
-!AB: I think we can move the repeated lines with lpersist and
-!AB: input_snap_finalize to here.
-!
 !  Read data using lnrho, and now convert to rho.
 !  This assumes that one is now using ldensity_nolog=T.
 !
