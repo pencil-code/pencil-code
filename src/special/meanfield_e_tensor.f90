@@ -2280,34 +2280,6 @@ endif
             
     end subroutine parseParameters
 !*****************************************************************************
-    subroutine input_persistent_special(id,done)
-!
-!  Read in the stored index of the next timestep to be loaded
-!
-!  13-Dec-2011/Bourdin.KIS: reworked
-!  14-jul-2015/fred: removed obsolete Remnant persistant variable from current
-!  read and added new cluster variables. All now consistent with any io
-!
-      use IO, only: read_persist, lun_input
-!
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
-!
-      integer :: i
-!
-!      if (lcollective_IO) call fatal_error ('input_persistent_interstellar', &
-!          "The interstellar persistent variables can't be read collectively!")
-!
-      select case (id)
-        ! for backwards-compatibility (deprecated):
-        case (id_record_SPECIAL_ILOAD)
-          if (read_persist('SPECIAL_ILOAD', iload)) return
-          done = .true.
-      end select
-      if (lroot) print *,'input_persistent_special:','iload',iload
-
-     end subroutine input_persistent_special
-!*****************************************************************************
     logical function output_persistent_special()
 !
 !  Writes out the time of the next SNI

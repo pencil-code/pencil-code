@@ -54,6 +54,3 @@ integer, parameter :: id_record_MAGNETIC_AMPL    = 312
 ! Shear
 integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
 
-! Special
-integer, parameter :: id_record_SPECIAL_ILOAD    = 330
-
