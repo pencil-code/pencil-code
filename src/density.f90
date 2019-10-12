@@ -583,10 +583,10 @@ module Density
       if (lrun) then
         if ((ldiff_normal.or.ldiff_cspeed).and.diffrho==0.0) &
             call warning('initialize_density', &
-            'Diffusion coefficient diffrho is zero!')
+            'Diffusion coefficient diffrho is zero!', 0)
         if (ldiff_cspeed.and..not.(lentropy.or.ltemperature)) &
             call warning('initialize_density', &
-            'Diffusion with cspeed can only be used with lenergy!')
+            'Diffusion with cspeed can only be used with lenergy!', 0)
         if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict) &
             .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
@@ -603,12 +603,12 @@ module Density
         if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
           !lmassdiff_fix=.true.
           call warning('initialize_density', &
-            'For diffusion energy/momentum correction should use lmassdiff_fix!')
+            'For diffusion energy/momentum correction should use lmassdiff_fix!', 0)
         endif
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
           call warning('initialize_density', &
-              'Depricated: lmassdiff_fix now the default!')
+              'Depricated: lmassdiff_fix now the default!', 0)
         endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
