@@ -5,6 +5,7 @@
   public :: register_hydro, initialize_hydro
   public :: read_hydro_init_pars, write_hydro_init_pars
   public :: read_hydro_run_pars,  write_hydro_run_pars
+  public :: input_persistent_hydro, output_persistent_hydro
   public :: rprint_hydro
   public :: get_slices_hydro
   public :: init_uu, duu_dt, hydro_after_boundary, calc_pencils_hydro

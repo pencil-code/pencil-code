@@ -42,6 +42,7 @@ module Persist
 !   6-apr-08/axel: added input_persistent_magnetic
 !
       use IO, only: init_read_persist, read_persist_id, IO_strategy
+      use Hydro, only: input_persistent_hydro
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
       use Magnetic, only: input_persistent_magnetic
@@ -56,6 +57,7 @@ module Persist
       if (IO_strategy == 'HDF5') then
         if (.not. read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) return
         call input_persistent_general
+        call input_persistent_hydro
         call input_persistent_interstellar
         call input_persistent_forcing
         call input_persistent_magnetic
@@ -85,6 +87,7 @@ module Persist
       do while (id /= id_block_PERSISTENT)
         done = .false.
         if (.not. done) call input_persistent_general (id, done)
+        if (.not. done) call input_persistent_hydro (id, done)
         if (.not. done) call input_persistent_interstellar (id, done)
         if (.not. done) call input_persistent_forcing (id, done)
         if (.not. done) call input_persistent_magnetic (id, done)
@@ -106,6 +109,7 @@ module Persist
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
       use IO, only: init_write_persist
+      use Hydro, only: output_persistent_hydro
       use Interstellar, only: output_persistent_interstellar
       use Forcing, only: output_persistent_forcing
       use Magnetic, only: output_persistent_magnetic
@@ -123,6 +127,7 @@ module Persist
       endif
 !
       if (output_persistent_general()) return
+      if (output_persistent_hydro()) return
       if (output_persistent_interstellar()) return
       if (output_persistent_forcing()) return
       if (output_persistent_magnetic()) return

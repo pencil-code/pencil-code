@@ -4590,6 +4590,24 @@ module Hydro
 !
     endsubroutine write_hydro_run_pars
 !***********************************************************************
+    subroutine input_persistent_hydro(id,done)
+!
+!  Dummy. Reads the hydro persistent variables only in 'hydro_kinematic'.
+!
+      integer, optional :: id
+      logical, optional :: done
+!
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    logical function output_persistent_hydro()
+!
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
+!***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
