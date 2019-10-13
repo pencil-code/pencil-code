@@ -457,11 +457,11 @@ module Hydro
 !***********************************************************************
     subroutine input_persistent_hydro(id,done)
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer, intent(in), optional :: id
+      logical, intent(inout), optional :: done
 !
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(done)
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
