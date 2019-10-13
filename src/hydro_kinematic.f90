@@ -32,6 +32,11 @@ module Hydro
   include 'record_types.h'
   include 'hydro.h'
 !
+  interface input_persistent_hydro
+     module procedure input_persist_hydro_id
+     module procedure input_persist_hydro
+  endinterface
+!
   real, dimension (mx,3) :: uumx=0.
   real, dimension (mz,3) :: uumz=0.
   real, dimension (nz,3) :: guumz=0.
@@ -2750,7 +2755,7 @@ module Hydro
 !
     endsubroutine KS_order
 !***********************************************************************
-    subroutine input_persistent_hydro(id,done)
+    subroutine input_persist_hydro_id(id,done)
 !
 !  Read in the stored time of the next random phase calculation.
 !
@@ -2784,9 +2789,42 @@ module Hydro
         done = .true.
       endif
 !
-      if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
+      if (lroot) print*,'input_persist_hydro: ', tphase_kinflow
 !
-    endsubroutine input_persistent_hydro
+    endsubroutine input_persist_hydro_id
+!***********************************************************************
+    subroutine input_persist_hydro()
+!
+!  Read in the stored time of the next random phase calculation.
+!
+!  13-Oct-2019/PABourdin: adapted from input_persist_forcing
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('HYDRO_TPHASE', tphase_kinflow)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tphase_kinflow = ', tphase_kinflow
+!
+      error = read_persist ('HYDRO_PHASE1', phase1)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: phase1 = ', phase1
+!
+      error = read_persist ('HYDRO_PHASE2', phase2)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: phase2 = ', phase2
+!
+      error = read_persist ('HYDRO_LOCATION', location)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: location = ', location
+!
+      error = read_persist ('HYDRO_TSFORCE', tsforce)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce = ', tsforce
+!
+      error = read_persist ('HYDRO_AMPL', tsforce_ampl)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce_ampl = ', tsforce_ampl
+!
+      error = read_persist ('HYDRO_WAVENUMBER', tsforce_wavenumber)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce_wavenumber = ', tsforce_wavenumber
+!
+    endsubroutine input_persist_hydro
 !***********************************************************************
     logical function output_persistent_hydro()
 !
