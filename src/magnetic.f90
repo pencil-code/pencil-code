@@ -8410,7 +8410,7 @@ module Magnetic
 !  Read in the stored phase and amplitude for the correction of the Beltrami
 !  wave forcing.
 !
-!   5-apr-08/axel: adapted from input_persistent_forcing
+!   5-apr-08/axel: adapted from input_persist_forcing
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
       use IO, only: read_persist
@@ -8421,11 +8421,11 @@ module Magnetic
       select case (id)
         case (id_record_MAGNETIC_PHASE)
           if (read_persist ('MAGNETIC_PHASE', phase_beltrami)) return
-          if (lroot) print *, 'input_persist_magnetic: ', phase_beltrami
+          if (lroot) print *, 'input_persist_magnetic: phase_beltrami = ', phase_beltrami
           done = .true.
         case (id_record_MAGNETIC_AMPL)
           if (read_persist ('MAGNETIC_AMPL', ampl_beltrami)) return
-          if (lroot) print *, 'input_persist_magnetic: ', ampl_beltrami
+          if (lroot) print *, 'input_persist_magnetic: ampl_beltrami = ', ampl_beltrami
           done = .true.
       endselect
 !
@@ -8443,10 +8443,10 @@ module Magnetic
       logical :: error
 !
       error = read_persist ('MAGNETIC_PHASE', phase_beltrami)
-      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ', phase_beltrami
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: phase_beltrami = ', phase_beltrami
 !
       error = read_persist ('MAGNETIC_AMPL', ampl_beltrami)
-      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ', ampl_beltrami
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ampl_beltrami = ', ampl_beltrami
 !
     endsubroutine input_persist_magnetic
 !***********************************************************************
