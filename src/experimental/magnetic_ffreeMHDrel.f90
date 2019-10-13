@@ -579,6 +579,16 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
+    subroutine input_persistent_magnetic(id,done)
+!
+      integer, intent(in), optional :: id
+      logical, intent(inout), optional :: done
+!
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_magnetic
+!***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
