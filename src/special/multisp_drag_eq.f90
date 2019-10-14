@@ -39,6 +39,8 @@ module Special
   integer :: idiag_ruzduxm = 0
   integer :: idiag_ruzduym = 0
 !
+  integer :: idiag_drhopm = 0
+  integer :: idiag_drhop2m = 0
   integer :: idiag_rhopdvpxm = 0
   integer :: idiag_rhopdvpym = 0
   integer :: idiag_rhopdvpx2m = 0
@@ -80,12 +82,14 @@ module Special
 !
 !  04-oct-19/ccyang: coded
 !
-      diag: if (idiag_rduxm /= 0 .or. idiag_rduym /= 0 .or. &
-                idiag_rdux2m /= 0 .or. idiag_rduy2m /= 0 .or. &
-                idiag_rduxduym /= 0 .or. idiag_ruzduxm /= 0 .or. idiag_ruzduym /= 0) then
+      gas: if (idiag_rduxm /= 0 .or. idiag_rduym /= 0 .or. &
+               idiag_rdux2m /= 0 .or. idiag_rduy2m /= 0 .or. &
+               idiag_rduxduym /= 0 .or. idiag_ruzduxm /= 0 .or. idiag_ruzduym /= 0) then
         lpenc_diagnos(i_rho) = .true.
         lpenc_diagnos(i_uu) = .true.
-      endif diag
+      endif gas
+!
+      if (idiag_drhopm /= 0 .or. idiag_drhop2m /= 0) lpenc_diagnos(i_rhop) = .true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -104,12 +108,14 @@ module Special
 !  04-oct-19/ccyang: coded
 !
       use Diagnostics, only: sum_mn_name
+      use EquationOfState, only: rho0
+      use Particles_cdata, only: eps_dtog
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(in) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: dux, duy
+      real, dimension(nx) :: dux, duy, drhop
 !
       call keep_compiler_quiet(f, df)
 !
@@ -129,6 +135,10 @@ module Special
         if (idiag_rduxduym /= 0) call sum_mn_name(p%rho * dux * duy, idiag_rduxduym)
         if (idiag_ruzduxm /= 0) call sum_mn_name(p%rho * p%uu(:,3) * dux, idiag_ruzduxm)
         if (idiag_ruzduym /= 0) call sum_mn_name(p%rho * p%uu(:,3) * duy, idiag_ruzduym)
+!
+        drhop = p%rhop - eps_dtog * rho0
+        if (idiag_drhopm /= 0) call sum_mn_name(drhop, idiag_drhopm)
+        if (idiag_drhop2m /= 0) call sum_mn_name(drhop**2, idiag_drhop2m)
       endif diag
 !
     endsubroutine dspecial_dt
@@ -208,6 +218,8 @@ module Special
         idiag_ruzduxm = 0
         idiag_ruzduym = 0
 !
+        idiag_drhopm = 0
+        idiag_drhop2m = 0
         idiag_rhopdvpxm = 0
         idiag_rhopdvpym = 0
         idiag_rhopdvpx2m = 0
@@ -226,6 +238,8 @@ module Special
         call parse_name(iname, cname(iname), cform(iname), "ruzduxm", idiag_ruzduxm)
         call parse_name(iname, cname(iname), cform(iname), "ruzduym", idiag_ruzduym)
 !
+        call parse_name(iname, cname(iname), cform(iname), "drhopm", idiag_drhopm)
+        call parse_name(iname, cname(iname), cform(iname), "drhop2m", idiag_drhop2m)
         call parse_name(iname, cname(iname), cform(iname), "rhopdvpxm", idiag_rhopdvpxm)
         call parse_name(iname, cname(iname), cform(iname), "rhopdvpym", idiag_rhopdvpym)
         call parse_name(iname, cname(iname), cform(iname), "rhopdvpx2m", idiag_rhopdvpx2m)
@@ -244,6 +258,8 @@ module Special
         call farray_index_append("idiag_ruzduxm", idiag_ruzduxm)
         call farray_index_append("idiag_ruzduym", idiag_ruzduym)
 !
+        call farray_index_append("idiag_drhopm", idiag_drhopm)
+        call farray_index_append("idiag_drhop2m", idiag_drhop2m)
         call farray_index_append("idiag_rhopdvpxm", idiag_rhopdvpxm)
         call farray_index_append("idiag_rhopdvpym", idiag_rhopdvpym)
         call farray_index_append("idiag_rhopdvpx2m", idiag_rhopdvpx2m)
