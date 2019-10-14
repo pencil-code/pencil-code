@@ -124,7 +124,7 @@ module InitialCondition
 !
 !  Initialize particles' positions.
 !
-!  08-oct-19/ccyang: coded
+!  10-oct-19/ccyang: coded
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -132,10 +132,65 @@ module InitialCondition
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
 !
-      integer :: k
-      real :: r, p, amp
+      integer, dimension(npar_species) :: ip
+      integer :: npps, npx, npz, ix, iz, is, k
+      real :: dxp, dzp, xp, yp, zp, r, p, amp
 !
       call keep_compiler_quiet(f)
+!
+!  Sanity checks
+!
+      proc: if (mod(npar, ncpus) /= 0 .or. npar_loc /= npar / ncpus) then
+        if (lroot) print *, "initialize_initial_condition: npar, ncpus, npar_loc = ", npar, ncpus, npar_loc
+        call fatal_error("initialize_initial_condition", "particles are not evenly distributed among processors")
+      endif proc
+!
+      species: if (mod(npar_loc, npar_species) /= 0) then
+        if (lroot) print *, "initialize_initial_condition: npar_loc, npar_species = ", npar_loc, npar_species
+        call fatal_error("initialize_initial_condition", "particle species are not evenly divided")
+      endif species
+!
+!  Find the initial ID for each species.
+!
+      npps = npar_loc / npar_species
+      ip = (/ ((k - 1) * (npar / npar_species) + iproc * npps, k = 1, npar_species) /)
+!
+!  Find the spacing between particles.
+!
+      npx = nint(sqrt(Lxyz_loc(1) * real(npps) / Lxyz_loc(3)))
+      npz = npps / npx
+      grid: if (npx * npz /= npps) then
+        if (lroot) print *, "initialize_initial_condition: Lx_loc, Lz_loc = ", Lxyz_loc(1), Lxyz_loc(3)
+        if (lroot) print *, "initialize_initial_condition: npps, npx, npz = ", npps, npx, npz
+        call fatal_error("initialize_initial_condition", "cannot find equal spacing between particles")
+      endif grid
+!
+      dxp = Lxyz_loc(1) / real(npx)
+      dzp = Lxyz_loc(3) / real(npz)
+      if (lroot) print *, "initialize_initial_condition: npx, npz = ", npx, npz
+      if (lroot) print *, "initialize_initial_condition: dxp, dzp = ", dxp, dzp
+!
+!  Assign particle positions and IDs.
+!
+      k = 0
+      yp = xyz0(2) + 0.5 * Lxyz(2)
+      zloop: do iz = 1, npz
+        zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
+!
+        xloop: do ix = 1, npx
+          xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
+!
+          sloop: do is = 1, npar_species
+            k = k + 1
+            fp(k,ixp) = xp
+            fp(k,iyp) = yp
+            fp(k,izp) = zp
+!
+            ip(is) = ip(is) + 1
+            ipar(k) = ip(is)
+          enddo sloop
+        enddo xloop
+      enddo zloop
 !
 !  Add small perturbations to particle positions.
 !
