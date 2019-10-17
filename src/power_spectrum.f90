@@ -1849,20 +1849,7 @@ module power_spectrum
 ! Select cases where spectra are precomputed
 !
   if (iggXim>0.or.iggTim>0) then
-    if (sp=='GWs') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'GWs',lfirstcall)
-    if (sp=='GWh') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'GWh',lfirstcall)
-    if (sp=='GWm') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'GWm',lfirstcall)
-    if (sp=='Str') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'Str',lfirstcall)
-    if (sp=='SCL') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'SCL',lfirstcall)
-    if (sp=='VCT') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'VCT',lfirstcall)
-    if (sp=='Tpq') &
-      call special_calc_spectra(f,spectrum,spectrumhel,'Tpq',lfirstcall)
+      call special_calc_spectra(f,spectrum,spectrumhel,sp,lfirstcall)
   else
 !
 !  Initialize power spectrum to zero. The following lines only apply to
