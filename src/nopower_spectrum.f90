@@ -118,13 +118,15 @@ module power_spectrum
 !
     endsubroutine powerTra
 !***********************************************************************
-    subroutine powerGWs(f,sp)
+    subroutine powerGWs(f,sp,lfirstcall)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: sp
+      logical :: lfirstcall
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(lfirstcall)
 !
     endsubroutine powerGWs
 !***********************************************************************
