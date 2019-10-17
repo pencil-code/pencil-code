@@ -103,14 +103,9 @@ module Special
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
-!  Do this here because shared variables for this array doesn't work on Beskow.
-!
-  integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specSCL, specVCT, specTpq
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel, specSCL, specVCT, specTpq
+  real, dimension (:), allocatable :: kx, ky, kz
+  real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
+  real :: kscale_factor
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -152,6 +147,15 @@ module Special
   integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
 !
+  integer, parameter :: nk=nxgrid/2
+  type, public :: GWspectra
+    real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str
+    real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel
+    real, dimension(nk) :: SCL, VCT, Tpq
+  endtype GWspectra
+
+  type(GWspectra) :: spectra
+
   contains
 !***********************************************************************
     subroutine register_special()
@@ -205,6 +209,8 @@ module Special
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: stat, i
+      logical :: lscale_tobox1=.true.
 !
 !  set index table
 !
@@ -283,6 +289,35 @@ module Special
 !     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
 !         'cs0 should probably not be unity')
 !
+      allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_re')
+!
+      allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
+!
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
+          'Could not allocate memory for kz')
+!
+!  calculate kx, ky, kz
+!
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*kscale_factor
+!
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*kscale_factor
+!
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*kscale_factor
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -592,10 +627,10 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
+      logical, intent(in) :: llast
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
@@ -606,6 +641,212 @@ module Special
 !
     endsubroutine special_after_timestep
 !***********************************************************************
+    subroutine special_calc_spectra(f,spectrum,spectrum_hel,kind,lfirstcall)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrum_hel
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+
+      integer :: ikx, iky, ikz, q, p, pq, ik
+      real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
+      real :: SCL_re, SCL_im
+      real, dimension(3) :: VCT_re, VCT_im, kvec
+
+      if (lfirstcall) then
+        lfirstcall=.false.
+        spectra%GWs=0.; spectra%GWshel=0.
+        spectra%GWh=0.; spectra%GWhhel=0.
+        spectra%GWm=0.; spectra%GWmhel=0.
+        spectra%Str=0.; spectra%Strhel=0.
+        spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
+
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+!
+              k1=kx(ikx+ipy*ny)
+              k2=ky(iky+ipz*nz)
+              k3=kz(ikz+ipx*nx)
+              ksqr=k1**2+k2**2+k3**2
+!
+              if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+                one_over_k2=0.
+              else
+                one_over_k2=1./ksqr
+              endif
+              one_over_k4=one_over_k2**2
+!
+!  possibility of swapping the sign
+!
+              sign_switch=1.
+              if (lswitch_sign_e_X) then
+                if (k3<0.) then
+                  sign_switch=-1.
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    sign_switch=-1.
+                  elseif (k2==0.) then
+                    if (k1<0.) sign_switch=-1.
+                  endif
+                endif
+              endif
+!
+!  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
+!  for the Fortran index ik. Note, however, that 
+!
+!  set k vector
+!
+              kvec(1)=k1
+              kvec(2)=k2
+              kvec(3)=k3
+!
+              if (SCL_spec) then
+                SCL_re=0.
+                SCL_im=0.
+                do q=1,3
+                do p=1,3
+                  pq=ij_table(p,q)
+                  SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
+                  SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
+                enddo
+                enddo
+              endif
+!
+              if (VCT_spec) then
+                do q=1,3
+                  VCT_re(q)=+twothird*kvec(q)*SCL_im
+                  VCT_im(q)=-twothird*kvec(q)*SCL_re
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
+                    VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
+                  enddo
+                enddo
+              endif
+!
+              ik=1+nint(sqrt(ksqr)/kscale_factor)
+!
+!  Debug output
+!
+              if (ldebug_print) then
+                if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
+                1000 format(2i5,1p,4e11.2)
+              endif
+!
+              if (ik <= nk) then
+!
+!  Gravitational wave energy spectrum computed from hdot (=g)
+!
+                if (GWs_spec) then
+                  spectra%GWs(ik)=spectra%GWs(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
+                  spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
+                endif
+!
+!  Gravitational wave strain spectrum computed from h
+!
+                if (GWh_spec) then
+                  spectra%GWh(ik)=spectra%GWh(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                  spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                endif
+!
+!  Gravitational wave mixed spectrum computed from h and g
+!
+                if (GWm_spec) then
+                  spectra%GWm(ik)=spectra%GWm(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
+                  spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                endif
+!
+!  Stress spectrum computed from Str
+!  ?not used currently
+!
+                if (Str_spec) then
+                  spectra%Str(ik)=spectra%Str(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
+                  spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
+                endif
+!
+!  Stress spectrum computed from the scalar mode, SCL.
+!
+                if (SCL_spec) then
+                  spectra%SCL(ik)=spectra%SCL(ik)+.5*(SCL_re**2+SCL_im**2)
+                endif
+!
+!  Spectrum computed from the vector modes...
+!
+                if (VCT_spec) then
+                  do q=1,3
+                    spectra%VCT(ik)=spectra%VCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
+                  enddo
+                endif
+!
+!  Spectrum computed from the total unprojected stress
+!
+                if (Tpq_spec) then
+                  do q=1,3
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
+                  enddo
+                  enddo
+                endif
+!
+              endif
+
+            enddo
+          enddo
+        enddo
+      endif
+
+      select case(kind)
+
+      case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
+      case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
+      case ('Gwm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
+      case ('SCL'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('VCT'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+
+      endselect
+
+    endsubroutine special_calc_spectra
+!***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
@@ -615,22 +856,16 @@ module Special
       use Fourier, only: fourier_transform, fft_xyz_parallel
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
-      real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
-      real, dimension (3) :: e1, e2, kvec, VCT_re, VCT_im
-!     real, dimension(nk) :: specGWs   ,specGWh   ,specStr
-!     real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
+      real, dimension (3) :: e1, e2, kvec
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
-      logical :: lscale_tobox1=.true.
-      real :: kscale_factor, fact, sign_switch
+      real :: fact, sign_switch
       real :: ksqr, one_over_k2, one_over_k4, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, om12, om1, om, omt1
-      real :: SCL_re, SCL_im
       intent(inout) :: f
       character (len=2) :: label
 !
@@ -655,44 +890,10 @@ module Special
       allocate(S_X_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_X_im')
 !
-      allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_re')
-!
-      allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
-!
-      allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for kx')
-      allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for ky')
-      allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for kz')
-!
-!  calculate k^2
-!
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Lx
-      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*kscale_factor
-!
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Ly
-      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*kscale_factor
-!
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Lz
-      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*kscale_factor
-!
 !  set delta_ij
 !
-      delij(1)=1.
-      delij(2)=1.
-      delij(3)=1.
-      delij(4)=0.
-      delij(5)=0.
-      delij(6)=0.
+      delij(1:3)=1.
+      delij(4:6)=0.
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -700,31 +901,24 @@ module Special
 !
 !  Assemble stress, Tpq
 !
-      Tpq_re=0.0
-      Tpq_im=0.0
-      do ij=1,6
-        if (label=='St') then
+      if (label=='St') then
+        Tpq_re=0.0
+        Tpq_im=0.0
+        do ij=1,6
           jStress_ij=iStress_ij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jStress_ij)
-        endif
-      enddo
 !
 !  Fourier transform all 6 components
 !
-      do ij=1,6
-        call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
-!--     call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
-      enddo
+          call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+!--       call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+        enddo
+      endif
 !
 !  Set ST=SX=0 and reset all spectra.
 !
       S_T_re=0. ; S_T_im=0.
       S_X_re=0. ; S_X_im=0.
-      specGWs=0.; specGWshel=0.
-      specGWh=0.; specGWhhel=0.
-      specGWm=0.; specGWmhel=0.
-      specStr=0.; specStrhel=0.
-      specSCL=0.; specVCT=0.; specTpq=0.
 !
 !  P11, P22, P33, P12, P23, P31
 !
@@ -785,12 +979,6 @@ module Special
             endif
             one_over_k4=one_over_k2**2
 !
-!  set k vector
-!
-            kvec(1)=k1
-            kvec(2)=k2
-            kvec(3)=k3
-!
 !  compute e_T and e_X
 !
             do j=1,3
@@ -823,6 +1011,7 @@ module Special
 !
 !  Traceless-tansverse projection:
 !  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
+!  MR: Tpq should not be used if (label/='St')
 !
             Sij_re=0.
             Sij_im=0.
@@ -839,26 +1028,6 @@ module Special
             enddo
             enddo
             enddo
-            enddo
-!
-            SCL_re=0.
-            SCL_im=0.
-            do q=1,3
-            do p=1,3
-              pq=ij_table(p,q)
-              SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
-              SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
-            enddo
-            enddo
-!
-            do q=1,3
-              VCT_re(q)=+twothird*kvec(q)*SCL_im
-              VCT_im(q)=-twothird*kvec(q)*SCL_re
-              do p=1,3
-                pq=ij_table(p,q)
-                VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
-                VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
-              enddo
             enddo
 !
 !  Compute S_T and S_X. Loop over all i and j for simplicity to avoid
@@ -949,140 +1118,11 @@ module Special
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
 !
-!  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
-!  for the Fortran index ik. Note, however, that 
-!
-            if (lspec) then
-              ik=1+nint(sqrt(ksqr)/kscale_factor)
-!
-!  Debug output
-!
-              if (ldebug_print) then
-                if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
-                1000 format(2i5,1p,4e11.2)
-              endif
-!
-              if (ik <= nk) then
-!
-!  Gravitational wave energy spectrum computed from hdot (=g)
-!
-                if (GWs_spec) then
-                  specGWs(ik)=specGWs(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
-                  specGWshel(ik)=specGWshel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
-                endif
-!
-!  Gravitational wave strain spectrum computed from h
-!
-                if (GWh_spec) then
-                  specGWh(ik)=specGWh(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
-                  specGWhhel(ik)=specGWhhel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
-                endif
-!
-!  Gravitational wave mixed spectrum computed from h and g
-!
-                if (GWm_spec) then
-                  specGWm(ik)=specGWm(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
-                  specGWmhel(ik)=specGWmhel(ik)-sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
-                endif
-!
-!  Stress spectrum computed from Str
-!  ?not used currently
-!
-                if (Str_spec) then
-                  specStr(ik)=specStr(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
-                  specStrhel(ik)=specStrhel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
-                endif
-!
-!  Stress spectrum computed from the scalar mode, SCL.
-!
-                if (SCL_spec) then
-                  specSCL(ik)=specSCL(ik)+.5*(SCL_re**2+SCL_im**2)
-                endif
-!
-!  Spectrum computed from the vector modes...
-!
-                if (VCT_spec) then
-                  do q=1,3
-                    specVCT(ik)=specVCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
-                  enddo
-                endif
-!
-!  Spectrum computed from the total unprojected stress
-!
-                if (Tpq_spec) then
-                  do q=1,3
-                  do p=1,3
-                    pq=ij_table(p,q)
-                    specTpq(ik)=specTpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
-                  enddo
-                  enddo
-                endif
-!
-              endif
-!
-!  end of lspec
-!
-            endif
-!
 !  end of ikx, iky, and ikz loops
 !
           enddo
         enddo
       enddo
-!
-!  Communicate as shared variables
-!
-!     if (lspec) then
-!if (ldebug_print) print*,'AXEL5: iproc,specGWs=',iproc,specGWs
-!       if (GWs_spec) then
-!         call put_shared_variable('specGWs   ',specGWs   )
-!         call put_shared_variable('specGWshel',specGWshel)
-!       endif
-!       if (GWh_spec) then
-!         call put_shared_variable('specGWh   ',specGWh   )
-!         call put_shared_variable('specGWhhel',specGWhhel)
-!       endif
-!       if (Str_spec) then
-!         call put_shared_variable('specStr   ',specStr   )
-!         call put_shared_variable('specStrhel',specStrhel)
-!       endif
-!     endif
 !
 !  back to real space
 !
@@ -1090,16 +1130,6 @@ module Special
   !   call fourier_transform(S_X_re,S_X_im,linv=.true.)
 !--   call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
 !--   call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
-!
-!  Deallocate arrays.
-!
-      if (allocated(S_T_re)) deallocate(S_T_re)
-      if (allocated(S_X_im)) deallocate(S_X_im)
-      if (allocated(Tpq_re)) deallocate(Tpq_re)
-      if (allocated(Tpq_im)) deallocate(Tpq_im)
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(kz)) deallocate(kz)
 !
     endsubroutine compute_gT_and_gX_from_gij
 !***********************************************************************

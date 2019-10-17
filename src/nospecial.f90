@@ -82,14 +82,6 @@ module Special
 !
   include 'special.h'
 !
-!  Do this here because shared variables for this array doesn't work on Beskow.
-!
-  integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specSCL, specVCT, specTpq
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel, specSCL, specVCT, specTpq
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -552,6 +544,20 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_chemistry
+!***********************************************************************
+    subroutine special_calc_spectra(f,spectrum,spectrumhel,kind,lfirstcall)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrumhel
+      character(LEN=3) :: kind
+      logical :: lfirstcall
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum,spectrumhel)
+      call keep_compiler_quiet(kind)
+      call keep_compiler_quiet(lfirstcall)
+      
+    endsubroutine special_calc_spectra
 !***********************************************************************
     subroutine special_before_boundary(f)
 !

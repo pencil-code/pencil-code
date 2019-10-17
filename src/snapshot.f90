@@ -508,6 +508,7 @@ module Snapshot
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
+      logical :: lfirstcall
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -537,13 +538,14 @@ module Snapshot
         if (Lor_spec) call powerLor(f,'Lor')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
-        if (GWs_spec) call powerGWs(f,'GWs')
-        if (GWh_spec) call powerGWs(f,'GWh')
-        if (GWm_spec) call powerGWs(f,'GWm')
-        if (Str_spec) call powerGWs(f,'Str')
-        if (SCL_spec) call powerGWs(f,'SCL')
-        if (VCT_spec) call powerGWs(f,'VCT')
-        if (Tpq_spec) call powerGWs(f,'Tpq')
+        lfirstcall=.true.
+        if (GWs_spec) call powerGWs(f,'GWs',lfirstcall)
+        if (GWh_spec) call powerGWs(f,'GWh',lfirstcall)
+        if (GWm_spec) call powerGWs(f,'GWm',lfirstcall)
+        if (Str_spec) call powerGWs(f,'Str',lfirstcall)
+        if (SCL_spec) call powerGWs(f,'SCL',lfirstcall)
+        if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
+        if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
         if (GWd_spec) call powerhel(f,'GWd')
         if (GWe_spec) call powerhel(f,'GWe')
         if (GWf_spec) call powerhel(f,'GWf')

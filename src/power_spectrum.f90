@@ -26,6 +26,7 @@ module power_spectrum
 !
   use Cdata
   use Messages, only: svn_id, warning, fatal_error
+  use Special
 !
   implicit none
 !
@@ -1804,7 +1805,7 @@ module power_spectrum
   !
   endsubroutine powerTra
 !***********************************************************************
-  subroutine powerGWs(f,sp)
+  subroutine powerGWs(f,sp,lfirstcall)
 !
 !  Calculate power and helicity spectra (on spherical shells) of the
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
@@ -1819,14 +1820,15 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
-    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, &
-                       specGWm, specGWmhel, specStr, specStrhel, &
-                       specSCL, specVCT, specTpq
 !
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=3) :: sp
+  logical :: lfirstcall
+
   integer, parameter :: nk=nxgrid/2
+
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real :: k2
-  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
@@ -1834,12 +1836,9 @@ module power_spectrum
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-! real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
-! real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=3) :: sp
   logical, save :: lwrite_krms_GWs=.false.
   real :: sign_switch, kk1, kk2, kk3
 !
@@ -1850,45 +1849,20 @@ module power_spectrum
 ! Select cases where spectra are precomputed
 !
   if (iggXim>0.or.iggTim>0) then
-    if (sp=='GWs') then
-!     call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
-!     call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
-      spectrum   =specGWs
-      spectrumhel=specGWshel
-    endif
-    if (sp=='GWh') then
-!     call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
-!     call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
-      spectrum   =specGWh
-      spectrumhel=specGWhhel
-    endif
-    if (sp=='GWm') then
-!     call get_shared_variable('specGWm   ', specGWm   , caller='powerGWs')
-!     call get_shared_variable('specGWmhel', specGWmhel, caller='powerGWs')
-      spectrum   =specGWm
-      spectrumhel=specGWmhel
-    endif
-    if (sp=='Str') then
-!     call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
-!     call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
-      spectrum   =specStr
-      spectrumhel=specStrhel
-    endif
-    if (sp=='SCL') then
-!     call get_shared_variable('specSCL   ', specSCL   , caller='powerGWs')
-      spectrum   =specSCL
-      spectrumhel=0.
-    endif
-    if (sp=='VCT') then
-!     call get_shared_variable('specVCT   ', specVCT   , caller='powerGWs')
-      spectrum   =specVCT
-      spectrumhel=0.
-    endif
-    if (sp=='Tpq') then
-!     call get_shared_variable('specTpq   ', specTpq   , caller='powerGWs')
-      spectrum   =specTpq
-      spectrumhel=0.
-    endif
+    if (sp=='GWs') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'GWs',lfirstcall)
+    if (sp=='GWh') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'GWh',lfirstcall)
+    if (sp=='GWm') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'GWm',lfirstcall)
+    if (sp=='Str') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'Str',lfirstcall)
+    if (sp=='SCL') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'SCL',lfirstcall)
+    if (sp=='VCT') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'VCT',lfirstcall)
+    if (sp=='Tpq') &
+      call special_calc_spectra(f,spectrum,spectrumhel,'Tpq',lfirstcall)
   else
 !
 !  Initialize power spectrum to zero. The following lines only apply to

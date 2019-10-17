@@ -46,9 +46,10 @@
                           I_SPECIAL_PARTICLES_BFRE_BDARY=26,  &
                           I_SPECIAL_AFTER_BOUNDARY=27,  &
                           I_SPECIAL_AFTER_TIMESTEP=28,  &
-                          I_SET_INIT_PARAMETERS=29  
+                          I_SET_INIT_PARAMETERS=29, &
+                          I_SPECIAL_CALC_SPECTRA=30  
     
-    integer, parameter :: n_subroutines=29
+    integer, parameter :: n_subroutines=30
     integer, parameter :: n_special_modules_max=5
 !
     integer :: n_special_modules
@@ -82,7 +83,8 @@
                            'special_particles_bfre_bdary', &
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
-                           'set_init_parameters         '    /)
+                           'set_init_parameters         ', &
+                           'special_calc_spectra        ' /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
@@ -622,15 +624,16 @@
 !
 !  27-nov-08/wlad: coded
 !
-      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
+      logical, intent(in) :: llast
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP),3,f,df,dt_)
+        call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
+                    4,f,df,dt_,llast)
       enddo
 !
     endsubroutine special_after_timestep
@@ -653,5 +656,20 @@
       enddo
 !
     endsubroutine set_init_parameters
+!***********************************************************************
+    subroutine special_calc_spectra(f,spec,spec_hel,kind,lfirstcall)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spec,spec_hel
+      integer :: i
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+!
+      do i=1,n_special_modules
+        call caller(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),5,f, &
+                    spec, spec_hel, kind, lfirstcall)
+      enddo
+
+    endsubroutine special_calc_spectra
 !*********************************************************************** 
   endmodule Special

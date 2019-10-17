@@ -109,15 +109,6 @@ module Special
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
-!  Do this here because shared variables for this array doesn't work on Beskow.
-!
-  integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specSCL=0   ,specVCT=0   ,specTpq=0
-  real, dimension(nk) :: specGWs=0   ,specGWh=0   ,specGWm=0   ,specStr=0
-  real, dimension(nk) :: specGWshel=0,specGWhhel=0,specGWmhel=0,specStrhel=0
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel, specSCL, specVCT, specTpq
-!
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
@@ -297,7 +288,7 @@ module Special
 !
 !  give a warning if cs0**2=1
 !
-!     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+!     if (cs0==1.) call fatal_error('initialize_special', &
 !         'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
