@@ -31,7 +31,7 @@ CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodu
 ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX} -DPENCIL_ASTAROTH
 
 PRECISION =
-include PC_modulesources
+include PC_modulesources.h
 ifeq ($(PRECISION),DOUBLE)
   ENVIRON += -DAC_DOUBLE_PRECISION=1
   PREC=dbl
@@ -46,7 +46,7 @@ endif
 PCHEADER_DIR=.
 export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 
-astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS) submodule/build/src/core/libastaroth_core.so
+astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS) submodule/build/src/core/libastaroth_core.so
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
 
 submodule/build/src/core/libastaroth_core.so: $(ACSOURCES) $(ACHEADERS)
@@ -63,7 +63,7 @@ include Makefile.extern
 
 $(PC_HEADERS): .sentinel
 
-.sentinel: ../scripts/phys_modules2c PC_modulesources $(MODULESOURCES)
+.sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h diagnostics/PC_modulediags.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepardecs.h
