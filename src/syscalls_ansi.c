@@ -59,6 +59,13 @@ void FTNIZE(caller3)
   (*func)(par1,par2,par3);
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller_str5)
+     (void (**func)(void*,void*,void*,void*,char*,int*), 
+      void* par1, void* par2, void* par3, void* par4, char* str, int len)
+{
+  (*func)(par1,par2,par3,par4,str,&len);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller)
      (void (**func)(void*, ... ), FINT* npar, ... )
 {

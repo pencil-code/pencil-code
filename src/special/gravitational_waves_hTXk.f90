@@ -77,7 +77,7 @@ module Special
   use Cdata
   use Initcond
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, warning
 !
   implicit none
 !
@@ -158,7 +158,7 @@ module Special
 
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Set up indices for variables in special modules.
 !
@@ -194,9 +194,6 @@ module Special
         call farray_register_auxiliary('StXim',iStressXim)
         call farray_register_auxiliary('Str',iStress_ij,vector=6)
       endif
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -367,7 +364,7 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -641,211 +638,260 @@ module Special
 !
     endsubroutine special_after_timestep
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrum_hel,kind,lfirstcall)
-
+    subroutine make_spectra(f)
+!
+!  16-oct-19/MR: carved out from special_calc_spectra
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spectrum,spectrum_hel
-      logical :: lfirstcall
-      character(LEN=3) :: kind
 
       integer :: ikx, iky, ikz, q, p, pq, ik
       real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
       real :: SCL_re, SCL_im
       real, dimension(3) :: VCT_re, VCT_im, kvec
 
-      if (lfirstcall) then
-        lfirstcall=.false.
-        spectra%GWs=0.; spectra%GWshel=0.
-        spectra%GWh=0.; spectra%GWhhel=0.
-        spectra%GWm=0.; spectra%GWmhel=0.
-        spectra%Str=0.; spectra%Strhel=0.
-        spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
+      spectra%GWs=0.; spectra%GWshel=0.
+      spectra%GWh=0.; spectra%GWhhel=0.
+      spectra%GWm=0.; spectra%GWmhel=0.
+      spectra%Str=0.; spectra%Strhel=0.
+      spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
 
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
 !
-              k1=kx(ikx+ipy*ny)
-              k2=ky(iky+ipz*nz)
-              k3=kz(ikz+ipx*nx)
-              ksqr=k1**2+k2**2+k3**2
+            k1=kx(ikx+ipy*ny)
+            k2=ky(iky+ipz*nz)
+            k3=kz(ikz+ipx*nx)
+            ksqr=k1**2+k2**2+k3**2
 !
-              if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-                one_over_k2=0.
-              else
-                one_over_k2=1./ksqr
-              endif
-              one_over_k4=one_over_k2**2
+            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+              one_over_k2=0.
+            else
+              one_over_k2=1./ksqr
+            endif
+            one_over_k4=one_over_k2**2
 !
 !  possibility of swapping the sign
 !
-              sign_switch=1.
-              if (lswitch_sign_e_X) then
-                if (k3<0.) then
+            sign_switch=1.
+            if (lswitch_sign_e_X) then
+              if (k3<0.) then
+                sign_switch=-1.
+              elseif (k3==0.) then
+                if (k2<0.) then
                   sign_switch=-1.
-                elseif (k3==0.) then
-                  if (k2<0.) then
-                    sign_switch=-1.
-                  elseif (k2==0.) then
-                    if (k1<0.) sign_switch=-1.
-                  endif
+                elseif (k2==0.) then
+                  if (k1<0.) sign_switch=-1.
                 endif
               endif
+            endif
 !
 !  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
 !  for the Fortran index ik. Note, however, that 
 !
 !  set k vector
 !
-              kvec(1)=k1
-              kvec(2)=k2
-              kvec(3)=k3
+            kvec(1)=k1
+            kvec(2)=k2
+            kvec(3)=k3
 !
-              if (SCL_spec) then
-                SCL_re=0.
-                SCL_im=0.
-                do q=1,3
+            if (SCL_spec) then
+              SCL_re=0.
+              SCL_im=0.
+              do q=1,3
+              do p=1,3
+                pq=ij_table(p,q)
+                SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
+                SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
+              enddo
+              enddo
+            endif
+!
+            if (VCT_spec) then
+              do q=1,3
+                VCT_re(q)=+twothird*kvec(q)*SCL_im
+                VCT_im(q)=-twothird*kvec(q)*SCL_re
                 do p=1,3
                   pq=ij_table(p,q)
-                  SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
-                  SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
+                  VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
+                  VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
                 enddo
-                enddo
-              endif
+              enddo
+            endif
 !
-              if (VCT_spec) then
-                do q=1,3
-                  VCT_re(q)=+twothird*kvec(q)*SCL_im
-                  VCT_im(q)=-twothird*kvec(q)*SCL_re
-                  do p=1,3
-                    pq=ij_table(p,q)
-                    VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
-                    VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
-                  enddo
-                enddo
-              endif
-!
-              ik=1+nint(sqrt(ksqr)/kscale_factor)
+            ik=1+nint(sqrt(ksqr)/kscale_factor)
 !
 !  Debug output
 !
-              if (ldebug_print) then
-                if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
-                1000 format(2i5,1p,4e11.2)
-              endif
+            if (ldebug_print) then
+              if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
+              1000 format(2i5,1p,4e11.2)
+            endif
 !
-              if (ik <= nk) then
+            if (ik <= nk) then
 !
 !  Gravitational wave energy spectrum computed from hdot (=g)
 !
-                if (GWs_spec) then
-                  spectra%GWs(ik)=spectra%GWs(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
-                  spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
-                endif
+              if (GWs_spec) then
+                spectra%GWs(ik)=spectra%GWs(ik) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
+                spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                   -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
+              endif
 !
 !  Gravitational wave strain spectrum computed from h
 !
-                if (GWh_spec) then
-                  spectra%GWh(ik)=spectra%GWh(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
-                  spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
-                endif
+              if (GWh_spec) then
+                spectra%GWh(ik)=spectra%GWh(ik) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                   -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+              endif
 !
 !  Gravitational wave mixed spectrum computed from h and g
 !
-                if (GWm_spec) then
-                  spectra%GWm(ik)=spectra%GWm(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
-                  spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
-                endif
+              if (GWm_spec) then
+                spectra%GWm(ik)=spectra%GWm(ik) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
+                spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                   -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
+                   -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+              endif
 !
 !  Stress spectrum computed from Str
 !  ?not used currently
 !
-                if (Str_spec) then
-                  spectra%Str(ik)=spectra%Str(ik) &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
-                  spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
-                     +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
-                     -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
-                     *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
-                endif
+              if (Str_spec) then
+                spectra%Str(ik)=spectra%Str(ik) &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
+                spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
+                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
+                   -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
+                   *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
+              endif
 !
 !  Stress spectrum computed from the scalar mode, SCL.
 !
-                if (SCL_spec) then
-                  spectra%SCL(ik)=spectra%SCL(ik)+.5*(SCL_re**2+SCL_im**2)
-                endif
+              if (SCL_spec) then
+                spectra%SCL(ik)=spectra%SCL(ik)+.5*(SCL_re**2+SCL_im**2)
+              endif
 !
 !  Spectrum computed from the vector modes...
 !
-                if (VCT_spec) then
-                  do q=1,3
-                    spectra%VCT(ik)=spectra%VCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
-                  enddo
-                endif
+              if (VCT_spec) then
+                do q=1,3
+                  spectra%VCT(ik)=spectra%VCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
+                enddo
+              endif
 !
 !  Spectrum computed from the total unprojected stress
 !
-                if (Tpq_spec) then
-                  do q=1,3
-                  do p=1,3
-                    pq=ij_table(p,q)
-                    spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
-                  enddo
-                  enddo
-                endif
-!
+              if (Tpq_spec) then
+                do q=1,3
+                do p=1,3
+                  pq=ij_table(p,q)
+                  spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
+                enddo
+                enddo
               endif
+!
+            endif
 
-            enddo
           enddo
         enddo
+      enddo
+
+    endsubroutine make_spectra
+!***********************************************************************
+    subroutine special_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+!
+!  Calculates GW spectra. For use with a single special module.
+!
+!  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nk) :: spectrum,spectrum_hel
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+
+      if (lfirstcall) then
+        call make_spectra(f)
+        lfirstcall=.false.
       endif
 
       select case(kind)
-
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
-      case ('Gwm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
+      case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
       case ('SCL'); spectrum=spectra%Tpq; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%Tpq; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
-
+      case default; if (lroot) call warning('special_calc_spectra', &
+                      'kind of spectrum "'//kind//'" not implemented')
       endselect
 
     endsubroutine special_calc_spectra
+!***********************************************************************
+    subroutine special_calc_spectra_byte(f,spectrum,spectrum_hel,lfirstcall,kind,len)
+!
+!  Calculates GW spectra. For use with multiple special modules.
+!
+!  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nk) :: spectrum,spectrum_hel
+      logical :: lfirstcall
+      byte, dimension(3) :: kind
+      integer :: len
+
+      character(LEN=3) :: kindstr
+
+      if (lfirstcall) then
+        call make_spectra(f)
+        lfirstcall=.false.
+      endif
+
+      kindstr=char(kind(1))//char(kind(2))//char(kind(3))
+
+      select case(kindstr)
+      case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
+      case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
+      case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
+      case ('SCL'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('VCT'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case default; if (lroot) call warning('special_calc_spectra', &
+                      'kind of spectrum "'//kindstr//'" not implemented')
+      endselect
+
+    endsubroutine special_calc_spectra_byte
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !

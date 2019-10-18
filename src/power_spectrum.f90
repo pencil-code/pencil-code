@@ -1849,7 +1849,7 @@ module power_spectrum
 ! Select cases where spectra are precomputed
 !
   if (iggXim>0.or.iggTim>0) then
-      call special_calc_spectra(f,spectrum,spectrumhel,sp,lfirstcall)
+      call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
 !
 !  Initialize power spectrum to zero. The following lines only apply to
@@ -2029,16 +2029,18 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     endif
     close(1)
     !
-    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+    if ( all(sp.ne.(/'SCL','VCT','Tpq'/)) ) then
+      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') spectrumhel_sum
+      endif
+      close(1)
     endif
-    close(1)
     !
     if (lwrite_krms_GWs) then
       krms=sqrt(k2m_sum/nks_sum)

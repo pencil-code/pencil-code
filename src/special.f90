@@ -14,7 +14,7 @@
 
     implicit none
 
-    external caller, caller0, caller2, caller3
+    external caller, caller0, caller2, caller3, caller_str5
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 
@@ -84,7 +84,7 @@
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
                            'set_init_parameters         ', &
-                           'special_calc_spectra        ' /)
+                           'special_calc_spectra_byte   ' /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
@@ -657,17 +657,17 @@
 !
     endsubroutine set_init_parameters
 !***********************************************************************
-    subroutine special_calc_spectra(f,spec,spec_hel,kind,lfirstcall)
+    subroutine special_calc_spectra(f,spec,spec_hel,lfirstcall,kind)
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spec,spec_hel
-      integer :: i
       logical :: lfirstcall
       character(LEN=3) :: kind
 !
+      integer :: i
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),5,f, &
-                    spec, spec_hel, kind, lfirstcall)
+        call caller_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
+                         spec, spec_hel, lfirstcall, kind)
       enddo
 
     endsubroutine special_calc_spectra

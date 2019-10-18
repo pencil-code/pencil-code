@@ -545,19 +545,35 @@ module Special
 !
     endsubroutine special_calc_chemistry
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrumhel,kind,lfirstcall)
+    subroutine special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,kind)
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spectrum,spectrumhel
-      character(LEN=3) :: kind
       logical :: lfirstcall
+      character(LEN=3) :: kind
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(spectrum,spectrumhel)
+      call keep_compiler_quiet(lfirstcall)
       call keep_compiler_quiet(kind)
+  
+    endsubroutine special_calc_spectra
+!***********************************************************************
+    subroutine special_calc_spectra_byte(f,spectrum,spectrumhel,lfirstcall,kind,len)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrumhel
+      logical :: lfirstcall
+      byte, dimension(3) :: kind
+      integer :: len
+
+      !call keep_compiler_quiet(char(kind))
+      call keep_compiler_quiet(len)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum,spectrumhel)
       call keep_compiler_quiet(lfirstcall)
       
-    endsubroutine special_calc_spectra
+    endsubroutine special_calc_spectra_byte
 !***********************************************************************
     subroutine special_before_boundary(f)
 !

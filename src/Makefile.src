@@ -377,7 +377,7 @@ else
 endif
 #
 SPECIAL_DEPS =
-SPECIAL_MULT =
+SPECIAL_MULT = 1
 ifeq ($(SPECIAL),nospecial)
   SPECIAL_MODULES =
 else
@@ -387,13 +387,13 @@ special_message:
 	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
 	exit 1
   else
+    SPECIAL_MULT := $(words $(SPECIAL))
     SPECIAL_MODULES := $(strip $(SPECIAL))
     SPECIAL_DEPS = special_preps
-    ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
+    ifneq ($(SPECIAL_MULT),1)
       LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic
       SPECIAL_DEPS += special.so
       SPECIAL = special
-      SPECIAL_MULT = 1
     endif
   endif
 endif
@@ -2411,7 +2411,7 @@ endif
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
 
 special/%.o : special/%.f90
-ifeq ($(SPECIAL_MULT),1)
+ifneq ($(SPECIAL_MULT),1)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
 else
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
@@ -2437,7 +2437,7 @@ default_to_be: Makefile cparam.inc code buildinfo
 #  Please use alphabetical order.
 #
 preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_TETRAD_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(ASCALAR_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
-ifeq ($(SPECIAL_MULT),1)
+ifneq ($(SPECIAL_MULT),1)
   preprocess += $(SPECIAL_MODULES:=.f90)
 endif
 #
@@ -2471,7 +2471,7 @@ run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS) $(IO_ALT_DEPS)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 special_preps:
-ifneq ($(SPECIAL_MULT),1)
+ifeq ($(SPECIAL_MULT),1)
 	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
              -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' \
              -e "s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" \
@@ -2687,7 +2687,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
-ifneq ($(SPECIAL_MULT),1)
+ifeq ($(SPECIAL_MULT),1)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
