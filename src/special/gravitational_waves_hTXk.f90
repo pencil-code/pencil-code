@@ -867,7 +867,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nk) :: spectrum,spectrum_hel
       logical :: lfirstcall
-      byte, dimension(3) :: kind
+      integer(KIND=ikind1), dimension(3) :: kind
       integer :: len
 
       character(LEN=3) :: kindstr
