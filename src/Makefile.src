@@ -409,7 +409,8 @@ ifeq ($(GPU),gpu_astaroth)
   else
     LIBGPU = astaroth_sgl.so
   endif
-  LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
+  LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+  LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
 else
   GPU_INTERFACE=
 endif
@@ -2377,7 +2378,7 @@ LD=$(FC)
 #
 ifneq ($(IO_ALT),)
   IO_ALT_DEPS = io_alt.so
-  LDFLAGS_MAIN += -Bdynamic -Wl,--export-dynamic
+  LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
   FFLAGS += $(DLL_FFLAGS)
 else
   IO_ALT_DEPS =
@@ -2468,7 +2469,7 @@ start.x: start.o | $(SPECIAL_DEPS)
 #
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS) $(IO_ALT_DEPS)
-	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
+	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 special_preps:
 ifeq ($(SPECIAL_MULT),1)
@@ -2493,15 +2494,15 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 io_alt.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(IO_ALT_OBJ) 
 	$(LD) $(IO_ALT_OBJ) $(DLL_LDFLAGS) -o io_alt.so
 #
-# writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources
+# writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
 # 
 CUDA_MAKEDIR=astaroth
 CUDA_INCDIR=$(CUDA_MAKEDIR)
 CUDA_RELPATH=..
 
-gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources
+gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h
 #
-$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources: .sentinel
+$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h: .sentinel
 #
 .sentinel: Makefile.local
 	@touch .sentinel
@@ -2511,17 +2512,17 @@ $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources: .sentinel
 	@sed -f gpu.sed < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
-	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources
+	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(TIMESTEP),timestep)
-	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources
+	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(EOS),noeos)
-	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources
+	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 else
-	@echo '' >> $(CUDA_MAKEDIR)/PC_modulesources
+	@echo '' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
-#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources
+#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -2823,7 +2824,7 @@ clean:  slender
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
-	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
+	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
