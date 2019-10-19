@@ -5254,7 +5254,7 @@ module Magnetic
         endif
 !
         if (idiag_exatop/=0) then
-          if (n==n2.and.last_proc_z) call integrate_mn_name(p%exa(:,3),idiag_exatop)
+          if (n==n2.and.llast_proc_z) call integrate_mn_name(p%exa(:,3),idiag_exatop)
         endif
 !
       endif
