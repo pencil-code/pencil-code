@@ -2664,7 +2664,7 @@ module Magnetic
          ) lpenc_diagnos2d(i_jj)=.true.
 !
       if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 .or. &
-          idiag_exatop/=0 .or. idiag_exabot/=0
+          idiag_exatop/=0 .or. idiag_exabot/=0 &
          ) lpenc_diagnos(i_exa)=.true.
       if (idiag_e3xamz1/=0 .or. idiag_e3xamz2/=0 .or. idiag_e3xamz3/=0 &
          ) lpenc_diagnos(i_e3xa)=.true.
