@@ -5250,11 +5250,11 @@ module Magnetic
         call sum_mn_name(p%exa(:,3),idiag_examz)
 !
         if (idiag_exabot/=0) then
-          if (n==n1) call integrate_mn_name(p%exa(:,3),idiag_exabot)
+          if (n==n1.and.lfirst_proc_z) call integrate_mn_name(p%exa(:,3),idiag_exabot)
         endif
 !
         if (idiag_exatop/=0) then
-          if (n==n2) call integrate_mn_name(p%exa(:,3),idiag_exatop)
+          if (n==n2.and.last_proc_z) call integrate_mn_name(p%exa(:,3),idiag_exatop)
         endif
 !
       endif
@@ -8865,8 +8865,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
       enddo
 !
-      if (.not.lfirst_proc_z) idiag_exabot=0
-      if (.not.llast_proc_z) idiag_exatop=0
+      !!if (.not.lfirst_proc_z) idiag_exabot=0
+      !!if (.not.llast_proc_z) idiag_exatop=0
 !
 !  Quantities which are averaged over half (north-south) the box.
 !
