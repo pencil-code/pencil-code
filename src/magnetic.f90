@@ -8865,8 +8865,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
       enddo
 !
-      !!if (.not.lfirst_proc_z) idiag_exabot=0
-      !!if (.not.llast_proc_z) idiag_exatop=0
+      if (idiag_exabot/=0) call set_type(idiag_exabot,lint=.true.)
+      if (idiag_exatop/=0) call set_type(idiag_exatop,lint=.true.)
 !
 !  Quantities which are averaged over half (north-south) the box.
 !
