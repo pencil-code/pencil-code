@@ -32,6 +32,7 @@ echo "$datadir"
 #
 cd $datadir
 pc_mkproctree $ncpus
+mkdir allprocs
 pwd
 echo "pc_mkproctree $ncpus"
 cd $olddir
@@ -41,6 +42,7 @@ cd $olddir
 if ($#argv == 0) then
   echo "Example: restart-new-dir-VAR ../hydro256e 46"
 else
+  cp data/allprocs/grid.dat $1/data/allprocs
   cp data/dim.dat $1/data/
   cp data/param* $1/data/
   copy-proc-to-proc grid.dat $1
