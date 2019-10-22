@@ -441,7 +441,7 @@ module Interstellar
       frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
-      cooling_select, heating_select, heating_rate, rho0ts, &
+      cooling_select, heating_select, heating_rate, GammaUV, rho0ts, &
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
       average_SNI_heating, SN_rho_ratio, SN_TT_ratio, &
@@ -462,7 +462,7 @@ module Interstellar
       laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor,&
       heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
-      lheating_UV, cooling_select, heating_select, heating_rate, &
+      lheating_UV, cooling_select, heating_select, heating_rate, GammaUV, &
       heatcool_shock_cutoff_rate, ladd_massflux, lcooling_revert, &
       N_mass, addrate, add_scale, T_init, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
