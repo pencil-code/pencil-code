@@ -6,4 +6,5 @@ void loadOuterBot(AcMesh& mesh, Stream stream);
 void loadOuterTop(AcMesh& mesh, Stream stream);
 void loadOuterLeft(AcMesh& mesh, Stream stream);
 void loadOuterRight(AcMesh& mesh, Stream stream);
+void loadOuterHalos(AcMesh& mesh);
 

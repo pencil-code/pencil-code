@@ -29,3 +29,10 @@
 &density_init_pars
   initlnrho='const_lnrho', lnrho_const=1.23
 /
+&eos_init_pars
+/
+&entropy_init_pars
+/
+&magnetic_init_pars
+/
+

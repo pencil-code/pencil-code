@@ -97,8 +97,8 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
       {
-          //loadOuterHalos(mesh);
-          acLoad(mesh);
+          loadOuterHalos(mesh);
+          //acLoad(mesh);
       }
       acSynchronizeMesh();
       acIntegrateStep(isubstep-1, dt);
@@ -111,6 +111,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       acSynchronize();
  
       int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
+      printf("mesh.vertex_buffer, iargs= %p %d %d \n",mesh.vertex_buffer[0], iarg1, iarg2);
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
 
       loadOuterFront(mesh,STREAM_0);
@@ -251,11 +252,11 @@ void loadProfiles(AcMeshInfo & config){
 extern "C" void initializeGPU()
 {
     //Setup configurations used for initializing and running the GPU code
+        initLoadStore();
     	setupConfig(mesh.info);
         AcResult res=acInit(mesh.info);
         res=acGetNode(&node);
         acNodeQueryDeviceConfiguration(node, &devConfig);
-        initLoadStore();
         loadProfiles(mesh.info);
 
     // initialize diagnostics
