@@ -420,16 +420,17 @@ make_cuda_dir()
 #
 make_astaroth_dir()
 {
-## cuda subdirectory
+## astaroth subdirectory
   [ -h $src/astaroth ] && rm $src/astaroth
   adddir $src/astaroth
-## cuda/src_new subdirectory
+## submodule subdirectory
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
+  adddir $src/astaroth/submodule/src/utils
   adddir $src/astaroth/submodule/src/standalone
   adddir $src/astaroth/submodule/src/standalone/model
   adddir $src/astaroth/submodule/src/core
@@ -461,7 +462,9 @@ link_astaroth_files()
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
 $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
+$srcdir/astaroth/submodule/acc/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu \
+$srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
