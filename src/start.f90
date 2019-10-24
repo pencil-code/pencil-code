@@ -227,10 +227,10 @@ program start
         endif
       else
         if (lpole(i)) then ! overwrite xyz0 and xyz1 to 0:pi 
-          if (lperi(i)) call fatal_error('start',&
-            'lperi and lpole cannot be used together in same component')
           if (.not. lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
+          if (lperi(i)) call fatal_error('start',&
+            'lperi and lpole cannot be used together in same component')
           if (i==2) then
             xyz0(i) = 0.
             Lxyz(i) = pi 
@@ -245,9 +245,8 @@ program start
         endif
       endif
     else                            ! Lxyz was set
-      if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
+      if (xyz1(i)/=impossible) & ! both Lxyz and xyz1 are set
         call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
-      endif
     endif
   enddo
 !
