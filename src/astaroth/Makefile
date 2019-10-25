@@ -15,7 +15,7 @@ OPTFLAGS = -O1
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 #  Original
-CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
+CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
@@ -50,7 +50,7 @@ astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_modu
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
 
 submodule/build/src/core/libastaroth_core.so: $(ACSOURCES) $(ACHEADERS)
-	mkdir -p submodule/build && cd submodule/build && cmake -DAUTO_OPTIMIZATION=OFF -DMULTIGPU_ENABLED=OFF -DBUILD_DEBUG=OFF -DBUILD_SHARED=ON -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF -DVERBOSE_PRINTING=OFF .. && make -I../../.. -j # VERBOSE=1 # Build the core Astaroth library
+	mkdir -p submodule/build && cd submodule/build && export DSL_MODULE=pc_mhd_solver && cmake -DAUTO_OPTIMIZATION=OFF -DMULTIGPU_ENABLED=OFF -DBUILD_DEBUG=OFF -DBUILD_SHARED=ON -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF -DVERBOSE_PRINTING=OFF .. && make -I../../.. -j # VERBOSE=1 # Build the core Astaroth library
 
 include Makefile.depend
 include Makefile.extern
