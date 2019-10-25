@@ -15,6 +15,8 @@
 using namespace std;
 
 #include "astaroth.h"
+#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cparam_c.h"
+#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cdata_c.h"
 
 const int mxy=mx*my;
 extern int halo_yz_size;

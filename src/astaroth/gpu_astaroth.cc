@@ -24,6 +24,9 @@
 #define EXTERN 
 #define FINT int
 
+#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cparam_c.h"
+#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cdata_c.h"
+
 #include "../sub_c.h"                   // provides set_dt
 //#include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrecv_bdry
