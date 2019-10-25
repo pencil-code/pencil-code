@@ -46,7 +46,7 @@ endif
 PCHEADER_DIR=.
 export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 
-astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS) submodule/build/src/core/libastaroth_core.so
+astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) submodule/build/src/core/libastaroth_core.so  $(MAIN_OBJ) $(OBJECTS)
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
 
 submodule/build/src/core/libastaroth_core.so: $(ACSOURCES) $(ACHEADERS)
@@ -64,16 +64,21 @@ include Makefile.extern
 $(PC_HEADERS): .sentinel
 
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
-	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h diagnostics/PC_modulediags.h
+	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h 
+#diagnostics/PC_modulediags.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepardecs.h
-	@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
+	#@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
 	@for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
-	then ../scripts/phys_modules2c par $$file equationofstate; ../scripts/phys_modules2c diag $$file equationofstate;\
-        else ../scripts/phys_modules2c par $$file; ../scripts/phys_modules2c diag $$file; fi; done
-	@rm -f diagnostics/PC_modulediags_init.h
-	@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
+	then ../scripts/phys_modules2c par $$file equationofstate; \
+        else ../scripts/phys_modules2c par $$file; fi; done
+	#@rm -f diagnostics/PC_modulediags_init.h
+	#@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
 	@touch .sentinel
+
+#        @for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
+#        then ../scripts/phys_modules2c par $$file equationofstate; ../scripts/phys_modules2c diag $$file equationofstate;\
+#        else ../scripts/phys_modules2c par $$file; ../scripts/phys_modules2c diag $$file; fi; done
 
 clean:
 	@rm -f $(OBJECTS) $(MAIN_OBJ)
@@ -84,8 +89,9 @@ clean:
 # Deep cleaning, e.g. necessary with compiler change
 #
 cleann: clean
-	@rm -f ../cparam_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h
-	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
-	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f
+	@rm -f ../cparam_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h
 	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < $(PCHEADER_DIR)/PC_modulepardecs.h | xargs rm -f
 	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < $(PCHEADER_DIR)/PC_modulepars.h | xargs rm -f
+
+	#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
+	#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f

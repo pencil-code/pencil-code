@@ -2508,7 +2508,7 @@ $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h: .sentinel
 	@touch .sentinel
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
-	@sed -i -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' gpu.sed
+	@sed -i -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed
 	@sed -f gpu.sed < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h

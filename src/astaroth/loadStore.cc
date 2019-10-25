@@ -15,8 +15,8 @@
 using namespace std;
 
 #include "astaroth.h"
-#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cparam_c.h"
-#include "/homeappl/home/mreinhar/git/pencil-code/samples/gputest/src/cdata_c.h"
+#include "../cparam_c.h"
+#include "../cdata_c.h"
 
 const int mxy=mx*my;
 extern int halo_yz_size;
@@ -114,7 +114,7 @@ void loadOuterLeft(AcMesh& mesh, Stream stream)
     int3 start={0,                      halo_widths_y[BOT],     halo_widths_z[BOT]  };
     int3 end  ={halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1};
 
-    acLoadYZPlate(start, end, &mesh, halo_yz_buffer);
+    acNodeLoadYZPlate(node, stream, start, end, &mesh, halo_yz_buffer);
 }
 
 void loadOuterRight(AcMesh& mesh, Stream stream)
@@ -122,7 +122,7 @@ void loadOuterRight(AcMesh& mesh, Stream stream)
     int3 start={mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]  };
     int3 end  ={mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1};
 
-    acLoadYZPlate(start, end, &mesh, halo_yz_buffer);
+    acNodeLoadYZPlate(node, stream, start, end, &mesh, halo_yz_buffer);
 }
 
 void loadOuterHalos(AcMesh& mesh)
