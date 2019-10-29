@@ -82,7 +82,9 @@ module Testfield
   real :: ampl_fcont_aatest=1.,ampl_fcont_uutest=1.
   real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
-  logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
+  logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false., &
+             linitialize0_from_mainrun
+
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
        lremove_mean_flow_NLTFM_zero, lremove_mean_flow_NLTFM_all, &
@@ -95,7 +97,8 @@ module Testfield
        lforcing_cont_aatest,ampl_fcont_aatest, &
        lforcing_cont_uutest,ampl_fcont_uutest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,rescale_uutest, luse_main_run, lupw_uutest, Omega, lvisc_simplified_testfield
+       rescale_aatest,rescale_uutest, luse_main_run, lupw_uutest, Omega, lvisc_simplified_testfield, &
+       linitialize0_from_mainrun
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -258,7 +261,7 @@ module Testfield
       if (luxb_as_aux) then
         if (iuxbtest==0) then
           call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
-          if (lroot.and.iuxbtest/=0) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          if (lroot.and.iuxbtest/=0) print*, 'register_testfield: iuxbtest = ', iuxbtest
         endif
       endif
 !
@@ -267,7 +270,7 @@ module Testfield
       if (ljxb_as_aux) then
         if (ijxbtest==0) then
           call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
-          if (lroot.and.iuxbtest/=0) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          if (lroot.and.iuxbtest/=0) print*, 'register_testfield: ijxbtest = ', ijxbtest
         endif
       endif
 !
@@ -277,7 +280,7 @@ module Testfield
         if (lugu_as_aux) then
           if (iugutest==0) then
             call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
-            if (lroot.and.iugutest/=0) print*, 'initialize_testfield: iugutest = ', iugutest
+            if (lroot.and.iugutest/=0) print*, 'register_testfield: iugutest = ', iugutest
           endif
         else
           call warning('register_testfield','lugu=T requires lugu_as_aux=T -> switched off')
@@ -603,7 +606,7 @@ module Testfield
       type (pencil_case) :: p
 
       real, dimension (nx,3) :: uxB,bbtest,B0_imposed,uum,umxbtest
-      real, dimension (nx,3) :: B0test=0,J0test=0
+      real, dimension (nx,3) :: B0test,J0test
       real, dimension (nx,3) :: duxbtest,djxbtest,dugutest,eetest
       real, dimension (nx,3) :: uxbtest,uxbtestK,uxbtestM,uxbtestMK
       real, dimension (nx,3) :: jxbtest,jxbtestK,jxbtestM,jxbtestMK, ugutest
@@ -613,7 +616,7 @@ module Testfield
       real, dimension (nx) :: alpK,alpM,alpMK
       real, dimension (nx) :: phiK,phiM,phiMK
       real, dimension (nx,3) :: uufluct,bbfluct,jjfluct
-      real, dimension (nx,3) :: aatest,jjtest,graddivutest
+      real, dimension (nx,3) :: aatest,jjtest,graddivutest,del2Atest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
       real, dimension (nx,3) :: del2Utest,uutest
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
@@ -687,12 +690,14 @@ module Testfield
 !
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         uutest=f(l1:l2,m,n,iuxtest:iuztest)
+
         call gij(f,iuxtest,uijtest,1)
         call gij_etc(f,iuxtest,uutest,uijtest,DEL2=del2Utest,GRADDIV=graddivutest)
+
         call gij(f,iaxtest,aijtest,1)
-        call gij_etc(f,iaxtest,aatest,aijtest,bijtest)
+        call gij_etc(f,iaxtest,aatest,aijtest,bijtest,DEL2=del2Atest)
         call curl_mn(aijtest,bbtest,aatest)
-        call curl_mn(bijtest,jjtest,bbtest)
+        call curl_mn(bijtest,jjtest,bbtest)           ! jjtest actually \mu_0 jjtest
 !-test- call del2v_etc(f,iaxtest,CURLCURL=jjtest)
 !
 !  Get u0ref, b0ref, and j0ref (if iE0=5).
@@ -712,9 +717,9 @@ module Testfield
           endif
         endif
 !
-!  do diffusion terms
+!  do diffusion terms (Weyl gauge causes instability!)
 !
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)-etatest*jjtest
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest
 !
 !  valid for nu=const
 !
@@ -730,6 +735,9 @@ module Testfield
         if (lhydro) then
           call coriolis_cartesian(df,uutest,iuxtest)
         elseif (Omega/=0.) then
+!
+!  only Coriolis force so far without main run
+!
           df(l1:l2,m,n,iuxtest  )=df(l1:l2,m,n,iuxtest  )+2*Omega*uutest(:,2)
           df(l1:l2,m,n,iuxtest+1)=df(l1:l2,m,n,iuxtest+1)-2*Omega*uutest(:,1)
         endif
@@ -737,13 +745,15 @@ module Testfield
 !  With imposed field, calculate uutest x B0 and jjtest x B0 terms.
 !  This applies to all terms, including the reference fields.
 !
-        do j=1,3
-          B0_imposed(:,j)=Btest_ext(j)
-        enddo
-        call cross_mn(uutest,B0_imposed,uxbtest)
-        call cross_mn(jjtest,B0_imposed,jxbtest)
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
-        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbtest/rho0
+        if (any(Btest_ext/=0.)) then
+          do j=1,3
+            B0_imposed(:,j)=Btest_ext(j)
+          enddo
+          call cross_mn(uutest,B0_imposed,uxbtest)
+          call cross_mn(jjtest,B0_imposed,jxbtest)
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbtest/rho0
+        endif
 !
 !  If Ubar is available
 !     
@@ -878,6 +888,7 @@ module Testfield
         endif
         bpq(:,:,jtest)=bbtest
         upq(:,:,jtest)=uutest
+        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) jpq(:,:,jtest)=jjtest
 !
 !  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
 !  computation for comparison. Do the same for jxb and ugradu.
@@ -891,9 +902,6 @@ module Testfield
         Eipq(:,:,jtest)=uxbtest*bamp1
         Fipq(:,:,jtest)=jxbtest*bamp1/rho0
         if (lugu) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest*bamp1
-
-        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) &
-            jpq(:,:,jtest)=jjtest
 !
         if (lfirst.and.ldt) then
 !
@@ -1276,11 +1284,11 @@ module Testfield
 !   9-oct-18/MR  : fixed bug: to get p%bbb calculated lpencil(i_bb)=.true. necessary;
 !                  likewise for p%jj, lpencil(i_bij)=.true. needed
 !  17-oct-18/MR  : intro'd luse_main_run (=F -> kinematic case
-!!
+!
       use Sub
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-                          bbmz,jjmz,lcalc_aameanz,B_ext_inv
+                          aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1292,7 +1300,9 @@ module Testfield
       real, dimension (nx,3) :: uxbtest2,jxbtest2
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3) :: uufluct,bbfluct,jjfluct
-      integer :: jtest,j,juxb,jjxb,jugu,nl
+      real, dimension (mz,3) :: aatestmz, uutestmz
+!
+      integer :: jtest,j,juxb,jjxb,jugu,nl,jaatest,juutest,jaa,juu
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
       type (pencil_case) :: p
@@ -1310,6 +1320,61 @@ module Testfield
 !
       if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need njtest=5 for u0ref')
+
+      if (.false.) then      !lcalc_aameanz.or.lremove_meanaz) then
+!
+!  Remove averages from the test solutions. Not needed, but kept here for
+!  possible safety tests.
+!
+        do jtest=1,njtest
+
+          iaxtest=iaatest+3*(jtest-1)
+          iuxtest=iuutest+3*(jtest-1)
+          do j=1,3
+            do n=1,mz
+              aatestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iaxtest+j-1))
+              uutestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iuxtest+j-1))
+            enddo
+          enddo
+          call finalize_aver(nprocxy,12,aatestmz)
+          call finalize_aver(nprocxy,12,uutestmz)
+!
+          do j=1,3
+            do n=1,mz
+              f(:,:,n,iaxtest+j-1) = f(:,:,n,iaxtest+j-1)-aatestmz(n,j)
+              f(:,:,n,iuxtest+j-1) = f(:,:,n,iuxtest+j-1)-uutestmz(n,j)
+            enddo
+          enddo
+
+        enddo
+      endif
+
+!
+!  Initialize reference solutions (0-solutions) with fluctuations of main run.
+!
+      if (linitialize0_from_mainrun) then
+        if (lcalc_aameanz.and.lcalc_uumeanz) then
+          jtest=iE0
+          iaxtest=iaatest+3*(jtest-1)
+          iuxtest=iuutest+3*(jtest-1)
+          do j=1,3
+            jaatest=iaxtest+j-1;  jaa=iax+j-1
+            juutest=iuxtest+j-1;  juu=iux+j-1
+!
+!  Do only one xy plane at a time (for cache efficiency).
+!
+            do n=n1,n2
+              f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
+              f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
+            enddo
+          enddo
+        else
+          call fatal_error('testfield_after_boundary', &
+                           'need lcalc_aameanz.and.lcalc_uumeanz for initializing'// &
+                           ' 0-solutions with fluctuations of main run')
+        endif
+        linitialize0_from_mainrun=.false.
+      endif
 !
 !  Initialize buffer for mean fields.
 !
@@ -1457,9 +1522,9 @@ mn:   do n=n1,n2
 !
 !  Add corresponding contribution to averaged arrays, uxbtestmz, jxbtestmz
 !
-            uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+fac*sum(uxbtest,1)
-            jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
-            if (lugu) ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+fac*sum(ugutest,1)
+            uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+sum(uxbtest,1)
+            jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+sum(jxbtest,1)
+            if (lugu) ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+sum(ugutest,1)
 !
             headtt=.false.
 !
@@ -1471,9 +1536,11 @@ mn:   do n=n1,n2
 !
 !  do communication for finalizing averages.
 !
-      call finalize_aver(nprocxy,12,uxbtestmz)
-      call finalize_aver(nprocxy,12,jxbtestmz)
-      if (lugu) call finalize_aver(nprocxy,12,ugutestmz)
+      call finalize_aver(nprocxy,12,uxbtestmz); uxbtestmz=fac*uxbtestmz
+      call finalize_aver(nprocxy,12,jxbtestmz); jxbtestmz=fac*jxbtestmz
+      if (lugu) then 
+        call finalize_aver(nprocxy,12,ugutestmz); ugutestmz=fac*ugutestmz
+      endif
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
