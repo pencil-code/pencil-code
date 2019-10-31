@@ -14,8 +14,8 @@ def slices(*args, **kwargs):
 
     call signature:
 
-    read(self. field='uu1', extension='xz', datadir='data', proc=-1,
-         old_file=False, precision='f', quiet=False)
+    read(self. field='', extension='', datadir='data', proc=-1,
+         old_file=False, precision='f', quiet=True)
 
     Keyword arguments:
 
@@ -62,14 +62,14 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=False):
+             old_file=False, precision='f', quiet=True):
         """
         Read Pencil Code slice data.
 
         call signature:
 
         read(self. field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=False)
+             old_file=False, precision='f', quiet=True)
 
         Keyword arguments:
 

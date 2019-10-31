@@ -7,7 +7,6 @@
 # S. Candelaresi (iomsn1@gmail.com)
 #
 # 27-jun-19: F. Gent added hdf5
-#
 """
 Contains classes and methods to read the grid data.
 """
@@ -21,8 +20,7 @@ def grid(*args, **kwargs):
 
     call signature:
 
-    grid(file_name='time_series.dat', datadir='data',
-         double=0, quiet=0, comment_char='#')
+    grid(datadir='data', proc=-1, quiet=False, trim=False)
 
     Keyword arguments:
 
@@ -74,8 +72,7 @@ class Grid(object):
 
         call signature:
 
-        read(self, file_name='time_series.dat', datadir='data',
-             double=0, quiet=0, comment_char='#')
+        grid(datadir='data', proc=-1, quiet=False, trim=False)
 
         Keyword arguments:
 
@@ -99,26 +96,27 @@ class Grid(object):
         from scipy.io import FortranFile
         import pencilnew.read as read
 
-        if os.path.exists(datadir+'/grid.h5'):
+        if os.path.exists(os.path.join(datadir, 'grid.h5')):
             dim = read.dim(datadir, proc)
             import h5py
-            with h5py.File(datadir+'/grid.h5','r') as tmp:
-                x        = tmp['grid']['x'       ][()]
-                y        = tmp['grid']['y'       ][()]
-                z        = tmp['grid']['z'       ][()]
-                dx_1     = tmp['grid']['dx_1'    ][()]
-                dy_1     = tmp['grid']['dy_1'    ][()]
-                dz_1     = tmp['grid']['dz_1'    ][()]
+
+            with h5py.File(os.path.join(datadir, 'grid.h5'), 'r') as tmp:
+                x = tmp['grid']['x'][()]
+                y = tmp['grid']['y'][()]
+                z = tmp['grid']['z'][()]
+                dx_1 = tmp['grid']['dx_1'][()]
+                dy_1 = tmp['grid']['dy_1'][()]
+                dz_1 = tmp['grid']['dz_1'][()]
                 dx_tilde = tmp['grid']['dx_tilde'][()]
                 dy_tilde = tmp['grid']['dy_tilde'][()]
                 dz_tilde = tmp['grid']['dz_tilde'][()]
-                dx       = tmp['grid']['dx'      ][()]
-                dy       = tmp['grid']['dy'      ][()]
-                dz       = tmp['grid']['dz'      ][()]
-                Lx       = tmp['grid']['Lx'      ][()]
-                Ly       = tmp['grid']['Ly'      ][()]
-                Lz       = tmp['grid']['Lz'      ][()]
-                t        = 0.0
+                dx = tmp['grid']['dx'][()]
+                dy = tmp['grid']['dy'][()]
+                dz = tmp['grid']['dz'][()]
+                Lx = tmp['grid']['Lx'][()]
+                Ly = tmp['grid']['Ly'][()]
+                Lz = tmp['grid']['Lz'][()]
+                t = 0.0
         else:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
@@ -129,7 +127,7 @@ class Grid(object):
 
             if proc < 0:
                 proc_dirs = list(filter(lambda string: string.startswith(
-                                 'proc'), os.listdir(datadir)))
+                    'proc'), os.listdir(datadir)))
             else:
                 proc_dirs = ['proc' + str(proc)]
 

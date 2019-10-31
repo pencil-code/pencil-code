@@ -186,5 +186,3 @@ def natural_sort(string_list, reverse=False):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9.]+)', str(key))]
 
     return sorted(string_list, key=alphanum_key, reverse=reverse)
-
-

@@ -1,5 +1,12 @@
 def get(path='.', quiet=False):
-    """Returns simulation object from 'path, if already existing, or creates new simulation object from path, if its as simulation."""
+    """
+    Return simulation object from 'path, if already existing, or creates new
+    simulation object from path, if its as simulation.
+
+    Args:
+        path:   base directory where to look for simulation from.
+        quiet:  Switches out the output of the function. Default: False.
+    """
 
     from os.path import isdir, join, exists, basename
     from pencilnew.io import load
@@ -29,14 +36,12 @@ def get_sims(path_root='.', depth=0, unhide_all=True, quiet=False):
     following symbolic links.
 
     Args:
-        path_root: base directory where to look for simulation from.
-                   Default:'.'
-        depth:     depth of searching for simulations, default is 1,
-                   i.e. only one level deeper directories will be scanned.
-        unhide:    unhides all simulation found if True, if False (default)
-                   hidden sim will stay hidden.
-        quiet:     Switches out the output of the function. Default: False.
-
+        path_root:  base directory where to look for simulation from.
+        depth       depth of searching for simulations, default is 1,
+                    i.e. only one level deeper directories will be scanned.
+        unhide_all  unhides all simulation found if True, if False (default)
+                    hidden sim will stay hidden.
+        quiet:      Switches out the output of the function. Default: False.
     """
     from os.path import join, basename
     import numpy as np

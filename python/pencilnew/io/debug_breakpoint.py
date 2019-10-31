@@ -1,14 +1,9 @@
-
 def debug_breakpoint():
     """
     Python debug breakpoint.
     """
     from code import InteractiveConsole
     from inspect import currentframe
-    try:
-        import readline # noqa
-    except ImportError:
-        pass
 
     caller = currentframe().f_back
 

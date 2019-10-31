@@ -27,4 +27,3 @@ zder3 = zder3_4th
 xder6 = xder6_6th
 yder6 = yder6_6th
 zder6 = zder6_6th
-

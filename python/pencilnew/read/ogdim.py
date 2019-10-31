@@ -1,4 +1,3 @@
-
 # ogdim.py
 #
 # Read the dimensions of the simulationp.

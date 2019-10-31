@@ -1,12 +1,10 @@
 ############### to do list for PC python package #############
 
 1. Store information about array indices in data objects. (SC)
-2. Change to xyz ordering in all routines. (FG)
 3. Writing (in IO) routines for custom data: (FG, SC, LFSR)
 4. Implement particles reding modules for different types of particles. (VC, JA)
 5. Rbox_vid for visualization. (VC, SC).
 6. Simulation objects last implementations (see below). (LFSR, VC)
-7. Simplify directory structure: calc and diag into toolkit, some into math? Subdivide further. (SC).
 8. Coordinate transformations, including fields. (JA, SC)
 9. Derivatives on non-equidistant grids. (JA)
 10. Tutorials: wait until pencilnew is set up, then update tutorials and decide who is doing stuff.
@@ -52,9 +50,7 @@ Use simulation objects to:
 
 
 Put simulations in dictionary to:
-* sort them 
+* sort them
 * group them
 
 
-############### open issues ###############
-- SC: Do we need ogvar and ogdim? Ask JA.

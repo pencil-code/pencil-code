@@ -271,14 +271,14 @@ def del2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     from .der import xder2, yder2, zder2, xder, yder
 
     if coordinate_system == 'cartesian':
-        return xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
+        del2_value = xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
     if coordinate_system == 'cylindrical':
         if x is None:
             print('ERROR: need to specify x (radius)')
             raise ValueError
         # Make sure x has compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
-        return xder(f, dx)/x + xder2(f, dx) + yder2(f, dy)/(x**2) + zder2(f, dz)
+        del2_value = xder(f, dx)/x + xder2(f, dx) + yder2(f, dy)/(x**2) + zder2(f, dz)
     if coordinate_system == 'spherical':
         if x is None or y is None:
             print('ERROR: need to specify x (radius) and y (polar angle)')
@@ -286,8 +286,9 @@ def del2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         # Make sure x and y have compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         y = y[np.newaxis, :, np.newaxis]
-        return 2*xder(f, dx)/x + xder2(f, dx) + np.cos(y)*yder(f, dy)/((x**2)*np.sin(y)) + \
-               yder2(f, dy)/(x**2) + zder2(f, dz)/((x*np.sin(y))**2)
+        del2_value = 2*xder(f, dx)/x + xder2(f, dx) + np.cos(y)*yder(f, dy)/((x**2)*np.sin(y)) + \
+                     yder2(f, dy)/(x**2) + zder2(f, dz)/((x*np.sin(y))**2)
+    return del2_value
 
 
 def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):

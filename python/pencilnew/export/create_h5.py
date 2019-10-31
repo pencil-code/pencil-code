@@ -4,8 +4,8 @@ Created on Fri Apr 22 11:14:28 2016
 
 @author: fagent
 
-Create structure for hdf5 storage of 2D averages time series, motivated 
-to save emf tensors for use with mean-field pencil code module. 
+Create structure for hdf5 storage of 2D averages time series, motivated
+to save emf tensors for use with mean-field pencil code module.
 To generalise hdf5 for all data structures
 """
 
@@ -26,7 +26,7 @@ def create_aver_sph(
     # unpack the tuples
     nz, ny, nx, nt = nzyxt
     z, y, x, t = zyxt
-    #prepare hdf5 directory 
+    #prepare hdf5 directory
     if not os.path.exists(hdf5dir):
         os.makedirs(hdf5dir)
     print(hdf5dir, os.path.exists(hdf5dir),'constructing hdf5 file')
@@ -60,12 +60,12 @@ def create_aver_sph(
                                       dgroup,field,dataset), shape, 'f')
 #===========================================================================
 fvars=[
-           ('utensor',     (3,)), 
-           ('alpha',     (3,3,)), 
-           ('beta',      (3,3,)), 
+           ('utensor',     (3,)),
+           ('alpha',     (3,3,)),
+           ('beta',      (3,3,)),
            ('gamma',       (3,)),
            ('delta',       (3,)),
-           ('kappa',   (3,3,3,)), 
-           ('acoef',     (3,3,)), 
-           ('bcoef',   (3,3,3,)), 
+           ('kappa',   (3,3,3,)),
+           ('acoef',     (3,3,)),
+           ('bcoef',   (3,3,3,)),
        ]

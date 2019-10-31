@@ -98,7 +98,7 @@ class __Simulation__(object):
         from shutil import copyfile
         from glob import glob
         from numpy import size
-        from pencilnew.sim import is_sim_dir
+        from . import is_sim_dir
         from pencilnew import get_sim
         from pencilnew.io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
         from pencilnew.sim import is_sim_dir

@@ -96,5 +96,3 @@ def zder3_4th(f, dz):
         dfdz = 0.
 
     return dfdz
-
-

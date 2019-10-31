@@ -2,11 +2,9 @@
 #
 # Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays
-# For supernova data change file_name to 'sn_series.dat' (Fred Gent)
-#
+# For supernova data change file_name to 'sn_series.dat'. (Fred Gent)
 #
 # Author: S. Candelaresi (iomsn1@gmail.com).
-#         
 """
 Contains the classes and methods to read the time series file.
 """
@@ -19,7 +17,7 @@ def ts(*args, **kwargs):
     call signature:
 
     ts(file_name='time_series.dat', datadir='data',
-       quiet=False, comment_char='#', sim=False)
+       quiet=False, comment_char='#', sim=None, unique_clean=False)
 
     Keyword arguments:
 
@@ -69,8 +67,8 @@ class TimeSeries(object):
 
         call signature:
 
-        read(self, file_name='time_series.dat', datadir='data',
-             double=0, quiet=0, comment_char='#', sim=False)
+        read(file_name='time_series.dat', datadir='data',
+             quiet=False, comment_char='#', sim=None, unique_clean=False)
 
         Keyword arguments:
 

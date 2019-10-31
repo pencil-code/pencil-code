@@ -4,7 +4,7 @@
 #
 # Author: S. Candelaresi (iomsn1@gmail.com).
 """
-Contains the methods for the dot products and cros product.
+Contains the methods for the dot products and cross product.
 """
 
 
@@ -70,5 +70,3 @@ def cross(a, b):
 
     # (a x b)_i = eps_ijk a_j b_k
     return np.cross(a, b, axis=0)
-
-

@@ -1,10 +1,10 @@
 # integration.py
 #
-# Contains methods for integrating quantities on different coordinate systems.
+# Contains methods for integrating quantities in different coordinate systems.
 #
 # Authors: S. Candelaresi (iomsn1@gmail.com).
 """
-Contains the definitions various short mathematicl function.
+Contains methods for integrating quantities in different coordinate systems.
 """
 
 
@@ -93,7 +93,7 @@ def integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
         integral *= np.sin(y[np.newaxis, :, np.newaxis])
 
     # Perform the integration along the spcified axis.
-    # Attention: The order of these integral is important!!!
+    # Attention: The order of these integrals is important!!!
     if any(axis == 2):
         integral = sc.integrate.trapz(integral, x=x, axis=2)
     if any(axis == 1):

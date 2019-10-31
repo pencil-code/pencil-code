@@ -13,6 +13,7 @@ Contains the read class for the VAR file reading,
 some simulation attributes and the data cube.
 """
 
+
 def var(*args, **kwargs):
     """
     Read VAR files from Pencil Code. If proc < 0, then load all data
@@ -350,18 +351,19 @@ class DataCube(object):
                         i0zloc = procdim.nghostz
                         i1zloc = procdim.mz
 
-                    print('i0x, i1x = {0}, {1}'.format(i0x, i1x))
                     x[i0x:i1x] = x_loc[i0xloc:i1xloc]
                     y[i0y:i1y] = y_loc[i0yloc:i1yloc]
                     z[i0z:i1z] = z_loc[i0zloc:i1zloc]
 
                     if not run2D:
-                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[:, i0zloc:i1zloc,
+                                                                i0yloc:i1yloc, i0xloc:i1xloc]
                     else:
                         if dim.ny == 1:
                             f[:, i0z:i1z, i0x:i1x] = f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
                         else:
-                            f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                            f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[i0zloc:i1zloc,
+                                                                 i0yloc:i1yloc, i0xloc:i1xloc]
                 else:
                     f = f_loc
                     x = x_loc

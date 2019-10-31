@@ -42,7 +42,6 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
        Determines if binary or clear text data for the vtk files.
     """
 
-    import numpy as np
     # TODO: change to pencilnew in the future.
     import pencil as pc
 
@@ -66,7 +65,7 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
     particles_vtk_tmp.tf = tf
     particles_vtk_tmp.binary = binary
     particles_vtk_tmp.destination = destination
-    
+
     # Write the data inot vtk files.
     particles_vtk_tmp.write_to_vtk()
 
@@ -107,19 +106,19 @@ class ParticlesVtk(object):
 
         import numpy as np
         import vtk
-        
+
         for pvar in pvar_list:
             points = np.vstack([pvar.xp, pvar.yp, pvar.zp])
-            
+
             vtk_grid_data = vtk.vtkUnstructuredGrid()
             vtk_points = vtk.vtkPoints()
-            
+
             # Add the data to the vtk points.
             for point_idx in range(points.shape[1]):
                 vtk_points.InsertNextPoint(points[:, point_idx])
             # Add the vtk points to the vtk grid.
             vtk_grid_data.SetPoints(vtk_points)
-            
+
             self.vtk_grid_data.append(vtk_grid_data)
 
 
@@ -131,9 +130,9 @@ class ParticlesVtk(object):
 
             write_to_vtk(self)
         """
-        
+
         import vtk
-        
+
         if (self.ti >= 0) and (self.tf >= 0):
             for tidx in range(self.ti, self.tf):
                 destination = '{0}{1}.vtk'.format(self.destination, tidx)
@@ -142,7 +141,7 @@ class ParticlesVtk(object):
                     writer.SetFileTypeToBinary()
                 else:
                     writer.SetFileTypeToASCII()
-                
+
                 writer.SetFileName(destination)
                 # Insure compatability between vtk 5 and 6.
                 try:
@@ -156,7 +155,7 @@ class ParticlesVtk(object):
                 writer.SetFileTypeToBinary()
             else:
                 writer.SetFileTypeToASCII()
-            
+
             writer.SetFileName(self.destination)
             # Insure compatability between vtk 5 and 6.
             try:
@@ -164,4 +163,4 @@ class ParticlesVtk(object):
             except:
                 writer.SetInput(self.vtk_grid_data[0])
             writer.Write()
-            
+

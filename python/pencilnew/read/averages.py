@@ -74,7 +74,8 @@ class Averages(object):
 
         import os
 
-        l_h5=False
+        l_h5 = False
+
         # Initialize the planes list.
         if plane_list:
             if isinstance(plane_list, list):
@@ -87,23 +88,23 @@ class Averages(object):
         # Determine which average files to read.
         in_file_name_list = []
         aver_file_name_list = []
-        if os.path.exists(datadir+'/grid.h5'):
-            l_h5=True
+        if os.path.exists(os.path.join(datadir, 'grid.h5')):
+            l_h5 = True
             if plane_list.count('xy') > 0:
                 in_file_name_list.append('xyaver.in')
-                aver_file_name_list.append('averages/xy.h5')
+                aver_file_name_list.append(os.path.join('averages', 'xy.h5'))
             if plane_list.count('xz') > 0:
                 in_file_name_list.append('xzaver.in')
-                aver_file_name_list.append('averages/xz.h5')
+                aver_file_name_list.append(os.path.join('averages', 'xz.h5'))
             if plane_list.count('yz') > 0:
                 in_file_name_list.append('yzaver.in')
-                aver_file_name_list.append('averages/yz.h5')
+                aver_file_name_list.append(os.path.join('averages', 'yz.h5'))
             if plane_list.count('y') > 0:
                 in_file_name_list.append('yaver.in')
-                aver_file_name_list.append('averages/y.h5')
+                aver_file_name_list.append(os.path.join('averages', 'y.h5'))
             if plane_list.count('z') > 0:
                 in_file_name_list.append('zaver.in')
-                aver_file_name_list.append('averages/z.h5')
+                aver_file_name_list.append(os.path.join('averages', 'z.h5'))
         else:
             if plane_list.count('xy') > 0:
                 in_file_name_list.append('xyaver.in')
@@ -141,11 +142,11 @@ class Averages(object):
             n_vars = len(variables)
 
             if plane == 'xy' or plane == 'xz' or plane == 'yz':
-                t, raw_data = self.__read_2d_aver(plane, datadir,
-                              variables, aver_file_name, n_vars, l_h5)
+                t, raw_data = self.__read_2d_aver(plane, datadir, variables,
+                                                  aver_file_name, n_vars, l_h5)
             if plane == 'y' or plane == 'z':
-                t, raw_data = self.__read_1d_aver(plane, datadir,
-                              variables, aver_file_name, n_vars, proc, l_h5)
+                t, raw_data = self.__read_1d_aver(plane, datadir, variables,
+                                                  aver_file_name, n_vars, proc, l_h5)
 
             # Add the raw data to self.
             var_idx = 0
@@ -155,9 +156,6 @@ class Averages(object):
 
             self.t = t
             setattr(self, plane, ext_object)
-
-        del(raw_data)
-        del(ext_object)
 
         return 0
 
@@ -171,7 +169,7 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                             n_vars, proc, l_h5):
+                       n_vars, proc, l_h5):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -188,45 +186,45 @@ class Averages(object):
             file_id = os.path.join(datadir, aver_file_name)
             print(file_id)
             with h5py.File(file_id, 'r') as tmp:
-                n_times=len(tmp.keys())-1    
+                n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.
                 for var in variables:
-                    nu = tmp[str(0)+'/'+var.strip()].shape[0]
-                    nv = tmp[str(0)+'/'+var.strip()].shape[1]
+                    nu = tmp[str(0) + '/' + var.strip()].shape[0]
+                    nv = tmp[str(0) + '/' + var.strip()].shape[1]
                     break
             raw_data = np.zeros([n_times, n_vars, nv, nu])
             t = np.zeros(n_times, dtype=np.float32)
             with h5py.File(file_id, 'r') as tmp:
-                for t_idx in range(0,n_times):
-                    t[t_idx]=tmp[str(t_idx)+'/time'][()]
+                for t_idx in range(0, n_times):
+                    t[t_idx] = tmp[str(t_idx) + '/time'][()]
                     raw_idx = 0
                     for var in variables:
-                        raw_data[t_idx, raw_idx]=\
-                                    tmp[str(t_idx)+'/'+var.strip()][()]
-                        raw_idx += 1                   
+                        raw_data[t_idx, raw_idx] = \
+                                    tmp[str(t_idx) + '/' +var.strip()][()]
+                        raw_idx += 1
         else:
-            globdim = read.dim(datadir)
+            glob_dim = read.dim(datadir)
             if plane == 'y':
-                nu = globdim.nx
-                nv = globdim.nz
+                nu = glob_dim.nx
+                nv = glob_dim.nz
             if plane == 'z':
-                nu = globdim.nx
-                nv = globdim.ny
+                nu = glob_dim.nx
+                nv = glob_dim.ny
 
             if proc < 0:
-                offset = globdim.nprocx*globdim.nprocy
+                offset = glob_dim.nprocx*glob_dim.nprocy
                 if plane == 'z':
-                	procs = range(offset)
-                if plane == 'y': 
-                    procs = [] 
-                    xr = range(globdim.nprocx)
-                    for iz in range(globdim.nprocz):
-                        procs.extend(xr)
+                    proc_list = range(offset)
+                if plane == 'y':
+                    proc_list = []
+                    xr = range(glob_dim.nprocx)
+                    for iz in range(glob_dim.nprocz):
+                        proc_list.extend(xr)
                         xr = [x+offset for x in xr]
-                allprocs=True
+                all_procs = True
             else:
-                procs = [proc]
-                allprocs=False
+                proc_list = [proc]
+                all_procs = False
 
             dim = read.dim(datadir, proc)
             if dim.precision == 'S':
@@ -237,8 +235,8 @@ class Averages(object):
             # Prepare the raw data.
             # This will be reformatted at the end.
             raw_data = []
-            for proc in procs:
-                proc_dir = 'proc'+str(proc)
+            for proc in proc_list:
+                proc_dir = 'proc {0}'.format(proc)
                 proc_dim = read.dim(datadir, proc)
                 # Read the data.
                 t = []
@@ -247,7 +245,7 @@ class Averages(object):
                     file_id = FortranFile(os.path.join(datadir, proc_dir, aver_file_name))
                 except:
                     # Not all proc dirs have a [yz]averages.dat.
-                    print("Averages of processor"+str(proc)+"missing!")
+                    print("Averages of processor {0} missing.".format(proc))
                     break
                 while True:
                     try:
@@ -267,22 +265,24 @@ class Averages(object):
                 proc_data = np.array(proc_data)
                 proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
-                if not allprocs:
-                    return np.array(t), proc_data.swapaxes(2,3)
+                if not all_procs:
+                    return np.array(t), proc_data.swapaxes(2, 3)
 
                 # Add the proc_data (one proc) to the raw_data (all procs)
                 if plane == 'y':
-                    if allprocs:
+                    if all_procs:
                         idx_u = proc_dim.ipx*proc_dim.nx
                         idx_v = proc_dim.ipz*proc_dim.nz
                     else:
-                        idx_v = 0; idx_u = 0
+                        idx_v = 0
+                        idx_u = 0
                 if plane == 'z':
-                    if allprocs:
+                    if all_procs:
                         idx_u = proc_dim.ipx*proc_dim.nx
                         idx_v = proc_dim.ipy*proc_dim.ny
                     else:
-                        idx_v = 0; idx_u = 0
+                        idx_v = 0
+                        idx_u = 0
 
                 if not isinstance(raw_data, np.ndarray):
                     # Initialize the raw_data array with the right dimensions.
@@ -295,8 +295,7 @@ class Averages(object):
         return t, raw_data
 
 
-    def __read_2d_aver(self, plane, datadir, variables,
-                             aver_file_name, n_vars, l_h5):
+    def __read_2d_aver(self, plane, datadir, variables, aver_file_name, n_vars, l_h5):
         """
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
@@ -311,10 +310,10 @@ class Averages(object):
             file_id = os.path.join(datadir, aver_file_name)
             print(file_id)
             with h5py.File(file_id, 'r') as tmp:
-                n_times=len(tmp.keys())-1    
+                n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.
                 for var in variables:
-                    nw = tmp[str(0)+'/'+var.strip()].shape[0]
+                    nw = tmp[str(0) + '/' + var.strip()].shape[0]
                     break
         else:
             # Determine the structure of the xy/xz/yz averages.
@@ -337,15 +336,14 @@ class Averages(object):
         if l_h5:
             raw_data = np.zeros([n_times, n_vars, nw])
             with h5py.File(file_id, 'r') as tmp:
-                for t_idx in range(0,n_times):
-                    t[t_idx]=tmp[str(t_idx)+'/time'][()]
+                for t_idx in range(0, n_times):
+                    t[t_idx] = tmp[str(t_idx) + '/time'][()]
                     raw_idx = 0
                     for var in variables:
-                        raw_data[t_idx, raw_idx]=\
-                                    tmp[str(t_idx)+'/'+var.strip()][()]
-                        raw_idx += 1                   
+                        raw_data[t_idx, raw_idx] = tmp[str(t_idx) + '/' + var.strip()][()]
+                        raw_idx += 1
         else:
-            raw_data = np.zeros([n_times, n_vars * nw])
+            raw_data = np.zeros([n_times, n_vars*nw])
             line_idx = 0
             t_idx = -1
             for current_line in aver_lines:

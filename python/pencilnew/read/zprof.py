@@ -8,7 +8,6 @@ Contains the classes and methods to read the time series file.
 """
 
 
-
 def zprof(*args, **kwargs):
     """
     Read vertical profiles written in data/proc*/zprof_varname.dat.
@@ -16,7 +15,7 @@ def zprof(*args, **kwargs):
 
     call signature:
 
-    zprof(var_name, datadir='data/', dim=None, nfield=1):
+    zprof(var_name, datadir='data', dim=None, nfield=1):
 
     Keyword arguments:
 
@@ -52,14 +51,14 @@ class ZProfile(object):
         self.z = 0
 
 
-    def read(self, var_name, datadir='data/', dim=None, nfield=1):
+    def read(self, var_name, datadir='data', dim=None, nfield=1):
         """
         Read vertical profiles written in data/proc*/zprof_varname.dat.
         Returns a ZProfile object with z and profiles(z).
 
         call signature:
 
-        zprof(file_name, datadir='data/', dim=None, nfield=1):
+        zprof(var_name, datadir='data', dim=None, nfield=1):
 
         Keyword arguments:
 
@@ -113,4 +112,3 @@ class ZProfile(object):
                     self.prof[izcount] = data[1]
                 izcount = izcount+1
         fd.close()
-

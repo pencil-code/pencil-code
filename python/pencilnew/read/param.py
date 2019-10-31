@@ -18,7 +18,7 @@ def param(*args, **kwargs):
 
     call signature:
 
-    read(datadir='data', param2=False, quiet=True)
+    read(datadir='data', param2=False, quiet=True, asdict=False, nest_dict=False)
 
     Keyword arguments:
 
@@ -64,7 +64,7 @@ class Param(object):
 
         call signature:
 
-        read(datadir='data', param2=False, quiet=True)
+        read(datadir='data', param2=False, quiet=True, asdict=False, nest_dict=False)
 
         Keyword arguments:
 
@@ -124,6 +124,8 @@ class Param(object):
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
                 return -1
+
+        return 0
 
 
     def __param_formatter(self, string_part):

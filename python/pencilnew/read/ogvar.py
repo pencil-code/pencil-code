@@ -1,4 +1,3 @@
-
 # ogvar.py
 #
 # Read the ogvar files.

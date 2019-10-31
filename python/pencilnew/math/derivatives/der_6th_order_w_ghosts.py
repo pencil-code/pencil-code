@@ -294,4 +294,3 @@ def zder6_6th(f, dz):
                                          +f[..., n1-3:n2-3, :, :]))
 
     return d6fdy
-

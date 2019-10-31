@@ -16,12 +16,14 @@ def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
 
     print("## producing vtk-file from arrays")
 
-    if not (type(arrays) == type(['list']) and type(names) == type(['list'])): print('! ERROR: arrays and names must be a list!')
+    if not (type(arrays) == type(['list']) and type(names) == type(['list'])):
+        print('! ERROR: arrays and names must be a list!')
 
     if not os.path.exists(folder): os.makedirs(folder)        	# check for vtk folder
 
     dimx = len(gridx); dimy = len(gridy); dim = dimx * dimy
-    dx = (np.max(gridx) - np.min(gridx))/(dimx);   dy = (np.max(gridy) - np.min(gridy))/(dimy)
+    dx = (np.max(gridx) - np.min(gridx))/(dimx)
+    dy = (np.max(gridy) - np.min(gridy))/(dimy)
 
     dy = dx*dimx/dimy                                          # rescale dimmension to get a square as output 'image'
 

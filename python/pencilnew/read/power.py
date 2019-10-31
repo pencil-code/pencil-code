@@ -16,7 +16,7 @@ def power(*args, **kwargs):
 
     call signature:
 
-    power(datadir='data')
+    power(datadir='data', quiet=False)
 
     Keyword arguments:
 
@@ -43,6 +43,7 @@ class Power(object):
         """
 
         self.t = []
+
 
     def read(self, datadir='data', quiet=False):
         """
@@ -98,26 +99,25 @@ class Power(object):
             n_blocks = int(len(line_list)/block_size)
             if not file_name == 'power_krms.dat':
                 time = []
-                power = []
+                power_array = []
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
                         time.append(float(line.strip()))
                     else:
                         for value_string in line.strip().split():
-                            power.append(float(value_string))
+                            power_array.append(float(value_string))
 
                 # Reformat into arrays.
                 time = np.array(time)
-                power = np.array(power).reshape([n_blocks, int(dim.nxgrid/2)]).astype(np.float32)
+                power_array = np.array(power_array).reshape([n_blocks, int(dim.nxgrid/2)]).astype(np.float32)
 
                 self.t = time.astype(np.float32)
-                setattr(self, power_list[power_idx], power)
+                setattr(self, power_list[power_idx], power_array)
             else:
-                power = []
+                power_array = []
                 for line_idx, line in enumerate(line_list):
                     if line_idx < block_size-1:
                         for value_string in line.strip().split():
-                            power.append(float(value_string))
-                power = np.array(power).reshape([int(dim.nxgrid/2)]).astype(np.float32)
-                setattr(self, power_list[power_idx], power)
-
+                            power_array.append(float(value_string))
+                power_array = np.array(power_array).reshape([int(dim.nxgrid/2)]).astype(np.float32)
+                setattr(self, power_list[power_idx], power_array)
