@@ -10,9 +10,10 @@ def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
 
     import struct
     import numpy as np
+    import os
     from os.path import exists, join
-    from pencilnew.math import natural_sort
-    from pencilnew.io import mkdir
+    from ..math import natural_sort
+    from ..io import mkdir
 
     print("## producing vtk-file from arrays")
 

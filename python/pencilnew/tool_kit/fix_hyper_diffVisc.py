@@ -1,14 +1,12 @@
 
-import pencilnew as pcn
-from pencilnew.math import is_float
-from pencilnew.math import is_int
-from pencilnew.math import is_number
+from .. import get_sims
+from ..math import is_float, is_int, is_number
 import sys
 import os
 from os.path import join
 import numpy as np
 
-print('### PENCILNEW - FIX DIFFUSIVITIES STARTED ###')
+print('### PENCIL - FIX DIFFUSIVITIES STARTED ###')
 
 ######################
 # defaults
@@ -38,7 +36,7 @@ print('## Fixing the following values in run.in: '+str(diff_set_runin))
 ## main script
 ##
 ## doing:  nu_new = nu_old * (dx_new / dx_old)**5, maximum in x, y, z
-SIMs = pcn.get_sims()
+SIMs = get_sims()
 
 if SIMs == False: sys.exit('!! ERROR: No simulation found! No SIMDICT found!')
 

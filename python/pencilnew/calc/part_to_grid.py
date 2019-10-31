@@ -18,12 +18,12 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
         - zgrid:        if zp != False
 
     Example:
-        vpx = part_to_grid_2d(pvar.xp, pvar.yp, pvar.vpx), notice that this will execute pencilnew.get_sim() internally to get the extent
+        vpx = part_to_grid_2d(pvar.xp, pvar.yp, pvar.vpx), notice that this will execute pc.get_sim() internally to get the extent
     """
 
     import numpy as np
-    from pencilnew import get_sim
-    from pencilnew.calc import fill_gaps_in_grid
+    from .. import get_sim
+    from ..calc import fill_gaps_in_grid
 
     if not xp.shape == yp.shape and yp.shape == xp.shape and yp.shape == zp.shape:
         print('! ERROR: Shape of xp, yp, zp and quantity needs to be equal!')

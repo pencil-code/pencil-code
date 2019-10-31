@@ -2,7 +2,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     """ Use to read in a quantity from
         - *.in
         - *.local
-        - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pencilnew.io.get_systemid
+        - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pc.io.get_systemid
 
     Please add further functionallity by yourself!
 
@@ -18,11 +18,12 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
         Returns None if not successful
     """
 
-    import os, pencilnew
+    import os
     import numpy as np
     from os.path import join, abspath, exists, split, isfile
-    from pencilnew.math import is_number, is_float, is_int
-    from pencilnew.io import timestamp, debug_breakpoint, mkdir
+    from .. import get_sim
+    from ..math import is_number, is_float, is_int
+    from ..io import timestamp, debug_breakpoint, mkdir
     import re
     import copy
 
@@ -66,7 +67,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     # prepare search_path list to search filename in
     if filepath == False:
         if sim == False:
-            sim = pencilnew.get_sim()
+            sim = get_sim()
         else:
             filepath = sim.path
         search_paths = [sim.path, join(sim.path, 'src')]                    # add other search paths here!!

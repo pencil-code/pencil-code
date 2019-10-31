@@ -14,7 +14,7 @@ manipulate simulations.
 def simulation(*args, **kwargs):
     """
     Generate simulation object from parameters.
-    Simulation objects are containers for simulations. pencilnew can work with
+    Simulation objects are containers for simulations. pencil can work with
     several of them at once if stored in a simulations object.
 
     Args for Constructor:
@@ -99,9 +99,9 @@ class __Simulation__(object):
         from glob import glob
         from numpy import size
         from . import is_sim_dir
-        from pencilnew import get_sim
-        from pencilnew.io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
-        from pencilnew.sim import is_sim_dir
+        from .. import get_sim
+        from ..io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
+        from ..sim import is_sim_dir
 
         # set up paths
         if path_root == False or type(path_root) != type('string'):
@@ -224,8 +224,8 @@ class __Simulation__(object):
         from os import listdir
         from os.path import exists, join, isdir
         import glob
-        from pencilnew.math import is_int
-        from pencilnew.io import mkdir
+        from ..math import is_int
+        from ..io import mkdir
 
         def copyfile(src, dst, DEBUG=False):
             from shutil import copy2
@@ -284,7 +284,7 @@ class __Simulation__(object):
         """
         from os.path import exists
         from os.path import join
-        from pencilnew.read import param, grid, dim
+        from ..read import param, grid, dim
 
         REEXPORT = False
 
@@ -315,7 +315,6 @@ class __Simulation__(object):
 
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             try:                                # read grid only if param is not False
-                #import pencilnew as pcn; pcn.io.debug_breakpoint()
                 print('~ Reading grid.. ')
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
                 print('~ Reading ghost_grid.. ')
@@ -343,7 +342,6 @@ class __Simulation__(object):
             REEXPORT = True
 
         if REEXPORT == True: self.export()
-        #import pencilnew as pcn; pcn.io.debug_breakpoint()
         return self
 
 
@@ -359,7 +357,7 @@ class __Simulation__(object):
 
     def export(self):
         """Export simulation object to its root/.pc-dir"""
-        from pencilnew.io import save
+        from ..io import save
         if self == False: print('! ERROR: Simulation object is bool object and False!')
 
         # clean self.tmp_dict
@@ -388,10 +386,10 @@ class __Simulation__(object):
             verbose:      activate for verbosity
             fast:         set True for fast compilation
         """
-        import pencilnew as pcn
+        from .. import io
         from os.path import join
 
-        timestamp = pcn.io.timestamp()
+        timestamp = io.timestamp()
 
         command = []
         command.append('pc_build')
@@ -420,11 +418,11 @@ class __Simulation__(object):
                            True = all output
         """
         import subprocess
-        import pencilnew as pcn
+        from .. import io
         from os.path import join, realpath
 
-        timestamp = pcn.io.timestamp()
-        pcn.io.mkdir(self.pc_dir)
+        timestamp = io.timestamp()
+        io.mkdir(self.pc_dir)
         if not type(logfile) == type('string'):
             logfile = join(self.pc_dir, 'bash_log_'+timestamp)
 
@@ -472,7 +470,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from pencilnew.io import remove_files as remove
+        from ..io import remove_files as remove
 
         folder = join(self.path,'src')
         keeps = [f.split('/')[-1] for f in self.components+self.optionals]
@@ -495,7 +493,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from pencilnew.io import remove_files as remove
+        from ..io import remove_files as remove
 
         folder = join(self.path,'data')
         keeps = []
@@ -520,7 +518,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join
-        from pencilnew.io import remove_files as remove
+        from ..io import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
         if remove_data:
@@ -579,7 +577,7 @@ class __Simulation__(object):
         import glob
         from os.path import join as join
         from os.path import basename
-        from pencilnew.math import natural_sort
+        from ..math import natural_sort
 
         key = 'VAR'
         if particle == True: key = 'PVAR'
@@ -628,7 +626,7 @@ class __Simulation__(object):
                 return q
 
         if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
-        from pencilnew.io import get_value_from_file
+        from ..io import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, sim=self, DEBUG=DEBUG, silent=True)
             if q is not None:
@@ -644,7 +642,7 @@ class __Simulation__(object):
         """Returns time series object.
         Args:
             unique_clean:       set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs"""
-        from pencilnew.read import ts
+        from ..read import ts
 
         # check if already loaded
         if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] == self.get_T_last(): return self.tmp_dict['ts']
@@ -658,7 +656,7 @@ class __Simulation__(object):
             return False
 
     def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
-        """Same as pencilnew.io.change_value_in_file."""
-        from pencilnew.io import change_value_in_file
+        """Same as pencil.io.change_value_in_file."""
+        from ..io import change_value_in_file
 
         return change_value_in_file(filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG)

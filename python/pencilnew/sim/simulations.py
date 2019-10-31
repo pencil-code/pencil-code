@@ -19,7 +19,7 @@ def simulations(*args, **kwargs):
         - no args:          create empty object, simulation objects can be added
                             with add()
         - list, tuple:      provide a list of simulation objects or paths or names
-                            if one of the latter is provide, pencilnew.get_sim()
+                            if one of the latter is provide, pc.get_sim()
                             is used to generate simulation object from path or
                             name
 
@@ -28,7 +28,7 @@ def simulations(*args, **kwargs):
 
     Methods:
         self.add:           add a simulation object, provide simulation object
-                            or name or path (pencilnew.get_sim() is then used)
+                            or name or path (pc.get_sim() is then used)
         self.sort           sort self.sims list by, default by name, but also
                             different sorting algorithm are provided
     """
@@ -76,8 +76,8 @@ class __Simulations__(object):
         from .simulation import __Simulation__
         from .simulation import simulation
         import numpy as np
-        from pencilnew.io import debug_breakpoint
-        from pencilnew import get_sim
+        from ..io import debug_breakpoint
+        from .. import get_sim
 
         for arg in args:
 

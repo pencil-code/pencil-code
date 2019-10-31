@@ -72,8 +72,8 @@ class ParticleData(object):
 
         import numpy as np
         import os
-        import pencilnew as pcn
-        from pencilnew.math import is_number
+        from .. import get_sim
+        from ..math import is_number
         from sys import byteorder
 
         try:
@@ -94,7 +94,7 @@ class ParticleData(object):
         ####### interprate parameters
         if datadir == False:
             if sim == False:
-                sim = pcn.get_sim()
+                sim = get_sim()
         datadir = sim.datadir
 
         if quiet == False:

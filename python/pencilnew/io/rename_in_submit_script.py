@@ -2,7 +2,7 @@
 def rename_in_submit_script(new_name, submit_script_path=False, sim=False, old_name=False):
     import os
     from os.path import exists, join, abspath, dirname
-    from pencilnew.io import timestamp, get_systemid, mkdir
+    from ..io import timestamp, get_systemid, mkdir
 
     if submit_script_path != False:
         path = dirname(abspath(submit_script_path))
@@ -49,7 +49,7 @@ def rename_in_submit_script(new_name, submit_script_path=False, sim=False, old_n
     else:
         # get submit name line identifier
         identify = get_systemid()[2]
-        if identify == False: print('!! ERROR: Could not identify an submit script name identifier, please update pencilnew.io.get_systemid.py by adding your machine.')
+        if identify == False: print('!! ERROR: Could not identify an submit script name identifier, please update pc.io.get_systemid.py by adding your machine.')
         if identify in s:
             if s.count(identify) > 1: print('ERROR: Job name identifier has multiple appearences in submit script!'); return False
             s = s.split('\n')

@@ -16,8 +16,8 @@ def lic(vectorfield, filepath='.', filename='tmp',
     import numpy as np
     import pylab as plt
     from lic_internal import lic_internal
-    from pencilnew.visu.internal import export_fig
-    from pencilnew.io import debug_breakpoint
+    from ..visu.internal import export_fig
+    from ..io import debug_breakpoint
     from scipy.ndimage.interpolation import zoom
 
     ####### size of image and size of vectorfield give zoom factor

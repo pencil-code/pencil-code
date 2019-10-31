@@ -17,16 +17,17 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
       returns True if successfull
     """
 
-    import pencilnew as pcn
-    import pencilnew.io.mkdir as mkdir
-    import pencilnew.diag.particle.gas_velo_at_particle_pos as gas_velo_at_particle_pos
+    from .. import get_sim
+    from .. import io
+    from .. import read
+    from ..diag import gas_velo_at_particle_pos
     from scipy.io import readsav
     from os import listdir
     from os.path import exists, join, dirname
     import numpy as np
 
     if sim == False:
-        sim = pcn.get_sim()
+        sim = get_sim()
         if sim == False:
             print('! ERROR: Specify simulation object!')
             return False
@@ -65,21 +66,21 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
       print('## Starting the calculation for DISPERSON and DRIFT for  ### VAR'+str(file_no)+' ###')
 
       # check if files already exist
-      if (not OVERWRITE) and pcn.io.exists('sigma_'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('zeta_'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l')) and pcn.io.exists('zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l')):
+      if (not OVERWRITE) and io.exists('sigma_'+file_no, folder=SIM.pc_datadir) and io.exists('zeta_'+file_no, folder=SIM.pc_datadir) and io.exists('sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l')) and io.exists('zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l')):
         print('## Skipping calculations')
         continue
 
       ## read sav and var file
       print('## reading gas_velo_at_particle_pos file and VAR')
       if USE_PKL_FILES:
-          sav_file	= pcn.io.load(join(GASVELO_DIR, GASVELO_DESTINATION+scheme+'_'+file_no+'.pkl'))[GASVELO_DESTINATION]
+          sav_file	= io.load(join(GASVELO_DIR, GASVELO_DESTINATION+scheme+'_'+file_no+'.pkl'))[GASVELO_DESTINATION]
       else:
           sav_file	= readsav(join(GASVELO_DIR, GASVELO_DESTINATION+scheme+'_'+file_no+'.sav'))[GASVELO_DESTINATION]
-      var_file	= pcn.read.var(varfile='VAR'+file_no, quiet=True, trimall=True, datadir=SIM.datadir)
+      var_file	= read.var(varfile='VAR'+file_no, quiet=True, trimall=True, datadir=SIM.datadir)
 
       ## get everything ready
       dim = SIM.dim
-      pdim = pcn.read.pdim(sim=SIM)
+      pdim = read.pdim(sim=SIM)
       npar = pdim.npar
       npar1 = 1./npar
 
@@ -134,8 +135,8 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
                 'ZETA_o': np.sqrt(npar1 * np.sum((DATA_SET['vx'] - DATA_SET['gasv_x'])**2 + (DATA_SET['vy'] - DATA_SET['gasv_y'])**2 + (DATA_SET['vz'] - DATA_SET['gasv_z'])**2))}
 
         print('## saving calculated GLOBAL DISPERSION and DRIFT')
-        pcn.io.save(SIGMA, 'sigma_'+file_no, folder=SIM.pc_datadir)
-        pcn.io.save(ZETA, 'zeta_'+file_no, folder=SIM.pc_datadir)
+        io.save(SIGMA, 'sigma_'+file_no, folder=SIM.pc_datadir)
+        io.save(ZETA, 'zeta_'+file_no, folder=SIM.pc_datadir)
 
 
       # calculate LOCAL DISPERSION and DRIFT
@@ -192,8 +193,8 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
 
         # save sigma, zeta locally and globally to SIM.pc_datadir
         print('## saving calculated LOCAL DISPERSION and DRIFT')
-        pcn.io.save(sigma_l, 'sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l'))
-        pcn.io.save(zeta_l, 'zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l'))
+        io.save(sigma_l, 'sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l'))
+        io.save(zeta_l, 'zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l'))
 
       ## Please keep this lines as a reminder on how to add columns to an record array!
       # add colums to DATA_SET fror local zeta and sigma for the individuel particle

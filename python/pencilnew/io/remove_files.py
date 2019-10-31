@@ -11,7 +11,7 @@ def remove_files(path, do_it=False, do_it_really=False):
     import os, shutil
     import os
     from os.path import expanduser, isdir, realpath, relpath
-    from pencilnew.io import remove_files as remove
+    from ..io import remove_files as remove
 
     # safety checks
     # first get all sensible paths

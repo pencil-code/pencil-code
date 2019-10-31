@@ -40,11 +40,11 @@ class ParticleStalkData(object):
         import numpy as np
         import os
         from os.path import join
-        import pencilnew as pcn
+        from .. import get_sim
 
         if datadir == False:
             if sim == False:
-                sim = pcn.get_sim()
+                sim = get_sim()
             datadir = sim.datadir
 
         if quiet == False:
@@ -99,10 +99,10 @@ class ParticleStalkData(object):
                 print('! ')
                 print('~ BACKUP SOLUTION: reading pstalk via pidly, starting IDL..')
 
-                from pencilnew.backpack import pidly
+                from ..backpack import pidly
                 IDL = pidly.IDL(long_delay=0.05)	# start IDL engine
                 from scipy.io.idl import readsav
-                from pencilnew.io import mkdir
+                from ..io import mkdir
 
                 ## read tstalk file
                 print('## reading particle stalker file..')
@@ -113,7 +113,7 @@ class ParticleStalkData(object):
                 IDL('save, pstalk, filename="'+join(sim.pc_datadir,'tmp','pstalk_'+str(tmin)+'_'+str(tmax)+'.sav')+'"')
                 ps = readsav(join(sim.pc_datadir,'tmp','pstalk.sav'))('pstalk')
 
-                #from pencilnew.io import debug_breakpoint; debug_breakpoint()
+                #from pc.io import debug_breakpoint; debug_breakpoint()
 
                 for key in set(ps.dtype.fields.keys()):
                     if hasattr(self, key.lower()): continue

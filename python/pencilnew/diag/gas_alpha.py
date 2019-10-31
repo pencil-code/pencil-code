@@ -10,8 +10,9 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
             alpha dictionary
     """
 
-    import pencilnew as pcn
-    from pencilnew.io import save
+    from .. import get_sim
+    from ..sim import sim
+    from .. import io
     from os.path import exists, join
     import numpy as np
 
@@ -46,17 +47,17 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
         return empirical_std_deviation(x)/np.sqrt(M)
 
 
-    if type(sim) == pcn.sim.__Simulation__:
+    if type(sim) == sim.__Simulation__:
         SIM = sim
     else:
-        SIM = pcn.get_sim()
+        SIM = get_sim()
 
     filename = 'alpha_'+str(t_range[0])+'_'+str(t_range[1])
 
     ## skip if nothing is new
-    if not OVERWRITE and pcn.io.exists(name=filename, sim=SIM):
+    if not OVERWRITE and io.exists(name=filename, sim=SIM):
         print('~ Alpha for "'+SIM.name+'" already exists. Loading file...')
-        return pcn.io.load(name=filename, sim=SIM)
+        return io.load(name=filename, sim=SIM)
 
     print('~ Calculating alpha for "'+SIM.name+'" in "'+SIM.path+'"')
 
@@ -99,10 +100,10 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
     import math
     for v in alpha_dict.values():
         if type(v) == type(1.1) and math.isnan(v):
-            pencilnew.io,debug_breakpoint()
+            io.debug_breakpoint()
 
     ## save alpha in plk
     print('~ saving alpha values in '+SIM.pc_datadir+'/'+filename)
-    pcn.io.save(alpha_dict, filename, folder=SIM.pc_datadir)
+    io.save(alpha_dict, filename, folder=SIM.pc_datadir)
 
     return alpha_dict

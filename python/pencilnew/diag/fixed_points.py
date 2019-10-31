@@ -13,10 +13,10 @@ try:
     import h5py
 except:
     print('!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.')
-from pencilnew.diag.tracers import TracersParameterClass
-from pencilnew.diag.tracers import Tracers
-from pencilnew.calc.streamlines import Stream
-from pencilnew.math.interpolation import vec_int
+from ..diag.tracers import TracersParameterClass
+from ..diag.tracers import Tracers
+from ..calc.streamlines import Stream
+from ..math.interpolation import vec_int
 
 
 class FixedPoint(object):

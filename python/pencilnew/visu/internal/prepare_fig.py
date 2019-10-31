@@ -6,15 +6,13 @@ def preparePlot(x_datasets, y_datasets,
                 fig=False, ax=False,
                 PROFILE=False):
 
-  import pen
   import numpy as np
-  import math
   import matplotlib
   import matplotlib.pyplot as plt
   plt.ioff()
-  import pencilnew.visu.internal.calc_lims as calc_lims
-  from pencilnew.math import is_float
-  from pencilnew.visu.internal.internal import MinorSymLogLocator
+  from .. import io
+  from ..visu.internal import calc_lims
+  from ..visu.internal.internal import MinorSymLogLocator
 
   ## ESTIMATE LIMITS
   if np.any(x_errors) and np.shape(x_errors) == np.shape(x_datasets):
@@ -35,7 +33,7 @@ def preparePlot(x_datasets, y_datasets,
     xlim_max = np.max([np.max(ax.get_xlim()), xlim_max]); xlim_min = np.min([np.min(ax.get_xlim()), xlim_min])
     ylim_max = np.max([np.max(ax.get_ylim()), ylim_max]); ylim_min = np.min([np.min(ax.get_ylim()), ylim_min])
 
-  #pencilnew.io.debug_breakpoint()
+  #pencil.io.debug_breakpoint()
 
   if not xmin: xmin = xlim_min
   if not xmax: xmax = xlim_max
@@ -43,7 +41,7 @@ def preparePlot(x_datasets, y_datasets,
   if not ymax: ymax = ylim_max
 
   ## IF LOG: ENSHURE YOU ARE COVERING AT LEAST ONE ORDER OF MAGNITUDE
-  #pencilnew.io.debug_breakpoint()
+  #pencil.io.debug_breakpoint()
   while ylog and ymin > 0 and np.abs(np.int(np.floor(np.log10(ymin)))-np.int(np.floor(np.log10(ymax)))) < 1. and ymax > ymin and ymax*xmax != 0 :
     ymin = ymin - ymin * 0.01
     ymax = ymax + ymax * 0.01
@@ -96,7 +94,7 @@ def preparePlot(x_datasets, y_datasets,
       yaxis.set_minor_locator(MinorSymLogLocator(1e-1))
 
   ## ESTABLISH CALCULATED LIMITS FOR PLOT
-  #pencilnew.io.debug_breakpoint()
+  #pencil.io.debug_breakpoint()
   ax.set_xlim(left=xmin)
   ax.set_xlim(right=xmax)
   ax.set_ylim(bottom=ymin)
@@ -104,6 +102,6 @@ def preparePlot(x_datasets, y_datasets,
 
   if ax == False:
       print("!! ERROR: Created axis object is False! Starting debug_breakpoint")
-      pencilnew.io.debug_breakpoint()
+      io.debug_breakpoint()
 
   return (fig, ax)

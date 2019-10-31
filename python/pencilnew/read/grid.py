@@ -94,7 +94,7 @@ class Grid(object):
         import numpy as np
         import os
         from scipy.io import FortranFile
-        import pencilnew.read as read
+        from .. import read
 
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             dim = read.dim(datadir, proc)

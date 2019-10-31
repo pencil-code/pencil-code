@@ -37,7 +37,7 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
         diffusion objects and simulation-name as key is returned
     """
 
-    from pencilnew.sim import simulations
+    from ..sim import simulations
     import numpy as np
 
     sims = simulations(sim).sims
@@ -86,10 +86,10 @@ class DiffusionData(object):
         import numpy as np
         from scipy.stats import linregress
 
-        from pencilnew.io import load, save, exists
-        from pencilnew.read import pstalk as read_pstalk
-        from pencilnew.math.derivatives import simple_centered as derivatives_centered
-        from pencilnew.backpack import printProgressBar
+        from ..io import load, save, exists
+        from ..read import pstalk as read_pstalk
+        from ..math.derivatives import simple_centered as derivatives_centered
+        from ..backpack import printProgressBar
 
         # .. no pstalk file is found
         if not path_exists(join(sim.datadir, 'proc0', 'particles_stalker.dat')):

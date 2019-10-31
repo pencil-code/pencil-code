@@ -13,8 +13,10 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
     OVERWRITE:		set to True to overwrite already calculated results
   """
 
-  import pencilnew as pcn
-  import pencilnew.io.mkdir as mkdir
+  from .. import get_sim
+  from .. import read
+  from .. import diag
+  from ..io import mkdir
   from os import listdir
   from os.path import exists, join, dirname
   import numpy as np
@@ -22,7 +24,7 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
   GAS_VELO_TAG = 'gas_velo_at_particle_pos'
 
   if sim == False:
-      sim = pcn.get_sim()
+      sim = get_sim()
       if sim == False:
           print('! ERROR: Specify simulation object!')
           return False
@@ -30,7 +32,7 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
 
   if use_IDL:
       print('? WARNING: IDL VERSION OF THIS SCRIPT BY JOHANSEN, not recommended for 2D data')
-      import pencilnew.backpack.pidly as pidly
+      from ..backpack import pidly
       print('## starting IDL engine..')
       IDL = pidly.IDL(long_delay=0.05)		# start IDL engine
 
@@ -41,7 +43,7 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
       else:
           ## start calculations
           print('~ Calculating gas_velo_at_particle_pos for "'+SIM.name+'" in "'+SIM.path+'"')
-          IDL('.COMPILE '+str(join(dirname(pcn.diag.particle.__file__), 'gas_velo_at_particle_pos.pro')))
+          IDL('.COMPILE '+str(join(dirname(diag.particle.__file__), 'gas_velo_at_particle_pos.pro')))
           IDL.pro('gas_velo_at_particle_pos', datadir=SIM.datadir, destination=GAS_VELO_TAG, doforthelastNvar=varfiles[4:])
           files = [i.split('_')[-1].split('.sav')[0] for i in listdir(join(SIM.pc_datadir,GAS_VELO_TAG)) if i.startswith(GAS_VELO_TAG) and i.endswith('.sav') or i.endswith('.pkl')]
           if files == []: print('!! ERROR: No calc_gas_speed_at_particle_position-files found for '+SIM.name+'! Use idl script to produce them first!')
@@ -59,8 +61,8 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
           if not OVERWRITE and exists(save_filename, folder=save_destination): continue
 
           print('## Reading '+f+' ...')
-          ff = pcn.read.var(datadir=SIM.datadir, varfile=f, quiet=True, trimall=False)
-          pp = pc.read.pvar(datadir=SIM.datadir, varfile=p)
+          ff = read.var(datadir=SIM.datadir, varfile=f, quiet=True, trimall=False)
+          pp = read.pvar(datadir=SIM.datadir, varfile=p)
 
           ## remove ghost zones from grid, call the reduced grid the "real grid"
           realgridx = ff.x[ff.l1:ff.l2]; realgridy = ff.y[ff.m1:ff.m2]; realgridz = ff.z[ff.n1:ff.n2]

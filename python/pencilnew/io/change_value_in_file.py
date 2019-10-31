@@ -2,7 +2,7 @@ def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False
     """ Use to change a quantity in
         - *.in
         - *.local
-        - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pencilnew.io.get_systemid
+        - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pc.io.get_systemid
 
     Please add further functionallity by yourself!
 

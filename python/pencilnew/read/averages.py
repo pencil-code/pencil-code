@@ -303,7 +303,7 @@ class Averages(object):
 
         import os
         import numpy as np
-        from pencilnew import read
+        from .. import read
 
         if l_h5:
             import h5py

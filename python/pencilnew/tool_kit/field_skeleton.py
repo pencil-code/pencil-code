@@ -10,7 +10,7 @@ Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499).
 
 import numpy as np
 import os as os
-from pencilnew.math.interpolation import vec_int
+from ..math.interpolation import vec_int
 try:
     import vtk as vtk
     from vtk.util import numpy_support as VN

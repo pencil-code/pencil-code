@@ -53,8 +53,8 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
 
     import numpy as np
     import os as os
-    from pencilnew import read
-    from pencilnew import sim
+    from .. import read
+    from .. import sim
 
     # Find directories to include in accuracy assessment
     sims = []
@@ -198,6 +198,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
         return twonorms, maxerrs
     else:
         return twonorms
+
 
 def order_accuracy(simulations=[], nstrips=0, twonorm_arr= [], field='ux', var_file='ogvar.dat',direction='x'):
     """
@@ -350,8 +351,8 @@ def twonorm_accuracy2D(simulations, field='ur', var_file='ogvar.dat',noerr=True,
 
     import numpy as np
     import os as os
-    from pencilnew import read
-    from pencilnew import sim
+    from .. import read
+    from .. import sim
 
     # Find directories to include in accuracy assessment
     sims = []
@@ -468,8 +469,8 @@ def twonorm_accuracy1D(simulations, field='ur', strip=1, direction='r', varfile=
 
     import numpy as np
     import os as os
-    from pencilnew import read
-    from pencilnew import sim
+    from .. import read
+    from .. import sim
 
     # Find directories to include in accuracy assessment
     sims = []

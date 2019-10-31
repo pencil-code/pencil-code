@@ -51,7 +51,6 @@ imageformat --- a string variable, indicating the format of the output image. Se
 """
 
 
-import pencilnew as pcn
 import numpy as np
 import os
 import plotly.graph_objs as go
@@ -111,7 +110,7 @@ def plot(
     driver = webdriver.Firefox(options=options, executable_path="/homeappl/home/longs1/tmp/geckodriver")
     driver.set_window_size(1000, 500)
     time.sleep(5)
-    driver.get('file:///homeappl/home/longs1/appl_taito/pencil-code/python/pencilnew/visu/temp-plot.html')
+    driver.get('file:///homeappl/home/longs1/appl_taito/pencil-code/python/pencil/visu/temp-plot.html')
     driver.save_screenshot('test.png')
     #driver.close()
     #imgkit.from_file('test.html', 'out.png')

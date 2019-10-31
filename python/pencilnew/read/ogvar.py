@@ -108,7 +108,7 @@ class ogDataCube(DataCube):
         Transform velocity coordinates from ur and uth to ux and uy.
         """
 
-        from pencilnew.math.transform import pospolar2cart, velpolar2cart
+        from ..math.transform import pospolar2cart, velpolar2cart
 
         if trim_all:
             zcoord=0

@@ -31,9 +31,8 @@ def zav2h5(
     timereducers needs to be expanded to include various smoothing options
     """
     import numpy as np
-    import pencilnew as pcn
     from .. import read
-    from ..read import averages
+    from ..read import aver
     from ..export import fvars, create_aver_sph
     from ..calc import tensors_sph
     import h5py
@@ -147,7 +146,7 @@ def zav2h5(
             iproc=dim.nprocx*ipy+ipx         # proc rank of the PC run (0 ... nprocx*nprocy-1)
             yndx=yndx_tmp[ipy]-ipy*(dim.nygrid/dim.nprocy)
 
-            zav=pcn.read.aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
+            zav=aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
 
             print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
             """

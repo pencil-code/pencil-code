@@ -35,7 +35,7 @@ def dill_load(name, folder=False, sim=False, quiet=True):
     # open file
     filepath = join(folder, name)
     if not quiet: print(filepath)
-    # from pencilnew.io import debug_breakpoint; debug_breakpoint()
+    # from pc.io import debug_breakpoint; debug_breakpoint()
     try:                                                   # check on existance
         if not exists(filepath) or not exists(join(sim_path, filepath)):
             print('!! ERROR: dill_load couldnt load '+filepath); return False

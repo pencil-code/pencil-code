@@ -42,18 +42,17 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
        Determines if binary or clear text data for the vtk files.
     """
 
-    # TODO: change to pencilnew in the future.
-    import pencil as pc
+    from .. import read
 
     # Read the particle data and save it in a list.
     pvar_list = []
     if (ti >= 0) and (tf >= 0):
         for tidx in range(ti, tf):
             var_file = 'PVAR{0}'.format(tidx)
-            pvar = pc.read_pvar(varfile=var_file, datadir=datadir, proc=proc)
+            pvar = read.pvar(varfile=var_file, datadir=datadir, proc=proc)
             pvar_list.append(pvar)
     else:
-        pvar = pc.read_pvar(varfile=var_file, datadir=datadir, proc=proc)
+        pvar = read.pvar(varfile=var_file, datadir=datadir, proc=proc)
         pvar_list.append(pvar)
 
     # Convert the data into vtk.
