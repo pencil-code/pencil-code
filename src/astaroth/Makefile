@@ -1,6 +1,6 @@
 ACSOURCES = $(wildcard submodule/src/core/*.cu) 
 #submodule/src/standalone/config_loader.cc
-ACHEADERS = $(wildcard submodule/*.h) $(wildcard submodule/src/core/kernels/*.cuh)
+ACHEADERS = $(wildcard submodule/include/*.h) $(wildcard submodule/src/core/kernels/*.cuh)
 ACOBJECTS = $(ACSOURCES:.cu=.o) $(ACSOURCES:.cc=.o)
 
 CCSOURCES = loadStore.cc 
@@ -33,7 +33,7 @@ ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SU
 PRECISION =
 include PC_modulesources.h
 ifeq ($(PRECISION),DOUBLE)
-  ENVIRON += -DAC_DOUBLE_PRECISION=1
+  ENVIRON += -DAC_DOUBLE_PRECISION=1 -DDOUBLE_PRECISION
   PREC=dbl
 #  OPTFLAGS += -fsingle-PRECision-constant
   CMAKE_PREC = 'DOUBLE_PRECISION=ON'

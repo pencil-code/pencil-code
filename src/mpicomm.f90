@@ -1843,8 +1843,8 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
       use General, only: transpose_mn, notanumber, copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
 
-      real, dimension(:,:,:,:), intent(inout):: f
-      integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+      integer, optional,                 intent(in)   :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
 !

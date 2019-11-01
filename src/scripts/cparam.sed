@@ -30,6 +30,6 @@ s/double  *precision *, *parameter *::/const double /
 s/\.true\./true/g
 s/\.false\./false/g
 s/\(^[^#].*[^&">]\) *$/\1;/
-s/const  *FINT  *nghost *= *\([0-9]*\) *;/const FINT nghost=\1;\n#define NGHOST \1/
+s/const  *FINT  *nghost *= *\([0-9]*\) *;/const FINT nghost=\1;\n#ifdef NGHOST \n#undef NGHOST \n#endif \n#define NGHOST \1\n#ifdef STENCIL_ORDER\n#undef STENCIL_ORDER\n#endif \n#define STENCIL_ORDER (2\*\1)/
 s/& *$//
 

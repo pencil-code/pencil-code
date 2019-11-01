@@ -13,17 +13,16 @@
 #include <algorithm>
 #include <limits>
 #include <stdio.h>
-//using namespace std;
 
 #define CUDA_ERRCHK(X)
+
 #include "submodule/src/core/math_utils.h"
 #include "submodule/include/astaroth.h"
-
-//PC interface
 #define real AcReal
 #define EXTERN 
 #define FINT int
 
+//PC interface
 #include "../cparam_c.h"
 #include "../cdata_c.h"
 
@@ -41,7 +40,7 @@
 static AcMesh mesh;
 Node node;
 DeviceConfiguration devConfig;
-int halo_yz_size=0;
+int halo_xy_size=0, halo_xz_size=0, halo_yz_size=0;
 #if LFORCING
 static ForcingParams forcing_params;
 #endif
@@ -96,7 +95,6 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     //NOTE: In Astaroth, isubstep is {0,1,2}, in PC it is {1,2,3}
 
     if (early_finalize) {
-    //if (1) {
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
       {
@@ -108,44 +106,54 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 
     } else {
     // MPI communication has not yet finished, hence only the inner domain can be advanced.
+//printf("isubstep= %d \n", isubstep);
+      int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1+1;   // -1 shift because of C indexing convention
+      acIntegrateStepWithOffset(isubstep-1,dt,start,end);                          // +1 shift because end is exclusive
 
-      int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1;   // -1 shift because of C indexing convention
-      acIntegrateStepWithOffset(isubstep-1,dt,start,end);
-      acSynchronize();
- 
       int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
-      printf("mesh.vertex_buffer, iargs= %p %d %d \n",mesh.vertex_buffer[0], iarg1, iarg2);
+      //printf("mesh.vertex_buffer, iargs= %p %d %d \n",mesh.vertex_buffer[0], iarg1, iarg2);
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
 
-      loadOuterFront(mesh,STREAM_0);
-      start=(int3){l1i+2,m1i+2,n1}; end=(int3){l2i-2,m2i-2,n1i+1};     // integrate inner front plate
-      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_0, isubstep-1, start, end, dt);
- 
-      loadOuterBack(mesh,STREAM_1);
-      start=(int3){l1i+2,m1i+2,n2i-1}; end=(int3){l2i-2,m2i-2,n2};     // integrate inner back plate
-      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_1, isubstep-1, start, end, dt);
-  
-      loadOuterBot(mesh,STREAM_2);
-      start=(int3){l1i+2,m1,n1}; end=(int3){l2i-2,m1i+1,n2};   // integrate inner bottom plate
-      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_2, isubstep-1, start, end, dt);
-  
-      loadOuterTop(mesh,STREAM_3);
-      start=(int3){l1i+2,m2i-1,n1}; end=(int3){l2i-2,m2,n2};   // integrate inner top plate
-      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_3, isubstep-1, start, end, dt);
-  
       loadOuterLeft(mesh,STREAM_4);
-      start=(int3){l1,m1,n1}; end=(int3){l1i+1,m2,n2};   // integrate inner left plate
+      loadOuterRight(mesh,STREAM_5);
+      loadOuterBot(mesh,STREAM_2);
+      loadOuterTop(mesh,STREAM_3);
+      loadOuterFront(mesh,STREAM_6);
+      loadOuterBack(mesh,STREAM_1);
+
+      start=(int3){l1,m1i+2,n1i+2}-1; end=(int3){l1i+1,m2i-2,n2i-2}-1+1;   // integrate inner left plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_4, isubstep-1, start, end, dt);
   
-      loadOuterRight(mesh,STREAM_5);
-      start=(int3){l2i-1,m1,n1}; end=(int3){l2,m2,n2};   // integrate inner right plate
+      start=(int3){l2i-1,m1i+2,n1i+2}-1; end=(int3){l2,m2i-2,n2i-2}-1+1;   // integrate inner right plate
       acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_5, isubstep-1, start, end, dt);
+ 
+      start=(int3){l1,m1,n1i+2}-1; end=(int3){l2,m1i+1,n2i-2}-1+1;         // integrate inner bottom plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_2, isubstep-1, start, end, dt);
   
+      start=(int3){l1,m2i-1,n1i+2}-1; end=(int3){l2,m2,n2i-2}-1+1;         // integrate inner top plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_3, isubstep-1, start, end, dt);
+
+      start=(int3){l1,m1,n1}-1; end=(int3){l2,m2,n1i+1}-1+1;               // integrate inner front plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_6, isubstep-1, start, end, dt);
+ 
+      start=(int3){l1,m1,n2i-1}-1; end=(int3){l2,m2,n2}-1+1;               // integrate inner back plate
+      acDeviceIntegrateSubstep(devConfig.devices[0], STREAM_1, isubstep-1, start, end, dt);
+
+      
+      storeInnerLeft(mesh,STREAM_4);
+      storeInnerRight(mesh,STREAM_5);
+      storeInnerBot(mesh,STREAM_2);
+      storeInnerTop(mesh,STREAM_3);
+      storeInnerFront(mesh,STREAM_6);
+      storeInnerBack(mesh,STREAM_1);
+      
+ 
       acSynchronize();
+      acNodeSwapBuffers(node); 
     }
 
     //storeInnerHalos(mesh);
-    acStore(&mesh);
+    //acStore(&mesh);
 }
 /***********************************************************************************************/
 extern "C" void registerGPU(AcReal* farray)
@@ -155,14 +163,14 @@ extern "C" void registerGPU(AcReal* farray)
     for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i) {
         //mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)farray+offset;
         mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
-//printf("&farray[offset]= %d \n", (size_t)&farray[offset]);
+//printf("&farray[offset],i= %p %d\n", &farray[offset],i);
         offset+=mw;
     }
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
 {
-    //Initialize GPUs in the node
+    // Initialize GPUs in the node
     AcResult res=acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
@@ -184,7 +192,9 @@ void setupConfig(AcMeshInfo & config){
      config.int_params[AC_mxy]  = mx*my;
      config.int_params[AC_nxy]  = nx*ny;
      config.int_params[AC_nxyz] = nw;
+     config.int_params[AC_xz_plate_bufsize] = halo_xz_size;
      config.int_params[AC_yz_plate_bufsize] = halo_yz_size;
+     config.int_params[AC_yz_plate_bufsize] = halo_xy_size;
 
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;
@@ -275,7 +285,7 @@ extern "C" void finalizeGPU()
 {
        finalLoadStore();
 
-    //Deallocate everything on the GPUs and reset
+    // Deallocate everything on the GPUs and reset
        AcResult res=acQuit();
 }
 /***********************************************************************************************/
