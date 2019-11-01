@@ -95,7 +95,7 @@ void loadOuterBot(AcMesh& mesh, Stream stream)
         int3 start={0,0,halo_widths_z[BOT]};
         int3 end={mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
 
-        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer);
+        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterTop(AcMesh& mesh, Stream stream)
@@ -103,7 +103,7 @@ void loadOuterTop(AcMesh& mesh, Stream stream)
         int3 start={0,my-halo_widths_y[TOP],halo_widths_z[BOT]};
         int3 end={mx,my,mz-halo_widths_z[TOP]};  //end is exclusive
 
-        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer);
+        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterLeft(AcMesh& mesh, Stream stream)
@@ -111,7 +111,7 @@ void loadOuterLeft(AcMesh& mesh, Stream stream)
     int3 start=      {0,                      halo_widths_y[BOT],     halo_widths_z[BOT]  };
     int3 end  =(int3){halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
 
-    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer);
+    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void loadOuterRight(AcMesh& mesh, Stream stream)
@@ -119,7 +119,7 @@ void loadOuterRight(AcMesh& mesh, Stream stream)
     int3 start=      {mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]  };
     int3 end  =(int3){mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
 
-    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer);
+    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void loadOuterHalos(AcMesh& mesh)
@@ -137,7 +137,7 @@ void storeInnerFront(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n1}-1;
         int3 end=(int3){l2,m2,n1+halo_widths_z[BOT]-1}-1+1;   //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
 void storeInnerBack(AcMesh& mesh, Stream stream)
@@ -145,7 +145,7 @@ void storeInnerBack(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n2-halo_widths_z[TOP]+1}-1;
         int3 end=(int3){l2,m2,n2}-1+1;    //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
 void storeInnerBot(AcMesh& mesh, Stream stream)
@@ -153,7 +153,7 @@ void storeInnerBot(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n1+halo_widths_z[BOT]}-1;
         int3 end=(int3){l2,m1+halo_widths_y[BOT]-1,n2-halo_widths_z[TOP]}-1+1;   //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void storeInnerTop(AcMesh& mesh, Stream stream)
@@ -161,7 +161,7 @@ void storeInnerTop(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m2-halo_widths_y[TOP]+1,n1+halo_widths_z[BOT]}-1;
         int3 end=(int3){l2,m2,n2-halo_widths_z[TOP]}-1+1;    //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void storeInnerLeft(AcMesh& mesh, Stream stream)
@@ -169,7 +169,7 @@ void storeInnerLeft(AcMesh& mesh, Stream stream)
     int3 start=(int3){l1,                     m1+halo_widths_y[BOT],n1+halo_widths_z[BOT]}-1;
     int3 end  =(int3){l1+halo_widths_x[BOT]-1,m2-halo_widths_y[TOP],n2-halo_widths_z[TOP]}-1+1;  //end is exclusive
 
-    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer);
+    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void storeInnerRight(AcMesh& mesh, Stream stream)
@@ -177,7 +177,7 @@ void storeInnerRight(AcMesh& mesh, Stream stream)
     int3 start=(int3){l2-halo_widths_x[TOP]+1,m1+halo_widths_y[BOT],n1+halo_widths_z[BOT]}-1;
     int3 end  =(int3){l2,                     m2-halo_widths_y[TOP],n2-halo_widths_z[TOP]}-1+1; //end is exclusive
 
-    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer);
+    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void storeInnerHalos(AcMesh& mesh)
