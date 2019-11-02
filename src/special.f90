@@ -119,7 +119,8 @@
 
     do i=1,n_special_modules
       do j=1,n_subroutines
-        sub_handle=dlsym_c(libhandle,trim(mod_prefix)//trim(special_modules(i))//trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)//char(0))
+        sub_handle=dlsym_c(libhandle,trim(mod_prefix)//trim(special_modules(i))// &
+            trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)//char(0))
         if (sub_handle==0) &
           call fatal_error('setup_mult_special','Error for symbol '// &
           trim(special_subroutines(j))//' in module '//trim(special_modules(i))) 
