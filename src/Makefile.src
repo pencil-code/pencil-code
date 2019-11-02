@@ -1963,6 +1963,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=cc #(beskow*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
 ##
+## Tegner
+##
+#FC=gfortran #(tegner*)
+#F90=$(FC) #(tegner*)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(tegner)
+#CC=gcc     #(tegner)
+#CFLAGS=-O1 -DFUNDERSC=1   #(tegner)
+##LD_MPI= openmpi/4.0-test #(tegner)
+##
 ##  the following 2 lines are for the default Cray compiler
 ##  which has bugs!
 ##
