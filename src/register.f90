@@ -1087,7 +1087,7 @@ module Register
       call rprint_cosmicrayflux   (lreset,LWRITE=lroot)
       call rprint_gravity         (lreset,LWRITE=lroot)
       call rprint_selfgravity     (lreset,LWRITE=lroot)
-      call rprint_special         (lreset,LWRITE=lroot)
+      call rprint_special         (lreset,lroot)
       call rprint_shock           (lreset,LWRITE=lroot)
       call rprint_solid_cells     (lreset,LWRITE=lroot)
       call rprint_viscosity       (lreset,LWRITE=lroot)

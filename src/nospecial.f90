@@ -306,11 +306,7 @@ module Special
 !!      use FArrayManager, only: farray_index_append
 !
 !!      integer :: iname
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      logical :: lreset,lwrite
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)

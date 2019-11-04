@@ -53,7 +53,7 @@
     integer, parameter :: n_special_modules_max=5
 !
     integer :: n_special_modules
-    character(LEN=256) :: special_modules_list = ' '
+    character(LEN=256) :: special_modules_list = ''
     character(LEN=29), dimension(n_subroutines) :: special_subroutines=(/ &
                            'register_special            ', &
                            'register_particles_special  ', &
@@ -342,24 +342,12 @@
 !
 !  06-oct-03/tony: coded
 !
-      use General, only: loptest
-
-      logical :: lreset
-      logical, optional :: lwrite
+      logical :: lreset,lwrite
       integer :: i
-      logical :: lwr
-!
-      lwr = loptest(lwrite)
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-!        idiag_SPECIAL_DIAGNOSTIC=0
-      endif
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_RPRINT_SPECIAL),2,lreset,lwr)
+        !call caller(special_sub_handles(i,I_RPRINT_SPECIAL),2,lreset,lwrite)
+        call caller2(special_sub_handles(i,I_RPRINT_SPECIAL),lreset,lwrite)
       enddo
 !
     endsubroutine rprint_special
@@ -376,7 +364,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_GET_SLICES_SPECIAL),2,f,slices)
+        !call caller(special_sub_handles(i,I_GET_SLICES_SPECIAL),2,f,slices)
+        call caller2(special_sub_handles(i,I_GET_SLICES_SPECIAL),f,slices)
       enddo
 !
     endsubroutine get_slices_special
@@ -525,7 +514,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_CALC_PARTICLES),5,f,df,fp,dfp,ineargrid)
+        !call caller(special_sub_handles(i,I_SPECIAL_CALC_PARTICLES),5,f,df,fp,dfp,ineargrid)
+        call caller5(special_sub_handles(i,I_SPECIAL_CALC_PARTICLES),f,df,fp,dfp,ineargrid)
       enddo
 !
     endsubroutine special_calc_particles
@@ -544,7 +534,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_PARTICLES_BFRE_BDARY),3,f,fp,ineargrid)
+        !call caller(special_sub_handles(i,I_SPECIAL_PARTICLES_BFRE_BDARY),3,f,fp,ineargrid)
+        call caller3(special_sub_handles(i,I_SPECIAL_PARTICLES_BFRE_BDARY),f,fp,ineargrid)
       enddo
 !
     endsubroutine special_particles_bfre_bdary
@@ -615,7 +606,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_BOUNDCONDS),2,f,bc)
+        !call caller(special_sub_handles(i,I_SPECIAL_BOUNDCONDS),2,f,bc)
+        call caller2(special_sub_handles(i,I_SPECIAL_BOUNDCONDS),f,bc)
       enddo
 !
     endsubroutine special_boundconds
@@ -635,8 +627,10 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
-                    4,f,df,dt_,llast)
+        !call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
+        !            4,f,df,dt_,llast)
+        call caller4(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
+                    f,df,dt_,llast)
       enddo
 !
     endsubroutine special_after_timestep
@@ -655,7 +649,8 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SET_INIT_PARAMETERS),4,Ntot,dsize,init_distr,init_distr2)
+        !call caller(special_sub_handles(i,I_SET_INIT_PARAMETERS),4,Ntot,dsize,init_distr,init_distr2)
+        call caller4(special_sub_handles(i,I_SET_INIT_PARAMETERS),Ntot,dsize,init_distr,init_distr2)
       enddo
 !
     endsubroutine set_init_parameters
