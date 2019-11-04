@@ -543,8 +543,7 @@ module Special
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset
-      logical, optional :: lwrite
+      logical :: lreset,lwrite
 !
 !  check for those quantities for which we want video slices
 !
@@ -591,7 +590,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
-        call parse_name(iname, cname(iname), cform(iname), 'jxm', idiag_jxm)
+        call parse_name(iname,cname(iname), cform(iname),'jxm', idiag_jxm)
       enddo
 !
     endsubroutine rprint_special
