@@ -2916,7 +2916,6 @@ module Energy
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
-!
       if (lpencil(i_ugss)) then
         call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
         if (lreference_state) p%ugss = p%ugss + p%uu(:,1)*reference_state(:,iref_gs)  ! suppress if grad(s)=0
@@ -2962,11 +2961,9 @@ module Energy
           call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1)
         endif
       endif
-!
 ! initlnrho
       if (lpencil(i_initlnrho).and.iglobal_lnrho0/=0) &
           p%initlnrho=f(l1:l2,m,n,iglobal_lnrho0)
-!
 ! initss
       if (lpencil(i_initss).and.iglobal_ss0/=0) &
           p%initss=f(l1:l2,m,n,iglobal_ss0)
