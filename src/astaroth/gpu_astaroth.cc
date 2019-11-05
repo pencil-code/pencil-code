@@ -72,9 +72,8 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 {
 #if LFORCING
     //Update forcing params
-    if (isubstep == itorder) { 
+    if (isubstep == itorder) 
          forcing_params.Update();  // calculate on CPU and load into GPU
-    }
 #endif
     if (lfirst && ldt) {
          AcReal dt1_advec  = max_advec()/cdt;
@@ -84,16 +83,14 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     }
     //Transfer the updated ghost zone to the device(s) in the node 
 
-    if (full)
-    {
-        acLoad(mesh);
-    }
+    if (full) acLoad(mesh);
 
     //if (ldiagnos) timeseries_diagnostics(h_grid);
 
     //Integrate on the GPUs in this node
     //NOTE: In Astaroth, isubstep is {0,1,2}, in PC it is {1,2,3}
 
+//printf("isubstep,early_finalize= %d %s\n", isubstep,early_finalize ? "true" : "false");
     if (early_finalize) {
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
@@ -106,7 +103,6 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 
     } else {
     // MPI communication has not yet finished, hence only the inner domain can be advanced.
-//printf("isubstep= %d \n", isubstep);
       int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1+1;   // -1 shift because of C indexing convention
       acIntegrateStepWithOffset(isubstep-1,dt,start,end);                          // +1 shift because end is exclusive
 
@@ -146,7 +142,6 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       storeInnerTop(mesh,STREAM_3);
       storeInnerFront(mesh,STREAM_6);
       storeInnerBack(mesh,STREAM_1);
-      
  
       acSynchronize();
       acNodeSwapBuffers(node); 
@@ -192,9 +187,9 @@ void setupConfig(AcMeshInfo & config){
      config.int_params[AC_mxy]  = mx*my;
      config.int_params[AC_nxy]  = nx*ny;
      config.int_params[AC_nxyz] = nw;
+     config.int_params[AC_xy_plate_bufsize] = halo_xy_size;
      config.int_params[AC_xz_plate_bufsize] = halo_xz_size;
      config.int_params[AC_yz_plate_bufsize] = halo_yz_size;
-     config.int_params[AC_yz_plate_bufsize] = halo_xy_size;
 
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;

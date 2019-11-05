@@ -69,7 +69,7 @@ module Slices_methods
     use General, only: ioptest
 !
     type (slice_data)             , intent(INOUT):: slices
-    real, dimension(:,:,:), target, intent(OUT)  :: xy,xz,yz,xy2,xy3,xy4,xz2
+    real, dimension(:,:,:), target, intent(IN)   :: xy,xz,yz,xy2,xy3,xy4,xz2
     integer, optional             , intent(IN)   :: ncomp
 
     integer :: nc

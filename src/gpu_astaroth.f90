@@ -117,17 +117,17 @@ contains
 !if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
 !if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
 !f(:,:,:,iuy)=0.; f(:,:,:,iuz)=0.
-      call rhs_gpu_c(isubstep,lvery_first)
+      call rhs_gpu_c(isubstep,lvery_first,early_finalize)
 !
       lvery_first=.false.
 
       return
 !
       if (.not.lroot) return
-      do nn=1,mz   !  nghost+1,mz-nghost   !1,mz
+      do nn=1,mz   !  nghost+1,mz-nghost
         print*, 'nn=', nn
         do mm=1,my
-          print'(14(1x,f7.0))',f(:,mm,nn,iux)
+          print'(22(1x,f7.0))',f(:,mm,nn,iux)
       enddo; enddo
 
     endsubroutine rhs_GPU
