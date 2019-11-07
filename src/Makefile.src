@@ -2022,6 +2022,16 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-fdefault-real-8 #(taito-gpu)
 #CFLAGS=-DFUNDERSC=1 -O3 #(taito-gpu)
 ##
+## Puhti: Atos BullSequana X400 (Kajaani)
+##
+#FC=mpif90 #(puhti-[^g]|puhti[^-])
+#FSTD_95=-std95 #(puhti-[^g]|puhti[^-])
+#F90=$(FC) #(puhti-[^g]|puhti[^-])
+#CC=mpicc #(puhti-[^g]|puhti[^-])
+#FFLAGS=-O1 -fimplicit-none #(puhti-[^g]|puhti[^-])
+#FFLAGS_DOUBLE=-fdefault-real-8 #(puhti-[^g]|puhti[^-])
+#CFLAGS=-DFUNDERSC=1 -O1 #(puhti-[^g]|puhti[^-])
+##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
 #FC=mpif90 #(login*|manterm1|kapylap1)
