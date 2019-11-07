@@ -1,30 +1,17 @@
 # field_skeleton.py
+#
 # Written by Simon Candelaresi (iomsn1@gmail.com)
-
 """
-Finds the structure of the field's skeleton, i.e. null points, separatrix
-layers and separators using the trilinear method by
+Classes for determining the structure of the field's skeleton, i.e. null points,
+separatrix layers and separators using the trilinear method by
 Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751) and
 Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499).
 """
 
-import numpy as np
-import os as os
-from ..math.interpolation import vec_int
-try:
-    import vtk as vtk
-    from vtk.util import numpy_support as VN
-except:
-    print("Warning: no vtk library found.")
-try:
-    import h5py as h5py
-except:
-    print("Warning: no h5py library found.")
-
 
 class NullPoint(object):
     """
-    Contains the position of the null points.
+    Contains the position of the null points and the finding routine.
     """
 
     def __init__(self):
@@ -51,11 +38,13 @@ class NullPoint(object):
         Arguments:
 
         *var*:
-            The var object from the read_var routine.
+            The var object from the read.var routine.
 
         *field*:
             The vector field.
         """
+
+        import numpy as np
 
         # 1) Reduction step.
         # Find all cells for which all three field components change sign.
@@ -79,9 +68,9 @@ class NullPoint(object):
             # 2) Analysis step.
 
             # Find the indices of the cell where to look for the null point.
-            idx_x = np.where(reduced_cells == True)[2][cell_idx]
-            idx_y = np.where(reduced_cells == True)[1][cell_idx]
-            idx_z = np.where(reduced_cells == True)[0][cell_idx]
+            idx_x = np.where(reduced_cells is True)[2][cell_idx]
+            idx_y = np.where(reduced_cells is True)[1][cell_idx]
+            idx_z = np.where(reduced_cells is True)[0][cell_idx]
             x = var.x
             y = var.y
             z = var.z
@@ -120,7 +109,7 @@ class NullPoint(object):
             null_cell = []
 
             # Find the intersection of the curves field_i = field_j = 0.
-            # The units are first normalized to the unit cube from 000 to 111.
+            # The units are first normalized to the unit cube from (0, 0, 0) to (1, 1, 1).
 
             # face 1
             intersection = False
@@ -371,11 +360,11 @@ class NullPoint(object):
         keep_null = np.ones(len(nulls_list), dtype=bool)
         for idx_null_1 in range(len(nulls_list)):
             for idx_null_2 in range(idx_null_1+1, len(nulls_list)):
-                diff_nulls = abs(nulls_list[idx_null_1]-nulls_list[idx_null_2])
+                diff_nulls = abs(nulls_list[idx_null_1] - nulls_list[idx_null_2])
                 if diff_nulls[0] < var.dx and diff_nulls[1] < var.dy and \
                 diff_nulls[2] < var.dz:
                     keep_null[idx_null_2] = False
-        nulls_list = nulls_list[keep_null == True]
+        nulls_list = nulls_list[keep_null is True]
 
         # Compute the field's characteristics around each null.
         for null in nulls_list:
@@ -401,7 +390,7 @@ class NullPoint(object):
                 normal = np.cross(fan_vectors[0], fan_vectors[1])
                 normal = normal/np.sqrt(np.sum(normal**2))
             else:
-                print("Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field)
+                print("Warning: det(Jacobian) = {0}, grad(field) = {1}".format(np.linalg.det(grad_field), grad_field))
                 eigen_values = np.zeros(3)
                 eigen_vectors = np.zeros((3, 3))
                 sign_trace = 0
@@ -423,14 +412,13 @@ class NullPoint(object):
         self.normals = np.array(np.real(self.normals))
 
 
-    def write_vtk(self, datadir='./data', file_name='nulls.vtk',
-                  binary=False):
+    def write_vtk(self, datadir='data', file_name='nulls.vtk', binary=False):
         """
         Write the null point into a vtk file.
 
         call signature:
 
-            write_vtk(datadir='./data', file_name='nulls.vtk', binary=False)
+            write_vtk(datadir='data', file_name='nulls.vtk', binary=False)
 
         Arguments:
 
@@ -443,6 +431,13 @@ class NullPoint(object):
         *binary*:
             Write file in binary or ASCII format.
         """
+
+        import os as os
+        try:
+            import vtk as vtk
+            from vtk.util import numpy_support as VN
+        except:
+            print("Warning: no vtk library found.")
 
         writer = vtk.vtkUnstructuredGridWriter()
         if binary:
@@ -491,7 +486,7 @@ class NullPoint(object):
             grid_data.GetPointData().AddArray(normals_vtk)
             grid_data.SetPoints(points)
 
-        # Insure compatability between vtk 5 and 6.
+        # Ensure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
         except:
@@ -499,13 +494,13 @@ class NullPoint(object):
         writer.Write()
 
 
-    def read_vtk(self, datadir='./data', file_name='nulls.vtk'):
+    def read_vtk(self, datadir='data', file_name='nulls.vtk'):
         """
         Read the null point from a vtk file.
 
         call signature:
 
-            read_vtk(datadir='./data', file_name='nulls.vtk')
+            read_vtk(datadir='data', file_name='nulls.vtk')
 
         Arguments:
 
@@ -515,6 +510,14 @@ class NullPoint(object):
         *file_name*:
             Origin file name.
         """
+
+        import numpy as np
+        import os as os
+        try:
+            import vtk as vtk
+            from vtk.util import numpy_support as VN
+        except:
+            print("Warning: no vtk library found.")
 
         reader = vtk.vtkUnstructuredGridReader()
         reader.SetFileName(os.path.join(datadir, file_name))
@@ -564,14 +567,23 @@ class NullPoint(object):
 
 
     def __triLinear_interpolation(self, x, y, z, coefTri):
-        """ Compute the interpolated field at (normalized) x, y, z. """
+        """
+        Compute the interpolated field at (normalized) x, y, z.
+        """
+
         return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
                coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
                coefTri[7]*x*y*z
 
 
     def __grad_field(self, xyz, var, field, dd):
-        """ Compute the gradient if the field at xyz. """
+        """
+        Compute the gradient if the field at xyz.
+        """
+
+        import numpy as np
+        from ..math.interpolation import vec_int
+
         gf = np.zeros((3, 3))
         gf[0, :] = (vec_int(xyz+np.array([dd, 0, 0]), var, field) -
                     vec_int(xyz-np.array([dd, 0, 0]), var, field))/(2*dd)
@@ -584,7 +596,12 @@ class NullPoint(object):
 
 
     def __grad_field_1(self, x, y, z, coefTri, dd):
-        """ Compute the inverse of the gradient of the field. """
+        """
+        Compute the inverse of the gradient of the field.
+        """
+
+        import numpy as np
+
         gf1 = np.zeros((3, 3))
         gf1[0, :] = (self.__triLinear_interpolation(x+dd, y, z, coefTri) - \
                      self.__triLinear_interpolation(x-dd, y, z, coefTri))/(2*dd)
@@ -592,16 +609,23 @@ class NullPoint(object):
                      self.__triLinear_interpolation(x, y-dd, z, coefTri))/(2*dd)
         gf1[2, :] = (self.__triLinear_interpolation(x, y, z+dd, coefTri) - \
                      self.__triLinear_interpolation(x, y, z-dd, coefTri))/(2*dd)
+
         # Invert the matrix.
         if np.linalg.det(gf1) != 0 and not np.max(np.isnan(gf1)):
             gf1 = np.matrix(gf1).I
         else:
             gf1 *= 0
+
         return gf1
 
 
     def __newton_raphson(self, xyz0, coefTri, dd):
-        """ Newton-Raphson method for finding null-points. """
+        """
+        Newton-Raphson method for finding null-points.
+        """
+
+        import numpy as np
+
         xyz = np.array(xyz0)
         iterMax = 10
         tol = dd/10
@@ -617,9 +641,10 @@ class NullPoint(object):
         return np.array(xyz)
 
 
+
 class Separatrix(object):
     """
-    Contains the separatrix layers.
+    Contains the separatrix layers and methods to find them.
     """
 
     def __init__(self):
@@ -645,7 +670,7 @@ class Separatrix(object):
         call signature:
 
             find_separatrices(var, field, null_point, delta=0.1,
-                              iter_max=100, density=8)
+                              iter_max=100, ring_density=8)
 
         Arguments:
 
@@ -668,6 +693,8 @@ class Separatrix(object):
             Density of the tracer rings.
         """
 
+        import numpy as np
+        from ..math.interpolation import vec_int
 
         separatrices = []
         connectivity = []
@@ -679,11 +706,11 @@ class Separatrix(object):
 
             tracing = True
             separatrices.append(null)
-            
+
             # Only trace separatrices for x-point lilke nulls.
             if abs(np.linalg.det(null_point.eigen_vectors[null_idx])) < delta*1e-8:
                 continue
-            
+
             # Create the first ring of points.
             ring = []
             offset = len(separatrices)-1
@@ -714,8 +741,8 @@ class Separatrix(object):
                     point_idx += 1
 
                 # Connectivity array between old and new ring.
-                connectivity_rings = np.ones((2, len(ring)), dtype = 'int')*range(len(ring))
-                
+                connectivity_rings = np.ones((2, len(ring)), dtype='int')*range(len(ring))
+
                 # Add points if distance becomes too large.
                 ring_new = []
                 ring_new.append(ring[0])
@@ -745,7 +772,7 @@ class Separatrix(object):
                         left_shift += mask
                 connectivity_rings[1, :] -= left_shift
                 ring = ring_new
-                
+
                 # Stop the tracing routine if there are no points in the ring.
                 if not ring:
                     tracing = False
@@ -769,22 +796,20 @@ class Separatrix(object):
                         connectivity_rings[1, point_old_idx] += len(separatrices)-len(ring)
                         connectivity.append(np.array([connectivity_rings[0, point_old_idx],
                                                       connectivity_rings[1, point_old_idx]]))
-                
+
                 iteration += 1
 
         self.separatrices = np.array(separatrices)
         self.connectivity = np.array(connectivity)
 
 
-    def write_vtk(self, datadir='./data', file_name='separatrices.vtk',
-                  binary=False):
+    def write_vtk(self, datadir='data', file_name='separatrices.vtk', binary=False):
         """
         Write the separatrices into a vtk file.
 
         call signature:
 
-            write_vtk(datadir='./data', file_name='separatrices.vtk',
-                      binary=False)
+            write_vtk(datadir='data', file_name='separatrices.vtk', binary=False)
 
         Arguments:
 
@@ -798,6 +823,12 @@ class Separatrix(object):
             Write file in binary or ASCII format.
         """
 
+        import os as os
+        try:
+            import vtk as vtk
+        except:
+            print("Warning: no vtk library found.")
+
         writer = vtk.vtkUnstructuredGridWriter()
         if binary:
             writer.SetFileTypeToBinary()
@@ -807,7 +838,6 @@ class Separatrix(object):
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
         cell_array = vtk.vtkCellArray()
-#        for idx in range(len(self.separatrices)):
         for point_idx in range(len(self.separatrices)):
             points.InsertNextPoint(self.separatrices[point_idx, :])
         for cell_idx in range(len(self.connectivity)):
@@ -818,7 +848,7 @@ class Separatrix(object):
         grid_data.SetPoints(points)
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
 
-        # Insure compatability between vtk 5 and 6.
+        # Ensure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
         except:
@@ -826,13 +856,13 @@ class Separatrix(object):
         writer.Write()
 
 
-    def read_vtk(self, datadir='./data', file_name='separatrices.vtk'):
+    def read_vtk(self, datadir='data', file_name='separatrices.vtk'):
         """
         Read the separatrices from a vtk file.
 
         call signature:
 
-            read_vtk(datadir='./data', file_name='separatrices.vtk')
+            read_vtk(datadir='data', file_name='separatrices.vtk')
 
         Arguments:
 
@@ -842,6 +872,14 @@ class Separatrix(object):
         *file_name*:
             Origin file name.
         """
+
+        import numpy as np
+        import os as os
+        try:
+            import vtk as vtk
+            from vtk.util import numpy_support as VN
+        except:
+            print("Warning: no vtk library found.")
 
         reader = vtk.vtkUnstructuredGridReader()
         reader.SetFileName(os.path.join(datadir, file_name))
@@ -862,18 +900,32 @@ class Separatrix(object):
 
 
     def __distance(self, point_a, point_b):
-        """ Compute the distance of two points (Euclidian geometry). """
+        """
+        Compute the distance of two points (Euclidian geometry).
+        """
+
+        import numpy as np
+
         return np.sqrt(np.sum((point_a-point_b)**2))
 
 
     def __inside_domain(self, point, var):
+        """
+        Determine of a point lies within the simulation domain.
+        """
+
         return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
                (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
                (point[2] > var.z[0]) * (point[2] < var.z[-1])
 
 
     def __rotate_vector(self, rot_normal, vector, theta):
-        """ Rotate vector around rot_normal by theta. """
+        """
+        Rotate vector around the vector rot_normal by theta.
+        """
+
+        import numpy as np
+
         # Compute the rotation matrix.
         u = rot_normal[0]
         v = rot_normal[1]
@@ -890,6 +942,15 @@ class Separatrix(object):
         return np.array(vector*rot_matrix)[0]
 
 
+#import numpy as np
+#import os as os
+#from ..math.interpolation import vec_int
+#try:
+#    import vtk as vtk
+#    from vtk.util import numpy_support as VN
+#except:
+#    print("Warning: no vtk library found.")
+
 class Spine(object):
     """
     Contains the spines of the null points and their finding routines.
@@ -903,15 +964,13 @@ class Spine(object):
         self.spines = []
 
 
-    def find_spines(self, var, field, null_point, delta=0.1,
-                    iter_max=100):
+    def find_spines(self, var, field, null_point, delta=0.1, iter_max=100):
         """
         Find the spines to the field 'field' with information from 'var'.
 
         call signature:
 
-            find_spines(var, field, null_point, delta=0.1,
-                        iter_max=100)
+            find_spines(var, field, null_point, delta=0.1, iter_max=100)
 
         Arguments:
 
@@ -930,6 +989,9 @@ class Spine(object):
         *iter_max*:
             Maximum iteration steps for the fiel line tracing.
         """
+
+        import numpy as np
+        from ..math.interpolation import vec_int
 
         spines = []
         for null_idx in range(len(null_point.nulls)):
@@ -972,13 +1034,13 @@ class Spine(object):
         self.spines = np.array(spines)
 
 
-    def write_vtk(self, datadir='./data', file_name='spines.vtk', binary=False):
+    def write_vtk(self, datadir='data', file_name='spines.vtk', binary=False):
         """
         Write the spines into a vtk file.
 
         call signature:
 
-            write_vtk(datadir='./data', file_name='spines.vtk', binary=False)
+            write_vtk(datadir='data', file_name='spines.vtk', binary=False)
 
         Arguments:
 
@@ -991,6 +1053,12 @@ class Spine(object):
         *binary*:
             Write file in binary or ASCII format.
         """
+
+        import os as os
+        try:
+            import vtk as vtk
+        except:
+            print("Warning: no vtk library found.")
 
         writer = vtk.vtkPolyDataWriter()
         if binary:
@@ -1026,13 +1094,13 @@ class Spine(object):
         writer.Write()
 
 
-    def read_vtk(self, datadir='./data', file_name='spines.vtk'):
+    def read_vtk(self, datadir='data', file_name='spines.vtk'):
         """
         Read the spines from a vtk file.
 
         call signature:
 
-            read_vtk(datadir='./data', file_name='spines.vtk')
+            read_vtk(datadir='data', file_name='spines.vtk')
 
         Arguments:
 
@@ -1042,6 +1110,13 @@ class Spine(object):
         *file_name*:
             Target file name.
         """
+
+        import numpy as np
+        import os as os
+        try:
+            import vtk as vtk
+        except:
+            print("Warning: no vtk library found.")
 
         reader = vtk.vtkPolyDataReader()
         reader.SetFileName(os.path.join(datadir, file_name))
@@ -1066,8 +1141,10 @@ class Spine(object):
 
 
     def __inside_domain(self, point, var):
+        """
+        Determine of a point lies within the simulation domain.
+        """
+
         return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
                (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
                (point[2] > var.z[0]) * (point[2] < var.z[-1])
-
-                
