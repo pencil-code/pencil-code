@@ -2489,7 +2489,6 @@ ifeq ($(SPECIAL_MULT),1)
              -e "s/NML *= *[a-zA-Z0-9_]*_\([a-z][a-z]*_pars\)/NML=special_\1/"< $(SPECIAL_MODULES).f90 > special.tmp
 	@if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then mv -f special.tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f special.tmp; fi
 else
-	@list="$(subst special/,,$(SPECIAL_MODULES))";list=`echo $${list}|tr [A-Z] [a-z]`;sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > special.tmp; mv -f special.tmp $(PENCIL_HOME)/src/special.f90
 	@for file in $(SPECIAL_MODULES); do sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \

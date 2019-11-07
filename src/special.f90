@@ -104,8 +104,7 @@
     character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
     integer(KIND=ikind8) :: sub_handle
 
-    !call system_cmd("export PC_MODULES_LIST=`tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' |sed -e's/.*= *//' -e's/special\///g'`")       
-    !call getenv("PC_MODULES_LIST", special_modules_list)
+    call getenv("PC_MODULES_LIST", special_modules_list)
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
 
     libhandle=dlopen_c('src/special.so'//char(0),RTLD_NOW)

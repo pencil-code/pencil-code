@@ -2039,7 +2039,8 @@ endif
 
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
 eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
-echo MODULE_[PRE|IN|SUF]FIX= $MODULE_PREFIX, $MODULE_INFIX, $MODULE_SUFFIX
+echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 
 # Determine data directory (defaults to `data')
 if (-r datadir.in) then
