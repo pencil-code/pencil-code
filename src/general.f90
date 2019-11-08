@@ -330,13 +330,14 @@ module General
       gn(2)=sqrt(-2*log(r))*cos(twopi*p)
     endsubroutine gaunoise_number
 !***********************************************************************
-    subroutine random_number_wrapper_0(a)
+    subroutine random_number_wrapper_0(a,channel)
 !
 !  Fills a with a random number calculated with one of the generators
 !  available with random_gen.
 !
       use Cdata, only: lroot
 !
+      integer, optional :: channel
       real, intent(out) :: a
 !
       select case (random_gen)
@@ -346,7 +347,12 @@ module General
         case ('min_std')
           a=ran0(rstate(1))
         case ('nr_f90')
-          a=mars_ran()
+          if (present(channel)) then
+            a=mars_ran2()
+          else
+            a=mars_ran()
+          endif
+ 
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -355,7 +361,7 @@ module General
 !
     endsubroutine random_number_wrapper_0
 !***********************************************************************
-    subroutine random_number_wrapper_1(a)
+    subroutine random_number_wrapper_1(a,channel)
 !
 !  Fills a with an array of random numbers calculated with one of the
 !  generators available with random_gen.
@@ -363,6 +369,7 @@ module General
       use Cdata, only: lroot
 !
       real, dimension(:), intent(out) :: a
+      integer, optional :: channel
       integer :: i
 !
       select case (random_gen)
@@ -374,9 +381,15 @@ module General
             a(i)=ran0(rstate(1))
           enddo
         case ('nr_f90')
-          do i=1,size(a,1)
-            a(i)=mars_ran()
-          enddo
+          if (present(channel)) then
+            do i=1,size(a,1)
+              a(i)=mars_ran2()
+            enddo
+          else
+            do i=1,size(a,1)
+              a(i)=mars_ran()
+            enddo
+          endif
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -385,7 +398,7 @@ module General
 !
     endsubroutine random_number_wrapper_1
 !***********************************************************************
-    subroutine random_number_wrapper_3(a)
+    subroutine random_number_wrapper_3(a,channel)
 !
 !  Fills a with a matrix of random numbers calculated with one of the
 !  generators available with random_gen.
@@ -393,6 +406,7 @@ module General
       use Cdata, only: lroot
 !
       real, dimension(:,:,:), intent(out) :: a
+      integer, optional :: channel
       integer :: i,j,k
 !
       select case (random_gen)
@@ -407,6 +421,16 @@ module General
           do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
             a(i,j,k)=mars_ran()
           enddo; enddo; enddo
+
+          if (present(channel)) then
+            do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+              a(i,j,k)=mars_ran2()
+            enddo; enddo; enddo
+          else
+            do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+              a(i,j,k)=mars_ran()
+            enddo; enddo; enddo
+          endif
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -444,11 +468,12 @@ module General
 !
     endsubroutine normal_deviate
 !***********************************************************************
-    subroutine random_seed_wrapper(size,put,get)
+    subroutine random_seed_wrapper(size,put,get,channel)
 !
 !  Mimics the f90 random_seed routine.
 !
       integer, optional :: size
+      integer, optional :: channel
       integer, optional, dimension(:) :: put,get
 !
       real :: dummy
@@ -473,11 +498,17 @@ module General
         if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
-            dummy = mars_ran(put(1))
+
+            if (present(channel)) then
+              dummy = mars_ran2(put(1))
+            else
+              dummy = mars_ran(put(1))
+            endif
           else
             rstate(1:nseed)=put(1:nseed)
           endif
         endif
+!
       endselect
 !
     endsubroutine random_seed_wrapper
@@ -558,6 +589,54 @@ module General
       mars_ran=am*ior(iand(im,ieor(rstate(1),rstate(2))),1)
 !
     endfunction mars_ran
+!***********************************************************************
+    function mars_ran2(init)
+!
+!  Same as mars_ran, but with another seed (for now)
+!
+!   8-nov-19/nils+axel: adapted from mars_ran
+!
+      implicit none
+!
+      integer, optional, intent(in) :: init
+!
+      real :: mars_ran2
+      real, save :: am   ! will be constant on a given platform
+      integer, parameter :: ia=16807, im=2147483647, iq=127773, ir=2836
+      integer :: k
+      integer, save :: init1=1812
+      logical, save :: first_call=.true.
+!
+!  Initialize.
+!
+      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
+        if (present(init)) init1 = init
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
+        rstate(1)=ieor(777755555,abs(init1))
+        rstate(2)=ior(ieor(888889999,abs(init1)),1)
+      elseif (first_call) then
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
+      endif
+!
+!  Marsaglia shift sequence with period 2^32-1.
+!
+      rstate(1)=ieor(rstate(1),ishft(rstate(1),13))
+      rstate(1)=ieor(rstate(1),ishft(rstate(1),-17))
+      rstate(1)=ieor(rstate(1),ishft(rstate(1),5))
+!
+!  Park-Miller sequence by Schrage's method, period 2^31-2.
+!
+      k=rstate(2)/iq
+      rstate(2)=ia*(rstate(2)-k*iq)-ir*k
+      if (rstate(2) < 0) rstate(2)=rstate(2)+im
+!
+!  Combine the two generators with masking to ensure nonzero value.
+!
+      mars_ran2=am*ior(iand(im,ieor(rstate(1),rstate(2))),1)
+!
+    endfunction mars_ran2
 !***********************************************************************
     function nr_ran(iseed1)
 !
