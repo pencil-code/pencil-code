@@ -948,6 +948,7 @@ module Io
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
+!  AB: Philippe, can you explain what it does?
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
