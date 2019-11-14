@@ -4970,9 +4970,10 @@ nameloop: do
       use Mpicomm, only: lroot
       use General, only: random_seed_wrapper
 !
-      integer :: nseed
+      integer, intent(out) :: nseed
 !
       call random_seed_wrapper(SIZE=nseed)
+print*,'AXELsub nseed=',nseed
 !
 !  Test whether mseed is large enough for this machine.
 !

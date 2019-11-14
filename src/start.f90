@@ -292,7 +292,8 @@ program start
 !  Initialise random number generator in processor-independent fashion
 !
   call get_nseed(nseed)   ! get state length of random number generator
-  call random_seed_wrapper(GET=seed)
+  call random_seed_wrapper(GET=seed,CHANNEL=1)
+  call random_seed_wrapper(GET=seed2,CHANNEL=2)
 !
 !  Generate grid and initialize specific grid variables.
 !
@@ -450,9 +451,11 @@ program start
 !  The default is seed0=1812 for some obscure Napoleonic reason
 !  Fred: NB, when using persistent variables take care whether seeds need
 !        to be synchronous or not for init_*
+!  Maybe we want to allow the  2 channels to be initialized separately.
 !
   seed(1)=-((seed0-1812+1)*10+iproc_world)
-  call random_seed_wrapper(PUT=seed)
+  call random_seed_wrapper(PUT=seed,CHANNEL=1)
+  call random_seed_wrapper(PUT=seed2,CHANNEL=2)
 !
 !  Set random seed independent of processor prior to initial conditions.
 !  Do this only if seed0 is modified from its original value.
@@ -461,7 +464,8 @@ program start
 !
   if (seed0/=1812) then
     seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  The following init routines only need to add to f.
@@ -571,7 +575,8 @@ program start
 !
   if (lseed_global.and.seed0==1812) then
     seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  Final update of ghost cells, after that 'f' must not be altered, anymore.

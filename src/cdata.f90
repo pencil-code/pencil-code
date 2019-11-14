@@ -224,8 +224,8 @@ module Cdata
 !
 !  Random numbers.
 !
-  integer, dimension(mseed) :: seed=0
-  integer :: nseed=0, seed0=1812
+  integer, dimension(mseed) :: seed=0, seed2=0
+  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=2
   integer, parameter :: ndustspec0=8
   real, dimension (2) :: fran1,fran2
   logical :: lseed_global=.true.

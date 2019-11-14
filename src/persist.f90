@@ -64,6 +64,7 @@ module Persist
         return
       endif
 !
+print*,'AXEL_input_persistent id=',id
       if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
         if (.not. present (file)) return
         if (file == 'var.dat') then
@@ -77,12 +78,15 @@ module Persist
       else
         if (init_read_persist ()) return
       endif
+print*,'AXEL2_input_persistent id=',id
 !
       if (id /= id_block_PERSISTENT) then
         if (lroot .and. (ip <= 8)) print *, 'input_persistent: Missing initial persistent block ID'
         return
       endif
 !
+!if (done) 
+print*,'AXEL3_input_persistent id=',id
       if (read_persist_id ('FIRST_BLOCK_ID', id)) return
       do while (id /= id_block_PERSISTENT)
         done = .false.
@@ -137,21 +141,29 @@ module Persist
     subroutine input_persist_general_by_id(id,done)
 !
 !  Reads seed from a snapshot.
+!  A read is performed depending on id
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed
+      use Cdata, only: seed, nseed, ichannel1, ichannel2
       use General, only: random_seed_wrapper
       use IO, only: read_persist
 !
+      integer :: ichannel
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
+print*,'AXEL id,nseed=',id,nseed
       select case (id)
         case (id_record_RANDOM_SEEDS)
-          call random_seed_wrapper (GET=seed)
+          call random_seed_wrapper (GET=seed,CHANNEL=1)
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
-          call random_seed_wrapper (PUT=seed)
+          call random_seed_wrapper (PUT=seed,CHANNEL=1)
+          done = .true.
+        case (id_record_RANDOM_SEEDS2)
+          call random_seed_wrapper (GET=seed2,CHANNEL=2)
+          if (read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) return
+          call random_seed_wrapper (PUT=seed2,CHANNEL=2)
           done = .true.
         case (id_record_SHEAR_DELTA_Y)
           if (read_persist ('SHEAR_DELTA_Y', deltay)) return
@@ -166,16 +178,23 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed
+      use Cdata, only: seed, nseed, ichannel1, ichannel2
       use General, only: random_seed_wrapper
       use IO, only: persist_exists, read_persist
 !
+      integer :: ichannel
       logical :: error
 !
       if (persist_exists ('RANDOM_SEEDS')) then
-        call random_seed_wrapper (GET=seed)
+        call random_seed_wrapper (GET=seed,CHANNEL=1)
         error = read_persist ('RANDOM_SEEDS', seed(1:nseed))
         if (.not. error) call random_seed_wrapper (PUT=seed)
+      endif
+!
+      if (persist_exists ('RANDOM_SEEDS2')) then
+        call random_seed_wrapper (GET=seed2,CHANNEL=2)
+        error = read_persist ('RANDOM_SEEDS2', seed2(1:nseed))
+        if (.not. error) call random_seed_wrapper (PUT=seed2)
       endif
 !
       error = read_persist ('SHEAR_DELTA_Y', deltay)
@@ -188,18 +207,27 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, lshear, deltay
+      use Cdata, only: seed, nseed, ichannel1, ichannel2, lshear, deltay
       use General, only: random_seed_wrapper
       use IO, only: write_persist
+!
+      integer :: ichannel
 !
       output_persistent_general = .false.
 !
       ! Don't write the seeds, if they are unchanged from their default value.
-      call random_seed_wrapper (GET=seed)
+      call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif
+!
+      call random_seed_wrapper (GET=seed2,CHANNEL=2)
+      if (any (seed2(1:nseed) /= seed0)) then
+        if (write_persist ('RANDOM_SEEDS2', id_record_RANDOM_SEEDS2, seed2(1:nseed))) &
+            output_persistent_general = .true.
+      endif
+print*,'AXEL output_persistent_general: nseed=',nseed
 !
       if (lshear) then
         if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &

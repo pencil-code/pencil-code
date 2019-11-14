@@ -383,14 +383,19 @@ program run
 !  With lreset_seed (which is not the default) we can reset the seed during
 !  the run. This is necessary when lreinitialize_uu=T, inituu='gaussian-noise'.
 !
+  call get_nseed(nseed)
   if (lreset_seed) then
     seed(1)=-((seed0-1812+1)*10+iproc_world)
-    call random_seed_wrapper(PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    call random_seed_wrapper(PUT=seed,CHANNEL=2)
   else
-    call get_nseed(nseed)
-    call random_seed_wrapper (GET=seed)
+    call random_seed_wrapper(GET=seed,CHANNEL=1)
     seed = seed0
-    call random_seed_wrapper (PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+!
+    call random_seed_wrapper(GET=seed2,CHANNEL=2)
+    seed2 = seed0
+    call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  Write particle block dimensions to file (may have been changed for better
@@ -420,8 +425,6 @@ program run
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
   if (lpointmasses) call pointmasses_read_snapshot('qvar.dat')
-!
-  call get_nseed(nseed)
 !
 !  Set initial time to zero if requested. This is dangerous, however!
 !  One may forget removing this entry after having set this once.

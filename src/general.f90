@@ -159,7 +159,7 @@ module General
 !
 !  State and default generator of random numbers.
 !
-  integer, save, dimension(mseed) :: rstate=0
+  integer, save, dimension(mseed) :: rstate=0, rstate2=0
   character (len=labellen) :: random_gen='min_std'
 
   include 'general.h'
@@ -348,11 +348,15 @@ module General
           a=ran0(rstate(1))
         case ('nr_f90')
           if (present(channel)) then
-            a=mars_ran2()
+            if (channel/=1) then
+              a=mars_ran2()
+            else
+              a=mars_ran()
+            endif
           else
             a=mars_ran()
           endif
- 
+!
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -382,9 +386,15 @@ module General
           enddo
         case ('nr_f90')
           if (present(channel)) then
-            do i=1,size(a,1)
-              a(i)=mars_ran2()
-            enddo
+            if (channel/=1) then
+              do i=1,size(a,1)
+                a(i)=mars_ran2()
+              enddo
+            else
+              do i=1,size(a,1)
+                a(i)=mars_ran()
+              enddo
+            endif
           else
             do i=1,size(a,1)
               a(i)=mars_ran()
@@ -423,9 +433,16 @@ module General
           enddo; enddo; enddo
 
           if (present(channel)) then
-            do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
-              a(i,j,k)=mars_ran2()
-            enddo; enddo; enddo
+            if (channel/=1) then
+              do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+                a(i,j,k)=mars_ran2()
+              enddo; enddo; enddo
+            else
+              do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+                a(i,j,k)=mars_ran()
+              enddo; enddo; enddo
+            endif
+
           else
             do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
               a(i,j,k)=mars_ran()
@@ -494,18 +511,41 @@ module General
       case default ! 'nr_f90'
         nseed=2
         if (present(size)) size=nseed
-        if (present(get)) get(1:nseed)=rstate(1:nseed)
+        if (present(get)) then
+          if (present(channel)) then
+            if (channel/=1) then
+              get(1:nseed)=rstate2(1:nseed)
+            else
+              get(1:nseed)=rstate(1:nseed)
+            endif
+          else
+            get(1:nseed)=rstate(1:nseed)
+          endif
+        endif
+!
         if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
-
+!
             if (present(channel)) then
-              dummy = mars_ran2(put(1))
+              if (channel/=1) then
+                dummy = mars_ran2(put(1))
+              else
+                dummy = mars_ran(put(1))
+              endif
             else
               dummy = mars_ran(put(1))
             endif
           else
-            rstate(1:nseed)=put(1:nseed)
+            if (present(channel)) then
+              if (channel/=1) then
+                rstate2(1:nseed)=put(1:nseed)
+              else
+                rstate(1:nseed)=put(1:nseed)
+              endif
+            else
+              rstate(1:nseed)=put(1:nseed)
+            endif
           endif
         endif
 !
@@ -596,6 +636,8 @@ module General
 !
 !   8-nov-19/nils+axel: adapted from mars_ran
 !
+      use Cdata, only: iproc
+!
       implicit none
 !
       integer, optional, intent(in) :: init
@@ -609,12 +651,12 @@ module General
 !
 !  Initialize.
 !
-      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
+      if (present(init) .or. (rstate2(1) == 0) .or. (rstate2(2) <= 0)) then
         if (present(init)) init1 = init
         am=nearest(1.0,-1.0)/im
         first_call=.false.
-        rstate(1)=ieor(777755555,abs(init1))
-        rstate(2)=ior(ieor(888889999,abs(init1)),1)
+        rstate2(1)=ieor(777755555,abs(init1))
+        rstate2(2)=ior(ieor(888889999,abs(init1)),1)
       elseif (first_call) then
         am=nearest(1.0,-1.0)/im
         first_call=.false.
@@ -622,19 +664,20 @@ module General
 !
 !  Marsaglia shift sequence with period 2^32-1.
 !
-      rstate(1)=ieor(rstate(1),ishft(rstate(1),13))
-      rstate(1)=ieor(rstate(1),ishft(rstate(1),-17))
-      rstate(1)=ieor(rstate(1),ishft(rstate(1),5))
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),13))
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),-17))
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),5))
 !
 !  Park-Miller sequence by Schrage's method, period 2^31-2.
 !
-      k=rstate(2)/iq
-      rstate(2)=ia*(rstate(2)-k*iq)-ir*k
-      if (rstate(2) < 0) rstate(2)=rstate(2)+im
+      k=rstate2(2)/iq
+      rstate2(2)=ia*(rstate2(2)-k*iq)-ir*k
+      if (rstate2(2) < 0) rstate2(2)=rstate2(2)+im
 !
 !  Combine the two generators with masking to ensure nonzero value.
 !
-      mars_ran2=am*ior(iand(im,ieor(rstate(1),rstate(2))),1)
+      mars_ran2=am*ior(iand(im,ieor(rstate2(1),rstate2(2))),1)
+print*,'AXEL, mars_ran2=',iproc,mars_ran2
 !
     endfunction mars_ran2
 !***********************************************************************
