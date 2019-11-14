@@ -677,7 +677,6 @@ module General
 !  Combine the two generators with masking to ensure nonzero value.
 !
       mars_ran2=am*ior(iand(im,ieor(rstate2(1),rstate2(2))),1)
-print*,'AXEL, mars_ran2=',iproc,mars_ran2
 !
     endfunction mars_ran2
 !***********************************************************************

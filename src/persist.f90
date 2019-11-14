@@ -64,7 +64,6 @@ module Persist
         return
       endif
 !
-print*,'AXEL_input_persistent id=',id
       if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
         if (.not. present (file)) return
         if (file == 'var.dat') then
@@ -78,15 +77,12 @@ print*,'AXEL_input_persistent id=',id
       else
         if (init_read_persist ()) return
       endif
-print*,'AXEL2_input_persistent id=',id
 !
       if (id /= id_block_PERSISTENT) then
         if (lroot .and. (ip <= 8)) print *, 'input_persistent: Missing initial persistent block ID'
         return
       endif
 !
-!if (done) 
-print*,'AXEL3_input_persistent id=',id
       if (read_persist_id ('FIRST_BLOCK_ID', id)) return
       do while (id /= id_block_PERSISTENT)
         done = .false.
@@ -153,7 +149,6 @@ print*,'AXEL3_input_persistent id=',id
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
-print*,'AXEL id,nseed=',id,nseed
       select case (id)
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
@@ -227,7 +222,6 @@ print*,'AXEL id,nseed=',id,nseed
         if (write_persist ('RANDOM_SEEDS2', id_record_RANDOM_SEEDS2, seed2(1:nseed))) &
             output_persistent_general = .true.
       endif
-print*,'AXEL output_persistent_general: nseed=',nseed
 !
       if (lshear) then
         if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &

@@ -189,7 +189,6 @@ module Io
 !
       if (persist_initialized) then
         write (lun_output) id_block_PERSISTENT
-print*,'AXEL_output_snap_finalize id_block_PERSISTENT=',id_block_PERSISTENT
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
@@ -359,7 +358,6 @@ print*,'AXEL_output_snap_finalize id_block_PERSISTENT=',id_block_PERSISTENT
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       write (lun_output) id_block_PERSISTENT
-print*,'AXEL_init_write_persist id_block_PERSISTENT=',id_block_PERSISTENT
       init_write_persist = .false.
       persist_initialized = .true.
 !
@@ -381,7 +379,6 @@ print*,'AXEL_init_write_persist id_block_PERSISTENT=',id_block_PERSISTENT
       if (persist_last_id /= id) then
         write (lun_output) id
         persist_last_id = id
-print*,'AXEL_write_persist_id id=',id
       endif
 !
       write_persist_id = .false.
@@ -964,7 +961,6 @@ print*,'AXEL_write_persist_id id=',id
       logical :: lcatch_error
       integer :: io_err
 !
-print*,'AXEL_read_persist_id lun_input,id=',lun_input,id
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
