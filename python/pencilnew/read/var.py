@@ -194,7 +194,8 @@ class DataCube(object):
                     break
                 for key in record_types.keys():
                     if record_types[key][0] == tmp_arr[0]:
-                         print(key, record_types[key][0])
+                         if not quiet:
+                             print(key, record_types[key][0])
                          tmp_arr = infile.read_record(record_types[key][1])
                          self.__setattr__(key, tmp_arr)
             return self
