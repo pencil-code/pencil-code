@@ -16,7 +16,6 @@
 ! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
 !
 !***************************************************************
-!
 module Forcing
 !
   use Cdata
@@ -89,7 +88,8 @@ module Forcing
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
-  integer :: random2d_kmin=0.,random2d_kmax=0.
+  integer :: random2d_kmin=0, random2d_kmax=0
+  integer :: channel_force=1
 ! continious 2d forcing
   integer :: k2d
   logical :: l2dxz,l2dyz
@@ -154,7 +154,7 @@ module Forcing
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
-       n_hel_sin_pow, kzlarge, cs0eff
+       n_hel_sin_pow, kzlarge, cs0eff, channel_force
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -1037,7 +1037,7 @@ module Forcing
 ! where k_1 -- k_2 and k_3 -- k_4 are two randomly chose pairs in the list
 ! random2d_kmodes and  \phi_1 and \phi_2 are two random phases.
 !
-      call random_number_wrapper(fran)
+      call random_number_wrapper(fran,CHANNEL=channel_force)
       phase1=pi*(2*fran(1)-1.)
       phase2=pi*(2*fran(2)-1.)
       iran1=random2d_nmodes*(.9999*fran(3))+1
@@ -1136,7 +1136,7 @@ module Forcing
 ! where k_1 -- k_2 and k_3 -- k_4 are two randomly chose pairs in the list
 ! random2d_kmodes and  \phi_1 and \phi_2 are two random phases.
 !
-      call random_number_wrapper(fran)
+      call random_number_wrapper(fran,CHANNEL=channel_force)
       phase1=pi*(2*fran(1)-1.)
       phase2=pi*(2*fran(2)-1.)
 !
@@ -1197,7 +1197,7 @@ module Forcing
       call keep_compiler_quiet(force_ampl)
 !
       do
-        call random_number_wrapper(fran)
+        call random_number_wrapper(fran,CHANNEL=channel_force)
         phase=pi*(2*fran(1)-1.)
         ik=nk*(.9999*fran(2))+1
 !
@@ -1421,7 +1421,7 @@ module Forcing
 !  |k_i| < akmax
 !
       do
-        call random_number_wrapper(fran)
+        call random_number_wrapper(fran,CHANNEL=channel_force)
         phase=pi*(2*fran(1)-1.)
         ik=nk*(.9999*fran(2))+1
 !
@@ -1515,7 +1515,7 @@ module Forcing
         call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
         call cross(kk,e1,e2)
         call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
-        call random_number_wrapper(phi); phi = phi*2*pi
+        call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
       endif
@@ -2109,7 +2109,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number_wrapper(fran)
+      call random_number_wrapper(fran,CHANNEL=channel_force)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
       if (ip<=6) then
@@ -2129,7 +2129,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  Loop over all k, but must have the call to random_number_wrapper
 !  outside this loop.
 !
-      call random_number_wrapper(phi); phi = phi*2*pi
+      call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
       do n=n1,n2
 !
 !  normally we want to use the wavevectors as they are,
@@ -2512,7 +2512,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number_wrapper(fran)
+      call random_number_wrapper(fran,CHANNEL=channel_force)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
       if (ip<=6) then 
@@ -2580,7 +2580,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
         call cross(kk,e1,e2)
         call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
-        call random_number_wrapper(phi); phi = phi*2*pi
+        call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
       endif
@@ -2772,17 +2772,17 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       else
       endif
 ! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
-   call random_number_wrapper(rindex)
+   call random_number_wrapper(rindex,CHANNEL=channel_force)
    lmindex=nint(rindex*(nlist_ck-1))+1
    emm = cklist(lmindex,1)
    Legendrel = cklist(lmindex,2)
-   call random_number_wrapper(ralpha)
+   call random_number_wrapper(ralpha,CHANNEL=channel_force)
    aindex=nint(ralpha*2)
    Balpha = cklist(lmindex,3+aindex)
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r)
-   call random_number_wrapper(rphase1)
+   call random_number_wrapper(rphase1,CHANNEL=channel_force)
    rphase1=rphase1*2*pi
    if (lfastCK) then
      do n=n1-nghost,n2+nghost
@@ -2828,9 +2828,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 ! get random psi.
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
-   call random_number_wrapper(rz)
+   call random_number_wrapper(rz,CHANNEL=channel_force)
    ee(3) = rz
-   call random_number_wrapper(rphase2)
+   call random_number_wrapper(rphase2,CHANNEL=channel_force)
    rphase2 = pi*rphase2
    ee(1) = sqrt(1-rz*rz)*cos(rphase2)
    ee(2) = sqrt(1-rz*rz)*sin(rphase2)
@@ -2967,7 +2967,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
    lmindex=icklist
    emm = cklist(lmindex,1)
    Legendrel = cklist(lmindex,2)
-   call random_number_wrapper(ralpha)
+   call random_number_wrapper(ralpha,CHANNEL=channel_force)
    aindex=nint(ralpha*2)
    Balpha = cklist(lmindex,3)
 !
@@ -2975,7 +2975,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r)
 !
-   call random_number_wrapper(rphase1)
+   call random_number_wrapper(rphase1,CHANNEL=channel_force)
    rphase1=rphase1*2*pi
    if (lfastCK) then
      do n=n1-nghost,n2+nghost
@@ -3017,9 +3017,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !      write(*,*) 'mmin=',mmin
 ! ----------now generate and add the force ------------
 !
-   call random_number_wrapper(rz)
+   call random_number_wrapper(rz,CHANNEL=channel_force)
    ee(3) = rz
-   call random_number_wrapper(rphase2)
+   call random_number_wrapper(rphase2,CHANNEL=channel_force)
    rphase2 = pi*rphase2
    ee(1) = sqrt(1-rz*rz)*cos(rphase2)
    ee(2) = sqrt(1-rz*rz)*sin(rphase2)
@@ -3445,7 +3445,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       if (t>tsforce) then
         if (lrandom_location) then
-          call random_number_wrapper(fran)
+          call random_number_wrapper(fran,CHANNEL=channel_force)
           location=fran*Lxyz+xyz0
         else
           location=location_fixed
@@ -3639,7 +3639,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       if (t>tsforce) then
         if (lrandom_location) then
-          call random_number_wrapper(fran)
+          call random_number_wrapper(fran,CHANNEL=channel_force)
           location=fran*Lxyz+xyz0
         else
           location=location_fixed
@@ -3866,8 +3866,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
             if (lactive_dimension(j)) then
               jf=j+ifff-1
               if (modulo(j-1,2)==0) then
-                call random_number_wrapper(r)
-                call random_number_wrapper(p)
+                call random_number_wrapper(r,CHANNEL=channel_force)
+                call random_number_wrapper(p,CHANNEL=channel_force)
                 tmp=sqrt(-2*log(r))*sin(2*pi*p)
               else
                 tmp=sqrt(-2*log(r))*cos(2*pi*p)
@@ -3997,7 +3997,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number_wrapper(fran)
+      call random_number_wrapper(fran,CHANNEL=channel_force)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'force_hel_noshear: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt
@@ -4035,7 +4035,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
         call cross(kk,e1,e2)
         call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
-        call random_number_wrapper(phi); phi = phi*2*pi
+        call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
       endif
@@ -4521,11 +4521,11 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       !so that it will be read again on restarts.
       if (t > tsforce) then
         if (tsforce < 0) then
-          call random_number_wrapper(fran1)
+          call random_number_wrapper(fran1,CHANNEL=channel_force)
         else
           fran1=fran2
         endif
-        call random_number_wrapper(fran2)
+        call random_number_wrapper(fran2,CHANNEL=channel_force)
         tsforce=t+dtforce
       endif
       phase1=pi*(2*fran1(1)-1.)
@@ -4793,7 +4793,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
         call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
         call cross(kk,e1,e2)
         call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
-        call random_number_wrapper(phi); phi = phi*2*pi
+        call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
       endif
@@ -5270,6 +5270,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)= 0.5*ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i)
           force(:,3)= 0.
 !
+!  f=(0,x,0)
+!
+        case ('(0,x,0)')
+          force(:,1)=0.
+          force(:,2)=ampl_ff(i)*x(l1:l2)
+          force(:,3)=0.
+!
 !  f=(0,sinx,0)
 !
         case ('(0,sinx,0)')
@@ -5381,6 +5388,18 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=tmp
+!
+!  blob-like vertical field patch
+!
+        case('vert_field_blob')
+          tmp=x(l1:l2)**2+y(m)**2+z(n)**2
+          force(:,1)=0.
+          where (tmp<=1.)
+            force(:,2)=ampl_ff(i)*x(l1:l2)
+          elsewhere
+            force(:,2)=0.
+          endwhere
+          force(:,3)=0.
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
