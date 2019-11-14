@@ -143,7 +143,7 @@ class DataCube(object):
         from .. import read
         from ..sim import __Simulation__
 
-        def persist(self, infile=None, precision='d'):
+        def persist(self, infile=None, precision='d', quiet=quiet):
             """An open Fortran file potentially containing persistent variables appended
                to the f array and grid data are read from the first proc data
 
@@ -153,7 +153,7 @@ class DataCube(object):
 
             record_types={
                 'id_block_persistent': (2000, 'h'),
-                'random_seeds'    :( 1   ,'h'      ),
+                'random_seeds'    :( 1   ,'i'      ),
                 'shear_delta_y'   :( 320 ,precision),
                 'hydro_tphase'    :( 280 ,precision),
                 'hydro_phase1'    :( 281 ,precision),
@@ -171,8 +171,8 @@ class DataCube(object):
                 'ism_y_cluster'   :( 256 ,precision),
                 'ism_z_cluster'   :( 260 ,precision),
                 'ism_t_cluster'   :( 261 ,precision),
-                'ism_toggle_sni'  :( 257 ,'h'),
-                'ism_toggle_snii' :( 258 ,'h'),
+                'ism_toggle_sni'  :( 257 ,'i'),
+                'ism_toggle_snii' :( 258 ,'i'),
                 'ism_snrs'        :( 259 ,precision),
                 'ism_toggle_old'  :( 1001,precision),
                 'ism_snrs_old'    :( 1002,precision),
@@ -348,7 +348,7 @@ class DataCube(object):
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
                 raw_etc = infile.read_record(precision)
                 if lpersist:
-                    persist(self, infile=infile, precision=precision)
+                    persist(self, infile=infile, precision=precision, quiet=quiet)
                 infile.close()
 
                 t = raw_etc[0]
