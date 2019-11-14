@@ -14,6 +14,7 @@ integer, parameter :: id_block_PERSISTENT        = 2000
 
 ! Random Seeds
 integer, parameter :: id_record_RANDOM_SEEDS     = 1
+integer, parameter :: id_record_RANDOM_SEEDS2    = 2
 
 ! Interstellar
 ! deprecated:
