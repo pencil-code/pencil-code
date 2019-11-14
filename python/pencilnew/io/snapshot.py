@@ -255,12 +255,14 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         dim = read.dim()
         for key in skeys:
             settings[key]=dim.__getattribute__(key)
+        settings['precision']=precision.encode()
         settings['nghost']=nghost
+        nprocs=settings['nprocx']*settings['nprocy']*settings['nprocz']
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
             ]
     if grid == None:
-        grid = read.grid()
+        grid = read.grid(quiet=True)
     else:
         gd_err = False
         for key in gkeys:
@@ -272,11 +274,12 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
                  'temperature', 'flux', 'energy', 'mass', 'system',
                 ]
-        param = read.param()
+        param = read.param(quiet=True)
         param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
         param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
         param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
         param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
+        param.unit_system=param.unit_system.encode()
 
     #check whether the snapshot matches the simulation shape
     if lghosts:
@@ -380,14 +383,12 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         # add physical units
         unit_grp = ds.create_group('unit')
         for key in ukeys:
-            print(key,param.__getattribute__('unit_'+key))
-            if 'system' in key:
-                unit_grp.create_dataset(key, data=np.array(param.__getattribute__('unit_'+key).encode()))
-            else:
-                unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
+            unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
         # add optional pesristent data
         if persist != None:
             pers_grp = ds.create_group('persist')
             for key in persist.keys():
-                pers_grp.create_dataset(key, data=(persist[key],))
+                arr=np.empty(nprocs,dtype=type(persist[key][0]))
+                arr[:]=persist[key][()]
+                pers_grp.create_dataset(key, data=arr,)
 #    return 0
