@@ -170,7 +170,7 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
 
 def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
-                   unit=None, grid=None, lghosts=False,
+                   unit=None, grid=None, lghosts=False, indx=None,
                    t=None, x=None, y=None, z=None, lshear=False):
     """
     Write a snapshot given as numpy array.
@@ -184,7 +184,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
 
     write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
-                   unit=None, grid=None, lghosts=False,
+                   param=None, grid=None, lghosts=False, indx=None,
                    t=None, x=None, y=None, z=None, lshear=False)
 
     Keyword arguments:
@@ -209,8 +209,8 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     *settings*:
       optional dictionary of persistent variable.
 
-    *unit*:
-      optional dictionary of code units.
+    *param*:
+      optional Param object.
 
     *grid*:
       optional Pencil Grid object of grid parameters.
@@ -220,6 +220,9 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
 
     *lghosts*:
       If True the snapshot contains the ghost zones.
+
+    *indx*
+      Index object of index for each variable in f-array
 
     *t*:
       Time of the snapshot.
@@ -243,10 +246,11 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     #test if simulation directory
     if not sim.is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
-    indx=read.index()
+    if indx == None:
+        indx = read.index()
     #
     if settings == None:
-        settings={}
+        settings = {}
         skeys = ['l1', 'l2', 'm1', 'm2', 'n1', 'n2',
                  'nx', 'ny', 'nz', 'mx', 'my', 'mz',
                  'nprocx', 'nprocy', 'nprocz',
@@ -254,10 +258,10 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 ]
         dim = read.dim()
         for key in skeys:
-            settings[key]=dim.__getattribute__(key)
-        settings['precision']=precision.encode()
-        settings['nghost']=nghost
-        nprocs=settings['nprocx']*settings['nprocy']*settings['nprocz']
+            settings[key] = dim.__getattribute__(key)
+        settings['precision'] = precision.encode()
+        settings['nghost'] = nghost
+        nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
             ]
@@ -270,16 +274,16 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 print("ERROR: key "+key+" missing from grid")
         if gd_err:
             print("ERROR: grid incomplete")
-    if unit == None:
-        ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
-                 'temperature', 'flux', 'energy', 'mass', 'system',
-                ]
+    if param == None:
         param = read.param(quiet=True)
-        param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
-        param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
-        param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
-        param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
-        param.unit_system=param.unit_system.encode()
+    ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
+             'temperature', 'flux', 'energy', 'mass', 'system',
+            ]
+    param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
+    param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
+    param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
+    param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
+    param.unit_system = param.unit_system.encode()
 
     #check whether the snapshot matches the simulation shape
     if lghosts:
@@ -351,7 +355,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         # Write the data.
         data_grp = ds.create_group('data')
         for key in indx.__dict__.keys():
-            if key in ['uu','keys','aa']:
+            if key in ['uu','keys','aa','KR_Frad','uun','gg']:
                 continue
             #create ghost zones if required
             if not lghosts:
@@ -388,7 +392,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         if persist != None:
             pers_grp = ds.create_group('persist')
             for key in persist.keys():
-                arr=np.empty(nprocs,dtype=type(persist[key][0]))
-                arr[:]=persist[key][()]
+                arr = np.empty(nprocs,dtype=type(persist[key][0]))
+                arr[:] = persist[key][()]
                 pers_grp.create_dataset(key, data=arr,)
 #    return 0
