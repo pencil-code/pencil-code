@@ -11,7 +11,6 @@ MPICOMM   =   mpicomm
 IO        =   io_dist
 #--------------------------------
 #IO        =   io_hdf5
-#HDF5_IO   =   hdf5_io_parallel
 #================================
 
 HYDRO     =   hydro_kinematic

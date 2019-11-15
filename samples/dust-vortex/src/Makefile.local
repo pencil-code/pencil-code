@@ -6,11 +6,10 @@
 #================================
 # Please uncomment one IO option:
 #================================
-IO        = io_dist
+IO        =   io_dist
 #--------------------------------
 #MPICOMM   =   mpicomm
-#IO        = io_hdf5
-#HDF5_IO   =   hdf5_io_parallel
+#IO        =   io_hdf5
 #================================
 
 HYDRO     =   hydro
