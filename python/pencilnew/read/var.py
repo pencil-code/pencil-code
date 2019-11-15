@@ -151,36 +151,10 @@ class DataCube(object):
                variables in the depricated fortran binary format
             """
 
-            record_types={
-                'id_block_persistent': (2000, 'h'),
-                'random_seeds'    :( 1   ,'i'      ),
-                'shear_delta_y'   :( 320 ,precision),
-                'hydro_tphase'    :( 280 ,precision),
-                'hydro_phase1'    :( 281 ,precision),
-                'hydro_phase2'    :( 282 ,precision),
-                'hydro_tsforce'   :( 284 ,precision),
-                'hydro_location'  :( 285 ,precision),
-                'hydro_ampl'      :( 286 ,precision),
-                'hydro_wavenumber':( 287 ,precision),
-                'ism_t_next_old'  :( 250 ,precision),
-                'ism_pos_next_old':( 251 ,precision),
-                'ism_bold_mass'   :( 252 ,precision),
-                'ism_t_next_sni'  :( 253 ,precision),
-                'ism_t_next_snii' :( 254 ,precision),
-                'ism_x_cluster'   :( 255 ,precision),
-                'ism_y_cluster'   :( 256 ,precision),
-                'ism_z_cluster'   :( 260 ,precision),
-                'ism_t_cluster'   :( 261 ,precision),
-                'ism_toggle_sni'  :( 257 ,'i'),
-                'ism_toggle_snii' :( 258 ,'i'),
-                'ism_snrs'        :( 259 ,precision),
-                'ism_toggle_old'  :( 1001,precision),
-                'ism_snrs_old'    :( 1002,precision),
-                'forcing_location':( 270 ,precision),
-                'forcing_tsforce' :( 271 ,precision),
-                'magnetic_phase'  :( 311 ,precision),
-                'magnetic_ampl'   :( 312 ,precision),
-            }
+            if precision != 'd':
+                for key in read.record_types.keys():
+                    if read.record_type[key][1] == 'd':
+                        read.record_type[key][1] = precision
 
             try:
                 tmp_arr = infile.read_record('h')
@@ -192,11 +166,11 @@ class DataCube(object):
                 block_id = tmp_arr[0]
                 if block_id == 2000:
                     break
-                for key in record_types.keys():
-                    if record_types[key][0] == tmp_arr[0]:
+                for key in read.record_types.keys():
+                    if read.record_types[key][0] == tmp_arr[0]:
                          if not quiet:
-                             print(key, record_types[key][0])
-                         tmp_arr = infile.read_record(record_types[key][1])
+                             print(key, read.record_types[key][0])
+                         tmp_arr = infile.read_record(read.record_types[key][1])
                          self.__setattr__(key, tmp_arr)
             return self
 

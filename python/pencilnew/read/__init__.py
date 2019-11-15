@@ -14,6 +14,7 @@ from .averages import aver
 from .power import power
 from .ogdim import ogdim
 from .ogvar import ogvar
+from .pencil_record_types import record_types
 
 # idl workarounds
 from .pstalk import pstalk
