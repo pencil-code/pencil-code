@@ -416,7 +416,8 @@ else
 endif
 #
 ifeq ($(IO),io_hdf5)
-  HDF5_IO=hdf5_io_parallel
+  # if unset, choose default HDF5 IO strategy (parallel)
+  HDF5_IO ?= hdf5_io_parallel
 endif
 #ifdef ENTROPY
 #entropy_message:
