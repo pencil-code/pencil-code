@@ -2413,7 +2413,7 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	LD := $(shell which h5pfc || which h5fc)
 	ifeq ($(LD),)
 		# try our best guess (parallel version)
-                LD = $(FC)
+                LD = h5pfc
 	endif
 	# set HDF5 compiler and linker
 	FC_HDF5 := $(LD)
