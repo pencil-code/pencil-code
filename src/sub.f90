@@ -4973,7 +4973,6 @@ nameloop: do
       integer, intent(out) :: nseed
 !
       call random_seed_wrapper(SIZE=nseed)
-print*,'AXELsub nseed=',nseed
 !
 !  Test whether mseed is large enough for this machine.
 !

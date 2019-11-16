@@ -109,7 +109,7 @@ module Param_IO
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
       sigmaSB_set, c_light_set, k_B_set, m_u_set, &
-      lnoghost_strati
+      lnoghost_strati, ichannel1, ichannel2
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
