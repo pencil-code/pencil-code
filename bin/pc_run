@@ -904,7 +904,7 @@ sub setup_datadir {
 sub subdir_list {
 # Return list of directories below data/ that must exist
     my @subdirs = qw/ allprocs averages idl /;
-    my $HDF5 = `grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`;
+    my $HDF5 = `grep -Eci '^ *io *= *io_hdf5' src/Makefile.local`;
     if ($HDF5 > 0) {
         push @subdirs, 'slices';
     } else {
