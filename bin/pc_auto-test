@@ -1070,7 +1070,7 @@ sub test_start {
 
         # Check for broken pencil check or floating-point exception
         my $res = $out;
-        if ($res =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
+        if ($res =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
             return;
         }
@@ -1124,7 +1124,7 @@ sub test_run {
         }
 
         # Check for broken pencil check or floating-point exception
-        if ($res =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
+        if ($res =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "running");
             return;
         }
