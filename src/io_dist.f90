@@ -948,7 +948,8 @@ module Io
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
-!  AB: Philippe, can you explain what it does?
+!  Each persist data block starts with a unique ID followed by the data.
+!  Both are Fortran records. Returns a positive ID number on success.
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
