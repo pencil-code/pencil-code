@@ -1407,11 +1407,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Axel on norlx65 (gfortran)
 ##
 #FC=mpif90 #(norlx65)
+#FFLAGS=-O1 -finit-real=nan #(norlx65)
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring #(norlx65)
 #CC=mpicc #(norlx65)
 #CFLAGS=-O1 #(norlx65)
 #LD_MPI= #(norlx65)
-#LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx65)
+##LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx65)
 #LIBMPISUFFIX= #(norlx65)
 ##
 ## Axel on norlx55 (gfortran)
