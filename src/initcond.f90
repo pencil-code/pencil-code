@@ -5996,9 +5996,18 @@ module Initcond
             if (pz == ipz) then
               call distribute_xy(A_local, A_global)
               f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
-              if (iglobal_ax_ext/=0 .and. comp == 1) f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
-              if (iglobal_ay_ext/=0 .and. comp == 2) f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
-              if (iglobal_az_ext/=0 .and. comp == 3) f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+              if (iglobal_ax_ext/=0 .and. comp == 1) then
+                f(:,:,:, iglobal_ax_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+              endif
+              if (iglobal_ay_ext/=0 .and. comp == 2) then
+                f(:,:,:, iglobal_ay_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+              endif
+              if (iglobal_az_ext/=0 .and. comp == 3) then
+                f(:,:,:, iglobal_az_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+              endif
             else
               partner = ipx + ipy*nprocx + pz*nprocxy
               call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
@@ -6017,9 +6026,18 @@ module Initcond
             call distribute_xy(A_local)
           endif
           f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
-          if (iglobal_ax_ext/=0 .and. comp == 1) f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
-          if (iglobal_ay_ext/=0 .and. comp == 2) f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
-          if (iglobal_az_ext/=0 .and. comp == 3) f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+          if (iglobal_ax_ext/=0 .and. comp == 1) then
+            f(:,:,:, iglobal_ax_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+          endif
+          if (iglobal_ay_ext/=0 .and. comp == 2) then
+            f(:,:,:, iglobal_ay_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+          endif
+          if (iglobal_az_ext/=0 .and. comp == 3) then
+            f(:,:,:, iglobal_az_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+          endif
         enddo
       endif
 !
