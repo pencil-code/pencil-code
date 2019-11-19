@@ -59,6 +59,10 @@ module Mpicomm
      module procedure mpirecv_logical_arr
   endinterface
 !
+  interface mpirecv_char
+    module procedure mpirecv_char_scl
+  endinterface
+!
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
@@ -2770,6 +2774,21 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
           MPI_COMM_YBEAM,mpierr)
 !
     endsubroutine radboundary_zx_periodic_ray
+!***********************************************************************
+    subroutine mpirecv_char_scl(str,proc_src,tag_id)
+!
+!  Receive character scalar from other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      character(LEN=*) :: str
+      integer :: proc_src, tag_id
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      call MPI_RECV(str, len(str), MPI_CHARACTER, proc_src, &
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
+!
+    endsubroutine mpirecv_char_scl
 !***********************************************************************
     subroutine mpirecv_logical_scl(bcast_array,proc_src,tag_id)
 !

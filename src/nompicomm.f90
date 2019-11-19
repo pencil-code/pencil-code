@@ -584,6 +584,15 @@ module Mpicomm
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
+    subroutine mpirecv_char(str,proc_src,tag_id)
+!
+      character(LEN=*) :: str
+      integer :: proc_src, tag_id
+!
+      if (ALWAYS_FALSE) print*, str, proc_src, tag_id
+!
+    endsubroutine mpirecv_char
+!***********************************************************************
     subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
       integer :: nbcast_array
@@ -1640,7 +1649,11 @@ module Mpicomm
 !
     endsubroutine end_serialize
 !***********************************************************************
-    subroutine mpibarrier
+    subroutine mpibarrier(comm)
+
+      integer, optional :: comm
+
+      call keep_compiler_quiet(comm)
 !
     endsubroutine mpibarrier
 !***********************************************************************

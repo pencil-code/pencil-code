@@ -13,7 +13,7 @@
   public :: die_gracefully, die_immediately
   public :: check_emergency_brake
 
-  public :: mpirecv_logical, mpirecv_real, mpirecv_int   !, mpirecv_cmplx
+  public :: mpirecv_logical, mpirecv_real, mpirecv_int, mpirecv_char  !, mpirecv_cmplx
   public :: mpisend_logical, mpisend_real, mpiscan_int, mpisend_int   !, mpisend_cmplx
   public :: mpisendrecv_real
   public :: mpireduce_sum_int, mpireduce_sum             !, mpireduce_sum_double
