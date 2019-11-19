@@ -129,12 +129,16 @@ module Hydro
   logical :: lupdate_aux=.false.
 !
   type foreign_setup
+    character(LEN=labellen) :: name=''
     real :: dt_out=0., t_last_out=0.
+    integer, dimension(3) :: dims
+    real, dimension(2,3) :: extents
   endtype foreign_setup
   
   type(foreign_setup), save :: frgn_setup
   integer :: peer_foreign=-1, irecv_from_foreign
-  real, dimension(:,:,:,:), allocatable :: uu_2
+  real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
+  real, dimension(:,:,:), allocatable :: shell_buffer
 
   contains
 !***********************************************************************
@@ -187,7 +191,7 @@ module Hydro
       character(LEN=128) :: messg
       integer, dimension(3) :: intbuf
       real, dimension(2) :: floatbuf
-      integer :: j
+      integer :: j,ll,name_len
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -325,21 +329,36 @@ module Hydro
 
         if (lroot) then
           lok=.true.; messg=''
+
+          call mpirecv_int(name_len,root_foreign,MPI_ANY_TAG)
+          if (name_len<=0) then
+            call fatal_error('initialize_hydro','length of foreign name <=0 or >')
+          elseif (name_len>labellen) then
+            call fatal_error('initialize_hydro','length of foreign name > labellen ='// &
+                            trim(itoa(labellen)))
+          endif
+
+          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,MPI_ANY_TAG)
+          if (.not.(frgn_setup%name=='MagIC'.or.frgn_setup%name=='EULAG')) &
+            call fatal_error('initialize_hydro', &
+             'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
+          
           call mpirecv_int(intbuf,3,root_foreign,MPI_ANY_TAG)
           if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
           endif
 
-          call mpirecv_int(intbuf,3,root_foreign,MPI_ANY_TAG)
-          if (any(intbuf/=(/nx,ny,nz/))) then
+          call mpirecv_int(frgn_setup%dims,3,root_foreign,MPI_ANY_TAG)
+
+          if ( any(frgn_setup%dims(2:3)/=(/ny,nz/)) .or. frgn_setup%name/='MagIC'.and.frgn_setup%dims(1)/=nx )  then
             messg=trim(messg)//" foreign grid sizes don't match;"
             lok=.false.
           endif
  
           do j=1,3
-            call mpirecv_real(floatbuf,2,root_foreign,MPI_ANY_TAG)
-            if (any(floatbuf/=(/xyz0(j),xyz1(j)/))) then
+            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,MPI_ANY_TAG)
+            if (any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
               lok=.false.
             endif
@@ -359,8 +378,27 @@ module Hydro
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
        
         frgn_setup%t_last_out=t
-        call mpirecv_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG)
-        call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+
+        if (frgn_setup%name=='MagIC') then
+          allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
+          allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
+        endif
+
+        do j=1,2
+          if (frgn_setup%name=='MagIC') then
+            do ll=1,frgn_setup%dims(1)
+              call mpirecv_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/),peer_foreign,MPI_ANY_TAG)
+              frgn_buffer(ll,:,:,:)=shell_buffer
+            enddo
+            ! interpolate/restrict to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
+          else
+            if (j==1) then
+              call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+            else
+              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+            endif
+          endif
+        enddo
 
       endif
 
@@ -2179,6 +2217,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: fac
+      integer :: ll
 
       if (kinematic_flow=='from-foreign-snap') then
 
@@ -2186,7 +2225,15 @@ module Hydro
           if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
             call mpiwait(irecv_from_foreign)
             frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
-            call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+            if (frgn_setup%name=='MagIC') then
+              do ll=l1,l2
+                call mpirecv_nonblock_real(shell_buffer,(/ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+                frgn_buffer(ll,:,:,:)=shell_buffer
+                !uu_2(ll,:,:,:)=frgn_buffer
+              enddo
+            else
+              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+            endif
           endif
         endif
 
@@ -3101,6 +3148,9 @@ module Hydro
         deallocate(KS_B)
         deallocate(KS_omega)
       endif
+
+      if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+      if (allocated(shell_buffer)) deallocate(shell_buffer)
 !
       print*, 'Done.'
 !
