@@ -125,7 +125,7 @@ if (iglobal_ay_ext gt 0) then begin
   varcontent[iglobal_ay_ext].variable   = 'Magnetic vector potential (ay_ext)'
   varcontent[iglobal_ay_ext].idlvar     = 'ay_ext'
   varcontent[iglobal_ay_ext].idlinit    = INIT_SCALAR
-  varcontent[iglobal_ay_ext].idlvarloc  = 'ax_ext_loc'
+  varcontent[iglobal_ay_ext].idlvarloc  = 'ay_ext_loc'
   varcontent[iglobal_ay_ext].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
