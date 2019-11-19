@@ -732,6 +732,7 @@ module Forcing
           open(9,file='k.dat',status='old')
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'initialize_forcing: average k=',kav
+          if (allocated(kkx)) deallocate(kkx,kky,kkz)
           allocate(kkx(nk),kky(nk),kkz(nk))
           read(9,*) kkx
           read(9,*) kky
@@ -751,6 +752,7 @@ module Forcing
             open(9,file='k_double.dat',status='old')
             read(9,*) nk2,kav2
             if (lroot.and.ip<14) print*,'initialize_forcing: average k(2)=',kav2
+            if (allocated(kkx2)) deallocate(kkx2,kky2,kkz2)
             allocate(kkx2(nk2),kky2(nk2),kkz2(nk2))
             read(9,*) kkx2
             read(9,*) kky2
