@@ -157,10 +157,14 @@ CFLAGS_FFTW2  =
 FFLAGS_FFTW2  =
 LD_FFTW2      =
 #
-# Extra compiler flags (what does the `GENERAL' refer to?).
+# Extra compiler flags (what does the `GENERAL' refer to?). MR: could be renamed to EXTRA
 #
 FFLAGS_GENERAL =
 CFLAGS_GENERAL =
+#
+# Preprocessing flags.
+#
+FPPFLAGS =
 #
 # Default double flags (can be overwritten in machine-specific section).
 #
@@ -384,7 +388,7 @@ else
   ifeq ($(SPECIAL),special)
 special_message:
 	@echo ";;; Cannot build:"
-	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
+	@echo ";;;    SPECIAL must not be set to special, but to individual module(s) in directory special."
 	exit 1
   else
     SPECIAL_MULT := $(words $(SPECIAL))
@@ -415,11 +419,23 @@ else
   GPU_INTERFACE=
 endif
 #
+MODULE_CMD := $(shell command -v module)
 ifeq ($(IO),io_hdf5)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
   ifeq ($(HDF5_IO),nohdf5_io)
     # choose default HDF5 IO strategy (parallel)
     HDF5_IO = hdf5_io_parallel
+  endif
+
+  ifneq ($(MODULE_CMD),)
+    HDF5_LOADED := $(shell (module list |& grep hdf5) || (module list |& grep hf5) )
+    ifeq ($(HDF5_LOADED),)
+no_hdf5_message:
+	@echo ";;;"
+	@echo ";;; No HDF5 module seems to be loaded! Exit."
+	@echo ";;;"
+	@exit 1
+    endif
   endif
 endif
 #
@@ -2405,17 +2421,19 @@ LD=$(FC)
 ifneq ($(IO_ALT),)
   IO_ALT_DEPS = io_alt.so
   LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-  FFLAGS += $(DLL_FFLAGS)
+  FFLAGS += $(DLL_FFLAGS)    #???
 else
   IO_ALT_DEPS =
 endif
 #
+MOST_COMP_FLAGS = $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS)
+ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPP_FLAGS)
+#
+#  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPP_FLAGS) below this point!
+#
 ifneq ($(HDF5_IO),nohdf5_io)
-	# set HDF5 Fortran compiler and Fortran linker
-	export HDF5_FC:=$(FC)
-	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
-	LD := $(shell which h5pfc || which h5fc)
+	LD := $(notdir $(shell which h5pfc || which h5fc ))
 	ifeq ($(LD),)
 		# try our best guess (parallel version)
                 LD = h5pfc
@@ -2435,18 +2453,18 @@ endif
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
 
 special/%.o : special/%.f90
 ifneq ($(SPECIAL_MULT),1)
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
 else
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
 #
 ifneq ($(IO_ALT),)
 $(IO_ALT).o : $(IO_ALT).f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o $*.o -c $*.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o $*.o -c $*.f90
 endif
 #
 .c.o:
@@ -2607,7 +2625,7 @@ nompicomm.o: nompicomm.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o nompicomm.o -c nompicomm.f90
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
-	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -c hdf5_io_parallel.f90 -o hdf5_io_parallel.o
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o hdf5_io$*.o -c hdf5_io$*.f90
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
@@ -2710,7 +2728,7 @@ cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preproce
 	fi
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
+	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
 ifeq ($(SPECIAL_MULT),1)
@@ -2754,6 +2772,9 @@ legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	else \
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
+ifneq ($(MODULE_CMD),)
+	@module list >& .moduleinfo
+endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 
@@ -2802,24 +2823,24 @@ linkonly:
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM).o -c $(MPICOMM).f90
+	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM).o -c $(MPICOMM).f90
 #
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC) $(PARTICLES_OBJ)
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
+	$(FC) $(ALL_COMP_FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
+	$(FC) $(ALL_COMP_FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o param_io.o -c param_io.f90
+	$(FC) $(ALL_COMP_FLAGS) -o param_io.o -c param_io.f90
 diagnostics_outlog.o: diagnostics_outlog.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
 io_collect_xy_f2003.o: io_collect_xy_f2003.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
 io_hdf5.o: io_hdf5.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o io_hdf5.o -c io_hdf5.f90
+	$(FC) $(ALL_COMP_FLAGS) -o io_hdf5.o -c io_hdf5.f90
 file_io_f95.o: file_io_f95.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_f95.o -c file_io_f95.f90
+	$(FC) $(ALL_COMP_FLAGS) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_dist.o -c file_io_dist.f90
+	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
 #
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
