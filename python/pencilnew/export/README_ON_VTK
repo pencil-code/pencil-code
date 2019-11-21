@@ -26,9 +26,9 @@ z = np.zeros((nx + 1, ny + 1, nz + 1))
 for k in range(nz + 1):
     for j in range(ny + 1):
         for i in range(nx + 1):
-            x[i,j,k] = X[i] + (0.5 - rnd.random()*0) * 0.1 * dx * 0
-            y[i,j,k] = Y[j] + (0.5 - rnd.random()*0) * 0.1 * dy * 0
-            z[i,j,k] = Z[k] + (0.5 - rnd.random()*0) * 0.1 * dz * 0
+            x[i, j, k] = X[i] + (0.5 - rnd.random()*0) * 0.1 * dx * 0
+            y[i, j, k] = Y[j] + (0.5 - rnd.random()*0) * 0.1 * dy * 0
+            z[i, j, k] = Z[k] + (0.5 - rnd.random()*0) * 0.1 * dz * 0
 
 # Variables
 pressure = np.random.randn(ncells).reshape( (nx, ny, nz))
