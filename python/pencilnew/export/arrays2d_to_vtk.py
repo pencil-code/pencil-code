@@ -1,35 +1,54 @@
+# arrays2d_to_vtk.py
+#
+# Export 2d arrays into vtk format.
+#
+# Authors:
+# A. Schreiber (aschreiber@mpia.de)
+"""
+Contains the exporting routine for 2d arrays into vtk.
+"""
+
+
 def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
-    """Convert 2-D array in a VTK file.
+    """
+    Convert 2-D array in a VTK file.
+
+    call signature:
+
+    arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy)
+
     Args:
         - folder:       where to put the vtk
-        - filename:     name of the vtk, '.vtk' will be added automatically
+        - fil_ename:    name of the vtk, '.vtk' will be added automatically
         - arrays:       list of 2d array to export
         - names:        list of names associated with arrays
         - gridx/y:      grid as array
     """
 
     import struct
-    import numpy as np
     import os
-    from os.path import exists, join
-    from ..math import natural_sort
-    from ..io import mkdir
+    import numpy as np
 
-    print("## producing vtk-file from arrays")
+    print("## Producing vtk-file from arrays.")
 
-    if not (type(arrays) == type(['list']) and type(names) == type(['list'])):
-        print('! ERROR: arrays and names must be a list!')
+    if not (isinstance(arrays, list) and isinstance(names, list)):
+        print('ERROR: Arrays and names must be a list!')
 
-    if not os.path.exists(folder): os.makedirs(folder)        	# check for vtk folder
+    # Check if the output folder exists.
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-    dimx = len(gridx); dimy = len(gridy); dim = dimx * dimy
-    dx = (np.max(gridx) - np.min(gridx))/(dimx)
-    dy = (np.max(gridy) - np.min(gridy))/(dimy)
+    dimx = len(gridx)
+    dimy = len(gridy)
+    dim = dimx*dimy
+    dx = (np.max(gridx) - np.min(gridx))/dimx
+    dy = (np.max(gridy) - np.min(gridy))/dimy
 
-    dy = dx*dimx/dimy                                          # rescale dimmension to get a square as output 'image'
+    # Rescale dimmension to get a square as output 'image'.
+    dy = dx*dimx/dimy
 
-    ######## do the vtk output
-    fd = open(join(folder, filename+'.vtk'), 'wb')
+    # Do the vtk output.
+    fd = open(os.path.join(folder, filename+'.vtk'), 'wb')
     fd.write('# vtk DataFile Version 2.0\n')
     fd.write('Pencil Code Data\n')
     fd.write('BINARY\n')
@@ -44,9 +63,9 @@ def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
         fd.write('LOOKUP_TABLE default\n')
         for kk in range(dimy):
             for jj in range(dimx):
-                fd.write(struct.pack(">f", array[kk,jj]))
+                fd.write(struct.pack(">f", array[kk, jj]))
 
         fd.write('')
 
     fd.close()
-    print("## Done!")
+    print("Done!")
