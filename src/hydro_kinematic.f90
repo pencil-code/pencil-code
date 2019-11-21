@@ -2259,10 +2259,10 @@ module Hydro
             frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
             if (frgn_setup%name=='MagIC') then
               do ll=l1,l2
-                call mpirecv_nonblock_real(shell_buffer,(/ny,nz,3/),frgn_setup%peer, &
+                call mpirecv_nonblock_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/),frgn_setup%peer, &
                                            frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
                 frgn_buffer(ll,:,:,:)=shell_buffer
-                !uu_2(ll,:,:,:)=frgn_buffer
+                !TODO: interpolate/restrict/scatter into uu_2(ll,:,:,:)
               enddo
             else
               call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer, &
