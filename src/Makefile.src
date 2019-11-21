@@ -401,10 +401,24 @@ special_message:
     endif
   endif
 endif
-
+#
+MODULE_CMD := $(shell command -v module)
+#
 LIBGPU =
 GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
+#
+  ifneq ($(MODULE_CMD),)
+    CUDA_LOADED := $(shell (module list |& grep -i cuda) )
+    ifeq ($(CUDA_LOADED),)
+no_cuda_message:
+        @echo ";;;"
+        @echo ";;; No CUDA module seems to be loaded! Exit."
+        @echo ";;;"
+        @exit 1
+    endif
+  endif
+#
   FFLAGS_GENERAL += -mcmodel=medium
   GPU_INTERFACE = gpu_astaroth_ansi.o
   GPU_DEPS = gpu_preps astaroth/submodule/build/src/core/libastaroth_core.so
@@ -419,7 +433,6 @@ else
   GPU_INTERFACE=
 endif
 #
-MODULE_CMD := $(shell command -v module)
 ifeq ($(IO),io_hdf5)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
   ifeq ($(HDF5_IO),nohdf5_io)
@@ -2773,7 +2786,7 @@ legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module list >& .moduleinfo
+	@module -t list |& sed -e '1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
