@@ -338,7 +338,9 @@ module Hydro
 !endif
         if (lroot) then
           lok=.true.; messg=''
-      
+!
+!  Receive length of name of foreign code.
+!      
           call mpirecv_int(name_len,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
 
           if (name_len<=0) then
@@ -347,26 +349,34 @@ module Hydro
             call fatal_error('initialize_hydro','length of foreign name > labellen ='// &
                             trim(itoa(labellen)))
           endif
-
+!
+!  Receive name of foreign code.
+!      
           call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call fatal_error('initialize_hydro', &
              'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
           !print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
-
+!
+!  Receive processor numbers of foreign code.
+!      
           call mpirecv_int(intbuf,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
           endif
-
+!
+!  Receive gridpoint numbers of foreign code.
+!      
           call mpirecv_int(frgn_setup%dims,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
 
           if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nx,ny,nz/))) then
             messg=trim(messg)//" foreign grid sizes don't match;"
             lok=.false.
           endif
- 
+!
+!  Receive domain extents of foreign code. j loops over r, theta, phi.
+!      
           do j=1,3
             call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
             if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
@@ -374,13 +384,17 @@ module Hydro
               lok=.false.
             endif
           enddo
-
+!
+!  Receive output timestep of foreign code (code units).
+!      
           call mpirecv_real(frgn_setup%dt_out,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (frgn_setup%dt_out==0.) then
             messg=trim(messg)//' foreign output step=0'
             lok=.false.
           endif
- 
+!
+!  Send confirmation flag that setup is acceptable.
+! 
           call mpisend_logical(lok,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
@@ -388,17 +402,15 @@ module Hydro
         call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)           ! should synchronize 
        
         frgn_setup%t_last_out=t
-
-        if (frgn_setup%name=='MagIC') then
-          allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
-          allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
-          if (.not.allocated(uu_2)) &
-            allocate(uu_2(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
-        else
-          if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
-        endif
+        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
 
         if (iproc<frgn_setup%ncpus) then
+
+          if (frgn_setup%name=='MagIC') then
+            allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
+            allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
+          endif
+
           do j=1,2
             if (frgn_setup%name=='MagIC') then
               do ll=1,frgn_setup%dims(1)
@@ -406,7 +418,7 @@ module Hydro
                                   frgn_setup%peer,frgn_setup%tag,MPI_COMM_UNIVERSE)
                 frgn_buffer(ll,:,:,:)=shell_buffer
               enddo
-              ! interpolate/restrict to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
+              ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
             else
               if (j==1) then
                 call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/), &
