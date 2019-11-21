@@ -2445,6 +2445,10 @@ ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPP_FLAGS)
 #  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPP_FLAGS) below this point!
 #
 ifneq ($(HDF5_IO),nohdf5_io)
+
+	# set HDF5 Fortran compiler and Fortran linker
+	export HDF5_FC:=$(FC)
+	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
 	LD := $(notdir $(shell which h5pfc || which h5fc ))
 	ifeq ($(LD),)
