@@ -199,12 +199,12 @@ else if ($?SLURM_NODELIST) then
   #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
   # using a Perl ``one-liner'':
   if ($SLURM_NNODES != 1) then
-    set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    #set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    set nodelist = `echo "$SLURM_NODELIST" | scontrol show hostnames`
   else
     set nodelist = $SLURM_NODELIST
   endif
   echo "SLURM_NODELIST = $SLURM_NODELIST"
-  echo "nodelist = $nodelist"
   echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
 else if ($?JOB_ID) then
   if (-e $HOME/.score/ndfile.$JOB_ID) then
@@ -2039,7 +2039,7 @@ endif
 
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
 eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
-echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+#echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
 setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 
 # Determine data directory (defaults to `data')
