@@ -8,14 +8,14 @@
 Contains the class with the vtk data.
 """
 
-def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
+def particles_to_vtk(var_file='pvar.dat', datadir='data', proc=-1,
                      destination='particles.vtk', ti=-1, tf=-1, binary=True):
     """
     Read the pVAR files from Pencil Code and write them as vtk files.
 
     call signature:
 
-    particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
+    particles_to_vtk(var_file='pvar.dat', datadir='data', proc=-1,
                      destination='particles.vtk', ti=-1, tf=-1, binary=True)
 
     Keyword arguments:
@@ -30,7 +30,7 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
       Processor to be read. If -1 read all and assemble to one array.
 
     *destination*:
-      Destination file (onyl if ti, tf > 0).
+      Destination file (only if ti, tf > 0).
 
     *ti*:
       Initial time index for animation.
@@ -73,7 +73,7 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data/', proc=-1,
 
 class ParticlesVtk(object):
     """
-    ParticlesVtk -- holds the vtk particle data.
+    ParticlesVtk -- holds the vtk particle data and methods.
     """
 
     def __init__(self):
@@ -142,7 +142,7 @@ class ParticlesVtk(object):
                     writer.SetFileTypeToASCII()
 
                 writer.SetFileName(destination)
-                # Insure compatability between vtk 5 and 6.
+                # Ensure compatability between vtk 5 and 6.
                 try:
                     writer.SetInputData(self.vtk_grid_data[tidx-self.ti])
                 except:
@@ -156,10 +156,9 @@ class ParticlesVtk(object):
                 writer.SetFileTypeToASCII()
 
             writer.SetFileName(self.destination)
-            # Insure compatability between vtk 5 and 6.
+            # Ensure compatability between vtk 5 and 6.
             try:
                 writer.SetInputData(self.vtk_grid_data[0])
             except:
                 writer.SetInput(self.vtk_grid_data[0])
             writer.Write()
-
