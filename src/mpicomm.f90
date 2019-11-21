@@ -51,8 +51,8 @@ module Mpicomm
 !
   implicit none
 !
-  include 'mpicomm.h'
   include 'mpif.h'
+  include 'mpicomm.h'
 !
   interface mpirecv_logical
      module procedure mpirecv_logical_scl
@@ -61,6 +61,10 @@ module Mpicomm
 !
   interface mpirecv_char
     module procedure mpirecv_char_scl
+  endinterface
+!
+  interface mpisend_char
+    module procedure mpisend_char_scl
   endinterface
 !
   interface mpirecv_real
@@ -406,7 +410,7 @@ module Mpicomm
 !
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
-  integer :: MPI_COMM_GRID
+  integer :: MPI_COMM_GRID, MPI_COMM_PENCIL
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
@@ -473,6 +477,7 @@ module Mpicomm
       endif
 
       MPI_COMM_GRID=MPI_COMM_WORLD
+      MPI_COMM_PENCIL=MPI_COMM_WORLD
       iproc_world=iproc
 !
 !  Check consistency in processor layout.
@@ -531,24 +536,36 @@ module Mpicomm
 !
 !  Announce myself for pc_run to detect.
 !
+      use General, only: itoa
+
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
 !  Check total number of processors.
 !
-      if ( .not.lyinyang.and.nprocs/=ncpus .or. lyinyang.and.nprocs/=2*ncpus) then
+      if (.not.( lyinyang.and.nprocs==2*ncpus .or. lforeign.and.nprocs==ncpus+ncpus_frgn .or. nprocs==ncpus)) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
                 ', but running on ', nprocs, ' processors'
+          elseif (lforeign) then
+            print*, 'number of processors '//trim(itoa(nprocs))// &
+                    '/= number of own + foreign processors ='// &
+                    trim(itoa(ncpus+ncpus_frgn))
           else
             print*, 'Compiled with ncpus = ', ncpus, &
                 ', but running on ', nprocs, ' processors'
           endif
+        
+          call stop_it('initialize_mpicomm')
         endif
-        call stop_it('initialize_mpicomm')
       endif
 !
       if (lyinyang) then
+
+        if (lforeign) then
+          print*, 'Yin-Yang grid and foreign companion mutually exclusive!'
+          call stop_it('initialize_mpicomm')
+        endif
 
         if (nprocy>5.and..not.lcutoff_corners) then
           if (lroot) print*, 'Processor layout with nprocz>15, nprocy>5 not implemented for Yin-Yang grid.'
@@ -559,11 +576,20 @@ module Mpicomm
           call stop_it('initialize_mpicomm')
         endif
 
-        lyang=iproc>=ncpus        ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
+        lyang=iproc>=ncpus             ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
+      endif
 
-        call MPI_COMM_SPLIT(MPI_COMM_WORLD, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)   
-!  MPI_COMM_GRID refers to Yin or Yang grid
-        
+      if (lyinyang.or.lforeign) call MPI_COMM_SPLIT(MPI_COMM_WORLD, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
+!
+!  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
+!
+      if (lforeign) then
+        MPI_COMM_PENCIL=MPI_COMM_GRID   ! MPI_COMM_PENCIL refers only to Pencil, not to foreign code!
+      else
+        MPI_COMM_PENCIL=MPI_COMM_WORLD
+      endif
+
+      if (lyinyang) then
         if (lyang) then
           iproc=iproc-ncpus
           cyinyang='Yang'
@@ -1055,28 +1081,28 @@ endif
 !          size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
 
           call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         zlneigh,iproc_world,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+                         zlneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowz,mpierr)
                                 !tolowz
           call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
-                         zlneigh,zlneigh,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+                         zlneigh,zlneigh,MPI_COMM_PENCIL,irecv_rq_fromlowz,mpierr)
                                 !MPI_ANY_TAG
           if (llcorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', llcorn
 !if (.not.lyang) write(iproc+200,*) iproc, 'sends', size_corn/(2*nghost), 'to ', llcorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to right corner neighbor
-                           llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
+                           llcorn,TOll,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
             call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
-                           llcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
+                           llcorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
           endif
 
           if (ulcorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', ulcorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to left corner neighbor
-                           ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
+                           ulcorn,TOul,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
             call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~ 
-                           ulcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
+                           ulcorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
           endif
         endif
 
@@ -1127,28 +1153,28 @@ endif
 !if (lcorner_yz) print*, 'proc ',iproc_world,', sends thphprime_strip to ', zuneigh, &
 !size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
           call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         zuneigh,iproc_world,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+                         zuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppz,mpierr)
                                 !touppz
           call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
-                         zuneigh,zuneigh,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+                         zuneigh,zuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppz,mpierr)
                                 !MPI_ANY_TAG
           if (lucorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', lucorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to left corner neighbor
-                           lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+                           lucorn,TOlu,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
 
             call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
-                           lucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
+                           lucorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
           endif
 
           if (uucorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', uucorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              ! send strip to right corner neighbor
-                           uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
+                           uucorn,TOuu,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
 
             call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
-                           uucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
+                           uucorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
           endif
         endif
       endif
@@ -1235,27 +1261,27 @@ endif
 
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', ylneigh
           call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         ylneigh,iproc_world,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
+                         ylneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowy,mpierr)
                                 !tolowy
           call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
-                         ylneigh,ylneigh,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
+                         ylneigh,ylneigh,MPI_COMM_PENCIL,irecv_rq_fromlowy,mpierr)
                                 !MPI_ANY_TAG
           if (llcorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', llcorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to left corner neighbor
-                           llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
+                           llcorn,TOll,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
 
             call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
-                           llcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
+                           llcorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
           endif
 
           if (lucorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', lucorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to right corner neighbor
-                           lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+                           lucorn,TOlu,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
 
             call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~ 
-                           lucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
+                           lucorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
           endif
         endif
 
@@ -1317,28 +1343,28 @@ endif
 !size(thphprime_strip_y,1), size(thphprime_strip_y,2), size(thphprime_strip_y,3)
 
           call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                    ! send strip to direct neighbor
-                         yuneigh,iproc_world,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
+                         yuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppy,mpierr)
                                 !touppy
 
 !print*, 'at IRECV: proc ,',iproc_world,',  from ', yuneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)
           call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &          ! receive strip from ~
-                         yuneigh,yuneigh,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
+                         yuneigh,yuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppy,mpierr)
                                 !MPI_ANY_TAG
           if (ulcorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        
-                           ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
+                           ulcorn,TOul,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
 ! send strip to right corner neighbor
 
             call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &     ! receive strip from ~
-                           ulcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
+                           ulcorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
           endif
           if (uucorn>=0) then
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', uucorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        ! send strip to left corner neighbor
-                           uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
+                           uucorn,TOuu,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
             call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &       ! receive strip from ~
-                           uucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
+                           uucorn,MPI_ANY_TAG,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
           endif
         endif
 
@@ -1569,7 +1595,7 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 
           call interpolate_yy(f,ivar1,ivar2,lbufyo,MIDZ,iyinyang_intpol_type) !
 if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
-          comm=MPI_COMM_WORLD; touppyr=ylneigh; tolowys=iproc_world   !touppyr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; touppyr=ylneigh; tolowys=iproc_world   !touppyr=MPI_ANY_TAG
         else
           lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2)         !(lower y-zone)
           if (lcommunicate_y) then
@@ -1597,7 +1623,7 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 !
           call interpolate_yy(f,ivar1,ivar2,ubufyo,MIDZ,iyinyang_intpol_type)
 if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
-          comm=MPI_COMM_WORLD; tolowyr=yuneigh; touppys=iproc_world  !tolowyr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; tolowyr=yuneigh; touppys=iproc_world  !tolowyr=MPI_ANY_TAG
         else
           ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
 !
@@ -1632,7 +1658,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in lbufzo.
 !
           call interpolate_yy(f,ivar1,ivar2,lbufzo,MIDY,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; touppzr=zlneigh; tolowzs=iproc_world  !touppzr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; touppzr=zlneigh; tolowzs=iproc_world  !touppzr=MPI_ANY_TAG
         else
           lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
           comm=MPI_COMM_GRID
@@ -1653,7 +1679,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in ubufyo.
 !
           call interpolate_yy(f,ivar1,ivar2,ubufzo,MIDY,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; tolowzr=zuneigh; touppzs=iproc_world   !tolowzr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; tolowzr=zuneigh; touppzs=iproc_world   !tolowzr=MPI_ANY_TAG
         else
           ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
           comm=MPI_COMM_GRID
@@ -1716,7 +1742,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in llbufo.
 !
           if (llcorns>=0) call interpolate_yy(f,ivar1,ivar2,llbufo,dir,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; TOuur=llcornr; TOlls=iproc_world   !TOuur=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; TOuur=llcornr; TOlls=iproc_world   !TOuur=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1747,7 +1773,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in ulbufo.
 !
           if (ulcorns>=0) call interpolate_yy(f,ivar1,ivar2,ulbufo,dir,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; TOlur=ulcornr; TOuls=iproc_world   !TOlur=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; TOlur=ulcornr; TOuls=iproc_world   !TOlur=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1778,7 +1804,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in uubufo.
 !
           if (uucorns>=0) call interpolate_yy(f,ivar1,ivar2,uubufo,dir,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; TOllr=uucornr; TOuus=iproc_world   !TOllr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; TOllr=uucornr; TOuus=iproc_world   !TOllr=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1807,7 +1833,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in lubufo.
 !
           if (lucorns>=0) call interpolate_yy(f,ivar1,ivar2,lubufo,dir,iyinyang_intpol_type)
-          comm=MPI_COMM_WORLD; TOulr=lucornr; TOlus=iproc_world   !TOulr=MPI_ANY_TAG
+          comm=MPI_COMM_PENCIL; TOulr=lucornr; TOlus=iproc_world   !TOulr=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -2775,33 +2801,56 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
-    subroutine mpirecv_char_scl(str,proc_src,tag_id)
+    subroutine mpirecv_char_scl(str,proc_src,tag_id,comm)
 !
 !  Receive character scalar from other processor.
 !
 !  04-sep-06/wlad: coded
 !
+      use General, only: ioptest
+
       character(LEN=*) :: str
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm
 !
       call MPI_RECV(str, len(str), MPI_CHARACTER, proc_src, &
-                    tag_id, MPI_COMM_GRID, stat, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_char_scl
 !***********************************************************************
-    subroutine mpirecv_logical_scl(bcast_array,proc_src,tag_id)
+    subroutine mpisend_char_scl(str,proc_src,tag_id,comm)
+!
+!  Receive character scalar from other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      use General, only: ioptest
+
+      character(LEN=*) :: str
+      integer :: proc_src, tag_id
+      integer, optional :: comm
+!
+      call MPI_SEND(str, len(str), MPI_CHARACTER, proc_src, &
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpisend_char_scl
+!***********************************************************************
+    subroutine mpirecv_logical_scl(bcast_array,proc_src,tag_id,comm)
 !
 !  Receive logical scalar from other processor.
 !
 !  04-sep-06/wlad: coded
 !
+      use General, only: ioptest
+
       logical :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm
 !
       call MPI_RECV(bcast_array, 1, MPI_LOGICAL, proc_src, &
-                    tag_id, MPI_COMM_GRID, stat, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
@@ -3000,18 +3049,21 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_real_arr5
 !***********************************************************************
-    subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
+    subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id,comm)
 !
 !  Receive integer scalar from other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm
 !
       call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
-                    tag_id, MPI_COMM_GRID, stat, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
@@ -3062,17 +3114,20 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_int_arr2
 !***********************************************************************
-    subroutine mpisend_logical_scl(bcast_array,proc_rec,tag_id)
+    subroutine mpisend_logical_scl(bcast_array,proc_rec,tag_id,comm)
 !
 !  Send logical scalar to other processor.
 !
 !  04-sep-06/wlad: coded
 !
+      use General, only: ioptest
+
       logical :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
       call MPI_SEND(bcast_array, 1, MPI_LOGICAL, proc_rec, &
-                    tag_id, MPI_COMM_GRID, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_logical_scl
 !***********************************************************************
@@ -3324,31 +3379,37 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 
     endsubroutine mpisendrecv_real_arr4
 !***********************************************************************
-    subroutine mpisend_int_scl(bcast_array,proc_rec,tag_id)
+    subroutine mpisend_int_scl(bcast_array,proc_rec,tag_id,comm)
 !
 !  Send integer scalar to other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
       call MPI_SEND(bcast_array, 1, MPI_INTEGER, proc_rec, &
-                    tag_id, MPI_COMM_GRID, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpirecv_nonblock_int_scl(bcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_int_scl(bcast_array,proc_src,tag_id,ireq,comm)
 !
 !  Receive integer scalar from other processor, with non-blocking communication.
 !
 !  12-dec-14/wlad: adapted
 !
+      use General, only: ioptest
+
       integer :: bcast_array
       integer :: proc_src, tag_id, ireq
+      integer, optional :: comm
 !
       call MPI_IRECV(bcast_array, 1, MPI_INTEGER, proc_src, &
-                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+                     tag_id, ioptest(comm,MPI_COMM_GRID), ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_int_scl
 !***********************************************************************
@@ -3426,15 +3487,18 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_nonblock_real_arr2
 !***********************************************************************
-    subroutine mpirecv_nonblock_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,ireq,comm)
 !
 !  Receive real array(:,:) from other processor, with non-blocking communication.
 !
 !  07-jul-17/Jorgen: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_src, tag_id, ireq, num_elements
+      integer, optional :: comm
 !
       intent(out) :: bcast_array
 
@@ -3442,19 +3506,22 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+                     tag_id, ioptest(comm,MPI_COMM_GRID), ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr3
 !***********************************************************************
-    subroutine mpirecv_nonblock_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq,comm)
 !
 !  Receive real array(:,:,:,:) from other processor, with non-blocking communication.
 !
 !  12-dec-14/wlad: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, ireq, num_elements
+      integer, optional :: comm
 !
       intent(out) :: bcast_array
 
@@ -3462,7 +3529,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+                     tag_id, ioptest(comm,MPI_COMM_GRID), ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
@@ -4802,13 +4869,13 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       integer, optional, intent(IN) :: comm
 !
-      call MPI_BARRIER(ioptest(comm,MPI_COMM_WORLD), mpierr)
+      call MPI_BARRIER(ioptest(comm,MPI_COMM_PENCIL), mpierr)
 !
     endsubroutine mpibarrier
 !***********************************************************************
     subroutine mpifinalize
 !
-      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+      call MPI_BARRIER(MPI_COMM_UNIVERSE, mpierr)
       call MPI_FINALIZE(mpierr)
 !
     endsubroutine mpifinalize
@@ -4951,9 +5018,9 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !  on whether to call stop_it:
 !
       call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
-                         MPI_LOR,MPI_COMM_WORLD,mpierr)
+                         MPI_LOR,MPI_COMM_PENCIL,mpierr)
       call MPI_ALLREDUCE(stop_flag,identical_stop_flag,1,MPI_LOGICAL, &
-                         MPI_LAND,MPI_COMM_WORLD,mpierr)
+                         MPI_LAND,MPI_COMM_PENCIL,mpierr)
 !
       if (global_stop_flag) then
         if ((.not. lroot) .and. (.not. identical_stop_flag) .and. (msg/='')) &
@@ -4976,7 +5043,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !  processors agree on whether to call stop_it:
 !
       call MPI_ALLREDUCE(lemergency_brake,global_stop_flag,1,MPI_LOGICAL, &
-                         MPI_LOR,MPI_COMM_WORLD,mpierr)
+                         MPI_LOR,MPI_COMM_PENCIL,mpierr)
 !
       if (global_stop_flag) call stop_it( &
             "Emergency brake activated. Check for error messages above.")
@@ -9311,7 +9378,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       if (lroot) allocate(flags(ncpus))
 !
-      call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, mpierr)
+      call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_PENCIL, mpierr)
 !
       report_clean_output = .false.
       if (lroot) then
@@ -9348,7 +9415,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
 ! Broadcast flag for 'sychronization necessary'.
 !
-      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_PENCIL,mpierr)
 !
     end function report_clean_output
 !**************************************************************************
@@ -9359,7 +9426,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !  for data exchange between the neighbors and stores them in yy_buflens.
 !  Implemented for nprocz/nprocy=3 only!
 ! 
-!  At return neighbor ranks refer to MPI_COMM_WORLD.
+!  At return neighbor ranks refer to MPI_COMM_PENCIL.
 !
 !  20-dec-15/MR: coded
 !

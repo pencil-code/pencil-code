@@ -53,6 +53,11 @@ module Cdata
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
 !
+!  Simultaneous foreign code.
+!
+  integer :: ncpus_frgn=0, tag_frgn=0
+  logical :: lforeign=.false.
+!
 !  Yin-Yang grid.
 !
   logical :: lyinyang=.false., lyang=.false., lcutoff_corners=.false.

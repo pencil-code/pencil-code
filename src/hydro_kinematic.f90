@@ -26,6 +26,7 @@ module Hydro
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+  use Mpicomm
 !
   implicit none
 !
@@ -130,13 +131,13 @@ module Hydro
 !
   type foreign_setup
     character(LEN=labellen) :: name=''
+    integer :: ncpus,peer,tag,irecv
     real :: dt_out=0., t_last_out=0.
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
   endtype foreign_setup
   
-  type(foreign_setup), save :: frgn_setup
-  integer :: peer_foreign=-1, irecv_from_foreign
+  type(foreign_setup) :: frgn_setup
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
   real, dimension(:,:,:), allocatable :: shell_buffer
 
@@ -322,15 +323,24 @@ module Hydro
         endif
       endif
 !
-      if (kinematic_flow=='from-foreign-snap') then
+      if (lforeign.and.kinematic_flow=='from-foreign-snap') then
    
         root_foreign=ncpus
-        peer_foreign=iproc+ncpus
+        frgn_setup%peer=iproc+ncpus
+        frgn_setup%tag=tag_frgn
+        frgn_setup%ncpus=ncpus_frgn
 
+!if (iproc_world/=iproc.and.iproc_world==2) then
+!  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
+!  name_len=5
+!  call mpisend_int(name_len,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+!  call mpisend_char('MagIC',root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+!endif
         if (lroot) then
           lok=.true.; messg=''
+      
+          call mpirecv_int(name_len,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
 
-          call mpirecv_int(name_len,root_foreign,MPI_ANY_TAG)
           if (name_len<=0) then
             call fatal_error('initialize_hydro','length of foreign name <=0 or >')
           elseif (name_len>labellen) then
@@ -338,67 +348,76 @@ module Hydro
                             trim(itoa(labellen)))
           endif
 
-          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,MPI_ANY_TAG)
-          if (.not.(frgn_setup%name=='MagIC'.or.frgn_setup%name=='EULAG')) &
+          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call fatal_error('initialize_hydro', &
              'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
-          
-          call mpirecv_int(intbuf,3,root_foreign,MPI_ANY_TAG)
+          !print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
+
+          call mpirecv_int(intbuf,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
           endif
 
-          call mpirecv_int(frgn_setup%dims,3,root_foreign,MPI_ANY_TAG)
+          call mpirecv_int(frgn_setup%dims,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
 
-          if ( any(frgn_setup%dims(2:3)/=(/ny,nz/)) .or. frgn_setup%name/='MagIC'.and.frgn_setup%dims(1)/=nx )  then
+          if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nx,ny,nz/))) then
             messg=trim(messg)//" foreign grid sizes don't match;"
             lok=.false.
           endif
  
           do j=1,3
-            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,MPI_ANY_TAG)
-            if (any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
+            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+            if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
               lok=.false.
             endif
           enddo
 
-          call mpirecv_real(frgn_setup%dt_out,root_foreign,MPI_ANY_TAG)
+          call mpirecv_real(frgn_setup%dt_out,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (frgn_setup%dt_out==0.) then
             messg=trim(messg)//' foreign output step=0'
             lok=.false.
           endif
  
-          call mpisend_logical(lok,root_foreign,MPI_ANY_TAG)
+          call mpisend_logical(lok,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
-        call mpibcast_real(frgn_setup%dt_out)                 ! should synchronize 
-        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+        call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)           ! should synchronize 
        
         frgn_setup%t_last_out=t
 
         if (frgn_setup%name=='MagIC') then
           allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
           allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
+          if (.not.allocated(uu_2)) &
+            allocate(uu_2(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
+        else
+          if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
         endif
 
-        do j=1,2
-          if (frgn_setup%name=='MagIC') then
-            do ll=1,frgn_setup%dims(1)
-              call mpirecv_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/),peer_foreign,MPI_ANY_TAG)
-              frgn_buffer(ll,:,:,:)=shell_buffer
-            enddo
-            ! interpolate/restrict to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
-          else
-            if (j==1) then
-              call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+        if (iproc<frgn_setup%ncpus) then
+          do j=1,2
+            if (frgn_setup%name=='MagIC') then
+              do ll=1,frgn_setup%dims(1)
+                call mpirecv_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/), &
+                                  frgn_setup%peer,frgn_setup%tag,MPI_COMM_UNIVERSE)
+                frgn_buffer(ll,:,:,:)=shell_buffer
+              enddo
+              ! interpolate/restrict to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
             else
-              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+              if (j==1) then
+                call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/), &
+                                           frgn_setup%peer,frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
+              else
+                call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer,frgn_setup%tag, &
+                                           frgn_setup%irecv,MPI_COMM_UNIVERSE)
+              endif
             endif
-          endif
-        enddo
+          enddo
+        endif
 
       endif
 
@@ -2212,7 +2231,7 @@ module Hydro
 !
 !   16-dec-10/bing: coded
 !
-      use Mpicomm, only: mpiwait, mpirecv_nonblock_real, MPI_ANY_TAG
+      use Mpicomm, only: mpiwait, mpirecv_nonblock_real
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2221,18 +2240,21 @@ module Hydro
 
       if (kinematic_flow=='from-foreign-snap') then
 
+
         if (lfirst) then
           if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
-            call mpiwait(irecv_from_foreign)
+            call mpiwait(frgn_setup%irecv)
             frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
             if (frgn_setup%name=='MagIC') then
               do ll=l1,l2
-                call mpirecv_nonblock_real(shell_buffer,(/ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+                call mpirecv_nonblock_real(shell_buffer,(/ny,nz,3/),frgn_setup%peer, &
+                                           frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
                 frgn_buffer(ll,:,:,:)=shell_buffer
                 !uu_2(ll,:,:,:)=frgn_buffer
               enddo
             else
-              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),peer_foreign,MPI_ANY_TAG,irecv_from_foreign)
+              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer, &
+                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
             endif
           endif
         endif
