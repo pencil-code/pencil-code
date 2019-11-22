@@ -130,9 +130,9 @@ module Hydro
   logical :: lupdate_aux=.false.
 !
   type foreign_setup
-    character(LEN=labellen) :: name=''
+    character(LEN=labellen) :: name
     integer :: ncpus,peer,tag,irecv
-    real :: dt_out=0., t_last_out=0.
+    real :: dt_out, t_last_out
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
   endtype foreign_setup
