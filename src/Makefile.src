@@ -390,6 +390,7 @@ special_message:
 	@echo ";;; Cannot build:"
 	@echo ";;;    SPECIAL must not be set to special, but to individual module(s) in directory special."
 	exit 1
+
   else
     SPECIAL_MULT := $(words $(SPECIAL))
     SPECIAL_MODULES := $(strip $(SPECIAL))
@@ -402,7 +403,7 @@ special_message:
   endif
 endif
 #
-MODULE_CMD := $(shell command -v module)
+MODULE_CMD := $(shell command -v module 2> /dev/null)
 #
 LIBGPU =
 GPU_DEPS =
@@ -412,10 +413,11 @@ ifeq ($(GPU),gpu_astaroth)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ifeq ($(CUDA_LOADED),)
 no_cuda_message:
-        @echo ";;;"
-        @echo ";;; No CUDA module seems to be loaded! Exit."
-        @echo ";;;"
-        @exit 1
+	@echo ";;;"
+	@echo ";;; No CUDA module seems to be loaded! Exit."
+	@echo ";;;"
+	@exit 1
+
     endif
   endif
 #
@@ -448,6 +450,7 @@ no_hdf5_message:
 	@echo ";;; No HDF5 module seems to be loaded! Exit."
 	@echo ";;;"
 	@exit 1
+
     endif
   endif
 endif
@@ -2450,13 +2453,16 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	export HDF5_FC:=$(FC)
 	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
-	LD := $(notdir $(shell which h5pfc 2> /dev/null || which h5fc 2> /dev/null))
+	LD := $(shell which h5pfc 2> /dev/null || which h5fc 2> /dev/null)
+        FC_HDF5_FULL := $(LD)
+        LD := $(notdir $(LD))
 	ifeq ($(LD),)
 		# try our best guess (parallel version)
                 LD = h5pfc
 	endif
+
 	# set HDF5 compiler and linker
-	FC_HDF5 := $(LD)
+        FC_HDF5 := $(LD)
 endif
 #
 #  RULES SECTION
@@ -2781,6 +2787,9 @@ LAST_OBJ=$(EXECUTABLES:.x=.o)
 legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
+ifneq ($(HDF5_IO),nohdf5_io)
+	@echo HDF5 compiler and linker in $(FC_HDF5_FULL).
+endif
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
