@@ -865,8 +865,10 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
       endif
 !
-      if (lreac_as_aux) then
-        if (llast) call get_reac_rate_ogr(f_og,p_ogrid)
+      if (lreac_heter) then
+        if (lreac_as_aux) then
+          if (llast) call get_reac_rate_ogr(f_og,p_ogrid)
+        endif
       endif
 !
 !
