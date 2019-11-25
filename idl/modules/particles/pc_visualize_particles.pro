@@ -59,8 +59,15 @@ if (nopvar eq 0) then begin
     pc_read_pvar,obj=objpvar,solid_object=solid_object,irmv=irmv,$
       savefile=savefile,trmv=trmv
 endif
-pc_read_pstalk,obj=obj
-
+;
+; Read stalker particles if we want to visualize them
+;
+if (noviz eq 0) then begin
+   pc_read_pstalk,obj=objstalk
+   dims=size(objstalk.xp)
+   n_parts=dims(1)
+   n_steps=dims(2)
+endif
 ;
 ; Find number of solid objects
 ;
@@ -97,9 +104,6 @@ endif
 ;
 nx=procdim.nx
 ny=procdim.ny
-dims=size(obj.xp)
-n_parts=dims(1)
-n_steps=dims(2)
 print,'param.coord_system=',param.coord_system
 if (param.coord_system eq 'cylindric') then begin
     default,xmax,param.xyz1[0]
@@ -231,23 +235,23 @@ if (noviz eq 0) then begin
 ;    endif
    if (channel) then begin
        channel_visualize,irmv,trmv,n_steps,tmin,tmax,png,w,psym,$
-         obj=obj,pvar=objpvar
+         obj=objstalk,pvar=objpvar
        plot_vorticity,npart_radii=npart_radii,irmv=irmv,trmv=trmv,$
          totpar=n_parts,nts=n_steps,savefile=savefile,$
          prmv=prvm,$
-         startparam=startparam,obj=obj
+         startparam=startparam,obj=objstalk
    endif else begin
        if (plane eq 'xy') then begin
-           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
-             xpos,ypos,radius,oneradius,png,w,psym,obj.xp,obj.yp,$
+           solid_object_visualize,ncylinders,n_steps,objstalk,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,objstalk.xp,objstalk.yp,$
              Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
        endif else if (plane eq 'xz') then begin
-           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
-             xpos,ypos,radius,oneradius,png,w,psym,obj.xp,obj.zp,$
+           solid_object_visualize,ncylinders,n_steps,objstalk,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,objstalk.xp,objstalk.zp,$
              Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
        endif else if (plane eq 'yz') then begin
-           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
-             xpos,ypos,radius,oneradius,png,w,psym,obj.yp,obj.zp,$
+           solid_object_visualize,ncylinders,n_steps,objstalk,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,objstalk.yp,objstalk.zp,$
              Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
        end
    end
@@ -257,7 +261,7 @@ if (noviz eq 0) then begin
   ;
   xytrace=0
   if (arg_present(xtrace) or arg_present(ytrace)) then begin
-      dims=size(obj.xp)
+      dims=size(objstalk.xp)
       timeiter=dims[2]
       xtrace=dblarr(npart,timeiter)
       ytrace=dblarr(npart,timeiter)
@@ -271,12 +275,12 @@ if (noviz eq 0) then begin
   if (trace) then begin
       for ipar=0,npart-1 do begin
           if (param.coord_system eq 'cylindric') then begin
-              xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
-              yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
-              ux_loc=cos(obj.yp(ipar,*))*obj.ux(ipar,*)$
-                -sin(obj.yp(ipar,*))*obj.uy(ipar,*)
-              uy_loc=sin(obj.yp(ipar,*))*obj.ux(ipar,*)$
-                +cos(obj.yp(ipar,*))*obj.uy(ipar,*)
+              xx0=objstalk.xp(ipar,*)*cos(objstalk.yp(ipar,*))
+              yy0=objstalk.xp(ipar,*)*sin(objstalk.yp(ipar,*))
+              ux_loc=cos(objstalk.yp(ipar,*))*objstalk.ux(ipar,*)$
+                -sin(objstalk.yp(ipar,*))*objstalk.uy(ipar,*)
+              uy_loc=sin(objstalk.yp(ipar,*))*objstalk.ux(ipar,*)$
+                +cos(objstalk.yp(ipar,*))*objstalk.uy(ipar,*)
               ARROW, xx0, yy0,$
                 xx0+ux_loc*ddt, $
                 yy0+uy_loc*ddt, $
@@ -284,20 +288,20 @@ if (noviz eq 0) then begin
           endif else if (tracermv) then begin
               rmvdims=size(irmv)
               for k=0,rmvdims[1]-1 do begin        
-                  xx0=obj.xp(irmv(k),*)
-                  yy0=obj.yp(irmv(k),*)
+                  xx0=objstalk.xp(irmv(k),*)
+                  yy0=objstalk.yp(irmv(k),*)
           
                   ARROW, xx0, yy0,$
-                    xx0+obj.ux(irmv(k),*)*ddt, $
-                    yy0+obj.uy(irmv(k),*)*ddt, $
+                    xx0+objstalk.ux(irmv(k),*)*ddt, $
+                    yy0+objstalk.uy(irmv(k),*)*ddt, $
                     /data,col=255,HSIZE=4
               endfor
           endif else begin
-              xx0=obj.xp(ipar,*)
-              yy0=obj.yp(ipar,*)
+              xx0=objstalk.xp(ipar,*)
+              yy0=objstalk.yp(ipar,*)
               ARROW, xx0, yy0,$
-                xx0+obj.ux(ipar,*)*ddt, $
-                yy0+obj.uy(ipar,*)*ddt, $
+                xx0+objstalk.ux(ipar,*)*ddt, $
+                yy0+objstalk.uy(ipar,*)*ddt, $
                 /data,col=255,HSIZE=4
           endelse
           oplot,xx0,yy0,ps=3
