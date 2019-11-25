@@ -1945,7 +1945,7 @@ module Particles_map
 !
         if (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)) then
           call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
-            interp%pol_uu)
+              interp%pol_uu)
         else
           interp_uu=0.0
         endif
@@ -2009,6 +2009,8 @@ module Particles_map
               interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
            enddo
            if (lsolid_ogrid) then
+             call fatal_error('interpolate_quantities',&
+                 'This must be wrong e.g. when species are included - must be fixed!')
                  call interp_field_pencil_wrap(f,iTT+1,iTT+mogaux,&
                       fp,ineargrid,interp_gradTT,interp%pol_TT)
            endif
@@ -2225,11 +2227,14 @@ module Particles_map
         rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
              +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
         do k=k1_imn(imn),k2_imn(imn)
-           if(rp2(k)>r2_ogrid) then
-              if(iTT > 0 .or. i1<=iTT) then
+          if(rp2(k)>r2_ogrid) then
+!
+!  NILS: Commented out the line below  since we should enter here even
+!  NILS: when iTT=0 (e.g. for interpolation of velocity).
+!              if(iTT > 0 .or. i1<=iTT) then
                  call interpolate_linear( &
                       f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
-              endif
+ !             endif
            else
               call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
               call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
