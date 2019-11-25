@@ -4132,7 +4132,7 @@ module Solid_Cells
           if (idiag_Nusselt/=0) then
             call Nusselt_pencils(Nusselt)
           endif
-          if (idiag_mdot_C/=0) then
+          if (idiag_mdot_C/=0 .and. lreac_heter) then
             call mdot_C_pencils(mdot_C)
           endif
         endif
