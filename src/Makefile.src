@@ -2799,7 +2799,7 @@ endif
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e '1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
