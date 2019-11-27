@@ -2815,6 +2815,9 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	else \
 	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 #
@@ -2827,6 +2830,9 @@ fast:
 	else \
 	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
 	fi
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+endif
 #
 debug:
 	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
@@ -2836,6 +2842,9 @@ debug:
 	else \
 	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+endif
 #
 #  Handy for debugging; just compile by hand what is changed.
 #  When you use this you must be certain that everying is consistent.
@@ -2895,7 +2904,7 @@ clean:  slender
 	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
-	rm -f work.pc work.pcl .build*
+	rm -f work.pc work.pcl .build* .moduleinfo
 	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
