@@ -898,6 +898,7 @@ module power_spectrum
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, cross, grad, curli
+    use chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
@@ -918,9 +919,7 @@ module power_spectrum
 !
 !  passive scalar contributions (hardwired for now)
 !
-  integer :: itmp1=8,itmp2=9
   real, dimension(nx,3) :: gtmp1,gtmp2
-  real :: BextEP=.1 !(hard-wired for now/Axel)
 !
 !  identify version
 !
@@ -1099,21 +1098,23 @@ module power_spectrum
 !  magnetic energy spectra based on fields with Euler potentials
 !
     elseif (sp=='bEP') then
-      do n=n1,n2
-        do m=m1,m2
-          call grad(f,itmp1,gtmp1)
-          call grad(f,itmp2,gtmp2)
-          gtmp1(:,2)=gtmp1(:,2)+BextEP
-          gtmp2(:,3)=gtmp2(:,3)+1.
-          call cross(gtmp1,gtmp2,bbEP)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+      if (iXX_chiral/=0.and.iYY_chiral/=0) then
+print*,'AXEL: iXX_chiral,iYY_chiral=',iXX_chiral,iYY_chiral
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,iXX_chiral,gtmp1)
+            call grad(f,iYY_chiral,gtmp2)
+            call cross(gtmp1,gtmp2,bbEP)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
+                             -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
+          enddo
         enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+        a_im=0.
+        b_im=0.
+      endif
 !
 !  Spectrum of uxj
 !

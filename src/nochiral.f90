@@ -25,6 +25,8 @@ module Chiral
 !
   include 'chiral.h'
 !
+  integer :: iXX_chiral=0,iYY_chiral=0
+!
   contains
 !***********************************************************************
     subroutine register_chiral
