@@ -148,14 +148,14 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #check consistency between Fortran binary and h5 data
     os.chdir(newdir)
     dim = read.dim()
-        try:
-            dim.mvar == settings['mvar']
-            dim.mx   == settings['mx']
-            dim.my   == settings['my']
-            dim.mz   == settings['mz']
-        except ValueError:
-            print("ERROR: new simulation dimensions do not match.")
-            return -1 
+    try:
+        dim.mvar == settings['mvar']
+        dim.mx   == settings['mx']
+        dim.my   == settings['my']
+        dim.mz   == settings['mz']
+    except ValueError:
+        print("ERROR: new simulation dimensions do not match.")
+        return -1 
     #move var.h5 out of the way, if it exists for reading binary
     if os.path.exists(todatadir+'/var.h5'):
         cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
@@ -171,7 +171,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         try:
             var.deltay
             lshear = True
-        except
+        except:
             lshear = False
 
         if lpersist:
