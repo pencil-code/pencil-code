@@ -5,7 +5,6 @@ Creates the fixed point values.
 """
 
 #import numpy as np
-import pencil as pc
 import math as m
 import multiprocessing as mp
 import os
@@ -347,6 +346,7 @@ class FixedPoint(object):
 
         # Discard fixed points which are too close to each other.
         def __discard_close_fixed_points(fixed, fixed_sign, var):
+
             fixed_new = []
             fixed_sign_new = []
             if len(fixed) > 0:
@@ -364,6 +364,8 @@ class FixedPoint(object):
 
             return np.array(fixed_new), np.array(fixed_sign_new)
 
+        from .. import read
+        from .. import math
 
         # Convert int_q string into list.
         if not isinstance(int_q, list):
@@ -409,7 +411,7 @@ class FixedPoint(object):
         if any(np.array(int_q) == 'ee'):
             magic.append('bb')
             magic.append('jj')
-        dim = pc.read_dim(datadir=datadir)
+        dim = read.dim(datadir=datadir)
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -422,14 +424,14 @@ class FixedPoint(object):
         self.t = np.zeros(n_times)
 
         # Read the initial field.
-        var = pc.read_var(varfile=varfile, datadir=datadir, magic=magic,
-                          quiet=True, trimall=True)
+        var = read.var(var_file=varfile, datadir=datadir, magic=magic,
+                       quiet=True, trimall=True)
         self.t[0] = var.t
-        grid = pc.read_grid(datadir=datadir, quiet=True, trim=True)
+        grid = read.grid(datadir=datadir, quiet=True, trim=True)
         field = getattr(var, trace_field)
-        param2 = pc.read_param(datadir=datadir, param2=True, quiet=True)
+        param2 = read.param(datadir=datadir, param2=True, quiet=True)
         if any(np.array(int_q) == 'ee'):
-            ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
+            ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
 
         # Get the simulation parameters.
         self.params.dx = var.dx
@@ -469,8 +471,8 @@ class FixedPoint(object):
         # Start the parallelized fixed point finding.
         for tidx in range(n_times):
             if tidx > 0:
-                var = pc.read_var(varfile='VAR'+str(tidx+ti), datadir=datadir,
-                                  magic=magic, quiet=True, trimall=True)
+                var = read.var(var_file='VAR'+str(tidx+ti), datadir=datadir,
+                               magic=magic, quiet=True, trimall=True)
                 field = getattr(var, trace_field)
                 self.t[tidx] = var.t
 
