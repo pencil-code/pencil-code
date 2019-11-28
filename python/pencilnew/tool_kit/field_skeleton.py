@@ -19,12 +19,12 @@ class NullPoint(object):
         Fill members with default values.
         """
 
-        self.nulls = []
-        self.eigen_values = []
-        self.eigen_vectors = []
-        self.sign_trace = []
-        self.fan_vectors = []
-        self.normals = []
+        self.nulls = None
+        self.eigen_values = None
+        self.eigen_vectors = None
+        self.sign_trace = None
+        self.fan_vectors = None
+        self.normals = None
 
 
     def find_nullpoints(self, var, field):
@@ -41,7 +41,7 @@ class NullPoint(object):
             The var object from the read.var routine.
 
         *field*:
-            The vector field.
+            The vector field name.
         """
 
         import numpy as np
@@ -128,7 +128,7 @@ class NullPoint(object):
                                    coefBi[0, 0]*coefBi[2, 1] -
                                    coefBi[0, 1]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
-            if len(roots_x) == 0:
+            if not roots_x:
                 roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
@@ -168,7 +168,7 @@ class NullPoint(object):
                                    coefBi[0, 0]*coefBi[2, 1] -
                                    coefBi[0, 1]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
-            if len(roots_x) == 0:
+            if not roots_x:
                 roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
@@ -208,7 +208,7 @@ class NullPoint(object):
                                    coefBi[0, 0]*coefBi[2, 2] -
                                    coefBi[0, 2]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
-            if len(roots_x) == 0:
+            if not roots_x:
                 roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
@@ -248,7 +248,7 @@ class NullPoint(object):
                                    coefBi[0, 0]*coefBi[2, 2] -
                                    coefBi[0, 2]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
-            if len(roots_x) == 0:
+            if not roots_x:
                 roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
@@ -288,7 +288,7 @@ class NullPoint(object):
                                    coefBi[0, 1]*coefBi[2, 2] -
                                    coefBi[0, 2]*coefBi[2, 1]])
             roots_y = np.roots(polynomial)
-            if len(roots_y) == 0:
+            if not roots_y:
                 roots_y = -np.ones(2)
             if len(roots_y) == 1:
                 roots_y = np.array([roots_y, roots_y])
@@ -328,7 +328,7 @@ class NullPoint(object):
                                    coefBi[0, 1]*coefBi[2, 2] -
                                    coefBi[0, 2]*coefBi[2, 1]])
             roots_y = np.roots(polynomial)
-            if len(roots_y) == 0:
+            if not roots_y:
                 roots_y = -np.ones(2)
             if len(roots_y) == 1:
                 roots_y = np.array([roots_y, roots_y])
@@ -452,7 +452,7 @@ class NullPoint(object):
         for null in self.nulls:
             points.InsertNextPoint(null)
 
-        if len(self.nulls) != 0:
+        if self.nulls:
             eigen_values_vtk = []
             eigen_values = []
             eigen_vectors_vtk = []
@@ -566,14 +566,14 @@ class NullPoint(object):
         self.normals = np.array(normals)
 
 
-    def __triLinear_interpolation(self, x, y, z, coefTri):
+    def __triLinear_interpolation(self, x, y, z, coef_tri):
         """
         Compute the interpolated field at (normalized) x, y, z.
         """
 
-        return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
-               coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
-               coefTri[7]*x*y*z
+        return coef_tri[0] + coef_tri[1]*x + coef_tri[2]*y + coef_tri[3]*x*y +\
+               coef_tri[4]*z + coef_tri[5]*x*z + coef_tri[6]*y*z + \
+               coef_tri[7]*x*y*z
 
 
     def __grad_field(self, xyz, var, field, dd):
@@ -595,7 +595,7 @@ class NullPoint(object):
         return np.matrix(gf)
 
 
-    def __grad_field_1(self, x, y, z, coefTri, dd):
+    def __grad_field_1(self, x, y, z, coef_tri, dd):
         """
         Compute the inverse of the gradient of the field.
         """
@@ -603,12 +603,12 @@ class NullPoint(object):
         import numpy as np
 
         gf1 = np.zeros((3, 3))
-        gf1[0, :] = (self.__triLinear_interpolation(x+dd, y, z, coefTri) - \
-                     self.__triLinear_interpolation(x-dd, y, z, coefTri))/(2*dd)
-        gf1[1, :] = (self.__triLinear_interpolation(x, y+dd, z, coefTri) - \
-                     self.__triLinear_interpolation(x, y-dd, z, coefTri))/(2*dd)
-        gf1[2, :] = (self.__triLinear_interpolation(x, y, z+dd, coefTri) - \
-                     self.__triLinear_interpolation(x, y, z-dd, coefTri))/(2*dd)
+        gf1[0, :] = (self.__triLinear_interpolation(x+dd, y, z, coef_tri) - \
+                     self.__triLinear_interpolation(x-dd, y, z, coef_tri))/(2*dd)
+        gf1[1, :] = (self.__triLinear_interpolation(x, y+dd, z, coef_tri) - \
+                     self.__triLinear_interpolation(x, y-dd, z, coef_tri))/(2*dd)
+        gf1[2, :] = (self.__triLinear_interpolation(x, y, z+dd, coef_tri) - \
+                     self.__triLinear_interpolation(x, y, z-dd, coef_tri))/(2*dd)
 
         # Invert the matrix.
         if np.linalg.det(gf1) != 0 and not np.max(np.isnan(gf1)):
@@ -619,7 +619,7 @@ class NullPoint(object):
         return gf1
 
 
-    def __newton_raphson(self, xyz0, coefTri, dd):
+    def __newton_raphson(self, xyz0, coef_tri, dd):
         """
         Newton-Raphson method for finding null-points.
         """
@@ -627,13 +627,13 @@ class NullPoint(object):
         import numpy as np
 
         xyz = np.array(xyz0)
-        iterMax = 10
+        iter_max = 10
         tol = dd/10
 
-        for i in range(iterMax):
+        for i in range(iter_max):
             diff = self.__triLinear_interpolation(xyz[0], xyz[1],
-                                                  xyz[2], coefTri) * \
-                   self.__grad_field_1(xyz[0], xyz[1], xyz[2], coefTri, dd)
+                                                  xyz[2], coef_tri) * \
+                   self.__grad_field_1(xyz[0], xyz[1], xyz[2], coef_tri, dd)
             diff = np.array(diff)[0]
             xyz = xyz - diff
             if any(abs(diff) < tol) or any(abs(diff) > 1):
@@ -942,14 +942,6 @@ class Separatrix(object):
         return np.array(vector*rot_matrix)[0]
 
 
-#import numpy as np
-#import os as os
-#from ..math.interpolation import vec_int
-#try:
-#    import vtk as vtk
-#    from vtk.util import numpy_support as VN
-#except:
-#    print("Warning: no vtk library found.")
 
 class Spine(object):
     """
