@@ -3,7 +3,7 @@ Reading routines for the pencil code data.
 '''
 
 from .dim import dim
-from .pdim import pdim, __Pdim__
+from .pdim import pdim, PDim
 from .param import param
 from .grid import grid
 from .index import index

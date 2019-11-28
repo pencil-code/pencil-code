@@ -14,7 +14,7 @@ def slices(*args, **kwargs):
 
     call signature:
 
-    read(self. field='', extension='', datadir='data', proc=-1,
+    read(field='', extension='', datadir='data', proc=-1,
          old_file=False, precision='f', quiet=True)
 
     Keyword arguments:
@@ -68,7 +68,7 @@ class SliceSeries(object):
 
         call signature:
 
-        read(self. field='', extension='', datadir='data', proc=-1,
+        read(field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f', quiet=True)
 
         Keyword arguments:

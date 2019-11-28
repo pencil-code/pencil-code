@@ -65,9 +65,6 @@ def var(*args, **kwargs):
         if exists(join('data', 'time_series.dat')):
             started = True
 
-        #else:
-        #    print('!! ERROR: No simulation of path specified..')
-
     if not started:
         if 'ivar' in kwargs:
             if kwargs['ivar'] != 0:
