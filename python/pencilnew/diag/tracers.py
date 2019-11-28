@@ -6,8 +6,6 @@ Reads the tracer files, composes a color map.
 
 #import numpy as np
 import os
-import pencil as pc
-import pylab as plt
 try:
     import h5py
 except:
@@ -115,9 +113,12 @@ class Tracers(object):
         """
 
         import numpy as np
+        from .. import read
+        from .. import math
 
         # Return the tracers for the specified starting locations.
         def __sub_tracers(queue, var, field, t_idx, i_proc, n_proc):
+
             xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)/n_proc,
                             self.x0.shape[1], 3])
             xx[:, :, 0] = self.x0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
@@ -209,7 +210,7 @@ class Tracers(object):
         if any(np.array(int_q) == 'ee'):
             magic.append('bb')
             magic.append('jj')
-        dim = pc.read_dim(datadir=datadir)
+        dim = read.dim(datadir=datadir)
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -241,10 +242,10 @@ class Tracers(object):
                 varfile = 'VAR' + str(t_idx)
 
             # Read the data.
-            var = pc.read_var(varfile=varfile, datadir=datadir, magic=magic,
-                              quiet=True, trimall=True)
-            grid = pc.read_grid(datadir=datadir, quiet=True, trim=True)
-            param2 = pc.read_param(datadir=datadir, param2=True, quiet=True)
+            var = read.var(var_file=varfile, datadir=datadir, magic=magic,
+                           quiet=True, trimall=True)
+            grid = read.grid(datadir=datadir, quiet=True, trim=True)
+            param2 = read.param(datadir=datadir, param2=True, quiet=True)
             self.t[t_idx] = var.t
 
             # Extract the requested vector trace_field.
@@ -252,7 +253,7 @@ class Tracers(object):
             if any(np.array(int_q) == 'curly_A'):
                 aa = var.aa
             if any(np.array(int_q) == 'ee'):
-                ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
+                ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
 
             # Get the simulation parameters.
             self.params.dx = var.dx
