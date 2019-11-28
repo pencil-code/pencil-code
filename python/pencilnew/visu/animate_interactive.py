@@ -9,12 +9,12 @@ Versatile interactive plotting routine for slices and tomography.
 
 
 def animate_interactive(data, t=None, dim_order=(0, 1, 2),
-                        fps=10.0, title='', xlabel='x', ylabel='y',
+                        fps=10.0, title=None, xlabel='x', ylabel='y',
                         font_size=24, color_bar=0, colorbar_label=None,
                         sloppy=True, fancy=False,
                         range_min=None, range_max=None, extent=[-1, 1, -1, 1],
                         shade=False, azdeg=0, altdeg=65,
-                        arrowsX=None, arrowsY=None, arrows_res=10,
+                        arrowsX=None, arrowsY=None, arrows_resX=10, arrows_resY=10,
                         arrows_pivot='mid', arrows_width=0.002, arrows_scale=5,
                         arrows_color='black', plot_arrows_grid=False,
                         movie_file=None, bitrate=1800, keep_images=False,
@@ -26,12 +26,12 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     call signature::
 
     animate_interactive(data, t=None, dim_order=(0, 1, 2),
-                        fps=10.0, title='', xlabel='x', ylabel='y',
+                        fps=10.0, title=None, xlabel='x', ylabel='y',
                         font_size=24, color_bar=0, colorbar_label=None,
                         sloppy=True, fancy=False,
                         range_min=None, range_max=None, extent=[-1, 1, -1, 1],
                         shade=False, azdeg=0, altdeg=65,
-                        arrowsX=None, arrowsY=None, arrows_res=10,
+                        arrowsX=None, arrowsY=None, arrows_resX=10, arrows_resY=10,
                         arrows_pivot='mid', arrows_width=0.002, arrows_scale=5,
                         arrows_color='black', plot_arrows_grid=False,
                         movie_file=None, bitrate=1800, keep_images=False,
@@ -62,7 +62,7 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
 
     *font_size*:
       Font size of the title, x and y label.
-      The size of the x- and y-ticks is 0.7*font_size and the colorbar ticks'
+      The size of the x- and y-ticks is 0.5*font_size and the colorbar ticks'
       font size is 0.5*font_size.
 
     *color_bar*: [ 0 | 1 ]
@@ -100,8 +100,8 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     *arrowsY*:
       Data containing the y-component of the arrows.
 
-    *arrows_res*:
-      Plot every arrows_res arrow.
+    *arrows_resXY*:
+      Plot every arrows_resXY arrow in x and y.
 
     *arrows_pivot*: [ 'tail' | 'middle' | 'tip' ]
       The part of the arrow that is used as pivot point.
@@ -143,9 +143,15 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     except:
         import _thread as thread
 
+    # We need to define these variables as globals, as they are being used
+    # by various functions.
+
     global time_step, time_slider, pause
     global fig, axes, image, colorbar, arrows, manager, n_times, movie_files
     global rgb, plot_arrows
+
+    if title is None:
+        title = ''
 
 
     def plot_frame():
@@ -153,17 +159,20 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
         Plot the current frame.
         """
 
-        global time_step, axes, axes, colorbar, arrows, manager, rgb
+        global time_step, axes, colorbar, arrows, manager, rgb
 
+        # Define the plot title.
         if not movie_file is None:
             axes.set_title(title + r'$\quad$' + r'$t={0:.4e}$'.format(t[time_step]),
                            fontsize=font_size)
 
+        # Update the image data.
         if not shade:
             image.set_data(data[time_step, :, :])
         else:
             image.set_data(rgb[time_step, :, :, :])
 
+        # Update the colorbar.
         if color_bar == 0:
             pass
         if color_bar == 1:
@@ -171,9 +180,10 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
                               vmax=data[time_step, :, :].max())
             colorbar.draw_all()
 
+        # Update the arrows data.
         if plot_arrows:
-            arrows.set_UVC(U=arrowsX[time_step, ::arrows_res, ::arrows_res],
-                           V=arrowsY[time_step, ::arrows_res, ::arrows_res])
+            arrows.set_UVC(U=arrowsX[time_step, ::arrows_resX, ::arrows_resY],
+                           V=arrowsY[time_step, ::arrows_resX, ::arrows_resY])
 
         if not sloppy or (not movie_file is None):
             manager.canvas.draw()
@@ -222,14 +232,12 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     def pausing(event):
         global pause
 
-        print('pause')
         pause = True
 
 
     def reverse(event):
         global time_step, time_slider
 
-        print('reverse')
         time_step -= 1
         if time_step < 0:
             time_step = 0
@@ -240,7 +248,6 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     def forward(event):
         global time_step, time_slider
 
-        print('forward')
         time_step += 1
         if time_step > len(t)-1:
             time_step = len(t)-1
@@ -307,9 +314,9 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     nY = data.shape[2]
 
     # Determine the minimum and maximum values of the data set.
-    if not(range_min):
+    if not range_min:
         range_min = np.min(data)
-    if not(range_max):
+    if not range_max:
         range_max = np.max(data)
 
     # Setup the plot.
@@ -324,13 +331,14 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
         axes = plt.axes([0.15, 0.1, .70, .85])
     else:
         fig = plt.figure(figsize=figsize)
-        axes = plt.axes([0.1, 0.3, .85, .65])
+        axes = plt.axes([0.1, 0.3, .80, .65])
 
+    # Set up canvas of the plot.
     axes.set_title(title, fontsize=font_size)
     axes.set_xlabel(xlabel, fontsize=font_size)
     axes.set_ylabel(ylabel, fontsize=font_size)
-    plt.xticks(fontsize=0.7*font_size)
-    plt.yticks(fontsize=0.7*font_size)
+    plt.xticks(fontsize=0.5*font_size)
+    plt.yticks(fontsize=0.5*font_size)
     if shade:
         plane = np.zeros([nX, nY, 3])
     else:
@@ -368,12 +376,12 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     if plot_arrows:
         # Prepare the mesh grid where the arrows will be drawn.
         arrow_grid = np.meshgrid(np.arange(extent[0], extent[1],
-                                           float(extent[1]-extent[0])*arrows_res/(data.shape[2]-1)),
+                                           float(extent[1]-extent[0])*arrows_resX/(data.shape[2]-1)),
                                  np.arange(extent[2], extent[3],
-                                           float(extent[3]-extent[2])*arrows_res/(data.shape[1]-1)))
+                                           float(extent[3]-extent[2])*arrows_resY/(data.shape[1]-1)))
         arrows = axes.quiver(arrow_grid[0], arrow_grid[1],
-                             arrowsX[0, ::arrows_res, ::arrows_res],
-                             arrowsY[0, ::arrows_res, ::arrows_res],
+                             arrowsX[0, ::arrows_resX, ::arrows_resY],
+                             arrowsY[0, ::arrows_resX, ::arrows_resY],
                              units='width', pivot=arrows_pivot, width=arrows_width,
                              scale=arrows_scale, color=arrows_color)
         # Plot the grid for the arrows.
@@ -407,22 +415,24 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
         plt.ion()
         plt.subplots_adjust(bottom=0.2)
 
-        axes_play = plt.axes([0.1, 0.05, 0.15, 0.05])
-        button_play = plt.Button(axes_play, 'play', color='lightgoldenrodyellow',
-                                 hovercolor='0.975')
-        button_play.on_clicked(play_thread)
+#        axes_play = plt.axes([0.1, 0.05, 0.15, 0.05])
+#        button_play = plt.Button(axes_play, 'play', color='lightgoldenrodyellow',
+#                                 hovercolor='0.975')
+#        button_play.on_clicked(play_thread)
 
-        axes_pause = plt.axes([0.3, 0.05, 0.15, 0.05])
-        button_pause = plt.Button(axes_pause, 'pause', color='lightgoldenrodyellow',
-                                  hovercolor='0.975')
-        button_pause.on_clicked(pausing)
+#        axes_pause = plt.axes([0.3, 0.05, 0.15, 0.05])
+#        button_pause = plt.Button(axes_pause, 'pause', color='lightgoldenrodyellow',
+#                                  hovercolor='0.975')
+#        button_pause.on_clicked(pausing)
 
-        axes_reverse = plt.axes([0.5, 0.05, 0.15, 0.05])
+#        axes_reverse = plt.axes([0.5, 0.05, 0.15, 0.05])
+        axes_reverse = plt.axes([0.1, 0.05, 0.3, 0.05])
         button_reverse = plt.Button(axes_reverse, 'reverse', color='lightgoldenrodyellow',
                                     hovercolor='0.975')
         button_reverse.on_clicked(reverse)
 
-        axes_forward = plt.axes([0.7, 0.05, 0.15, 0.05])
+#        axes_forward = plt.axes([0.7, 0.05, 0.15, 0.05])
+        axes_forward = plt.axes([0.5, 0.05, 0.3, 0.05])
         button_forward = plt.Button(axes_forward, 'forward', color='lightgoldenrodyellow',
                                     hovercolor='0.975')
         button_forward.on_clicked(forward)
@@ -445,3 +455,6 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
         plt.show()
 
     print("done")
+
+#    return button_play, button_pause, button_reverse, button_forward
+    return button_reverse, button_forward
