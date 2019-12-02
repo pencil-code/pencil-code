@@ -897,16 +897,16 @@ module power_spectrum
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, cross, grad, curli
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
+  integer :: i, k, ikx, iky, ikz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi,jji
-  real, dimension(nx,3) :: bbEP
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -1000,6 +1000,26 @@ module power_spectrum
         if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
       endif
 !
+!  magnetic power spectra (spectra of |J|^2 and J.B)
+!
+    elseif (sp=='j.a') then
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+          call del2vi_etc(f,iaa,ivec,curlcurl=jji)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=jji  !(this corresponds to the current density)
+          enddo
+        enddo
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
+!
 !  Gravitational wave power spectra (breathing mode; diagonal components of gij)
 !  Also compute production of |hij|^2, i.e., hij*gij^*
 !
@@ -1080,6 +1100,64 @@ module power_spectrum
         b_im=0.
       endif
 !
+!  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
+!  Do as before, but compute only for ivec=3.
+!  Arrays will still be zero otherwise.
+!
+    elseif (sp=='bb2') then
+      if (ivec==3) then
+        do n=n1,n2
+          do m=m1,m2
+            call curl(f,iaa,bb)
+            call dot2(bb,b2)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=b2
+          enddo
+        enddo
+        if (ilnrho/=0) then
+          a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        else
+          a_re=0.
+        endif
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
+      endif
+!
+!  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
+!  Do as before, but compute only for ivec=3.
+!  Arrays will still be zero otherwise.
+!
+    elseif (sp=='jj2') then
+      if (ivec==3) then
+        do n=n1,n2
+          do m=m1,m2
+            call del2v_etc(f,iaa,curlcurl=jj)
+            call dot2(jj,j2)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=j2
+          enddo
+        enddo
+        if (ilnrho/=0) then
+          a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        else
+          a_re=0.
+        endif
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
+      endif
+!
 !  spectrum of uzs and s^2
 !
     elseif (sp=='uzs') then
@@ -1099,7 +1177,6 @@ module power_spectrum
 !
     elseif (sp=='bEP') then
       if (iXX_chiral/=0.and.iYY_chiral/=0) then
-print*,'AXEL: iXX_chiral,iYY_chiral=',iXX_chiral,iYY_chiral
         do n=n1,n2
           do m=m1,m2
             call grad(f,iXX_chiral,gtmp1)

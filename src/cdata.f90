@@ -522,7 +522,7 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
+  logical :: j_spec=.false., jb_spec=.false., oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
@@ -537,7 +537,7 @@ module Cdata
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.
   logical :: SCL_spec=.false., VCT_spec=.false., Tpq_spec=.false.
-  logical :: har_spec=.false.,hav_spec=.false.
+  logical :: har_spec=.false., hav_spec=.false., bb2_spec=.false., jj2_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.

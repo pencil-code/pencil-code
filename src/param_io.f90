@@ -121,6 +121,7 @@ module Param_IO
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
+      bb2_spec, jj2_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, &
       SCL_spec, VCT_spec, Tpq_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       vel_phispec, mag_phispec, &
