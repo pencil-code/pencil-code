@@ -2122,6 +2122,8 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
   elseif (sp=='sp') then
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
+  elseif (sp=='mu') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
   elseif (sp=='hr') then
     a_re=0.
     do m=m1,m2
