@@ -100,9 +100,7 @@ module Special
    real :: cdtchiral=1.
    real, dimension (nx) :: dt1_lambda5, dt1_D5, dt1_gammaf5
    real, dimension (nx) :: dt1_CMW, dt1_Dmu, dt1_vmu, dt1_special
-!JEN:
    real, dimension (nx) :: dt1_CVE1, dt1_CVE2 
-!JEN.
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
@@ -128,6 +126,7 @@ module Special
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$     
+  integer :: idiag_gmuSrms=0   ! DIAG_DOC: $\left<(\nabla\mu_S)^2\right>^{1/2}$     
   integer :: idiag_gmu5mx=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_x$   
   integer :: idiag_gmu5my=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_y$       
   integer :: idiag_gmu5mz=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_z$   
@@ -166,11 +165,14 @@ module Special
 !
       if (lmuS) then
         call farray_register_pde('muS',imuS)
+! JEN:
+        ispecialvar2=imuS
+! JEN.
       endif
 !
 !!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call
-!farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
+!      farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -350,7 +352,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2
       real, dimension (nx,3) :: mu5bb, muSmu5oo
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -460,6 +462,12 @@ module Special
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
         endif
+!JEN:
+        if (idiag_gmuSrms/=0) then
+          call dot2_mn(p%gmuS,gmuS2)
+          call sum_mn_name(gmuS2,idiag_gmuSrms,lsqrt=.true.)
+        endif
+!JEN.
         if (idiag_gmu5mx/=0) call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
         if (idiag_gmu5my/=0) call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
         if (idiag_gmu5mz/=0) call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
@@ -556,9 +564,13 @@ module Special
 !
       if (lreset) then
         idiag_muSm=0; idiag_muSrms=0;
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_gmu5rms=0; 
+!JEN:
+!        idiag_mu5m=0; idiag_mu5rms=0; idiag_gmu5rms=0; 
+        idiag_mu5m=0; idiag_mu5rms=0;
+        idiag_gmu5rms=0; idiag_gmuSrms=0; 
+!JEN.
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
-        idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
+        idiag_mu5bjm=0; idiag_mu5bjrms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_dt_chiral=0; idiag_dt_vmu=0;
         idiag_dt_lambda5=0; idiag_dt_D5=0;
@@ -572,6 +584,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
+!JEN:
+        call parse_name(iname,cname(iname),cform(iname),'gmuSrms',idiag_gmuSrms)
+!JEN.
         call parse_name(iname,cname(iname),cform(iname),'gmu5mx',idiag_gmu5mx)
         call parse_name(iname,cname(iname),cform(iname),'gmu5my',idiag_gmu5my)
         call parse_name(iname,cname(iname),cform(iname),'gmu5mz',idiag_gmu5mz)
