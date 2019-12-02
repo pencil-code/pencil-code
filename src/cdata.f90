@@ -1,3 +1,4 @@
+
 ! $Id$
 !
 !  Global variables are defined in this module.
@@ -302,7 +303,7 @@ module Cdata
   integer :: igradu11=0,igradu12=0,igradu13=0
   integer :: igradu21=0,igradu22=0,igradu23=0
   integer :: igradu31=0,igradu32=0,igradu33=0
-  integer :: ispecialvar=0
+  integer :: ispecialvar=0, ispecialvar2=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
              ijxb=0, ijxbx=0, ijxby=0, ijxbz=0
@@ -529,7 +530,7 @@ module Cdata
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
-  logical :: sp_spec=.false.
+  logical :: sp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
