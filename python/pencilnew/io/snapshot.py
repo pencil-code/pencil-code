@@ -255,7 +255,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         settings = {}
         skeys = ['l1', 'l2', 'm1', 'm2', 'n1', 'n2',
                  'nx', 'ny', 'nz', 'mx', 'my', 'mz',
-                 'nprocx', 'nprocy', 'nprocz', 
+                 'nprocx', 'nprocy', 'nprocz',
                  'maux', 'mglobal', 'mvar', 'precision',
                 ]
         dim = read.dim()
