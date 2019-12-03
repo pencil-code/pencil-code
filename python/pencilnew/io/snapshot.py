@@ -170,8 +170,9 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
 
 def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
-                   unit=None, grid=None, lghosts=False, indx=None,
-                   t=None, x=None, y=None, z=None, lshear=False):
+                   param=None, grid=None, lghosts=False, indx=None,
+                   unit=None, t=None, x=None, y=None, z=None,
+                   quiet=True, lshear=False):
     """
     Write a snapshot given as numpy array.
     We assume by default that a run simulation directory has already been
@@ -185,7 +186,8 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
                    param=None, grid=None, lghosts=False, indx=None,
-                   t=None, x=None, y=None, z=None, lshear=False)
+                   unit=None, t=None, x=None, y=None, z=None,
+                   quiet=True, lshear=False)
 
     Keyword arguments:
 
@@ -253,7 +255,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         settings = {}
         skeys = ['l1', 'l2', 'm1', 'm2', 'n1', 'n2',
                  'nx', 'ny', 'nz', 'mx', 'my', 'mz',
-                 'nprocx', 'nprocy', 'nprocz',
+                 'nprocx', 'nprocy', 'nprocz', 
                  'maux', 'mglobal', 'mvar', 'precision',
                 ]
         dim = read.dim()
@@ -261,6 +263,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
             settings[key] = dim.__getattribute__(key)
         settings['precision'] = precision.encode()
         settings['nghost'] = nghost
+        settings['version'] = np.int32(0)
         nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
@@ -272,6 +275,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         for key in gkeys:
             if not key in grid.__dict__.keys():
                 print("ERROR: key "+key+" missing from grid")
+                gd_err = True
         if gd_err:
             print("ERROR: grid incomplete")
     if param == None:
@@ -376,23 +380,31 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         # add settings
         sets_grp = ds.create_group('settings')
         for key in settings.keys():
-            sets_grp.create_dataset(key, data=(settings[key],))
+            if 'precision' in key:
+                sets_grp.create_dataset(key, data=(settings[key],))
+            else:
+                sets_grp.create_dataset(key, data=(settings[key]))
         # add grid
         grid_grp = ds.create_group('grid')
         for key in gkeys:
-            grid_grp.create_dataset(key, data=(grid.__getattribute__(key),))
-        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0],))
-        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1],))
-        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2],))
+            grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
+        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
+        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
+        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
         # add physical units
         unit_grp = ds.create_group('unit')
         for key in ukeys:
-            unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
+            if 'system' in key:
+                unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
+            else:
+                unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
         # add optional pesristent data
         if persist != None:
             pers_grp = ds.create_group('persist')
             for key in persist.keys():
-                arr = np.empty(nprocs,dtype=type(persist[key][0]))
+                if not quiet:
+                    print(key,type(persist[key]))
+                arr = np.empty(nprocs,dtype=type(persist[key]))
                 arr[:] = persist[key][()]
-                pers_grp.create_dataset(key, data=arr,)
+                pers_grp.create_dataset(key, data=(arr))
 #    return 0
