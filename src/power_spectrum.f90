@@ -26,7 +26,6 @@ module power_spectrum
 !
   use Cdata
   use Messages, only: svn_id, warning, fatal_error
-  use Special
 !
   implicit none
 !
@@ -898,7 +897,7 @@ module power_spectrum
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use chiral, only: iXX_chiral, iYY_chiral
+    use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, im, in, ivec, ivec_jj
@@ -1898,6 +1897,7 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
+    use Special, only: special_calc_spectra
 !
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=3) :: sp

@@ -542,15 +542,14 @@ module Mpicomm
 !
 !  Check total number of processors.
 !
-      if (.not.( lyinyang.and.nprocs==2*ncpus .or. lforeign.and.nprocs==ncpus+ncpus_frgn .or. nprocs==ncpus)) then
+      if (.not.( lyinyang.and.nprocs==2*ncpus .or. lforeign.and.nprocs>ncpus .or. nprocs==ncpus)) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
                 ', but running on ', nprocs, ' processors'
           elseif (lforeign) then
             print*, 'number of processors '//trim(itoa(nprocs))// &
-                    '/= number of own + foreign processors ='// &
-                    trim(itoa(ncpus+ncpus_frgn))
+                    '= number of own processors -> no procs for foreign code left'
           else
             print*, 'Compiled with ncpus = ', ncpus, &
                 ', but running on ', nprocs, ' processors'
