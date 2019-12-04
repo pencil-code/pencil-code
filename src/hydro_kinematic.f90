@@ -328,7 +328,6 @@ module Hydro
         root_foreign=ncpus
         frgn_setup%peer=iproc+ncpus
         frgn_setup%tag=tag_frgn
-        frgn_setup%ncpus=ncpus_frgn
 
 !if (iproc_world/=iproc.and.iproc_world==2) then
 !  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
@@ -364,6 +363,11 @@ module Hydro
           if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
+          else
+            frgn_setup%ncpus=product(intbuf)
+            if (ncpus+frgn_setup%ncpus/=nprocs) &
+            call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
+                    ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
           endif
 !
 !  Receive gridpoint numbers of foreign code.
@@ -372,7 +376,7 @@ module Hydro
 
           if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nx,ny,nz/))) then
             messg=trim(messg)//" foreign grid sizes don't match;"
-            lok=.false.
+            lok=.false.   !MR: alleviate to interpolation
           endif
 !
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
@@ -381,15 +385,15 @@ module Hydro
             call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
             if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
-              lok=.false.
+              lok=.false. !MR: alleviate to selection
             endif
           enddo
 !
 !  Receive output timestep of foreign code (code units).
 !      
           call mpirecv_real(frgn_setup%dt_out,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
-          if (frgn_setup%dt_out==0.) then
-            messg=trim(messg)//' foreign output step=0'
+          if (frgn_setup%dt_out<=0.) then
+            messg=trim(messg)//' foreign output step<=0'
             lok=.false.
           endif
 !
@@ -404,7 +408,7 @@ module Hydro
         frgn_setup%t_last_out=t
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
 
-        if (iproc<frgn_setup%ncpus) then
+        if (iproc<ncpus) then
 
           if (frgn_setup%name=='MagIC') then
             allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))

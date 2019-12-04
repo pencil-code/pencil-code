@@ -56,7 +56,7 @@ module Cdata
 !
 !  Simultaneous foreign code.
 !
-  integer :: ncpus_frgn=0, tag_frgn=0
+  integer :: tag_frgn=0
   logical :: lforeign=.false.
 !
 !  Yin-Yang grid.
