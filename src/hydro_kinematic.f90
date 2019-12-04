@@ -360,7 +360,13 @@ module Hydro
 !  Receive processor numbers of foreign code.
 !      
           call mpirecv_int(intbuf,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
-          if (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
+          if ( frgn_setup%name/='MagIC' ) then
+            if (any(intbuf/=(/nprocx,1,1/))) then
+              messg='MagIC processor numbers '//trim(itoa(intbuf(1)))//', '// &
+                    trim(itoa(intbuf(2)))//', '//trim(itoa(intbuf(3)))//' not consistent with (nprocx,1,1)'
+              lok=.false.
+            endif
+          elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
           else
@@ -374,7 +380,7 @@ module Hydro
 !      
           call mpirecv_int(frgn_setup%dims,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
 
-          if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nx,ny,nz/))) then
+          if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))) then
             messg=trim(messg)//" foreign grid sizes don't match;"
             lok=.false.   !MR: alleviate to interpolation
           endif
