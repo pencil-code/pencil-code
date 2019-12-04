@@ -12,6 +12,8 @@ module Mpicomm
   implicit none
 !
   integer, parameter :: MPI_COMM_WORLD=0, MPI_ANY_TAG=0
+  integer :: nprocs=1
+
   include 'mpicomm.h'
 !
   interface mpirecv_logical
