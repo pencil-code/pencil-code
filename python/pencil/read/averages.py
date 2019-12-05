@@ -298,10 +298,10 @@ class Averages(object):
                 proc_data = np.array(proc_data)
                 if var_index >= 0:
                     proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
-                    if millennium_bug and proc==1:
-                        proc_data=np.insert(proc_data,3766,0.5*(
-                                            proc_data[3766]+
-                                            proc_data[3767]),axis=0)
+                    if millennium_bug and proc == 1:
+                        proc_data = np.insert(proc_data, 3766, 0.5*(
+                            proc_data[3766] +
+                            proc_data[3767]), axis=0)
                 else:
                     proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
