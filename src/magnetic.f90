@@ -3702,8 +3702,6 @@ module Magnetic
       use Special, only: special_calc_magnetic
       use Sub
       use General, only: transform_thph_yy, notanumber
-      use Diagnostics, only: save_name_sound
-      use Slices_methods, only: store_slices
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3712,7 +3710,7 @@ module Magnetic
       intent(in)   :: p
       intent(inout):: f,df
 !
-      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
+      real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
       real, dimension (nx,3) :: dAdt, gradeta_shock
@@ -3727,7 +3725,6 @@ module Magnetic
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
-      integer :: isound,lspoint,mspoint,nspoint
       integer, parameter :: nxy=nxgrid*nygrid
 !
 !  Identify module and boundary conditions.
@@ -4823,6 +4820,35 @@ module Magnetic
         maxdiffus3=max(maxdiffus3,diffus_eta3)
 !
       endif
+
+      call calc_diagnostics_magnetic(f,p)
+!
+!  Debug output.
+!
+      if (headtt .and. lfirst .and. ip<=4) then
+        call output_pencil('aa.dat',p%aa,3)
+        call output_pencil('bb.dat',p%bb,3)
+        call output_pencil('jj.dat',p%jj,3)
+        call output_pencil('del2A.dat',p%del2a,3)
+        call output_pencil('JxBr.dat',p%jxbr,3)
+        call output_pencil('JxB.dat',p%jxb,3)
+        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
+      endif
+      call timing('daa_dt','finished',mnloop=.true.)
+!
+    endsubroutine daa_dt
+!******************************************************************************
+    subroutine calc_diagnostics_magnetic(f,p)
+
+      use Diagnostics, only: save_name_sound
+      use Slices_methods, only: store_slices
+      use Sub, only: cross,vecout
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+
+      integer :: isound,lspoint,mspoint,nspoint,j
+      real, dimension (nx,3) :: uxbxb,poynting
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
@@ -4855,19 +4881,10 @@ module Magnetic
         enddo
       endif
 
-      call calc_diagnostics_magnetic(f,p)
-!
-!  Debug output.
-!
-      if (headtt .and. lfirst .and. ip<=4) then
-        call output_pencil('aa.dat',p%aa,3)
-        call output_pencil('bb.dat',p%bb,3)
-        call output_pencil('jj.dat',p%jj,3)
-        call output_pencil('del2A.dat',p%del2a,3)
-        call output_pencil('JxBr.dat',p%jxbr,3)
-        call output_pencil('JxB.dat',p%jxb,3)
-        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
-      endif
+      call calc_2d_diagnostics_magnetic(p)
+      call calc_1d_diagnostics_magnetic(p)
+      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
+
 !
 !  Write B-slices for output in wvid in run.f90.
 !  Note: ix_loc is the index with respect to array with ghost zones.
@@ -4883,30 +4900,21 @@ module Magnetic
         if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
         if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
                                              beta1_xy3,beta1_xy4,beta1_xz2)
-        if (bthresh_per_brms/=0) call calc_bthresh
-        call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
-!
         if (ivid_poynting/=0) then
           call cross(p%uxb,p%bb,uxbxb)
           do j=1,3
-            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
+            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)  !!! etatotal invalid outside daa_dt!
           enddo
           call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2)
         endif
-      endif
-      call timing('daa_dt','finished',mnloop=.true.)
 !
-    endsubroutine daa_dt
-!******************************************************************************
-    subroutine calc_diagnostics_magnetic(f,p)
-
-      real, dimension(:,:,:,:) :: f
-      type(pencil_case) :: p
-
-      call calc_2d_diagnostics_magnetic(p)
-      call calc_1d_diagnostics_magnetic(p)
-      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
+        if (bthresh_per_brms/=0) then
+          call calc_bthresh
+          call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+        endif
+!
+      endif
 
     endsubroutine calc_diagnostics_magnetic
 !******************************************************************************
@@ -6176,6 +6184,8 @@ module Magnetic
       endif
 !
 !  calculate bthresh as a certain fraction of brms
+!  MR: can hardly be correct as at this moment the updated brms is not yet
+!      available.
 !
       bthresh=bthresh_scl*bthresh_per_brms*brms
 !

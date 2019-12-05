@@ -2854,7 +2854,6 @@ module Hydro
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3073,20 +3072,6 @@ module Hydro
           Fmax=max(Fmax,ftot/ulev)
         enddo
       endif
-!
-!  store slices for output in wvid in run.f90
-!  This must be done outside the diagnostics loop (accessed at different times).
-!
-      if (lvideo.and.lfirst) then
-        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
-        if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
-        call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
-
-        if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
-        if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
-        if (othresh_per_orms/=0) call calc_othresh
-        if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
-      endif
 
       call calc_diagnostics_hydro(f,p)
 !
@@ -3128,12 +3113,11 @@ module Hydro
           if ((idiag_taufmin/=0).and.lcdt_tauf) &
             call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
+!
 ! urlm
-! This is being always calculated but written out only when asked.
-! It should not be done this way, but calculated only is must be written out.
 !
         if (lspherical_coords.and.any(idiag_urlm/=0)) then
-          call amp_lm(p%uu(:,1),urlm,profile_SH)
+          call amp_lm(p%uu(:,1),urlm,profile_SH)    ! MR: tb restricted to needed urlm
           do k=1,Nmodes_SH
             call sum_mn_name(urlm(:,k),idiag_urlm(k))
           enddo
@@ -3759,12 +3743,31 @@ module Hydro
 !**************************************************************************************
     subroutine calc_diagnostics_hydro(f,p)
 
+      use Slices_methods, only: store_slices
+      use Sub, only: vecout
+
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 
       call calc_2d_diagnostics_hydro(f,p)
       call calc_1d_diagnostics_hydro(p)
       call calc_0d_diagnostics_hydro(f,p)
+!
+!  store slices for output in wvid in run.f90
+!  This must be done outside the diagnostics loop (accessed at different times).
+!
+      if (lvideo.and.lfirst) then
+        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+        if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
+        if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
+        if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+        if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
+
+        if (othresh_per_orms/=0) then
+          call calc_othresh
+          call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
+        endif
+      endif
 
     endsubroutine calc_diagnostics_hydro
 !******************************************************************************
@@ -3999,7 +4002,7 @@ module Hydro
 !
 !  calculate othresh as a certain fraction of orms
 !
-      othresh=othresh_scl*othresh_per_orms*orms
+      othresh=othresh_scl*othresh_per_orms*orms  !!!MR: orms not yet valid when used inside duu_dt
 !
     endsubroutine calc_othresh
 !***********************************************************************

@@ -774,7 +774,7 @@ program run
 !
 !  Add forcing and/or do rescaling (if applicable).
 !
-    if (lforcing) call addforce(f)
+    if (lforcing.and..not.lgpu) call addforce(f)
     if (lparticles_lyapunov) call particles_stochastic
 !    if (lspecial) call special_stochastic
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
