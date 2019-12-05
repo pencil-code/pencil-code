@@ -39,6 +39,7 @@ module Particles_radius
   real :: modified_vapor_diffusivity=6.74e-6, n0_mean = 1.e8
   real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
+  real :: xi_accretion = 1.
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -49,6 +50,7 @@ module Particles_radius
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
+  logical :: ldust_accretion = .false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -75,7 +77,7 @@ module Particles_radius
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
-      ldust_condensation
+      ldust_condensation, xi_accretion, ldust_accretion
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -678,7 +680,7 @@ module Particles_radius
 !
 !  15-jan-10/anders: coded
 !
-      use EquationOfState, only: gamma
+      use EquationOfState, only: gamma, rho0
       use Particles_number
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -763,7 +765,11 @@ module Particles_radius
             else
 !                    
               if (lcondensation_simplified) then
-                dapdt = GS_condensation/fp(k,iap)
+                if (ldust_accretion) then
+                  dapdt = xi_accretion*exp(f(ix,m,n,ilnrho))/rho0
+                else
+                  dapdt = GS_condensation/fp(k,iap)
+                endif
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
