@@ -37,5 +37,3 @@
     module procedure calc_pencils_hydro_pencpar
     module procedure calc_pencils_hydro_std
   endinterface calc_pencils_hydro
-!
-

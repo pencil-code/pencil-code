@@ -138,6 +138,7 @@ module Hydro
   endtype foreign_setup
   
   type(foreign_setup) :: frgn_setup
+  real, dimension(:), allocatable :: x_foreign
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
   real, dimension(:,:,:), allocatable :: shell_buffer
 
@@ -419,6 +420,8 @@ module Hydro
           if (frgn_setup%name=='MagIC') then
             allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
             allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
+            allocate(x_foreign(frgn_setup%dims(1)))
+            call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,frgn_setup%tag)
           endif
 
           do j=1,2
