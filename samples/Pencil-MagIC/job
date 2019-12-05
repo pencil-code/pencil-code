@@ -1,0 +1,15 @@
+#!/bin/bash -l
+
+#SBATCH --accoun=ituomine
+##SBATCH -N 1
+#SBATCH -n 2
+#SBATCH -p test
+#SBATCH -t 00:03:00
+##SBATCH --ntasks-per-node=1
+
+source src/.moduleinfo
+
+rm -f LOCK
+./start.csh
+touch data/jobid.dat
+./run.csh #src/magic.exe

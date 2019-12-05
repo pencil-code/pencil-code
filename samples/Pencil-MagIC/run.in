@@ -1,0 +1,21 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for kinematic dynamo run with Glen Roberts flow
+!
+&run_pars
+  cvsid='$Id$'
+  nt=400, it1=50, isave=1000, itorder=3
+  nt=1, it1=1, isave=1000, itorder=3
+  dsnap=100., dvid=5, ialive=0, dtmin=1e-8
+  cdtv=0.30, d2davg=5, cdt=0.9
+  lpencil_check=T
+  !nghost_read_fewer=0, luse_oldgrid=T
+  lkinflow_as_aux=T
+/
+&hydro_run_pars
+  kinematic_flow='from-foreign-snap'
+/
+&testfield_run_pars
+  etatest=1.e-3
+  linit_aatest=T, daainit=75.
+/
