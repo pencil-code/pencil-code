@@ -66,7 +66,7 @@ class __Simulation__(object):
                            'run.in',
                            'print.in']
         self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
-        self.optionals = ['*.in', '*.py', 'submit*']    # optinal files that should stick with the simulation when copied
+        self.optionals = ['*.in', '*.py', 'submit*']    # optional files that should stick with the simulation when copied
 
         self.hidden = hidden                # hidden is default False
         self.param = False
