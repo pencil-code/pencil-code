@@ -171,4 +171,5 @@ if [ $same_source ]; then
     ln -s $olddir/src/*.x .
   fi
   cp $olddir/src/*.inc .
+  [ -f $olddir/src/revision.txt ] && cp $olddir/src/revision.txt .
 fi
