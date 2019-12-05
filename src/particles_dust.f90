@@ -6339,6 +6339,10 @@ module Particles
 !
 !  Calculate the Brownian force contribution due to the random thermal motions
 !  of the gas molecules.
+!      
+!  See A. Li and G. Ahmadi. "Dispersion and Deposition of Spherical
+!      Particles from Point Sources in a Turbulent Channel Flow".
+!      Aerosol Science and Technology. 16. 209–226. 1992.
 !
 !  28-jul-08/kapelrud: coded
 !
@@ -6391,14 +6395,15 @@ module Particles
 !
       call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
+!  NILS: The particle material density is given by rhopmat - not rhop_swarm_par
+!      Szero = 216*nu*k_B*TT*pi_1/ &
+!          (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
       Szero = 216*nu*k_B*TT*pi_1/ &
-          (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+          (dia**5*stocunn*rhopmat**2/interp_rho(k))
 !
 !  https://en.wikipedia.org/wiki/Brownian_motion
 !  .3 * urms * lmfp = D=kB*T/(6pi*eta*a)
 !  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
-!
-!print*,'AXEL: nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)=', nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)
 !
 !  du/dt = sqrt(dt)
 !  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
@@ -6427,7 +6432,7 @@ module Particles
       real :: Inf=1e14
 !
       real, dimension(3) :: temp_grad
-      real TT,mu,nu_,Kn,phi_therm,mass_p
+      real TT,dyn_visc,nu_,Kn,phi_therm,mass_p
       real Ktc,Ce,Cm,Cint
       character(len=labellen) :: ivis=''
 !
@@ -6444,17 +6449,17 @@ module Particles
       !Find dynamic viscosity
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis == 'nu-const') then
-        mu = nu_*interp_rho(k)
+        dyn_visc = nu_*interp_rho(k)
       elseif (ivis == 'nu-mixture') then
-        mu = interp_nu(k)*interp_rho(k)
+        dyn_visc = interp_nu(k)*interp_rho(k)
       elseif (ivis == 'rho-nu-const') then
-        mu = nu_
+        dyn_visc = nu_
       elseif (ivis == 'sqrtrho-nu-const') then
-        mu = nu_*sqrt(interp_rho(k))
+        dyn_visc = nu_*sqrt(interp_rho(k))
       elseif (ivis == 'nu-therm') then
-        mu = nu_*interp_rho(k)*sqrt(TT)
+        dyn_visc = nu_*interp_rho(k)*sqrt(TT)
       elseif (ivis == 'mu-therm') then
-        mu = nu_*sqrt(TT)
+        dyn_visc = nu_*sqrt(TT)
       else
         call fatal_error('calc_thermophoretic_force','No such ivis!')
       endif
@@ -6482,13 +6487,13 @@ module Particles
       endif
 !
 !
-      force = (fp(k,iap)*temp_grad*mu**2*phi_therm)/(TT*interp_rho(k)*mass_p)
+      force = (fp(k,iap)*temp_grad*dyn_visc**2*phi_therm)/(TT*interp_rho(k)*mass_p)
       
       
       do i = 1,3
         if (force(i) < -Inf .or. force(i) > Inf) then
           print*, 'Force xyz:', force, 'Temp_grad xyz:',temp_grad
-          print*, 'Thermophoretic term ', phi_therm, 'Mu ',mu, 'TT',TT
+          print*, 'Thermophoretic term ', phi_therm, 'Dyn_Visc ',dyn_visc, 'TT',TT
           print*, 'Rho_gas', interp_rho(k), 'M_p',mass_p
           call fatal_error('calc_pencil_rep','infs in thermophoretic')
         endif
