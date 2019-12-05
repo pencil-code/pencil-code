@@ -34,7 +34,7 @@ def aver(*args, **kwargs):
       Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
 
     *millennium_bug*
-      Correction required for missing data on proc 0 in millennium test
+      Correction required for missing data on proc 1 in millennium test
       field run - temp fix
     """
 
