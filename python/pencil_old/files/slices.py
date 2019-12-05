@@ -7,8 +7,8 @@
 #
 import os
 import numpy as np
-from pencil.files.npfile import npfile
-from pencil.files.dim import read_dim
+from ..files.npfile import npfile
+from ..files.dim import read_dim
 from time import sleep
 from os.path import join
 

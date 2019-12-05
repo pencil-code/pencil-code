@@ -11,13 +11,13 @@
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
 
 import numpy as np
-from pencil.files.npfile import npfile
+from ..files.npfile import npfile
 import os
 import sys
-from pencil.files.param import read_param
-from pencil.files.index import read_index
-from pencil.files.dim import read_dim
-from pencil.math.derivatives import curl, curl2, div
+from ..files.param import read_param
+from ..files.index import read_index
+from ..files.dim import read_dim
+from ..math.derivatives import curl, curl2, div
 import re
 
 

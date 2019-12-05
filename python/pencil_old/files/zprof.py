@@ -1,7 +1,7 @@
 #$Id$
 
 from numpy import zeros, asarray
-from pencil import read_dim
+from .. import read_dim
 
 
 def read_zprof(*args, **kwargs):

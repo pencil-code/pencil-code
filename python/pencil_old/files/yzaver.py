@@ -13,7 +13,7 @@ from subprocess import check_output
 import numpy as N
 
 #from param import read_param
-from pencil.files.dim import read_dim
+from ..files.dim import read_dim
 
 class YzAver:
     pass

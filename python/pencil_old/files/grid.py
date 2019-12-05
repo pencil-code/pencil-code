@@ -6,10 +6,10 @@
 #
 #
 import numpy as N
-from pencil.files.npfile import npfile
+from ..files.npfile import npfile
 import os
-from pencil.files.param import read_param
-from pencil.files.dim import read_dim
+from ..files.param import read_param
+from ..files.dim import read_dim
 
 
 def read_grid(*args, **kwargs):

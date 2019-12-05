@@ -1,7 +1,7 @@
 # $Id$
 
 import numpy as N
-from pencil.files.dim import read_dim
+from ..files.dim import read_dim
 
 def read_power(file):
     """ 

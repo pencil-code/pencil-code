@@ -11,9 +11,9 @@ import os
 import re
 import numpy as N
 
-from pencil.files.npfile import npfile
-from pencil.files.param import read_param 
-from pencil.files.dim import read_dim 
+from ..files.npfile import npfile
+from ..files.param import read_param 
+from ..files.dim import read_dim 
 
 def read_yaver(datadir='data/',format='native',point=(-1,-1)):
 

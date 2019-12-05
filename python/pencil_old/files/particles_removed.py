@@ -8,8 +8,8 @@
 import numpy as np
 import os.path
 # Pencil routines
-from pencil.files.pdim import read_pdim
-from pencil.files.dim import read_dim
+from .pdim import read_pdim
+from .dim import read_dim
 
 
 class par_rmv:

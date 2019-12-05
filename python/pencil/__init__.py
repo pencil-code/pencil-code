@@ -1,46 +1,83 @@
-#import numpy as N
-#import scipy as S
+'''
+The __init__ file is used not only to import the sub-modules, but also to
+set everything up properly.
+'''
 
-from pencil.files.ts import *
-from pencil.files.sn import *
-from pencil.files.dim import *
-from pencil.files.pdim import *
-from pencil.files.qdim import *
-from pencil.files.param import *
-from pencil.files.grid import read_grid
-from pencil.files.var import read_var
-from pencil.files.read_pvar import read_pvar
-#from pencil.files.read_qvar import read_qvar
-from pencil.files.qvar import read_qvar
-from pencil.files.index import *
-from pencil.files.rrmv_par import *
-from pencil.files.slices import *
-from pencil.files.xyaver import *
-from pencil.files.yzaver import *
-from pencil.files.xzaver import *
-from pencil.files.yaver import *
-from pencil.files.zaver import *
-from pencil.files.zprof import *
-from pencil.files.power import *
-from pencil.files.tensors import *
-from pencil.files.shocktube import *
-try:
-    from pencil.files.animate_interactive import *
-except:
-    pass
-from pencil.files.pc2vtk import *
-from pencil.files.post_processing import *
-from pencil.files.streamlines import *
-from pencil.files.tracers import *
-from pencil.files.kf import *
-from pencil.files.get_format import *
-from pencil.files.fixed_points import *
-from pencil.math.derivatives import *
-from pencil.math.vector_multiplication import *
-#from pencil.files.multi_slices import *
-from pencil.files.particles_removed import read_rmv_par
-from pencil.files.particles_to_density import *
-try:
-    from pencil.files.remesh import interp_var, distribute_fort, pers
-except:
-    pass
+print("Warning: pencilnew has moved to pencil.")
+print("         pencil has moved to pencil_old.")
+print("To change your scripts accordingly:")
+print("import pencilnew as pc -> import pencil as pc")
+print("import pencil as pc -> import pencil_old as pc")
+
+# Load sub-modules.
+from . import io           # input und output functions, like save data or call IDL scripts
+from . import diag         # diagnostic scripts and functions
+from . import visu         # visualization routines
+from . import calc         # math functions and further calculations
+from . import math         # basic math functions, like products and derivatives
+from . import sim          # handling simulations as python objects
+from . import read         # read data and parameters from pencil code directory
+from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
+from . import export       # exporter (e.g., vtk, xml)
+from . import backpack     # third party modules, tribute to the author!
+
+
+# Internal routines.
+def __is_sim_dir__(path='.'):
+    """
+    Check if a path is pointing at a pencil code simulation.
+    """
+
+    return sim.is_sim_dir(path)
+
+
+def get_sim(path='.', quiet=True):
+    """
+    Return simulation object from 'path, if already existing, or creates new
+    simulation object from path, if its as simulation.
+
+    Args:
+        path:   Base directory where to look for simulation from.
+        quiet:  Switches out the output of the function. Default: False.
+    """
+
+    return sim.get(path, quiet=quiet)
+
+
+def get_sims(path_root='.', depth=1, unhide_all=False, quiet=True):
+    """
+    Returns all found simulations as object list from all subdirs, not
+    following symbolic links.
+
+    Args:
+        path_root:  Base directory where to look for simulation from.
+        depth:      Depth of searching for simulations, default is 1,
+                    i.e. only one level deeper directories will be scanned.
+        unhide_all: Unhides all simulation found if True, if False (default)
+                    hidden sim will stay hidden.
+        quiet:      Switches out the output of the function. Default: True.
+    """
+
+    return sim.get_sims(path_root=path_root, depth=depth, unhide_all=unhide_all, quiet=quiet)
+
+
+def check_dependencies():
+    """
+    Check if dependencies are fullfilled for pencil.
+    """
+
+    import importlib
+    from itertools import compress
+
+    dependencies = ['vtk', 'tqdm']
+
+    not_found = [importlib.util.find_spec(dep) is None for dep in dependencies]
+    missing_dependencies = list(compress(dependencies, not_found))
+
+    print('WARNING: The following python modules have not been found. \
+          Full functionallity may not be granted!')
+
+    if 'vtk' in missing_dependencies:
+        print('Warning: vtk missing. Try to install the python-vtk or pyevtk module.')
+    if 'tqdm' in missing_dependencies:
+        print('Warning: tqdm missing. Check out https://github.com/tqdm/tqdm.')

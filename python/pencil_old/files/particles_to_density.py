@@ -7,7 +7,7 @@
 ##
 import numpy as np
 import os.path
-from pencil.files.dim import read_dim
+from .dim import read_dim
 import sys
 
 def particles_to_density(xxp,yyp,zzp,x,y,z):

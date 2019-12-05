@@ -1,7 +1,7 @@
 #$Id$
 import os
 import numpy as np
-from pencil import read_param, read_dim
+from .. import read_param, read_dim
 
 
 def read_index(*args, **kwargs):

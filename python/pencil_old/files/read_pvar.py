@@ -3,7 +3,7 @@
 import pencil as pc
 import numpy as np
 
-from pencil.files.npfile import npfile
+from ..files.npfile import npfile
 import os
 import sys
 #from string import maketrans
