@@ -2110,6 +2110,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
+# MR: Where is NODELIST used?
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
