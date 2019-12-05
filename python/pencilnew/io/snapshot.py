@@ -278,16 +278,16 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 gd_err = True
         if gd_err:
             print("ERROR: grid incomplete")
-    if param == None:
-        param = read.param(quiet=True)
     ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
              'temperature', 'flux', 'energy', 'mass', 'system',
             ]
-    param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
-    param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
-    param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
-    param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
-    param.unit_system = param.unit_system.encode()
+    if param == None:
+        param = read.param(quiet=True)
+        param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
+        param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
+        param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
+        param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
+        param.unit_system = param.unit_system.encode()
 
     #check whether the snapshot matches the simulation shape
     if lghosts:
@@ -408,3 +408,173 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 arr[:] = persist[key][()]
                 pers_grp.create_dataset(key, data=(arr))
 #    return 0
+
+def write_h5_averages(aver, file_name='xy', datadir='data/averages',
+                   precision='d', indx=None, trange=None, quiet=True,
+                   append=False, dim=None):
+    """
+    Write an hdf5 format averages dataset given as an Averages object.
+    We assume by default that a run simulation directory has already been
+    constructed and start completed successfully in h5 format so that
+    files dim, grid and param files are already present.
+    If not the contents of these will need to be supplied as dictionaries
+    along with persist if included.
+
+    call signature:
+
+    write_h5_averages(aver, file_name='xy', datadir='data/averages',
+                   precision='d', indx=None, trange=None, quiet=True)
+
+    Keyword arguments:
+
+    *aver*:
+      Averages object.
+      Must be of shape [n_vars, n1] for averages across 'xy', 'xz' or 'yz'.
+      Must be of shape [n_vars, n1, n2] for averages across 'y', 'z'.
+
+    *file_name*:
+      Name of the snapshot file to be written, e.g. 'xy', 'xz', 'yz', 'y', 'z'.
+
+    *datadir*:
+      Directory where the data is stored.
+
+    *precision*:
+      Single 'f' or double 'd' precision.
+
+    *indx*
+      Restrict iterative range to be written.
+
+    *trange*:
+      Restrict time range to be written.
+
+    *append*
+      For large binary files the data may need to be appended iteratively.
+
+    *dim*
+      Dim object required if the large binary files are supplied in chunks.
+    """
+
+    import os.path
+    import numpy as np
+    import h5py
+    from .. import read
+    from .. import sim
+
+    #test if simulation directory
+    if not sim.is_sim_dir():
+        print("ERROR: Directory needs to be a simulation")
+        return -1
+    if not os.path.exists(datadir):
+         os.mkdir(datadir)
+    #open file for writing data
+    filename = os.path.join(datadir,file_name+'.h5')
+    if append:
+        state = 'a'
+    else:
+        state = 'w'
+    #number of iterations to record
+    nt=aver.t.shape[0]
+    with h5py.File(filename, state) as ds:
+        for key in aver.__getattribute__(file_name).__dict__.keys():
+            for it in range(0,nt):
+                if not ds.__contains__(str(it)):
+                    ds.create_group(str(it))
+                if not ds[str(it)].__contains__('time'):
+                    ds[str(it)].create_dataset('time', data=aver.t[it])
+                if not ds[str(it)].__contains__(key):
+                    ds[str(it)].create_dataset(key,
+                                   data=aver.__getattribute__(file_name).__getattribute__(key)[it])
+        if not ds.__contains__('last'):
+            ds.create_dataset('last', data=nt-1)
+
+def write_h5_slices(vslice, coordinates, positions, datadir='data/slices', 
+                   precision='d', indx=None, trange=None, quiet=True,
+                   append=False, dim=None):
+    """
+    Write an hdf5 format slices dataset given as an Slices object.
+    We assume by default that a run simulation directory has already been
+    constructed and start completed successfully in h5 format so that
+    files dim, grid and param files are already present.
+    If not the contents of these will need to be supplied as dictionaries
+    along with persist if included.
+
+    call signature:
+
+    write_h5_slices(vslice, coordinates, positions,
+                   datadir='data/slices', 
+                   precision='d', indx=None, trange=None, quiet=True)
+
+    Keyword arguments:
+
+    *vslice*:
+      Slices object.
+      Object with attributes 't', extensions e.g, 'xy', 'xy2', 'xz', 'yz'
+      and data fields of shape [nt, n1, n2] e.g 'uu1', 'uu2', 'uu3', ...
+
+    *coordinates*
+      Dictionary of lmn indices of all slices in the object n for 'xy', etc.
+      Obtained from 'data/positions.dat' in source binary simulation
+
+    *positions*
+      Dictionary of xyz values of all slices in the object z for 'xy', etc.
+      Obtained from source binary simulation grid at coordinates.
+
+    *datadir*:
+      Directory where the data is stored.
+
+    *precision*:
+      Single 'f' or double 'd' precision.
+
+    *indx*
+      Restrict iterative range to be written.
+
+    *trange*:
+      Restrict time range to be written.
+
+    *append*
+      For large binary files the data may need to be appended iteratively.
+
+    *dim*
+      Dim object required if the large binary files are supplied in chunks.
+    """
+
+    import os.path
+    import numpy as np
+    import h5py
+    from .. import read
+    from .. import sim
+
+    #test if simulation directory
+    if not sim.is_sim_dir():
+        print("ERROR: Directory needs to be a simulation")
+        return -1
+    if not os.path.exists(datadir):
+         os.mkdir(datadir)
+    #open file for writing data
+    nt = vslice.t.shape[0]
+    for extension in vslice.__dict__.keys():
+        if not extension in 't':
+            for field in vslice.__getattribute__(extension).__dict__.keys():
+                filename = os.path.join(datadir,field+'_'+extension+'.h5')
+                if append:
+                    state = 'a'
+                else:
+                    state = 'w'
+                #number of iterations to record
+                with h5py.File(filename, state) as ds:
+                    for it in range(1,nt+1):
+                        if not ds.__contains__(str(it)):
+                            ds.create_group(str(it))
+                        if not ds[str(it)].__contains__('time'):
+                            ds[str(it)].create_dataset('time', data=vslice.t[it-1])
+                        if not ds[str(it)].__contains__('data'):
+                            ds[str(it)].create_dataset('data',
+                                           data=vslice.__getattribute__(extension).__getattribute__(field)[it-1])
+                        if not ds[str(it)].__contains__('coordinate'):
+                            ds[str(it)].create_dataset('coordinate',
+                                           data=(np.int32(coordinates[extension]),))
+                        if not ds[str(it)].__contains__('position'):
+                            ds[str(it)].create_dataset('position',
+                                           data=positions[extension])
+                    if not ds.__contains__('last'):
+                        ds.create_dataset('last', data=(np.int32(nt),))
