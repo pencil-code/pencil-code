@@ -22,12 +22,20 @@ def aver(*args, **kwargs):
       A list of the 2d/1d planes over which the averages were taken.
       Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
+   *var_index*:
+     Index of single variable taken from among the 'y' or 'z' averages.
+     Takes an integer value < len(yaver.in or zaver.in).
+
     *datadir*:
       Directory where the data is stored.
 
     *proc*:
       Processor to be read. If -1 read all and assemble to one array.
       Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
+
+    *millennium_bug*
+      Correction required for missing data on proc 0 in millennium test
+      field run - temp fix
     """
 
     averages_tmp = Averages()
@@ -50,7 +58,8 @@ class Averages(object):
         self.t = np.array([])
 
 
-    def read(self, plane_list=None, datadir='data', proc=-1):
+    def read(self, plane_list=None, var_index=-1, datadir='data',
+             proc=-1, millennium_bug=False):
         """
         Read Pencil Code average data.
 
@@ -64,12 +73,20 @@ class Averages(object):
           A list of the 2d/1d planes over which the averages were taken.
           Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
+        *var_index*:
+             Index of variable from among within the 'y' or 'z' averages.
+             Takes an integer value < len(yaver.in or zaver.in).
+
         *datadir*:
           Directory where the data is stored.
 
         *proc*:
           Processor to be read. If -1 read all and assemble to one array.
           Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
+
+        *millennium_bug*
+          Correction required for missing data on proc 0 in millennium test
+          field run - temp fix
         """
 
         import os
@@ -85,6 +102,8 @@ class Averages(object):
         else:
             plane_list = ['xy', 'xz', 'yz']
 
+        if var_index >= 0:
+            print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
         # Determine which average files to read.
         in_file_name_list = []
         aver_file_name_list = []
@@ -146,12 +165,20 @@ class Averages(object):
                                                   aver_file_name, n_vars, l_h5)
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
-                                                  aver_file_name, n_vars, proc, l_h5)
+                                                  aver_file_name, n_vars,
+                                                  var_index, proc, l_h5,
+                                                  millennium_bug)
 
             # Add the raw data to self.
             var_idx = 0
             for var in variables:
-                setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
+                if var_index >= 0:
+                    if var_idx == var_index:
+                        setattr(ext_object, var.strip(),
+                                raw_data[:, ...])
+                else:
+                    setattr(ext_object, var.strip(),
+                            raw_data[:, var_idx, ...])
                 var_idx += 1
 
             self.t = t
@@ -169,7 +196,7 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                       n_vars, proc, l_h5):
+                       n_vars, var_index, proc, l_h5, millennium_bug):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -236,8 +263,17 @@ class Averages(object):
             # This will be reformatted at the end.
             raw_data = []
             for proc in proc_list:
-                proc_dir = 'proc {0}'.format(proc)
+                proc_dir = 'proc{0}'.format(proc)
                 proc_dim = read.dim(datadir, proc)
+                if plane == 'y':
+                    pnu = proc_dim.nx
+                    pnv = proc_dim.nz
+                if plane == 'z':
+                    pnu = proc_dim.nx
+                    pnv = proc_dim.ny
+                if var_index >= 0:
+                    inx1 = var_index*pnu*pnv
+                    inx2 = (var_index+1)*pnu*pnv
                 # Read the data.
                 t = []
                 proc_data = []
@@ -250,20 +286,24 @@ class Averages(object):
                 while True:
                     try:
                         t.append(file_id.read_record(dtype=dtype)[0])
-                        proc_data.append(file_id.read_record(dtype=dtype))
+                        if var_index >= 0:
+                            proc_data.append(file_id.read_record(dtype=dtype)[inx1:inx2])
+                        else:
+                            proc_data.append(file_id.read_record(dtype=dtype))
                     except:
                         # Finished reading.
                         break
                 file_id.close()
                 # Reshape the proc data into [len(t), pnu, pnv].
-                if plane == 'y':
-                    pnu = proc_dim.nx
-                    pnv = proc_dim.nz
-                if plane == 'z':
-                    pnu = proc_dim.nx
-                    pnv = proc_dim.ny
                 proc_data = np.array(proc_data)
-                proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
+                if var_index >= 0:
+                    proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
+                    if millennium_bug and proc==1:
+                        proc_data=np.insert(proc_data,3766,0.5*(
+                                            proc_data[3766]+
+                                            proc_data[3767]),axis=0)
+                else:
+                    proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
                 if not all_procs:
                     return np.array(t), proc_data.swapaxes(2, 3)
@@ -285,8 +325,11 @@ class Averages(object):
                         idx_u = 0
 
                 if not isinstance(raw_data, np.ndarray):
-                    # Initialize the raw_data array with the right dimensions.
-                    raw_data = np.zeros([len(t), n_vars, nv, nu])
+                    #Initialize the raw_data array with correct dimensions.
+                    if var_index >= 0:
+                        raw_data = np.zeros([len(t), 1, nv, nu])
+                    else:
+                        raw_data = np.zeros([len(t), n_vars, nv, nu])
                 raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = proc_data.copy()
 
             t = np.array(t)
