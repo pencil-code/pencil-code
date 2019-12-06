@@ -322,6 +322,8 @@ module EquationOfState
 !
       call keep_compiler_quiet(mu_tmp)
       call keep_compiler_quiet(present(f))
+      call fatal_error("getmu", &
+             "This routine is not implemented: ")
 !
     endsubroutine getmu
 !***********************************************************************
