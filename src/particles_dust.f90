@@ -2096,7 +2096,8 @@ module Particles
 !
       logical, save :: linsertmore=.true.
       real :: xx0, yy0, r2, r, tmp
-      integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
+      integer :: j, k, n_insert, npar_loc_old, iii
+      integer (kind=8) :: particles_insert_rate_tmp
       real, pointer :: gravr
 !
 ! Insertion of particles is stopped when maximum number of particles is reached,
@@ -2118,6 +2119,7 @@ module Particles
       if (lroot) then
         avg_n_insert = particles_insert_rate_tmp*dt
         n_insert = int(avg_n_insert + remaining_particles)
+!        
 ! Remaining particles saved for subsequent timestep:
         remaining_particles = avg_n_insert + remaining_particles - n_insert
 !
@@ -2153,7 +2155,7 @@ module Particles
 ! Not the same as npar_total, which is the number of particles in the system,
 ! without counting removed particles
 !
-          npar_inserted_tot = n_insert + npar_inserted_tot
+          npar_inserted_tot = n_insert + npar_inserted_tot          
 !
 ! Insert particles in chosen position (as in init_particles).
 !
