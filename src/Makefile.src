@@ -164,7 +164,7 @@ CFLAGS_GENERAL =
 #
 # Preprocessing flags.
 #
-FPP_FLAGS =
+FPPFLAGS =
 #
 # Default double flags (can be overwritten in machine-specific section).
 #
@@ -2443,9 +2443,9 @@ else
 endif
 #
 MOST_COMP_FLAGS = $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS)
-ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPP_FLAGS)
+ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPPFLAGS)
 #
-#  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPP_FLAGS) below this point!
+#  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPPFLAGS) below this point!
 #
 ifneq ($(HDF5_IO),nohdf5_io)
 
