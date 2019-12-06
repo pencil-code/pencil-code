@@ -365,6 +365,7 @@ module Param_IO
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
+      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)
       call parse_bc(bcz,bcz12)
@@ -519,6 +520,7 @@ module Param_IO
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
+      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)
       call parse_bc(bcz,bcz12)
