@@ -164,7 +164,7 @@ CFLAGS_GENERAL =
 #
 # Preprocessing flags.
 #
-FPPFLAGS =
+FPP_FLAGS =
 #
 # Default double flags (can be overwritten in machine-specific section).
 #
