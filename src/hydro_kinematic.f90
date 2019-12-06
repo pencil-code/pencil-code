@@ -328,7 +328,7 @@ module Hydro
    
         root_foreign=ncpus
         frgn_setup%peer=iproc+ncpus
-        frgn_setup%tag=tag_frgn
+        frgn_setup%tag=tag_foreign
 
 !if (iproc_world/=iproc.and.iproc_world==2) then
 !  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
