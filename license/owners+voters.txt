@@ -1,0 +1,95 @@
+As of 7 Dec 2019: 16 owners: 
+        Sven Bingert <sven.bingert@gwdg.de>,
+        Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,
+        Axel Brandenburg <brandenb@nordita.org>,
+        Piyali Chatterjee <mppiyali@gmail.com>,
+        Boris Dintrans <boris.dintrans@irap.omp.eu>,
+        Wolfgang Dobler <wdobler@gmail.com>,
+        Nils E Haugen <Nils.E.Haugen@sintef.no>,
+        Tobias Heinemann <tobias.heinemann@gmail.com>,
+        Anders Johansen <anders@astro.lu.se>,
+        Maarit Kapyla <kapyla@mps.mpg.de>,
+        Petri Kapyla <petri.kapyla@aalto.fi>,
+        Wladimir Lyra <wladimir.lyra@gmail.com>,
+        Dhrubaditya Mitra <dhruba.mitra@gmail.com>,
+        Rheinhardt Matthias <matthias.rheinhardt@aalto.fi>,
+        Joern Warnecke <warnecke@mps.mpg.de>,
+        Chao-Chin Yang <ccyang@astro.lu.se>
+
+   1758+91 Philippe Bourdin+PABourdin
+   1118+206  mrheinhardt, Matthias Rheinhardt
+    784 Axel Brandenburg
+    460+39  Wladimir Lyra, wlyra
+    297 Chao-Chin Yang
+    229+4  Wolfgang Dobler, wdobler
+    174+9+5  Nils Erland L. Haugen, Nils, Haugen Nils E
+     84 Boris Dintrans
+     81+80+13+6+3+2 Jörn Warnecke, Joern Warnecke, 'Joern, Jörn, warnecke, ’jwarne’
+     76 Petri Käpylä
+     71+28+14 dhrubaditya, Dhrubaditya MITRA, Dhrubaditya Mitra
+     49 Sven Bingert
+     44+20+18+24+2 Dr. Piyali Chatterjee, Piyali Chatterjee, piyali, piyalic, mppiyali
+     37 Anders Johansen
+      8 Tobias Heinemann
+      1+1 Maarit Korpi, Maarit Käpylä
+
+As of 7 Dec 2019: 12 voters: 
+        Frederick Gent <frederick.gent@aalto.fi>,
+        simon candelaresi <simon.candelaresi@gmail.com>,
+        Andreas Schreiber <andreasschreiber88@googlemail.com>,
+        Xiang-Yu Li <xiang-yu.li@misu.su.se>,
+        Jorgen Aarnes <jorgenaarnes@gmail.com>,
+        Alex Richert <alexrichert@gmail.com>,
+        Jonas Krüger <jonas.kruger@ntnu.no>,
+        Natalia Babkovskaia <nbabkovskaia@gmail.com>,
+        Jennifer Schober <schober.jen@gmail.com>,
+        ???mewek@gmail.com,
+        Luiz Felippe Santiago Rodrigues <luizfelippesr@gmail.com>,
+        Pekkilä Johannes <johannes.pekkila@aalto.fi>,
+        Anjum Omer <omer.anjum@aalto.fi>
+
+    529+18+4+1 Frederick Gent, fredgent, F Gent, Fred Gent
+    256+42+15+1 Iomsn, iomsn, Simon Candelaresi, simon
+    247+56  andreas-schreiber, Andreas Schreiber
+    196+7 Xiangyu LI, Xiang-Yu Li
+    160+8+6 Jørgen R. Aarnes, Jørgen Røysland Aarnes, Jørgen Aarnes
+    135+1+1+1 alexrichert, Alex Richert, Alexander J Richert, Alexander John Wolf Richert
+     95+28 +13+3+3 Jonas Krueger, Jonas Krüger, jonas krueger, jonaskru, jnskrueger
+     55+3 Simo Tuomisto, Tuomisto Simo
+     53 Natalia Babkovskaia
+     48 JenSchober
+     44 Ewa
+     38 Luiz Felippe S. Rodrigues
+     21 jpekkila
+     16+6  Omer Anjum, omer anjum
+
+---------------------------------------------------------------
+     14 Colin McNally
+     14 Chengeng Qian
+     12 Vincent Carpenter
+     11 Nishant K. Singh
+     10+7  Graeme R Sarson, Graeme R. Sarson
+      9+2 mviviani, Mariangela Viviani
+      6+1 Illa R. Losada, Illa Rivero Losada
+      6 Daniel Carrera
+      5 chaoli mao
+      4 Ivan Yashchuk
+      4 AmandaRowen
+      4 akshayphy
+      3 rohitcbscient
+      2 sayanmandalcmu
+      2+2 Sarah Jabbari, Sarah
+      2 Sahel Dey
+      2 Pallavi Bhat
+      2 Farrukh Nauman
+      2 ChaoliMao
+      2 AlbertoRoper
+      1 TJzju
+      1 System Administrator
+      1+1 Miikka Väisälä, Miikka Vaisala
+      1 Michiel Lambrechts
+      1 Juxhin Zhuleku
+      1 Gustavo Guerrero
+      1 felipehnn
+      1 betsyhern
+      1 Alexander Hubbard
