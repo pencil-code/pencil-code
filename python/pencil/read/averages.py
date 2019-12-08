@@ -110,36 +110,46 @@ class Averages(object):
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             l_h5 = True
             if plane_list.count('xy') > 0:
-                in_file_name_list.append('xyaver.in')
-                aver_file_name_list.append(os.path.join('averages', 'xy.h5'))
+                if os.path.exists('xyaver.in'):
+                    in_file_name_list.append('xyaver.in')
+                    aver_file_name_list.append(os.path.join('averages', 'xy.h5'))
             if plane_list.count('xz') > 0:
-                in_file_name_list.append('xzaver.in')
-                aver_file_name_list.append(os.path.join('averages', 'xz.h5'))
+                if os.path.exists('xzaver.in'):
+                    in_file_name_list.append('xzaver.in')
+                    aver_file_name_list.append(os.path.join('averages', 'xz.h5'))
             if plane_list.count('yz') > 0:
-                in_file_name_list.append('yzaver.in')
-                aver_file_name_list.append(os.path.join('averages', 'yz.h5'))
+                if os.path.exists('yzaver.in'):
+                    in_file_name_list.append('yzaver.in')
+                    aver_file_name_list.append(os.path.join('averages', 'yz.h5'))
             if plane_list.count('y') > 0:
-                in_file_name_list.append('yaver.in')
-                aver_file_name_list.append(os.path.join('averages', 'y.h5'))
+                if os.path.exists('yaver.in'):
+                    in_file_name_list.append('yaver.in')
+                    aver_file_name_list.append(os.path.join('averages', 'y.h5'))
             if plane_list.count('z') > 0:
-                in_file_name_list.append('zaver.in')
-                aver_file_name_list.append(os.path.join('averages', 'z.h5'))
+                if os.path.exists('zaver.in'):
+                    in_file_name_list.append('zaver.in')
+                    aver_file_name_list.append(os.path.join('averages', 'z.h5'))
         else:
             if plane_list.count('xy') > 0:
-                in_file_name_list.append('xyaver.in')
-                aver_file_name_list.append('xyaverages.dat')
+                if os.path.exists('xyaver.in'):
+                    in_file_name_list.append('xyaver.in')
+                    aver_file_name_list.append('xyaverages.dat')
             if plane_list.count('xz') > 0:
-                in_file_name_list.append('xzaver.in')
-                aver_file_name_list.append('xzaverages.dat')
+                if os.path.exists('xzaver.in'):
+                    in_file_name_list.append('xzaver.in')
+                    aver_file_name_list.append('xzaverages.dat')
             if plane_list.count('yz') > 0:
-                in_file_name_list.append('yzaver.in')
-                aver_file_name_list.append('yzaverages.dat')
+                if os.path.exists('yzaver.in'):
+                    in_file_name_list.append('yzaver.in')
+                    aver_file_name_list.append('yzaverages.dat')
             if plane_list.count('y') > 0:
-                in_file_name_list.append('yaver.in')
-                aver_file_name_list.append('yaverages.dat')
+                if os.path.exists('yaver.in'):
+                    in_file_name_list.append('yaver.in')
+                    aver_file_name_list.append('yaverages.dat')
             if plane_list.count('z') > 0:
-                in_file_name_list.append('zaver.in')
-                aver_file_name_list.append('zaverages.dat')
+                if os.path.exists('zaver.in'):
+                    in_file_name_list.append('zaver.in')
+                    aver_file_name_list.append('zaverages.dat')
         if not in_file_name_list:
             print("error: invalid plane name")
             return -1
