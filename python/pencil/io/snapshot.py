@@ -226,6 +226,12 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     *indx*
       Index object of index for each variable in f-array
 
+    *unit*:
+      Optional dictionary of simulation units.
+
+    *quiet*:
+      Option to print output.
+
     *t*:
       Time of the snapshot.
 
@@ -264,7 +270,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         settings['precision'] = precision.encode()
         settings['nghost'] = nghost
         settings['version'] = np.int32(0)
-        nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
+    nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
             ]
@@ -403,10 +409,131 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
             pers_grp = ds.create_group('persist')
             for key in persist.keys():
                 if not quiet:
-                    print(key,type(persist[key]))
-                arr = np.empty(nprocs,dtype=type(persist[key]))
+                    print(key,type(persist[key][0]))
+                arr = np.empty(nprocs,dtype=type(persist[key][0]))
                 arr[:] = persist[key][()]
                 pers_grp.create_dataset(key, data=(arr))
+#    return 0
+
+def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
+                  settings=None, param=None, grid=None, unit=None, quiet=True ):
+    """
+    Write the grid information as hdf5.
+    We assume by default that a run simulation directory has already been
+    constructed, but start has not been executed in h5 format so that
+    binary sim files dim, grid and param files are already present in the sim
+    directroy, or provided from an old binary sim source directory as inputs.
+
+    call signature:
+
+    write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
+                  settings=None, param=None, grid=None, unit=None, quiet=True )
+
+    Keyword arguments:
+
+    *file_name*:
+      Prefix of the file name to be written, 'grid'.
+
+    *datadir*:
+      Directory where 'grid.h5' is stored.
+
+    *precision*:
+      Single 'f' or double 'd' precision.
+
+    *nghost*:
+      Number of ghost zones.
+
+    *settings*:
+      Optional dictionary of persistent variable.
+
+    *param*:
+      Optional Param object.
+
+    *grid*:
+      Optional Pencil Grid object of grid parameters.
+
+    *unit*:
+      Optional dictionary of simulation units.
+
+    *quiet*:
+      Option to print output.
+    """
+
+    import os.path
+    import numpy as np
+    import h5py
+    from .. import read
+    from .. import sim
+
+
+    #test if simulation directory
+    if not sim.is_sim_dir():
+        print("ERROR: Directory needs to be a simulation")
+    #
+    if settings == None:
+        settings = {}
+        skeys = ['l1', 'l2', 'm1', 'm2', 'n1', 'n2',
+                 'nx', 'ny', 'nz', 'mx', 'my', 'mz',
+                 'nprocx', 'nprocy', 'nprocz',
+                 'maux', 'mglobal', 'mvar', 'precision',
+                ]
+        dim = read.dim()
+        for key in skeys:
+            settings[key] = dim.__getattribute__(key)
+        settings['precision'] = precision.encode()
+        settings['nghost'] = nghost
+        settings['version'] = np.int32(0)
+    gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
+             'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
+            ]
+    if grid == None:
+        grid = read.grid(quiet=True)
+    else:
+        gd_err = False
+        for key in gkeys:
+            if not key in grid.__dict__.keys():
+                print("ERROR: key "+key+" missing from grid")
+                gd_err = True
+        if gd_err:
+            print("ERROR: grid incomplete")
+    ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
+             'temperature', 'flux', 'energy', 'mass', 'system',
+            ]
+    if param == None:
+        param = read.param(quiet=True)
+        param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
+        param.__setattr__('unit_energy',param.unit_mass*param.unit_velocity**2)
+        param.__setattr__('unit_time',param.unit_length/param.unit_velocity)
+        param.__setattr__('unit_flux',param.unit_mass/param.unit_time**3)
+        param.unit_system = param.unit_system.encode()
+
+    # Create the data directory if it doesn't exist.
+    if not os.path.exists(datadir):
+         os.mkdir(datadir)
+    #open file for writing data
+    filename = os.path.join(datadir,file_name+'.h5')
+    with h5py.File(filename, 'w') as ds:
+        # add settings
+        sets_grp = ds.create_group('settings')
+        for key in settings.keys():
+            if 'precision' in key:
+                sets_grp.create_dataset(key, data=(settings[key],))
+            else:
+                sets_grp.create_dataset(key, data=(settings[key]))
+        # add grid
+        grid_grp = ds.create_group('grid')
+        for key in gkeys:
+            grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
+        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
+        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
+        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
+        # add physical units
+        unit_grp = ds.create_group('unit')
+        for key in ukeys:
+            if 'system' in key:
+                unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
+            else:
+                unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
 #    return 0
 
 def write_h5_averages(aver, file_name='xy', datadir='data/averages',
@@ -474,8 +601,11 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
         state = 'w'
     #number of iterations to record
     nt=aver.t.shape[0]
+    print('saving '+filename)
     with h5py.File(filename, state) as ds:
         for key in aver.__getattribute__(file_name).__dict__.keys():
+            data=aver.__getattribute__(file_name).__getattribute__(key)[()] 
+            nt=min(nt,data.shape[0])
             for it in range(0,nt):
                 if not ds.__contains__(str(it)):
                     ds.create_group(str(it))
@@ -483,7 +613,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
                     ds[str(it)].create_dataset('time', data=aver.t[it])
                 if not ds[str(it)].__contains__(key):
                     ds[str(it)].create_dataset(key,
-                                   data=aver.__getattribute__(file_name).__getattribute__(key)[it])
+                                   data=data[it])
         if not ds.__contains__('last'):
             ds.create_dataset('last', data=nt-1)
 
@@ -561,6 +691,7 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                 else:
                     state = 'w'
                 #number of iterations to record
+                print('saving '+filename)
                 with h5py.File(filename, state) as ds:
                     for it in range(1,nt+1):
                         if not ds.__contains__(str(it)):

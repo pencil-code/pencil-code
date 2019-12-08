@@ -10,6 +10,7 @@ from .debug_breakpoint import debug_breakpoint
 from .timestamp import timestamp
 from .snapshot import write_snapshot
 from .snapshot import write_h5_snapshot
+from .snapshot import write_h5_grid
 from .snapshot import write_h5_averages
 from .snapshot import write_h5_slices
 from .fort2h5 import sim2h5

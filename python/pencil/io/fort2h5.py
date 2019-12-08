@@ -95,6 +95,7 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
     #proceed to copy each snapshot in varfile_names
     for file_name in varfile_names:
         #load Fortran binary snapshot
+        print('saving '+file_name)
         os.chdir(olddir)
         var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
                        lpersist=lpersist
@@ -110,6 +111,8 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
             for key in read.record_types.keys():
                 try:
                     persist[key] = var.__getattribute__(key)[()]
+                    if (type(persist[key][0])==str):
+                        persist[key][0] = var.__getattribute__(key)[0].encode()
                 except:
                     continue
         else:
@@ -149,7 +152,7 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
                       lshear=lshear)
     if lremove_old_snapshots:
         os.chdir(olddir)
-        cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
+        cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
         os.system(cmd)
 
 def slices2h5(newdir, olddir, grid,
@@ -209,8 +212,26 @@ def slices2h5(newdir, olddir, grid,
     lines1, lines2 = [],[]
     for line in readlines1:
         lines1.append(int(line.split(' ')[-1].split('\n')[0]))
-    for line in readlines2:
-        lines2.append(line.split(' ')[-1].split('\n')[0].lower())
+    """In newer binary sims lines2 obtains 7 strings below, but older sims may
+    only yield the integer coordinates, so lines2 is hardcoded. The current
+    version of the Pencil Code has 7 potential slices, but earlier versions
+    may not. If your sim does not conform to this arrangement edit/copy this
+    module and set lines1 and lines2 manually from data/slice_position.dat and
+    the extensions present in your slice_*.xy  etc.
+    """
+    #check simulation includes the slice keys in data/proc*/slice_position.dat
+    try:
+        int(int(readlines2[0].split(' ')[-1].split('\n')[0]))
+        lines2=['xy', 'xy2', 'xy3', 'xy4', 'xz', 'xz2', 'yz']
+    except:
+        for line in readlines2:
+            lines2.append(line.split(' ')[-1].split('\n')[0].lower())
+    #check if number of slice options as expected
+    try:
+        len(lines1)==7
+    except ValueError:
+        print("ERROR: slice keys and positions must be set see lines 212...")
+        return -1
     for key, num in zip(lines2, lines1):
         if num > 0:
             if 'xy' in key:
@@ -230,7 +251,7 @@ def slices2h5(newdir, olddir, grid,
         os.system(cmd)
 
 def aver2h5(newdir, olddir,
-            todatadir='data/slices', fromdatadir='data', l2D=True,
+            todatadir='data/averages', fromdatadir='data', l2D=True,
             precision='d', quiet=True, lremove_old_averages=False):
 
     """
@@ -386,6 +407,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     import glob
     from .. import read
     from .. import sim
+    from . import write_h5_grid
 
     #test if simulation directories
     os.chdir(olddir)
@@ -464,7 +486,6 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
                precision, lpersist, quiet, nghost, settings, param, grid,
                x, y, z, lshear, lremove_old_snapshots, indx)
-
     #copy old video slices to new h5 sim
     if lvids:
         slices2h5(newdir, olddir, grid,
@@ -474,6 +495,29 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #copy old averages data to new h5 sim
     if laver:
         aver2h5(newdir, olddir,
-                todatadir='data/slices', fromdatadir='data', l2D=l2D,
+                todatadir='data/averages', fromdatadir='data', l2D=l2D,
                 precision=precision, quiet=quiet,
                 lremove_old_averages=lremove_old_averages)
+    #check some critical sim files are present for new sim without start
+    #construct grid.h5 sim information if requied for new h5 sim
+    os.chdir(newdir)
+    write_h5_grid(file_name='grid', datadir='data', precision=precision,
+                  nghost=nghost, settings=settings, param=param, grid=grid,
+                  unit=None, quiet=quiet)
+    source_file = os.path.join(olddir,fromdatadir,'proc0/varN.list')
+    target_file = os.path.join(newdir,todatadir,'varN.list')
+    if os.path.exists(source_file):
+        cmd='cp '+source_file+' '+target_file
+        os.system(cmd)
+    items=['def_var.pro', 'index.pro', 'jobid.dat', 'param.nml',
+           'particle_index.pro', 'pc_constants.pro', 'pointmass_index.pro',
+           'pt_positions.dat', 'sn_series.dat', 'svnid.dat', 'time_series.dat',
+           'tsnap.dat', 'tspec.dat', 'tvid.dat', 'var.general',
+           'variables.pro', 'varname.dat']
+    for item in items:
+        source_file = os.path.join(olddir,fromdatadir,item)
+        target_file = os.path.join(newdir,fromdatadir,item)
+        if os.path.exists(source_file):
+            if not os.path.exists(target_file):
+                cmd='cp '+source_file+' '+target_file
+                os.system(cmd)
