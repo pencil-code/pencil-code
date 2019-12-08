@@ -264,7 +264,7 @@ module solid_cells_ogrid_cdata
   integer :: n_procs_recv_part_data 
   integer :: n_procs_send_part_data 
   integer :: ivar1_part=1
-  integer :: ivar2_part=4
+  integer :: ivar2_part=mvar
   !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
   !public :: f_ogrid_procs
   !public :: r_ogrid, xorigo_ogrid

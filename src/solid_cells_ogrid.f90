@@ -48,9 +48,9 @@ module Solid_Cells
       lrk_tvd, SBP_optimized, interp_shift, &
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
-      lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
+      lfilter_rhoonly, lspecial_rad_int_mom, &
       lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
-      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time
+      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time!, ivar1_part,ivar2_part
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -58,8 +58,8 @@ module Solid_Cells
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
-      ivar1_part,ivar2_part, solid_reactions_intro_time, &
-      lstore_ogTT, filter_frequency
+      solid_reactions_intro_time, &
+      lstore_ogTT, filter_frequency!,ivar1_part,ivar2_part 
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
