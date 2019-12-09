@@ -7,17 +7,17 @@
 Contains the routines for converting PencilCode data data into vtk format.
 """
 
-def pc2vtk(var_file='var.dat', datadir='data', proc=-1,
-           variables='', b_ext=False,
+def var2vtk(var_file='var.dat', datadir='data', proc=-1,
+           variables=None, b_ext=False, magic=[],
            destination='work', quiet=True, trimall=True, ti=-1, tf=-1):
     """
     Convert data from PencilCode format to vtk.
 
     call signature::
 
-      pc2vtk(var_file='var.dat', datadir='data', proc=-1,
+      pc2vtk(var_file='', datadir='data', proc=-1,
              variables='', b_ext=False,
-             destination='work', quiet=True, ti=-1, tf=-1)
+             destination='work', quiet=True, trimall=True, ti=-1, tf=-1)
 
     Read *var_file* and convert its content into vtk format. Write the result
     in *destination*.
@@ -34,10 +34,7 @@ def pc2vtk(var_file='var.dat', datadir='data', proc=-1,
         Processor which should be read. Set to -1 for all processors.
 
       *variables*:
-        List of variables which should be written.
-
-      *magic*: [ 'vort' , 'bb' ]
-        Additional variables which should be written.
+        List of variables which should be written. If None all.
 
       *b_ext*:
         Add the external magnetic field.
@@ -61,31 +58,48 @@ def pc2vtk(var_file='var.dat', datadir='data', proc=-1,
     from .. import read
     from .. import math
 
-    # Convert single variable string into length 1 list of arrays.
-    if (len(variables) > 0):
-        if (len(variables[0]) == 1):
-            variables = [variables]
-
     # Determine of we want an animation.
     if ti < 0 or tf < 0:
         animation = False
     else:
         animation = True
 
-    # Make sure magic is set.
-    magic = []
-    if 'vort' in variables:
-        magic.append('vort')
-    if 'bb' in variables:
-        magic.append('bb')
-    if 'b_mag' in variables and not 'bb' in magic:
-        magic.append('bb')
-    if 'jj' in variables:
-        magic.append('jj')
-    if 'j_mag' in variables and not 'jj' in magic:
-        magic.append('jj')
-    if 'ab' in variables and not 'bb' in magic:
-        magic.append('bb')
+    # If no variables specified collect all by default
+    if not variables:
+        variables = []
+        indx = read.index()
+        for key in indx.__dict__.keys(): 
+            if 'keys' not in key:
+                variables.append(key)
+        if 'uu' in variables:
+            magic.append('vort')
+            variables.append('vort')
+        if 'rho' in variables or 'lnrho' in variables:
+            if 'ss' in variables:
+                magic.append('tt')
+                variables.append('tt')
+                magic.append('pp')
+                variables.append('pp')
+        if 'aa' in variables:
+            magic.append('bb')
+            variables.append('bb')
+            magic.append('jj')
+            variables.append('jj')
+            variables.append('ab')
+            variables.append('b_mag')
+            variables.append('j_mag')
+    else:
+        # Convert single variable string into length 1 list of arrays.
+        if (len(variables) > 0):
+            if (len(variables[0]) == 1):
+                variables = [variables]
+        if 'b_mag' in variables and not 'bb' in magic:
+            magic.append('bb')
+        if 'j_mag' in variables and not 'jj' in magic:
+            magic.append('jj')
+        if 'ab' in variables and not 'bb' in magic:
+            magic.append('bb')
+
 
     for t_idx in range(ti, tf+1):
         if animation:
@@ -136,6 +150,8 @@ def pc2vtk(var_file='var.dat', datadir='data', proc=-1,
                 data = math.dot(var.aa, var.bb)
             elif v == 'b_mag':
                 data = np.sqrt(math.dot2(var.bb))
+            elif v == 'j_mag':
+                data = np.sqrt(math.dot2(var.jj))
             else:
                 data = getattr(var, v)
             if sys.byteorder == 'little':
