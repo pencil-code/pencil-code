@@ -410,7 +410,8 @@ module Hydro
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
-        call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)           ! should synchronize 
+        call mpibarrier
+        call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)
        
         frgn_setup%t_last_out=t
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
@@ -421,6 +422,9 @@ module Hydro
             allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
             allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
             allocate(x_foreign(frgn_setup%dims(1)))
+!
+!  Receive vector of global r-grid points.
+!
             call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,frgn_setup%tag)
           endif
 
