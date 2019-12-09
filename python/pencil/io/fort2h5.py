@@ -13,7 +13,8 @@ data/slices/uu1_xy.h5, etc. and averages to data/averages/xy.h5, etc
 
 def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
            precision, lpersist, quiet, nghost, settings, param, grid,
-           x, y, z, lshear, lremove_old_snapshots, indx
+           x, y, z, lshear, lremove_old_snapshots, indx,
+           last_var=True, trimall=False
           ):
 
     """
@@ -77,6 +78,9 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
     *indx*
       List of variable indices in the f-array.
 
+    *last_var*
+      If last_var copy and remove var.dat
+
     """
 
     import os
@@ -98,7 +102,7 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
         print('saving '+file_name)
         os.chdir(olddir)
         var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
-                       lpersist=lpersist
+                       lpersist=lpersist, trimall=trimall
                       )
         try:
             var.deltay
@@ -131,7 +135,7 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
             os.system(cmd)
     os.chdir(olddir)
     var = read.var('var.dat', datadir=fromdatadir, quiet=quiet,
-                   lpersist=lpersist
+                   lpersist=lpersist, trimall=trimall
                   )
     if lpersist:
         persist = {}
@@ -144,16 +148,17 @@ def var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
         persist = None
     #write data to h5
     os.chdir(newdir)
-    write_h5_snapshot(var.f, file_name='var', datadir=todatadir,
-                      precision=precision, nghost=nghost,
-                      persist=persist,
-                      settings=settings, param=param, grid=grid,
-                      lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
-                      lshear=lshear)
-    if lremove_old_snapshots:
-        os.chdir(olddir)
-        cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
-        os.system(cmd)
+    if last_var:
+        write_h5_snapshot(var.f, file_name='var', datadir=todatadir,
+                          precision=precision, nghost=nghost,
+                          persist=persist,
+                          settings=settings, param=param, grid=grid,
+                          lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
+                          lshear=lshear)
+        if lremove_old_snapshots:
+            os.chdir(olddir)
+            cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
+            os.system(cmd)
 
 def slices2h5(newdir, olddir, grid,
               todatadir='data/slices', fromdatadir='data',
@@ -341,7 +346,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     """
     Copy a simulation object written in Fortran binary to hdf5.
     The default is to copy all snapshots from/to the current simulation
-    directory. Optionally the old files can be removed to 
+    directory. Optionally the old files can be removed to
 
     call signature:
 
@@ -434,7 +439,16 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     os.chdir(olddir)
     if varfile_names == None:
         os.chdir(fromdatadir+'/proc0')
-        varfile_names = glob.glob('VAR*') 
+        lVARd = False
+        varfiled_names = glob.glob('VARd*')
+        if len(varfiled_names) > 0:
+            varfile_names = glob.glob('VAR*')
+            for iv in range(len(varfile_names)-1,-1,-1):
+                if 'VARd' in varfile_names[iv]:
+                    varfile_names.remove(varfile_names[iv])
+            lVARd = True
+        else:
+            varfile_names = glob.glob('VAR*')
         os.chdir(olddir)
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
@@ -443,7 +457,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     for key in gkeys:
         if not key in grid.__dict__.keys():
             print("ERROR: key "+key+" missing from grid")
-            return -1 
+            return -1
     #obtain the settings from the old simulation
     settings={}
     skeys = ['l1', 'l2', 'm1', 'm2', 'n1', 'n2',
@@ -480,14 +494,23 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         dim.mz   == settings['mz']
     except ValueError:
         print("ERROR: new simulation dimensions do not match.")
-        return -1 
+        return -1
     print('precision is ',precision)
+    #copy snapshots
     if lvars:
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
                precision, lpersist, quiet, nghost, settings, param, grid,
                x, y, z, lshear, lremove_old_snapshots, indx)
+    #copy downsampled snapshots if present
+    if lvars and lVARd:
+        var2h5(newdir, olddir, varfiled_names, todatadir, fromdatadir,
+               precision, lpersist, quiet, nghost, settings, param, grid,
+               x, y, z, lshear, lremove_old_snapshots, indx, last_var=False,
+               trimall=True)
     #copy old video slices to new h5 sim
     if lvids:
+        cmd='src/read_all_videofiles.x'
+        os.system(cmd)
         slices2h5(newdir, olddir, grid,
                   todatadir='data/slices', fromdatadir='data',
                   precision=precision, quiet=quiet,
