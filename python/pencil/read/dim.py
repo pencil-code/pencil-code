@@ -69,7 +69,7 @@ class Dim(object):
         self.mxgrid = self.mygrid = self.mzgrid = 0
 
 
-    def read(self, datadir='data', proc=-1, ogrid=False):
+    def read(self, datadir='data', proc=-1, ogrid=False, down=False):
         """
         Read the dim.dat file.
 
@@ -127,7 +127,10 @@ class Dim(object):
                 self.mw = self.mx*self.my*self.mz
         else:
             if not ogrid:
-                file_name = 'dim.dat'
+                if down:
+                    file_name = 'dim_down.dat'
+                else:
+                    file_name = 'dim.dat'
             else:
                 file_name = 'ogdim.dat'
 

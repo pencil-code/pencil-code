@@ -186,7 +186,10 @@ class DataCube(object):
                 if var_file[0:2].lower() == 'og':
                     dim = read.ogdim(datadir, proc)
                 else:
-                    dim = read.dim(datadir, proc)
+                    if var_file[0:4] == 'VARd':
+                        dim = read.dim(datadir, proc, down=True)
+                    else:
+                        dim = read.dim(datadir, proc)
             if param is None:
                 param = read.param(datadir=datadir, quiet=quiet)
             if index is None:
@@ -408,7 +411,7 @@ class DataCube(object):
             if 'bb' in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
-                self.bb = curl(aa, dx, dy, dz, run2D=run2D,
+                self.bb = curl(aa, dx, dy, dz, x=x, y=y, run2D=run2D,
                                coordinate_system=param.coord_system)
                 if trimall:
                     self.bb = self.bb[:, dim.n1:dim.n2+1,
@@ -416,7 +419,7 @@ class DataCube(object):
             if 'jj' in magic:
                 # Compute the electric current field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
-                self.jj = curl2(aa, dx, dy, dz,
+                self.jj = curl2(aa, dx, dy, dz ,x=x, y=y,
                                 coordinate_system=param.coord_system)
                 if trimall:
                     self.jj = self.jj[:, dim.n1:dim.n2+1,
