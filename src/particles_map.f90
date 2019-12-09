@@ -2008,12 +2008,6 @@ module Particles_map
            do k=k1,k2
               interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
            enddo
-           if (lsolid_ogrid) then
-             call fatal_error('interpolate_quantities',&
-                 'This must be wrong e.g. when species are included - must be fixed!')
-                 call interp_field_pencil_wrap(f,iTT+1,iTT+mogaux,&
-                      fp,ineargrid,interp_gradTT,interp%pol_TT)
-           endif
         endif
       endif
 !
