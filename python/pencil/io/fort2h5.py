@@ -257,7 +257,8 @@ def slices2h5(newdir, olddir, grid,
 
 def aver2h5(newdir, olddir,
             todatadir='data/averages', fromdatadir='data', l2D=True,
-            precision='d', quiet=True, lremove_old_averages=False):
+            precision='d', quiet=True, lremove_old_averages=False,
+            laver2D=False):
 
     """
     Copy a simulation set of video slices written in Fortran binary to hdf5.
@@ -294,6 +295,10 @@ def aver2h5(newdir, olddir,
     *lremove_old_averages*:
       If True the old averages data will be deleted once the new h5 data
       has been saved.
+
+    *laver2D*
+      If True apply to each plane_list 'y', 'z' and load each variable
+      sequentially
     """
 
     import os
@@ -302,36 +307,64 @@ def aver2h5(newdir, olddir,
     from . import write_h5_averages
 
     #copy old 1D averages to new h5 sim
-    os.chdir(olddir)
-    av = read.aver()
-    os.chdir(newdir)
-    for key in av.__dict__.keys():
-        if not key in 't':
-            write_h5_averages(av, file_name=key, datadir=todatadir,
-                              precision=precision, quiet=quiet)
+    if laver2D:
+        os.chdir(olddir)
+        if 'milltest' in olddir:
+            millennium_bug=True
+        else:
+            millennium_bug=False
+        for xl in ['y','z']:    
+            if os.path.exists(xl+'aver.in'):
+                 variables=[]
+                 file_id = open(xl+'aver.in')
+                 for line in file_id.readlines():
+                     variables.append(line.rstrip('\n'))
+                 file_id.close()
+                 n_vars = len(variables)
+                 for iav in range(0,n_vars):
+                     print('writing',iav,variables[iav],'of',xl+'averages')
+                     os.chdir(olddir)
+                     av = read.aver(plane_list=xl, var_index=iav,
+                                    millennium_bug=millennium_bug)
+                     os.chdir(newdir)
+                     for key in av.__dict__.keys():
+                         if not key in 't':
+                             write_h5_averages(av, file_name=key,
+                                               datadir=todatadir,
+                                               precision=precision,
+                                               append=True,
+                                               quiet=quiet)
+    else:    
+        os.chdir(olddir)
+        av = read.aver()
+        os.chdir(newdir)
+        for key in av.__dict__.keys():
+            if not key in 't':
+                write_h5_averages(av, file_name=key, datadir=todatadir,
+                                  precision=precision, quiet=quiet)
+        if lremove_old_averages:
+            os.chdir(olddir)
+            cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
+            os.system(cmd)
+        if l2D:
+           plane_list = []
+           os.chdir(olddir)
+           if os.path.exists('xaver.in'):
+               plane_list.append('x')
+           if os.path.exists('yaver.in'):
+               plane_list.append('y')
+           if os.path.exists('zaver.in'):
+               plane_list.append('z')
+           if len(plane_list) > 0:
+               for key in plane_list:
+                   os.chdir(olddir)
+                   av = read.aver(plane_list=key)
+                   os.chdir(newdir)
+                   write_h5_averages(av, file_name=key, datadir=todatadir,
+                                     precision=precision, quiet=quiet)
     if lremove_old_averages:
         os.chdir(olddir)
         cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
-        os.system(cmd)
-    if l2D:
-       plane_list = []
-       os.chdir(olddir)
-       if os.path.exists('xaver.in'):
-           plane_list.append('x')
-       if os.path.exists('yaver.in'):
-           plane_list.append('y')
-       if os.path.exists('zaver.in'):
-           plane_list.append('z')
-       if len(plane_list) > 0:
-           for key in plane_list:
-               os.chdir(olddir)
-               av = read.aver(plane_list=key)
-               os.chdir(newdir)
-               write_h5_averages(av, file_name=key, datadir=todatadir,
-                                 precision=precision, quiet=quiet)
-    if lremove_old_averages:
-        os.chdir(olddir)
-        cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', '*averages.dat')
         os.system(cmd)
 
 def sim2h5(newdir='.', olddir='.', varfile_names=None,
@@ -340,7 +373,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
            x=None, y=None, z=None, lshear=False,
            lremove_old_snapshots=False, lremove_old_slices=False,
            lremove_old_averages=False, execute=False, quiet=True,
-           l2D=True, lvars=True, lvids=True, laver=True
+           l2D=True, lvars=True, lvids=True, laver=True, laver2D=False,
           ):
 
     """
@@ -483,7 +516,6 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #index list for variables in f-array
     indx=read.index()
 
-
     #check consistency between Fortran binary and h5 data
     os.chdir(newdir)
     dim = read.dim()
@@ -496,6 +528,11 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         print("ERROR: new simulation dimensions do not match.")
         return -1
     print('precision is ',precision)
+    if laver2D:
+        aver2h5(newdir, olddir,
+                todatadir='data/averages', fromdatadir='data', l2D=False,
+                precision=precision, quiet=quiet, laver2D=laver2D,
+                lremove_old_averages=False)
     #copy snapshots
     if lvars:
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
