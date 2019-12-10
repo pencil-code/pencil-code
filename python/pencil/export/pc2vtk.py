@@ -93,6 +93,16 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
         if (len(variables) > 0):
             if (len(variables[0]) == 1):
                 variables = [variables]
+        if 'tt' in variables:
+            magic.append('tt')
+        if 'pp' in variables:
+            magic.append('pp')
+        if 'bb' in variables:
+            magic.append('bb')
+        if 'jj' in variables:
+            magic.append('jj')
+        if 'vort' in variables:
+            magic.append('vort')
         if 'b_mag' in variables and not 'bb' in magic:
             magic.append('bb')
         if 'j_mag' in variables and not 'jj' in magic:
