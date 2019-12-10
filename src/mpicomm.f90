@@ -3048,7 +3048,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_real_arr5
 !***********************************************************************
-    subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id,comm)
+    subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive integer scalar from other processor.
 !
@@ -3059,10 +3059,15 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       integer :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer, optional :: comm
+      integer, optional :: comm, nonblock
 !
-      call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
-                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, 1, MPI_INTEGER, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else 
+        call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
