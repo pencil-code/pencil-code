@@ -3152,34 +3152,40 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
-    subroutine mpisend_real_scl(bcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_scl(bcast_array,proc_rec,tag_id,comm)
 !
 !  Send real scalar to other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       real :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
       call MPI_SEND(bcast_array, 1, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_GRID, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_scl
 !***********************************************************************
-    subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
 !  Send real array to other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
       if (nbcast_array == 0) return
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_GRID,mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
