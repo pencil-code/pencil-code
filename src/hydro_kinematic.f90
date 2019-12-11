@@ -353,6 +353,7 @@ module Hydro
 !  Receive name of foreign code.
 !      
           call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          frgn_setup%name=frgn_setup%name(1:name_len)
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call fatal_error('initialize_hydro', &
              'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
@@ -410,7 +411,7 @@ module Hydro
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
-        call mpibarrier
+        call mpibarrier(MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)
        
         frgn_setup%t_last_out=t
