@@ -324,7 +324,7 @@ class DataCube(object):
                     else:
                         f_loc = infile.read_record(dtype=precision)
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
-                raw_etc = infile.read_record(precision)
+                raw_etc = infile.read_record(dtype=precision)
                 if lpersist:
                     persist(self, infile=infile, precision=precision, quiet=quiet)
                 infile.close()
