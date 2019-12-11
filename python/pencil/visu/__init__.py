@@ -18,4 +18,5 @@ from . import internal
 try:
     from . import rvid_box
 except:
-    print('Warning: Could not import visu.rvid_box.')
+    print('Warning: Could not import visu.rvid_box. Try:')
+    print('$ conda install -c plotly plotly-orca psutil requests')
