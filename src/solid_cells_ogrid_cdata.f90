@@ -343,7 +343,7 @@ module solid_cells_ogrid_cdata
   real, dimension(:), pointer :: Lewis_coef1
   real :: solid_reactions_intro_time=0.0
   real, pointer :: p_init
-  logical :: ldist_CO2, ldist_CO
+  logical :: ldist_CO2=.false., ldist_CO=.false.
   integer, pointer :: ireac
 
 !  Diagnostics for output
