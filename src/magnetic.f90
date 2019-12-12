@@ -413,6 +413,15 @@ module Magnetic
   integer :: idiag_uxbzm=0      ! DIAG_DOC: $\left<u_xB_z\right>$
   integer :: idiag_uybzm=0      ! DIAG_DOC: $\left<u_yB_z\right>$
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
+  integer :: idiag_uxjxm=0      ! DIAG_DOC: $\left<u_xJ_x\right>$
+  integer :: idiag_uxjym=0      ! DIAG_DOC: $\left<u_xJ_y\right>$
+  integer :: idiag_uxjzm=0      ! DIAG_DOC: $\left<u_xJ_z\right>$
+  integer :: idiag_uyjxm=0      ! DIAG_DOC: $\left<u_yJ_x\right>$
+  integer :: idiag_uyjym=0      ! DIAG_DOC: $\left<u_yJ_y\right>$
+  integer :: idiag_uyjzm=0      ! DIAG_DOC: $\left<u_yJ_z\right>$
+  integer :: idiag_uzjxm=0      ! DIAG_DOC: $\left<u_zJ_x\right>$
+  integer :: idiag_uzjym=0      ! DIAG_DOC: $\left<u_zJ_y\right>$
+  integer :: idiag_uzjzm=0      ! DIAG_DOC: $\left<u_zJ_z\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
                                 ! DIAG_DOC: \right>$
   integer :: idiag_jxbxm=0      ! DIAG_DOC: $\left<j_xB_x\right>$
@@ -5088,6 +5097,18 @@ module Magnetic
       if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
       if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
 !
+!  Velocity-current density tensor (components)
+!
+      if (idiag_uxjxm/=0) call sum_mn_name(p%uu(:,1)*p%jj(:,1),idiag_uxjxm)
+      if (idiag_uxjym/=0) call sum_mn_name(p%uu(:,1)*p%jj(:,2),idiag_uxjym)
+      if (idiag_uxjzm/=0) call sum_mn_name(p%uu(:,1)*p%jj(:,3),idiag_uxjzm)
+      if (idiag_uyjxm/=0) call sum_mn_name(p%uu(:,2)*p%jj(:,1),idiag_uyjxm)
+      if (idiag_uyjym/=0) call sum_mn_name(p%uu(:,2)*p%jj(:,2),idiag_uyjym)
+      if (idiag_uyjzm/=0) call sum_mn_name(p%uu(:,2)*p%jj(:,3),idiag_uyjzm)
+      if (idiag_uzjxm/=0) call sum_mn_name(p%uu(:,3)*p%jj(:,1),idiag_uzjxm)
+      if (idiag_uzjym/=0) call sum_mn_name(p%uu(:,3)*p%jj(:,2),idiag_uzjym)
+      if (idiag_uzjzm/=0) call sum_mn_name(p%uu(:,3)*p%jj(:,3),idiag_uzjzm)
+!
 !  compute rms value of difference between u and b    !!!MR: units?
 !
       if (idiag_dubrms/=0) then
@@ -8539,6 +8560,9 @@ module Magnetic
         idiag_jxbxm=0; idiag_jybxm=0; idiag_jzbxm=0
         idiag_jxbym=0; idiag_jybym=0; idiag_jzbym=0
         idiag_jxbzm=0; idiag_jybzm=0; idiag_jzbzm=0
+        idiag_uxjxm=0; idiag_uyjxm=0; idiag_uzjxm=0
+        idiag_uxjym=0; idiag_uyjym=0; idiag_uzjym=0
+        idiag_uxjzm=0; idiag_uyjzm=0; idiag_uzjzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -8690,6 +8714,15 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbzm',idiag_uxbzm)
         call parse_name(iname,cname(iname),cform(iname),'uybzm',idiag_uybzm)
         call parse_name(iname,cname(iname),cform(iname),'uzbzm',idiag_uzbzm)
+        call parse_name(iname,cname(iname),cform(iname),'uxjxm',idiag_uxjxm)
+        call parse_name(iname,cname(iname),cform(iname),'uyjxm',idiag_uyjxm)
+        call parse_name(iname,cname(iname),cform(iname),'uzjxm',idiag_uzjxm)
+        call parse_name(iname,cname(iname),cform(iname),'uxjym',idiag_uxjym)
+        call parse_name(iname,cname(iname),cform(iname),'uyjym',idiag_uyjym)
+        call parse_name(iname,cname(iname),cform(iname),'uzjym',idiag_uzjym)
+        call parse_name(iname,cname(iname),cform(iname),'uxjzm',idiag_uxjzm)
+        call parse_name(iname,cname(iname),cform(iname),'uyjzm',idiag_uyjzm)
+        call parse_name(iname,cname(iname),cform(iname),'uzjzm',idiag_uzjzm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_cosubm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxm',idiag_jxbxm)
         call parse_name(iname,cname(iname),cform(iname),'jybxm',idiag_jybxm)
