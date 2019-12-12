@@ -896,6 +896,7 @@ module Viscosity
       if (lvisc_nu_profr .or. lvisc_nu_profr_twosteps) then
         if (lsphere_in_a_box.or.lspherical_coords) then
           lpenc_requested(i_r_mn)=.true.
+          if (lsphere_in_a_box) lpenc_requested(i_r_mn1)=.true.
         else
           lpenc_requested(i_rcyl_mn)=.true.
           if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
@@ -1901,7 +1902,7 @@ module Viscosity
 !
             call grad(f,inusmag,gradnu)
 
-          else  
+          else
 !
 !  Compute nu_smag and put into a pencil
 !
@@ -2241,9 +2242,9 @@ module Viscosity
         gradnu(:,1)=tmp*x(l1:l2)*p%rcyl_mn1
         gradnu(:,2)=tmp*y(  m  )*p%rcyl_mn1
       elseif (ljumpr.and.lsphere_in_a_box) then
-        print*,'get_gradnu: not yet implemented for '
-        print*,'embedded spheres'
-        call fatal_error("","")
+        gradnu(:,1)=tmp*x(l1:l2)*p%r_mn1
+        gradnu(:,2)=tmp*y(  m  )*p%r_mn1
+        gradnu(:,3)=tmp*z(  n  )*p%r_mn1
       endif
 !
     endsubroutine get_gradnu
