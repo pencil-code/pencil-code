@@ -19,6 +19,7 @@ module Boundcond
 !
   public :: update_ghosts, zero_ghosts, finalize_boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
+  public :: boundconds_x_c, boundconds_y_c, boundconds_z_c
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
@@ -531,6 +532,17 @@ module Boundcond
 !
     endsubroutine boundconds
 !***********************************************************************
+    subroutine boundconds_x_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_x(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_x_c
+!***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x, except for periodic part handled by communication.
@@ -881,6 +893,17 @@ module Boundcond
 !
     endsubroutine boundconds_x
 !***********************************************************************
+    subroutine boundconds_y_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_y(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_y_c
+!***********************************************************************
     subroutine boundconds_y(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in y, except for periodic part handled by communication.
@@ -1131,6 +1154,17 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_y
+!***********************************************************************
+    subroutine boundconds_z_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_z(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_z_c
 !***********************************************************************
     subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
