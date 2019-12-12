@@ -43,7 +43,7 @@ As of 7 Dec 2019: 12 voters:
         Jonas Krüger <jonas.kruger@ntnu.no>,
         Natalia Babkovskaia <nbabkovskaia@gmail.com>,
         Jennifer Schober <schober.jen@gmail.com>,
-        ???mewek@gmail.com,
+        Ewa Karchniwy <ewa.karchniwy@ntnu.no>,
         Luiz Felippe Santiago Rodrigues <luizfelippesr@gmail.com>,
         Pekkilä Johannes <johannes.pekkila@aalto.fi>,
         Anjum Omer <omer.anjum@aalto.fi>
