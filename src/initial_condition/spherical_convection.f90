@@ -386,6 +386,7 @@ module InitialCondition
          print*,'initial_condition: rratio     =',rratio
          print*,'initial_condition: volume     =',volume
          print*,'initial_condition: total_mass =',total_mass
+         print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
