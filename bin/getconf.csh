@@ -788,7 +788,7 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
-else if (($hn =~ r0*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
+else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
   echo "Puhti - CSC, Kajaani, Finland"
   set mpirun = 'srun'
   set npops = "-n $ncpus"
