@@ -587,11 +587,13 @@ module Solid_Cells
                  (a2-2*r_gradT*xyz0_ogrid(1)+r_gradT**2)
          coef1 = -2*coef2*r_gradT
          coef0 = f(l2,m2,n2,ilnTT) + coef2*r_gradT**2
-      endif
-      if (unit_system == 'cgs' .and. lchemistry) then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
-      endif
+       endif
+       if (unit_system=='cgs') then
+         Rgas_unit_sys=k_B_cgs/m_u_cgs
+       elseif (unit_system=='SI') then
+         Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
+       endif
+       Rgas = Rgas_unit_sys/unit_energy
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -616,7 +618,7 @@ module Solid_Cells
                   endif
                   if (.not. lchemistry) then
                     f(i,j,:,irho) = f(l2,m2,n2,irho) &
-                                  * f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
+                        * f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                   endif
                 endif
                 if (lchemistry .and. .not. lflame_front_2D) then
@@ -647,7 +649,7 @@ module Solid_Cells
             if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
               f(i,j,:,ilnTT) = cylinder_temp
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
-                *f(l2,m2,n2,ilnTT)/cylinder_temp
+                  *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
             if (lchemistry .and. .not. lflame_front_2D) then
               do k = 1,nchemspec
