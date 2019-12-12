@@ -62,7 +62,7 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=True):
+             old_file=False, precision='f', quiet=True, vlarge=200000000000):
         """
         Read Pencil Code slice data.
 
@@ -287,7 +287,24 @@ class SliceSeries(object):
                         print('Reshaping array')
                     self.t = np.array(self.t[1:], dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
-                    slice_series = slice_series[1:].reshape(islice, vsize, hsize)
+                    # Separate the data in chunks if too big
+                    if slice_series[1:].size > vlarge:
+                        print("slice_series.shape",slice_series.shape)
+                        nchunks  = int(vlarge/vsize/hsize)
+                        slice_size = int(slice_series.size/nchunks)*nchunks
+                        print("chunk_size",nchunks)
+                        subslice_series = np.array_split(slice_series, nchunks, axis=0)
+                        print("subslice_series[0].size", subslice_series[0].size)
+                        slice_series = subslice_series[0]
+                        print("slice_series.shape",slice_series.shape)
+                        for subslice in subslice_series[1:]: 
+                            ichunk_size = int(subslice.size/vsize/hsize)
+                            print("subslice.shape",subslice.shape)
+                            slice_series = np.concatenate([slice_series, subslice], axis=0)
+                            print("slice_series.shape",slice_series.shape)
+                        print("slice_series.shape",slice_series.shape)
+                    else:
+                        slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
