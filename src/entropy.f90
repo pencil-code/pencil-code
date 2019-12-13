@@ -145,6 +145,7 @@ module Energy
   logical :: limpose_heat_ceiling=.false.
   logical :: lthdiff_Hmax=.false.
   logical :: lchit_noT=.false.
+  logical :: lss_running_aver_as_aux=.false.
   real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -185,7 +186,7 @@ module Energy
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
-      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz
+      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux
 !
 !  Run parameters.
 !
@@ -221,7 +222,8 @@ module Energy
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
-      chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac
+      chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
+      lss_running_aver_as_aux
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -414,7 +416,8 @@ module Energy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, &
+                               farray_index_append
       use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -440,7 +443,22 @@ module Energy
         if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
         if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
-
+!
+!  Running average of entropy
+!
+      if (lss_running_aver_as_aux) then
+        if (iss_run_aver==0) then
+          call farray_register_auxiliary('ss_run_aver',iss_run_aver)
+        else
+          if (lroot) print*, 'register_energy: iss_run_aver = ', iss_run_aver
+          call farray_index_append('iss_run_aver',iss_run_aver)
+        endif
+        if (lroot) write(15,*) 'ss_run_aver = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',ss_run_aver'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -3118,7 +3136,7 @@ module Energy
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
       if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
       if (lheatc_kramers)  call calc_heatcond_kramers(df,p)
-      if (lheatc_chit)     call calc_heatcond_chit(df,p)
+      if (lheatc_chit)     call calc_heatcond_chit(f,df,p)
       if (lheatc_smagorinsky)  call calc_heatcond_smagorinsky(f,df,p)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(df,p)
@@ -3462,6 +3480,7 @@ module Energy
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div
       use EquationOfState, only : lnrho0, cs20, get_cv1
+!      use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
@@ -3630,7 +3649,6 @@ module Energy
 !  auxilaries variables in the f array. Finally the divergence
 !  of the flux is calculated and stored in the f array.
 !
-!
       if (lenergy_slope_limited.and.lfirst) then
   
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
@@ -3642,6 +3660,14 @@ module Energy
         enddo; enddo
 
       endif
+!
+!  Compute running average of entropy
+!
+      if (lss_running_aver_as_aux) then
+        if (t.lt.dt) f(:,:,:,iss_run_aver)=f(:,:,:,iss)
+        f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
+      endif
+!      call update_ghosts(f,iss_run_aver)
 !
     endsubroutine energy_after_boundary
 !***********************************************************************
@@ -5229,7 +5255,7 @@ module Energy
 !
     endsubroutine calc_heatcond_sfluct
 !***********************************************************************
-    subroutine calc_heatcond_chit(df,p)
+    subroutine calc_heatcond_chit(f,df,p)
 !
 !  Subgrid-scale ("turbulent") diffusion of entropy.
 !
@@ -5241,10 +5267,10 @@ module Energy
 !
 !   21-apr-17/pete: adapted from calc_heatcond_sfluct
 !
-      use Sub, only: dot
+      use Sub, only: dot, grad, del2
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar) :: f,df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gss0, gss1
       real, dimension (nx) :: thdiff, g2, del2ss0, del2ss1
@@ -5336,6 +5362,25 @@ module Energy
           call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
           call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
           call xysum_mn_name_z(-chi_t1*chit_prof*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+      endif
+!
+! chi_t1 acting on deviations from a running 3D mean of entropy   
+!
+      if (lchit_fluct .and. lss_running_aver_as_aux) then
+        call grad(f(:,:,:,iss_run_aver),gss1)
+        do j=1,3
+          gss0(:,j)=p%gss(:,j)-gss1(:,j)
+        enddo
+        call del2(f(:,:,:,iss_run_aver),del2ss1)
+        del2ss0=p%del2ss-del2ss1
+        if (lchit_noT) then 
+          call dot(p%glnrho,gss0,g2)
+        else
+          call dot(p%glnrho+p%glnTT,gss0,g2)
+        endif
+        thdiff=thdiff+chi_t1*chit_prof_fluct*(del2ss0+g2)
+        call dot(glnchit_prof_fluct,gss0,g2)
+        thdiff=thdiff+chi_t1*g2
       endif
 !
 !  At the end of this routine, add all contribution to
@@ -6881,8 +6926,10 @@ module Energy
       use Gravity, only: z1, z2
       use Sub, only: step
 !
-      real, dimension (nx) :: chit_prof,z_mn
+      real, dimension (nx) :: chit_prof,z_mn,r_mn
       real :: zbot, ztop
+!
+      type (pencil_case) :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6914,6 +6961,12 @@ module Energy
         endselect
       endif
 !
+      if (lsphere_in_a_box) then
+         r_mn=p%r_mn
+         chit_prof = 1 + (chit_prof1-1)*step(r_mn,xbot,-widthss) &
+                       + (chit_prof2-1)*step(r_mn,xtop,widthss)
+      endif
+!
     endsubroutine chit_profile
 !***********************************************************************
     subroutine gradlogchit_profile(glnchit_prof)
@@ -6927,8 +6980,10 @@ module Energy
       use Sub, only: der_step
 !
       real, dimension (nx,3) :: glnchit_prof
-      real, dimension (nx) :: z_mn
+      real, dimension (nx) :: z_mn, r_mn, tmp
       real :: zbot, ztop
+!
+      type (pencil_case) :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6961,6 +7016,15 @@ module Energy
             glnchit_prof(:,1) = -pclaw*(x(l1:l2)/xchit)**(-pclaw-1)*1/xchit
             glnchit_prof(:,2:3) = 0.
         endselect
+      endif
+!
+      if (lsphere_in_a_box) then
+         r_mn=p%r_mn
+         tmp = (chit_prof1-1)*der_step(r_mn,xbot,-widthss)&
+              +(chit_prof2-1)*der_step(r_mn,xtop,widthss)
+         glnchit_prof(:,1) = tmp*x(l1:l2)*p%r_mn1
+         glnchit_prof(:,2) = tmp*y(  m  )*p%r_mn1
+         glnchit_prof(:,3) = tmp*z(  n  )*p%r_mn1
       endif
 !
     endsubroutine gradlogchit_profile
@@ -6998,6 +7062,10 @@ module Energy
       if (lgravx) then
         chit_prof_fluct = 1. + (chit_fluct_prof1-1)*step(x(l1:l2),xbot_chit1,-widthss) &
                              + (chit_fluct_prof2-1)*step(x(l1:l2),xtop_chit1,widthss)
+      endif
+!
+      if (lgravr) then
+        chit_prof_fluct = 1.
       endif
 !
     endsubroutine chit_profile_fluct
@@ -7038,6 +7106,10 @@ module Energy
         glnchit_prof_fluct(:,1) = (chit_fluct_prof1-1)*der_step(x(l1:l2),xbot_chit1,-widthss)&
                                 + (chit_fluct_prof2-1)*der_step(x(l1:l2),xtop_chit1,widthss)
         glnchit_prof_fluct(:,2:3) = 0.
+      endif
+!
+      if (lgravr) then
+        glnchit_prof_fluct(:,1:3) = 0.
       endif
 !
     endsubroutine gradlogchit_profile_fluct

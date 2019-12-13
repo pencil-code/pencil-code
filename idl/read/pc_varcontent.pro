@@ -157,7 +157,8 @@ indices = [ $
   { name:'ieth', label:'Thermal energy', dims:1 }, $
   { name:'igpx', label:'Pressure gradient x', dims:1 }, $
   { name:'igpy', label:'Pressure gradient y', dims:1 }, $
-  { name:'iRR', label:'Specific gas constant', dims:1 } $
+  { name:'iRR', label:'Specific gas constant', dims:1 }, $
+  { name:'iss_run_aver', label:'Running mean of entropy', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 

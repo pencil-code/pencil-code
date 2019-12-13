@@ -354,7 +354,7 @@ module Cdata
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
   integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
-  integer :: icp=0, igpx=0, igpy=0, iRR=0
+  integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
 !
 !  Parameters related to message passing.
 !
@@ -695,5 +695,10 @@ module Cdata
 !
   logical :: lstratz = .false.
   logical :: lnoghost_strati = .false.
+!
+!  Inverse timescale for running time average
+!
+  real :: tau_aver1 = 1.0
+!
 !***********************************************************************
 endmodule Cdata
