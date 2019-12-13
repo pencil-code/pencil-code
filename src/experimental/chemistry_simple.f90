@@ -1578,6 +1578,8 @@ module Chemistry
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion) then
+            call fatal_error('dchemistry_dt',&
+                'The correction vel. is not properly implemented - pleas fix!')
             do k = 1,nchemspec
               call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)

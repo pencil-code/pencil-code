@@ -841,6 +841,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion) then
+            call fatal_error('dchemistry_dt',&
+                'The correction vel. is not properly implemented - pleas fix!')
             do k = 1,nchemspec
               call dot_mn_ogrid(sum_diff,p_ogrid%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*sum_dhhk(:)
