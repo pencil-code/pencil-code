@@ -721,8 +721,11 @@ module Solid_Cells
                   f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(4))&
                                                   -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
                 endif
-                if (nchemspec==5) then
-                  f_ogrid(i,j,:,ichemspec(1))=f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(5))
+                if (ldist_CO2 .or. ldist_CO) then 
+                  if (nchemspec==5) then
+                    f_ogrid(i,j,:,ichemspec(1))=&
+                        f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(5))
+                  endif
                 endif
                 ! Do not set dp/dr = 0 at the cylinder surface when heter. reactions
                 if (lreac_heter) lexpl_rho = .false.
