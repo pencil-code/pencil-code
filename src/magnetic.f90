@@ -2137,12 +2137,23 @@ module Magnetic
             f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)))/x(l1:l2)**3
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
+!
         case ('Axy_from_file') !(prelim version to set Ax,Ay on one proc)
           open(1,file='Axy.dat',form='unformatted')
           read(1) ax,ay
           close(1)
           f(l1:l2,m1:m2,n1,iax)=ax*amplaa(1)
           f(l1:l2,m1:m2,n1,iay)=ay*amplaa(1)
+!
+        case ('A_from_file') !(prelim version to set Ax,Ay on one proc)
+          allocate(ap(nx,ny,nz,3))
+          open(1,file='aa.dat',form='unformatted')
+          read(1) ap
+          close(1)
+          f(l1:l2,m1:m2,n1:n2,iax)=ap(:,:,:,1)*amplaa(1)
+          f(l1:l2,m1:m2,n1:n2,iay)=ap(:,:,:,2)*amplaa(1)
+          f(l1:l2,m1:m2,n1:n2,iaz)=ap(:,:,:,3)*amplaa(1)
+          if (allocated(ap)) deallocate(ap)
 !
         case ('B_ext_from_file')
           allocate(ap(mx,my,mz,6))
