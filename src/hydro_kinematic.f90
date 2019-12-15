@@ -1535,6 +1535,21 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  original Galloway-Proctor flow from Nature paper
+!
+      case ('Galloway-Proctor-92')
+        if (headtt) print*,'Galloway-Proctor-orig flow; kx_uukin=',kx_uukin
+        fac=ampl_kinflow
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*(sin(kz_uukin*z(n)+esint)+cos(ky_uukin*y(m)+ecost))
+          p%uu(:,2)=+fac* cos(kz_uukin*z(n)+esint)
+          p%uu(:,3)=+fac* sin(ky_uukin*y(m)+ecost)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Potential flow, u=gradphi, with phi=coskx*X cosky*Y coskz*Z,
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !  Possibility of gaussian distributed random amplitudes if lrandom_ampl.
