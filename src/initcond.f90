@@ -6407,11 +6407,30 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ix
-      real :: amp, rpart
+      real :: amp, rpart, rr2, pom2
 
-      integer :: m,l
-
-      if (lspherical_coords) then
+      integer :: l,m,n
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Dipole in spherical coordinantes
+!
+      elseif (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
             rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
