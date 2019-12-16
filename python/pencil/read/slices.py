@@ -62,7 +62,7 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=True, vlarge=200000000000):
+             old_file=False, precision='f', quiet=True, vlarge=1000000000):
         """
         Read Pencil Code slice data.
 
@@ -282,27 +282,36 @@ class SliceSeries(object):
                     if not quiet:
                         print('  -> Done')
 
-                    # Reshape and remove first entry.
+                    # Remove first entry and reshape.
                     if not quiet:
                         print('Reshaping array')
                     self.t = np.array(self.t[1:], dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
                     # Separate the data in chunks if too big
                     if slice_series[1:].size > vlarge:
-                        print("slice_series.shape",slice_series.shape)
-                        nchunks  = int(vlarge/vsize/hsize)
-                        slice_size = int(slice_series.size/nchunks)*nchunks
-                        print("chunk_size",nchunks)
-                        subslice_series = np.array_split(slice_series, nchunks, axis=0)
-                        print("subslice_series[0].size", subslice_series[0].size)
-                        slice_series = subslice_series[0]
-                        print("slice_series.shape",slice_series.shape)
+                        vscaled = (int(vlarge/vsize/hsize)+1)*vsize*hsize
+                        nchunks = int(slice_series[1:].size/vscaled)
+                        endslice = vscaled*nchunks
+                        subslice_series = np.array_split(slice_series[1:endslice+1], nchunks, axis=0)
+                        ichunk_size = int(subslice_series[0].size/vsize/hsize)
+                        slice_tmp = subslice_series[0].reshape(ichunk_size, vsize, hsize)
+                        if not quiet:
+                            print("slice_series.shape",slice_series.shape)
+                            print(field,"chunk_size",nchunks)
+                            print("subslice_series[0].size", subslice_series[0].size)
                         for subslice in subslice_series[1:]: 
                             ichunk_size = int(subslice.size/vsize/hsize)
-                            print("subslice.shape",subslice.shape)
-                            slice_series = np.concatenate([slice_series, subslice], axis=0)
-                            print("slice_series.shape",slice_series.shape)
-                        print("slice_series.shape",slice_series.shape)
+                            subslice = subslice.reshape(ichunk_size, vsize, hsize)
+                            slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
+                            if not quiet:
+                                print("slice_tmp.shape",slice_tmp.shape)
+                        if not nchunks*vscaled==slice_series[1:].size:
+                            ichunk_size = int(slice_series[endslice+1:].size/vsize/hsize)
+                            subslice = slice_series[endslice+1:].reshape(ichunk_size, vsize, hsize)
+                            slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
+                            if not quiet:
+                                print("slice_tmp.shape",slice_tmp.shape)
+                        slice_series = slice_tmp
                     else:
                         slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                     setattr(ext_object, field, slice_series)
