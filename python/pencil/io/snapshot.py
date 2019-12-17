@@ -172,7 +172,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
                    param=None, grid=None, lghosts=False, indx=None,
                    unit=None, t=None, x=None, y=None, z=None,
-                   quiet=True, lshear=False):
+                   quiet=True, lshear=False, driver=None, comm=None):
     """
     Write a snapshot given as numpy array.
     We assume by default that a run simulation directory has already been
@@ -187,7 +187,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
                    param=None, grid=None, lghosts=False, indx=None,
                    unit=None, t=None, x=None, y=None, z=None,
-                   quiet=True, lshear=False)
+                   quiet=True, lshear=False, driver=None, comm=None)
 
     Keyword arguments:
 
@@ -242,6 +242,12 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
 
     *lshear*:
       Flag for the shear.
+
+    *driver*
+      File driver for hdf5 io for use in serial or MPI parallel
+
+    *comm*
+      MPI objects supplied if driver is 'mpio'
     """
 
     import os.path
@@ -361,7 +367,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
          os.mkdir(datadir)
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
-    with h5py.File(filename, 'w') as ds:
+    with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
         # Write the data.
         data_grp = ds.create_group('data')
         for key in indx.__dict__.keys():
@@ -416,7 +422,8 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
 #    return 0
 
 def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
-                  settings=None, param=None, grid=None, unit=None, quiet=True ):
+                  settings=None, param=None, grid=None, unit=None, quiet=True,
+                  driver=None, comm=None):
     """
     Write the grid information as hdf5.
     We assume by default that a run simulation directory has already been
@@ -427,7 +434,8 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
     call signature:
 
     write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
-                  settings=None, param=None, grid=None, unit=None, quiet=True )
+                  settings=None, param=None, grid=None, unit=None, quiet=True,
+                  driver=None, comm=None)
 
     Keyword arguments:
 
@@ -512,7 +520,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
          os.mkdir(datadir)
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
-    with h5py.File(filename, 'w') as ds:
+    with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
         # add settings
         sets_grp = ds.create_group('settings')
         for key in settings.keys():
@@ -602,7 +610,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
     #number of iterations to record
     nt=aver.t.shape[0]
     print('saving '+filename)
-    with h5py.File(filename, state) as ds:
+    with h5py.File(filename, state, driver=driver, comm=comm) as ds:
         for key in aver.__getattribute__(file_name).__dict__.keys():
             data=aver.__getattribute__(file_name).__getattribute__(key)[()] 
             nt=min(nt,data.shape[0])
@@ -692,7 +700,7 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                     state = 'w'
                 #number of iterations to record
                 print('saving '+filename)
-                with h5py.File(filename, state) as ds:
+                with h5py.File(filename, state, driver=driver, comm=comm) as ds:
                     for it in range(1,nt+1):
                         if not ds.__contains__(str(it)):
                             ds.create_group(str(it))
