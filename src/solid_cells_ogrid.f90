@@ -502,8 +502,8 @@ module Solid_Cells
          iogTTy = iogTTx + 1
          iogTTz = iogTTy + 1
 ! NILS: This test should be made more generic!!!!!!
-         if (mogaux .ne. 3 .and. (.not. lpres_grad)) then
-            call fatal_error('solid_cells_ogrid','mogaux .ne. ndims. Mogaux increased?')
+         if (maux .ne. 3 .and. (.not. lpres_grad)) then
+            call fatal_error('solid_cells_ogrid','maux .ne. ndims. maux increased?')
          endif
          allocate(curv_cart_transform(my_ogrid,2))
          call create_curv_cart_transform(curv_cart_transform)
@@ -605,16 +605,16 @@ module Solid_Cells
               if (cyl == 0) then
                 wall_smoothing = 1-exp(-(rr2-a2)/skin_depth_solid**2)
                 f(i,j,:,iorth) = f(i,j,:,iorth)-init_uu* &
-                  2*flow_r*orth_r*a2/rr2**2*wall_smoothing
+                    2*flow_r*orth_r*a2/rr2**2*wall_smoothing
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
-                  (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
+                    (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
                 if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
                   if (TT_square_fit .and. sqrt(rr2) .le. r_gradT) then
                     f(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(rr2) + coef0
                   else
                     wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
                     f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
-                      +cylinder_temp*(1-wall_smoothing_temp)
+                        +cylinder_temp*(1-wall_smoothing_temp)
                   endif
                   if (.not. lchemistry) then
                     f(i,j,:,irho) = f(l2,m2,n2,irho) &
@@ -622,12 +622,12 @@ module Solid_Cells
                   endif
                 endif
                 if (lchemistry .and. .not. lflame_front_2D) then
-                    do k = 1,nchemspec
-                      f(i,j,:,ichemspec(k)) = chemspec0(k)
-                      mu1_full(i,j,:)=mu1_full(i,j,:)+f(i,j,:,ichemspec(k))/species_constants(k,imass)
-                    enddo
-                    f(i,j,:,iRR) = mu1_full(i,j,:)*Rgas
-                    f(i,j,:,irho) = p_init/f(i,j,:,iRR)/f(i,j,:,ilnTT)
+                  do k = 1,nchemspec
+                    f(i,j,:,ichemspec(k)) = chemspec0(k)
+                    mu1_full(i,j,:)=mu1_full(i,j,:)+f(i,j,:,ichemspec(k))/species_constants(k,imass)
+                  enddo
+                  f(i,j,:,iRR) = mu1_full(i,j,:)*Rgas
+                  f(i,j,:,irho) = p_init/f(i,j,:,iRR)/f(i,j,:,ilnTT)
                 endif
               else
                 shift_orth = cyl*Lorth
@@ -4173,11 +4173,10 @@ module Solid_Cells
           m_ogrid=mm_ogrid(imn_ogrid)
           df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
           if (lexpl_rho) df(l1_ogrid,m_ogrid,n_ogrid,irho) = 0.
-  !        if (lchemistry .and. lreac_heter) &
+          if (iTT .gt. 0) df(l1_ogrid,m_ogrid,n_ogrid,iTT) = 0.
           if (lchemistry) &
              df(l1_ogrid,m_ogrid,n_ogrid,ichemspec(1):ichemspec(nchemspec)) = 0.
         enddo
-        if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
       endif
 !
     endsubroutine pde_ogrid
@@ -4543,9 +4542,9 @@ module Solid_Cells
           ! chemistry BCs are taken care of here
           call bval_from_neumann_SBP(f_og)
         elseif(BDRY5) then
-          if(lexpl_rho) call bval_from_neumann_bdry5(f_og)
-          if (lchemistry) call fatal_error('boundconds_x_ogrid', &
-          'chemistry BCs set correctly only when SBP=T')
+          call bval_from_neumann_bdry5(f_og)
+          if (lchemistry .and. lreac_heter) call fatal_error('boundconds_x_ogrid', &
+          'chemistry BCs with heterogeneous reactions set correctly only when SBP=T')
         else
           !TODO set f_og as input
           call set_ghosts_onesided_ogrid(iux)
@@ -5467,7 +5466,7 @@ module Solid_Cells
       endif
 !
       if (lstore_ogTT) then
-         call input_snap_ogrid(chsnap,f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),mfarray_ogrid-mogaux,mode)
+         call input_snap_ogrid(chsnap,f_ogrid(:,:,:,1:mfarray_ogrid-maux),mfarray_ogrid-maux,mode)
       else
          call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
       endif
@@ -5980,7 +5979,7 @@ module Solid_Cells
 !
       procs_needed = count(linside_proc)
       if(procs_needed>0) then
-        allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1+mogaux))
+        allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1+maux))
         allocate(ip_proc(procs_needed,3))
         allocate(recv_part_data_from(procs_needed))
         allocate(ip_proc_pointer(ncpus))

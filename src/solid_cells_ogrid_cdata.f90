@@ -315,7 +315,7 @@ module solid_cells_ogrid_cdata
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
   save p_ogrid
-  integer, parameter :: mfarray_ogrid=mvar+mogaux
+  integer, parameter :: mfarray_ogrid=mvar+maux
   real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), save ::  f_ogrid=0.
   real, dimension(:,:,:,:), allocatable ::  f_tmp ! Array allocated if lrk_tvd=.true.
 
