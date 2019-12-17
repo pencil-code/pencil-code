@@ -546,7 +546,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
 
 def write_h5_averages(aver, file_name='xy', datadir='data/averages',
                    precision='d', indx=None, trange=None, quiet=True,
-                   append=False, dim=None):
+                   append=False, dim=None, driver=None, comm=None):
     """
     Write an hdf5 format averages dataset given as an Averages object.
     We assume by default that a run simulation directory has already been
@@ -627,7 +627,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
 
 def write_h5_slices(vslice, coordinates, positions, datadir='data/slices', 
                    precision='d', indx=None, trange=None, quiet=True,
-                   append=False, dim=None):
+                   append=False, dim=None, driver=None, comm=None):
     """
     Write an hdf5 format slices dataset given as an Slices object.
     We assume by default that a run simulation directory has already been
