@@ -167,10 +167,14 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
                 iproc += 1
 
     return 0
-
+#def create_h5_dataset(data, key, settings, indx,
+#                      precision='d',
+#                      proc=None, ipx=None, ipy=None, ipz=None
+#
 def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
                    param=None, grid=None, lghosts=False, indx=None,
+                   proc=None, ipx=None, ipy=None, ipz=None,
                    unit=None, t=None, x=None, y=None, z=None,
                    quiet=True, lshear=False, driver=None, comm=None):
     """
@@ -370,9 +374,20 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
             pass
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
-    with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
+    if proc:
+        state = 'a'
+    else:
+        state = 'w'
+    with h5py.File(filename, state, driver=driver, comm=comm) as ds:
         # Write the data.
-        data_grp = ds.create_group('data')
+        if not ds.__contains__('data'):
+            if comm:
+                comm.Barrier()
+                if proc == 0:
+                    data_grp = ds.create_group('data')
+                comm.Barrier()
+            else:
+                data_grp = ds.create_group('data')
         for key in indx.__dict__.keys():
             if key in ['uu','keys','aa','KR_Frad','uun','gg']:
                 continue
@@ -619,20 +634,39 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
     #number of iterations to record
     nt=aver.t.shape[0]
     print('saving '+filename)
-    with h5py.File(filename, state, driver=driver, comm=comm) as ds:
-        for key in aver.__getattribute__(file_name).__dict__.keys():
-            data=aver.__getattribute__(file_name).__getattribute__(key)[()] 
-            nt=min(nt,data.shape[0])
-            for it in range(0,nt):
-                if not ds.__contains__(str(it)):
-                    ds.create_group(str(it))
-                if not ds[str(it)].__contains__('time'):
-                    ds[str(it)].create_dataset('time', data=aver.t[it])
-                if not ds[str(it)].__contains__(key):
-                    ds[str(it)].create_dataset(key,
-                                   data=data[it])
-        if not ds.__contains__('last'):
-            ds.create_dataset('last', data=nt-1)
+    if comm:
+        comm.barrier()
+        for rank in range(0, comm.Get_size()):
+            if rank == comm.Get_rank():
+                with h5py.File(filename, state, driver=driver, comm=comm) as ds:
+                    for key in aver.__getattribute__(file_name).__dict__.keys():
+                        data=aver.__getattribute__(file_name).__getattribute__(key)[()]
+                        nt=min(nt,data.shape[0])
+                        for it in range(0,nt):
+                            if not ds.__contains__(str(it)):
+                                ds.create_group(str(it))
+                            if not ds[str(it)].__contains__('time'):
+                                ds[str(it)].create_dataset('time', data=aver.t[it])
+                            if not ds[str(it)].__contains__(key):
+                                ds[str(it)].create_dataset(key,
+                                               data=data[it])
+                    if not ds.__contains__('last'):
+                        ds.create_dataset('last', data=nt-1)
+    else:
+        with h5py.File(filename, state, driver=driver, comm=comm) as ds:
+            for key in aver.__getattribute__(file_name).__dict__.keys():
+                data=aver.__getattribute__(file_name).__getattribute__(key)[()]
+                nt=min(nt,data.shape[0])
+                for it in range(0,nt):
+                    if not ds.__contains__(str(it)):
+                        ds.create_group(str(it))
+                    if not ds[str(it)].__contains__('time'):
+                        ds[str(it)].create_dataset('time', data=aver.t[it])
+                    if not ds[str(it)].__contains__(key):
+                        ds[str(it)].create_dataset(key,
+                                       data=data[it])
+            if not ds.__contains__('last'):
+                ds.create_dataset('last', data=nt-1)
 
 def write_h5_slices(vslice, coordinates, positions, datadir='data/slices', 
                    precision='d', indx=None, trange=None, quiet=True,

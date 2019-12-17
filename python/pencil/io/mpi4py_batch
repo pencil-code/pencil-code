@@ -1,7 +1,14 @@
 #!/bin/bash -l
 ##
+## Author: F. Gent (fred.gent.ncl@gmail.com).
+##
 ## Example script for submitting python mpi job
 ## Depends on machine settings and processor/memory requirements
+##
+## As well as hdf5 parallel the h5py need to be parallel
+## Try conda install -c conda-forge "h5py>=2.9=mpi*"
+## Thanks to Luiz Felippe
+## Also required > pip install mpio
 ##
 ##SBATCH -N 1
 #SBATCH -n 24

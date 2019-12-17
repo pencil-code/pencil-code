@@ -93,7 +93,10 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
     #move var.h5 out of the way, if it exists for reading binary
     if os.path.exists(todatadir+'/var.h5'):
         cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
-        os.system(cmd)
+        try:
+            os.system(cmd)
+        except OSError:
+            pass
 
     if l_mpi:
         rank = comm.Get_rank()
@@ -145,6 +148,188 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
                               settings=settings, param=param, grid=grid,
                               lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
                               lshear=lshear, driver=driver, comm=comm)
+            if lremove_old_snapshots:
+                os.chdir(olddir)
+                cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
+                os.system(cmd)
+    if last_var:
+        last_var = rank==size-1
+    if last_var:
+        os.chdir(olddir)
+        var = read.var('var.dat', datadir=fromdatadir, quiet=quiet,
+                       lpersist=lpersist, trimall=trimall
+                      )
+        if lpersist:
+            persist = {}
+            for key in read.record_types.keys():
+                try:
+                    persist[key] = var.__getattribute__(key)[()]
+                except:
+                    continue
+        else:
+            persist = None
+            #write data to h5
+            os.chdir(newdir)
+            write_h5_snapshot(var.f, file_name='var', datadir=todatadir,
+                              precision=precision, nghost=nghost,
+                              persist=persist,
+                              settings=settings, param=param, grid=grid,
+                              lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
+                              lshear=lshear, driver=driver, comm=comm)
+        if lremove_old_snapshots:
+            os.chdir(olddir)
+            cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
+            os.system(cmd)
+
+def varmpi2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
+           precision, lpersist, quiet, nghost, settings, param, grid,
+           x, y, z, lshear, lremove_old_snapshots, indx,
+           last_var=True, trimall=False, l_mpi=True, driver=None, comm=None
+          ):
+
+    """
+    Copy a simulation snapshot set written in Fortran binary to hdf5.
+
+    call signature:
+
+    varmpi2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
+           precision, lpersist, quiet, nghost, settings, param, grid,
+           x, y, z, lshear, lremove_old_snapshots, indx,
+           last_var=True, trimall=False, l_mpi=True, driver=None, comm=None
+          )
+
+    Keyword arguments:
+
+    *newdir*:
+      String path to simulation destination directory.
+
+    *olddir*:
+      String path to simulation destination directory.
+
+    *allfile_names*:
+      A list of names of the snapshot files to be written, e.g. VAR0.
+
+    *todatadir*:
+      Directory to which the data is stored.
+
+    *fromdatadir*:
+      Directory from which the data is collected.
+
+    *precision*:
+      Single 'f' or double 'd' precision for new data.
+
+    *lpersist*:
+      option to include persistent variables from snapshots.
+
+    *quiet*
+      Option not to print output.
+
+    *nghost*:
+      Number of ghost zones.
+
+    *settings*
+      simulation properties.
+
+    *param*
+      simulation Param object.
+
+    *grid*
+      simulation Grid object.
+
+    *xyz*:
+      xyz arrays of the domain with ghost zones.
+
+    *lshear*:
+      Flag for the shear.
+
+    *lremove_old_snapshots*:
+      If True the old snapshots will be deleted once the new snapshot has
+      been saved.
+
+    *indx*
+      List of variable indices in the f-array.
+
+    *last_var*
+      If last_var copy and remove var.dat
+
+    """
+    import os
+    import numpy as np
+    import h5py
+    import glob
+    from .. import read
+    from .. import sim
+    from . import write_h5_snapshot
+
+    #move var.h5 out of the way, if it exists for reading binary
+    if os.path.exists(todatadir+'/var.h5'):
+        cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
+        try:
+            os.system(cmd)
+        except OSError:
+            pass
+
+    if not l_mpi:
+        print('ERROR: varmpi2h5 requires mpi implemenatation')
+        return -1
+    else:
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+    #proceed to copy each snapshot in varfile_names
+    file_names = np.array_split(allfile_names, size)
+    if 'VARd1' in allfile_names:
+        varfile_names = file_names[size-rank-1]
+    else:
+        varfile_names = file_names[rank]
+    if len(varfile_names) > 0:
+        for file_name in varfile_names:
+            #load Fortran binary snapshot
+            print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
+            os.chdir(olddir)
+            ipx = np.arange(settings['nprocx'])
+            ipy = np.arange(settings['nprocy'])
+            ipz = np.arange(settings['nprocz'])
+            iproc = np.arange(ipx.size*ipy.size*ipz.size)
+            iprocs = np.array_split(iproc,size)
+            iproc_loc = iprocs[rank]
+            if iproc_loc.size>0:
+                for proc in iproc_loc:
+                    var = read.var(file_name, proc=proc,
+                                   datadir=fromdatadir, quiet=quiet,
+                                   lpersist=lpersist, trimall=trimall
+                                  )
+                if proc == 0:
+                    try:
+                        var.deltay
+                        lshear = True
+                    except:
+                        lshear = False
+                    if lpersist:
+                        persist = {}
+                        for key in read.record_types.keys():
+                            try:
+                                persist[key] = var.__getattribute__(key)[()]
+                                if (type(persist[key][0])==str):
+                                    persist[key][0] = \
+                                                   var.__getattribute__(key)[0].encode()
+                            except:
+                                continue
+                else:
+                    persist = None
+                    lshear = False
+                #write data to h5
+                os.chdir(newdir)
+                write_h5_snapshot(var.f, file_name=file_name, datadir=todatadir,
+                                  precision=precision, nghost=nghost,
+                                  persist=persist, proc=proc,
+                                  ipx=ipx[np.mod(proc,ipx.size)],
+                                  ipy=ipy[np.mod(proc,ipy.size)],
+                                  ipz=ipz[np.mod(proc,ipz.size)],
+                                  settings=settings, param=param, grid=grid,
+                                  lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
+                                  lshear=lshear, driver=driver, comm=comm)
+            comm.Barrier()
             if lremove_old_snapshots:
                 os.chdir(olddir)
                 cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
@@ -277,7 +462,7 @@ def slices2h5(newdir, olddir, grid,
         import glob
         slice_lists = glob.glob('data/slice_*')
         slice_lists.remove('slice_position.dat')
-        slice_lists = np.array_split(slice_lists,20)
+        slice_lists = np.array_split(slice_lists,size)
         slice_list = slice_lists[rank]
         if len(slice_list) > 0:
             for field_ext in slice_list:
@@ -514,7 +699,8 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-        driver='mpio'
+        #driver='mpio'
+        driver=None
         l_mpi = True
         l_mpi = l_mpi and (size != 1)
     except ImportError:
