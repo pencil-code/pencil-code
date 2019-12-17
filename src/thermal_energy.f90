@@ -478,13 +478,11 @@ module Energy
 !  04-nov-10/anders+evghenii: coded
 !  02-aug-11/ccyang: add mesh hyper-diffusion
 !
-      use Diagnostics
       use EquationOfState, only: gamma
       use Special, only: special_calc_energy
       use Sub, only: identify_bcs, u_dot_grad, del2
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
-      use Slices_methods, only: store_slices
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -592,16 +590,27 @@ module Energy
 !
 !  Diagnostics.
 !
+     call calc_diagnostics_energy(p)
+!
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      use Diagnostics
+      use Slices_methods, only: store_slices
+
+      type(pencil_case) :: p
+
       if (ldiagnos) then
-        if (idiag_TTm/=0)    call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_TTmax/=0)  call max_mn_name(p%TT,idiag_TTmax)
+        call sum_mn_name(p%TT,idiag_TTm)
+        call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
-        if (idiag_ethtot/=0) call integrate_mn_name(p%eth,idiag_ethtot)
+        call sum_mn_name(p%eth,idiag_ethm)
+        call integrate_mn_name(p%eth,idiag_ethtot)
         if (idiag_ethmin/=0) call max_mn_name(-p%eth,idiag_ethmin,lneg=.true.)
-        if (idiag_ethmax/=0) call max_mn_name(p%eth,idiag_ethmax)
-        if (idiag_eem/=0)    call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0)    call sum_mn_name(p%pp,idiag_ppm)
+        call max_mn_name(p%eth,idiag_ethmax)
+        call sum_mn_name(p%ee,idiag_eem)
+        call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_etot /= 0) call sum_mn_name(p%eth + p%ekin, idiag_etot)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
       endif
@@ -618,15 +627,15 @@ module Energy
 !  2-D averages.
 !
       if (l2davgfirst) then
-        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
-        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+        call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        call ysum_mn_name_xz(p%TT,idiag_TTmxz)
       endif
 !
       if (lvideo.and.lfirst) then
         if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
       endif
-!
-    endsubroutine denergy_dt
+
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !

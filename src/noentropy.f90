@@ -46,7 +46,6 @@ module Energy
                                 ! DIAG_DOC:   [=internal] energy)
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_ufpresm=0
-  integer :: idiag_uduum=0
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
@@ -313,14 +312,12 @@ module Energy
 !  of state.
 !
       use Density, only: beta_glnrho_global, beta_glnrho_scaled
-      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: ufpres, uduu
-      integer :: j,i
+      integer :: j
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -350,6 +347,21 @@ module Energy
           enddo
         endif
      endif
+
+     call calc_diagnostics_energy(p)
+!
+     call keep_compiler_quiet(f)
+!
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+      
+      use Diagnostics
+
+      type(pencil_case) :: p
+
+      real, dimension(nx) :: ufpres
+      integer :: i
 !
 !  Calculate energy related diagnostics.
 !
@@ -369,18 +381,9 @@ module Energy
           enddo
           call sum_mn_name(p%rho*ufpres,idiag_ufpresm)
         endif
-        if (idiag_uduum/=0) then
-          uduu=0
-          do i = 1, 3
-            uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
-          enddo
-          call sum_mn_name(p%rho*uduu,idiag_uduum)
-        endif
       endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine denergy_dt
+
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
@@ -469,7 +472,7 @@ module Energy
 !
       if (lreset) then
         idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
-        idiag_pdivum=0; idiag_ufpresm=0; idiag_uduum=0
+        idiag_pdivum=0; idiag_ufpresm=0
       endif
 !
       do iname=1,nname
@@ -479,7 +482,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
-        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
 
       call keep_compiler_quiet(present(lwrite))
