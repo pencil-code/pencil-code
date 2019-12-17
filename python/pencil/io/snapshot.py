@@ -364,7 +364,10 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
 
     # Create the data directory if it doesn't exist.
     if not os.path.exists(datadir):
-         os.mkdir(datadir)
+        try:
+            os.mkdir(datadir)
+        except FileExistsError:
+            pass
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
     with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
@@ -517,7 +520,10 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
 
     # Create the data directory if it doesn't exist.
     if not os.path.exists(datadir):
-         os.mkdir(datadir)
+        try:
+            os.mkdir(datadir)
+        except FileExistsError:
+            pass
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
     with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
@@ -600,7 +606,10 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
         print("ERROR: Directory needs to be a simulation")
         return -1
     if not os.path.exists(datadir):
-         os.mkdir(datadir)
+        try:
+            os.mkdir(datadir)
+        except FileExistsError:
+            pass
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
     if append:
@@ -687,7 +696,10 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
         print("ERROR: Directory needs to be a simulation")
         return -1
     if not os.path.exists(datadir):
-         os.mkdir(datadir)
+        try:
+            os.mkdir(datadir)
+        except FileExistsError:
+            pass
     #open file for writing data
     nt = vslice.t.shape[0]
     for extension in vslice.__dict__.keys():
