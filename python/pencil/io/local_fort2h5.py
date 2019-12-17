@@ -37,5 +37,5 @@ pc.io.sim2h5(newdir='full/path/to/fortran/binary/simulation',
              lremove_old_snapshots=True,
              lremove_old_slices=True,
              lremove_old_averages=True,
-             #warning given before executing removal of data until set True 
+             #warning given before executing removal of data until set True
              execute=False)
