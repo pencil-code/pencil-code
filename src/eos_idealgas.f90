@@ -234,7 +234,7 @@ module EquationOfState
 !
       if (lroot) then
         print*, 'units_eos: unit_temperature=', unit_temperature
-        print*, 'units_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
+        print*, 'units_eos: cp, lnTT0, cs0, pp0, Rgas=', cp, lnTT0, cs0, pp0, Rgas
       endif
 !
     endsubroutine units_eos
