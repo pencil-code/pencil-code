@@ -32,10 +32,6 @@ def aver(*args, **kwargs):
     *proc*:
       Processor to be read. If -1 read all and assemble to one array.
       Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
-
-    *millennium_bug*
-      Correction required for missing data on proc 1 in millennium test
-      field run - temp fix
     """
 
     averages_tmp = Averages()
@@ -59,7 +55,7 @@ class Averages(object):
 
 
     def read(self, plane_list=None, var_index=-1, datadir='data',
-             proc=-1, millennium_bug=False):
+             proc=-1):
         """
         Read Pencil Code average data.
 
@@ -83,10 +79,6 @@ class Averages(object):
         *proc*:
           Processor to be read. If -1 read all and assemble to one array.
           Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
-
-        *millennium_bug*
-          Correction required for missing data on proc 0 in millennium test
-          field run - temp fix
         """
 
         import os
@@ -177,7 +169,7 @@ class Averages(object):
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
                                                   aver_file_name, n_vars,
                                                   var_index, proc, l_h5,
-                                                  millennium_bug)
+                                                 )
 
             # Add the raw data to self.
             var_idx = 0
@@ -206,7 +198,7 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                       n_vars, var_index, proc, l_h5, millennium_bug):
+                       n_vars, var_index, proc, l_h5):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -308,10 +300,6 @@ class Averages(object):
                 proc_data = np.array(proc_data)
                 if var_index >= 0:
                     proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
-                    if millennium_bug and proc == 1:
-                        proc_data = np.insert(proc_data, 3766, 0.5*(
-                            proc_data[3766] +
-                            proc_data[3767]), axis=0)
                 else:
                     proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
