@@ -217,6 +217,14 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_energy
+!***********************************************************************
     subroutine energy_after_boundary(f)
 !
 !  dummy routine
