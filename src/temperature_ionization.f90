@@ -597,7 +597,6 @@ module Energy
 !   2-feb-03/axel: added possibility of ionization
 !  29-jul-14/axel: imported reduced sound speed from entropy module
 !
-      use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
       use Special, only: special_calc_energy
       use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
@@ -712,29 +711,38 @@ module Energy
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
+
+      call calc_diagnostics_energy(p)
+!
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
+
+      type(pencil_case) :: p
 !
 !  Calculate temperature related diagnostics
 !
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
+        call sum_mn_name(p%TT,idiag_TTm)
+        call max_mn_name(p%yH,idiag_yHmax)
         if (idiag_yHmin/=0) call max_mn_name(-p%yH,idiag_yHmin,lneg=.true.)
-        if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
+        call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_ethm/=0) call sum_mn_name(p%ee/p%rho1,idiag_ethm)
-        if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
-        if (idiag_cv/=0) call sum_mn_name(p%cv,idiag_cv)
-        if (idiag_cp/=0) call sum_mn_name(p%cp,idiag_cp)
-        if (idiag_dtc/=0) then
+        call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%cv,idiag_cv)
+        call sum_mn_name(p%cp,idiag_cp)
+        if (idiag_dtc/=0) &
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        endif
-        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        call sum_mn_name(p%ee,idiag_eem)
+        call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)
-        if (idiag_ppmax/=0) call max_mn_name(p%pp,idiag_ppmax)
+        call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
-        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
       endif
 !
@@ -751,8 +759,8 @@ module Energy
         call xysum_mn_name_z(p%ee,idiag_eemz)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
       endif
-!
-    endsubroutine denergy_dt
+
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !
