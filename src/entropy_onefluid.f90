@@ -473,34 +473,40 @@ module Energy
         advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
+
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      type(pencil_case) :: p
 !
 !  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
+        call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
-        if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
-     endif
+        call sum_mn_name(p%ss,idiag_ssm)
+      endif
 !
 !  1D averages. Happens at every it1d timesteps, NOT at every it1
-!  idiag_fradz is done in the calc_headcond routine
+!  idiag_fradz is done in the calc_heatcond routine
 !
-     if (l1davgfirst) then
-        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+      if (l1davgfirst) then
+        if (idiag_fconvz) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
-    endsubroutine denergy_dt
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !
