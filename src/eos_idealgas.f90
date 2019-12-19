@@ -106,9 +106,6 @@ module EquationOfState
 !
       leos_idealgas=.true.
 !
-      iyH=0
-      ilnTT=0
-!
       if ((ip<=8) .and. lroot) then
         print*, 'register_eos: ionization nvar = ', nvar
       endif
