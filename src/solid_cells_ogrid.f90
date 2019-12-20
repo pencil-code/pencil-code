@@ -9,6 +9,8 @@
 ! CPARAM logical, parameter :: lsolid_cells = .true.
 ! CPARAM logical, parameter :: lsolid_ogrid = .true.
 !
+! MAUX CONTRIBUTION 0
+!
 !***************************************************************
 !
 !   New solid cells module
@@ -49,7 +51,7 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, &
-      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
+      init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
       TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time!, ivar1_part,ivar2_part
 
 !  Read run.in file
@@ -59,7 +61,7 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
       solid_reactions_intro_time, &
-      lstore_ogTT, filter_frequency!,ivar1_part,ivar2_part 
+      filter_frequency!,ivar1_part,ivar2_part 
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -492,22 +494,6 @@ module Solid_Cells
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
 !
       if(lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
-!
-!  For particles with thermophoretic effects, the gradient of the temperature has
-!  to be saved in as an auxiliary so that it can then be interpolated over
-!  at the particles position      
-!
-      if (lstore_ogTT) then
-         iogTTx = iTT + 1
-         iogTTy = iogTTx + 1
-         iogTTz = iogTTy + 1
-! NILS: This test should be made more generic!!!!!!
-         if (maux .ne. 3 .and. (.not. lpres_grad)) then
-            call fatal_error('solid_cells_ogrid','maux .ne. ndims. maux increased?')
-         endif
-         allocate(curv_cart_transform(my_ogrid,2))
-         call create_curv_cart_transform(curv_cart_transform)
-      endif   
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -4454,6 +4440,10 @@ module Solid_Cells
 ! for cases with chemistry).
 !
       if (lpres_grad .and. (.not. lchemistry)) then
+         if (igpx == 0 .or. igpy == 0) then
+            call fatal_error('calc_pencils_energy_ogrid',&
+                 'igpx and igpy must be non-zero.')
+         endif
         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = &
             -p_ogrid%fpres(:,1)*p_ogrid%rho
         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = &
@@ -5465,11 +5455,7 @@ module Solid_Cells
         mode=1
       endif
 !
-      if (lstore_ogTT) then
-         call input_snap_ogrid(chsnap,f_ogrid(:,:,:,1:mfarray_ogrid-maux),mfarray_ogrid-maux,mode)
-      else
-         call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
-      endif
+      call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
       close (lun_input)
       if (lserial_io) call end_serialize
 !
@@ -5971,11 +5957,8 @@ module Solid_Cells
 !  Initialize arrays of points needed for particle properties 
 !  The ip_proc is needed to transform global coordinates to coordinates local to 
 !  the processor considered in the f_ogrid_procs_arrary
-!  Procs_pointer is used to point to correct place in ip_proc and f_ogrid_procs array
-!  when using point from specific processor
-!
-!  JONAS: The mogaux in the allocation of f_ogrid_procs is cruuuude, need to implement
-!  it more elegantly      
+!  Procs_pointer is used to point to correct place in ip_proc and f_ogrid_procs 
+!  array when using point from specific processor
 !
       procs_needed = count(linside_proc)
       if(procs_needed>0) then

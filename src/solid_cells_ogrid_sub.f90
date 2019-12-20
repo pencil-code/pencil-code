@@ -45,20 +45,6 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       call der_ogrid(f,k,g(:,1),1)
       call der_ogrid(f,k,g(:,2),2)
       call der_ogrid(f,k,g(:,3),3)
-
-
-      if (lstore_ogTT .and. k == iTT) then
-         f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTx) = &
-             g(:,1)*curv_cart_transform(m_ogrid,2) - &
-             g(:,2)*curv_cart_transform(m_ogrid,1)
-         f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTy) = &
-             g(:,1)*curv_cart_transform(m_ogrid,1) + &
-             g(:,2)*curv_cart_transform(m_ogrid,2)
-         if (nz_ogrid>1) then
-            f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTz) = g(:,3)
-         endif
-      endif
-      
 !
     endsubroutine grad_ogrid
 !***********************************************************************

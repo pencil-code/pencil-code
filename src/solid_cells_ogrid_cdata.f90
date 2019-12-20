@@ -355,7 +355,6 @@ module solid_cells_ogrid_cdata
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases
   real :: init_rho_cyl = 1.0
-  logical :: lstore_ogTT = .false.
   logical, pointer :: lthermophoretic_forces
   real, dimension(:,:), allocatable ::  curv_cart_transform
   
