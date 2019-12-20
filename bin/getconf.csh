@@ -796,6 +796,18 @@ else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
+#--------------------------------------------------
+else if (($hn =~ gcn*) && ($USER =~ nipkapyl)) then
+  echo "HLRN-IV - HLRN, Germany"
+  module load intel
+  module load impi
+#  export SLURM_CPU_BIND=none
+  set mpirun = 'mpirun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
 #----------------------------------------------
 else if (($hn =~ s*) && ($USER =~ pr*)) then
   echo "MareNostrum - BSC, Barcelona, Spain"
