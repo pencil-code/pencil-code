@@ -292,6 +292,9 @@ module Hydro
   integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
   integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
   integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
+  integer :: idiag_ux4m=0       ! DIAG_DOC: $\left<u_x^4\right>$
+  integer :: idiag_uy4m=0       ! DIAG_DOC: $\left<u_y^4\right>$
+  integer :: idiag_uz4m=0       ! DIAG_DOC: $\left<u_z^4\right>$
   integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
@@ -3171,6 +3174,9 @@ module Hydro
         if (idiag_ux2m/=0)    call sum_mn_name(p%uu(:,1)**2,idiag_ux2m)
         if (idiag_uy2m/=0)    call sum_mn_name(p%uu(:,2)**2,idiag_uy2m)
         if (idiag_uz2m/=0)    call sum_mn_name(p%uu(:,3)**2,idiag_uz2m)
+        if (idiag_ux4m/=0)    call sum_mn_name(p%uu(:,1)**4,idiag_ux4m)
+        if (idiag_uy4m/=0)    call sum_mn_name(p%uu(:,2)**4,idiag_uy4m)
+        if (idiag_uz4m/=0)    call sum_mn_name(p%uu(:,3)**4,idiag_uz4m)
         if (idiag_ux2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,1)**2,idiag_ux2ccm)
         if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
         if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
@@ -4669,6 +4675,9 @@ module Hydro
         idiag_ux2m=0
         idiag_uy2m=0
         idiag_uz2m=0
+        idiag_ux4m=0
+        idiag_uy4m=0
+        idiag_uz4m=0
         idiag_ux2ccm=0
         idiag_ux2ssm=0
         idiag_uy2ccm=0
@@ -4990,6 +4999,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2m',idiag_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',idiag_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',idiag_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'ux4m',idiag_ux4m)
+        call parse_name(iname,cname(iname),cform(iname),'uy4m',idiag_uy4m)
+        call parse_name(iname,cname(iname),cform(iname),'uz4m',idiag_uz4m)
         call parse_name(iname,cname(iname),cform(iname),'ux2ccm',idiag_ux2ccm)
         call parse_name(iname,cname(iname),cform(iname),'ux2ssm',idiag_ux2ssm)
         call parse_name(iname,cname(iname),cform(iname),'uy2ccm',idiag_uy2ccm)
