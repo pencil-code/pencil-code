@@ -849,8 +849,8 @@ module Special
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('SCL'); spectrum=spectra%Tpq; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
@@ -884,8 +884,8 @@ module Special
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('SCL'); spectrum=spectra%Tpq; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
