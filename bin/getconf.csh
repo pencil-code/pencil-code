@@ -797,7 +797,7 @@ else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
-else if (($hn =~ gcn*) && ($USER =~ nipkapyl)) then
+else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
   echo "HLRN-IV - HLRN, Germany"
   module load intel
   module load impi
