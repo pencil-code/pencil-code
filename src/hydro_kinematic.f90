@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
-! PENCILS PROVIDED der6u(3)
+! PENCILS PROVIDED der6u(3); curlo(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 !***********************************************************************
@@ -2204,6 +2204,14 @@ module Hydro
         if (lpenc_loc(i_uu)) p%uu=0.
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  for delta-correlated *flows*, use "lhelical_test=T" in forcing
+!  and kinematic_flow='from_aux' in forcing_run_pars and
+!  lkinflow_as_aux=T in run_pars.
+!
+      case('from_aux')
+        if (lpenc_loc(i_uu)) p%uu=ampl_kinflow*f(l1:l2,m,n,iux:iuz)
+        lupdate_aux=.false.
       case('spher-harm-poloidal')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
         lupdate_aux=.false.
