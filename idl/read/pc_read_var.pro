@@ -221,8 +221,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Get necessary dimensions quietly.
 ;
-logrid=0
-if (keyword_set(ogrid)) then logrid=1  
+  logrid=0
+  if (keyword_set(ogrid)) then logrid=1  
   if (n_elements(dim) eq 0) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
   if (n_elements(param) eq 0) then $
@@ -282,7 +282,7 @@ if (keyword_set(ogrid)) then logrid=1
   if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     procdim=dim
   endif else begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled
+    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled, ogrid=logrid
   endelse
 ;
 ; ... and check pc_precision is set for all Pencil Code tools.
@@ -348,7 +348,7 @@ if (keyword_set(ogrid)) then logrid=1
 ; data written with IO_STRATEGY=IO_DIST
 ;
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
-  endelse
+ endelse
 ;
 ; Initialize / set default returns for ALL variables.
 ;
@@ -542,7 +542,7 @@ if (keyword_set(ogrid)) then logrid=1
             print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
             strtrim(str((yinyang+1)*nprocs)), ' (', $
             strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled
+        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled, ogrid=logrid
       endelse
     endelse
 ;
@@ -638,7 +638,6 @@ if (keyword_set(ogrid)) then logrid=1
 ;
     close, file
     openr, file, filename, f77=f77, swap_endian=swap_endian
-
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
