@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  cparam.local
+!
+!  Local settings concerning grid size and number of CPUs.
+!  This file is included by cparam.f90
+!
+! NCHEMSPEC CONTRIBUTION 5*1
+!
+! If chemistry is solved on th ogrid add 3 aux var for cp, viscosity and R
+!
+! MAUX CONTRIBUTION 6
+!
+integer, parameter :: ncpus=1,nprocy=1,nprocz=1,nprocx=1
+integer, parameter :: nxgrid=240,nygrid=480,nzgrid=1
+integer, parameter :: npar=100
+integer, parameter :: npar_mig=100,mpar_loc=100
+
+integer, parameter :: nxgrid_ogrid=48,nygrid_ogrid=240,nzgrid_ogrid=nzgrid

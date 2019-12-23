@@ -1,0 +1,51 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  ip=14,
+  nt=10, it1=1, isave=1000, itorder=3, ialive=0
+  cdt=1.0,
+  cdtv=1.0,
+  dtmin=1e-10
+  dsnap=15.
+!  dt=3e-9
+  dvid=1e-6
+!  lpencil_check=F
+!  lpencil_check_small=F
+!  lpencil_check_no_zeros=F
+!  lpencil_check_diagnos_opti=F
+/
+&eos_run_pars
+  Pr_number=0.7 ! This is the default number
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_rho=F
+  lupw_lnrho=F
+/
+&viscosity_run_pars
+  ivisc='nu-mixture'
+/
+&entropy_run_pars
+/
+&chemistry_run_pars
+  lfilter=F
+  lreactions=F
+/  
+&solid_cells_run_pars
+/
+&NSCBC_run_pars
+/
+&particles_run_pars
+  ldragforce_dust_par=T
+  ldragforce_gas_par=F
+  ldraglaw_steadystate=T
+  lnostore_uu=F
+  particles_insert_rate=6e9
+  max_particle_insert_time=1.67e-5
+  linsert_particles_continuously=T
+/
+&particles_radius_run_pars
+/

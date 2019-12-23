@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/cylinder_ogrid_thermo_chem
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Haugen Nils E <Nils.E.Haugen/gmail[dot]com>
+Added:
+    23-Dec-2019
+Status:
+    works
+Recommended resolution:
+    nxgrid       x nygrid       = 240 x 480
+    nxgrid_ogrid x nygrid_ogrid =  48 x 240
+Comments:
+   
