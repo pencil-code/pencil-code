@@ -20,7 +20,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3); d2xlnTT; d2zlnTT
 !
 !***************************************************************
 module Energy
@@ -66,13 +66,15 @@ module Energy
   logical :: lhcond_global=.false., lheatc_chicubicstep=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
   logical :: lheatc_Ktherm=.false.
+  logical, target :: lheatc_kramers=.false.
+  real, target :: hcond0_kramers=0.0, nkramers=0.0
   logical :: lviscosity_heat=.true.
   logical :: lcalc_TTmean=.false.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
-  logical :: lreduced_sound_speed=.false.
+  logical, pointer :: lreduced_sound_speed   !=>.false.
 !  logical, pointer :: lscale_to_cs2top
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -109,7 +111,8 @@ module Energy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range, &
-      gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth
+      gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
+      hcond0_kramers, nkramers
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -247,11 +250,10 @@ module Energy
                                 ! ZAVG_DOC: integrated over z direction
   integer :: idiag_EmXRTmxy=0   ! ZAVG_DOC: Emission off XRT Al-poly channel
                                 ! ZAVG_DOC: integrated over z direction
-
 !
   integer :: ivid_pp=0
 !
-  real, dimension (nx) :: diffus_chi,diffus_chi3
+  real, dimension(nx) :: diffus_chi,diffus_chi3,hcond
 !
   contains
 !***********************************************************************
@@ -264,7 +266,7 @@ module Energy
 ! 18-may-12/MR: shared variable PrRa fetched from hydro
 !
       use BorderProfiles, only: request_border_driving
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_index_append
       use SharedVariables, only: get_shared_variable
 !
 !  Register TT or lnTT, depending on whether or not ltemperature_nolog
@@ -272,6 +274,7 @@ module Energy
       if (ltemperature_nolog) then
         call farray_register_pde('TT',iTT)
         ilnTT=iTT
+        !call farray_index_append('ilnTT',ilnTT)
       else
         call farray_register_pde('lnTT',ilnTT)
       endif
@@ -326,18 +329,17 @@ module Energy
       !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: hcond, dhcond
+      real, dimension (nx) :: dhcond
       logical :: lnothing
       integer :: i
       logical, pointer :: lrss
       real :: star_cte
+
+      if (lstart .and. .not.leos) &
+        call warning('initialize_energy', &
+            'EOS=noeos, but possibly an EQUATION OF STATE is needed')
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
-!
-      if (.not. leos) then
-         call fatal_error('initialize_energy', &
-             'EOS=noeos but temperature_idealgas requires an EQUATION OF STATE')
-      endif
 !
       if (ltemperature_nolog) then
         call select_eos_variable('TT',iTT)
@@ -358,6 +360,7 @@ module Energy
       lheatc_tensordiffusion=.false.
       lheatc_chiconst = .false.
       lheatc_chicubicstep = .false.
+      lheatc_kramers= .false.
 !
 !  Initialize thermal diffusion.
 !
@@ -421,6 +424,9 @@ module Energy
         case ('tensor-diffusion')
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
+        case ('kramers')
+          lheatc_kramers=.true.
+          if (lroot) print*, 'heat conduction: kramers'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -462,6 +468,11 @@ module Energy
 !  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
 !
       if (bcz12(ilnTT,1)=='c1' .and. lrun) then
+
+        if (.not. leos) &
+          call fatal_error('initialize_energy', &
+              'EOS=noeos, but BC "c1" requires an EQUATION OF STATE')
+!
         if (Fbot==impossible .and. hcond0 /= impossible) then
           Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
           if (lroot) print*, &
@@ -478,6 +489,11 @@ module Energy
       endif
 !
       if (initlnTT(1)=='star_heat') then
+
+        if (.not. leos) &
+          call fatal_error('initialize_energy', &
+              'EOS=noeos, but star heating requires an EQUATION OF STATE')
+!
         if (lroot) print*,'star_heat: compute the gravity profile'
         ! compute the gravity profile
         star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
@@ -486,6 +502,11 @@ module Energy
       endif
 !
       if (lmultilayer) then
+
+        if (.not. leos) &
+          call fatal_error('initialize_energy', &
+              'EOS=noeos, but multilayer requires an EQUATION OF STATE')
+!
         hcond1=(mpoly1+1.)/(mpoly0+1.)
         hcond2=(mpoly2+1.)/(mpoly0+1.)
       endif
@@ -503,6 +524,9 @@ module Energy
       call put_shared_variable('mpoly0', mpoly0)
       call put_shared_variable('mpoly1', mpoly1)
       call put_shared_variable('mpoly2', mpoly2)
+      call put_shared_variable('hcond0_kramers', hcond0_kramers)
+      call put_shared_variable('nkramers', nkramers)
+      call put_shared_variable('lheatc_kramers', lheatc_kramers)
       if (lsolid_cells) then
         if (.not. lchemistry) call put_shared_variable('chi', chi)
         call put_shared_variable('ladvection_temperature',ladvection_temperature)
@@ -518,21 +542,18 @@ module Energy
 !
 !  A word of warning...
 !
-      if (lheatc_Kconst .and. hcond0==0.0) then
+      if (lheatc_Kconst .and. hcond0==0.0) &
         call warning('initialize_energy', 'hcond0 is zero!')
-      endif
-      if (lheatc_Ktherm .and. hcond0==0.0) then
+      if (lheatc_Ktherm .and. hcond0==0.0) &
         call warning('initialize_energy','hcond0 is zero!')
-      endif
-      if (lheatc_Kprof .and. hcond0==0.0) then
+      if (lheatc_Kprof .and. hcond0==0.0) &
         call warning('initialize_energy', 'hcond0 is zero!')
-      endif
-      if (lheatc_chiconst .and. chi==0.0) then
+      if (lheatc_chiconst .and. chi==0.0) &
         call warning('initialize_energy','chi is zero!')
-      endif
-      if (lheatc_chicubicstep .and. chi==0.0) then
+      if (lheatc_chicubicstep .and. chi==0.0) &
         call warning('initialize_energy','chi is zero!')
-      endif
+      if (lheatc_kramers .and. hcond0==0.0) &
+        call warning('initialize_energy','hcond0 is zero!')
       if (lrun) then
         if (lheatc_hyper3 .and. chi_hyper3==0.0) &
             call fatal_error('initialize_energy', &
@@ -547,10 +568,9 @@ module Energy
         if (chi/=impossible) call warning('initialize_energy', &
             'No heat conduction, but chi/=0')
       endif
-      if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') then
+      if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') &
         call stop_it("temperature_idealgas: "//&
           "lADI_mixed=T while iheatcond /= K-arctan?")
-      endif
 !
       if (llocal_iso) &
            call fatal_error('initialize_energy', &
@@ -590,8 +610,8 @@ module Energy
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
-        call get_shared_variable('lreduced_sound_speed', lrss)
-        lreduced_sound_speed=lrss
+        call get_shared_variable('lreduced_sound_speed', lreduced_sound_speed)  !lrss)
+        !!!lreduced_sound_speed=lrss
         if (lreduced_sound_speed) then
           call get_shared_variable('reduce_cs2',reduce_cs2)
 !          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
@@ -671,6 +691,20 @@ module Energy
             endif
             cs2bot=gamma_m1*TTz(n1)
             cs2top=gamma_m1*TTz(n2)
+!
+          case ('linz_fromBC')
+!
+!  Linear profile between temperature values at bottom and top supposed to be given
+!  in fbcz.
+!
+            if (ltemperature_nolog) then
+              TTz=fbcz(iTT,1)+(z-xyz0(3))/Lxyz(3)*(fbcz(iTT,2)-fbcz(iTT,1))
+              f(:,:,:,iTT)=f(:,:,:,iTT)+spread(spread(TTz,1,mx),2,my)
+              cs2bot=gamma_m1*fbcz(iTT,1)
+              cs2top=gamma_m1*fbcz(iTT,2)
+            else
+              call fatal_error('init_ss','BC "linz_fromBC" not implemented for logarithmic temperature')
+            endif
 !
           case ('mode')
 !
@@ -755,13 +789,13 @@ module Energy
 !
 !  Catch unknown values.
 !
-            write(unit=errormsg,fmt=*) 'No such value for initss(' &
+            write(unit=errormsg,fmt=*) 'No such value for initlnTT(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
             call fatal_error('init_energy',errormsg)
 !
           endselect
 !
-          if (lroot) print*,'init_energy: initss(' &
+          if (lroot) print*,'init_energy: initlnTT(' &
               //trim(iinit_str)//') = ',trim(initlnTT(j))
         endif
       enddo
@@ -907,6 +941,20 @@ module Energy
 !
       if (lheatc_hyper3_mesh) lpenc_requested(i_TT1)=.true.
 !
+      if (lheatc_kramers) then
+
+        !lpenc_requested(i_rho)=.true.
+        !lpenc_requested(i_lnrho)=.true.
+        !lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        !lpenc_requested(i_cv1)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
+!
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
@@ -1025,6 +1073,9 @@ module Energy
         lpencil_in(i_glnTT)=.true.
         lpencil_in(i_glnmumol)=.true.
       endif
+
+      if (lpencil_in(i_glnTT).and.ltemperature_nolog.and..not.leos) &
+        lpencil_in(i_TT1) =.true.
 !
     endsubroutine pencil_interdep_energy
 !***********************************************************************
@@ -1037,7 +1088,8 @@ module Energy
 !  31-01-18/MR: made calculation of p%gTT corrrect also for log temperature
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad,grad,multmv
+      use Sub, only: u_dot_grad,grad,multmv,del2
+      use Deriv, only: der2
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
@@ -1045,6 +1097,47 @@ module Energy
       real, dimension(nx,3) :: gpp
       real, dimension(nx) :: temp
 !
+      if (.not.leos) then
+        if (lpencil(i_lnTT)) then
+          if (ltemperature_nolog) then
+            p%lnTT=alog(f(l1:l2,m,n,iTT))
+          else
+            p%lnTT=f(l1:l2,m,n,ilnTT)
+          endif
+        endif
+        if (lpencil(i_TT)) then
+          if (ltemperature_nolog) then
+            p%TT=f(l1:l2,m,n,iTT)
+          else
+            p%TT=exp(f(l1:l2,m,n,ilnTT))
+          endif
+        endif
+        if (lpencil(i_TT1)) then
+          if (ltemperature_nolog) then
+            p%TT1=1./f(l1:l2,m,n,iTT)
+          else
+            p%TT1=exp(-f(l1:l2,m,n,ilnTT))
+          endif
+        endif
+        if (lpencil(i_glnTT)) then
+          call grad(f,ilnTT,p%glnTT)
+          if (ltemperature_nolog) then
+            do j=1,3
+              p%glnTT(:,j) = p%glnTT(:,j)*p%TT1
+            enddo
+          endif
+        endif
+
+        if (ltemperature_nolog) then
+          if (lpencil(i_del2TT)) call del2(f,iTT,p%del2TT)
+        else
+          call fatal_error('calc_pencils_energy','del2TT, not implmented for logaritthmic temp and noeos')
+        endif
+
+        if (lpencil(i_hlnTT).or.lpencil(i_del2lnTT).or.lpencil(i_del6TT).or.lpencil(i_del6lnTT)) &
+          call fatal_error('calc_pencils_energy','hlnTT, del[26]TT, del[26]lnTT, not implmented for noeos')
+
+      endif
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! uglnTT
@@ -1053,7 +1146,7 @@ module Energy
 ! ugTT
       if (lpencil(i_ugTT)) &
           call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
-! Compute glnTT
+! glnTT
       if (lpencil(i_gTT)) then
         call grad(f,ilnTT,p%gTT)
         if (.not.ltemperature_nolog) then
@@ -1066,6 +1159,9 @@ module Energy
           if (gradTT0(j)/=0.) p%gTT(:,j)=p%gTT(:,j)+gradTT0(j)
         enddo
       endif
+
+      if (lpencil(i_d2xlnTT)) call der2(f,ilnTT,p%d2xlnTT,1)
+      if (lpencil(i_d2zlnTT)) call der2(f,ilnTT,p%d2zlnTT,3)
 !
 ! fpres
       if (lpencil(i_fpres)) then
@@ -1117,22 +1213,17 @@ module Energy
 !  18-may-12/MR: compression work as heat sink added for boussinesq
 !
       use Deriv, only: der6
-      use Diagnostics
       use EquationOfState, only: gamma_m1, lpres_grad
       use ImplicitPhysics, only: heatcond_TT
       use Special, only: special_calc_energy
-      use Sub, only: dot2,identify_bcs, dot, dot_mn
+      use Sub, only: identify_bcs
       use Viscosity, only: calc_viscous_heat
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
-      real, dimension (nx) :: NN2_resp, logT_resp, resp, resp2
-      real :: fradtop, fradbot
-      integer, dimension (nx) :: idx_resp
+      real, dimension (nx) :: Hmax=0.0, thdiff, tmp, advec_hypermesh_ss
       integer :: j
 !
       intent(inout) :: f,p,df
@@ -1158,24 +1249,22 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
-        advec_cs2=p%cs2*dxyz_2
-      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
-!        if (lscale_to_cs2top) then
-!          advec_cs2=reduce_cs2*cs2top*dxyz_2
-!        else
-          advec_cs2=reduce_cs2*p%cs2*dxyz_2
-!        endif
+      if (lfirst.and.ldt.and.ldensity.and.lhydro) then
+        if (lreduced_sound_speed) then
+!          if (lscale_to_cs2top) then
+!            advec_cs2=reduce_cs2*cs2top*dxyz_2
+!          else
+            advec_cs2=reduce_cs2*p%cs2*dxyz_2
+!          endif
+        else
+          advec_cs2=p%cs2*dxyz_2
+        endif
+        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
+!
 !  Sound speed squared.
 !
       if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
-!
-!  ``cs2/dx^2'' for timestep
-!
-!XY: commented out the following
-!      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Add pressure gradient term in momentum equation.
 !
@@ -1229,6 +1318,7 @@ module Energy
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
       if (lheatc_Ktherm) call calc_heatcond_Ktherm (df,p)
+      if (lheatc_kramers) call calc_heatcond_kramers (df,p)
 !
 !  Hyper diffusion.
 !
@@ -1321,27 +1411,201 @@ module Energy
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_entropy(f,df,p)
+
+      call calc_diagnostics_energy(p)
 !
-!  Calculate temperature related diagnostics.
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      use Slices_methods, only: store_slices
+
+      type(pencil_case) :: p
+
+      call calc_2d_diagnostics_energy(p)
+      call calc_1d_diagnostics_energy(p)
+      call calc_0d_diagnostics_energy(p)
+
+      if (lvideo.and.lfirst) then
+        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+      endif
 !
+    endsubroutine calc_diagnostics_energy
+!***********************************************************************
+    subroutine calc_2d_diagnostics_energy(p)
+!
+!  2-D averages.
+!
+      use Diagnostics
+
+      type(pencil_case) :: p      
+!
+      real, dimension (nx) :: NN2_resp, logT_resp, resp, resp2
+
+      if (l2davgfirst) then
+
+        call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+!
+!   calculating emission with tabulated response files
+!
+        if (idiag_EmAIA94mxy/=0  .or. idiag_EmAIA94mxz/=0  .or. &
+            idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0 .or. &
+            idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0 .or. &
+            idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0 .or. &
+            idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0 .or. &
+            idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0 .or. &
+            idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0 .or. &
+            idiag_EmXRTmxy/=0    .or. idiag_EmXRTmxz/=0        ) then
+!
+! particle density squared in SI
+!
+          NN2_resp = (6./7.*p%rho/m_p*unit_density/unit_mass)**2.
+!
+! log10 temperature in SI (K)
+!
+          logT_resp =log10(p%TT*unit_temperature)
+!
+          if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0) then
+            call get_AIA_tab_resp('094',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA94mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA94mxy)
+            endif
+            if (idiag_EmAIA94mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA94mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0) then
+            call get_AIA_tab_resp('131',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA131mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA131mxy)
+            endif
+            if (idiag_EmAIA131mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA131mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0) then
+            call get_AIA_tab_resp('171',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA171mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA171mxy)
+            endif
+            if (idiag_EmAIA171mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA171mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0) then
+            call get_AIA_tab_resp('193',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA193mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA193mxy)
+            endif
+            if (idiag_EmAIA193mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA193mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0) then
+            call get_AIA_tab_resp('211',logT_resp,NN2_resp,resp)
+              resp = resp*unit_length/1e6
+            if (idiag_EmAIA211mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA211mxy)
+            endif
+            if (idiag_EmAIA211mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA211mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0) then
+            call get_AIA_tab_resp('304',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA304mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA304mxy)
+            endif
+            if (idiag_EmAIA304mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA304mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0) then
+            call get_AIA_tab_resp('335',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmAIA335mxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmAIA335mxy)
+            endif
+            if (idiag_EmAIA335mxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmAIA335mxz)
+            endif
+          endif
+!
+          if (idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0) then
+            call get_AIA_tab_resp('XRT',logT_resp,NN2_resp,resp)
+            resp = resp*unit_length/1e6
+            if (idiag_EmXRTmxy/=0) then
+              resp2 = resp*Lz
+              call zsum_mn_name_xy(resp2,idiag_EmXRTmxy)
+            endif
+            if (idiag_EmXRTmxz/=0) then
+              resp2 = resp*Ly
+              call ysum_mn_name_xz(resp2,idiag_EmXRTmxz)
+            endif
+          endif
+!
+        endif
+
+      endif
+    endsubroutine calc_2d_diagnostics_energy
+!***********************************************************************
+    subroutine calc_0d_diagnostics_energy(p)
+!
+!  Calculate temperature related 0D-diagnostics.
+!
+      use Diagnostics
+      use Sub, only: dot2, dot, dot_mn
+
+      type(pencil_case) :: p
+
+      real, dimension(nx) :: tmp
+      real :: fradtop, fradbot
+
       if (ldiagnos) then
-        if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
+!
+        call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_TTzmask/=0) call sum_mn_name(p%TT*zmask_temp(n-n1+1),idiag_TTzmask)
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
-        if (idiag_eem/=0)   call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0)   call sum_mn_name(p%pp,idiag_ppm)
+        call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%ee,idiag_eem)
+        call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
-        if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-        if (idiag_csmax/=0) call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
+        call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
         if (idiag_TT2m/=0)  call sum_mn_name(p%TT**2,idiag_TT2m)
-        if (idiag_uxTm/=0)  call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
-        if (idiag_uyTm/=0)  call sum_mn_name(p%uu(:,2)*p%TT,idiag_uyTm)
-        if (idiag_uzTm/=0)  call sum_mn_name(p%uu(:,3)*p%TT,idiag_uzTm)
+        call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
+        call sum_mn_name(p%uu(:,2)*p%TT,idiag_uyTm)
+        call sum_mn_name(p%uu(:,3)*p%TT,idiag_uzTm)
         if (idiag_Tugux_uxugTm/=0) call sum_mn_name(p%TT*p%ugu(:,1)+p%uu(:,1)*p%ugTT,idiag_Tugux_uxugTm)
         if (idiag_Tuguy_uyugTm/=0) call sum_mn_name(p%TT*p%ugu(:,2)+p%uu(:,2)*p%ugTT,idiag_Tuguy_uyugTm)
         if (idiag_Tuguz_uzugTm/=0) call sum_mn_name(p%TT*p%ugu(:,3)+p%uu(:,3)*p%ugTT,idiag_Tuguz_uzugTm)
@@ -1369,200 +1633,74 @@ module Energy
           call sum_mn_name(tmp,idiag_guzgTm)
         endif
 !
-        if (idiag_dtc/=0) then
+        if (idiag_dtc/=0) &
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        endif
+
         if (idiag_gTmax/=0) then
           call dot2(p%glnTT,tmp)
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
 !
-        if (idiag_fradtop/=0) then
-          if (llast_proc_z.and.n==n2) then
-            if (lADI) then
-              call heatcond_TT(p%TT,hcond)
-            else
-              hcond=hcond0
-            endif
-            fradtop=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
+        if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
+          if (lADI) then
+            call heatcond_TT(p%TT,hcond)
           else
-            fradtop=0.
+            hcond=hcond0
           endif
+          fradtop=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           call surf_mn_name(fradtop,idiag_fradtop)
         endif
 !
-        if (idiag_fradbot/=0) then
-          if (lfirst_proc_z.and.n==n1) then
-            if (lADI) then
-              call heatcond_TT(p%TT,hcond)
-            else
-              hcond=hcond0
-            endif
-            fradbot=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
+        if (idiag_fradbot/=0.and.lfirst_proc_z.and.n==n1) then
+          if (lADI) then
+            call heatcond_TT(p%TT,hcond)
           else
-            fradbot=0.
+            hcond=hcond0
           endif
+          fradbot=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           call surf_mn_name(fradbot,idiag_fradbot)
         endif
+!
       endif
+
+    endsubroutine calc_0d_diagnostics_energy
+!***********************************************************************
+    subroutine calc_1d_diagnostics_energy(p)
 !
 !  1-D averages.
 !
+      use Diagnostics
+
+      type(pencil_case) :: p
+
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradmz)
-        call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvmz)
+
+        if (idiag_fradmz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradmz)
+        if (idiag_fconvmz/=0) call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvmz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
         call yzsum_mn_name_x(p%TT,idiag_TTmx)
         call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
-        call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
-        call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
-        call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1),idiag_ethuxmx)
-        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1),idiag_ethuxmz)
-        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2),idiag_ethuymz)
-        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3),idiag_ethuzmz)
+        if (idiag_ppuzmz/=0) call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
+        if (idiag_ethmz/=0) call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
+        if (idiag_ethuxmx/=0) call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1),idiag_ethuxmx)
+        if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1),idiag_ethuxmz)
+        if (idiag_ethuymz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2),idiag_ethuymz)
+        if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3),idiag_ethuzmz)
         call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
         call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
         call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
 !
-        call xysum_mn_name_z(p%TT**2,       idiag_TT2mz)
-        call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTmz)
-        call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTmz)
+        if (idiag_TT2mz/=0) call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
+        if (idiag_uxTmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTmz)
+        if (idiag_uyTmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTmz)
+        if (idiag_uzTmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTmz)
 !
       endif
-!
-!  2-D averages.
-!
-      if (l2davgfirst) then
-        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
-        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
-!
-!   calculating emission with tabulated response files
-!
-        if (idiag_EmAIA94mxy/=0  .or. idiag_EmAIA94mxz/=0  .or. &
-            idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0 .or. &
-            idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0 .or. &
-            idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0 .or. &
-            idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0 .or. &
-            idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0 .or. &
-            idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0 .or. &
-            idiag_EmXRTmxy/=0    .or. idiag_EmXRTmxz/=0) then
-!
-! partical density squared in SI
-!
-          NN2_resp   = (6./7.*p%rho/m_p*unit_density/unit_mass)**2.
-!
-! log10 temperature in SI (K)
-!
-          logT_resp  =log10(p%TT*unit_temperature)
-!
-          if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0) then
-            call get_AIA_tab_resp('094',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA94mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA94mxy)
-            endif
-            if (idiag_EmAIA94mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA94mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0) then
-            call get_AIA_tab_resp('131',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA131mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA131mxy)
-            endif
-            if (idiag_EmAIA131mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA131mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0) then
-            call get_AIA_tab_resp('171',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA171mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA171mxy)
-            endif
-            if (idiag_EmAIA171mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA171mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0) then
-            call get_AIA_tab_resp('193',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA193mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA193mxy)
-            endif
-            if (idiag_EmAIA193mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA193mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0) then
-            call get_AIA_tab_resp('211',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA211mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA211mxy)
-            endif
-            if (idiag_EmAIA211mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA211mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0) then
-            call get_AIA_tab_resp('304',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA304mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA304mxy)
-            endif
-            if (idiag_EmAIA304mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA304mxz)
-            endif
-          endif
-!
-          if (idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0) then
-            call get_AIA_tab_resp('335',logT_resp,NN2_resp,resp)
-            if (idiag_EmAIA335mxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmAIA335mxy)
-            endif
-            if (idiag_EmAIA335mxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmAIA335mxz)
-            endif
-          endif
-!
-          if (idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0) then
-            call get_AIA_tab_resp('XRT',logT_resp,NN2_resp,resp)
-            if (idiag_EmXRTmxy/=0) then
-              resp2 = resp*Lz*unit_length/1e6
-              call zsum_mn_name_xy(resp2,idiag_EmXRTmxy)
-            endif
-            if (idiag_EmXRTmxz/=0) then
-              resp2 = resp*Ly*unit_length/1e6
-              call ysum_mn_name_xz(resp2,idiag_EmXRTmxz)
-            endif
-          endif
-!
-        endif
-      endif
-!
-      if (lvideo.and.lfirst) then
-        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
-      endif
-!
-    endsubroutine denergy_dt
+
+    endsubroutine calc_1d_diagnostics_energy
 !***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
@@ -1744,6 +1882,10 @@ module Energy
       real :: hcond, dtemp, dlnrho, ss
       integer :: i,n,iz
 !
+      if (.not. leos) &
+        call fatal_error('rad_equil', &
+            'EOS=noeos, but radiative equilibrium requires an EQUATION OF STATE')
+
       if (.not. ltemperature_nolog) &
           call fatal_error('temperature_idealgas', &
                            'rad_equil not implemented for lnTT')
@@ -1815,6 +1957,10 @@ module Energy
       intent(in) :: p
       intent(inout) :: df
 !
+      if (.not. leos) &
+        call fatal_error('calc_heat_cool', &
+            'EOS=noeos, but heatng/cooling requires an EQUATION OF STATE')
+
       if (headtt) print*,'enter calc_heat_cool', rcool, wcool, cool, cs20
 !
       if (lgravr) then
@@ -2072,6 +2218,48 @@ module Energy
 !
     endsubroutine calc_heatcond_Ktherm
 !***********************************************************************
+    subroutine calc_heatcond_kramers(df,p)
+!
+!  Heat conduction using Kramers' opacity law
+!
+!  23-feb-11/pete: coded
+!  24-aug-15/MR: bounds for chi introduced
+!
+      use Diagnostics
+      use Debug_IO, only: output_pencil
+      use Sub, only: dot
+      use General, only: notanumber
+      use EquationOfState, only: gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+      real, dimension(nx) :: thdiff,Krho1,g2
+!
+!  Diffusion of the form
+!      cv*rho*D log(T)/Dt = ... + nab.(K*gradT)/T ,
+!  where
+!      K = K_0*(T**6.5/rho**2)**n.
+!  In reality n=1, but we may need to use n\=1 for numerical reasons.
+!
+      Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      !Krho1 = hcond0_kramers*exp(-p%lnrho*(2.*nkramers+1.)+p%lnTT*(6.5*nkramers))   ! = K/rho
+      !if (chimax_kramers>0.) &
+      !  Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
+      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
+      thdiff = Krho1*(p%del2lnTT+g2)
+
+      df(l1:l2,m,n,ilntt) = df(l1:l2,m,n,ilntt) + thdiff
+
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+(gamma*p%cp1*Krho1)*dxyz_2
+      endif
+
+    endsubroutine calc_heatcond_kramers
+!***********************************************************************
     subroutine calc_heatcond_arctan(df,p)
 !
 !  Radiative diffusion with an arctan profile for the conductivity
@@ -2091,7 +2279,7 @@ module Energy
       use ImplicitPhysics, only: heatcond_TT
 !
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension (nx)   :: hcond, dhcond, g1, chix
+      real, dimension (nx)   :: dhcond, g1, chix
       real, dimension (nx,3) :: gLnhcond=0.
       type (pencil_case)     :: p
 !
@@ -2143,7 +2331,7 @@ module Energy
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: g2, hcond, dhcond, chix
+      real, dimension(nx) :: g2, dhcond, chix
       real, dimension (nx,3) :: glhc=0.,glnThcond
 !
       intent(in) :: f,p
@@ -2375,7 +2563,7 @@ module Energy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics, only: parse_name
+      use Diagnostics, only: parse_name, set_type
       use FArrayManager, only: farray_index_append
 !
       logical :: lreset
@@ -2455,6 +2643,9 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
+
+      if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
+      if (idiag_fradtop/=0) call set_type(idiag_fradtop,lsurf=.true.)
 !
 !  Check for those quantities for which we want yz-averages.
 !
@@ -2553,10 +2744,10 @@ module Energy
 !     
       if (lwrite_slices) then 
         where(cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
+        do iname=1,nnamev
+          call parse_name(iname,cnamev(iname),cformv(iname),'pp',ivid_pp)
+        enddo
       endif
-      do iname=1,nnamev
-        call parse_name(iname,cnamev(iname),cformv(iname),'pp',ivid_pp)
-      enddo
 !
 !  Write column where which variable is stored.
 !
@@ -2566,8 +2757,6 @@ module Energy
         else
           call farray_index_append('iTT', 0)
         endif
-        call farray_index_append('iyH', iyH)
-        call farray_index_append('iss', iss)
       endif
 !
     endsubroutine rprint_energy
@@ -2620,6 +2809,10 @@ module Energy
 !  gamma*(Rgas/mu)T0 = cs2(ad) = cp*T0*gamma_m1,
 !  so T0 = cs20*cp1/gamma_m1
 !
+      if (.not. leos) &
+        call fatal_error('single_polytrope', &
+            'EOS=noeos, but polytrope requires an EQUATION OF STATE')
+
       call get_cp1(cp1)
       beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
       ztop=xyz0(3)+Lxyz(3)
@@ -2667,6 +2860,10 @@ module Energy
       real :: lnrhotop, lnrho1, lnrho2, ztop
       integer :: i
 !
+      if (.not. leos) &
+        call fatal_error('piecew_poly', &
+            'EOS=noeos, but polytrope requires an EQUATION OF STATE')
+
       call get_cp1(cp1)
 !
 !  Top boundary values.
@@ -2737,6 +2934,10 @@ module Energy
       real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss
       real                 :: rhotop, rbot,rt_old,rt_new,rhobot
       real                 :: rb_old,rb_new,crit,r_max
+
+      if (.not. leos) &
+        call fatal_error('star_heat', &
+            'EOS=noeos, but star heating requires an EQUATION OF STATE')
 !
 !  Define the radial grid r=[0,r_max], luminosity and gravity
 !
@@ -2830,6 +3031,10 @@ module Energy
       real                 :: dr,dtemp,dlnrho
       real                 :: rhotop,rhobot,lnrhobot
 !
+      if (.not. leos) &
+        call fatal_error('strat_heat', &
+            'EOS=noeos, but stratified heating requires an EQUATION OF STATE')
+
       temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
       dr=r(2)
       do i=nr-1,1,-1
@@ -2929,6 +3134,10 @@ module Energy
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
       real, dimension(mx) :: cs2
+
+      if (.not. leos) &
+        call fatal_error('update_char_vel_energy', &
+            'EOS=noeos, but sound speed requires an EQUATION OF STATE')
 !
 !  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
 !
