@@ -1581,6 +1581,7 @@ module Energy
 !
       use Diagnostics
       use Sub, only: dot2, dot, dot_mn
+      use ImplicitPhysics, only: heatcond_TT
 
       type(pencil_case) :: p
 
