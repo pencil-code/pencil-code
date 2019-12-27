@@ -118,8 +118,8 @@ module Chemistry
   real :: lamb_low, lamb_up, Pr_turb=0.7
   real :: intro_time=0
   real :: p_init=1013000 ! cgs !
-  integer :: i_CO, ichem_CO
-  logical :: lCO
+  integer :: i_CO, ichem_CO, i_CO2, ichem_CO2, ichem_O2
+  logical :: lCO, lCO2, lO2
   ! const mass fraction of H2O for lmech_simple when only 4 species are used
   real :: Y_H2O=0.0008
   real :: m_H2O = 2.*1.00794+15.9994
@@ -185,8 +185,7 @@ module Chemistry
 !
 !  Auxiliaries.
 !
-  integer :: ireac=0
-  integer, dimension(nchemspec) :: ireaci=0
+  integer :: ireac=0, ireac_CO2=0, ireac_CO=0, ireac_O2=0
 !
 
   contains
@@ -524,14 +523,13 @@ module Chemistry
       if (lreac_as_aux) then
         if (ireac == 0) then
           call find_species_index('CO',i_CO,ichem_CO,lCO)
-          call farray_register_auxiliary('reac',ireac)
-        else
-          if (lroot) print*, 'initialize_chemistry: ireac = ', ireac
-          call farray_index_append('ireac',ireac)
-          do i = 1, nchemspec
-            write (car2,'(i2)') i
-            call farray_index_append('ireac'//trim(adjustl(car2)),ireaci(i))
-          enddo
+          call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+          call find_species_index('O2',i_O2,ichem_O2,lO2)
+!          call farray_register_auxiliary('reac_CO2',ireac_CO2)
+          call farray_register_auxiliary('reac_CO',ireac_CO)
+!          call farray_register_auxiliary('reac_O2',ireac_O2)
+!          call farray_register_auxiliary('reac',ireac)
+!          call farray_register_auxiliary('reac',ireac)
         endif
       endif
 !
@@ -581,8 +579,13 @@ module Chemistry
       call put_shared_variable('imass',imass)
       call put_shared_variable('lflame_front_2D',lflame_front_2D)
       call put_shared_variable('p_init',p_init)
-      call put_shared_variable('ireac',ireac)
       call put_shared_variable('lreac_as_aux',lreac_as_aux)
+      if (lreac_as_aux) then
+        call put_shared_variable('ireac',ireac)
+        call put_shared_variable('ireac_CO',ireac_CO)
+        call put_shared_variable('ireac_CO2',ireac_CO2)
+        call put_shared_variable('ireac_O2',ireac_O2)
+      endif
       if (lmech_simple) then
         call put_shared_variable('orders_p',orders_p)
         call put_shared_variable('orders_m',orders_m)
@@ -1564,12 +1567,17 @@ module Chemistry
 !  Sum over all species of diffusion terms
 !
               if (ldiffusion) then
+                call grad(f,ichemspec(k),gchemspec)
                 do i = 1,3
                   dk_D(:,i) = gchemspec(:,i)*p%Diff_penc_add(:,k)
                 enddo
                 call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
                 sum_dk_ghk = sum_dk_ghk+dk_dhhk
-                if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
+                if (ldiff_corr) then
+                  do i = 1,3
+                    sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+                  enddo
+                endif
               endif
 !
             endif
@@ -1578,8 +1586,6 @@ module Chemistry
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion) then
-            call fatal_error('dchemistry_dt',&
-                'The correction vel. is not properly implemented - pleas fix!')
             do k = 1,nchemspec
               call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
@@ -1840,6 +1846,10 @@ module Chemistry
         endif
         if (sname(1:9)=='viscosity') cformv(iname)='DEFINED'
         if (sname(1:2)=='cp') cformv(iname)='DEFINED'
+        if (sname(1:8)=='reac_CO2') cformv(iname)='DEFINED'
+        if (sname(1:7)=='reac_CO') cformv(iname)='DEFINED'
+        if (sname(1:7)=='reac_O2') cformv(iname)='DEFINED'
+        if (sname(1:4)=='reac') cformv(iname)='DEFINED'
       enddo
 !
 !  Write chemistry index in short notation
@@ -2326,14 +2336,15 @@ module Chemistry
         0.0000000000000000E+000 /)
 !
       if (nchemspec==5) then
-        Sijp(5,1) = 0.0
+        Sijp(nchemspec,1) = 0.0
         Sijm(nchemspec,1) = 0.0
       endif
 !
       B_n = 33.6174731212
+      !B_n = 32.680877  !changed A to lower S_l
       alpha_n = 0.0
       !! E_an in CAL !!
-      E_an = 40700 
+      E_an = 40000 
 !
       back(:) = lback
       Mplus_case(:) = .false.
@@ -4242,6 +4253,7 @@ module Chemistry
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
           kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+       !   kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
@@ -4556,6 +4568,7 @@ module Chemistry
       real, dimension(mx,my,mz) :: cs2_full
       intent(out) :: cs2_full
 !
+      call keep_compiler_quiet(cs2_full)
       call fatal_error('get_cs2_full',&
         'This function is not working with chemistry_simple since all full arrays are removed')
 !
@@ -4726,6 +4739,7 @@ module Chemistry
       real, dimension(mx,my,mz) :: gamma_full
       intent(out) :: gamma_full
 !
+      call keep_compiler_quiet(gamma_full)
       call fatal_error('get_gamma_full',&
         'This function is not working with chemistry_simple since all full arrays are removed')
 !
@@ -5109,7 +5123,10 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      f(l1:l2,m,n,ireac) = p%DYDt_reac(:,ichem_CO)
+!      f(l1:l2,m,n,ireac_CO2) = p%DYDt_reac(:,ichem_CO2)
+      f(l1:l2,m,n,ireac_CO) = p%DYDt_reac(:,ichem_CO)
+!      f(l1:l2,m,n,ireac_O2) = p%DYDt_reac(:,ichem_O2)
+!      f(l1:l2,m,n,ireac) = p%DYDt_reac(:,ichem_CO2)+p%DYDt_reac(:,ichem_CO)+p%DYDt_reac(:,ichem_O2)
 !
     endsubroutine get_reac_rate
 !***********************************************************************

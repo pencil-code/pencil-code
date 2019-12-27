@@ -1189,9 +1189,12 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  07-nov-18/Jonas: Added treatment for cases with temperature gradient
 !  jan-19/Eva: added BC for chemistry
 !
-      integer :: k, j
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: k, j, i, l
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       real, dimension (my_ogrid, mz_ogrid) :: df_surf, grad_lnR, dR, diff_coeff, mdot_c
+      real, dimension (my_ogrid, mz_ogrid) :: first_term
 !
       k=l1_ogrid
 !
@@ -1246,17 +1249,55 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       elseif (lchemistry) then
         mdot_c = heter_reaction_rate(:,:,nchemspec+1)
         do j = 1,nchemspec
-          diff_coeff = f_og(l1_ogrid,:,:,iviscosity)*Pr_number1*Lewis_coef1(k)
-          f_og   (k,:,:,ichemspec(j)) = (-(D1_SBP(1,2)*f_og(k+1,:,:,ichemspec(j)) + &
+          diff_coeff = f_og(l1_ogrid,:,:,iviscosity)*Pr_number1*Lewis_coef1(j)
+          first_term = -(D1_SBP(1,2)*f_og(k+1,:,:,ichemspec(j)) + &
               D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &
               D1_SBP(1,4)*f_og   (k+3,:,:,ichemspec(j)) + &
               D1_SBP(1,5)*f_og   (k+4,:,:,ichemspec(j)) + &
               D1_SBP(1,6)*f_og   (k+5,:,:,ichemspec(j)) + &
               D1_SBP(1,7)*f_og   (k+6,:,:,ichemspec(j)) + &
               D1_SBP(1,8)*f_og   (k+7,:,:,ichemspec(j)) + &
-              D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)))*dx_1_ogrid(l1_ogrid)* &
-              diff_coeff*f_og(k,:,:,irho) - heter_reaction_rate(:,:,j))/ &
-              (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c)
+              D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)))* &
+              dx_1_ogrid(l1_ogrid)*diff_coeff*f_og(k,:,:,irho)
+!       if (nchemspec == 2 .or. nchemspec == 3 .or. nchemspec == 5) then
+          if (.not. llin_BC) then
+            f_og(k,:,:,ichemspec(j)) = (first_term - heter_reaction_rate(:,:,j))/&
+                  (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c)
+          else
+            f_og(k,:,:,ichemspec(j)) = -(heter_reaction_rate(:,:,j) + f_og(k+1,:,:,ichemspec(j))*&
+                                        diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid))/&
+                                       (mdot_c - diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid))
+          endif
+!
+          if (lnonegative_Yk) then
+            do i = m1_ogrid,m2_ogrid
+              if (f_og(k,i,4,ichemspec(j)) .lt. 0) then
+                heter_reaction_rate(i,:,j) = first_term(i,:)
+                heter_reaction_rate(i,:,ichem_CO2) = -2.*((12.0107+15.9994)&
+                  /(2.*15.9994)*heter_reaction_rate(i,:,ichem_O2)+(12.0107+15.9994)&
+                  /(12.0107+2.*15.9994)*heter_reaction_rate(i,:,ichem_CO2))
+                mdot_c(i,:) = -(heter_reaction_rate(i,:,ichem_CO) + &
+                               heter_reaction_rate(i,:,ichem_CO2) + heter_reaction_rate(i,:,ichem_O2))
+                do l = 1,nchemspec
+                  diff_coeff(i,:) = f_og(l1_ogrid,i,:,iviscosity)*Pr_number1*Lewis_coef1(l)
+                  first_term(i,:) = -(D1_SBP(1,2)*f_og(k+1,i,:,ichemspec(l)) + &
+                      D1_SBP(1,3)*f_og   (k+2,i,:,ichemspec(l)) + &
+                      D1_SBP(1,4)*f_og   (k+3,i,:,ichemspec(l)) + &
+                      D1_SBP(1,5)*f_og   (k+4,i,:,ichemspec(l)) + &
+                      D1_SBP(1,6)*f_og   (k+5,i,:,ichemspec(l)) + &
+                      D1_SBP(1,7)*f_og   (k+6,i,:,ichemspec(l)) + &
+                      D1_SBP(1,8)*f_og   (k+7,i,:,ichemspec(l)) + &
+                      D1_SBP(1,9)*f_og   (k+8,i,:,ichemspec(l)))* &
+                      dx_1_ogrid(l1_ogrid)*diff_coeff(i,:)*f_og(k,i,:,irho)
+                  f_og   (k,i,:,ichemspec(l)) = (first_term(i,:) - heter_reaction_rate(i,:,l))/ &
+                      (D1_SBP(1,1)*diff_coeff(i,:)*f_og(k,i,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c(i,:))
+                enddo
+              endif
+            enddo
+          endif
+        ! The below is the proper expression for the line above if gradM is accounted for in equations
+        ! (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c - diff_coeff*f_og(k,:,:,irho)*grad_lnR)
+        ! If this is used remember to take grad_lnR outside lexpl_rho condition
         enddo
       endif
 !

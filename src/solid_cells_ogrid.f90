@@ -47,12 +47,12 @@ module Solid_Cells
       lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
       interpolation_method, lock_dt, lexpl_rho, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
-      lrk_tvd, SBP_optimized, interp_shift, &
-      particle_interpolate, lparticle_uradonly, &
+      lrk_tvd, SBP_optimized, interp_shift, llin_BC, lnonegative_Yk, &
+      particle_interpolate, lparticle_uradonly, lsinus_spec_distr, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, &
       init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
-      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time!, ivar1_part,ivar2_part
+      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -61,8 +61,8 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
       solid_reactions_intro_time, &
-      filter_frequency!,ivar1_part,ivar2_part 
-    
+      filter_frequency, lwrite_mdotc
+
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
     module procedure dot2_0_ogrid
@@ -521,7 +521,7 @@ module Solid_Cells
       real, dimension(mx,my,mz) :: mu1_full=0
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_ogr=0
       real :: a2, rr2, rr2_low, rr2_high 
-      real :: wall_smoothing,wall_smoothing_temp
+      real :: wall_smoothing,wall_smoothing_temp, wall_smoothing_chem
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
       integer i,j,cyl,iflow,iorth, k, j2, j3
       real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
@@ -573,13 +573,13 @@ module Solid_Cells
                  (a2-2*r_gradT*xyz0_ogrid(1)+r_gradT**2)
          coef1 = -2*coef2*r_gradT
          coef0 = f(l2,m2,n2,ilnTT) + coef2*r_gradT**2
-       endif
-       if (unit_system=='cgs') then
+      endif
+      if (unit_system=='cgs') then
          Rgas_unit_sys=k_B_cgs/m_u_cgs
-       elseif (unit_system=='SI') then
+      elseif (unit_system=='SI') then
          Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
-       endif
-       Rgas = Rgas_unit_sys/unit_energy
+      endif
+      Rgas = Rgas_unit_sys/unit_energy
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -690,7 +690,13 @@ module Solid_Cells
 !      this comment) as it causes my simulations to crash
 !      *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
 !
-            if (lchemistry) then  
+            if (lchemistry) then
+              if (lsinus_spec_distr) then
+                wall_smoothing_chem = (sin(pi/(r_ogrid-cylinder_radius)*x_ogrid(i)-pi*(r_ogrid+cylinder_radius)&
+                                       /(2*(r_ogrid-cylinder_radius)))+1.)/2
+              else
+                wall_smoothing_chem = wall_smoothing
+              endif
               do k = 1,nchemspec
                 f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
@@ -698,19 +704,19 @@ module Solid_Cells
                 ! Heterogeneous reactions only work with simplified mechanism
                 if (ldist_CO2) then
                 ! distribute CO2 exponentially close to the cylinder - this slowly introduces reactions
-                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
+                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing_chem
                   f_ogrid(i,j,:,ichemspec(1)) = 1.-f_ogrid(i,j,:,ichemspec(4))&
                                                   -f_ogrid(i,j,:,ichemspec(2))-f_ogrid(i,j,:,ichemspec(3))
+                  if (nchemspec==5) then
+                    f_ogrid(i,j,:,ichemspec(1))=f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(5))
+                  endif
                 elseif (ldist_CO) then
                 ! otherwise CO is distributed exponentially close to the cylinder 
-                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
+                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing_chem
                   f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(4))&
                                                   -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
-                endif
-                if (ldist_CO2 .or. ldist_CO) then 
                   if (nchemspec==5) then
-                    f_ogrid(i,j,:,ichemspec(1))=&
-                        f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(5))
+                    f_ogrid(i,j,:,ichemspec(2))=f_ogrid(i,j,:,ichemspec(2))-f_ogrid(i,j,:,ichemspec(5))
                   endif
                 endif
                 ! Do not set dp/dr = 0 at the cylinder surface when heter. reactions
@@ -1588,7 +1594,7 @@ module Solid_Cells
       real :: Nusselt_all
       real :: norm
 !
-      norm = 2.*cylinder_radius/(cylinder_temp-T0)/(ny_ogrid*nz_ogrid)
+      norm = 2.*cylinder_radius/(cylinder_temp-T0)/(nzgrid_ogrid*nygrid_ogrid)
 !
       call mpireduce_sum(Nusselt,Nusselt_all)
 !
@@ -1620,7 +1626,9 @@ module Solid_Cells
       call mpireduce_sum(mdot_C,mdot_C_all)
 !
       if(lroot) then
-        mdot_C=mdot_C_all/(nzgrid_ogrid*ny_ogrid)
+        !*(-10) to change units from g/cm^2/s to kg/m^2/s and the opposite
+        ! sign is needed for production -> consumption
+        mdot_C=mdot_C_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
         if (idiag_mdot_C /= 0) fname(idiag_mdot_C)=mdot_C
       endif
 !
@@ -2794,7 +2802,7 @@ module Solid_Cells
 
       if (lcheck) then
         do i=1,ivar2-ivar1+1
-          if ((fp(i)>maxval(farr(:,:,i)).and.i/=half_order) .or. (fp(i)<minval(farr(:,:,i)).and.i/=half_order)) then
+          if ((fp(i)>maxval(farr(:,:,i)).and.i/=3) .or. (fp(i)<minval(farr(:,:,i)).and.i/=3)) then
 !
 !  Compensate for overshoots by linear interpolation
 !
@@ -4028,6 +4036,7 @@ module Solid_Cells
      if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
+    if (llast .and. lwrite_mdotc) call write_reactions(heter_reaction_rate(:,4,nchemspec+1))
 !
 !  Set silly values for f_cartesian inside r_int_inner
 !
@@ -4043,6 +4052,28 @@ module Solid_Cells
 ! enddo
 
   endsubroutine time_step_ogrid
+!***********************************************************************
+    subroutine write_reactions(mdot_c)
+!
+!  write mdot_C in the output file
+!
+      use Mpicomm, only: mpibarrier
+      character(len=fnlen) :: input_file="./data/mdotc.out"
+      integer :: file_id=123, i
+      real, dimension (my_ogrid) :: mdot_c
+!
+      do i=0,ncpus
+        if (iproc .eq. i) then
+          open (file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
+          write (file_id,*) 'Proc',iproc
+          write (file_id,*) 'Mdot_C',mdot_c
+          write (file_id,*) 'Theta',y_ogrid
+          close (file_id)
+        endif
+        call mpibarrier
+      enddo
+!
+    endsubroutine write_reactions
 !***********************************************************************
     subroutine pde_ogrid(f_og,df,dt_ogrid)
 !
@@ -4123,7 +4154,7 @@ module Solid_Cells
           if (idiag_Nusselt/=0) then
             call Nusselt_pencils(Nusselt)
           endif
-          if (idiag_mdot_C/=0 .and. lreac_heter) then
+          if (lchemistry .and. lreac_heter .and. idiag_mdot_C/=0) then
             call mdot_C_pencils(mdot_C)
           endif
         endif
@@ -4139,7 +4170,7 @@ module Solid_Cells
         if (idiag_Nusselt/=0) then
           call Nusselt_coeffs(Nusselt)
         endif
-        if (idiag_mdot_C/=0) then
+        if (lchemistry .and. lreac_heter .and. idiag_mdot_C/=0) then
           call mdot_C_coeffs(mdot_C)
         endif
       endif
@@ -4444,9 +4475,9 @@ module Solid_Cells
             call fatal_error('calc_pencils_energy_ogrid',&
                  'igpx and igpy must be non-zero.')
          endif
-        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = &
+         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = &
             -p_ogrid%fpres(:,1)*p_ogrid%rho
-        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = &
+         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = &
             -p_ogrid%fpres(:,2)*p_ogrid%rho
       endif
 !
@@ -7674,7 +7705,10 @@ module Solid_Cells
  !             r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interp_shift
  !           endif
           elseif (mod(interpolation_method,2)==0) then
-            r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)-dx_outer*interp_shift
+            r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)
+          !  r_int_outer=min(r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01),&
+          !                  r_ogrid+dx_outer-dxmax*((interpolation_method/2+0.5)+0.01))
+            r_int_outer=r_int_outer-dx_outer*interp_shift 
             if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
@@ -7698,8 +7732,8 @@ module Solid_Cells
               tmp_rad = radius_ogrid(x(ii),y(jj))
 
               if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
-                do i3=-3,3
-                  do j3=-3,3
+                do i3=-2,2
+                  do j3=-2,2
                     min_tmp_rad = radius_ogrid(x(ii+i3),y(jj+j3))
                     if(min_tmp_rad<min_rad) min_rad=min_tmp_rad
                   enddo
@@ -7708,6 +7742,7 @@ module Solid_Cells
             enddo
           enddo
           r_int_inner = min(r_int_outer-dxmax*3,min_rad-0.01*dxmax)
+    !      r_int_inner = r_int_outer-dxmax*(3.01)
         else
           r_int_inner_poly=x_ogrid(l1_ogrid+floor(interpol_order_poly*0.5))
           print*, 'Polynomial integration: r_int_outer, r_int_inner, r_int_inner_poly' &

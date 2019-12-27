@@ -127,7 +127,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !  Indices
 !
   integer :: i_CO2=0, i_CO=0
-  integer :: ichem_O2=0, ichem_CO2=0, ichem_CO=0
   logical :: lO2=.false., lN2=.false.
   logical :: lCO2=.false., lCO=.false.
 !
@@ -288,10 +287,15 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         call get_shared_variable('iaa2',iaa2)
         call get_shared_variable('lmech_simple',lmech_simple)
         call get_shared_variable('linterp_pressure',linterp_pressure)
-        call get_shared_variable('ireac',ireac)
         call get_shared_variable('lreac_as_aux',lreac_as_aux)
+        if (lreac_as_aux) then
+!          call get_shared_variable('ireac',ireac)
+          call get_shared_variable('ireac_CO',ireac_CO)
+!          call get_shared_variable('ireac_O2',ireac_O2)
+!          call get_shared_variable('ireac_CO2',ireac_CO2)
+        endif
 !
-        if (lreac_heter) then
+        if (lreac_heter .or. lreac_as_aux) then
           if (lmech_simple) then
             call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
             call find_species_index('CO',i_CO,ichem_CO,lCO)
@@ -827,12 +831,17 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !  Sum over all species of diffusion terms
 !
               if (ldiffusion) then
+                call grad_ogrid(f_og,ichemspec(k),gchemspec)
                 do i = 1,3
                   dk_D(:,i) = gchemspec(:,i)*p_ogrid%Diff_penc_add(:,k)
                 enddo
                 call dot_mn_ogrid(dk_D,p_ogrid%ghhk(:,:,k),dk_dhhk)
                 sum_dk_ghk = sum_dk_ghk+dk_dhhk
-                if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
+                if (ldiff_corr) then
+                  do i = 1,3
+                    sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+                  enddo
+                endif
               endif
 !
             endif
@@ -841,8 +850,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion) then
-            call fatal_error('dchemistry_dt',&
-                'The correction vel. is not properly implemented - pleas fix!')
             do k = 1,nchemspec
               call dot_mn_ogrid(sum_diff,p_ogrid%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*sum_dhhk(:)
@@ -1298,6 +1305,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
           kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+         ! kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
@@ -1500,14 +1508,26 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       Rcal  = Rgas_unit_sys/4.14*1e-7
       Rcal1 = 1./(Rcal)
 !
-      ! B & A checked in the paper that was cited - all ok
-      B_n_het=(/1.97e9,1.291e7/)        ! cm/s
-      E_an_het=(/47301.701,45635.267/)  ! cal/mol
+      ! 2C + O2 -> 2CO
+      ! C + CO2 -> 2CO
+!
+! Zhang (same as in Luo)
+!      B_n_het=(/1.97e9,1.291e7/)        ! cm/s
+!      E_an_het=(/47301.701,45635.267/)  ! cal/mol
+!
+! Schulze (REMEMBER to change back prod(2) and mdot for O2 because 1st reaction is C + 1/2O2 -> CO)
+!      B_n_het=(/3.007e7, 460.5/)        ! cm/s (/K) (in second reaction there's T^1 in rate expression)
+!      E_an_het=(/35700.2868, 41849.9044/)  ! cal/mol
+!
+! Kestel/Caram (REMEMBER to change mdot for O2 because and CO 1st reaction is C + 1/2O2 -> CO)
+      B_n_het=(/3.007e7, 4.016e10/)        ! cm/s
+      E_an_het=(/35700.2868, 59194.5507/)  ! cal/mol
 !
 !  Chemkin data case
 !
       prod(1) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)*rho_cgs
       prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs
+!      prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs*f_og(l1_ogrid,m_ogrid,n_ogrid,iTT)
       if (prod(1) .lt. 0.0) prod(1)=0.0
       if (prod(2) .lt. 0.0) prod(2)=0.0
       do i=1,2
@@ -1515,11 +1535,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         vreact_p(i)=prod(i)*exp(kf(i))
       enddo
 !
-      mdot(ichem_O2)=-vreact_p(1)
+!      mdot(ichem_O2)=-vreact_p(1)
+      mdot(ichem_O2)=-0.5*vreact_p(1)
       mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*vreact_p(1)&
                         +species_constants(ichem_CO,imass)/species_constants(ichem_CO2,imass)*vreact_p(2))
       mdot(ichem_CO2)=-vreact_p(2)
-!
       mdot=mdot*unit_time
 !
       u_stefan = 0.
@@ -1917,7 +1937,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
       type (pencil_case_ogrid) :: p_ogrid
 !
-      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac) = p_ogrid%DYDt_reac(:,ichem_CO)
+!      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac_CO2) = p_ogrid%DYDt_reac(:,ichem_CO2)
+      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac_CO) = p_ogrid%DYDt_reac(:,ichem_CO)
+!      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac_O2) = p_ogrid%DYDt_reac(:,ichem_O2)
+!      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac) = p_ogrid%DYDt_reac(:,ichem_CO)+&
+!                       p_ogrid%DYDt_reac(:,ichem_CO2) + p_ogrid%DYDt_reac(:,ichem_O2)
 !
     endsubroutine get_reac_rate_ogr
 !***********************************************************************

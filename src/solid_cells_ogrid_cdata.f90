@@ -344,7 +344,10 @@ module solid_cells_ogrid_cdata
   real :: solid_reactions_intro_time=0.0
   real, pointer :: p_init
   logical :: ldist_CO2=.false., ldist_CO=.false.
-  integer, pointer :: ireac
+  integer, pointer :: ireac, ireac_CO2, ireac_CO, ireac_O2
+  integer :: ichem_O2=0, ichem_CO2=0, ichem_CO=0
+  logical :: lwrite_mdotc=.false., lnonegative_Yk=.false.
+  logical :: llin_BC=.false., lsinus_spec_distr=.false.
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
