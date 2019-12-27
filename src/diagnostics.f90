@@ -226,12 +226,10 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
+
         call save_name(tdiagnos,idiag_t)
         call save_name(dt,idiag_dt)
         call save_name(one_real*(it-1),idiag_it)
-      endif
-!
-      if (lroot) then
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
 !  time).
@@ -272,7 +270,7 @@ module Diagnostics
 !
 !  Write 'time_series.h5' if output format is HDF5
 !
-      if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
+        if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
 !
 !  Insert imaginary parts behind real ones if quantity is complex.
 !
@@ -1378,14 +1376,14 @@ module Diagnostics
 !
     endsubroutine expand_cname_full
 !***********************************************************************
-    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin)
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf)
 !
 !  Sets the diagnostic type in itype_name.
 !
 !  21-sep-17/MR: coded
 !
       integer :: iname
-      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf
 
       if (iname==0) return
 
@@ -1397,6 +1395,8 @@ module Diagnostics
         itype_name(iname)=ilabel_sum_log10
       elseif (present(lint)) then
         itype_name(iname)=ilabel_integrate
+      elseif (present(lsurf)) then
+        itype_name(iname)=ilabel_surf
       elseif (present(lsum)) then
         itype_name(iname)=ilabel_sum
       elseif (present(lmax)) then
