@@ -14,7 +14,7 @@
 
     implicit none
 
-    external caller, caller0, caller2, caller3, caller_str5
+    external caller, caller0, caller2, caller3, caller4, caller5, caller5_str5
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 
@@ -663,7 +663,7 @@
 !
       integer :: i
       do i=1,n_special_modules
-        call caller_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
+        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
                          spec, spec_hel, lfirstcall, kind)
       enddo
 

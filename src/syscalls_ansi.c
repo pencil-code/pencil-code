@@ -53,10 +53,22 @@ void FTNIZE(caller2)
   (*func)(par1,par2);
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller2_str1)
+     (void (**func)(char*,int*,void*), char* str, int len, void* par1)
+{
+  (*func)(str,&len,par1);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller3)
      (void (**func)(void*,void*,void*), void* par1, void* par2, void* par3)
 {
   (*func)(par1,par2,par3);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(caller3_str1)
+     (void (**func)(char*,int*,void*,void*), char* str, int len, void* par2, void* par3)
+{
+  (*func)(str,&len,par2,par3);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(caller4)
@@ -65,17 +77,30 @@ void FTNIZE(caller4)
   (*func)(par1,par2,par3,par4);
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller4_str1)
+     (void (**func)(char*,int*,void*,void*,void*), char* str, int len, void* par2, void* par3, void* par4)
+{
+  (*func)(str,&len,par2,par3,par4);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller5)
      (void (**func)(void*,void*,void*,void*,void*), void* par1, void* par2, void* par3, void* par4, void* par5)
 {
   (*func)(par1,par2,par3,par4,par5);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(caller_str5)
+void FTNIZE(caller5_str5)
      (void (**func)(void*,void*,void*,void*,char*,int*), 
       void* par1, void* par2, void* par3, void* par4, char* str, int len)
 {
   (*func)(par1,par2,par3,par4,str,&len);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(caller7_str67)
+     (void (**func)(void*,void*,void*,void*,void*,char*,int*,char*,int*), 
+      void* par1, void* par2, void* par3, void* par4, void* par5, char* str1, int len1, char* str2, int len2)
+{
+  (*func)(par1,par2,par3,par4,par5,str1,&len1,str2,&len2);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(caller)
