@@ -130,6 +130,7 @@ my %tests = (
                          2d-tests/selfgravdisk-logspirals
                          2d-tests/turbulent_potential
                          2d-tests/WhiteDwarfDisk
+		         2d-tests/cylinder_ogrid_thermo_chem
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
