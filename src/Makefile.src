@@ -259,7 +259,7 @@ ifeq ($(SOLID_CELLS),solid_cells_ogrid)
   ifeq ($(MPICOMM),nompicomm)
     SOLID_CELLS_MPICOMM= solid_cells_ogrid_nompicomm
   endif
-  ifeq ($(CHEMISTRY),experimental/chemistry_simple)
+  ifeq ($(CHEMISTRY),chemistry_simple)
     SOLID_CELLS_OGRID_CHEMISTRY= solid_cells_ogrid_chemistry
   endif
   ifeq ($(CHEMISTRY),nochemistry)
