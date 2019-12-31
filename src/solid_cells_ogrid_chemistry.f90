@@ -38,8 +38,9 @@ module solid_cells_ogrid_chemistry
 !
   implicit none
 !
-public :: initialize_eos_chemistry, calc_for_chem_mixture_ogrid, calc_pencils_eos_ogrid_chem
-public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
+  public :: initialize_eos_chemistry, calc_for_chem_mixture_ogrid
+  public :: calc_pencils_eos_ogrid_chem, chemspec_normalization_N2_og
+  public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
   real :: Rgas_unit_sys=1.
   real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: cp_R_spec_ogrid
