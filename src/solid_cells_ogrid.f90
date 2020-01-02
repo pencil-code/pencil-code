@@ -6060,8 +6060,12 @@ module Solid_Cells
 !  Set momentum thickness, may be needed for particle interpolation
 !  Thickness from Weber et al. 2013
 !
-      call getnu(nu_input=nu)
-      delta_momentum = ((0.20669/sqrt(2.))/sqrt(2.*cylinder_radius*init_uu/nu))*(2*cylinder_radius)+cylinder_radius
+      ! NILS: nu is not known until run. I have therefore simplified the momentum
+      ! NILS: thickness to equal the cylinder radius
+      !call getnu(nu_input=nu)
+      !delta_momentum = ((0.20669/sqrt(2.))/sqrt(2.*cylinder_radius*init_uu/nu))&
+      !    *(2*cylinder_radius)+cylinder_radius
+      delta_momentum = cylinder_radius
 !  Use only one type of special handling near the surface
       if(lspecial_rad_int_mom) lspecial_rad_int=.false.
 !
