@@ -2109,10 +2109,11 @@ module Particles
 ! npar_loc + n_insert < mpar_loc
 ! so that a processor can not exceed its maximum number of particles.
 !
-      if (t > tstart_insert_particles+particles_insert_ramp_time) then
+      if (t >= tstart_insert_particles+particles_insert_ramp_time) then
         particles_insert_rate_tmp = particles_insert_rate
       else
-        particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
+        particles_insert_rate_tmp = int(real(particles_insert_rate)&
+            *(t-tstart_insert_particles)/particles_insert_ramp_time)
       endif
       call mpireduce_sum_int(npar_loc,npar_total)
 !
