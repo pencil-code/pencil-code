@@ -1212,7 +1212,9 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           call der_ogrid_SBP_surf(f_og,df_surf,iTT)
           if (lchemistry) then
             call der_ogrid_SBP_surf(f_og,dR,iRR)
-            grad_lnR = dR/f_og(k,:,:,iRR)
+            grad_lnR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid) &
+                = dR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid)&
+                /f_og(k,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iRR)
           else
             grad_lnR = 0   
           endif
