@@ -244,6 +244,7 @@ module Register
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
       use GPU,              only: initialize_gpu
+      !!use Io_wrapper,       only: initialize_io_wrapper
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -366,6 +367,7 @@ module Register
       call initialize_deriv
       call initialize_diagnostics
       call initialize_gpu
+      !!call initialize_io_wrapper 
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
       call initialize_eos

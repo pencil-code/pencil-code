@@ -2435,9 +2435,8 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 LD=$(FC)
 #
 ifneq ($(IO_ALT),)
-  IO_ALT_DEPS = io_alt.so
+  IO_ALT_DEPS = io_alt_preps io_alt.so
   LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-  FFLAGS += $(DLL_FFLAGS)    #???
 else
   IO_ALT_DEPS =
 endif
@@ -2485,11 +2484,6 @@ else
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
 #
-ifneq ($(IO_ALT),)
-$(IO_ALT).o : $(IO_ALT).f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o $*.o -c $*.f90
-endif
-#
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2498,7 +2492,7 @@ endif
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
-legacy_default: Makefile cparam.inc legacy_code buildinfo | $(SPECIAL_DEPS)
+legacy_default: Makefile cparam.inc legacy_code buildinfo | $(SPECIAL_DEPS) $(IO_ALT_DEPS)
 default_to_be: Makefile cparam.inc code buildinfo
 #
 #  Short hand for modules that must be preprocessed with mkcparam.
@@ -2556,6 +2550,15 @@ else
 endif
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
+#
+io_alt_preps:
+	sed -i -e"/module  *procedure/ ! s/^\( *module  *\)[Ii]o/\1$(IO_ALT)/" \
+	       -e"s/^\( *endmodule  *\)[Ii]o/\1$(IO_ALT)/" $(IO_ALT_SRC)
+#
+ifneq ($(IO_ALT),)
+$(IO_ALT_OBJ): $(IO_ALT_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o $*.o -c $*.f90
+endif
 #
 io_alt.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(IO_ALT_OBJ) 
 	$(LD) $(IO_ALT_OBJ) $(DLL_LDFLAGS) -o io_alt.so

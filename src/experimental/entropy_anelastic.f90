@@ -3623,6 +3623,14 @@ module Energy
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_energy
+!***********************************************************************
     subroutine read_hcond(hcond,glhc)
 !
 !  read radial profiles of hcond and glhc from an ascii-file.

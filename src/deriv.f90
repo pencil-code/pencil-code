@@ -1325,16 +1325,13 @@ module Deriv
       if (loptest(lwo_line_elem)) return
 
       if (lspherical_coords) then
-        if ((i==1.and.j==2)) df=df*r1_mn
-        if ((i==2.and.j==1)) df=df*r1_mn           !(minus extra terms)
-        if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
-        if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
-        if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
-        if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
+        if (i+j==3) df=df*r1_mn                     !(minus extra terms)
+        if (i+j==4) df=df*r1_mn*sin1th(m)           !(minus extra terms)
+        if (i+j==5) df=df*r2_mn*sin1th(m)           !(minus extra terms)
       endif
 !
       if (lcylindrical_coords) then
-        if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1
+        if ( i==2 .or. j==2 ) df=df*rcyl_mn1
       endif
 !
     endsubroutine derij_main
@@ -5563,67 +5560,49 @@ module Deriv
         if (idir==1) then
 
           do k=l1-1,l1-off,-1
-            f(k,:,:,j)=7*f(k+1,:,:,j) &
-                     -21*f(k+2,:,:,j) &
-                     +35*f(k+3,:,:,j) &
-                     -35*f(k+4,:,:,j) &
-                     +21*f(k+5,:,:,j) &
-                      -7*f(k+6,:,:,j) &
-                        +f(k+7,:,:,j)
+            f(k,:,:,j)=   7.*(f(k+1,:,:,j)-f(k+6,:,:,j)) &
+                        -21.*(f(k+2,:,:,j)-f(k+5,:,:,j)) &
+                        +35.*(f(k+3,:,:,j)-f(k+4,:,:,j)) &
+                            + f(k+7,:,:,j)
           enddo
         elseif (idir==2) then
 
           do k=m1-1,m1-off,-1
-            f(:,k,:,j)=7*f(:,k+1,:,j) &
-                     -21*f(:,k+2,:,j) &
-                     +35*f(:,k+3,:,j) &
-                     -35*f(:,k+4,:,j) &
-                     +21*f(:,k+5,:,j) &
-                      -7*f(:,k+6,:,j) &
-                        +f(:,k+7,:,j)
+            f(:,k,:,j)=   7.*(f(:,k+1,:,j)-f(:,k+6,:,j)) &
+                        -21.*(f(:,k+2,:,j)-f(:,k+5,:,j)) &
+                        +35.*(f(:,k+3,:,j)-f(:,k+4,:,j)) &
+                            + f(:,k+7,:,j)
           enddo
         elseif (idir==3) then
 
           do k=n1-1,n1-off,-1
-            f(:,:,k,j)=7*f(:,:,k+1,j) &
-                     -21*f(:,:,k+2,j) &
-                     +35*f(:,:,k+3,j) &
-                     -35*f(:,:,k+4,j) &
-                     +21*f(:,:,k+5,j) &
-                      -7*f(:,:,k+6,j) &
-                        +f(:,:,k+7,j)
+            f(:,:,k,j)=   7.*(f(:,:,k+1,j)-f(:,:,k+6,j)) &
+                        -21.*(f(:,:,k+2,j)-f(:,:,k+5,j)) &
+                        +35.*(f(:,:,k+3,j)-f(:,:,k+4,j)) &
+                            + f(:,:,k+7,j)
           enddo
         endif
       else
         if (idir==1) then
           do k=l2+1,l2+off
-            f(k,:,:,j)=7*f(k-1,:,:,j) &
-                     -21*f(k-2,:,:,j) &
-                     +35*f(k-3,:,:,j) &
-                     -35*f(k-4,:,:,j) &
-                     +21*f(k-5,:,:,j) &
-                      -7*f(k-6,:,:,j) &
-                        +f(k-7,:,:,j)
+            f(k,:,:,j)=   7.*(f(k-1,:,:,j)-f(k-6,:,:,j)) &
+                        -21.*(f(k-2,:,:,j)-f(k-5,:,:,j)) &
+                        +35.*(f(k-3,:,:,j)-f(k-4,:,:,j)) &
+                            + f(k-7,:,:,j)
           enddo
         elseif (idir==2) then
           do k=m2+1,m2+off
-            f(:,k,:,j)=7*f(:,k-1,:,j) &
-                     -21*f(:,k-2,:,j) &
-                     +35*f(:,k-3,:,j) &
-                     -35*f(:,k-4,:,j) &
-                     +21*f(:,k-5,:,j) &
-                      -7*f(:,k-6,:,j) &
-                        +f(:,k-7,:,j)
+            f(:,k,:,j)=   7.*(f(:,k-1,:,j)-f(:,k-6,:,j)) &
+                        -21.*(f(:,k-2,:,j)-f(:,k-5,:,j)) &
+                        +35.*(f(:,k-3,:,j)-f(:,k-4,:,j)) &
+                            + f(:,k-7,:,j)
           enddo
         elseif (idir==3) then
           do k=n2+1,n2+off
-            f(:,:,k,j)=7*f(:,:,k-1,j) &
-                     -21*f(:,:,k-2,j) &
-                     +35*f(:,:,k-3,j) &
-                     -35*f(:,:,k-4,j) &
-                     +21*f(:,:,k-5,j) &
-                      -7*f(:,:,k-6,j) &
-                        +f(:,:,k-7,j)
+            f(:,:,k,j)=   7.*(f(:,:,k-1,j)-f(:,:,k-6,j)) &
+                        -21.*(f(:,:,k-2,j)-f(:,:,k-5,j)) &
+                        +35.*(f(:,:,k-3,j)-f(:,:,k-4,j)) &
+                            + f(:,:,k-7,j)
           enddo
         endif
       endif

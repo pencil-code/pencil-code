@@ -28,7 +28,10 @@ module Syscalls
 !
       character(len=*) :: command
 !
-      call system_c(trim(command)//char(0))
+      integer :: ret
+      integer :: system_c
+
+      ret=system_c(trim(command)//char(0))
 !
     endsubroutine system_cmd
 !***********************************************************************

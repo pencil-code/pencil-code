@@ -2783,11 +2783,12 @@ module Density
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         call sum_mn_name(p%ugrho,idiag_ugrhom)
         call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (idiag_dtd/=0) &
-            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        if (.not.lgpu) then
+          if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        endif
         if (idiag_grhomax/=0) then
-          call dot2(p%grho,tmp)
-          call max_mn_name(sqrt(tmp),idiag_grhomax)
+          call dot2(p%grho,tmp); tmp=sqrt(tmp)
+          call max_mn_name(tmp,idiag_grhomax)
         endif
       endif
 

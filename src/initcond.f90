@@ -6431,39 +6431,57 @@ module Initcond
 !  Dipole in spherical coordinantes
 !
       elseif (lspherical_coords) then
-        do m = m1,m2
-          do l = l1,l2
+        !do m = m1,m2
+        !  do l = l1,l2
+        do m = 1,my
+          do l = 1,mx
             rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix:ix+1) = 0.
-            f(l,m,:,ix+2)    = rpart*sin(y(m))
+            !if (y(m1)==0.and.y(m2)==pi) then
+              f(l,m,:,ix+2) = rpart*sin(y(m))
+            !else
+            !  f(l,m,:,ix+2) = rpart*sin(pi*(y(m)-xyz0(2))/Lxyz(2))
+            !endif
           enddo
         enddo
       endif
 !
     endsubroutine dipole
 !***********************************************************************
-    subroutine dipole_tor(f,ix,amp)
+    subroutine dipole_tor(f,ix,amp,ladd)
 !
 !  initial vector potential for a
-!  purely toroidal axisymmetric field B_\phi \sim \sin\theta
+!  purely toroidal axisymmetric field B_\phi \sim \sin\theta.
+!  Radial dependence parabolic and vanishing at boundaries.
 !
 !  18-jun-13/MR: coded
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ix
       real :: amp, rpart
+      logical, optional :: ladd
 
       integer :: m,l
 
       if (lspherical_coords) then
-        do m = m1,m2
-          do l = l1,l2
+        do m = 1,my
+          do l = 1,mx
             rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
-            f(l,m,:,ix)   = 2.*rpart*cos(y(m))
-            f(l,m,:,ix+1) = rpart*sin(y(m))
-            f(l,m,:,ix+2) = 0.
+            if (loptest(ladd)) then
+              f(l,m,:,ix)   = f(l,m,:,ix)  + 2.*rpart*cos(y(m))
+              f(l,m,:,ix+1) = f(l,m,:,ix+1)+    rpart*sin(y(m))
+            else
+              f(l,m,:,ix)   = 2.*rpart*cos(y(m))
+              f(l,m,:,ix+1) =    rpart*sin(y(m))
+              f(l,m,:,ix+2) = 0.
+            endif
           enddo
         enddo
+      else
+        call fatal_error('dipole_tor', &
+        'dipolar toroidal field not implemented for non-spherical coordinates')
       endif
 !
     endsubroutine dipole_tor

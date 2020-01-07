@@ -1043,7 +1043,7 @@ module Equ
 !
 !  Do the time integrations here, before the pencils are overwritten.
 !
-        if (ltime_integrals.and.llast) then
+        if (ltime_integrals.and.llast.and..not.lgpu) then
           if (lhydro)    call time_integrals_hydro(f,p)
           if (lmagnetic) call time_integrals_magnetic(f,p)
         endif
