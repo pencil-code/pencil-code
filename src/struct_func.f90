@@ -43,7 +43,7 @@ module struct_func
       character (len=*) :: varlabel
       !
       integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
-      integer, parameter :: lb_nxgrid=floor(log(float(nxgrid)+1.e-6)/lntwo)
+      integer, parameter :: lb_nxgrid=floor(log(nxgrid+1.d-6)/lntwo)
       integer, parameter :: imax=lb_nxgrid*2-2
       integer, parameter :: n_pdf=101
       real, dimension (:,:,:,:), allocatable :: flux_vec
@@ -61,7 +61,7 @@ module struct_func
       character (len=fnlen):: prefix
       logical :: llsf=.false., llpdf=.false.
       logical, save :: l0=.true.
-print*, 'lb_nxgrid=', lb_nxgrid
+
       if (l0) then
         l0=.false.
         if (2**lb_nxgrid/=nxgrid) then
