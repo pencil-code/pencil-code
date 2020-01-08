@@ -1279,7 +1279,7 @@ module Hydro
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
-      real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur
+      real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur,lnrhor
       real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0,phi0
       real :: a2, rr2, wall_smoothing
@@ -2021,10 +2021,12 @@ module Hydro
               ur=sqrt(2.*(alog(ur*x(l1:l2)**2)+1./x(l1:l2)+phi0))
             endwhere
           enddo
+          lnrhor=-alog(4.*ur*x(l1:l2)**2)
 !
           do n=n1,n2
             do m=m1,m2
               f(l1:l2,m,n,iux)=ur
+              f(l1:l2,m,n,ilnrho)=lnrhor
             enddo
           enddo
 !
