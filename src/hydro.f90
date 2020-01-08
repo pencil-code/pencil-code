@@ -295,6 +295,9 @@ module Hydro
   integer :: idiag_ux4m=0       ! DIAG_DOC: $\left<u_x^4\right>$
   integer :: idiag_uy4m=0       ! DIAG_DOC: $\left<u_y^4\right>$
   integer :: idiag_uz4m=0       ! DIAG_DOC: $\left<u_z^4\right>$
+  integer :: idiag_uxuy2m=0     ! DIAG_DOC: $\left<u_x^2u_y^2\right>$
+  integer :: idiag_uyuz2m=0     ! DIAG_DOC: $\left<u_y^2u_z^2\right>$
+  integer :: idiag_uzux2m=0     ! DIAG_DOC: $\left<u_z^2u_x^2\right>$
   integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
@@ -1276,12 +1279,12 @@ module Hydro
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
-      real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0
+      real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur
       real, dimension (:,:), allocatable :: yz
-      real :: kabs,crit,eta_sigma,tmp0
+      real :: kabs,crit,eta_sigma,tmp0,phi0
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
-      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz
+      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100
       logical :: lvectorpotential=.false.
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1992,6 +1995,39 @@ module Hydro
               enddo
             enddo
           endif
+!
+        case('parker_wind')
+!
+!  Parker wind
+!
+          if (.not.lspherical_coords) call fatal_error("init_uu", &
+              "parker_wind only meaningful for spherical coordinates")
+!
+!  initial iteration step
+!
+          where (x(l1:l2) < .5) 
+            ur=2.*x(l1:l2)
+          elsewhere
+            ur=2.
+          endwhere
+          phi0=-1.5+alog(4.)
+!
+!  iterate
+!
+          do iter=1,niter
+            where (x(l1:l2) < .5) 
+              ur=exp(.5*ur**2-2.*alog(x(l1:l2))-1./x(l1:l2)-phi0)
+            elsewhere
+              ur=sqrt(2.*(alog(ur*x(l1:l2)**2)+1./x(l1:l2)+phi0))
+            endwhere
+          enddo
+!
+          do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,iux)=ur
+            enddo
+          enddo
+!
         case default
           !
           !  Catch unknown values
@@ -3177,6 +3213,9 @@ module Hydro
         if (idiag_ux4m/=0)    call sum_mn_name(p%uu(:,1)**4,idiag_ux4m)
         if (idiag_uy4m/=0)    call sum_mn_name(p%uu(:,2)**4,idiag_uy4m)
         if (idiag_uz4m/=0)    call sum_mn_name(p%uu(:,3)**4,idiag_uz4m)
+        if (idiag_uxuy2m/=0)  call sum_mn_name(p%uu(:,1)**2*p%uu(:,2)**2,idiag_uxuy2m)
+        if (idiag_uyuz2m/=0)  call sum_mn_name(p%uu(:,2)**2*p%uu(:,3)**2,idiag_uyuz2m)
+        if (idiag_uzux2m/=0)  call sum_mn_name(p%uu(:,3)**2*p%uu(:,1)**2,idiag_uzux2m)
         if (idiag_ux2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,1)**2,idiag_ux2ccm)
         if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
         if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
@@ -4678,6 +4717,9 @@ module Hydro
         idiag_ux4m=0
         idiag_uy4m=0
         idiag_uz4m=0
+        idiag_uxuy2m=0
+        idiag_uyuz2m=0
+        idiag_uzux2m=0
         idiag_ux2ccm=0
         idiag_ux2ssm=0
         idiag_uy2ccm=0
@@ -5002,6 +5044,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux4m',idiag_ux4m)
         call parse_name(iname,cname(iname),cform(iname),'uy4m',idiag_uy4m)
         call parse_name(iname,cname(iname),cform(iname),'uz4m',idiag_uz4m)
+        call parse_name(iname,cname(iname),cform(iname),'uxuy2m',idiag_uxuy2m)
+        call parse_name(iname,cname(iname),cform(iname),'uyuz2m',idiag_uyuz2m)
+        call parse_name(iname,cname(iname),cform(iname),'uzux2m',idiag_uzux2m)
         call parse_name(iname,cname(iname),cform(iname),'ux2ccm',idiag_ux2ccm)
         call parse_name(iname,cname(iname),cform(iname),'ux2ssm',idiag_ux2ssm)
         call parse_name(iname,cname(iname),cform(iname),'uy2ccm',idiag_uy2ccm)
