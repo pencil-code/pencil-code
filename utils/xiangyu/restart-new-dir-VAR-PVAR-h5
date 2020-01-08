@@ -1,0 +1,22 @@
+#!/bin/sh
+#$Id$
+#
+#  17-feb-06/xiangyu: restart the run from a VAR file for SWARM model
+#  One needs to specify which VAR is going to be copied in the code
+#  Example:
+#     restart-new-dir-VAR-PVAR ../hydro256e
+#  where "../hydro256e" is the target run 
+
+/bin/pwd >> $2/data/copied_from.dir
+/bin/date >> $2/data/copied_from.dir
+
+mkdir $1/data/allprocs
+cp data/allprocs/var.h5 $1/data/allprocs/var.h5
+cp data/allprocs/pvar.h5 $1/data/allprocs/pvar.h5
+cp data/grid.h5 $1/data/
+cp data/param* $1/data/
+cp data/tstalk.dat $1/data/
+cp data/pdim.dat $1/data/
+cp data/index.pro $1/data/
+cp data/particles_stalker_header.dat $1/data/
+cp data/particle_size_dist.dat $1/data/
