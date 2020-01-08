@@ -3,7 +3,10 @@
 !  cparam.local
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
+integer, parameter :: lb_nxgrid=5
+integer, parameter :: nxgrid=2**lb_nxgrid,nygrid=nxgrid,nzgrid=nxgrid
+! i.e. nxgrid=nygrid=32, nzgrid=16
+!integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
 integer, parameter :: npar=1024,nqpar=2
 
 integer, parameter :: njtest=12
