@@ -82,8 +82,7 @@ module EquationOfState
 !  Set indices for auxiliary variables.
 !
       call farray_register_auxiliary('yH',iyH)
-      if (ilnTT>0) &
-      call farray_register_auxiliary('lnTT',ilnTT)
+      if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT)
 !
 !  Identify version number (generated automatically by SVN).
 !
