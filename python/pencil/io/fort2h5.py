@@ -11,10 +11,10 @@ write snapshots in hdf5 (data/allprocs/VAR*.h5 files), video slices to
 data/slices/uu1_xy.h5, etc. and averages to data/averages/xy.h5, etc
 """
 
-def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
+def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
            precision, lpersist, quiet, nghost, settings, param, grid,
            x, y, z, lshear, lremove_old_snapshots, indx,
-           last_var=True, trimall=False, l_mpi=False, driver=None, comm=None
+           trimall=False, l_mpi=False, driver=None, comm=None, rank=0, size=1
           ):
 
     """
@@ -78,9 +78,6 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
     *indx*
       List of variable indices in the f-array.
 
-    *last_var*
-      If last_var copy and remove var.dat
-
     """
     import os
     import numpy as np
@@ -91,6 +88,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
     from . import write_h5_snapshot
 
     #move var.h5 out of the way, if it exists for reading binary
+    os.chdir(newdir)
     if os.path.exists(todatadir+'/var.h5'):
         cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
         try:
@@ -98,20 +96,22 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
         except OSError:
             pass
 
-    if l_mpi:
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-    else:
-        rank = 0
-        size = 1
-
     #proceed to copy each snapshot in varfile_names
     if l_mpi:
-        file_names = np.array_split(allfile_names, size)
-        if 'VARd1' in allfile_names:
-            varfile_names = file_names[size-rank-1]
+        nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
+        if not snap_by_proc:
+            file_names = np.array_split(allfile_names, size)
+            if 'VARd1' in allfile_names:
+                varfile_names = file_names[size-rank-1]
+            else:
+                varfile_names = file_names[rank]
         else:
-            varfile_names = file_names[rank]
+            if 'VARd1' in allfile_names:
+                varfile_names = file_names[size-rank-1]
+            else:
+                os.chdir(olddir)
+                iprocs = np.array_split(np.arange(nprocs),size)
+                procs = iprocs[rank]
     else:
         varfile_names = allfile_names
     if len(varfile_names) > 0:
@@ -119,192 +119,19 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
             #load Fortran binary snapshot
             print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
             os.chdir(olddir)
-            var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
-                           lpersist=lpersist, trimall=trimall
-                          )
-            try:
-                var.deltay
-                lshear = True
-            except:
-                lshear = False
-
-            if lpersist:
-                persist = {}
-                for key in read.record_types.keys():
-                    try:
-                        persist[key] = var.__getattribute__(key)[()]
-                        if (type(persist[key][0])==str):
-                            persist[key][0] = \
-                                           var.__getattribute__(key)[0].encode()
-                    except:
-                        continue
-            else:
-                persist = None
-            #write data to h5
-            os.chdir(newdir)
-            write_h5_snapshot(var.f, file_name=file_name, datadir=todatadir,
-                              precision=precision, nghost=nghost,
-                              persist=persist,
-                              settings=settings, param=param, grid=grid,
-                              lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
-                              lshear=lshear, driver=driver, comm=comm)
-            if lremove_old_snapshots:
-                os.chdir(olddir)
-                cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
-                os.system(cmd)
-    if last_var:
-        last_var = rank==size-1
-    if last_var:
-        os.chdir(olddir)
-        var = read.var('var.dat', datadir=fromdatadir, quiet=quiet,
-                       lpersist=lpersist, trimall=trimall
-                      )
-        if lpersist:
-            persist = {}
-            for key in read.record_types.keys():
-                try:
-                    persist[key] = var.__getattribute__(key)[()]
-                except:
-                    continue
-        else:
-            persist = None
-            #write data to h5
-            os.chdir(newdir)
-            write_h5_snapshot(var.f, file_name='var', datadir=todatadir,
-                              precision=precision, nghost=nghost,
-                              persist=persist,
-                              settings=settings, param=param, grid=grid,
-                              lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
-                              lshear=lshear, driver=driver, comm=comm)
-        if lremove_old_snapshots:
-            os.chdir(olddir)
-            cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
-            os.system(cmd)
-
-def varmpi2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
-           precision, lpersist, quiet, nghost, settings, param, grid,
-           x, y, z, lshear, lremove_old_snapshots, indx,
-           last_var=True, trimall=False, l_mpi=True, driver=None, comm=None
-          ):
-
-    """
-    Copy a simulation snapshot set written in Fortran binary to hdf5.
-
-    call signature:
-
-    varmpi2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
-           precision, lpersist, quiet, nghost, settings, param, grid,
-           x, y, z, lshear, lremove_old_snapshots, indx,
-           last_var=True, trimall=False, l_mpi=True, driver=None, comm=None
-          )
-
-    Keyword arguments:
-
-    *newdir*:
-      String path to simulation destination directory.
-
-    *olddir*:
-      String path to simulation destination directory.
-
-    *allfile_names*:
-      A list of names of the snapshot files to be written, e.g. VAR0.
-
-    *todatadir*:
-      Directory to which the data is stored.
-
-    *fromdatadir*:
-      Directory from which the data is collected.
-
-    *precision*:
-      Single 'f' or double 'd' precision for new data.
-
-    *lpersist*:
-      option to include persistent variables from snapshots.
-
-    *quiet*
-      Option not to print output.
-
-    *nghost*:
-      Number of ghost zones.
-
-    *settings*
-      simulation properties.
-
-    *param*
-      simulation Param object.
-
-    *grid*
-      simulation Grid object.
-
-    *xyz*:
-      xyz arrays of the domain with ghost zones.
-
-    *lshear*:
-      Flag for the shear.
-
-    *lremove_old_snapshots*:
-      If True the old snapshots will be deleted once the new snapshot has
-      been saved.
-
-    *indx*
-      List of variable indices in the f-array.
-
-    *last_var*
-      If last_var copy and remove var.dat
-
-    """
-    import os
-    import numpy as np
-    import h5py
-    import glob
-    from .. import read
-    from .. import sim
-    from . import write_h5_snapshot
-
-    #move var.h5 out of the way, if it exists for reading binary
-    if os.path.exists(todatadir+'/var.h5'):
-        cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
-        try:
-            os.system(cmd)
-        except OSError:
-            pass
-
-    if not l_mpi:
-        print('ERROR: varmpi2h5 requires mpi implemenatation')
-        return -1
-    else:
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
-    #proceed to copy each snapshot in varfile_names
-    file_names = np.array_split(allfile_names, size)
-    if 'VARd1' in allfile_names:
-        varfile_names = file_names[size-rank-1]
-    else:
-        varfile_names = file_names[rank]
-    if len(varfile_names) > 0:
-        for file_name in varfile_names:
-            #load Fortran binary snapshot
-            print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
-            os.chdir(olddir)
-            ipx = np.arange(settings['nprocx'])
-            ipy = np.arange(settings['nprocy'])
-            ipz = np.arange(settings['nprocz'])
-            iproc = np.arange(ipx.size*ipy.size*ipz.size)
-            iprocs = np.array_split(iproc,size)
-            iproc_loc = iprocs[rank]
-            if iproc_loc.size>0:
-                for proc in iproc_loc:
-                    var = read.var(file_name, proc=proc,
-                                   datadir=fromdatadir, quiet=quiet,
-                                   lpersist=lpersist, trimall=trimall
-                                  )
-                if proc == 0:
+            if snap_by_proc:
+                if len(procs) > 0:
+                    for proc in procs:
+                        procdim = read.dim(proc=proc)
+                        var = read.var(file_name, datadir=fromdatadir,
+                                       quiet=quiet, lpersist=lpersist,
+                                       trimall=trimall, proc=proc)
                     try:
                         var.deltay
                         lshear = True
                     except:
                         lshear = False
+
                     if lpersist:
                         persist = {}
                         for key in read.record_types.keys():
@@ -312,61 +139,59 @@ def varmpi2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
                                 persist[key] = var.__getattribute__(key)[()]
                                 if (type(persist[key][0])==str):
                                     persist[key][0] = \
-                                                   var.__getattribute__(key)[0].encode()
+                                          var.__getattribute__(key)[0].encode()
                             except:
                                 continue
+                    else:
+                        persist = None
+                    #write data to h5
+                    os.chdir(newdir)
+                    write_h5_snapshot(var.f, file_name=file_name,
+                                      datadir=todatadir, precision=precision,
+                                      nghost=nghost, persist=persist, proc=proc,
+                                      procdim=procdim, settings=settings,
+                                      param=param, grid=grid, lghosts=True,
+                                      indx=indx, t=var.t, x=x, y=y, z=z,
+                                      lshear=lshear, driver=driver, comm=comm)
+            else:
+                var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
+                               lpersist=lpersist, trimall=trimall)
+                try:
+                    var.deltay
+                    lshear = True
+                except:
+                    lshear = False
+
+                if lpersist:
+                    persist = {}
+                    for key in read.record_types.keys():
+                        try:
+                            persist[key] = var.__getattribute__(key)[()]
+                            if (type(persist[key][0])==str):
+                                persist[key][0] = \
+                                           var.__getattribute__(key)[0].encode()
+                        except:
+                            continue
                 else:
                     persist = None
-                    lshear = False
                 #write data to h5
                 os.chdir(newdir)
                 write_h5_snapshot(var.f, file_name=file_name, datadir=todatadir,
                                   precision=precision, nghost=nghost,
-                                  persist=persist, proc=proc,
-                                  ipx=ipx[np.mod(proc,ipx.size)],
-                                  ipy=ipy[np.mod(proc,ipy.size)],
-                                  ipz=ipz[np.mod(proc,ipz.size)],
-                                  settings=settings, param=param, grid=grid,
-                                  lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
-                                  lshear=lshear, driver=driver, comm=comm)
-            comm.Barrier()
+                                  persist=persist, settings=settings,
+                                  param=param, grid=grid, lghosts=True,
+                                  indx=indx, t=var.t, x=x, y=y, z=z,
+                                  lshear=lshear, driver=None, comm=None)
             if lremove_old_snapshots:
                 os.chdir(olddir)
                 cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
                 os.system(cmd)
-    if last_var:
-        last_var = rank==size-1
-    if last_var:
-        os.chdir(olddir)
-        var = read.var('var.dat', datadir=fromdatadir, quiet=quiet,
-                       lpersist=lpersist, trimall=trimall
-                      )
-        if lpersist:
-            persist = {}
-            for key in read.record_types.keys():
-                try:
-                    persist[key] = var.__getattribute__(key)[()]
-                except:
-                    continue
-        else:
-            persist = None
-            #write data to h5
-            os.chdir(newdir)
-            write_h5_snapshot(var.f, file_name='var', datadir=todatadir,
-                              precision=precision, nghost=nghost,
-                              persist=persist,
-                              settings=settings, param=param, grid=grid,
-                              lghosts=True, indx=indx, t=var.t, x=x, y=y, z=z,
-                              lshear=lshear, driver=driver, comm=comm)
-        if lremove_old_snapshots:
-            os.chdir(olddir)
-            cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'var.dat')
-            os.system(cmd)
+            del(var)
 
 def slices2h5(newdir, olddir, grid,
               todatadir='data/slices', fromdatadir='data',
               precision='d', quiet=True, lremove_old_slices=False,
-              l_mpi=False, driver=None, comm=None):
+              l_mpi=False, driver=None, comm=None, rank=0, size=1):
 
     """
     Copy a simulation set of video slices written in Fortran binary to hdf5.
@@ -411,13 +236,6 @@ def slices2h5(newdir, olddir, grid,
     from .. import sim
     from . import write_h5_slices
 
-    if l_mpi:
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-    else:
-        rank = 0
-        size = 1
-
     #copy old video slices to new h5 sim
     os.chdir(olddir)
     #identify the coordinates and positions of the slices
@@ -447,7 +265,8 @@ def slices2h5(newdir, olddir, grid,
         len(lines1)==7
     except ValueError:
         if rank == 0:
-            print("ERROR: slice keys and positions must be set see lines 212...", flush=True)
+            print("ERROR: slice keys and positions must be set, "+
+                  "see lines 212...", flush=True)
         return -1
     for key, num in zip(lines2, lines1):
         if num > 0:
@@ -461,7 +280,7 @@ def slices2h5(newdir, olddir, grid,
     if l_mpi:
         import glob
         slice_lists = glob.glob('data/slice_*')
-        slice_lists.remove('slice_position.dat')
+        slice_lists.remove('data/slice_position.dat')
         slice_lists = np.array_split(slice_lists,size)
         slice_list = slice_lists[rank]
         if len(slice_list) > 0:
@@ -470,9 +289,9 @@ def slices2h5(newdir, olddir, grid,
                 extension=str.split(str.split(field_ext,'_')[-1],'.')[1]
                 vslice = read.slices(field=field, extension=extension)
                 os.chdir(newdir)
-                write_h5_slices(vslice, coordinates, positions, datadir=todatadir,
-                                precision=precision, quiet=quiet, driver=driver, comm=comm)
-        comm.Barrier()
+                write_h5_slices(vslice, coordinates, positions,
+                                datadir=todatadir, precision=precision,
+                                quiet=quiet)
         if rank == size-1:
             if lremove_old_slices:
                 os.chdir(olddir)
@@ -483,16 +302,17 @@ def slices2h5(newdir, olddir, grid,
         #write new slices in hdf5
         os.chdir(newdir)
         write_h5_slices(vslice, coordinates, positions, datadir=todatadir,
-                        precision=precision, quiet=quiet, driver=driver, comm=comm)
+                        precision=precision, quiet=quiet)
         if lremove_old_slices:
             os.chdir(olddir)
             cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'slice_*')
             os.system(cmd)
+    del(vslice)
 
 def aver2h5(newdir, olddir,
             todatadir='data/averages', fromdatadir='data', l2D=True,
             precision='d', quiet=True, lremove_old_averages=False,
-            laver2D=False, l_mpi=False, driver=None, comm=None):
+            laver2D=False, l_mpi=False, driver=None, comm=None, rank=0, size=1):
 
     """
     Copy a simulation set of video slices written in Fortran binary to hdf5.
@@ -541,42 +361,30 @@ def aver2h5(newdir, olddir,
     from .. import sim
     from . import write_h5_averages
 
-    #copy old 1D averages to new h5 sim
-    if l_mpi:
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-    else:
-        rank = 0
-        size = 1
 
     if laver2D:
         os.chdir(olddir)
         for xl in ['y','z']:
             if os.path.exists(xl+'aver.in'):
-                 variables=[]
-                 file_id = open(xl+'aver.in','r')
-                 for line in file_id.readlines():
-                     variables.append(line.rstrip('\n'))
-                 file_id.close()
-                 if l_mpi:
-                     varN = np.array_split(np.arange(len(variables)),size)
-                     nvars = varN[rank]
-                 else:
-                     nvars = np.arange(len(variables))
-                 if len(nvars) > 0:
-                     for iav in nvars:
-                         print('writing',iav,variables[iav],'of',xl+'averages', flush=True)
-                         os.chdir(olddir)
-                         av = read.aver(plane_list=xl, var_index=iav)
-                         os.chdir(newdir)
-                         for key in av.__dict__.keys():
-                             if not key in 't':
-                                 write_h5_averages(av, file_name=key,
-                                                   datadir=todatadir,
-                                                   precision=precision,
-                                                   append=True,
-                                                   quiet=quiet, driver=driver, comm=comm)
+                if os.path.exists(os.path.join(fromdatadir,'t2davg.dat')):
+                    f = open(os.path.join(fromdatadir,'t2davg.dat'))
+                    niter = int(f.readline().split(' ')[-1].strip('\n'))
+                else:
+                    av = read.aver(plane_list=xl, proc=0, var_index=0)
+                    niter = av.t.size
+                all_list = np.array_split(np.arange(niter), size)
+                iter_list = list(all_list[rank])
+                os.chdir(olddir)
+                print('reading '+xl+'averages on rank', rank, flush=True)
+                av = read.aver(plane_list=xl, iter_list=iter_list)
+                os.chdir(newdir)
+                write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
+                                  precision=precision, append=False, indx=iter_list,
+                                  quiet=quiet, driver=driver, comm=comm, rank=rank,
+                                  size=size)
+                del(av)
     else:
+        #copy old 1D averages to new h5 sim
         if rank == size-1 or not l_mpi:
             os.chdir(olddir)
             av = read.aver()
@@ -584,27 +392,31 @@ def aver2h5(newdir, olddir,
             for key in av.__dict__.keys():
                 if not key in 't':
                     write_h5_averages(av, file_name=key, datadir=todatadir,
-                                      precision=precision, quiet=quiet, driver=driver, comm=comm)
+                                      precision=precision, quiet=quiet,
+                                      driver=driver, comm=None, rank=None,
+                                      size=size)
             if lremove_old_averages:
                 os.chdir(olddir)
                 cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
                 os.system(cmd)
             if l2D:
-               plane_list = []
-               os.chdir(olddir)
-               if os.path.exists('xaver.in'):
-                   plane_list.append('x')
-               if os.path.exists('yaver.in'):
-                   plane_list.append('y')
-               if os.path.exists('zaver.in'):
-                   plane_list.append('z')
-               if len(plane_list) > 0:
-                   for key in plane_list:
-                       os.chdir(olddir)
-                       av = read.aver(plane_list=key)
-                       os.chdir(newdir)
-                       write_h5_averages(av, file_name=key, datadir=todatadir,
-                                         precision=precision, quiet=quiet, driver=driver, comm=comm)
+                plane_list = []
+                os.chdir(olddir)
+                if os.path.exists('xaver.in'):
+                    plane_list.append('x')
+                if os.path.exists('yaver.in'):
+                    plane_list.append('y')
+                if os.path.exists('zaver.in'):
+                    plane_list.append('z')
+                if len(plane_list) > 0:
+                    for key in plane_list:
+                        os.chdir(olddir)
+                        av = read.aver(plane_list=key)
+                        os.chdir(newdir)
+                        write_h5_averages(av, file_name=key, datadir=todatadir,
+                                          precision=precision, quiet=quiet,
+                                          driver=None, comm=None)
+            del(av)
     if lremove_old_averages:
         if l_mpi:
             comm.Barrier()
@@ -617,12 +429,12 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
            todatadir='data/allprocs', fromdatadir='data',
            precision='d', nghost=3, lpersist=False,
            x=None, y=None, z=None, lshear=False,
+           snap_by_proc=False, aver_by_proc=False,
            lremove_old_snapshots=False, lremove_old_slices=False,
            lremove_old_averages=False, execute=False, quiet=True,
            l2D=True, lvars=True, lvids=True, laver=True, laver2D=False,
-           lremove_deprecated_vids=False
+           lremove_deprecated_vids=False, update_slices=True,
           ):
-
     """
     Copy a simulation object written in Fortran binary to hdf5.
     The default is to copy all snapshots from/to the current simulation
@@ -699,8 +511,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-        #driver='mpio'
-        driver=None
+        driver='mpio'
         l_mpi = True
         l_mpi = l_mpi and (size != 1)
     except ImportError:
@@ -709,6 +520,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         rank = 0
         size = 1
         l_mpi = False
+    if not l_mpi:
+        comm = None
+        driver=None
     print('rank {} and size {}'.format(rank,size), flush=True)
     if rank == size-1:
         print('l_mpi',l_mpi, flush=True)
@@ -717,13 +531,15 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     os.chdir(olddir)
     if not sim.is_sim_dir():
         if rank == 0:
-            print("ERROR: Directory ("+olddir+") needs to be a simulation", flush=True)
+            print("ERROR: Directory ("+olddir+") needs to be a simulation",
+                  flush=True)
         return -1
     if newdir != olddir:
         os.chdir(newdir)
         if not sim.is_sim_dir():
             if rank == 0:
-                print("ERROR: Directory ("+newdir+") needs to be a simulation", flush=True)
+                print("ERROR: Directory ("+newdir+") needs to be a simulation",
+                      flush=True)
             return -1
     #
     lremove_old = lremove_old_snapshots or\
@@ -833,36 +649,53 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         aver2h5(newdir, olddir,
                 todatadir='data/averages', fromdatadir='data', l2D=False,
                 precision=precision, quiet=quiet, laver2D=laver2D,
-                lremove_old_averages=False, l_mpi=l_mpi, driver=driver, comm=comm)
+                lremove_old_averages=False,
+                l_mpi=l_mpi, driver=driver, comm=comm, rank=rank, size=size)
     #copy snapshots
     if lvars:
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
-               precision, lpersist, quiet, nghost, settings, param, grid,
-               x, y, z, lshear, lremove_old_snapshots, indx, l_mpi=l_mpi, driver=driver, comm=comm)
+               snap_by_proc, precision, lpersist, quiet, nghost, settings,
+               param, grid, x, y, z, lshear, lremove_old_snapshots, indx,
+               l_mpi=l_mpi, driver=driver, comm=comm, rank=rank, size=size)
     #copy downsampled snapshots if present
     if lvars and lVARd:
         var2h5(newdir, olddir, varfiled_names, todatadir, fromdatadir,
+               snap_by_proc, precision, lpersist, quiet, nghost, settings,
+               param, grid, x, y, z, lshear, lremove_old_snapshots, indx,
+               trimall=True, l_mpi=l_mpi,
+               driver=driver, comm=comm, rank=rank, size=size)
+    if lvars:
+        var2h5(newdir, olddir, ['var.dat',], todatadir, fromdatadir,
+               snap_by_proc,
                precision, lpersist, quiet, nghost, settings, param, grid,
-               x, y, z, lshear, lremove_old_snapshots, indx, last_var=False,
-               trimall=True, l_mpi=l_mpi, driver=driver, comm=comm)
+               x, y, z, lshear, lremove_old_snapshots, indx,
+               l_mpi=l_mpi, driver=driver, comm=comm, rank=rank, size=size)
     #copy old video slices to new h5 sim
     if lvids:
         if lremove_deprecated_vids:
             for ext in ['bb.','uu.','ux.','uy.','uz.','bx.','by.','bz.']:
                 cmd = 'rm -f data/proc*/slice_'+ext+'*'
-                os.system(cmd)
+                if rank == 0:
+                    os.system(cmd)
+        if comm:
+            comm.Barrier()
         cmd = 'src/read_all_videofiles.x'
-        os.system(cmd)
+        #if rank == size-1:
+        #    os.system(cmd)
+        #if comm:
+        #    comm.Barrier()
         slices2h5(newdir, olddir, grid,
                   todatadir='data/slices', fromdatadir='data',
                   precision=precision, quiet=quiet,
-                  lremove_old_slices=lremove_old_slices, l_mpi=l_mpi, driver=driver, comm=comm)
+                  lremove_old_slices=lremove_old_slices, l_mpi=l_mpi,
+                  driver=driver, comm=comm, rank=rank, size=size)
     #copy old averages data to new h5 sim
     if laver:
         aver2h5(newdir, olddir,
                 todatadir='data/averages', fromdatadir='data', l2D=l2D,
                 precision=precision, quiet=quiet,
-                lremove_old_averages=lremove_old_averages, l_mpi=l_mpi, driver=driver, comm=comm)
+                lremove_old_averages=lremove_old_averages, l_mpi=l_mpi,
+                driver=driver, comm=comm, rank=rank, size=size)
     #check some critical sim files are present for new sim without start
     #construct grid.h5 sim information if requied for new h5 sim
     os.chdir(newdir)
@@ -879,9 +712,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             os.system(cmd)
         items=['def_var.pro', 'index.pro', 'jobid.dat', 'param.nml',
                'particle_index.pro', 'pc_constants.pro', 'pointmass_index.pro',
-               'pt_positions.dat', 'sn_series.dat', 'svnid.dat', 'time_series.dat',
-               'tsnap.dat', 'tspec.dat', 'tvid.dat', 'var.general',
-               'variables.pro', 'varname.dat']
+               'pt_positions.dat', 'sn_series.dat', 'svnid.dat',
+               'time_series.dat', 'tsnap.dat', 'tspec.dat', 'tvid.dat',
+               't2davg.dat', 'var.general', 'variables.pro', 'varname.dat']
         for item in items:
             source_file = os.path.join(olddir,fromdatadir,item)
             target_file = os.path.join(newdir,fromdatadir,item)
@@ -889,3 +722,4 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                 if not os.path.exists(target_file):
                     cmd='cp '+source_file+' '+target_file
                     os.system(cmd)
+    print('Simulation Fortran to h5 completed on rank {}.'.format(rank))
