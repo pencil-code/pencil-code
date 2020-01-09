@@ -174,7 +174,7 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
 def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                    precision='d', nghost=3, persist=None, settings=None,
                    param=None, grid=None, lghosts=False, indx=None,
-                   proc=None, ipx=None, ipy=None, ipz=None,
+                   proc=None, ipx=None, ipy=None, ipz=None, procdim=None,
                    unit=None, t=None, x=None, y=None, z=None,
                    quiet=True, lshear=False, driver=None, comm=None):
     """
@@ -373,70 +373,80 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         except FileExistsError:
             pass
     #open file for writing data
+    if file_name[-4:] == '.dat':
+        file_name = file_name[:-4]
     filename = os.path.join(datadir,file_name+'.h5')
     if proc:
         state = 'a'
     else:
         state = 'w'
-    with h5py.File(filename, state, driver=driver, comm=comm) as ds:
-        # Write the data.
-        if not ds.__contains__('data'):
+    if comm:
+        ds = h5py.File(filename, state, driver=driver, comm=comm)
+    else:
+        ds = h5py.File(filename, state)
+    # Write the data.
+    if not ds.__contains__('data'):
+        data_grp = ds.create_group('data')
+    for key in indx.__dict__.keys():
+        if comm:
+            key = comm.bcast(key, root=0)
+        if key in ['uu','keys','aa','KR_Frad','uun','gg']:
+            continue
+        #create ghost zones if required
+        if not lghosts:
+            tmp_arr = np.zeros([snapshot.shape[1]+2*nghost,
+                               snapshot.shape[2]+2*nghost,
+                               snapshot.shape[3]+2*nghost])
+            tmp_arr[dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1
+                   ] = np.array(snapshot[indx.__getattribute__(key)])
+            data_grp.create_dataset(key,
+                                    data=(tmp_arr), dtype=data_type)
+        else:
+            data_grp.create_dataset(
+                key,
+                data=np.array(snapshot[indx.__getattribute__(key)-1]),
+                dtype=data_type)
+    # add time data
+    ds.create_dataset('time', data=np.array(t), dtype=data_type)
+    # add settings
+    sets_grp = ds.create_group('settings')
+    for key in settings.keys():
+        if comm:
+            key = comm.bcast(key, root=0)
+        if 'precision' in key:
+            sets_grp.create_dataset(key, data=(settings[key],))
+        else:
+            sets_grp.create_dataset(key, data=(settings[key]))
+    # add grid
+    grid_grp = ds.create_group('grid')
+    for key in gkeys:
+        if comm:
+            key = comm.bcast(key, root=0)
+        grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
+    grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
+    grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
+    grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
+    # add physical units
+    unit_grp = ds.create_group('unit')
+    for key in ukeys:
+        if comm:
+            key = comm.bcast(key, root=0)
+        if 'system' in key:
+            unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
+        else:
+            unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
+    # add optional pesristent data
+    if persist != None:
+        pers_grp = ds.create_group('persist')
+        for key in persist.keys():
             if comm:
-                comm.Barrier()
-                if proc == 0:
-                    data_grp = ds.create_group('data')
-                comm.Barrier()
-            else:
-                data_grp = ds.create_group('data')
-        for key in indx.__dict__.keys():
-            if key in ['uu','keys','aa','KR_Frad','uun','gg']:
-                continue
-            #create ghost zones if required
-            if not lghosts:
-                tmp_arr = np.zeros([snapshot.shape[1]+2*nghost,
-                                   snapshot.shape[2]+2*nghost,
-                                   snapshot.shape[3]+2*nghost])
-                tmp_arr[dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1
-                       ] = np.array(snapshot[indx.__getattribute__(key)])
-                data_grp.create_dataset(key,
-                                        data=(tmp_arr), dtype=data_type)
-            else:
-                data_grp.create_dataset(
-                    key,
-                    data=np.array(snapshot[indx.__getattribute__(key)-1]),
-                    dtype=data_type)
-        # add time data
-        ds.create_dataset('time', data=np.array(t), dtype=data_type)
-        # add settings
-        sets_grp = ds.create_group('settings')
-        for key in settings.keys():
-            if 'precision' in key:
-                sets_grp.create_dataset(key, data=(settings[key],))
-            else:
-                sets_grp.create_dataset(key, data=(settings[key]))
-        # add grid
-        grid_grp = ds.create_group('grid')
-        for key in gkeys:
-            grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
-        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
-        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
-        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
-        # add physical units
-        unit_grp = ds.create_group('unit')
-        for key in ukeys:
-            if 'system' in key:
-                unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
-            else:
-                unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
-        # add optional pesristent data
-        if persist != None:
-            pers_grp = ds.create_group('persist')
-            for key in persist.keys():
-                if not quiet:
-                    print(key,type(persist[key][0]))
-                arr = np.empty(nprocs,dtype=type(persist[key][0]))
-                arr[:] = persist[key][()]
-                pers_grp.create_dataset(key, data=(arr))
+                key = comm.bcast(key, root=0)
+            if not quiet:
+                print(key,type(persist[key][0]))
+            arr = np.empty(nprocs,dtype=type(persist[key][0]))
+            arr[:] = persist[key][()]
+            pers_grp.create_dataset(key, data=(arr))
+    ds.close()
 #    return 0
 
 def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
@@ -541,33 +551,35 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
             pass
     #open file for writing data
     filename = os.path.join(datadir,file_name+'.h5')
-    with h5py.File(filename, 'w', driver=driver, comm=comm) as ds:
-        # add settings
-        sets_grp = ds.create_group('settings')
-        for key in settings.keys():
-            if 'precision' in key:
-                sets_grp.create_dataset(key, data=(settings[key],))
-            else:
-                sets_grp.create_dataset(key, data=(settings[key]))
-        # add grid
-        grid_grp = ds.create_group('grid')
-        for key in gkeys:
-            grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
-        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
-        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
-        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
-        # add physical units
-        unit_grp = ds.create_group('unit')
-        for key in ukeys:
-            if 'system' in key:
-                unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
-            else:
-                unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
+    ds = h5py.File(filename, 'w')
+    # add settings
+    sets_grp = ds.create_group('settings')
+    for key in settings.keys():
+        if 'precision' in key:
+            sets_grp.create_dataset(key, data=(settings[key],))
+        else:
+            sets_grp.create_dataset(key, data=(settings[key]))
+    # add grid
+    grid_grp = ds.create_group('grid')
+    for key in gkeys:
+        grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
+    grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
+    grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
+    grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
+    # add physical units
+    unit_grp = ds.create_group('unit')
+    for key in ukeys:
+        if 'system' in key:
+            unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
+        else:
+            unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
+    ds.close()
 #    return 0
 
-def write_h5_averages(aver, file_name='xy', datadir='data/averages',
+def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
                    precision='d', indx=None, trange=None, quiet=True,
-                   append=False, dim=None, driver=None, comm=None):
+                   append=False, dim=None, driver=None, comm=None, rank=0,
+                   size=1):
     """
     Write an hdf5 format averages dataset given as an Averages object.
     We assume by default that a run simulation directory has already been
@@ -631,46 +643,110 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages',
         state = 'a'
     else:
         state = 'w'
-    #number of iterations to record
-    nt=aver.t.shape[0]
-    print('saving '+filename)
+    if not quiet:
+        print('rank', rank, 'saving '+filename, flush=True)
     if comm:
-        comm.barrier()
-        for rank in range(0, comm.Get_size()):
-            if rank == comm.Get_rank():
-                with h5py.File(filename, state, driver=driver, comm=comm) as ds:
-                    for key in aver.__getattribute__(file_name).__dict__.keys():
-                        data=aver.__getattribute__(file_name).__getattribute__(key)[()]
-                        nt=min(nt,data.shape[0])
-                        for it in range(0,nt):
-                            if not ds.__contains__(str(it)):
-                                ds.create_group(str(it))
-                            if not ds[str(it)].__contains__('time'):
-                                ds[str(it)].create_dataset('time', data=aver.t[it])
-                            if not ds[str(it)].__contains__(key):
-                                ds[str(it)].create_dataset(key,
-                                               data=data[it])
-                    if not ds.__contains__('last'):
-                        ds.create_dataset('last', data=nt-1)
+        from mpi4py import MPI
+        #number of iterations to record
+        if not nt:
+            nt = aver.t.shape[0]
+            comm.allreduce(nt, op=MPI.SUM)
+        if indx:
+            if isinstance(indx, list):
+                indx = indx
+            else:
+                indx = [indx]
+        else:
+            indx = list(range(0,nt))
+        ds = h5py.File(filename, state, driver=driver, comm=comm)
+        #ds.atomic = True
+        if not ds.__contains__('last'):
+            try:
+                ds.create_dataset('last', data=nt-1, dtype='i')
+            except ValueError:
+                pass
+        if not quiet:
+            print('rank', rank, 'nt', nt, 'indx', indx, flush=True)
+        for it in range(0,nt):
+            ds.create_group(str(it))
+            if not ds[str(it)].__contains__('time'):
+                try:
+                    ds[str(it)].create_dataset('time',
+                                               (1,),
+                                               dtype=precision)
+                except ValueError:
+                    pass
+        for key in aver.__getattribute__(file_name).__dict__.keys():
+            key = comm.bcast(key, root=0)
+            data=aver.__getattribute__(file_name).__getattribute__(key)
+            for it in range(0,nt):
+                if not ds[str(it)].__contains__(key):
+                    try:
+                        ds[str(it)].create_dataset(key,
+                                                   data[0].shape,
+                                                   dtype=precision)
+                    except ValueError:
+                        pass
+        comm.Barrier()
+        for it in indx:
+            ds[str(it)]['time'][:] = aver.t[it-indx[0]]
+        for key in aver.__getattribute__(file_name).__dict__.keys():
+            #key needs to be broadcast as order of keys may vary on each process
+            #causing segmentation fault
+            key = comm.bcast(key, root=0)
+            data = aver.__getattribute__(file_name).__getattribute__(key)
+            if not quiet:
+                print('writing', key, 'on rank', rank, flush=True)
+            for it in indx:
+                ds[str(it)][key][:] = data[it-indx[0]]
+        ds.close()
     else:
-        with h5py.File(filename, state, driver=driver, comm=comm) as ds:
+        #number of iterations to record
+        if not nt:
+            nt = aver.t.shape[0]
+        with h5py.File(filename, state) as ds:
             for key in aver.__getattribute__(file_name).__dict__.keys():
                 data=aver.__getattribute__(file_name).__getattribute__(key)[()]
-                nt=min(nt,data.shape[0])
-                for it in range(0,nt):
+                if indx:
+                    if isinstance(indx, list):
+                        indx = indx
+                    else:
+                        indx = [indx]
+                else:
+                    nt = min(nt,data.shape[0])
+                    indx = list(range(0,nt))
+                for it in indx:
                     if not ds.__contains__(str(it)):
-                        ds.create_group(str(it))
+                        try:
+                            ds.create_group(str(it))
+                        except ValueError:
+                            pass
                     if not ds[str(it)].__contains__('time'):
-                        ds[str(it)].create_dataset('time', data=aver.t[it])
+                        try:
+                            ds[str(it)].create_dataset('time',
+                                                       data=aver.t[it-indx[0]],
+                                                       dtype=precision)
+                        except ValueError:
+                            pass
                     if not ds[str(it)].__contains__(key):
-                        ds[str(it)].create_dataset(key,
-                                       data=data[it])
+                        try:
+                            ds[str(it)].create_dataset(key,
+                                       data=data[it-indx[0]],
+                                       dtype=precision)
+                        except ValueError:
+                            pass
             if not ds.__contains__('last'):
-                ds.create_dataset('last', data=nt-1)
+                try:
+                    ds.create_dataset('last', data=nt-1, dtype='i')
+                except ValueError:
+                    pass
+    del(data)
+    if not quiet:
+        print(filename+' written on rank {}'.format(rank))
 
-def write_h5_slices(vslice, coordinates, positions, datadir='data/slices', 
+def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                    precision='d', indx=None, trange=None, quiet=True,
-                   append=False, dim=None, driver=None, comm=None):
+                   append=False, dim=None):
     """
     Write an hdf5 format slices dataset given as an Slices object.
     We assume by default that a run simulation directory has already been
@@ -745,8 +821,8 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                 else:
                     state = 'w'
                 #number of iterations to record
-                print('saving '+filename)
-                with h5py.File(filename, state, driver=driver, comm=comm) as ds:
+                print('saving '+filename, flush=True)
+                with h5py.File(filename, state) as ds:
                     for it in range(1,nt+1):
                         if not ds.__contains__(str(it)):
                             ds.create_group(str(it))
