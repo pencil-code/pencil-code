@@ -55,7 +55,7 @@ class Averages(object):
 
 
     def read(self, plane_list=None, var_index=-1, datadir='data',
-             proc=-1):
+             proc=-1, iter_list=None):
         """
         Read Pencil Code average data.
 
@@ -168,7 +168,7 @@ class Averages(object):
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
                                                   aver_file_name, n_vars,
-                                                  var_index, proc, l_h5,
+                                                  var_index, iter_list, proc, l_h5,
                                                  )
 
             # Add the raw data to self.
@@ -198,7 +198,7 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                       n_vars, var_index, proc, l_h5):
+                       n_vars, var_index, iter_list, proc, l_h5):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -285,16 +285,41 @@ class Averages(object):
                     # Not all proc dirs have a [yz]averages.dat.
                     print("Averages of processor {0} missing.".format(proc))
                     break
-                while True:
-                    try:
-                        t.append(file_id.read_record(dtype=dtype)[0])
-                        if var_index >= 0:
-                            proc_data.append(file_id.read_record(dtype=dtype)[inx1:inx2])
-                        else:
-                            proc_data.append(file_id.read_record(dtype=dtype))
-                    except:
-                        # Finished reading.
-                        break
+                if iter_list:
+                    if isinstance(iter_list, list):
+                        iter_list = iter_list
+                    else:
+                        iter_list = [iter_list]
+                    # split by iteration overrules split by variable
+                    var_index = -1
+                    iiter = 0
+                    while True:
+                        try:
+                            if iiter in iter_list:
+                                t.append(file_id.read_record(dtype=dtype)[0])
+                                proc_data.append(file_id.read_record(dtype=dtype))
+                                if iiter >= iter_list[-1]:
+                                    # Finished reading.
+                                    break
+                                iiter += 1
+                            else:
+                                file_id.read_record(dtype=dtype)[0]
+                                file_id.read_record(dtype=dtype)
+                                iiter += 1
+                        except:
+                            # Finished reading.
+                            break
+                else:
+                    while True:
+                        try:
+                            t.append(file_id.read_record(dtype=dtype)[0])
+                            if var_index >= 0:
+                                proc_data.append(file_id.read_record(dtype=dtype)[inx1:inx2])
+                            else:
+                                proc_data.append(file_id.read_record(dtype=dtype))
+                        except:
+                            # Finished reading.
+                            break
                 file_id.close()
                 # Reshape the proc data into [len(t), pnu, pnv].
                 proc_data = np.array(proc_data)
