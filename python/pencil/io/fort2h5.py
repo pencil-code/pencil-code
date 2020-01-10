@@ -283,12 +283,17 @@ def slices2h5(newdir, olddir, grid,
         slice_lists.remove('data/slice_position.dat')
         slice_lists = np.array_split(slice_lists,size)
         slice_list = slice_lists[rank]
+        if not quiet:
+            print('rank', rank, 'slice_list', slice_list, flush=True)
         if len(slice_list) > 0:
             for field_ext in slice_list:
                 field=str.split(str.split(field_ext,'_')[-1],'.')[0]
                 extension=str.split(str.split(field_ext,'_')[-1],'.')[1]
-                vslice = read.slices(field=field, extension=extension)
+                vslice = read.slices(field=field,
+                                     extension=extension, quiet=quiet)
                 os.chdir(newdir)
+                if not quiet:
+                    print('rank', rank, 'writing', field_ext, flush=True)
                 write_h5_slices(vslice, coordinates, positions,
                                 datadir=todatadir, precision=precision,
                                 quiet=quiet)
@@ -298,7 +303,7 @@ def slices2h5(newdir, olddir, grid,
                 cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'slice_*')
                 os.system(cmd)
     else:
-        vslice = read.slices()
+        vslice = read.slices(quiet=quiet)
         #write new slices in hdf5
         os.chdir(newdir)
         write_h5_slices(vslice, coordinates, positions, datadir=todatadir,
@@ -370,13 +375,14 @@ def aver2h5(newdir, olddir,
                     f = open(os.path.join(fromdatadir,'t2davg.dat'))
                     niter = int(f.readline().split(' ')[-1].strip('\n'))
                 else:
-                    av = read.aver(plane_list=xl, proc=0, var_index=0)
+                    av = read.aver(plane_list=xl, proc=0,
+                                   var_index=0, quiet=quiet)
                     niter = av.t.size
                 all_list = np.array_split(np.arange(niter), size)
                 iter_list = list(all_list[rank])
                 os.chdir(olddir)
                 print('reading '+xl+'averages on rank', rank, flush=True)
-                av = read.aver(plane_list=xl, iter_list=iter_list)
+                av = read.aver(plane_list=xl, iter_list=iter_list, quiet=quiet)
                 os.chdir(newdir)
                 write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
                                   precision=precision, append=False, indx=iter_list,
@@ -387,7 +393,7 @@ def aver2h5(newdir, olddir,
         #copy old 1D averages to new h5 sim
         if rank == size-1 or not l_mpi:
             os.chdir(olddir)
-            av = read.aver()
+            av = read.aver(quiet=quiet)
             os.chdir(newdir)
             for key in av.__dict__.keys():
                 if not key in 't':
@@ -411,7 +417,7 @@ def aver2h5(newdir, olddir,
                 if len(plane_list) > 0:
                     for key in plane_list:
                         os.chdir(olddir)
-                        av = read.aver(plane_list=key)
+                        av = read.aver(plane_list=key, quiet=quiet)
                         os.chdir(newdir)
                         write_h5_averages(av, file_name=key, datadir=todatadir,
                                           precision=precision, quiet=quiet,
@@ -430,7 +436,8 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
            precision='d', nghost=3, lpersist=False,
            x=None, y=None, z=None, lshear=False,
            snap_by_proc=False, aver_by_proc=False,
-           lremove_old_snapshots=False, lremove_old_slices=False,
+           lremove_old_snapshots=False,
+           lremove_old_slices=False, lread_all_videoslices=True,
            lremove_old_averages=False, execute=False, quiet=True,
            l2D=True, lvars=True, lvids=True, laver=True, laver2D=False,
            lremove_deprecated_vids=False, update_slices=True,
@@ -446,7 +453,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
            todatadir='data/allprocs', fromdatadir='data',
            precision='d', nghost=3, lpersist=False,
            x=None, y=None, z=None, lshear=False,
-           lremove_old_snapshots=False, lremove_old_slices=False,
+           snap_by_proc=False, aver_by_proc=False,
+           lremove_old_snapshots=False,
+           lremove_old_slices=False, lread_all_videoslices=True,
            lremove_old_averages=False, execute=False, quiet=True,
            l2D=True, lvars=True, lvids=True, laver=True)
 
@@ -607,7 +616,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                 ]
     param = None
     if rank == size-1:
-        param = read.param()
+        param = read.param(quiet=True)
     if l_mpi:
         param=comm.bcast(param, root=size-1)
     param.__setattr__('unit_mass',param.unit_density*param.unit_length**3)
@@ -680,10 +689,10 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         if comm:
             comm.Barrier()
         cmd = 'src/read_all_videofiles.x'
-        #if rank == size-1:
-        #    os.system(cmd)
-        #if comm:
-        #    comm.Barrier()
+        if rank == size-1 and lread_all_videoslices:
+            os.system(cmd)
+        if comm:
+            comm.Barrier()
         slices2h5(newdir, olddir, grid,
                   todatadir='data/slices', fromdatadir='data',
                   precision=precision, quiet=quiet,
