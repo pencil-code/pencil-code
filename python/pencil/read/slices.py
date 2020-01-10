@@ -15,7 +15,7 @@ def slices(*args, **kwargs):
     call signature:
 
     read(field='', extension='', datadir='data', proc=-1,
-         old_file=False, precision='f', quiet=True)
+         old_file=False, precision='f', iter_list=None, quiet=True)
 
     Keyword arguments:
 
@@ -36,6 +36,12 @@ def slices(*args, **kwargs):
 
     *precision*:
       Precision of the data. Either float 'f' or double 'd'.
+
+   *iter_list*
+     list of iteration indices for which to sample the slices
+
+   *vlarge*
+     size of arrays over which memory limits reshaping
 
     *quiet*:
       Print progress if False
@@ -62,7 +68,10 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=True, vlarge=1000000000):
+             old_file=False, precision='f',
+             iter_list=None, vlarge=1000000000,
+             quiet=True
+            ):
         """
         Read Pencil Code slice data.
 
@@ -90,6 +99,12 @@ class SliceSeries(object):
 
         *precision*:
           Precision of the data. Either float 'f' or double 'd'.
+
+        *iter_list*
+          list of iteration indices for which to sample the slices
+
+        *vlarge*
+          size of arrays over which memory limits reshaping
 
         *quiet*:
           Print progress
@@ -218,13 +233,13 @@ class SliceSeries(object):
 
             for extension in extension_list:
                 if not quiet:
-                    print('Extension: ' + str(extension))
+                    print('Extension: ' + str(extension), flush=True)
                 # This one will store the data.
                 ext_object = Foo()
 
                 for field in field_list:
                     if not quiet:
-                        print('  -> Field: ' + str(field))
+                        print('  -> Field: ' + str(field), flush=True)
                     # Compose the file name according to field and extension.
                     datadir = os.path.expanduser(datadir)
                     if proc < 0:
@@ -263,7 +278,7 @@ class SliceSeries(object):
                     slice_series = [0]
 
                     if not quiet:
-                        print('  -> Reading... ')
+                        print('  -> Reading... ', flush=True)
                     while True:
                         try:
                             raw_data = infile.read_record(dtype=precision)
@@ -280,11 +295,11 @@ class SliceSeries(object):
                             slice_series.extend(list(raw_data[:-2]))
                         islice += 1
                     if not quiet:
-                        print('  -> Done')
+                        print('  -> Done', flush=True)
 
                     # Remove first entry and reshape.
                     if not quiet:
-                        print('Reshaping array')
+                        print('Reshaping array', flush=True)
                     self.t = np.array(self.t[1:], dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
                     # Separate the data in chunks if too big
@@ -296,21 +311,21 @@ class SliceSeries(object):
                         ichunk_size = int(subslice_series[0].size/vsize/hsize)
                         slice_tmp = subslice_series[0].reshape(ichunk_size, vsize, hsize)
                         if not quiet:
-                            print("slice_series.shape",slice_series.shape)
-                            print(field,"chunk_size",nchunks)
-                            print("subslice_series[0].size", subslice_series[0].size)
+                            print("slice_series.shape",slice_series.shape, flush=True)
+                            print(field,"chunk_size",nchunks, flush=True)
+                            print("subslice_series[0].size", subslice_series[0].size, flush=True)
                         for subslice in subslice_series[1:]: 
                             ichunk_size = int(subslice.size/vsize/hsize)
                             subslice = subslice.reshape(ichunk_size, vsize, hsize)
                             slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
                             if not quiet:
-                                print("slice_tmp.shape",slice_tmp.shape)
+                                print("slice_tmp.shape",slice_tmp.shape, flush=True)
                         if not nchunks*vscaled==slice_series[1:].size:
                             ichunk_size = int(slice_series[endslice+1:].size/vsize/hsize)
                             subslice = slice_series[endslice+1:].reshape(ichunk_size, vsize, hsize)
                             slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
                             if not quiet:
-                                print("slice_tmp.shape",slice_tmp.shape)
+                                print("slice_tmp.shape",slice_tmp.shape, flush=True)
                         slice_series = slice_tmp
                     else:
                         slice_series = slice_series[1:].reshape(islice, vsize, hsize)
