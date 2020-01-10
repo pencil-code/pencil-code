@@ -111,12 +111,12 @@ SUBROUTINE OneLargeTwoSmall(a1,a2,a4,w, z)
   aq(2)=a2+a1/w
   aq(3)=-a4*w
   CALL QuadraticRoots(real(aq), z)
-  z(3)=CMPLX(w,ZERO,DP)
+  z(3)=CMPLX(w,0.)
 
-  IF (AIMAG(z(1)) == ZERO) RETURN
+  IF (AIMAG(z(1)) == 0.) RETURN
   z(3)=z(2)
   z(2)=z(1)
-  z(1)=CMPLX(w,ZERO,DP)
+  z(1)=CMPLX(w,0.)
   RETURN
 END Subroutine OneLargeTwoSmall   ! -----------------------------------------
 
@@ -135,14 +135,14 @@ SUBROUTINE QuadraticRoots(a, z)
 !----------------------------------------------------------------------------
   IF(a(1)==0.0) THEN     ! EPS is a global module constant (private)
     z(1) = CZERO               ! one root is obviously zero
-    z(2) = CMPLX(-a(2)/a(3), ZERO,DP)    ! remainder is a linear eq.
+    z(2) = CMPLX(-a(2)/a(3), 0.)    ! remainder is a linear eq.
     outputCode=21   ! two identical real roots
     RETURN
   END IF
 
   d = a(2)*a(2) - FOUR*a(1)*a(3)             ! the discriminant
   IF (ABS(d) <= TWO*eps*a(2)*a(2)) THEN
-    z(1) = CMPLX(-HALF*a(2)/a(3), ZERO, DP) ! discriminant is tiny
+    z(1) = CMPLX(-0.5*a(2)/a(3), 0.) ! discriminant is tiny
     z(2) = z(1)
     outputCode=22  ! two distinct real roots
     RETURN
@@ -537,13 +537,13 @@ SUBROUTINE SolvePolynomial(quarticCoeff, cubicCoeff, quadraticCoeff, &
   a(4)=cubicCoeff
   a(5)=quarticCoeff
 
-  IF (quarticCoeff /= ZERO) THEN
+  IF (quarticCoeff /= 0.) THEN
     CALL QuarticRoots(a,z)
-  ELSE IF (cubicCoeff /= ZERO) THEN
+  ELSE IF (cubicCoeff /= 0.) THEN
     CALL CubicRoots(a,z)
-  ELSE IF (quadraticCoeff /= ZERO) THEN
+  ELSE IF (quadraticCoeff /= 0.) THEN
     CALL QuadraticRoots(a,z)
-  ELSE IF (linearCoeff /= ZERO) THEN
+  ELSE IF (linearCoeff /= 0.) THEN
     z(1)=CMPLX(-constantCoeff/linearCoeff, 0, DP)
     outputCode=1
   ELSE
