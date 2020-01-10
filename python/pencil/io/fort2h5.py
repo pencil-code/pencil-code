@@ -401,10 +401,9 @@ def aver2h5(newdir, olddir,
             if os.path.exists(xl+'aver.in'):
                 plane_list.append(xl)
         if rank == size-1 or not l_mpi:
-            os.chdir(olddir)
-            av = read.aver()
-            os.chdir(newdir)
             if len(plane_list) > 0:
+                av = read.aver(plane_list=plane_list)
+                os.chdir(newdir)
                 for key in av.__dict__.keys():
                     if not key in 't':
                         write_h5_averages(av, file_name=key, datadir=todatadir,
