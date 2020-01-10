@@ -395,16 +395,23 @@ def aver2h5(newdir, olddir,
                 del(av)
     else:
         #copy old 1D averages to new h5 sim
+        os.chdir(olddir)
+        plane_list = []
+        for xl in ['xy','xz','yz']:
+            if os.path.exists(xl+'aver.in'):
+                plane_list.append(xl)
         if rank == size-1 or not l_mpi:
             os.chdir(olddir)
             av = read.aver()
             os.chdir(newdir)
-            for key in av.__dict__.keys():
-                if not key in 't':
-                    write_h5_averages(av, file_name=key, datadir=todatadir,
-                                      precision=precision, quiet=quiet,
-                                      driver=driver, comm=None, rank=None,
-                                      size=size)
+            if len(plane_list) > 0:
+                for key in av.__dict__.keys():
+                    if not key in 't':
+                        write_h5_averages(av, file_name=key, datadir=todatadir,
+                                          precision=precision, quiet=quiet,
+                                          driver=driver, comm=None, rank=None,
+                                          size=size)
+                del(av)
             if lremove_old_averages:
                 os.chdir(olddir)
                 cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
@@ -412,12 +419,9 @@ def aver2h5(newdir, olddir,
             if l2D:
                 plane_list = []
                 os.chdir(olddir)
-                if os.path.exists('xaver.in'):
-                    plane_list.append('x')
-                if os.path.exists('yaver.in'):
-                    plane_list.append('y')
-                if os.path.exists('zaver.in'):
-                    plane_list.append('z')
+                for xl in ['x','y','z']:
+                    if os.path.exists(xl+'aver.in'):
+                        plane_list.append(xl)
                 if len(plane_list) > 0:
                     for key in plane_list:
                         os.chdir(olddir)
@@ -426,7 +430,7 @@ def aver2h5(newdir, olddir,
                         write_h5_averages(av, file_name=key, datadir=todatadir,
                                           precision=precision, quiet=quiet,
                                           driver=None, comm=None)
-            del(av)
+                    del(av)
     if lremove_old_averages:
         if l_mpi:
             comm.Barrier()
