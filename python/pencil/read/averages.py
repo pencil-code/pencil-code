@@ -22,6 +22,9 @@ def aver(*args, **kwargs):
       A list of the 2d/1d planes over which the averages were taken.
       Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
+   *iter_list*
+     list of iteration indices for which to sample the slices
+
    *var_index*:
      Index of single variable taken from among the 'y' or 'z' averages.
      Takes an integer value < len(yaver.in or zaver.in).
@@ -69,9 +72,12 @@ class Averages(object):
           A list of the 2d/1d planes over which the averages were taken.
           Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
+        *iter_list*
+          list of iteration indices for which to sample the slices
+
         *var_index*:
-             Index of variable from among within the 'y' or 'z' averages.
-             Takes an integer value < len(yaver.in or zaver.in).
+          Index of variable from among within the 'y' or 'z' averages.
+          Takes an integer value < len(yaver.in or zaver.in).
 
         *datadir*:
           Directory where the data is stored.
@@ -167,9 +173,8 @@ class Averages(object):
                                                   aver_file_name, n_vars, l_h5)
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
-                                                  aver_file_name, n_vars,
-                                                  var_index, iter_list, proc, l_h5,
-                                                 )
+                                                  aver_file_name, n_vars, l_h5,
+                                                  var_index, iter_list, proc)
 
             # Add the raw data to self.
             var_idx = 0
@@ -280,7 +285,8 @@ class Averages(object):
                 t = []
                 proc_data = []
                 try:
-                    file_id = FortranFile(os.path.join(datadir, proc_dir, aver_file_name))
+                    file_id = FortranFile(os.path.join(datadir, proc_dir,
+                                                       aver_file_name))
                 except:
                     # Not all proc dirs have a [yz]averages.dat.
                     print("Averages of processor {0} missing.".format(proc))
@@ -297,7 +303,8 @@ class Averages(object):
                         try:
                             if iiter in iter_list:
                                 t.append(file_id.read_record(dtype=dtype)[0])
-                                proc_data.append(file_id.read_record(dtype=dtype))
+                                proc_data.append(
+                                            file_id.read_record(dtype=dtype))
                                 if iiter >= iter_list[-1]:
                                     # Finished reading.
                                     break
@@ -314,9 +321,11 @@ class Averages(object):
                         try:
                             t.append(file_id.read_record(dtype=dtype)[0])
                             if var_index >= 0:
-                                proc_data.append(file_id.read_record(dtype=dtype)[inx1:inx2])
+                                proc_data.append(
+                                    file_id.read_record(dtype=dtype)[inx1:inx2])
                             else:
-                                proc_data.append(file_id.read_record(dtype=dtype))
+                                proc_data.append(
+                                    file_id.read_record(dtype=dtype))
                         except:
                             # Finished reading.
                             break
@@ -353,7 +362,8 @@ class Averages(object):
                         raw_data = np.zeros([len(t), 1, nv, nu])
                     else:
                         raw_data = np.zeros([len(t), n_vars, nv, nu])
-                raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = proc_data.copy()
+                raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = \
+                                                                proc_data.copy()
 
             t = np.array(t)
             raw_data = np.swapaxes(raw_data, 2, 3)
@@ -361,7 +371,8 @@ class Averages(object):
         return t, raw_data
 
 
-    def __read_2d_aver(self, plane, datadir, variables, aver_file_name, n_vars, l_h5):
+    def __read_2d_aver(self, plane, datadir, variables,
+                       aver_file_name, n_vars, l_h5):
         """
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
@@ -406,7 +417,8 @@ class Averages(object):
                     t[t_idx] = tmp[str(t_idx) + '/time'][()]
                     raw_idx = 0
                     for var in variables:
-                        raw_data[t_idx, raw_idx] = tmp[str(t_idx) + '/' + var.strip()][()]
+                        raw_data[t_idx, raw_idx] = \
+                                         tmp[str(t_idx) + '/' + var.strip()][()]
                         raw_idx += 1
         else:
             raw_data = np.zeros([n_times, n_vars*nw])
@@ -437,5 +449,6 @@ class Averages(object):
         import re
 
         convert = lambda text: int(text) if text.isdigit() else text.lower()
-        alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+        alphanum_key = \
+                     lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
         return sorted(l, key=alphanum_key)
