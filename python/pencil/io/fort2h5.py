@@ -428,7 +428,7 @@ def aver2h5(newdir, olddir,
                 if len(plane_list) > 0:
                     for key in plane_list:
                         os.chdir(olddir)
-                        av = read.aver(plane_list=key, quiet=quiet)
+                        av = read.aver(plane_list=key)
                         os.chdir(newdir)
                         write_h5_averages(av, file_name=key, datadir=todatadir,
                                           precision=precision, quiet=quiet,
