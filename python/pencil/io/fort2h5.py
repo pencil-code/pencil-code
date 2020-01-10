@@ -96,6 +96,10 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
         except OSError:
             pass
 
+    if isinstance(allfile_names, list):
+        allfile_names = allfile_names
+    else:
+        allfile_names = [allfile_names]
     #proceed to copy each snapshot in varfile_names
     if l_mpi:
         nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
