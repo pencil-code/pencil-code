@@ -589,6 +589,17 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         else:
             varfile_names = glob.glob('VAR*')
         os.chdir(olddir)
+    else:
+        lVARd = False
+        varfiled_names = []
+        tmp_names = []
+        for varfile_name in varfile_names:
+            if 'VARd' in varfile_names:
+                varfiled_names.append(varfile_name)
+                lVARd = True
+            else:
+                tmp_file.append(varfile_name)
+        varfile_names = tmp_names
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
             ]
