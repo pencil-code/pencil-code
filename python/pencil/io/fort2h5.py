@@ -598,7 +598,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                 varfiled_names.append(varfile_name)
                 lVARd = True
             else:
-                tmp_file.append(varfile_name)
+                tmp_names.append(varfile_name)
         varfile_names = tmp_names
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
@@ -631,6 +631,11 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         settings['precision']=precision.encode()
     if l_mpi:
         settings=comm.bcast(settings, root=0)
+    if snap_by_proc:
+        nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
+        if np.mod(nprocs,size) != 0:
+            print("ERROR: efficiency reqires cpus to divide ncpus", flush=True)
+            return -1
     if not quiet:
         print(rank,grid)
     #obtain physical units from old simulation
