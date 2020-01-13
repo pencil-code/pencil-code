@@ -591,6 +591,10 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         os.chdir(olddir)
     else:
         lVARd = False
+        if isinstance(varfile_names, list):
+            varfile_names = varfile_names
+        else:
+            varfile_names = [varfile_names]
         varfiled_names = []
         tmp_names = []
         for varfile_name in varfile_names:
