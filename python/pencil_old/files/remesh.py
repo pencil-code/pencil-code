@@ -56,28 +56,28 @@ def interp_var(
             return 
         os.chdir(localdir+source)
         print('loading data from '+localdir+source)
-        fold=pc.read_var(oldvar,quiet=True)
+        fold=pc.reads.var(oldvar,quiet=True)
     else:
         if not os.path.exists(source_path):
             print('error: source_path does not exist')
             return 
         os.chdir(source_path)
         print('loading data from '+source_path)
-        fold=pc.read_var(oldvar,quiet=True)
+        fold=pc.read.var(oldvar,quiet=True)
     if target_path==None:
         if not os.path.exists(localdir+target):
             print('error: target_path must be specified as string')
             return 
         os.chdir(localdir+target)
         print('loading data from '+localdir+target)
-        fnew=pc.read_var(newvar,quiet=True)
+        fnew=pc.read.var(newvar,quiet=True)
     else:
         if not os.path.exists(target_path):
             print('error: target_path does not exist')
             return 
         os.chdir(target_path)
         print('loading data from '+target_path)
-        fnew=pc.read_var(newvar,quiet=True)
+        fnew=pc.read.var(newvar,quiet=True)
     if xlim==None:
         xlim=[fold.x.min(),fold.x.max()]
     if ylim==None:
@@ -150,7 +150,7 @@ def distribute_fort(
     datadir=os.getcwd()+'/data/'
     if not os.path.exists(datadir):
         print('error: target_path does not exist')
-    dim=pc.read_dim()
+    dim=pc.read.dim()
     if dim.precision=='D':
         prec=np.float64
         intp=np.int64
@@ -204,7 +204,7 @@ def distribute_fort(
                 f.close()
 
 #set of persistent variables used by interstellar, listed in record_types.h
-#if required replace pc.pers with your list in local_remesh.py below 
+#if required replace pco.pers with your list in local_remesh.py below 
 pers=[
       (253, 0.0), 
       (254, 0.0), 
@@ -232,17 +232,17 @@ pers=[
 file to contain:
 
 import pencil as pc
-fnew=pc.interp_var(
+fnew=pco.interp_var(
                    target_path='/path/to/mature_run',
                    source_path='/path/to/new_run'
                   )
-pc.distribute_fort(fnew,'/path/to/new_run')
+pco.distribute_fort(fnew,'/path/to/new_run')
 ##or if the run uses persistent variables comment above line and uncomment 
-##below. pc.pers will need to be replaced by the appropriate variables
-#pc.distribute_fort(
+##below. pco.pers will need to be replaced by the appropriate variables
+#pco.distribute_fort(
                     fnew,
                     '/path/to/new_run',
-                    persist=pc.pers
+                    persist=pco.pers
                    )
 
     > python local_remesh.py
