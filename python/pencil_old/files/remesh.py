@@ -231,7 +231,7 @@ pers=[
     > vi local_remesh.py
 file to contain:
 
-import pencil as pc
+import pencil_old as pco
 fnew=pco.interp_var(
                    target_path='/path/to/mature_run',
                    source_path='/path/to/new_run'
