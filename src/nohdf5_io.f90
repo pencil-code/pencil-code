@@ -849,9 +849,9 @@ module HDF5_IO
         close(lun_output)
       else
         open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
         write(lun_output,'(1pe12.5)') time
-        write(lun_output,'(1p,8e14.5e3)') data(:,1:nc)
+        write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,1:nc)
         close(lun_output)
       endif
 !
@@ -912,12 +912,12 @@ module HDF5_IO
         close(lun_output)
       else
         open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
         write(lun_output,'(1pe12.5)') time
         if (label == 'z') then
-          write(lun_output,'(1p,8e14.5e3)') ( data(ia,:,:), ia=1, nc )
+          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') ( data(ia,:,:), ia=1, nc )
         else
-          write(lun_output,'(1p,8e14.5e3)') data(:,:,1:nc)
+          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,:,1:nc)
         endif
         close(lun_output)
       endif
