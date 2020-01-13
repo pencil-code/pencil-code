@@ -441,7 +441,11 @@ ifeq ($(IO),io_hdf5)
     # choose default HDF5 IO strategy (parallel)
     HDF5_IO = hdf5_io_parallel
   endif
+endif
 
+HDF5_MODULES = io_hdf5 special/meanfield_e_tensor
+
+ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
   ifneq ($(MODULE_CMD),)
     HDF5_LOADED := $(shell (module list |& grep hdf5) || (module list |& grep hf5) )
     ifeq ($(HDF5_LOADED),)
@@ -2446,8 +2450,7 @@ ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPPFLAGS)
 #
 #  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPPFLAGS) below this point!
 #
-ifneq ($(HDF5_IO),nohdf5_io)
-
+ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
 	export HDF5_FC:=$(FC)
 	export HDF5_FLINKER:=$(LD)
@@ -2653,6 +2656,13 @@ nompicomm.o: nompicomm.f90
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c hdf5_io$*.f90 -o hdf5_io$*.o
 #
+special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90 
+ifneq ($(SPECIAL_MULT),1)
+	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
+else
+	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
+endif
+#
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
 experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) | experimental/analyzers.o
@@ -2790,7 +2800,7 @@ LAST_OBJ=$(EXECUTABLES:.x=.o)
 legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
-ifneq ($(HDF5_IO),nohdf5_io)
+ifdef FC_HDF5_FULL
 	@echo HDF5 compiler and linker in $(FC_HDF5_FULL).
 endif
 	@# Realize error even when last command in pipe is FCCLEANER:
@@ -2807,9 +2817,12 @@ endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 
-code: Makefile.inc Makefile-standard.inc cparam.inc
+code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
+ifdef FC_HDF5_FULL
+	@echo HDF5 compiler and linker in $(FC_HDF5_FULL).
+endif
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2904,7 +2917,7 @@ slender:
 #  Clean up, but leave makefile and TAGS.
 #
 clean:  slender
-	rm -f *.x *.d cparam*.inc* cparam_pencils*.inc file_io_common.inc *.il
+	rm -f *.x *.d cparam*.inc* cparam_pencils*.inc file_io_common.inc *.il *.so
 	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
