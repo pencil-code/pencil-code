@@ -239,11 +239,7 @@ fnew=pco.interp_var(
 pco.distribute_fort(fnew,'/path/to/new_run')
 ##or if the run uses persistent variables comment above line and uncomment 
 ##below. pco.pers will need to be replaced by the appropriate variables
-#pco.distribute_fort(
-                    fnew,
-                    '/path/to/new_run',
-                    persist=pco.pers
-                   )
+#pco.distribute_fort(fnew, '/path/to/new_run', persist=pco.pers)
 
     > python local_remesh.py
     Done!
