@@ -101,7 +101,7 @@ class Averages(object):
             plane_list = ['xy', 'xz', 'yz']
 
         if var_index >= 0:
-            print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
+            print("var_index {} requires plane_list = 'y' or 'z',".format(var_index),flush=True)
         # Determine which average files to read.
         in_file_name_list = []
         aver_file_name_list = []
@@ -170,11 +170,11 @@ class Averages(object):
 
             if plane == 'xy' or plane == 'xz' or plane == 'yz':
                 t, raw_data = self.__read_2d_aver(plane, datadir, variables,
-                                                  aver_file_name, n_vars, l_h5)
+                                                  aver_file_name, n_vars, l_h5=l_h5)
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
-                                                  aver_file_name, n_vars, l_h5,
-                                                  var_index, iter_list, proc)
+                                                  aver_file_name, n_vars,
+                                                  var_index, iter_list, proc, l_h5=l_h5)
 
             # Add the raw data to self.
             var_idx = 0
@@ -203,7 +203,7 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                       n_vars, var_index, iter_list, proc, l_h5):
+                       n_vars, var_index, iter_list, proc, l_h5=False):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -218,7 +218,7 @@ class Averages(object):
         if l_h5:
             import h5py
             file_id = os.path.join(datadir, aver_file_name)
-            print(file_id)
+            print(file_id,flush=True)
             with h5py.File(file_id, 'r') as tmp:
                 n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.
@@ -372,7 +372,7 @@ class Averages(object):
 
 
     def __read_2d_aver(self, plane, datadir, variables,
-                       aver_file_name, n_vars, l_h5):
+                       aver_file_name, n_vars, l_h5=False):
         """
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
@@ -385,7 +385,7 @@ class Averages(object):
         if l_h5:
             import h5py
             file_id = os.path.join(datadir, aver_file_name)
-            print(file_id)
+            print(file_id,flush=True)
             with h5py.File(file_id, 'r') as tmp:
                 n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.
