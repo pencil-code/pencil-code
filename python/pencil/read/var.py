@@ -200,7 +200,7 @@ class DataCube(object):
         else:
             total_vars = dim.mvar
 
-        if os.path.exists(os.path.join(datadir, 'allprocs', 'var.h5')):
+        if os.path.exists(os.path.join(datadir, 'grid.h5')):
             import h5py
             run2D = param.lwrite_2d
 
