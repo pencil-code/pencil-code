@@ -87,14 +87,15 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
     from .. import sim
     from . import write_h5_snapshot
 
-    #move var.h5 out of the way, if it exists for reading binary
-    os.chdir(newdir)
-    if os.path.exists(todatadir+'/var.h5'):
-        cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
-        try:
-            os.system(cmd)
-        except OSError:
-            pass
+    #not reqd - grid.h5 now used
+    ##move var.h5 out of the way, if it exists for reading binary
+    #os.chdir(newdir)
+    #if os.path.exists(todatadir+'/var.h5'):
+    #    cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
+    #    try:
+    #        os.system(cmd)
+    #    except OSError:
+    #        pass
 
     if isinstance(allfile_names, list):
         allfile_names = allfile_names
@@ -116,6 +117,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                 os.chdir(olddir)
                 iprocs = np.array_split(np.arange(nprocs),size)
                 procs = iprocs[rank]
+                varfile_names = allfile_names
     else:
         varfile_names = allfile_names
     if len(varfile_names) > 0:
@@ -130,33 +132,33 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                         var = read.var(file_name, datadir=fromdatadir,
                                        quiet=quiet, lpersist=lpersist,
                                        trimall=trimall, proc=proc)
-                    try:
-                        var.deltay
-                        lshear = True
-                    except:
-                        lshear = False
+                        try:
+                            var.deltay
+                            lshear = True
+                        except:
+                            lshear = False
 
-                    if lpersist:
-                        persist = {}
-                        for key in read.record_types.keys():
-                            try:
-                                persist[key] = var.__getattribute__(key)[()]
-                                if (type(persist[key][0])==str):
-                                    persist[key][0] = \
-                                          var.__getattribute__(key)[0].encode()
-                            except:
-                                continue
-                    else:
-                        persist = None
-                    #write data to h5
-                    os.chdir(newdir)
-                    write_h5_snapshot(var.f, file_name=file_name,
-                                      datadir=todatadir, precision=precision,
-                                      nghost=nghost, persist=persist, proc=proc,
-                                      procdim=procdim, settings=settings,
-                                      param=param, grid=grid, lghosts=True,
-                                      indx=indx, t=var.t, x=x, y=y, z=z,
-                                      lshear=lshear, driver=driver, comm=comm)
+                        if lpersist:
+                            persist = {}
+                            for key in read.record_types.keys():
+                                try:
+                                    persist[key] = var.__getattribute__(key)[()]
+                                    if (type(persist[key][0])==str):
+                                        persist[key][0] = \
+                                              var.__getattribute__(key)[0].encode()
+                                except:
+                                    continue
+                        else:
+                            persist = None
+                        #write data to h5
+                        os.chdir(newdir)
+                        write_h5_snapshot(var.f, file_name=file_name,
+                                          datadir=todatadir, precision=precision,
+                                          nghost=nghost, persist=persist, proc=proc,
+                                          procdim=procdim, settings=settings,
+                                          param=param, grid=grid, lghosts=True,
+                                          indx=indx, t=var.t, x=x, y=y, z=z,
+                                          lshear=lshear, driver=driver, comm=comm)
             else:
                 var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
                                lpersist=lpersist, trimall=trimall)
@@ -325,6 +327,7 @@ def slices2h5(newdir, olddir, grid,
 def aver2h5(newdir, olddir,
             todatadir='data/averages', fromdatadir='data', l2D=True,
             precision='d', quiet=True, lremove_old_averages=False,
+            aver_by_proc=False,
             laver2D=False, l_mpi=False, driver=None, comm=None, rank=0, size=1):
 
     """
@@ -363,6 +366,10 @@ def aver2h5(newdir, olddir,
       If True the old averages data will be deleted once the new h5 data
       has been saved.
 
+    *aver_by_proc*
+      Option to read old binary files by processor and write in
+      parallel
+
     *laver2D*
       If True apply to each plane_list 'y', 'z' and load each variable
       sequentially
@@ -381,22 +388,47 @@ def aver2h5(newdir, olddir,
             if os.path.exists(xl+'aver.in'):
                 if os.path.exists(os.path.join(fromdatadir,'t2davg.dat')):
                     f = open(os.path.join(fromdatadir,'t2davg.dat'))
-                    niter = int(f.readline().split(' ')[-1].strip('\n'))
+                    niter = int(f.readline().split(' ')[-1].strip('\n'))-1
                 else:
-                    av = read.aver(plane_list=xl, proc=0,
-                                   var_index=0)
-                    niter = av.t.size
-                all_list = np.array_split(np.arange(niter), size)
-                iter_list = list(all_list[rank])
-                os.chdir(olddir)
-                print('reading '+xl+'averages on rank', rank, flush=True)
-                av = read.aver(plane_list=xl, iter_list=iter_list)
-                os.chdir(newdir)
-                write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
-                                  precision=precision, append=False, indx=iter_list,
-                                  quiet=quiet, driver=driver, comm=comm, rank=rank,
-                                  size=size)
-                del(av)
+                    if not aver_by_proc:
+                        av = read.aver(plane_list=xl, proc=0,
+                                       var_index=0)
+                        niter = av.t.size
+                    else:
+                        niter = None
+                if aver_by_proc:
+                    dim = read.dim()
+                    if xl == 'y':
+                        nproc = dim.nprocz
+                    if xl == 'z':
+                        nproc = dim.nprocy
+                    all_list = np.array_split(np.arange(nproc), size)
+                    proc_list = list(all_list[rank])
+                    os.chdir(olddir)
+                    if len(proc_list) > 0:
+                        for proc in proc_list:
+                            print('reading '+xl+'averages on proc', proc,
+                                                                     flush=True)
+                        av = read.aver(plane_list=xl, proc=proc)
+                        procdim = read.dim(proc=proc)
+                        write_h5_averages(av, file_name=xl, datadir=todatadir,
+                             nt=niter, precision=precision, append=True,
+                             aver_by_proc=True,
+                             proc=proc, dim=dim, procdim=procdim, quiet=quiet,
+                             driver=driver, comm=comm, rank=rank, size=size)
+                    del(av)
+                else:
+                    all_list = np.array_split(np.arange(niter), size)
+                    iter_list = list(all_list[rank])
+                    os.chdir(olddir)
+                    print('reading '+xl+'averages on rank', rank, flush=True)
+                    av = read.aver(plane_list=xl, iter_list=iter_list)
+                    os.chdir(newdir)
+                    write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
+                                      precision=precision, append=False, indx=iter_list,
+                                      quiet=quiet, driver=driver, comm=comm, rank=rank,
+                                      size=size)
+                    del(av)
     else:
         #copy old 1D averages to new h5 sim
         os.chdir(olddir)
@@ -690,8 +722,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         aver2h5(newdir, olddir,
                 todatadir='data/averages', fromdatadir='data', l2D=False,
                 precision=precision, quiet=quiet, laver2D=laver2D,
-                lremove_old_averages=False,
+                lremove_old_averages=False, aver_by_proc=aver_by_proc,
                 l_mpi=l_mpi, driver=driver, comm=comm, rank=rank, size=size)
+        l2D = False
     #copy snapshots
     if lvars:
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
@@ -738,7 +771,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if laver:
         aver2h5(newdir, olddir,
                 todatadir='data/averages', fromdatadir=fromdatadir, l2D=l2D,
-                precision=precision, quiet=quiet,
+                precision=precision, quiet=quiet, aver_by_proc=False,
                 lremove_old_averages=lremove_old_averages, l_mpi=l_mpi,
                 driver=driver, comm=comm, rank=rank, size=size)
     #check some critical sim files are present for new sim without start
