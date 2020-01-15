@@ -258,6 +258,7 @@ module Testfield
 !
       ntestfield = 3*njtest
       ntestflow = 3*njtest
+      ntestlnrho = njtest
       call farray_register_pde('aatest',iaatest,array=ntestfield)
       call farray_index_append('ntestfield',ntestfield)
       call farray_register_pde('uutest',iuutest,array=ntestflow)
@@ -270,7 +271,7 @@ module Testfield
 !
       iaztestpq=iaatest+ntestfield-1
       iuztestpq=iuutest+ntestflow-1
-      ihhtestpq=ihhtest+njtest-1
+      ihhtestpq=ihhtest+ntestlnrho-1
 !
 !  Identify version number.
 !

@@ -318,7 +318,7 @@ module Cdata
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
-  integer :: ntestscalar=0,ntestfield=0,ntestflow=0
+  integer :: ntestscalar=0,ntestfield=0,ntestflow=0,ntestlnrho=0
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
