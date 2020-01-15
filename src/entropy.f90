@@ -483,7 +483,8 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (:), allocatable :: hcond, glhc
+      real, dimension (:), allocatable :: hcond, dlhc
+      real, dimension (nx,3) :: glhc
       real, dimension (nz) :: tmpz
       real, dimension(5) :: star_params
       real :: beta1, cp1, beta0, TT_bcz, star_cte
@@ -1017,27 +1018,27 @@ module Energy
         endif
 !
 !  Heat conduction calculated globally: if lhcond_global=.true., we
-!  compute hcond and glhc and put the results in global arrays.
+!  compute hcond and dlhc and put the results in global arrays.
 !
       if (lhcond_global) then
         call farray_register_auxiliary('hcond',iglobal_hcond)
         call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
         if (coord_system=='spherical' .or. lconvection_gravx) then
-          allocate(hcond(nx),glhc(nx))
-          call read_hcond(hcond,glhc,nxgrid,ipx,hcondxtop,hcondxbot)
+          allocate(hcond(nx),dlhc(nx))
+          call read_hcond(hcond,dlhc,nxgrid,ipx,hcondxtop,hcondxbot)
           do q=n1,n2; do m=m1,m2
             f(l1:l2,m,q,iglobal_hcond)=hcond
-            f(l1:l2,m,q,iglobal_glhc)=glhc
+            f(l1:l2,m,q,iglobal_glhc)=dlhc
           enddo; enddo
           f(l1:l2,m1:m2,n1:n2,iglobal_glhc+1:iglobal_glhc+2)=0.
           FbotKbot=Fbot/hcondxbot
           FtopKtop=Ftop/hcondxtop
         else if (lgravz .and. lread_hcond) then
-          allocate(hcond(nz),glhc(nz))
-          call read_hcond(hcond,glhc,nzgrid,ipz,hcondztop,hcondzbot)
+          allocate(hcond(nz),dlhc(nz))
+          call read_hcond(hcond,dlhc,nzgrid,ipz,hcondztop,hcondzbot)
           do q=l1,l2; do m=m1,m2
             f(q,m,n1:n2,iglobal_hcond)=hcond
-            f(q,m,n1:n2,iglobal_glhc+2)=glhc
+            f(q,m,n1:n2,iglobal_glhc+2)=dlhc
           enddo; enddo
           f(l1:l2,m1:m2,n1:n2,iglobal_glhc:iglobal_glhc+1)=0.
           FbotKbot=Fbot/hcondzbot
@@ -1049,14 +1050,14 @@ module Energy
 !  AB: Anders, you inserted these lines in revision 14718.
 !
             if (lgravz) then
-              p%z_mn=spread(z(n),1,nx)
+              p%z_mn=z(n)
             else
               p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
             endif
             call heatcond(f(l1:l2,m,n,iglobal_hcond),p)
-            call gradloghcond(f(l1:l2,m,n,iglobal_glhc),p)
+            call gradloghcond(glhc,p)
+            f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
           enddo; enddo
-          f(l1:l2,m1:m2,n1:n2,iglobal_glhc+1:iglobal_glhc+2)=0.
         endif
       endif
 !
@@ -7548,8 +7549,7 @@ module Energy
 !  19-mar-14/pjk: added reading z-dependent profiles
 !  14-jan-20/MR: simplified
 !
-      real, dimension(:), intent(out):: hcond
-      real, dimension(:), intent(out):: glhc
+      real, dimension(:), intent(out):: hcond,glhc
       integer,            intent(in) :: ngrid,ipc
       real,               intent(out):: hcondbot, hcondtop
 !
@@ -7568,7 +7568,7 @@ module Energy
         if (exist) then
           open(31,file=trim(directory)//'/hcond_glhc.ascii')
         else
-          call fatal_error('read_hcond','*** error *** - no input file')
+          call fatal_error('read_hcond','no input file')
         endif
       endif
 !
