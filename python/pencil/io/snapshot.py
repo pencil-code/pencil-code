@@ -743,6 +743,8 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
         if comm:
             key = comm.bcast(key, root=0)
         data=aver.__getattribute__(file_name).__getattribute__(key)
+        if (file_name == 'y' or file_name == 'z'):
+            data = np.swapaxes(data, 1, 2)
         for it in range(0,nt):
             if not ds[str(it)].__contains__(key):
                 try:
