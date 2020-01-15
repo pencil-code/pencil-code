@@ -82,7 +82,7 @@ class Index(object):
             totalvars = dim.mvar
 
         index_file = open(os.path.join(datadir, 'index.pro'))
-        ntestfield = 0
+        ntestfield, ntestflow, ntestlnrho, ntestscalar = 0, 0, 0, 0
         for line in index_file.readlines():
             clean = line.strip()
             name = clean.split('=')[0].strip().replace('[', '').replace(']', '')
