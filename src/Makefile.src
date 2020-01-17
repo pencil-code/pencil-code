@@ -2753,7 +2753,7 @@ buildinfo:
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
-cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
+cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
 	scripts/mkcparam -b $(preprocess) -o cparam.inc.tmp
 	@cat cparam.inc.tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
 	@rm -f cparam.inc.tmp
@@ -2837,7 +2837,7 @@ endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 #
-FASTEXECS=start.x run.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+FASTEXECS=code combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2917,7 +2917,7 @@ slender:
 #  Clean up, but leave makefile and TAGS.
 #
 clean:  slender
-	rm -f *.x *.d cparam*.inc* cparam_pencils*.inc file_io_common.inc *.il *.so
+	rm -f *.x *.d cparam*.inc* pencil_init.inc file_io_common.inc *.il *.so
 	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
