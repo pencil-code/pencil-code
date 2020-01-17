@@ -1752,9 +1752,9 @@ module PointMasses
 !
 !  The gravity of every single cell - should exclude inner and outer radii...
 !
-!  selfgrav = G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
+!  selfgrav = - G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
 !  gx = selfgrav * r\hat dot x\hat
-!  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
+!  -> gx = selfgrav * (x-x0)/r = - G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
         density=0.
         if (ldensity_nolog) then
@@ -1774,7 +1774,7 @@ module PointMasses
            rrp=rp_mn
         endif
 !
-        selfgrav = GNewton*density_scale*&
+        selfgrav = -GNewton*density_scale*&
              density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Everything inside the accretion radius of the particle should
@@ -1920,7 +1920,7 @@ module PointMasses
 !
       if (ldust.and.ldust_gravity) density=density+p%rhop
 !
-      selfgrav = GNewton*density_scale*&
+      selfgrav = -GNewton*density_scale*&
            density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Everything inside the accretion radius of the particle should
