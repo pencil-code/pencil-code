@@ -1,0 +1,17 @@
+Maintainer:
+    Betsy Hernandez <betsyhern/gmail[dot]com>
+Added:
+    2020-January-17
+Comments:
+    Total torque on planet embedded in an adiabatic disk
+Recommended time steps:
+    for test: 5
+    replicate paper: 80
+    	      use smoothing, such as numpy convole, to obtain mean torque
+Recommended resolution:
+    for test: 256x768x1
+    replicate paper: 1024x3072x1
+Reference:
+    Figure 6, Paardekooper S.-J., Baruteau C., Crida A., Kley W.: 2010,
+    "A torque formula for non-isothermal type I planetary migration – I.
+    Unsaturated horseshoe drag" Monthly Notices vol. 401, p. 1950-1964
