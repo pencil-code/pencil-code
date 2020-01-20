@@ -330,19 +330,31 @@ module Hydro
         frgn_setup%peer=iproc+ncpus
         frgn_setup%tag=tag_foreign
 
-!if (iproc_world/=iproc.and.iproc_world==2) then
-!  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
-!  name_len=5
-!  call mpisend_int(name_len,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-!  call mpisend_char('MagIC',root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-!endif
+if (.false.) then
+!if (iproc_world/=iproc) then
+if (iproc_world==2) then
+  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
+  name_len=5
+  call mpisend_int(name_len,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_char('MagIC',root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nprocx,2,2/),3,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(1),xyz1(1)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(2),xyz1(2)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(3),xyz1(3)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_real(0.1,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpirecv_logical(lok,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpibarrier(MPI_COMM_PENCIL)
+  !stop
+endif
+return
+endif
         if (lroot) then
           lok=.true.; messg=''
 !
 !  Receive length of name of foreign code.
 !      
           call mpirecv_int(name_len,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
-
           if (name_len<=0) then
             call fatal_error('initialize_hydro','length of foreign name <=0 or >')
           elseif (name_len>labellen) then
@@ -362,7 +374,7 @@ module Hydro
 !  Receive processor numbers of foreign code.
 !      
           call mpirecv_int(intbuf,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
-          if ( frgn_setup%name/='MagIC' ) then
+          if ( frgn_setup%name=='MagIC' ) then
             if (any(intbuf/=(/nprocx,1,1/))) then
               messg='MagIC processor numbers '//trim(itoa(intbuf(1)))//', '// &
                     trim(itoa(intbuf(2)))//', '//trim(itoa(intbuf(3)))//' not consistent with (nprocx,1,1)'
@@ -371,12 +383,12 @@ module Hydro
           elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
-          else
-            frgn_setup%ncpus=product(intbuf)
-            if (ncpus+frgn_setup%ncpus/=nprocs) &
+          endif
+
+          frgn_setup%ncpus=product(intbuf)
+          if (ncpus+frgn_setup%ncpus/=nprocs) &
             call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
                     ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
-          endif
 !
 !  Receive gridpoint numbers of foreign code.
 !      
