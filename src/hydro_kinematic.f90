@@ -335,15 +335,15 @@ if (.false.) then
 if (iproc_world==2) then
   print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
   name_len=5
-  call mpisend_int(name_len,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_char('MagIC',root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_int((/nprocx,2,2/),3,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(1),xyz1(1)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(2),xyz1(2)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(3),xyz1(3)/),2,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpisend_real(0.1,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
-  call mpirecv_logical(lok,root,frgn_setup%tag,MPI_COMM_UNIVERSE)
+  call mpisend_int(name_len,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_char('MagIC',root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nprocx,2,2/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(1),xyz1(1)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(2),xyz1(2)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_real((/xyz0(3),xyz1(3)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_real(0.1,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpirecv_logical(lok,root,tag_foreign,MPI_COMM_UNIVERSE)
   call mpibarrier(MPI_COMM_PENCIL)
   !stop
 endif
@@ -354,7 +354,7 @@ endif
 !
 !  Receive length of name of foreign code.
 !      
-          call mpirecv_int(name_len,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpirecv_int(name_len,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if (name_len<=0) then
             call fatal_error('initialize_hydro','length of foreign name <=0 or >')
           elseif (name_len>labellen) then
@@ -364,7 +364,7 @@ endif
 !
 !  Receive name of foreign code.
 !      
-          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           frgn_setup%name=frgn_setup%name(1:name_len)
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call fatal_error('initialize_hydro', &
@@ -373,7 +373,7 @@ endif
 !
 !  Receive processor numbers of foreign code.
 !      
-          call mpirecv_int(intbuf,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpirecv_int(intbuf,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if ( frgn_setup%name=='MagIC' ) then
             if (any(intbuf/=(/nprocx,1,1/))) then
               messg='MagIC processor numbers '//trim(itoa(intbuf(1)))//', '// &
@@ -394,7 +394,7 @@ endif
 !
 !  Receive gridpoint numbers of foreign code.
 !      
-          call mpirecv_int(frgn_setup%dims,3,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpirecv_int(frgn_setup%dims,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
 
           if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))) then
             messg=trim(messg)//" foreign grid sizes don't match;"
@@ -404,7 +404,7 @@ endif
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
 !      
           do j=1,3
-            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
             if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
               lok=.false. !MR: alleviate to selection
@@ -413,7 +413,7 @@ endif
 !
 !  Receive output timestep of foreign code (code units).
 !      
-          call mpirecv_real(frgn_setup%dt_out,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpirecv_real(frgn_setup%dt_out,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if (frgn_setup%dt_out<=0.) then
             messg=trim(messg)//' foreign output step<=0'
             lok=.false.
@@ -421,7 +421,7 @@ endif
 !
 !  Send confirmation flag that setup is acceptable.
 ! 
-          call mpisend_logical(lok,root_foreign,frgn_setup%tag,MPI_COMM_UNIVERSE)
+          call mpisend_logical(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
@@ -440,7 +440,7 @@ endif
 !
 !  Receive vector of global r-grid points.
 !
-            call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,frgn_setup%tag)
+            call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,tag_foreign)
           endif
 
           do j=1,2
@@ -448,15 +448,15 @@ endif
               !do ipx_foreign=1,frgn_setup%procnums(1)
               call mpirecv_real(frgn_buffer, &
                                 (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/), &
-                                frgn_setup%peer,frgn_setup%tag,MPI_COMM_UNIVERSE)
+                                frgn_setup%peer,tag_foreign,MPI_COMM_UNIVERSE)
               !enddo
               ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
             else
               if (j==1) then
                 call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/), &
-                                           frgn_setup%peer,frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
+                                           frgn_setup%peer,tag_foreign,frgn_setup%irecv,MPI_COMM_UNIVERSE)
               else
-                call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer,frgn_setup%tag, &
+                call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer,tag_foreign, &
                                            frgn_setup%irecv,MPI_COMM_UNIVERSE)
               endif
             endif

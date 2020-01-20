@@ -456,11 +456,17 @@ module Mpicomm
 !
       use Syscalls, only: sizeof_real
 !
+      integer :: iapp, key
+
       lmpicomm = .true.
 !
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
+print*, 'nprocs=', nprocs
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
+      call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, key, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, key, MPI_COMM_PENCIL, mpierr)
+
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_WORLD!
 !
       if (sizeof_real() < 8) then
@@ -477,7 +483,6 @@ module Mpicomm
       endif
 
       MPI_COMM_GRID=MPI_COMM_WORLD
-      MPI_COMM_PENCIL=MPI_COMM_WORLD
       iproc_world=iproc
 !
 !  Check consistency in processor layout.
@@ -538,21 +543,26 @@ module Mpicomm
 !
       use General, only: itoa
 
+      integer :: nprocs_penc
+
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
 !  Check total number of processors.
 !
-      if (.not.( lyinyang.and.nprocs==2*ncpus .or. lforeign.and.nprocs>ncpus .or. nprocs==ncpus)) then
+      call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
+
+      if (.not.( lyinyang.and.nprocs_penc==2*ncpus .or. &
+                 (lforeign.and.nprocs>ncpus .or. .not.lforeign).and.nprocs_penc==ncpus )) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
                 ', but running on ', nprocs, ' processors'
-          elseif (lforeign) then
+          elseif (nprocs_penc/=ncpus) then
+            print*, 'Compiled with ncpus = ', ncpus, &
+                ', but running on ', nprocs_penc, ' processors'
+          elseif (lforeign.and.nprocs==ncpus) then
             print*, 'number of processors '//trim(itoa(nprocs))// &
                     '= number of own processors -> no procs for foreign code left'
-          else
-            print*, 'Compiled with ncpus = ', ncpus, &
-                ', but running on ', nprocs, ' processors'
           endif
         
           call stop_it('initialize_mpicomm')
@@ -582,12 +592,6 @@ module Mpicomm
 !
 !  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
 !
-      if (lforeign) then
-        MPI_COMM_PENCIL=MPI_COMM_GRID   ! MPI_COMM_PENCIL refers only to Pencil, not to foreign code!
-      else
-        MPI_COMM_PENCIL=MPI_COMM_WORLD
-      endif
-
       if (lyinyang) then
         if (lyang) then
           iproc=iproc-ncpus
@@ -3006,15 +3010,17 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_cmplx_arr3
 !***********************************************************************
-    subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,comm)
 !
 !  Receive real array(:,:,:,:) from other processor.
 !
 !  20-may-06/anders: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_src, tag_id, num_elements
+      integer :: proc_src, tag_id, num_elements, comm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
@@ -3023,7 +3029,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_GRID, stat, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
