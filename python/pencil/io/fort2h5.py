@@ -102,8 +102,8 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
     else:
         allfile_names = [allfile_names]
     #proceed to copy each snapshot in varfile_names
+    nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
     if l_mpi:
-        nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
         if not snap_by_proc:
             file_names = np.array_split(allfile_names, size)
             if 'VARd1' in allfile_names:
@@ -111,13 +111,14 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             else:
                 varfile_names = file_names[rank]
         else:
-            if 'VARd1' in allfile_names:
-                varfile_names = file_names[size-rank-1]
-            else:
-                os.chdir(olddir)
-                iprocs = np.array_split(np.arange(nprocs),size)
-                procs = iprocs[rank]
-                varfile_names = allfile_names
+            #if 'VARd1' in allfile_names:
+            #    file_names = np.array_split(allfile_names, size)
+            #    varfile_names = file_names[size-rank-1]
+            #else:
+            os.chdir(olddir)
+            iprocs = np.array_split(np.arange(nprocs),size)
+            procs = iprocs[rank]
+            varfile_names = allfile_names
     else:
         varfile_names = allfile_names
     if len(varfile_names) > 0:
@@ -126,6 +127,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
             os.chdir(olddir)
             if snap_by_proc:
+                procs = np.arange(nprocs)
                 if len(procs) > 0:
                     for proc in procs:
                         procdim = read.dim(proc=proc)
@@ -670,8 +672,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if snap_by_proc:
         nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
         if np.mod(nprocs,size) != 0:
-            print("ERROR: efficiency reqires cpus to divide ncpus", flush=True)
-            return -1
+            print("WARNING: efficiency requires cpus to divide ncpus", flush=True)
     if not quiet:
         print(rank,grid)
     #obtain physical units from old simulation
@@ -726,7 +727,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                 l_mpi=l_mpi, driver=driver, comm=comm, rank=rank, size=size)
         l2D = False
     #copy snapshots
-    if lvars:
+    if lvars and len(varfile_names) > 0:
         var2h5(newdir, olddir, varfile_names, todatadir, fromdatadir,
                snap_by_proc, precision, lpersist, quiet, nghost, settings,
                param, grid, x, y, z, lshear, lremove_old_snapshots, indx,
@@ -734,7 +735,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #copy downsampled snapshots if present
     if lvars and lVARd:
         var2h5(newdir, olddir, varfiled_names, todatadir, fromdatadir,
-               snap_by_proc, precision, lpersist, quiet, nghost, settings,
+               False, precision, lpersist, quiet, nghost, settings,
                param, grid, x, y, z, lshear, lremove_old_snapshots, indx,
                trimall=True, l_mpi=l_mpi,
                driver=driver, comm=comm, rank=rank, size=size)
