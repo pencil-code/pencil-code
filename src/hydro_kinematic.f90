@@ -339,11 +339,11 @@ if (iproc_world==2) then
   call mpisend_char('MagIC',root,tag_foreign,MPI_COMM_UNIVERSE)
   call mpisend_int((/nprocx,2,2/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
   call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(1),xyz1(1)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(2),xyz1(2)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_real((/xyz0(3),xyz1(3)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_real(0.1,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpirecv_logical(lok,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(1),xyz1(1)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(2),xyz1(2)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(3),xyz1(3)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real(0.1,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpirecv_logical(lok,root,tag_foreign,MPI_COMM_UNIVERSE)
   call mpibarrier(MPI_COMM_PENCIL)
   !stop
 endif
@@ -421,7 +421,7 @@ endif
 !
 !  Send confirmation flag that setup is acceptable.
 ! 
-          call mpisend_logical(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpisend_logical_scl(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
