@@ -133,6 +133,7 @@ module Hydro
     character(LEN=labellen) :: name
     integer :: ncpus,peer,tag,irecv
     real :: dt_out, t_last_out
+    integer, dimension(3) :: procnums
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
   endtype foreign_setup
@@ -140,7 +141,6 @@ module Hydro
   type(foreign_setup) :: frgn_setup
   real, dimension(:), allocatable :: x_foreign
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
-  real, dimension(:,:,:), allocatable :: shell_buffer
 
   contains
 !***********************************************************************
@@ -193,7 +193,7 @@ module Hydro
       character(LEN=128) :: messg
       integer, dimension(3) :: intbuf
       real, dimension(2) :: floatbuf
-      integer :: j,ll,name_len
+      integer :: j,ll,name_len,ipx_foreign,nx_foreign
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -389,6 +389,8 @@ endif
           if (ncpus+frgn_setup%ncpus/=nprocs) &
             call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
                     ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
+
+          frgn_setup%procnums=intbuf
 !
 !  Receive gridpoint numbers of foreign code.
 !      
@@ -432,8 +434,8 @@ endif
         if (iproc<ncpus) then
 
           if (frgn_setup%name=='MagIC') then
-            allocate(frgn_buffer(frgn_setup%dims(1),frgn_setup%dims(2),frgn_setup%dims(3),3))
-            allocate(shell_buffer(frgn_setup%dims(2),frgn_setup%dims(3),3))
+            nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
+            allocate(frgn_buffer(nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3))
             allocate(x_foreign(frgn_setup%dims(1)))
 !
 !  Receive vector of global r-grid points.
@@ -443,11 +445,11 @@ endif
 
           do j=1,2
             if (frgn_setup%name=='MagIC') then
-              do ll=1,frgn_setup%dims(1)
-                call mpirecv_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/), &
-                                  frgn_setup%peer,frgn_setup%tag,MPI_COMM_UNIVERSE)
-                frgn_buffer(ll,:,:,:)=shell_buffer
-              enddo
+              !do ipx_foreign=1,frgn_setup%procnums(1)
+              call mpirecv_real(frgn_buffer, &
+                                (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/), &
+                                frgn_setup%peer,frgn_setup%tag,MPI_COMM_UNIVERSE)
+              !enddo
               ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
             else
               if (j==1) then
@@ -2301,7 +2303,7 @@ endif
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: fac
-      integer :: ll
+      integer :: ipx_foreign,nx_foreign
 
       if (kinematic_flow=='from-foreign-snap') then
 
@@ -2311,12 +2313,11 @@ endif
             call mpiwait(frgn_setup%irecv)
             frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
             if (frgn_setup%name=='MagIC') then
-              do ll=l1,l2
-                call mpirecv_nonblock_real(shell_buffer,(/frgn_setup%dims(2),frgn_setup%dims(3),3/),frgn_setup%peer, &
-                                           frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
-                frgn_buffer(ll,:,:,:)=shell_buffer
+              nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
+              call mpirecv_nonblock_real(frgn_buffer, &
+                                         (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/),frgn_setup%peer, &
+                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
                 !TODO: interpolate/restrict/scatter into uu_2(ll,:,:,:)
-              enddo
             else
               call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer, &
                                          frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
@@ -3237,7 +3238,6 @@ endif
       endif
 
       if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-      if (allocated(shell_buffer)) deallocate(shell_buffer)
 !
       print*, 'Done.'
 !
