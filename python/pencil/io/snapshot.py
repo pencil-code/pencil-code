@@ -350,21 +350,21 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         if len(x) != settings['mx']:
             print('ERROR: x array is incompatible with the shape of snapshot.')
             return -1
-        grid.x = x
+        grid.x = data_type(x)
     if y != None:
         if len(y) != settings['my']:
             print('ERROR: y array is incompatible with the shape of snapshot.')
             return -1
-        grid.y = y
+        grid.y = data_type(y)
     if z != None:
         if len(z) != settings['mz']:
             print('ERROR: z array is incompatible with the shape of snapshot.')
             return -1
-        grid.z = z
+        grid.z = data_type(z)
 
     # Define a time.
     if t is None:
-        t = 0
+        t = data_type(0.)
 
     # Create the data directory if it doesn't exist.
     if not os.path.exists(datadir):
@@ -401,7 +401,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                                    snapshot.shape[2]+2*nghost,
                                    snapshot.shape[3]+2*nghost])
                 tmp_arr[dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1
-                       ] = np.array(snapshot[indx.__getattribute__(key)])
+                       ] = np.array(snapshot[indx.__getattribute__(key)-1])
                 data_grp.create_dataset(key, data=(tmp_arr), dtype=data_type)
             else:
                 data_grp.create_dataset(key,
@@ -440,8 +440,9 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         for key in data_grp.keys():
             if comm:
                 key = comm.bcast(key, root=0)
-            tmp_arr = np.array(snapshot[indx.__getattribute__(key)])
-            data_grp[key][n1+ipz*nz:n2+ipz*nz+1, m1+ipy*ny:m2+ipy*ny+1, l1+ipx*nx:l2+ipx*nx+1] = \
+            tmp_arr = np.array(snapshot[indx.__getattribute__(key)-1])
+            data_grp[key][n1+ipz*nz:n2+ipz*nz+1, m1+ipy*ny:m2+ipy*ny+1,
+                          l1+ipx*nx:l2+ipx*nx+1] = \
                 tmp_arr[n1:n2+1, m1:m2+1, l1:l2+1]
     # add time data
     if not ds.__contains__('time'):
@@ -462,10 +463,10 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         for key in gkeys:
             if comm:
                 key = comm.bcast(key, root=0)
-            grid_grp.create_dataset(key, data=(grid.__getattribute__(key)))
-        grid_grp.create_dataset('Ox',data=(param.__getattribute__('xyz0')[0]))
-        grid_grp.create_dataset('Oy',data=(param.__getattribute__('xyz0')[1]))
-        grid_grp.create_dataset('Oz',data=(param.__getattribute__('xyz0')[2]))
+            grid_grp.create_dataset(key, data=(data_type(grid.__getattribute__(key))))
+        grid_grp.create_dataset('Ox',data=(data_type(param.__getattribute__('xyz0')[0])))
+        grid_grp.create_dataset('Oy',data=(data_type(param.__getattribute__('xyz0')[1])))
+        grid_grp.create_dataset('Oz',data=(data_type(param.__getattribute__('xyz0')[2])))
     # add physical units
     if not ds.__contains__('unit'):
         unit_grp = ds.create_group('unit')
@@ -725,7 +726,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
         print('rank', rank, 'nt', nt, 'indx', indx, flush=True)
     if not ds.__contains__('last'):
         try:
-            ds.create_dataset('last', data=nt-1, dtype='i')
+            ds.create_dataset('last', data=(nt-1,), dtype='i')
         except ValueError:
             pass
     for it in range(0,nt):
