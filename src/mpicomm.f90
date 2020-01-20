@@ -3020,8 +3020,9 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_src, tag_id, num_elements, comm
+      integer :: proc_src, tag_id, num_elements
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm
 !
       intent(out) :: bcast_array
 !
