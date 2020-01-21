@@ -62,7 +62,7 @@ def plot(
          itt, it, quiet=True,  
          #yz[i], xy[i], xz[i], xy2[i], 
          #save output
-         figdir='./images/', imageformat='.png',
+         figdir='./images/', imageformat='png',
          #set color parameters
          norm='linear', colorscale='RdBu',
          color_levels=None,
@@ -321,7 +321,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #select data to plot
              tstart=0., tend=1e38, islice=-1,
              #set image properties
-             imageformat=".png", figdir='./images/',
+             imageformat="png", figdir='./images/',
              #set color parameters
              colorscale='Hot', norm='linear', 
              color_range=None, color_levels=None,
