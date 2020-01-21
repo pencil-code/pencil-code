@@ -192,6 +192,7 @@ module Hydro
       logical :: lok
       character(LEN=128) :: messg
       integer, dimension(3) :: intbuf
+      integer, dimension(4) :: dimbuf
       real, dimension(2) :: floatbuf
       integer :: j,ll,name_len,ipx_foreign,nx_foreign
 !
@@ -446,8 +447,8 @@ endif
           do j=1,2
             if (frgn_setup%name=='MagIC') then
               !do ipx_foreign=1,frgn_setup%procnums(1)
-              call mpirecv_real(frgn_buffer, &
-                                (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/), &
+              dimbuf=(/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/)
+              call mpirecv_real(frgn_buffer, dimbuf, &
                                 frgn_setup%peer,tag_foreign,MPI_COMM_UNIVERSE)
               !enddo
               ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
