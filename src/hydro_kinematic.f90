@@ -194,7 +194,7 @@ module Hydro
       integer, dimension(3) :: intbuf
       integer, dimension(4) :: dimbuf
       real, dimension(2) :: floatbuf
-      integer :: j,ll,name_len,ipx_foreign,nx_foreign
+      integer :: j,ll,name_len,ipx_foreign,nx_foreign,peer
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -422,7 +422,7 @@ endif
 !
 !  Send confirmation flag that setup is acceptable.
 ! 
-          call mpisend_logical_scl(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpisend_logical(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           if (.not.lok) call fatal_error('initialize_hydro',messg)
         endif
 
@@ -448,8 +448,8 @@ endif
             if (frgn_setup%name=='MagIC') then
               !do ipx_foreign=1,frgn_setup%procnums(1)
               dimbuf=(/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/)
-              call mpirecv_real(frgn_buffer, dimbuf, &
-                                frgn_setup%peer,tag_foreign,MPI_COMM_UNIVERSE)
+              peer=frgn_setup%peer
+              call mpirecv_real(frgn_buffer,dimbuf,peer,tag_foreign,MPI_COMM_UNIVERSE)
               !enddo
               ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
             else
