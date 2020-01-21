@@ -766,7 +766,8 @@ module Particles_radius
 !                    
               if (lcondensation_simplified) then
                 if (ldust_accretion) then
-                  dapdt = xi_accretion*exp(f(ix,m,n,ilnrho))/rho0
+!                  dapdt = xi_accretion*exp(f(ix,m,n,ilnrho))/rho0
+                  dapdt = xi_accretion*p%rho(ix)/rho0
                 else
                   dapdt = GS_condensation/fp(k,iap)
                 endif
