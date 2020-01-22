@@ -4074,6 +4074,9 @@ module Particles
                     call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
                   endif
                 else
+                  ix0 = ineargrid(k,1)
+                  iy0 = ineargrid(k,2)
+                  iz0 = ineargrid(k,3)
                   uup = f(ix0,iy0,iz0,iux:iuz)
                 endif
                 fp(k,ivpx:ivpz) = uup
