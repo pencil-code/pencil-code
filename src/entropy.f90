@@ -5353,10 +5353,12 @@ module Energy
       endif
 !
       if (l1davgfirst) then
-        if (chi_t/=0.) &
+        if ((lchit_total .or. lchit_mean) .and. chi_t0/=0.) then
           call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
           call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
-          call xysum_mn_name_z(-chi_t1*chit_prof*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+        endif
+        if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) &
+          call xysum_mn_name_z(-chi_t1*chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
       endif
 !
 ! chi_t1 acting on deviations from a running 3D mean of entropy   
@@ -5389,7 +5391,10 @@ module Energy
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+(chi_t0*chit_prof+chi_t1*chit_prof_fluct)*dxyz_2
+        if (lchit_total .or. lchit_mean) &
+          diffus_chi=diffus_chi+chi_t0*chit_prof*dxyz_2
+        if (lchit_fluct) &
+          diffus_chi=diffus_chi+chi_t1*chit_prof_fluct*dxyz_2
       endif
 !
     endsubroutine calc_heatcond_chit
