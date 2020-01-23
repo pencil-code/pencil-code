@@ -661,11 +661,12 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
-    subroutine mpirecv_real_arr4(bcast_array,nb,proc_src,tag_id)
+    subroutine mpirecv_real_arr4(bcast_array,nb,proc_src,tag_id,comm)
 !
       integer, dimension(4) :: nb
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer :: proc_src, tag_id
+      integer, optional :: comm
 !
       if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id
 !
