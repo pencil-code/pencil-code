@@ -118,18 +118,22 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             os.chdir(olddir)
             iprocs = np.array_split(np.arange(nprocs),size)
             procs = iprocs[rank]
+            print('rank {}'.format(rank)+'procs:',procs)
             varfile_names = allfile_names
     else:
         varfile_names = allfile_names
     if len(varfile_names) > 0:
         for file_name in varfile_names:
             #load Fortran binary snapshot
-            print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
+            if not quiet:
+                print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
             os.chdir(olddir)
             if snap_by_proc:
-                procs = np.arange(nprocs)
                 if len(procs) > 0:
                     for proc in procs:
+                        if not quiet:
+                            print('rank {}:'.format(rank)+'saving '+file_name+
+                                          ' on proc{}'.format(proc), flush=True)
                         procdim = read.dim(proc=proc)
                         var = read.var(file_name, datadir=fromdatadir,
                                        quiet=quiet, lpersist=lpersist,
@@ -583,6 +587,10 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         print('l_mpi',l_mpi, flush=True)
 
     #test if simulation directories
+    if newdir == '.':
+        newdir = os.getcwd()
+    if olddir == '.':
+        olddir = os.getcwd()
     os.chdir(olddir)
     if not sim.is_sim_dir():
         if rank == 0:
@@ -610,34 +618,35 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             return -1
 
     os.chdir(olddir)
-    if varfile_names == None:
-        os.chdir(fromdatadir+'/proc0')
-        lVARd = False
-        varfiled_names = glob.glob('VARd*')
-        if len(varfiled_names) > 0:
-            varfile_names = glob.glob('VAR*')
-            for iv in range(len(varfile_names)-1,-1,-1):
-                if 'VARd' in varfile_names[iv]:
-                    varfile_names.remove(varfile_names[iv])
-            lVARd = True
-        else:
-            varfile_names = glob.glob('VAR*')
-        os.chdir(olddir)
-    else:
-        lVARd = False
-        if isinstance(varfile_names, list):
-            varfile_names = varfile_names
-        else:
-            varfile_names = [varfile_names]
-        varfiled_names = []
-        tmp_names = []
-        for varfile_name in varfile_names:
-            if 'VARd' in varfile_names:
-                varfiled_names.append(varfile_name)
+    if lvars:
+        if varfile_names == None:
+            os.chdir(fromdatadir+'/proc0')
+            lVARd = False
+            varfiled_names = glob.glob('VARd*')
+            if len(varfiled_names) > 0:
+                varfile_names = glob.glob('VAR*')
+                for iv in range(len(varfile_names)-1,-1,-1):
+                    if 'VARd' in varfile_names[iv]:
+                        varfile_names.remove(varfile_names[iv])
                 lVARd = True
             else:
-                tmp_names.append(varfile_name)
-        varfile_names = tmp_names
+                varfile_names = glob.glob('VAR*')
+            os.chdir(olddir)
+        else:
+            lVARd = False
+            if isinstance(varfile_names, list):
+                varfile_names = varfile_names
+            else:
+                varfile_names = [varfile_names]
+            varfiled_names = []
+            tmp_names = []
+            for varfile_name in varfile_names:
+                if 'VARd' in varfile_names:
+                    varfiled_names.append(varfile_name)
+                    lVARd = True
+                else:
+                    tmp_names.append(varfile_name)
+            varfile_names = tmp_names
     gkeys = ['x', 'y', 'z', 'Lx', 'Ly', 'Lz', 'dx', 'dy', 'dz',
              'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde',
             ]
