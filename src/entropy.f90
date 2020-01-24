@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho, uuadvec_gss; hcond_prof; hcond_const 
+! PENCILS PROVIDED initss; initlnrho, uuadvec_gss 
 !
 !***************************************************************
 module Energy
@@ -48,7 +48,7 @@ module Energy
   real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
-  real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
+  real :: khor_ss=1.0, ss_const=0.0
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
   real :: mixinglength_flux=0.0, entropy_flux=0.0
@@ -293,7 +293,7 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
-  integer :: idiag_Kkramersm=0   ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
+  integer :: idiag_Kkramersm=0  ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -407,7 +407,7 @@ module Energy
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
-  real, dimension (nx) :: diffus_chi,diffus_chi3
+  real, dimension (nx) :: Hmax,ss0,diffus_chi,diffus_chi3
 !
   contains
 !
@@ -1025,7 +1025,6 @@ module Energy
         if (coord_system=='spherical' .or. lconvection_gravx) then
           allocate(hcond(nx),dlhc(nx))
           call read_hcond(hcond,dlhc,nxgrid,ipx,hcondxtop,hcondxbot)
-!print*, 'hcond,dlhc:', maxval(hcond), minval(hcond),maxval(dlhc), minval(dlhc)
           do q=n1,n2; do m=m1,m2
             f(l1:l2,m,q,iglobal_hcond)=hcond
             f(l1:l2,m,q,iglobal_glhc)=dlhc
@@ -1274,7 +1273,7 @@ module Energy
       real, dimension (nx) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,ss,r_mn
       real, dimension (mx) :: ss_mx
-      real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext,cp1
+      real :: cs2int,ss0,ssint,ztop,ss_ext,pot0,pot_ext,cp1
       real, pointer :: fac_cs
       integer, pointer :: isothmid
       integer :: j,n,m
@@ -3060,14 +3059,12 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2,ss0
-      real, dimension (nx,3) :: gTxgs
-      real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
-      integer :: j,i
-!
       intent(inout)  :: f,p
       intent(inout) :: df
+!
+      real :: ztop,xi,profile_cor
+      real, dimension(nx) :: uduu
+      integer :: j,i
 !
       Hmax = 0.
 !
@@ -3231,13 +3228,6 @@ module Energy
 !
       if (lborder_profiles) call set_border_entropy(f,df,p)
 !
-!  Phi-averages
-!
-      if (l2davgfirst) then
-        if (idiag_ssmphi/=0)  call phisum_mn_name_rz(p%ss,idiag_ssmphi)
-        if (idiag_cs2mphi/=0) call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
-      endif
-!
 !  Enforce maximum heating rate timestep constraint
 !
       if (lfirst.and.ldt) then
@@ -3252,51 +3242,82 @@ module Energy
 !  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
+        if (idiag_uduum/=0) then
+            uduu=0.
+            do i = 1, 3
+              uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
+            enddo
+            call sum_mn_name(p%rho*uduu,idiag_uduum)
+        endif
+      endif
+!
+      call calc_diagnostics_energy(p)
+
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_0d_diagnostics_energy(p)
+!
+!  Calculate entropy related diagnostics.
+!
+      use Diagnostics
+      use Sub, only: cross, dot2
+
+      type(pencil_case) :: p
+
+      real, dimension(nx) :: ufpres, glnTT2, Ktmp
+      real, dimension(nx) :: gT2,gs2,gTxgs2
+      real, dimension(nx,3) :: gTxgs
+      real :: uT,fradz,TTtop
+      integer :: i
+
+      if (ldiagnos) then
+
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
+
         if (idiag_dtchi/=0) &
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        if (idiag_dtH/=0) then 
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)    !!diffus_chi
+        if (idiag_dtH/=0) then
           if (lthdiff_Hmax) then
-            call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)
+            call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)       !!ss0
           else
-            call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+            call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)       !!Hmax
           endif
         endif
-        if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
+        if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)        !!Hmax
         if (idiag_tauhmin/=0) then
           if (lthdiff_Hmax) then
-            call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.)
+            call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.) !!ss0
           else
-            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
+            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.) !!Hmax
           endif
         endif
-        if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
-        if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
-        if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
-        if (idiag_TTmin/=0)  call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)
+        if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
+        if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
+        if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
         if (idiag_gTmax/=0) then
           call dot2(p%glnTT,glnTT2)
           call max_mn_name(p%TT*sqrt(glnTT2),idiag_gTmax)
         endif
         if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
-        if (idiag_yHmax/=0)  call max_mn_name(p%yH,idiag_yHmax)
-        if (idiag_yHm/=0)    call sum_mn_name(p%yH,idiag_yHm)
+        call max_mn_name(p%yH,idiag_yHmax)
+        call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_dtc/=0) &
-            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        if (idiag_ethm/=0)    call sum_mn_name(p%rho*p%ee,idiag_ethm)
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.) !!advec_cs2
+        if (idiag_ethm/=0)   call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
         if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
         if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
-        if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
-        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
-        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-        if (idiag_csmax/=0) call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
+        call sum_mn_name(p%ee,idiag_eem)
+        call sum_mn_name(p%pp,idiag_ppm)
+        call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_cgam/=0) call sum_mn_name(16.*real(sigmaSB)*p%TT**3*p%cp1*p%rho1,idiag_cgam)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
@@ -3304,17 +3325,10 @@ module Energy
             call sum_mn_name(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
         if (idiag_ufpresm/=0) then
             ufpres=0.
-            do i = 1, 3
+            do i = 1,3
               ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
             enddo
             call sum_mn_name(ufpres,idiag_ufpresm)
-        endif
-        if (idiag_uduum/=0) then
-            uduu=0.
-            do i = 1, 3
-              uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
-            enddo
-            call sum_mn_name(p%rho*uduu,idiag_uduum)
         endif
 !
 !  Analysis for the baroclinic term.
@@ -3329,159 +3343,171 @@ module Energy
           call sum_mn_name(gs2,idiag_gsrms,lsqrt=.true.)
         endif
 !
-        if (idiag_gTxgsrms/=0) call cross(p%gTT,p%gss,gTxgs)
         if (idiag_gTxgsrms/=0) then
+          call cross(p%gTT,p%gss,gTxgs)
           call dot2(gTxgs,gTxgs2)
           call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
         endif
 !
 !  Radiative heat flux at the bottom (assume here that hcond=hcond0=const).
 !
-        if (idiag_fradbot/=0) then
-          if (lfirst_proc_z.and.n==n1) then
-            if (hcond0==0.) then
-              Ktmp=chi*p%rho*p%cp
-            else
-              Ktmp=hcond0
-            endif
-            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
+        if (idiag_fradbot/=0.and.lfirst_proc_z.and.n==n1) then
+          if (hcond0==0.) then
+            Ktmp=chi*p%rho*p%cp
           else
-            fradz=0.
+            Ktmp=hcond0
           endif
+          fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           call surf_mn_name(fradz,idiag_fradbot)
         endif
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
 !
-        if (idiag_fradtop/=0) then
-          if (llast_proc_z.and.n==n2) then
-            if (hcond0==0.) then
-              Ktmp=chi*p%rho*p%cp
-            else
-              Ktmp=hcond0
-            endif
-            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
+        if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
+          if (hcond0==0.) then
+            Ktmp=chi*p%rho*p%cp
           else
-            fradz=0.
+            Ktmp=hcond0
           endif
+          fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           call surf_mn_name(fradz,idiag_fradtop)
         endif
 !
 !  Mean temperature at the top.
 !
-        if (idiag_TTtop/=0) then
-          if (llast_proc_z.and.n==n2) then
-            TTtop=sum(p%TT*dsurfxy)
-          else
-            TTtop=0.
-          endif
+        if (idiag_TTtop/=0.and.llast_proc_z.and.n==n2) then
+          TTtop=sum(p%TT*dsurfxy)
           call surf_mn_name(TTtop,idiag_TTtop)
         endif
 !
 !  Calculate integrated temperature in in limited radial range.
 !
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
+
       endif
+
+    endsubroutine calc_0d_diagnostics_energy
+!***********************************************************************
+    subroutine calc_1d_diagnostics_energy(p)
+!
+      use Diagnostics
+      use Sub, only: cross
+
+      type(pencil_case) :: p
+!
+      real, dimension (nx,3) :: gTxgs
 !
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
-        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
-        call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
-        call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
+
+        if (idiag_ethmz/=0) call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
+        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
+        if (idiag_fconvz/=0) call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        if (idiag_fconvxmx/=0) call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        call yzsum_mn_name_x(p%ss**2,idiag_ss2mx)
+        if (idiag_ss2mx/=0) call yzsum_mn_name_x(p%ss**2,idiag_ss2mx)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
-        call xysum_mn_name_z(p%ss**2,idiag_ss2mz)
+        if (idiag_ss2mz/=0) call xysum_mn_name_z(p%ss**2,idiag_ss2mz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
         call yzsum_mn_name_x(p%TT,idiag_TTmx)
         call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
-        call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
-        call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
-        call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
-        call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
-        call yzsum_mn_name_x(p%uu(:,2)*p%TT,idiag_uyTTmx)
-        call yzsum_mn_name_x(p%uu(:,3)*p%TT,idiag_uzTTmx)
-        call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
-        if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
-        if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
-      endif
+        if (idiag_fradz_constchi/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
+        if (idiag_TT2mx/=0) call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
+        if (idiag_TT2mz/=0) call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
+        if (idiag_uxTTmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
+        if (idiag_uxTTmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
+        if (idiag_uyTTmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%TT,idiag_uyTTmx)
+        if (idiag_uzTTmx/=0) call yzsum_mn_name_x(p%uu(:,3)*p%TT,idiag_uzTTmx)
+        if (idiag_uyTTmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
+        if (idiag_uzTTmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
+        call phizsum_mn_name_r(p%ss,idiag_ssmr)
+        call phizsum_mn_name_r(p%TT,idiag_TTmr)
 !
 !  For the 1D averages of the baroclinic term
 !
-       if (l1davgfirst) then
-         if (idiag_gTxgsxmz/=0 .or. idiag_gTxgsx2mz/=0 .or. &
-             idiag_gTxgsymz/=0 .or. idiag_gTxgsy2mz/=0 .or. &
-             idiag_gTxgszmz/=0 .or. idiag_gTxgsz2mz/=0) then
-           call cross(p%gTT,p%gss,gTxgs)
-           if (idiag_gTxgsxmz/=0) &
-               call xysum_mn_name_z(gTxgs(:,1),idiag_gTxgsxmz)
-           if (idiag_gTxgsymz/=0) &
-               call xysum_mn_name_z(gTxgs(:,2),idiag_gTxgsymz)
-           if (idiag_gTxgszmz/=0) &
-               call xysum_mn_name_z(gTxgs(:,3),idiag_gTxgszmz)
-           if (idiag_gTxgsx2mz/=0) &
-               call xysum_mn_name_z(gTxgs(:,1)**2,idiag_gTxgsx2mz)
-           if (idiag_gTxgsy2mz/=0) &
-               call xysum_mn_name_z(gTxgs(:,2)**2,idiag_gTxgsy2mz)
-           if (idiag_gTxgsz2mz/=0) &
-               call xysum_mn_name_z(gTxgs(:,3)**2,idiag_gTxgsz2mz)
-         endif
-       endif
+        if (idiag_gTxgsxmz/=0 .or. idiag_gTxgsx2mz/=0 .or. &
+            idiag_gTxgsymz/=0 .or. idiag_gTxgsy2mz/=0 .or. &
+            idiag_gTxgszmz/=0 .or. idiag_gTxgsz2mz/=0) then
+          call cross(p%gTT,p%gss,gTxgs)
+          call xysum_mn_name_z(gTxgs(:,1),idiag_gTxgsxmz)
+          call xysum_mn_name_z(gTxgs(:,2),idiag_gTxgsymz)
+          call xysum_mn_name_z(gTxgs(:,3),idiag_gTxgszmz)
+          if (idiag_gTxgsx2mz/=0) &
+              call xysum_mn_name_z(gTxgs(:,1)**2,idiag_gTxgsx2mz)
+          if (idiag_gTxgsy2mz/=0) &
+              call xysum_mn_name_z(gTxgs(:,2)**2,idiag_gTxgsy2mz)
+          if (idiag_gTxgsz2mz/=0) &
+              call xysum_mn_name_z(gTxgs(:,3)**2,idiag_gTxgsz2mz)
+        endif
+      endif
+!
+    endsubroutine calc_1d_diagnostics_energy
+!***********************************************************************
+    subroutine calc_2d_diagnostics_energy(p)
 !
 !  2-D averages.
 !
+      use Diagnostics
+      use Sub, only: cross
+
+      type(pencil_case) :: p
+
+      real, dimension (nx,3) :: gTxgs, tmpvec
+
       if (l2davgfirst) then
-        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
-        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
-        if (idiag_ssmxy/=0) call zsum_mn_name_xy(p%ss,idiag_ssmxy)
-        if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
-        if (idiag_uxTTmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
-        if (idiag_uyTTmxy/=0) &
-            call zsum_mn_name_xy(p%uu,idiag_uyTTmxy,(/0,1,0/),p%TT)
-        if (idiag_uzTTmxy/=0) &
-            call zsum_mn_name_xy(p%uu,idiag_uzTTmxy,(/0,0,1/),p%TT)
+!
+!  Phi-averages
+!
+        call phisum_mn_name_rz(p%ss,idiag_ssmphi)
+        call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
+
+        call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+        call zsum_mn_name_xy(p%ss,idiag_ssmxy)
+        call ysum_mn_name_xz(p%ss,idiag_ssmxz)
+        if (idiag_uxTTmxy/=0) call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
+        call zsum_mn_name_xy(p%uu,idiag_uyTTmxy,(/0,1,0/),p%TT)
+        call zsum_mn_name_xy(p%uu,idiag_uzTTmxy,(/0,0,1/),p%TT)
         if (idiag_fconvxy/=0) &
             call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
         if (idiag_fconvyxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_fconvyxy,(/0,1,0/),p%cp*p%rho*p%TT)
         if (idiag_fconvzxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_fconvzxy,(/0,0,1/),p%cp*p%rho*p%TT)
-        if (idiag_gTxmxy/=0) &
-            call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
-        if (idiag_gTymxy/=0) &
-            call zsum_mn_name_xy(p%gTT,idiag_gTymxy,(/0,1,0/))
-        if (idiag_gTzmxy/=0) &
-            call zsum_mn_name_xy(p%gTT,idiag_gTzmxy,(/0,0,1/))
-        if (idiag_gsxmxy/=0) &
-            call zsum_mn_name_xy(p%gss(:,1),idiag_gsxmxy)
-        if (idiag_gsymxy/=0) &
-            call zsum_mn_name_xy(p%gss,idiag_gsymxy,(/0,1,0/))
-        if (idiag_gszmxy/=0) &
-            call zsum_mn_name_xy(p%gss,idiag_gszmxy,(/0,0,1/))
-      endif
+        call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
+        call zsum_mn_name_xy(p%gTT,idiag_gTymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%gTT,idiag_gTzmxy,(/0,0,1/))
+        call zsum_mn_name_xy(p%gss(:,1),idiag_gsxmxy)
+        call zsum_mn_name_xy(p%gss,idiag_gsymxy,(/0,1,0/))
+        call zsum_mn_name_xy(p%gss,idiag_gszmxy,(/0,0,1/))
+
+        if (chi_t/=0.) then
+          if (idiag_fturbrxy/=0) &
+            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
+                                 (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
+          if (idiag_fturbthxy/=0) then
+            tmpvec(:,(/1,3/))=0.
+            tmpvec(:,2)= -chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
+                         (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2))
+            call zsum_mn_name_xy(tmpvec,idiag_fturbthxy,(/0,1,0/))   ! not correct for Yin-Yang: phi component in tmpvec missing
+
+          endif
+        endif
 !
+!  2D averages of the baroclinic term.
 !
-!  For the 2D averages of the baroclinic term
-!
-       if (l2davgfirst) then
          if (idiag_gTxgsxmxy/=0 .or. idiag_gTxgsx2mxy/=0 .or. &
              idiag_gTxgsymxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. &
              idiag_gTxgszmxy/=0 .or. idiag_gTxgsz2mxy/=0) then
            call cross(p%gTT,p%gss,gTxgs)
-           if (idiag_gTxgsxmxy/=0) &
-               call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
-           if (idiag_gTxgsymxy/=0) &
-               call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
-           if (idiag_gTxgszmxy/=0) &
-               call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
+           call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
+           call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
+           call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
            if (idiag_gTxgsx2mxy/=0) &
                call zsum_mn_name_xy(gTxgs(:,1)**2,idiag_gTxgsxmxy)
            if (idiag_gTxgsy2mxy/=0) &
@@ -3490,8 +3516,18 @@ module Energy
                call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
          endif
        endif
-!
-    endsubroutine denergy_dt
+
+    endsubroutine calc_2d_diagnostics_energy
+!***********************************************************************
+    subroutine calc_diagnostics_energy(p)
+
+      type(pencil_case) :: p
+
+      call calc_2d_diagnostics_energy(p)
+      call calc_1d_diagnostics_energy(p)
+      call calc_0d_diagnostics_energy(p)
+
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine calc_ssmeanxy(f,ssmxy)
 !
@@ -3841,8 +3877,6 @@ module Energy
       real, dimension(nx) :: thdiff, g2, chit_prof
       real, dimension(nx,3) :: glnchit_prof
 !
-      save :: chit_prof, glnchit_prof
-!
 !  Check that chi is ok.
 !
       if (headtt) print*,'calc_heatcond_constchi: chi=',chi
@@ -3869,20 +3903,17 @@ module Energy
         call get_prof_pencil(chit_prof_stored,glnchit_prof_stored, &
                              chit_prof,glnchit_prof, &
                              .not.(lspherical_coords.or.lconvection_gravx),p)
-!print*, 'chit:', maxval(chit_prof), &
-!minval(chit_prof),maxval(glnchit_prof(:,1)), minval(glnchit_prof(:,1))
         call dot(p%glnrho+p%glnTT,p%gss,g2)
         thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
         call dot(glnchit_prof,p%gss,g2)
         thdiff=thdiff+chi_t*g2
-      endif
 !
 !  Diagnostics
 !
-      if (l1davgfirst) then
-        if (chi_t/=0.) &
-          call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
-          call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
+        if (l1davgfirst) then
+          if (idiag_fturbz/=0) &
+            call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        endif
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -4478,7 +4509,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
+        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
       endif
 !
 !  Check maximum diffusion from thermal diffusion.
@@ -4728,7 +4759,7 @@ module Energy
         call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
         call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
         if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
-        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
 !  2d-averages
@@ -4898,7 +4929,7 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in) :: p
+      intent(in) :: f,p
       intent(inout) :: df
 
       real, dimension (nx,3) :: glnThcond,glhc,gss1
@@ -4969,7 +5000,6 @@ module Energy
 !
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-!print*, 'n,m,glnThcond=', n,m,maxval(glnThcond),minval(glnThcond)
         if (notanumber(p%glnTT)) then
           !print*, 'entropy:iproc,it,m,n=', iproc_world,it,m,n
           call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
@@ -4996,12 +5026,8 @@ module Energy
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
-        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
-        if (chi_t/=0.) then
-          call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
-          call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
-        endif
+        if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
       endif
 !
 !  2d-averages
@@ -5009,19 +5035,6 @@ module Energy
       if (l2davgfirst) then
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
         if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(p%glnTT,idiag_fradymxy_Kprof,(/0,1,0/),-hcond*p%TT)
-        if (chi_t/=0.) then
-          if (idiag_fturbxy/=0  ) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
-          if (idiag_fturbymxy/=0) call zsum_mn_name_xy(p%gss,idiag_fturbymxy,(/0,1,0/),-chi_t*chit_prof*p%rho*p%TT)
-          if (idiag_fturbrxy/=0) &
-            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
-                                 (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
-          if (idiag_fturbthxy/=0) then
-            tmpvec(:,(/1,3/))=0.
-            tmpvec(:,2)= -chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
-                         (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2))
-            call zsum_mn_name_xy(tmpvec,idiag_fturbthxy,(/0,1,0/))   ! not correct for Yin-Yang: phi component in tmpvec missing
-          endif
-        endif
       endif
 !
 !  "Turbulent" entropy diffusion.
@@ -5046,8 +5059,6 @@ module Energy
           call get_prof_pencil(chit_prof_stored,glnchit_prof_stored, &
                                chit_prof,glnchit_prof, &
                                .not.(lspherical_coords.or.lconvection_gravx),p)
-!print*, 'chit:', maxval(chit_prof), &
-!minval(chit_prof),maxval(glnchit_prof(:,1)), minval(glnchit_prof(:,1))
         endif
 !
 !  'Standard' formulation where the flux contains temperature:
@@ -5086,9 +5097,16 @@ module Energy
           endif
 !
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-!print*, 'n,m,chit=', n,m,maxval(abs(chi_t*chit_prof*(p%del2ss+g2)))
           call dot(glnchit_prof,p%gss,g2)
           thdiff=thdiff+chi_t*g2
+        endif
+        if (l1davgfirst) then
+          if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+          if (idiag_fturbmx/=0) call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
+        endif
+        if (l2davgfirst) then
+          if (idiag_fturbxy/=0  ) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
+          if (idiag_fturbymxy/=0) call zsum_mn_name_xy(p%gss,idiag_fturbymxy,(/0,1,0/),-chi_t*chit_prof*p%rho*p%TT)
         endif
       endif
 !
@@ -5150,7 +5168,6 @@ module Energy
         if (notanumber(chix))      print*,'calc_heatcond: NaNs in chix'
         if (notanumber(p%del2ss))  print*,'calc_heatcond: NaNs in del2ss'
 !        if (notanumber(p%del2lnrho)) print*,'calc_heatcond: NaNs in del2lnrho'
-        if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
         if (notanumber(1/hcond))   print*,'calc_heatcond: NaNs in 1/hcond'
         if (notanumber(p%glnTT))   print*,'calc_heatcond: NaNs in glnT'
         if (notanumber(glnThcond)) print*,'calc_heatcond: NaNs in glnThcond'
@@ -5191,7 +5208,7 @@ module Energy
         else
           diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
         endif
-if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minval(diffus_chi)
+!if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minval(diffus_chi)
 !        if (ldiagnos.and.idiag_dtchi/=0) &
 !          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
@@ -5373,11 +5390,12 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
 !
       if (l1davgfirst) then
         if ((lchit_total .or. lchit_mean) .and. chi_t0/=0.) then
-          call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
-          call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
+          if (idiag_fturbtz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
+          if (idiag_fturbmz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
         endif
-        if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) &
-          call xysum_mn_name_z(-chi_t1*chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+        if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
+          if (idiag_fturbfz/=0) call xysum_mn_name_z(-chi_t1*chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+        endif
       endif
 !
 ! chi_t1 acting on deviations from a running 3D mean of entropy   
@@ -5594,15 +5612,11 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
 !
 !  Heating/cooling related diagnostics.
 !
-      if (ldiagnos) then
-        if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
-      endif
+      if (ldiagnos) call sum_mn_name(heat,idiag_heatm)
 !
 !  Write divergence of cooling flux.
 !
-      if (l1davgfirst) then
-        call xysum_mn_name_z(heat,idiag_heatmz)
-      endif
+      if (l1davgfirst) call xysum_mn_name_z(heat,idiag_heatmz)
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -6089,12 +6103,8 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
 !
 !  Write divergence of cooling flux.
 !
-      if (l1davgfirst) &
-        call yzsum_mn_name_x(heat,idiag_dcoolx)
-!
-      if (l2davgfirst) then
-        if (idiag_dcoolxy/=0) call zsum_mn_name_xy(heat,idiag_dcoolxy)
-      endif
+      if (l1davgfirst) call yzsum_mn_name_x(heat,idiag_dcoolx)
+      if (l2davgfirst) call zsum_mn_name_xy(heat,idiag_dcoolxy)
 !
     endsubroutine get_heat_cool_gravx_spherical
 !***********************************************************************
@@ -6378,7 +6388,7 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics, only: parse_name
+      use Diagnostics, only: parse_name,set_type
       use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
@@ -6467,6 +6477,10 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
+!
+      if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
+      if (idiag_fradtop/=0) call set_type(idiag_fradtop,lsurf=.true.)
+      if (idiag_TTtop/=0) call set_type(idiag_TTtop,lsurf=.true.)
 !
 !  Check for those quantities for which we want yz-averages.
 !
@@ -6794,10 +6808,10 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
       call get_shared_variable('gravx', gravx)
 !
 ! Radial profile of the polytropic index
-      mpoly_xprof = mpoly0 - (mpoly0-mpoly1)*step(x,xb,widthss) - &
-           (mpoly1-mpoly2)*step(x,xc,widthss)
-      dmpoly_dx = -(mpoly0-mpoly1)*der_step(x,xb,widthss) - &
-           (mpoly1-mpoly2)*der_step(x,xc,widthss)
+      mpoly_xprof = mpoly0 - (mpoly0-mpoly1)*step(x,xb,widthss) &
+                           - (mpoly1-mpoly2)*step(x,xc,widthss)
+      dmpoly_dx = -(mpoly0-mpoly1)*der_step(x,xb,widthss) &
+                  -(mpoly1-mpoly2)*der_step(x,xc,widthss)
 !
 ! Hydrostatic equilibrium relations
       dTTdxc = gravx_xpencil / (cv*gamma_m1*(mpoly_xprof+1.))
@@ -6979,7 +6993,6 @@ if (lroot) print*, 'calc_heatcond: n,m,diffus_chi=',n,m,maxval(diffus_chi), minv
                                   + (chit_prof2-1.)*step(x(l1:l2),xtop, widthss)
             glnchit_prof_stored = (chit_prof1-1.)*der_step(x(l1:l2),xbot,-widthss) &
                                 + (chit_prof2-1.)*der_step(x(l1:l2),xtop, widthss)
-!print*, 'chit:', maxval(chit_prof_stored), minval(chit_prof_stored),maxval(glnchit_prof_stored), minval(glnchit_prof_stored)
           case ('powerlaw','power-law')
             chit_prof_stored = (x(l1:l2)/xchit)**(-pclaw)
             glnchit_prof_stored = -pclaw*(x(l1:l2)/xchit)**(-pclaw-1.)/xchit
