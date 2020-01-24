@@ -190,7 +190,6 @@ module Boundcond
       integer ::  mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
                   nghost_in, nprocx_in, nprocy_in, nprocz_in, nprocz_in_
       logical :: lbcxslc,lbcyslc,lbczslc
-      character(LEN=fnlen) :: dir
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
 
@@ -5482,7 +5481,7 @@ module Boundcond
 
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
-       integer :: lend=0,ierr,frame=0,stat,pos,iref,px,py
+       integer :: lend=0,ierr,frame=0,pos,iref,px,py
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
        logical :: quench
