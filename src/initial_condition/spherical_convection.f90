@@ -78,7 +78,7 @@ module InitialCondition
 !                Profiles hcond and glhcond not written then!
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: gamma, gamma_m1, rho0, cs20
+      use EquationOfState, only: gamma, rho0, cs20
       use General, only: safe_character_assign
       use Mpicomm, only: stop_it, mpiallreduce_sum
       use FArrayManager
@@ -86,7 +86,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
-      real, dimension (mx) :: TT, TTc, rho_prof, dTdr_cor, dlnTdr 
+      real, dimension (mx) :: TT, TTc, rho_prof
       real, dimension (mx) :: lnrho, ss_prof, cs2_prof
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
@@ -99,9 +99,9 @@ module InitialCondition
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
-      real :: meanrho, volume, total_mass, tmp
+      real :: volume, total_mass, tmp
       real, pointer :: gravx, cp, cv
-      integer :: i, j, n, m, q, ix, ierr, nsurf, nsurf_global
+      integer :: i, j, n, m, ix, ierr, nsurf, nsurf_global
       integer, parameter :: unit=1
 
       character (len=120) :: wfile
@@ -452,8 +452,6 @@ module InitialCondition
 !  Initialize entropy.
 !
 !  07-may-09/wlad: coded
-!
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

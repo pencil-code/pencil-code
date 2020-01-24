@@ -2418,7 +2418,7 @@ module Hydro
 !
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmp3
-      integer :: i, j, ju, ij, jj, kk, jk
+      integer :: i, j, ju, jj, kk, jk
 !
       intent(in) :: lpenc_loc
       intent(out):: p
@@ -2904,7 +2904,7 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx) :: ftot
-      integer :: j, ju, k
+      integer :: j, ju
 !
       Fmax=tini
 !
@@ -3132,7 +3132,7 @@ module Hydro
 !
       real, dimension (nx,3) :: uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real :: kx
       integer :: k
       logical, save :: lcorr_zero_dt=.false.
