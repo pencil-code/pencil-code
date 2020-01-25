@@ -479,12 +479,15 @@ module Hydro
   integer :: idiag_divru2mz=0   ! XYAVG_DOC: $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$
   integer :: idiag_fmasszmz=0   ! XYAVG_DOC: $\left< \varrho u_z \right>_{xy}$
   integer :: idiag_fkinzmz=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
+  integer :: idiag_fkinzupmz=0  ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_{z\uparrow}\right>_{xy}$
+  integer :: idiag_fkinzdownmz=0 ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_{z\downarrow}\right>_{xy}$
   integer :: idiag_uxmz=0       ! XYAVG_DOC: $\left< u_x \right>_{xy}$
                                 ! XYAVG_DOC:   \quad(horiz. averaged $x$
                                 ! XYAVG_DOC:   velocity)
   integer :: idiag_uymz=0       ! XYAVG_DOC: $\left< u_y \right>_{xy}$
   integer :: idiag_uzmz=0       ! XYAVG_DOC: $\left< u_z \right>_{xy}$
   integer :: idiag_uzupmz=0     ! XYAVG_DOC: $\left< u_{z\uparrow} \right>_{xy}$
+  integer :: idiag_ffdownmz=0   ! XYAVG_DOC: Filling factor of downflows
   integer :: idiag_uzdownmz=0   ! XYAVG_DOC: $\left< u_{z\downarrow} \right>_{xy}$
   integer :: idiag_ruzupmz=0    ! XYAVG_DOC: $\left< \varrho u_{z\uparrow} \right>_{xy}$
   integer :: idiag_ruzdownmz=0  ! XYAVG_DOC: $\left< \varrho u_{z\downarrow} \right>_{xy}$
@@ -496,6 +499,8 @@ module Hydro
   integer :: idiag_ux2mz=0      ! XYAVG_DOC: $\left<u_x^2\right>_{xy}$
   integer :: idiag_uy2mz=0      ! XYAVG_DOC: $\left<u_y^2\right>_{xy}$
   integer :: idiag_uz2mz=0      ! XYAVG_DOC: $\left<u_z^2\right>_{xy}$
+  integer :: idiag_uz2upmz=0    ! XYAVG_DOC: $\left<(u_z^2)_\uparrow\right>_{xy}$
+  integer :: idiag_uz2downmz=0  ! XYAVG_DOC: $\left<(u_z^2)_\downarrow\right>_{xy}$
   integer :: idiag_ox2mz=0      ! XYAVG_DOC: $\left< \omega_x^2 \right>_{xy}$
   integer :: idiag_oy2mz=0      ! XYAVG_DOC: $\left< \omega_y^2 \right>_{xy}$
   integer :: idiag_oz2mz=0      ! XYAVG_DOC: $\left< \omega_z^2 \right>_{xy}$
@@ -2232,7 +2237,8 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-          idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
+           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
+           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0) then
@@ -3506,7 +3512,6 @@ module Hydro
 
       real, dimension (nx,3) :: curlru
       real, dimension (nx) :: uus,curlru2
-      integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -3519,10 +3524,6 @@ module Hydro
         call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
         call xysum_mn_name_z(p%divu,idiag_divumz)
         if (idiag_uzdivumz/=0) call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
-        call sign_masked_xyaver(p%uu(:,3),idiag_uzupmz,nuzup)
-        if (idiag_uzdownmz/=0) call sign_masked_xyaver(-p%uu(:,3),idiag_uzdownmz,nuzdown)
-        if (idiag_ruzupmz/=0) call sign_masked_xyaver(p%rho*p%uu(:,3),idiag_ruzupmz,nruzup)
-        if (idiag_ruzdownmz/=0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz,nruzdown)
         call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
         call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
         call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
@@ -3547,6 +3548,31 @@ module Hydro
         if (idiag_ux2mz/=0) call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
         if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
+        if (idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. idiag_uz2upmz/=0 .or. &
+          idiag_fkinzupmz/=0) then
+          where (p%uu(:,3) > 0.)
+            uus = p%uu(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_uzupmz)
+          call xysum_mn_name_z(p%rho*uus,idiag_ruzupmz)
+          call xysum_mn_name_z(uus**2,idiag_uz2upmz)
+          call xysum_mn_name_z(p%ekin*uus,idiag_fkinzupmz)
+        endif
+        if (idiag_ffdownmz/=0 .or. idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. &
+          idiag_uz2upmz/=0 .or. idiag_fkinzupmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%uu(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus/abs(uus),idiag_ffdownmz)
+          call xysum_mn_name_z(uus,idiag_uzdownmz)
+          call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
+          call xysum_mn_name_z(uus**2,idiag_uz2downmz)
+          call xysum_mn_name_z(p%ekin*uus,idiag_fkinzdownmz)
+        endif
 !
 !  mean squared velocity and vorticity
 !
@@ -3948,7 +3974,6 @@ module Hydro
 !         +2.*omega_precession*Omega*mat_cent3
 !     endif
 !
-
 !
 !  Remove mean flow (z average).
 !
@@ -4745,6 +4770,8 @@ module Hydro
         idiag_ux2mz=0
         idiag_uy2mz=0
         idiag_uz2mz=0
+        idiag_uz2upmz=0
+        idiag_uz2downmz=0
         idiag_ruxmx=0
         idiag_ruymx=0
         idiag_ruzmx=0
@@ -4765,6 +4792,7 @@ module Hydro
         idiag_uzmz=0
         idiag_uzupmz=0
         idiag_uzdownmz=0
+        idiag_ffdownmz=0
         idiag_ruzupmz=0
         idiag_ruzdownmz=0
         idiag_divumz=0
@@ -4941,6 +4969,8 @@ module Hydro
         idiag_ekinmz=0
         idiag_fmasszmz=0
         idiag_fkinzmz=0
+        idiag_fkinzdownmz=0
+        idiag_fkinzupmz=0
         idiag_fkinxmx=0
         idiag_fkinxmxy=0
         idiag_fkinymxy=0
@@ -5287,6 +5317,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzupmz',idiag_uzupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzdownmz',idiag_uzdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ffdownmz',idiag_ffdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruzupmz',idiag_ruzupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruzdownmz',idiag_ruzdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'divumz',idiag_divumz)
@@ -5297,6 +5328,8 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux2mz',idiag_ux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy2mz',idiag_uy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2upmz',idiag_uz2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2downmz',idiag_uz2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ox2mz',idiag_ox2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oy2mz',idiag_oy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oz2mz',idiag_oz2mz)
@@ -5331,6 +5364,10 @@ module Hydro
             'fmasszmz',idiag_fmasszmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fkinzmz',idiag_fkinzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'fkinzdownmz',idiag_fkinzdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'fkinzupmz',idiag_fkinzupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ekinmz',idiag_ekinmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
