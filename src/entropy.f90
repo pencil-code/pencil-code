@@ -145,6 +145,9 @@ module Energy
   logical :: lthdiff_Hmax=.false.
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
+  logical :: lFenth_as_aux=.false.
+  logical :: lss_flucz_as_aux=.false.
+  logical :: lTT_flucz_as_aux=.false.
   real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -189,7 +192,8 @@ module Energy
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
-      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux
+      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
+      lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
 !
 !  Run parameters.
 !
@@ -226,7 +230,7 @@ module Energy
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
-      lss_running_aver_as_aux
+      lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -299,14 +303,33 @@ module Energy
 !
   integer :: idiag_fradz=0      ! XYAVG_DOC: $\left<F_{\rm rad}\right>_{xy}$
   integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
+  integer :: idiag_Fenthz=0     ! XYAVG_DOC: $\left<c_p (\varrho u_z)' T' \right>_{xy}$
+  integer :: idiag_Fenthupz=0   ! XYAVG_DOC: $\left<(c_p (\varrho u_z)' T')_\uparrow \right>_{xy}$
+  integer :: idiag_Fenthdownz=0 ! XYAVG_DOC: $\left<(c_p (\varrho u_z)' T')_\downarrow \right>_{xy}$
   integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
+  integer :: idiag_ssupmz=0     ! XYAVG_DOC: $\left< s_\uparrow \right>_{xy}$
+  integer :: idiag_ssdownmz=0   ! XYAVG_DOC: $\left< s_\downarrow \right>_{xy}$
   integer :: idiag_ss2mz=0      ! XYAVG_DOC: $\left< s^2 \right>_{xy}$
+  integer :: idiag_ss2upmz=0    ! XYAVG_DOC: $\left< s^2_\uparrow \right>_{xy}$
+  integer :: idiag_ss2downmz=0  ! XYAVG_DOC: $\left< s^2_\downarrow \right>_{xy}$
+  integer :: idiag_ssf2mz=0     ! XYAVG_DOC: $\left< s'^2\right>_{xy}$
+  integer :: idiag_ssf2upmz=0   ! XYAVG_DOC: $\left< s'^2_\uparrow \right>_{xy}$
+  integer :: idiag_ssf2downmz=0 ! XYAVG_DOC: $\left< s'^2_\downarrow \right>_{xy}$
   integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left< p \right>_{xy}$
   integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left< T \right>_{xy}$
+  integer :: idiag_TTdownmz=0   ! XYAVG_DOC: $\left< T_\downarrow \right>_{xy}$
+  integer :: idiag_TTupmz=0     ! XYAVG_DOC: $\left< T_\uparrow \right>_{xy}$
   integer :: idiag_TT2mz=0      ! XYAVG_DOC: $\left< T^2 \right>_{xy}$
+  integer :: idiag_TT2upmz=0    ! XYAVG_DOC: $\left< T^2_\uparrow \right>_{xy}$
+  integer :: idiag_TT2downmz=0  ! XYAVG_DOC: $\left< T^2_\downarrow \right>_{xy}$
+  integer :: idiag_TTf2mz=0     ! XYAVG_DOC: $\left< T'^2 \right>_{xy}$
+  integer :: idiag_TTf2upmz=0   ! XYAVG_DOC: $\left< T'^2_\uparrow \right>_{xy}$
+  integer :: idiag_TTf2downmz=0 ! XYAVG_DOC: $\left< T'^2_\downarrow \right>_{xy}$
   integer :: idiag_uxTTmz=0     ! XYAVG_DOC: $\left< u_x T \right>_{xy}$
   integer :: idiag_uyTTmz=0     ! XYAVG_DOC: $\left< u_y T \right>_{xy}$
   integer :: idiag_uzTTmz=0     ! XYAVG_DOC: $\left< u_z T \right>_{xy}$
+  integer :: idiag_uzTTupmz=0   ! XYAVG_DOC: $\left< (u_z T)_\uparrow \right>_{xy}$
+  integer :: idiag_uzTTdownmz=0 ! XYAVG_DOC: $\left< (u_z T)_\downarrow \right>_{xy}$
   integer :: idiag_gTxgsxmz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_x\right>_{xy}$
   integer :: idiag_gTxgsymz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_y\right>_{xy}$
   integer :: idiag_gTxgszmz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_z\right>_{xy}$
@@ -458,6 +481,51 @@ module Energy
         endif
         if (lroot) write(15,*) 'ss_run_aver = fltarr(mx,my,mz)*one'
         aux_var(aux_count)=',ss_run_aver'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
+!  Enthalpy flux
+!
+      if (lFenth_as_aux) then
+        if (iFenth==0) then
+          call farray_register_auxiliary('Fenth',iFenth)
+        else
+          if (lroot) print*, 'register_energy: iFenth = ', iFenth
+          call farray_index_append('iFenth',iFenth)
+        endif
+        if (lroot) write(15,*) 'Fenth = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',Fenth'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
+!  Fluctuating entropy = s - \mean_xy(s)
+!
+      if (lss_flucz_as_aux) then
+        if (iss_flucz==0) then
+          call farray_register_auxiliary('ss_flucz',iss_flucz)
+        else
+          if (lroot) print*, 'register_energy: iss_run_aver = ', iss_flucz
+          call farray_index_append('iss_flucz',iss_flucz)
+        endif
+        if (lroot) write(15,*) 'ss_flucz = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',ss_flucz'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
+!  Fluctuating squared sound speed = TT - \mean_xy(TT)
+!
+      if (lTT_flucz_as_aux) then
+        if (iTT_flucz==0) then
+          call farray_register_auxiliary('TT_flucz',iTT_flucz)
+        else
+          if (lroot) print*, 'register_energy: iTT_run_aver = ', iTT_flucz
+          call farray_index_append('iTT_flucz',iTT_flucz)
+        endif
+        if (lroot) write(15,*) 'TT_flucz = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',TT_flucz'
         if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+1
       endif
@@ -2806,6 +2874,9 @@ module Energy
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
           idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. & 
+          idiag_ssupmz/=0 .or. idiag_ssdownmz/=0 .or. &
+          idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. & 
+          idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0 .or. & 
           idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. & 
           idiag_ssmr/=0) & 
           lpenc_diagnos(i_ss)=.true.
@@ -2820,6 +2891,7 @@ module Energy
       endif
       if (idiag_ssuzm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
+          idiag_Fenthz/=0 .or. idiag_Fenthupz/=0 .or. idiag_Fenthdownz/=0 .or. &
           idiag_fconvxmx/=0) then
         lpenc_diagnos(i_cp)=.true.
         lpenc_diagnos(i_uu)=.true.
@@ -2856,10 +2928,21 @@ module Energy
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
+          idiag_TTdownmz/=0 .or. idiag_TTupmz/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
           idiag_uzTTmz/=0 .or. idiag_TT2mx/=0 .or. idiag_TT2mz/=0 .or. &
+          idiag_uzTTupmz/=0 .or. idiag_uzTTdownmz/=0 .or. &
+          idiag_TT2downmz/=0 .or. idiag_TT2upmz/=0 .or. &
           idiag_uxTTmx/=0 .or. idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0) &
           lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTupmz/=0 .or. idiag_TTdownmz/=0 .or. &
+          idiag_TT2upmz/=0 .or. idiag_TT2downmz/=0 .or. &
+          idiag_TTf2mz/=0 .or. idiag_TTf2upmz/=0 .or. idiag_TTf2downmz/=0 .or. &
+          idiag_ssupmz/=0 .or. idiag_ssdownmz/=0 .or. &
+          idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. &
+          idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0 .or. &
+          idiag_uzTTupmz/=0 .or. idiag_uzTTdownmz/=0) &
+        lpenc_diagnos(i_uu)=.true.
       if (idiag_gTmax/=0) then
         lpenc_diagnos(i_glnTT) =.true.
         lpenc_diagnos(i_TT) =.true.
@@ -3053,6 +3136,7 @@ module Energy
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
+      use Mpicomm, only: stop_it
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3251,7 +3335,7 @@ module Energy
         endif
       endif
 !
-      call calc_diagnostics_energy(p)
+      call calc_diagnostics_energy(f,p)
 
     endsubroutine denergy_dt
 !***********************************************************************
@@ -3388,19 +3472,40 @@ module Energy
 
     endsubroutine calc_0d_diagnostics_energy
 !***********************************************************************
-    subroutine calc_1d_diagnostics_energy(p)
+    subroutine calc_1d_diagnostics_energy(f,p)
 !
       use Diagnostics
       use Sub, only: cross
-
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gTxgs
+      real, dimension (nx) :: uzmask
 !
 !  1-D averages.
 !
       if (l1davgfirst) then
-
+!
+        if ((idiag_Fenthz/=0 .or. idiag_Fenthupz/=0 .or. idiag_Fenthdownz/=0) &
+            .and..not. lFenth_as_aux) then
+            call stop_it('denergy_dt: Need to set lFenth_as_aux=T'// &
+                          ' in entropy_run_pars for enthalpy diagnostics.')
+        endif
+!
+        if ((idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0) &
+            .and..not. lss_flucz_as_aux) then
+            call stop_it('denergy_dt: Need to set lss_flucz_as_aux=T'// &
+                         ' in entropy_run_pars for entropy fluctuation diagnostics.')
+        endif
+!
+        if ((idiag_TTf2mz/=0 .or. idiag_TTf2upmz/=0 .or. idiag_TTf2downmz/=0) &
+            .and..not. lTT_flucz_as_aux) then
+            call stop_it('denergy_dt: Need to set lTT_flucz_as_aux=T'// &
+                         ' in entropy_run_pars for temperature fluctuation diagnostics.')
+        endif
+!
         if (idiag_ethmz/=0) call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
         if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
         if (idiag_fconvz/=0) call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
@@ -3427,6 +3532,45 @@ module Energy
         if (idiag_uzTTmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
         call phizsum_mn_name_r(p%ss,idiag_ssmr)
         call phizsum_mn_name_r(p%TT,idiag_TTmr)
+        call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
+        call xysum_mn_name_z(f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2mz)
+!
+        if (idiag_Fenthupz/=0 .or. idiag_ssupmz/=0 .or. idiag_ss2upmz/=0 .or. &
+            idiag_ssf2upmz/=0 .or. idiag_TTupmz/=0 .or. idiag_TT2upmz/=0 .or. &
+            idiag_TTf2upmz/=0 .or. idiag_uzTTupmz/=0) then
+          where (p%uu(:,3) > 0.)
+            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask = 0.
+          endwhere
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthupz)
+          call xysum_mn_name_z(uzmask*p%ss,idiag_ssupmz)
+          call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2upmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
+          call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTupmz)
+          call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2upmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
+          call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTupmz)
+        endif
+!
+        if (idiag_Fenthdownz/=0 .or. idiag_ssdownmz/=0 .or. idiag_ss2downmz/=0 .or. &
+            idiag_ssf2downmz/=0 .or. idiag_TTdownmz/=0 .or. idiag_TT2downmz/=0 .or. &
+            idiag_TTf2downmz/=0 .or. idiag_uzTTdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask = 0.
+          endwhere
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthdownz)
+          call xysum_mn_name_z(uzmask*p%ss,idiag_ssdownmz)
+          call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2downmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
+          call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTdownmz)
+          call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2downmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
+          call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTdownmz)
+        endif
 !
 !  For the 1D averages of the baroclinic term
 !
@@ -3519,12 +3663,13 @@ module Energy
 
     endsubroutine calc_2d_diagnostics_energy
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       call calc_2d_diagnostics_energy(p)
-      call calc_1d_diagnostics_energy(p)
+      call calc_1d_diagnostics_energy(f,p)
       call calc_0d_diagnostics_energy(p)
 
     endsubroutine calc_diagnostics_energy
@@ -3562,15 +3707,17 @@ module Energy
 !  12-feb-15/MR  : changed for reference state; not yet done in averages of entropy.
 !
       use Deriv, only: der_x, der2_x, der_z, der2_z
-      use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpiallreduce_sum, stop_it
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div
-      use EquationOfState, only : lnrho0, cs20, get_cv1
-!      use Boundcond, only: update_ghosts
+      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
+      real, dimension (mx,my,mz) :: cs2p, ruzp
+      real, dimension (mz) :: ruzmz
+!
       integer :: l,m,n,lf
-      real :: fact, cv1, tmp1
+      real :: fact, cv1, cp1, tmp1
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3582,6 +3729,13 @@ module Energy
         enddo
         call finalize_aver(nprocxy,12,ssmz)
 !
+!  Entropy fluctuations as auxilliary array
+!
+        if (lss_flucz_as_aux) then
+        do n=1,mz
+           f(l1:l2,m1:m2,n,iss_flucz) = f(l1:l2,m1:m2,n,iss) - ssmz(n)
+        enddo
+       endif
 !  Compute first and second derivatives.
 !
         gssmz(:,1:2)=0.
@@ -3719,7 +3873,17 @@ module Energy
           enddo
         endif
         call finalize_aver(nprocxy,12,cs2mz)
-      endif
+!
+!  Sound speed fluctuations as auxilliary array
+!
+        if (lTT_flucz_as_aux) then
+        call get_cp1(cp1)
+        tmp1=cp1/gamma_m1
+        do n=1,mz
+           f(l1:l2,m1:m2,n,iTT_flucz) = tmp1*(cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n))
+        enddo
+       endif
+     endif
 !
 !  Compute volume average of entropy.
 !
@@ -3752,13 +3916,42 @@ module Energy
         if (t.lt.dt) f(:,:,:,iss_run_aver)=f(:,:,:,iss)
         f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
       endif
-!      call update_ghosts(f,iss_run_aver)
+!
+!  Enthalpy flux as auxilliary array
+!
+      if (lFenth_as_aux) then
+!
+        if (.not. lcalc_cs2mz_mean) &
+             call stop_it('energy_after_boundary: Need to set lcalc_cs2mz_mean=T'// &
+                          ' in entropy_run_pars for enthalpy diagnostics.')
+!
+        call get_cp1(cp1)
+        tmp1=cp1/gamma_m1
+!
+        f(:,:,:,iFenth)=0.
+!
+        fact=1./nxygrid
+        cs2p=0.
+        ruzp=0.
+        ruzmz=0.
+        do n=1,mz
+           ruzmz(n)= fact*sum(exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz))
+        enddo
+        call finalize_aver(nprocxy,12,ruzmz)
+!
+        do n=1,mz
+           cs2p(l1:l2,m1:m2,n) = cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n)
+           ruzp(l1:l2,m1:m2,n) = exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz)-ruzmz(n)
+        enddo
+!
+        f(l1:l2,m1:m2,:,iFenth)=tmp1*cs2p(l1:l2,m1:m2,:)*ruzp(l1:l2,m1:m2,:)
+      endif
 !
     endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
 !   9-oct-15/MR: added updating of characteristic velocity by sound speed
@@ -6412,14 +6605,21 @@ module Energy
         idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0; idiag_csmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
+        idiag_Fenthz=0; idiag_Fenthupz=0; idiag_Fenthdownz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
         idiag_fturbtz=0; idiag_fturbmz=0; idiag_fturbfz=0
         idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
+        idiag_ssupmz=0; idiag_ssdownmz=0; idiag_ss2upmz=0; idiag_ss2downmz=0
+        idiag_ssf2mz=0; idiag_ssf2upmz=0; idiag_ssf2downmz=0
         idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
+        idiag_TTupmz=0; idiag_TTdownmz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
+        idiag_uzTTupmz=0; idiag_uzTTdownmz=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mx=0; idiag_TT2mz=0
+        idiag_TT2upmz=0; idiag_TT2downmz=0
+        idiag_TTf2mz=0; idiag_TTf2upmz=0; idiag_TTf2downmz=0
         idiag_uxTTmx=0; idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
@@ -6517,6 +6717,9 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbmz',idiag_fturbmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbfz',idiag_fturbfz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Fenthz',idiag_Fenthz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Fenthupz',idiag_Fenthupz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Fenthdownz',idiag_Fenthdownz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'heatmz',idiag_heatmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
@@ -6525,13 +6728,29 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_kramers',idiag_fradz_kramers)
         call parse_name(inamex,cnamez(inamez),cformz(inamez),'Kkramersmz',idiag_Kkramersmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssupmz',idiag_ssupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssdownmz',idiag_ssdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ss2mz',idiag_ss2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ss2upmz',idiag_ss2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ss2downmz',idiag_ss2downmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssf2mz',idiag_ssf2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssf2upmz',idiag_ssf2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssf2downmz',idiag_ssf2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTupmz',idiag_TTupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTdownmz',idiag_TTdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2mz',idiag_TT2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2upmz',idiag_TT2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2downmz',idiag_TT2downmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTf2mz',idiag_TTf2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTf2upmz',idiag_TTf2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTf2downmz',idiag_TTf2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTmz',idiag_uzTTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTupmz',idiag_uzTTupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTdownmz',idiag_uzTTdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsxmz',idiag_gTxgsxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsymz',idiag_gTxgsymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgszmz',idiag_gTxgszmz)
