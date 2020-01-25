@@ -354,6 +354,7 @@ module Cdata
   integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
+  integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
 !
 !  Parameters related to message passing.
 !
