@@ -88,6 +88,8 @@ module Gravity
       ipotential_secondary,lsecondary_wait,t_start_secondary, &
       lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
+  integer :: idiag_torque=0
+!
   contains
 !***********************************************************************
     subroutine register_gravity()
@@ -461,6 +463,7 @@ module Gravity
 !  20-11-04/anders: coded
 !
       if (lcorotational_frame) lpenc_requested(i_uu)=.true.
+      if (idiag_torque/=0)     lpenc_diagnos(i_rho) =.true.
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -544,6 +547,8 @@ module Gravity
 !  Indirect term for binary systems with origin at the primary.
 !
       if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
+!
+      if (idiag_torque/=0) call calc_torque(p)
 !
       call keep_compiler_quiet(f)
 !
@@ -1121,6 +1126,39 @@ module Gravity
 !
     endsubroutine secondary_body_gravity
 !***********************************************************************
+    subroutine calc_torque(p)
+!
+!  Output torque diagnostic for nbody particle ks
+!
+!  24-jan-20/wlad : coded
+!
+      use Diagnostics
+!
+      type (pencil_case) :: p
+      real, dimension(nx) :: torque
+      real, dimension(nx) :: rr2,rpre
+!
+      if (lcartesian_coords) then
+        call fatal_error("calc_torque","not coded for Cartesian")
+      elseif (lcylindrical_coords) then
+        rpre = x(l1:l2)*sin(y(m))
+        rr2  = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2
+      elseif (lspherical_coords) then
+        rpre = x(l1:l2)*sinth(m)*sinph(n)
+        rr2  = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n)
+      else
+        call fatal_error("calc_torque",&
+             "the world is flat and we should never gotten here")
+      endif
+!
+!  Define separate torques for gas and dust/particles
+!
+      torque = g1*p%rho*rpre*(rr2 + rp1**2)**(-1.5)
+!
+      call integrate_mn_name(torque,idiag_torque)
+!
+    endsubroutine calc_torque
+!***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for gravity advance
@@ -1129,12 +1167,22 @@ module Gravity
 !  26-apr-03/axel: coded
 !
       use FArrayManager, only: farray_index_append
+      use Diagnostics
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
+      integer :: iname
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+!
+      if (lreset) then
+        idiag_torque=0
+      endif
+
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'torque',idiag_torque)
+      enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
