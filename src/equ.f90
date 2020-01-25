@@ -688,7 +688,7 @@ module Equ
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 
         call calc_all_pencils(f,p)
-        call calc_diagnostics_density(p)
+        call calc_diagnostics_density(f,p)
         !call calc_diagnostics_energy(p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
