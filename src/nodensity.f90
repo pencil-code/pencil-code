@@ -184,11 +184,13 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine calc_diagnostics_density(p)
+    subroutine calc_diagnostics_density(f,p)
 
+      real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f)
 
     endsubroutine calc_diagnostics_density
 !***********************************************************************
