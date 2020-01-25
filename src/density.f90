@@ -107,6 +107,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
+  logical :: lrho_flucz_as_aux=.false.
   logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
@@ -150,7 +151,7 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
-      lconserve_total_mass, total_mass, ireference_state
+      lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -173,7 +174,7 @@ module Density
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
       lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
-      h_slope_limited, chi_sld_thresh, islope_limiter
+      h_slope_limited, chi_sld_thresh, islope_limiter, lrho_flucz_as_aux
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -208,10 +209,17 @@ module Density
 !
 ! xy averaged diagnostics given in xyaver.in
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
+  integer :: idiag_rhoupmz=0    ! XYAVG_DOC: $\left<\varrho_\uparrow\right>_{xy}$
+  integer :: idiag_rhodownmz=0  ! XYAVG_DOC: $\left<\varrho_\downarrow\right>_{xy}$
   integer :: idiag_rho2mz=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{xy}$
+  integer :: idiag_rho2upmz=0   ! XYAVG_DOC: $\left<\varrho_\uparrow^2\right>_{xy}$
+  integer :: idiag_rho2downmz=0 ! XYAVG_DOC: $\left<\varrho_\downarrow^2\right>_{xy}$
+  integer :: idiag_rhof2mz=0    ! XYAVG_DOC: $\left<\varrho'^2\right>_{xy}$
+  integer :: idiag_rhof2upmz=0  ! XYAVG_DOC: $\left<\varrho'_\uparrow^2\right>_{xy}$
+  integer :: idiag_rhof2downmz=0 ! XYAVG_DOC: $\left<\varrho'_\downarrow^2\right>_{xy}$
   integer :: idiag_gzlnrhomz=0  ! XYAVG_DOC: $\left<\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uglnrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$
-  integer :: idiag_ugrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
+  integer :: idiag_ugrhomz=0    ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
   integer :: idiag_uygzlnrhomz=0! XYAVG_DOC: $\left<u_y\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uzgylnrhomz=0! XYAVG_DOC: $\left<u_z\nabla_y\ln\varrho\right>_{xy}$
 !
@@ -274,6 +282,21 @@ module Density
         if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
         if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
         if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+      endif
+!
+!  Fluctuating density = \rho - \mean_xy(\rho)
+!
+      if (lrho_flucz_as_aux) then
+        if (irho_flucz==0) then
+          call farray_register_auxiliary('rho_flucz',irho_flucz)
+        else
+          if (lroot) print*, 'register_energy: irho_run_aver = ', irho_flucz
+          call farray_index_append('irho_flucz',irho_flucz)
+        endif
+        if (lroot) write(15,*) 'rho_flucz = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',rho_flucz'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -1609,6 +1632,12 @@ module Density
         lnrhomz=fact*lnrhomz
         call finalize_aver(nprocxy,12,lnrhomz)
 
+        if (lrho_flucz_as_aux) then
+           do n=n1,n2
+              nl = n-n1+1
+              f(l1:l2,m1:m2,n,irho_flucz) = exp(f(l1:l2,m1:m2,n,ilnrho) - lnrhomz(nl))
+           enddo
+        endif
       endif
 !
 !  Calculate mean (= xy-average) gradient of lnrho.
@@ -2021,6 +2050,10 @@ module Density
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
+           idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
+           idiag_rhof2downmz/=0) &
+           lpenc_diagnos(i_uu)=.true.
       if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
@@ -2684,28 +2717,30 @@ module Density
       if (lborder_profiles) call set_border_density(f,df,p)
 
       call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
-      call calc_diagnostics_density(p)
+      call calc_diagnostics_density(f,p)
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine calc_diagnostics_density(p)
-
+    subroutine calc_diagnostics_density(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-
-      call calc_2d_diagnostics_density(p)
-      call calc_1d_diagnostics_density(p)
-      call calc_0d_diagnostics_density(p)
-
+!
+      call calc_2d_diagnostics_density(f,p)
+      call calc_1d_diagnostics_density(f,p)
+      call calc_0d_diagnostics_density(f,p)
+!
     endsubroutine calc_diagnostics_density
 !***********************************************************************
-    subroutine calc_2d_diagnostics_density(p)
+    subroutine calc_2d_diagnostics_density(f,p)
 !
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       use Diagnostics
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       if (l2davgfirst) then
@@ -2718,15 +2753,25 @@ module Density
 
     endsubroutine calc_2d_diagnostics_density
 !***********************************************************************
-    subroutine calc_1d_diagnostics_density(p)
+    subroutine calc_1d_diagnostics_density(f,p)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       use Diagnostics
-
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-
+!
+      real, dimension (nx) :: uzmask
+!
       if (l1davgfirst) then
+        if ((idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
+            .and..not. lrho_flucz_as_aux) then
+            call stop_it('denergy_dt: Need to set lrho_flucz_as_aux=T'// &
+                         ' in density_run_pars for density fluctuation diagnostics.')
+        endif
+!
         call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
         if (idiag_rho2mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
@@ -2738,11 +2783,32 @@ module Density
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rho2mx/=0) call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
+        call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
+        if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
+          where (p%uu(:,3) > 0.)
+            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask=0.
+          endwhere
+          call xysum_mn_name_z(uzmask*p%rho,idiag_rhoupmz)
+          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2upmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+        endif
+        if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask=0.
+          endwhere
+          call xysum_mn_name_z(uzmask*p%rho,idiag_rhodownmz)
+          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2downmz)
+          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+        endif
       endif
 
     endsubroutine calc_1d_diagnostics_density
 !***********************************************************************
-    subroutine calc_0d_diagnostics_density(p)  
+    subroutine calc_0d_diagnostics_density(f,p)
 !
 !  Calculate density diagnostics
 !
@@ -2753,6 +2819,7 @@ module Density
       use Sub,only: dot2
       use General
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       real, dimension(nx), parameter :: unitpencil=1.
@@ -3317,6 +3384,8 @@ module Density
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
+        idiag_rhoupmz=0; idiag_rhodownmz=0; idiag_rho2upmz=0; idiag_rho2downmz=0
+        idiag_rhof2mz=0; idiag_rhof2upmz=0; idiag_rhof2downmz=0
         idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
@@ -3357,6 +3426,13 @@ module Density
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoupmz',idiag_rhoupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhodownmz',idiag_rhodownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2upmz',idiag_rho2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2downmz',idiag_rho2downmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2mz',idiag_rhof2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2upmz',idiag_rhof2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2downmz',idiag_rhof2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2mz',idiag_rho2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gzlnrhomz',idiag_gzlnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uglnrhomz',idiag_uglnrhomz)
