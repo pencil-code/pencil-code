@@ -215,8 +215,8 @@ module Density
   integer :: idiag_rho2upmz=0   ! XYAVG_DOC: $\left<\varrho_\uparrow^2\right>_{xy}$
   integer :: idiag_rho2downmz=0 ! XYAVG_DOC: $\left<\varrho_\downarrow^2\right>_{xy}$
   integer :: idiag_rhof2mz=0    ! XYAVG_DOC: $\left<\varrho'^2\right>_{xy}$
-  integer :: idiag_rhof2upmz=0  ! XYAVG_DOC: $\left<\varrho'_\uparrow^2\right>_{xy}$
-  integer :: idiag_rhof2downmz=0 ! XYAVG_DOC: $\left<\varrho'_\downarrow^2\right>_{xy}$
+  integer :: idiag_rhof2upmz=0  ! XYAVG_DOC: $\left<\varrho'^2_\uparrow\right>_{xy}$
+  integer :: idiag_rhof2downmz=0 ! XYAVG_DOC: $\left<\varrho'^2_\downarrow\right>_{xy}$
   integer :: idiag_gzlnrhomz=0  ! XYAVG_DOC: $\left<\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uglnrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$
   integer :: idiag_ugrhomz=0    ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
