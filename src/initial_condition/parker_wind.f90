@@ -29,12 +29,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: rcrit=1., mdot=0.
+  real :: rcrit=1., mdot=0., Om_inner=0.
   real, dimension(mx) :: vv=0.
   real, dimension(mx) :: den=0.
   
   namelist /initial_condition_pars/ &
-       rcrit, mdot
+       rcrit, mdot, Om_inner
 !
   contains
 !***********************************************************************
@@ -73,13 +73,11 @@ module InitialCondition
       if (.not. lanelastic) then
         call parker_wind_iteration(f,vv,den)
         do iy=m1,m2;do iz=n1,n2
-          f(:,iy,iz,ilnrho)=log(den)
-          f(:,iy,iz,iuu)=vv
-          f(:,iy,iz,iuu+1)=0.
-          f(:,iy,iz,iuu+2)=0.
+          f(:,iy,iz,ilnrho)=f(:,iy,iz,ilnrho)+log(den)
+          f(:,iy,iz,iuu)=f(:,iy,iz,iuu)+vv
+          f(:,iy,iz,iuu+2)=f(:,iy,iz,iuu+2)+Om_inner*sin(y(iy))*x(l1)**2/x
         enddo; enddo
       endif
-
 !
       call keep_compiler_quiet(f)
 !
