@@ -40,6 +40,8 @@ module InitialCondition
   ! lam = exponent for tanh smoothing profile for the density and temperature
   ! passive_scalar = determines if a passive scalar at the bubble should be set
   ! n_smooth = exponent of the smoothing function for the vector potential
+  ! b_field = shape of the magnetic field ('abc' or 'spheromak')
+  ! lam_bb = parapeter lambda for the spheromak field, lam_bb = 2E_mag/H_mag
   ! k_aa = wave vector of the initial magnetic vector potential in terms of the bubble radius
   ! ampl = amplitude of the initial magnetic vector potential
   
@@ -51,10 +53,13 @@ module InitialCondition
   character (len=labellen) :: profile = 'isothermal'
   real :: lam = 20
   integer :: passive_scalar = 0, n_smooth = 2
+  character (len=labellen) :: b_field = 'abc'
+  real :: lam_bb
   real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
   namelist /initial_condition_pars/ &
-      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, lam, profile, passive_scalar, k_aa, ampl, asym_factor, sigma_b, n_smooth
+      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, lam, profile, passive_scalar, b_field, lam_bb, k_aa, &
+      ampl, asym_factor, sigma_b, n_smooth
 !
   contains
 !***********************************************************************
@@ -164,22 +169,52 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       integer :: l, m, n
       real :: log_T_b, log_T_0
+      real :: j0, j1, R, R2d ! auxiliary variables
 !
     ! initialize the magnetic field inside the bubble
-    do n = n1, n2, 1
-      do m = m1, m2, 1
-        do l = l1, l2, 1
-          ! check if this point lies in the bubble
-          if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa) + sin((z(n)-z_b)*k_aa))
-            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa) + sin((x(l)-x_b)*k_aa))
-            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa) + sin((y(m)-y_b)*k_aa))
-            f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-                (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
-          endif
+    if (b_field == 'abc') then
+      do n = n1, n2, 1
+        do m = m1, m2, 1
+          do l = l1, l2, 1
+            ! check if this point lies in the bubble
+            if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
+              f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa) + sin((z(n)-z_b)*k_aa))
+              f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa) + sin((x(l)-x_b)*k_aa))
+              f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa) + sin((y(m)-y_b)*k_aa))
+              f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
+                  (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
+            endif
+          enddo
         enddo
       enddo
-    enddo
+    endif
+    if (b_field == 'spheromak') then
+      do n = n1, n2, 1
+        do m = m1, m2, 1
+          do l = l1, l2, 1
+            R = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
+            ! check if this point lies in the bubble
+            if (R .le. r_b) then
+              ! Compute some auxiliary variables.
+              j0 = bessel_j0(lam_bb*R)
+              j1 = bessel_j1(lam_bb*R)
+              R2d = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2)
+              ! terms Psi grad(Phi)
+              f(l,m,n,iax) = j1*R2d/R**2 * (-y(m)+y_b)
+              f(l,m,n,iay) = j1*R2d/R**2 * (x(l)-x_b)
+              ! terms grad(Psi)xgrad(Phi)
+              f(l,m,n,iax) = f(l,m,n,iax) - j1*R2d/R**4 * (-(x(l)-x_b)*(z(n)-z_b)) + &
+                             (j0-j1/lam_bb/R)*R2d/R**3*lam_bb * (-(x(l)-x_b)*(z(n)-z_b))
+              f(l,m,n,iay) = f(l,m,n,iay) - j1*R2d/R**4 * (-(y(m)-y_b)*(z(n)-z_b)) + &
+                             (j0-j1/lam_bb/R)*R2d/R**3*lam_bb * (-(y(m)-y_b)*(z(n)-z_b))
+              f(l,m,n,iaz) = f(l,m,n,iaz) + 2*j1/R**2*R2d - j1*R2d**3/R**4 + (j0-j1/lam_bb/R)*R2d**3/R**3*lam_bb
+              ! multiply by common factor
+              f(l,m,n,iax:iaz) = 2*pi*r_b*ampl * f(l,m,n,iax:iaz)
+            endif
+          enddo
+        enddo
+      enddo
+    endif
 !      
     endsubroutine initial_condition_aa
 !***********************************************************************
