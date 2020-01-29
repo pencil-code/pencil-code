@@ -182,7 +182,7 @@ module InitialCondition
               f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa) + sin((x(l)-x_b)*k_aa))
               f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa) + sin((y(m)-y_b)*k_aa))
               f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-                  (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
+                                 (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
             endif
           enddo
         enddo
@@ -209,7 +209,8 @@ module InitialCondition
                              (j0-j1/lam_bb/R)*R2d/R**3*lam_bb * (-(y(m)-y_b)*(z(n)-z_b))
               f(l,m,n,iaz) = f(l,m,n,iaz) + 2*j1/R**2*R2d - j1*R2d**3/R**4 + (j0-j1/lam_bb/R)*R2d**3/R**3*lam_bb
               ! multiply by common factor
-              f(l,m,n,iax:iaz) = 2*pi*r_b*ampl * f(l,m,n,iax:iaz)
+              f(l,m,n,iax:iaz) = 2*pi*r_b*ampl * f(l,m,n,iax:iaz) * &
+                                 (1-(R/r_b)**n_smooth)
             endif
           enddo
         enddo
