@@ -801,7 +801,7 @@ else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
   echo "HLRN-IV - HLRN, Germany"
   module load intel
   module load impi
-#  export SLURM_CPU_BIND=none
+  module load hdf5-parallel/impi/intel/1.10.5
   set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
