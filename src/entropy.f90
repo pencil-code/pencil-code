@@ -117,6 +117,7 @@ module Energy
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
+  logical :: lcalc_cs2mz_mean_diag=.false.
   logical :: lcalc_ssmeanxy=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
@@ -230,7 +231,8 @@ module Energy
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
-      lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
+      lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
+      lcalc_cs2mz_mean_diag
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3849,7 +3851,7 @@ module Energy
 !
 !  Compute average sound speed cs2(z)
 !
-      if (lcalc_cs2mz_mean) then
+      if (lcalc_cs2mz_mean .or. lcalc_cs2mz_mean_diag) then
         call get_cv1(cv1)
 !
         fact=1./nxygrid
@@ -3921,8 +3923,8 @@ module Energy
 !
       if (lFenth_as_aux) then
 !
-        if (.not. lcalc_cs2mz_mean) &
-             call stop_it('energy_after_boundary: Need to set lcalc_cs2mz_mean=T'// &
+        if (.not. lcalc_cs2mz_mean_diag) &
+             call stop_it('energy_after_boundary: Need to set lcalc_cs2mz_mean_diag=T'// &
                           ' in entropy_run_pars for enthalpy diagnostics.')
 !
         call get_cp1(cp1)
