@@ -39,7 +39,7 @@ module Particles_radius
   real :: modified_vapor_diffusivity=6.74e-6, n0_mean = 1.e8
   real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: xi_accretion = 1.
+  real :: xi_accretion = 0.
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -77,7 +77,8 @@ module Particles_radius
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
-      ldust_condensation, xi_accretion, ldust_accretion
+      ldust_condensation, xi_accretion, ldust_accretion, &
+      tstart_condensation_par
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
