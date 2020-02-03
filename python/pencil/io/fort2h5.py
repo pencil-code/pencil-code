@@ -118,7 +118,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             os.chdir(olddir)
             iprocs = np.array_split(np.arange(nprocs),size)
             procs = iprocs[rank]
-            print('rank {}'.format(rank)+'procs:',procs)
+            print('rank {} procs:'.format(rank),procs)
             varfile_names = allfile_names
     else:
         varfile_names = allfile_names
@@ -129,6 +129,8 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                 print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
             os.chdir(olddir)
             if snap_by_proc:
+                if not l_mpi:
+                    procs = np.array_split(np.arange(nprocs),size)
                 if len(procs) > 0:
                     for proc in procs:
                         if not quiet:
@@ -486,7 +488,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
            x=None, y=None, z=None, lshear=False,
            snap_by_proc=False, aver_by_proc=False,
            lremove_old_snapshots=False,
-           lremove_old_slices=False, lread_all_videoslices=True,
+           lremove_old_slices=False, lread_all_videoslices=False,
            vlarge=100000000,
            lremove_old_averages=False, execute=False, quiet=True,
            l2D=True, lvars=True, lvids=True, laver=True, laver2D=False,
