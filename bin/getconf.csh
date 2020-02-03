@@ -999,7 +999,7 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
   set mpi = 1
   set mpirunops = ''
-  set mpirun = 'aprun'
+  set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
