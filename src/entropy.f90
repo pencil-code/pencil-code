@@ -644,6 +644,9 @@ module Energy
             cs2cool=cs2top
           endif
         endif
+      endif
+!
+      if ((lgravz.or.lgravr) .and. lrun) then
 !
 !  Settings for fluxes.
 !
@@ -1156,7 +1159,7 @@ module Energy
 
       endif
 
-      if (chi_t/=0.) then
+      if (chi_t/=0..or.chi_t0/=0.) then
         if (lheatc_chiconst.or.(lheatc_Kprof.and..not.lgravz).or.lheatc_kramers.or. &
             (lheatc_chit.and.(lchit_total.or.lchit_mean))) call chit_profile
       endif
@@ -5342,7 +5345,7 @@ module Energy
 !
           thdiff=thdiff+chi_t*chit_aniso* &
               ((glchit_aniso_prof(:,1)*c2+chit_aniso_prof/x(l1:l2))*p%gss(:,1)+ &
-              sc*(chit_aniso_prof/x(l1:l2)-glnchit_prof(:,1))*p%gss(:,2))
+              sc*(chit_aniso_prof/x(l1:l2)-glchit_aniso_prof(:,1))*p%gss(:,2))
 !
           call g2ij(f,iss,tmp)
           thdiff=thdiff+chi_t*chit_aniso_prof*chit_aniso* &
@@ -7201,7 +7204,7 @@ module Energy
         chit_prof_stored = 1. + (chit_prof1-1.)*step(z(n1:n2),zbot,-widthss) &
                               + (chit_prof2-1.)*step(z(n1:n2),ztop, widthss)
         glnchit_prof_stored = (chit_prof1-1.)*der_step(z(n1:n2),zbot,-widthss) &
-                            + (chit_prof2-1.)*der_step(z(n1:n2),ztop, widthss)   ! /chit_prof_stored ???
+                            + (chit_prof2-1.)*der_step(z(n1:n2),ztop, widthss)
 !
       elseif (lspherical_coords.or.lconvection_gravx) then
 
