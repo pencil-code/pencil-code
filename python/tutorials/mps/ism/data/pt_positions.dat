@@ -1,0 +1,10 @@
+Positions where pt and p2 variables are written:
+
+x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint=
+ -0.42000E-01 -0.42000E-01 -0.35000          13    13    21
+
+x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2=
+ -0.70000E-01 -0.70000E-01 -0.39400           6     6    10
+
+x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)=
+  0.28000E-01  0.28000E-01  0.44000E-01

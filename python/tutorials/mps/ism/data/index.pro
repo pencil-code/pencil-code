@@ -1,0 +1,16 @@
+ ishock=9
+ iuu=1
+ iux=1
+ iuy=2
+ iuz=3
+ irho=4
+ iss=5
+ iaa=6
+ iax=6
+ iay=7
+ iaz=8
+ inetheat=10
+ icooling=12
+ nname=56
+ nnamev=4
+ nnamez=81
