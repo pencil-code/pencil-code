@@ -5513,106 +5513,105 @@ module Energy
         print*,'calc_heatcond_chit: chi_t0=',chi_t0
         print*,'calc_heatcond_chit: chi_t1=',chi_t1
       endif
+
+      thdiff=0.
+
+      if (chi_t0/=0.) then
 !
 !  Compute profiles. Diffusion of total and mean use the same profile
 !
-      if (lchit_total .or. lchit_mean) &
-        call get_prof_pencil(chit_prof_stored,glnchit_prof_stored, &
-                             chit_prof,glnchit_prof, &
-                             .not.(lspherical_coords.or.lconvection_gravx),p)
-      thdiff=0.
+        if (lchit_total .or. lchit_mean) &
+          call get_prof_pencil(chit_prof_stored,glnchit_prof_stored, &
+                               chit_prof,glnchit_prof, &
+                               .not.(lspherical_coords.or.lconvection_gravx),p)
 !
 !  chi_t acts on the total entropy 
 !      
-      if (lchit_total) then
-        if (lchit_noT) then 
-          call dot(p%glnrho,p%gss,g2)
-        else
-          call dot(p%glnrho+p%glnTT,p%gss,g2)
+        if (lchit_total) then
+          if (lchit_noT) then 
+            call dot(p%glnrho,p%gss,g2)
+          else
+            call dot(p%glnrho+p%glnTT,p%gss,g2)
+          endif
+          thdiff=thdiff+chi_t0*chit_prof*(p%del2ss+g2)
+          call dot(glnchit_prof,p%gss,g2)
+          thdiff=thdiff+chi_t0*g2
         endif
-        thdiff=thdiff+chi_t0*chit_prof*(p%del2ss+g2)
-        call dot(glnchit_prof,p%gss,g2)
-        thdiff=thdiff+chi_t0*g2
-      endif
 !
 !  chi_t acts on averaged entropy, need to have either lcalc_ssmean=T
 !  or lcalc_ssmeanxy=T
 !
-      if (lchit_mean .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
-        if (lcalc_ssmean) then
-          do j=1,3; gss0(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
-          del2ss0=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
-        else if (lcalc_ssmeanxy) then
-          do j=1,3; gss0(:,j)=gssmx(:,j); enddo
-          del2ss0=del2ssmx
+        if (lchit_mean .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
+          if (lcalc_ssmean) then
+            do j=1,3; gss0(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
+            del2ss0=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+          else if (lcalc_ssmeanxy) then
+            do j=1,3; gss0(:,j)=gssmx(:,j); enddo
+            del2ss0=del2ssmx
+          endif
+          if (lchit_noT) then 
+            call dot(p%glnrho,gss0,g2)
+          else
+            call dot(p%glnrho+p%glnTT,gss0,g2)
+          endif
+          thdiff=thdiff+chi_t0*chit_prof*(del2ss0+g2)
+          call dot(glnchit_prof,gss0,g2)
+          thdiff=thdiff+chi_t0*g2
         endif
-        if (lchit_noT) then 
-          call dot(p%glnrho,gss0,g2)
-        else
-          call dot(p%glnrho+p%glnTT,gss0,g2)
+        if (l1davgfirst) then
+          if (idiag_fturbtz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
+          if (idiag_fturbmz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
         endif
-        thdiff=thdiff+chi_t0*chit_prof*(del2ss0+g2)
-        call dot(glnchit_prof,gss0,g2)
-        thdiff=thdiff+chi_t0*g2
       endif
 !
 !  chi_t acts on fluctuations of entropy, again need to have either 
 !  lcalc_ssmean=T or lcalc_ssmeanxy=T
 !
-      if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
-        
-        if (lcalc_ssmean) then
-          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-          del2ss1=p%del2ss-del2ssmz(n-n1+1)
-        else if (lcalc_ssmeanxy) then
-          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
-          del2ss1=p%del2ss-del2ssmx
-        endif
-        if (lchit_noT) then 
-          call dot(p%glnrho,gss1,g2)
-        else
-          call dot(p%glnrho+p%glnTT,gss1,g2)
-        endif
-
-        if (chi_t1 /= 0.) then
+      if (chi_t1/=0.) then
+        if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
+          
+          if (lcalc_ssmean) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+          else if (lcalc_ssmeanxy) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+            del2ss1=p%del2ss-del2ssmx
+          endif
+          if (lchit_noT) then 
+            call dot(p%glnrho,gss1,g2)
+          else
+            call dot(p%glnrho+p%glnTT,gss1,g2)
+          endif
 
           call get_prof_pencil(chit_prof_fluct_stored,glnchit_prof_fluct_stored, &
                                chit_prof_fluct,glnchit_prof_fluct,lgravz,p)
-
           thdiff=thdiff+chi_t1*chit_prof_fluct*(del2ss1+g2)
           call dot(glnchit_prof_fluct,gss1,g2)
           thdiff=thdiff+chi_t1*g2
-        endif
-
-      endif
 !
-      if (l1davgfirst) then
-        if ((lchit_total .or. lchit_mean) .and. chi_t0/=0.) then
-          if (idiag_fturbtz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
-          if (idiag_fturbmz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
+          if (l1davgfirst) then
+            if (idiag_fturbfz/=0) call xysum_mn_name_z(-chi_t1*chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+          endif
         endif
-        if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
-          if (idiag_fturbfz/=0) call xysum_mn_name_z(-chi_t1*chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
-        endif
-      endif
 !
 ! chi_t1 acting on deviations from a running 3D mean of entropy   
 !
-      if (lchit_fluct .and. lss_running_aver_as_aux) then
-        call grad(f(:,:,:,iss_run_aver),gss1)
-        do j=1,3
-          gss0(:,j)=p%gss(:,j)-gss1(:,j)
-        enddo
-        call del2(f(:,:,:,iss_run_aver),del2ss1)
-        del2ss0=p%del2ss-del2ss1
-        if (lchit_noT) then 
-          call dot(p%glnrho,gss0,g2)
-        else
-          call dot(p%glnrho+p%glnTT,gss0,g2)
+        if (lchit_fluct .and. lss_running_aver_as_aux) then
+          call grad(f(:,:,:,iss_run_aver),gss1)
+          do j=1,3
+            gss0(:,j)=p%gss(:,j)-gss1(:,j)
+          enddo
+          call del2(f(:,:,:,iss_run_aver),del2ss1)
+          del2ss0=p%del2ss-del2ss1
+          if (lchit_noT) then 
+            call dot(p%glnrho,gss0,g2)
+          else
+            call dot(p%glnrho+p%glnTT,gss0,g2)
+          endif
+          thdiff=thdiff+chi_t1*chit_prof_fluct*(del2ss0+g2)
+          call dot(glnchit_prof_fluct,gss0,g2)
+          thdiff=thdiff+chi_t1*g2
         endif
-        thdiff=thdiff+chi_t1*chit_prof_fluct*(del2ss0+g2)
-        call dot(glnchit_prof_fluct,gss0,g2)
-        thdiff=thdiff+chi_t1*g2
       endif
 !
 !  At the end of this routine, add all contribution to
@@ -5626,9 +5625,9 @@ module Energy
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
-        if (lchit_total .or. lchit_mean) &
+        if (chi_t0/=0..and.(lchit_total .or. lchit_mean)) &
           diffus_chi=diffus_chi+chi_t0*chit_prof*dxyz_2
-        if (lchit_fluct) &
+        if (chi_t1/=0..and.lchit_fluct) &
           diffus_chi=diffus_chi+chi_t1*chit_prof_fluct*dxyz_2
       endif
 !
