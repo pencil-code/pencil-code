@@ -958,8 +958,8 @@ else if ($hn =~ eslogin[0-9]*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
-  echo "Hermit - HLRS, Stuttgart, Germany"
+else if (($hn =~ Xnid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
+  echo "Hermit - HLRS, Stuttgart, Germany="
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
     touch $PBS_O_WORKDIR/data/jobid.dat
@@ -988,9 +988,10 @@ else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if ($hn =~ beskow-login*.pdc.kth.se*) then
+#else if ($hn =~ beskow-login*.pdc.kth.se*) then
+else if ($hn =~ nid*) then
   echo "*********************************"
-  echo " PDC machine Beskow, Stockholm "
+  echo " PDC machine Beskow, Stockholm   "
   set start_x=$cwd/src/start.x
   set run_x=$cwd/src/run.x
   echo "*********************************"
