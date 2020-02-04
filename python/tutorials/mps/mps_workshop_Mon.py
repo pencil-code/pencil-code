@@ -32,14 +32,17 @@ fi
 export PYTHONSTARTUP=$HOME/pythonstart
 export PYTHONPATH="$PYTHONPATH:$PYTHONSTARTUP"
 """
-%pwd
+get_ipython().run_line_magic('pwd', '')
+
 
 # In[ ]:
 
 
 #Replace these directory paths with paths accessible to yourself with pencil simulations and data.
 import pencil as pc
-%cd /wrk/fagent/DONOTREMOVE/
+
+get_ipython().run_line_magic('cd', '')
+
 
 # In[ ]:
 
@@ -47,8 +50,10 @@ import pencil as pc
 #Alternative navigation to shell command line tools, python command line calls can be included in scripts
 #to be executed from the command line or batch file
 import os
+PC_HOME = os.getenv("PENCIL_HOME")
+os.chdir(PC_HOME+'/python/tutorials')
 dir1=os.getcwd()
-os.chdir('pencil-code/grand_challenge/h5box/4pcn0004hPr4M')
+os.chdir(os.path.join(dir1,'mps/ism'))
 dir2=os.getcwd()
 dir1,dir2
 
@@ -58,7 +63,7 @@ dir1,dir2
 
 #reading and plotting time series objects, also read parameters files data/param.nml and data/param2.nml
 import matplotlib.pyplot as plt
-%ls
+get_ipython().run_line_magic('ls', '')
 ts = pc.read.ts()
 pars=pc.read.param(quiet=True)
 parr = pc.read.param(quiet=True,param2=True)
@@ -67,10 +72,12 @@ plt.plot(ts.t,ts.brms)
 #if plot does not display try:
 plt.show()
 
+
 # In[ ]:
 
 
 #To keep plots open in ipython plt.ion()
+
 
 # In[ ]:
 
@@ -79,7 +86,6 @@ plt.show()
 plt.semilogy(ts.t,ts.brms,'g:')
 plt.semilogy(ts.t,ts.urms,'-.')
 plt.figure()
-
 
 
 # In[ ]:
@@ -93,6 +99,7 @@ ax[0].set_ylabel(r'$u$ [kms]')
 ax[1].set_ylabel(r'$b$ [$\mu$G]')
 ax[1].set_xlabel(r'$t$ [kpc]')
 
+
 # In[ ]:
 
 
@@ -100,11 +107,13 @@ ax[1].set_xlabel(r'$t$ [kpc]')
 var = pc.read.var(magic=['bb','tt','pp'],trimall=True)
 indx= pc.read.index()
 
+
 # In[ ]:
 
 
 print(var.__dict__.keys())
 print(indx.__dict__.keys())
+
 
 # In[ ]:
 
@@ -122,17 +131,18 @@ magic.append((2,'tt'))
 print(magic, magic[1][0])
 
 
-
 # In[ ]:
 
 
 stuff = (21, ['bb', 12, 1e23], 'Fred')
 stuff[0],stuff[1]
 
+
 # In[ ]:
 
 
 type(ts),type(ts.t)
+
 
 # In[ ]:
 
@@ -177,13 +187,13 @@ t0,t1,n0
 t0.shape,t1.shape,n0.shape,nn.shape[0], nn.size
 
 
-
 # In[ ]:
 
 
 #example of a dictionary
 for key in indx.__dict__.keys():
     print(key,indx.__getattribute__(key))
+
 
 # In[ ]:
 
@@ -198,6 +208,7 @@ av=pc.read.aver()
 
 av.__dict__.keys(),av.xy.__dict__.keys()
 
+
 # In[ ]:
 
 
@@ -211,10 +222,12 @@ vslice = pc.read.slices()
 
 vslice.__dict__.keys(),vslice.xy.__dict__.keys()
 
+
 # In[ ]:
 
 
 var.f.shape
+
 
 # In[ ]:
 
@@ -234,6 +247,7 @@ plt.imshow(fslice,
           )
 cbar=plt.colorbar()
 cbar.ax.set_ylabel(r'$u_x$ [km s$^{-1}$]',fontsize=16) #label the colorbar
+
 
 # In[ ]:
 
@@ -256,7 +270,7 @@ plt.imshow(fslice.T,
            norm=colors.LogNorm(),
            extent=[av.t.min(),av.t.max(),var.z.min(),var.z.max()],
            #vmin=-max(-fmin,fmax),vmax=max(-fmin,fmax),
-           cmap=cm.cool, aspect=0.425, #adjust the aspect ratio of the data
+           cmap=cm.cool, aspect=0.018, #adjust the aspect ratio of the data
            origin=True #sets indices 0,0 in bottom left corner
           )
 plt.xlabel(r'${\bf{\gamma}}$ [Gyr]',fontsize=20)
@@ -264,7 +278,15 @@ plt.ylabel(r'$h$ [kpc]',fontsize=20)
 
 #cbar=plt.colorbar()
 
+
 # In[ ]:
 
 
 vtk=pc.export.var2vtk('var.h5') #default is 'var.dat'
+
+
+# In[ ]:
+
+
+
+
