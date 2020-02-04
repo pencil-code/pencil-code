@@ -96,6 +96,8 @@ contains
 !**************************************************************************
     subroutine rhs_GPU(f,isubstep,early_finalize)
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
       logical,                            intent(IN)    :: early_finalize
@@ -111,12 +113,14 @@ contains
           do ll=1,mx
             f(ll,mm,nn,iux)=val; val=val+1.
       enddo; enddo; enddo
-      !f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
+
+      print*, 'vor integrate'
+      do nn=1,3
+        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn
+      enddo
+      print*, '---------------'
 
 1     continue
-!if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
-!if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
-!f(:,:,:,iuy)=0.; f(:,:,:,iuz)=0.
       call rhs_gpu_c(isubstep,lvery_first,early_finalize)
 !
       lvery_first=.false.
@@ -129,6 +133,10 @@ contains
         do mm=1,my
           print'(22(1x,f7.0))',f(:,mm,nn,iux)
       enddo; enddo
+
+      do nn=1,3
+        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn                
+      enddo
 
     endsubroutine rhs_GPU
 !**************************************************************************

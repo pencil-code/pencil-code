@@ -19,8 +19,6 @@
 #include <dlfcn.h>
 
 #include "headers_c.h"
-//#define bool int
-//#include "cdata_c.h"
 
 void initGPU();
 void registerGPU(REAL*);
@@ -70,14 +68,12 @@ void FTNIZE(initialize_gpu_c)()
 /* ---------------------------------------------------------------------- */
 void FTNIZE(init_gpu_c)()
 {
-
 // Initializes GPU use.
   initGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(register_gpu_c)(REAL* f)
 {
-
 // Allocates memory on GPU according to setup needs.
 
   registerGPU(f);
@@ -85,7 +81,6 @@ void FTNIZE(register_gpu_c)(REAL* f)
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)()
 {
-
 // Frees memory allocated on GPU.
 
   finalizeGPU();
