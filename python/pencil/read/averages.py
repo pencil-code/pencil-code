@@ -6,7 +6,7 @@
 """
 Contains the classes and methods to read average files.
 """
-
+import sys
 
 def aver(*args, **kwargs):
     """
@@ -104,7 +104,8 @@ class Averages(object):
                     plane_list.append(prefix)
 
         if var_index >= 0:
-            print("var_index {} requires plane_list = 'y' or 'z',".format(var_index),flush=True)
+            print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
+            sys.stdout.flush()
         # Determine which average files to read.
         in_file_name_list = []
         aver_file_name_list = []
@@ -153,6 +154,7 @@ class Averages(object):
                     aver_file_name_list.append('zaverages.dat')
         if not in_file_name_list:
             print("error: invalid plane name")
+            sys.stdout.flush()
             return -1
 
         class Foo(object):
@@ -221,7 +223,8 @@ class Averages(object):
         if l_h5:
             import h5py
             file_id = os.path.join(datadir, aver_file_name)
-            print(file_id,flush=True)
+            print(file_id)
+            sys.stdout.flush()
             with h5py.File(file_id, 'r') as tmp:
                 n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.
@@ -293,6 +296,7 @@ class Averages(object):
                 except:
                     # Not all proc dirs have a [yz]averages.dat.
                     print("Averages of processor {0} missing.".format(proc))
+                    sys.stdout.flush()
                     break
                 if iter_list:
                     if isinstance(iter_list, list):
@@ -388,7 +392,8 @@ class Averages(object):
         if l_h5:
             import h5py
             file_id = os.path.join(datadir, aver_file_name)
-            print(file_id,flush=True)
+            print(file_id)
+            sys.stdout.flush()
             with h5py.File(file_id, 'r') as tmp:
                 n_times = len(tmp.keys()) - 1
                 # Determine the structure of the xy/xz/yz averages.

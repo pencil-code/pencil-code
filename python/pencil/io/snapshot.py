@@ -8,7 +8,7 @@
 """
 Contains the functions to generate a snapshot (VAR files).
 """
-
+import sys
 
 def write_snapshot(snapshot, file_name='VAR0', datadir='data',
                    nprocx=1, nprocy=1, nprocz=1, precision='d', nghost=3,
@@ -69,11 +69,12 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
     else:
         print("ERROR: Precision {0} not understood.".format(precision)+
               " Must be either 'f' or 'd'")
-
+        sys.stdout.flush()
     # Check that the shape does not conflict with the proc numbers.
     if (nx%nprocx > 0) or (ny%nprocy > 0) or (nz%nprocz > 0):
         print('ERROR: Shape of the input array is not compatible with the '+
               'cpu layout. Make sure that nproci devides ni.')
+        sys.stdout.flush()
         return -1
 
     # Check the shape of the xyz arrays and generate them if they don't exist.
@@ -81,18 +82,21 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
         if len(x) != nx:
             print(
                 'ERROR: x array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
     else:
         x = np.arange(0, nx)
     if not y is None:
         if len(y) != ny:
             print(
                 'ERROR: y array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
     else:
         y = np.arange(0, ny)
     if not z is None:
         if len(z) != nz:
             print(
                 'ERROR: z array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
     else:
         z = np.arange(0, nz)
 
@@ -264,6 +268,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     #test if simulation directory
     if not sim.is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
+        sys.stdout.flush()
     if indx == None:
         indx = read.index()
     #
@@ -291,9 +296,11 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         for key in gkeys:
             if not key in grid.__dict__.keys():
                 print("ERROR: key "+key+" missing from grid")
+                sys.stdout.flush()
                 gd_err = True
         if gd_err:
             print("ERROR: grid incomplete")
+            sys.stdout.flush()
     ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
              'temperature', 'flux', 'energy', 'mass', 'system',
             ]
@@ -315,6 +322,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         except ValueError:
             print("ERROR: snapshot shape {} ".format(snapshot.shape)+
                   "does not match simulation dimensions with ghosts.")
+            sys.stdout.flush()
     else:
         try:
             snapshot.shape[0] == settings['mvar']
@@ -324,6 +332,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         except ValueError:
             print("ERROR: snapshot shape {} ".format(snapshot.shape)+
                   "does not match simulation dimensions without ghosts.")
+            sys.stdout.flush()
 
     #Determine the precision used and ensure snapshot has correct data_type.
     if precision == 'f':
@@ -335,6 +344,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     else:
         print("ERROR: Precision {0} not understood.".format(precision)+
               " Must be either 'f' or 'd'")
+        sys.stdout.flush()
         return -1
 
     # Check that the shape does not conflict with the proc numbers.
@@ -343,22 +353,26 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
        (settings['nz']%settings['nprocz'] > 0):
         print('ERROR: Shape of the input array is not compatible with the '+
               'cpu layout. Make sure that nproci devides ni.')
+        sys.stdout.flush()
         return -1
 
     # Check the shape of the xyz arrays if specified and overwrite grid values.
     if x != None:
         if len(x) != settings['mx']:
             print('ERROR: x array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
             return -1
         grid.x = data_type(x)
     if y != None:
         if len(y) != settings['my']:
             print('ERROR: y array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
             return -1
         grid.y = data_type(y)
     if z != None:
         if len(z) != settings['mz']:
             print('ERROR: z array is incompatible with the shape of snapshot.')
+            sys.stdout.flush()
             return -1
         grid.z = data_type(z)
 
@@ -486,6 +500,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                     key = comm.bcast(key, root=0)
                 if not quiet:
                     print(key,type(persist[key][0]))
+                    sys.stdout.flush()
                 arr = np.empty(nprocs,dtype=type(persist[key][0]))
                 arr[:] = persist[key][()]
                 pers_grp.create_dataset(key, data=(arr))
@@ -548,6 +563,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
     #test if simulation directory
     if not sim.is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
+        sys.stdout.flush()
     #
     if settings == None:
         settings = {}
@@ -572,9 +588,11 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
         for key in gkeys:
             if not key in grid.__dict__.keys():
                 print("ERROR: key "+key+" missing from grid")
+                sys.stdout.flush()
                 gd_err = True
         if gd_err:
             print("ERROR: grid incomplete")
+            sys.stdout.flush()
     ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
              'temperature', 'flux', 'energy', 'mass', 'system',
             ]
@@ -674,6 +692,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
     #test if simulation directory
     if not sim.is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
+        sys.stdout.flush()
         return -1
     if not os.path.exists(datadir):
         try:
@@ -687,7 +706,8 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
     else:
         state = 'w'
     if not quiet:
-        print('rank', rank, 'saving '+filename, flush=True)
+        print('rank', rank, 'saving '+filename)
+        sys.stdout.flush()
     if not (file_name == 'y' or file_name == 'z'):
         aver_by_proc = False
     if aver_by_proc:
@@ -723,7 +743,8 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
     else:
         indx = list(range(0,nt))
     if not quiet:
-        print('rank', rank, 'nt', nt, 'indx', indx, flush=True)
+        print('rank', rank, 'nt', nt, 'indx', indx)
+        sys.stdout.flush()
     if not ds.__contains__('last'):
         try:
             ds.create_dataset('last', data=(nt-1,), dtype='i')
@@ -772,7 +793,8 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
         if (file_name == 'y' or file_name == 'z'):
             data = np.swapaxes(data, 1, 2)
         if not quiet:
-            print('writing', key, 'on rank', rank, flush=True)
+            print('writing', key, 'on rank', rank)
+            sys.stdout.flush()
         for it in indx:
             if aver_by_proc:
                 ds[str(it)][key][proc*nn:(proc+1)*nn] = data[it-indx[0]]
@@ -782,6 +804,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
     del(data)
     if not quiet:
         print(filename+' written on rank {}'.format(rank))
+        sys.stdout.flush()
 
 def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                    precision='d', indx=None, trange=None, quiet=True,
@@ -843,6 +866,7 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
     #test if simulation directory
     if not sim.is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
+        sys.stdout.flush()
         return -1
     if not os.path.exists(datadir):
         try:
@@ -860,7 +884,8 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
                 else:
                     state = 'w'
                 #number of iterations to record
-                print('saving '+filename, flush=True)
+                print('saving '+filename)
+                sys.stdout.flush()
                 with h5py.File(filename, state) as ds:
                     for it in range(1,nt+1):
                         if not ds.__contains__(str(it)):

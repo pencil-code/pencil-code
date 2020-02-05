@@ -86,7 +86,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
     from .. import read
     from .. import sim
     from . import write_h5_snapshot
-
+    import sys
     #not reqd - grid.h5 now used
     ##move var.h5 out of the way, if it exists for reading binary
     #os.chdir(newdir)
@@ -119,6 +119,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             iprocs = np.array_split(np.arange(nprocs),size)
             procs = iprocs[rank]
             print('rank {} procs:'.format(rank),procs)
+            sys.stdout.flush()
             varfile_names = allfile_names
     else:
         varfile_names = allfile_names
@@ -126,7 +127,8 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
         for file_name in varfile_names:
             #load Fortran binary snapshot
             if not quiet:
-                print('rank {}:'.format(rank)+'saving '+file_name, flush=True)
+                print('rank {}:'.format(rank)+'saving '+file_name)
+                sys.stdout.flush()
             os.chdir(olddir)
             if snap_by_proc:
                 if not l_mpi:
@@ -135,7 +137,8 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                     for proc in procs:
                         if not quiet:
                             print('rank {}:'.format(rank)+'saving '+file_name+
-                                          ' on proc{}'.format(proc), flush=True)
+                                          ' on proc{}'.format(proc))
+                            sys.stdout.flush()
                         procdim = read.dim(proc=proc)
                         var = read.var(file_name, datadir=fromdatadir,
                                        quiet=quiet, lpersist=lpersist,
@@ -254,7 +257,7 @@ def slices2h5(newdir, olddir, grid,
     from .. import read
     from .. import sim
     from . import write_h5_slices
-
+    import sys
     #copy old video slices to new h5 sim
     os.chdir(olddir)
     #identify the coordinates and positions of the slices
@@ -285,7 +288,8 @@ def slices2h5(newdir, olddir, grid,
     except ValueError:
         if rank == 0:
             print("ERROR: slice keys and positions must be set, "+
-                  "see lines 212...", flush=True)
+                  "see lines 212...")
+            sys.stdout.flush()
         return -1
     for key, num in zip(lines2, lines1):
         if num > 0:
@@ -303,7 +307,8 @@ def slices2h5(newdir, olddir, grid,
         slice_lists = np.array_split(slice_lists,size)
         slice_list = slice_lists[rank]
         if not quiet:
-            print('rank', rank, 'slice_list', slice_list, flush=True)
+            print('rank', rank, 'slice_list', slice_list)
+            sys.stdout.flush()
         if len(slice_list) > 0:
             for field_ext in slice_list:
                 field=str.split(str.split(field_ext,'_')[-1],'.')[0]
@@ -312,7 +317,8 @@ def slices2h5(newdir, olddir, grid,
                                      extension=extension, quiet=quiet)
                 os.chdir(newdir)
                 if not quiet:
-                    print('rank', rank, 'writing', field_ext, flush=True)
+                    print('rank', rank, 'writing', field_ext)
+                    sys.stdout.flush()
                 write_h5_slices(vslice, coordinates, positions,
                                 datadir=todatadir, precision=precision,
                                 quiet=quiet)
@@ -388,7 +394,7 @@ def aver2h5(newdir, olddir,
     from .. import read
     from .. import sim
     from . import write_h5_averages
-
+    import sys
 
     if laver2D:
         os.chdir(olddir)
@@ -415,8 +421,8 @@ def aver2h5(newdir, olddir,
                     os.chdir(olddir)
                     if len(proc_list) > 0:
                         for proc in proc_list:
-                            print('reading '+xl+'averages on proc', proc,
-                                                                     flush=True)
+                            print('reading '+xl+'averages on proc', proc)
+                            sys.stdout.flush()
                         av = read.aver(plane_list=xl, proc=proc)
                         procdim = read.dim(proc=proc)
                         write_h5_averages(av, file_name=xl, datadir=todatadir,
@@ -429,7 +435,8 @@ def aver2h5(newdir, olddir,
                     all_list = np.array_split(np.arange(niter), size)
                     iter_list = list(all_list[rank])
                     os.chdir(olddir)
-                    print('reading '+xl+'averages on rank', rank, flush=True)
+                    print('reading '+xl+'averages on rank', rank)
+                    sys.stdout.flush()
                     av = read.aver(plane_list=xl, iter_list=iter_list)
                     os.chdir(newdir)
                     write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
@@ -566,6 +573,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     from .. import read
     from .. import sim
     from . import write_h5_grid
+    import sys
 
     try:
         from mpi4py import MPI
@@ -584,9 +592,11 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if not l_mpi:
         comm = None
         driver=None
-    print('rank {} and size {}'.format(rank,size), flush=True)
+    print('rank {} and size {}'.format(rank,size))
+        sys.stdout.flush()
     if rank == size-1:
-        print('l_mpi',l_mpi, flush=True)
+        print('l_mpi',l_mpi)
+        sys.stdout.flush()
 
     #test if simulation directories
     if newdir == '.':
@@ -596,15 +606,15 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     os.chdir(olddir)
     if not sim.is_sim_dir():
         if rank == 0:
-            print("ERROR: Directory ("+olddir+") needs to be a simulation",
-                  flush=True)
+            print("ERROR: Directory ("+olddir+") needs to be a simulation")
+            sys.stdout.flush()
         return -1
     if newdir != olddir:
         os.chdir(newdir)
         if not sim.is_sim_dir():
             if rank == 0:
-                print("ERROR: Directory ("+newdir+") needs to be a simulation",
-                      flush=True)
+                print("ERROR: Directory ("+newdir+") needs to be a simulation")
+                sys.stdout.flush()
             return -1
     #
     lremove_old = lremove_old_snapshots or\
@@ -616,7 +626,8 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                 print("WARNING: Are you sure you wish to remove the Fortran"+
                       " binary files from \n"+
                       os.getcwd()+".\n"+
-                      "Set execute=True to proceed.", flush=True)
+                      "Set execute=True to proceed.")
+                sys.stdout.flush()
             return -1
 
     os.chdir(olddir)
@@ -659,10 +670,12 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         grid=comm.bcast(grid, root=size-1)
     if not quiet:
         print(rank,grid)
+        sys.stdout.flush()
     for key in gkeys:
         if not key in grid.__dict__.keys():
             if rank == 0:
-                print("ERROR: key "+key+" missing from grid", flush=True)
+                print("ERROR: key "+key+" missing from grid")
+                sys.stdout.flush()
             return -1
     #obtain the settings from the old simulation
     settings={}
@@ -683,9 +696,11 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if snap_by_proc:
         nprocs = settings['nprocx']*settings['nprocy']*settings['nprocz']
         if np.mod(nprocs,size) != 0:
-            print("WARNING: efficiency requires cpus to divide ncpus", flush=True)
+            print("WARNING: efficiency requires cpus to divide ncpus")
+            sys.stdout.flush()
     if not quiet:
         print(rank,grid)
+        sys.stdout.flush()
     #obtain physical units from old simulation
     ukeys = ['length', 'velocity', 'density', 'magnetic', 'time',
                  'temperature', 'flux', 'energy', 'mass', 'system',
@@ -703,6 +718,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #index list for variables in f-array
     if not quiet:
         print(rank,param)
+        sys.stdout.flush()
     indx = None
     if rank == 0:
         indx = read.index()
@@ -718,6 +734,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         dim=comm.bcast(dim, root=size-1)
     if not quiet:
         print(rank,dim)
+        sys.stdout.flush()
     try:
         dim.mvar == settings['mvar']
         dim.mx   == settings['mx']
@@ -725,11 +742,13 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         dim.mz   == settings['mz']
     except ValueError:
         if rank == size-1:
-            print("ERROR: new simulation dimensions do not match.", flush=True)
+            print("ERROR: new simulation dimensions do not match.")
+            sys.stdout.flush()
         return -1
     dim = None
     if rank == size-1:
-        print('precision is ',precision, flush=True)
+        print('precision is ',precision)
+        sys.stdout.flush()
     if laver2D:
         aver2h5(newdir, olddir,
                 todatadir='data/averages', fromdatadir='data', l2D=False,
@@ -813,3 +832,4 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                     cmd='cp '+source_file+' '+target_file
                     os.system(cmd)
     print('Simulation Fortran to h5 completed on rank {}.'.format(rank))
+    sys.stdout.flush()
