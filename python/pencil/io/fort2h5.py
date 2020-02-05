@@ -593,7 +593,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         comm = None
         driver=None
     print('rank {} and size {}'.format(rank,size))
-        sys.stdout.flush()
+    sys.stdout.flush()
     if rank == size-1:
         print('l_mpi',l_mpi)
         sys.stdout.flush()
