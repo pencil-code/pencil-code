@@ -477,7 +477,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 unit_grp.create_dataset(key, data=(param.__getattribute__('unit_'+key),))
             else:
                 unit_grp.create_dataset(key, data=param.__getattribute__('unit_'+key))
-    # add optional pesristent data
+    # add optional persistent data
     if persist != None:
         if not ds.__contains__('persist'):
             pers_grp = ds.create_group('persist')
