@@ -484,7 +484,7 @@ def aver2h5(newdir, olddir,
 
 def sim2h5(newdir='.', olddir='.', varfile_names=None,
            todatadir='data/allprocs', fromdatadir='data',
-           precision='d', nghost=3, lpersist=False,
+           precision='d', nghost=3, lpersist=True,
            x=None, y=None, z=None, lshear=False,
            snap_by_proc=False, aver_by_proc=False,
            lremove_old_snapshots=False,
@@ -674,9 +674,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if rank == 0:
         olddim = read.dim()
         for key in skeys:
-            settings[key]=olddim.__getattribute__(key)
+            settings[key]=np.array(olddim.__getattribute__(key))
         olddim = None
-        settings['nghost']=nghost
+        stettings['nghost']=nghost
         settings['precision']=precision.encode()
     if l_mpi:
         settings=comm.bcast(settings, root=0)
