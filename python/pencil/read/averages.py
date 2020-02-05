@@ -98,6 +98,7 @@ class Averages(object):
             else:
                 plane_list = [plane_list]
         else:
+            plane_list = []
             for prefix in ['xy', 'xz', 'yz']:
                 if os.path.exists(prefix+'aver.in'):
                     plane_list.append(prefix)
