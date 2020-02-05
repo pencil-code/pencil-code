@@ -676,7 +676,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         for key in skeys:
             settings[key]=np.array(olddim.__getattribute__(key))
         olddim = None
-        stettings['nghost']=nghost
+        settings['nghost']=np.array(nghost)
         settings['precision']=precision.encode()
     if l_mpi:
         settings=comm.bcast(settings, root=0)
