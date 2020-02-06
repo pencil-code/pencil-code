@@ -3537,9 +3537,12 @@ module Energy
         if (idiag_uzTTmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
         call phizsum_mn_name_r(p%ss,idiag_ssmr)
         call phizsum_mn_name_r(p%TT,idiag_TTmr)
-        call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
-        call xysum_mn_name_z(f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2mz)
+        if (lFenth_as_aux) &
+            call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
+        if (lss_flucz_as_aux) &
+            call xysum_mn_name_z(f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2mz)
+        if (lTT_flucz_as_aux) &
+            call xysum_mn_name_z(f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2mz)
 !
         if (idiag_Fenthupz/=0 .or. idiag_ssupmz/=0 .or. idiag_ss2upmz/=0 .or. &
             idiag_ssf2upmz/=0 .or. idiag_TTupmz/=0 .or. idiag_TT2upmz/=0 .or. &
@@ -3549,13 +3552,16 @@ module Energy
           elsewhere
             uzmask = 0.
           endwhere
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthupz)
+          if (lFenth_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthupz)
           call xysum_mn_name_z(uzmask*p%ss,idiag_ssupmz)
           call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2upmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
+          if (lss_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
           call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTupmz)
           call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2upmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
+          if (lTT_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
           call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTupmz)
         endif
 !
@@ -3567,13 +3573,16 @@ module Energy
           elsewhere
             uzmask = 0.
           endwhere
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthdownz)
+          if (lFenth_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthdownz)
           call xysum_mn_name_z(uzmask*p%ss,idiag_ssdownmz)
           call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2downmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
+          if (lss_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
           call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTdownmz)
           call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2downmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
+          if (lTT_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
           call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTdownmz)
         endif
 !

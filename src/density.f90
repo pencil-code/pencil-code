@@ -2783,7 +2783,8 @@ module Density
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rho2mx/=0) call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
-        call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
+        if (lrho_flucz_as_aux) &
+            call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
         if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
           where (p%uu(:,3) > 0.)
             uzmask = p%uu(:,3)/abs(p%uu(:,3))
@@ -2792,7 +2793,8 @@ module Density
           endwhere
           call xysum_mn_name_z(uzmask*p%rho,idiag_rhoupmz)
           call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2upmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+          if (lrho_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
         endif
         if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
           where (p%uu(:,3) < 0.)
@@ -2802,7 +2804,8 @@ module Density
           endwhere
           call xysum_mn_name_z(uzmask*p%rho,idiag_rhodownmz)
           call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2downmz)
-          call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+          if (lrho_flucz_as_aux) &
+              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
         endif
       endif
 

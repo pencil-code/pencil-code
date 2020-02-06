@@ -1434,7 +1434,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Axel on norlx51 (gfortran)
 ##
 #FC=mpif90 #(norlx51)
-#FFLAGS=-O1 -finit-real=nan -fno-underscoring #(norlx51)
+#FFLAGS=-O1 -finit-real=nan -fno-underscoring -fbacktrace -g -fcheck=bounds #(norlx51)
 #CC=mpicc #(norlx51)
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
