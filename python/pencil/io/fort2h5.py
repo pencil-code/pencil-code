@@ -610,6 +610,12 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             sys.stdout.flush()
         return -1
     if newdir != olddir:
+        if not os.path.exists(newdir):
+            cmd = 'pc_newrun -s '+newdir
+            if rank == 0:
+                os.system(cmd)
+            if comm:
+                comm.Barrier()
         os.chdir(newdir)
         if not sim.is_sim_dir():
             if rank == 0:
