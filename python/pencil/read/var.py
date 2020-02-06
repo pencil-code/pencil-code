@@ -147,11 +147,14 @@ class DataCube(object):
                Record types provide the labels and id record for the peristent
                variables in the depricated fortran binary format
             """
-
+            record_types = {}
             if precision != 'd':
                 for key in read.record_types.keys():
-                    if read.record_type[key][1] == 'd':
-                        read.record_type[key][1] = precision
+                    if read.record_types[key][1] == 'd':
+                        record_types[key]=(read.record_types[key][0], 
+                                          precision)
+                    else:
+                        record_types[key] = read.record_types[key]
 
             try:
                 tmp_arr = infile.read_record('h')
@@ -163,11 +166,11 @@ class DataCube(object):
                 block_id = tmp_arr[0]
                 if block_id == 2000:
                     break
-                for key in read.record_types.keys():
-                    if read.record_types[key][0] == tmp_arr[0]:
+                for key in record_types.keys():
+                    if record_types[key][0] == tmp_arr[0]:
                          if not quiet:
-                             print(key, read.record_types[key][0])
-                         tmp_arr = infile.read_record(read.record_types[key][1])
+                             print(key, record_types[key][0])
+                         tmp_arr = infile.read_record(record_types[key][1])
                          self.__setattr__(key, tmp_arr)
             return self
 
