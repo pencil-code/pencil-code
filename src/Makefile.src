@@ -2812,7 +2812,8 @@ endif
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
@@ -2832,7 +2833,8 @@ endif
 	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
@@ -2847,7 +2849,8 @@ fast:
 	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
 #
 debug:
@@ -2859,7 +2862,8 @@ debug:
 	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
 ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' > .moduleinfo
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d'> .moduleinfo
 endif
 #
 #  Handy for debugging; just compile by hand what is changed.
