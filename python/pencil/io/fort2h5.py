@@ -612,7 +612,9 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if newdir != olddir:
         if not os.path.exists(newdir):
             cmd = 'pc_newrun -s '+newdir
-            if rank == 0:
+            if rank == size-1:
+                os.system(cmd)
+                cmd = 'rm -rf '+os.path.join(newdir,'data','proc')+'*'
                 os.system(cmd)
             if comm:
                 comm.Barrier()
