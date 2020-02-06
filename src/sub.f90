@@ -4347,17 +4347,22 @@ module Sub
 !  MR: perhaps to be merged with step
 !
 !  23-jan-02/wolf: coded
+!  06-feb-20/MR: smoother for large arguments
 !
       real, dimension(:) :: x
-      real, dimension(size(x,1)) :: der_step,arg
+      real, dimension(size(x)) :: der_step,arg
       real :: x0,width
+!
+      arg = abs((x-x0)/(width+tini))
+      where (abs(arg)>=8.) 
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
-      arg = abs((x-x0)/(width+tini))
-      arg = min(arg,8.)         ! cosh^2(8) = 3e+27
-      der_step = 0.5/(width*cosh(arg)**2)
+        der_step = 2./width*exp(-2.*abs(arg))
+      elsewhere
+        der_step = 0.5/(width*cosh(arg)**2)
+      endwhere
 !
       endfunction der_step
 !***********************************************************************
