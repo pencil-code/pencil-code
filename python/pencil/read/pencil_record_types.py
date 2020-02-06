@@ -1,4 +1,4 @@
-record_types={
+record_types = {
     'id_block_persistent':(2000,'i'),
     'random_seeds'       :(1   ,'i'),
     'shear_delta_y'      :(320 ,'d'),
