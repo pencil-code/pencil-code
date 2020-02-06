@@ -364,6 +364,7 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
+        push @mpiexec_cmd_line, '2>&1 |tee run.log';
         dump_parameters(
             $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
             $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
@@ -372,6 +373,7 @@ sub mpi_run_cmd {
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
+        push @cmd_line, '2>&1 |tee run.log';
         dump_parameters(undef, undef, 1, '') if $debug;
         time_system_cmd(@cmd_line, @extra_opts);
     }
