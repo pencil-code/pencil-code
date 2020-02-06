@@ -463,9 +463,11 @@ module Mpicomm
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
-      call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, key, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, key, MPI_COMM_PENCIL, mpierr)
-
+!     call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, key, mpierr)
+!     call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, key, MPI_COMM_PENCIL, mpierr)
+!AB: skype call with MR: some MPI routines are not ok
+      MPI_COMM_PENCIL=MPI_COMM_WORLD
+!
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_WORLD!
 !
       if (sizeof_real() < 8) then
