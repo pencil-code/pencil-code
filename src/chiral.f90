@@ -52,12 +52,13 @@ module Chiral
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
+  logical :: lupw_chiral=.false.
 !
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
        chiral_fishernu, chiral_fisherk, &
-       llorentzforceEP, &
+       lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
 !
@@ -271,8 +272,10 @@ module Chiral
 !
 !  advection term
 !
-      call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
-      call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
+      !call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
+      !call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
+      call u_dot_grad(f,iXX_chiral,gXX_chiral,p%uu,ugXX_chiral,UPWIND=lupw_chiral)
+      call u_dot_grad(f,iYY_chiral,gYY_chiral,p%uu,ugYY_chiral,UPWIND=lupw_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
 !
