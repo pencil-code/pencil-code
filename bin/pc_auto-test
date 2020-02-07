@@ -456,7 +456,7 @@ chomp($host);
 my $nice = "";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
 # Note: Csh's builtin 'nice' cmd has a different calling syntax, so we
-# need to use ther real nice cmd here.
+# need to use their real nice cmd here.
 
 my @testdirs;                   # full names of all dirs to run tests in
 my %time_summary;               # hash to accumulate timing summary
@@ -1052,7 +1052,7 @@ sub test_start {
         printf "$indi_fmt ", '';
 
         # Start the initialization
-        my $start_cmd = "@pc_run start";
+        my $start_cmd = "@pc_run --log start";
         my $out = "";
         if ($time_limit) {
             $out = test_timelimited_shell_cmd(
@@ -1107,7 +1107,7 @@ sub test_run {
         }
 
         # Run the Code
-        my $run_cmd = "@pc_run run";
+        my $run_cmd = "@pc_run --log run";
         $run_cmd .= " --no-pencil-check" if ($suppress_check);
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
