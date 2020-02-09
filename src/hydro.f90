@@ -3556,9 +3556,9 @@ module Hydro
             uus=0.
           endwhere
           call xysum_mn_name_z(uus,idiag_uzupmz)
-          call xysum_mn_name_z(p%rho*uus,idiag_ruzupmz)
-          call xysum_mn_name_z(uus**2,idiag_uz2upmz)
-          call xysum_mn_name_z(p%ekin*uus,idiag_fkinzupmz)
+          if (idiag_ruzupmz/=0) call xysum_mn_name_z(p%rho*uus,idiag_ruzupmz)
+          if (idiag_uz2upmz/=0) call xysum_mn_name_z(uus**2,idiag_uz2upmz)
+          if (idiag_fkinzupmz/=0) call xysum_mn_name_z(p%ekin*uus,idiag_fkinzupmz)
         endif
         if (idiag_ffdownmz/=0 .or. idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. &
           idiag_uz2upmz/=0 .or. idiag_fkinzupmz/=0) then
@@ -3567,11 +3567,11 @@ module Hydro
           elsewhere
             uus=0.
           endwhere
-          call xysum_mn_name_z(uus/abs(uus),idiag_ffdownmz)
+          if (idiag_ffdownmz/=0) call xysum_mn_name_z(uus/abs(uus),idiag_ffdownmz)
           call xysum_mn_name_z(uus,idiag_uzdownmz)
-          call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
-          call xysum_mn_name_z(uus**2,idiag_uz2downmz)
-          call xysum_mn_name_z(p%ekin*uus,idiag_fkinzdownmz)
+          if (idiag_ruzdownmz/=0) call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
+          if (idiag_uz2downmz/=0) call xysum_mn_name_z(uus**2,idiag_uz2downmz)
+          if (idiag_fkinzdownmz/=0) call xysum_mn_name_z(p%ekin*uus,idiag_fkinzdownmz)
         endif
 !
 !  mean squared velocity and vorticity

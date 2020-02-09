@@ -2727,20 +2727,19 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
-      call calc_2d_diagnostics_density(f,p)
+      call calc_2d_diagnostics_density(p)
       call calc_1d_diagnostics_density(f,p)
-      call calc_0d_diagnostics_density(f,p)
+      call calc_0d_diagnostics_density(p)
 !
     endsubroutine calc_diagnostics_density
 !***********************************************************************
-    subroutine calc_2d_diagnostics_density(f,p)
+    subroutine calc_2d_diagnostics_density(p)
 !
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       use Diagnostics
 
-      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       if (l2davgfirst) then
@@ -2783,8 +2782,9 @@ module Density
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rho2mx/=0) call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
-        if (lrho_flucz_as_aux) &
-            call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
+        if (lrho_flucz_as_aux) then
+          if (idiag_rhof2mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
+        endif
         if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
           where (p%uu(:,3) > 0.)
             uzmask = p%uu(:,3)/abs(p%uu(:,3))
@@ -2793,8 +2793,9 @@ module Density
           endwhere
           call xysum_mn_name_z(uzmask*p%rho,idiag_rhoupmz)
           call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2upmz)
-          if (lrho_flucz_as_aux) &
-              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+          if (lrho_flucz_as_aux) then
+            if (idiag_rhof2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+          endif
         endif
         if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
           where (p%uu(:,3) < 0.)
@@ -2804,14 +2805,15 @@ module Density
           endwhere
           call xysum_mn_name_z(uzmask*p%rho,idiag_rhodownmz)
           call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2downmz)
-          if (lrho_flucz_as_aux) &
-              call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+          if (lrho_flucz_as_aux) then
+            if (idiag_rhof2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+          endif
         endif
       endif
 
     endsubroutine calc_1d_diagnostics_density
 !***********************************************************************
-    subroutine calc_0d_diagnostics_density(f,p)
+    subroutine calc_0d_diagnostics_density(p)
 !
 !  Calculate density diagnostics
 !
@@ -2822,7 +2824,6 @@ module Density
       use Sub,only: dot2
       use General
 
-      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       real, dimension(nx), parameter :: unitpencil=1.
