@@ -2208,7 +2208,7 @@ module EquationOfState
       use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
       use General, only: loptest
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
+      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,chi
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
@@ -2227,9 +2227,7 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      call get_shared_variable('hcond0',hcond0,caller='bc_ss_flux')
-      call get_shared_variable('hcond1',hcond1)
-      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Fbot',Fbot,caller='bc_ss_flux')
       call get_shared_variable('Ftop',Ftop)
       call get_shared_variable('FbotKbot',FbotKbot)
       call get_shared_variable('FtopKtop',FtopKtop)
@@ -2251,11 +2249,6 @@ module EquationOfState
 !  ===============
 !
       case ('bot')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
 !
 !  calculate Fbot/(K*cs2)
 !
