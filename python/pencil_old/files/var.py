@@ -158,7 +158,7 @@ class DataCube(object):
                 if (not quiet):
                     #print "reading data from processor %i of %i ..." \ # Python 2
                           #% (proc, len(procdirs)) # Python 2
-                    print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
+                    print("reading data from processor {0} of {1} ...".format(proc+1, len(procdirs)))
 
                 mxloc = procdim.mx
                 myloc = procdim.my
