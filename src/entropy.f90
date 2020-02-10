@@ -353,7 +353,7 @@ module Energy
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
   integer :: idiag_heatmz=0     ! XYAVG_DOC: heating
-  integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$
+  integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
