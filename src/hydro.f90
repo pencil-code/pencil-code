@@ -499,8 +499,8 @@ module Hydro
   integer :: idiag_ux2mz=0      ! XYAVG_DOC: $\left<u_x^2\right>_{xy}$
   integer :: idiag_uy2mz=0      ! XYAVG_DOC: $\left<u_y^2\right>_{xy}$
   integer :: idiag_uz2mz=0      ! XYAVG_DOC: $\left<u_z^2\right>_{xy}$
-  integer :: idiag_uz2upmz=0    ! XYAVG_DOC: $\left<(u_z^2)_\uparrow\right>_{xy}$
-  integer :: idiag_uz2downmz=0  ! XYAVG_DOC: $\left<(u_z^2)_\downarrow\right>_{xy}$
+  integer :: idiag_uz2upmz=0    ! XYAVG_DOC: $\left<u_{z\uparrow}^2\right>_{xy}$
+  integer :: idiag_uz2downmz=0  ! XYAVG_DOC: $\left<u_{z\downarrow}^2\right>_{xy}$
   integer :: idiag_ox2mz=0      ! XYAVG_DOC: $\left< \omega_x^2 \right>_{xy}$
   integer :: idiag_oy2mz=0      ! XYAVG_DOC: $\left< \omega_y^2 \right>_{xy}$
   integer :: idiag_oz2mz=0      ! XYAVG_DOC: $\left< \omega_z^2 \right>_{xy}$
@@ -552,7 +552,7 @@ module Hydro
   integer :: idiag_oxdivumz=0   ! XYAVG_DOC: $\left<\omega_x\nabla\cdot\uv\right>_{xy}$
   integer :: idiag_oydivumz=0   ! XYAVG_DOC: $\left<\omega_y\nabla\cdot\uv\right>_{xy}$
   integer :: idiag_ozdivumz=0   ! XYAVG_DOC: $\left<\omega_z\nabla\cdot\uv\right>_{xy}$
-  integer :: idiag_oxdivu2mz=0  ! XYAVG_DOC: $\left<(\omega_x nabla\cdot\uv)^2\right>_{xy}$
+  integer :: idiag_oxdivu2mz=0  ! XYAVG_DOC: $\left<(\omega_x\nabla\cdot\uv)^2\right>_{xy}$
   integer :: idiag_oydivu2mz=0  ! XYAVG_DOC: $\left<(\omega_y\nabla\cdot\uv)^2\right>_{xy}$
   integer :: idiag_ozdivu2mz=0  ! XYAVG_DOC: $\left<(\omega_z\nabla\cdot\uv)^2\right>_{xy}$
   integer :: idiag_u3u21mz=0    ! XYAVG_DOC:
