@@ -41,7 +41,7 @@ module Poisson
 !
   contains
 !***********************************************************************
-    subroutine initialize_poisson()
+    subroutine initialize_poisson
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -50,7 +50,7 @@ module Poisson
 !
       if (lrazor_thin) then
         if (nzgrid/=1) then
-          if (lroot) print*, 'inverse_laplacian_fft: razon-thin approximation only works with nzgrid==1'
+          if (lroot) print*, 'inverse_laplacian_fft: razor-thin approximation only works with nzgrid==1'
           call fatal_error('inverse_laplacian_fft','')
         endif
       endif
@@ -78,7 +78,7 @@ module Poisson
 !
 !  Dimensionality
 !
-      call decide_fourier_routine()
+      call decide_fourier_routine
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -573,6 +573,87 @@ module Poisson
       return
 !
     endsubroutine inverse_laplacian_isoz
+!***********************************************************************
+    subroutine inverse_laplacian_z_2nd_neumann(f)
+!
+!  19-mar-2018/MR: coded
+!  Second-order version in the vertical direction that uses tridag_neumann.
+!  On input: phi=div(U), on output: phi=potential of the irrotational flow.
+!
+      use Fourier, only: fourier_transform_xy
+      use Mpicomm, only: transp_xz, transp_zx
+      !!!use Sub, only: tridag_neumann
+!
+      real, dimension(:,:,:,:), intent(INOUT)   :: f
+
+      real, dimension(nx,ny,0:nz+1) :: phi, b1
+      real, dimension(nx,ny), save :: k2dz2
+      real, dimension(nx,ny,1) :: uzhatlow_re, uzhatlow_im
+
+      real, dimension (nz-3) :: a, b
+      real, dimension (nz-2) :: c
+!
+      integer, parameter :: nxt = nx / nprocz
+      logical, save :: l1st = .true.
+      real,    save :: dz2
+      integer, save :: ikx0, iky0
+!
+      complex, dimension(nx,ny,nz) :: rhs
+!
+      integer :: ikx, iky, i1
+      real    :: ky2
+!
+      call fatal_error('inverse_laplacian_z_2nd_neumann',"don't call, not yet functioning")
+!
+!  Initialize the array k2dz2 and other constants for future use.
+!
+      if (l1st) then
+        dz2 = dz**2
+        ikx0 = ipz * nxt
+        iky0 = ipy * ny
+        do iky = 1, ny
+          ky2 = ky_fft2(iky0+iky)
+          do ikx = 1, nx
+            k2dz2(ikx,iky) = (kx_fft2(ikx0+ikx)+ky2)*dz2
+          enddo
+        enddo
+        l1st = .false.
+      endif
+!
+!  Forward transform of div(U) and U on lower boundary in xy.
+!
+      phi(:,:,1:nz)=f(l1:l2,m1:m2,n1:n2,iphiuu); b1 = 0.
+      call fourier_transform_xy(phi(:,:,1:nz), b1(:,:,1:nz))    ! Fourier transform of div(U) in cmplx(phi,b1)
+print*, 'nach fourier(div)'
+      uzhatlow_re=f(l1:l2,m1:m2,n1,iuz:iuz); uzhatlow_im=0
+      call fourier_transform_xy(uzhatlow_re, uzhatlow_im)       ! Fourier transform of U_z on lower boundary
+ 
+      if (lfirst_proc_z) then
+        rhs(:,:,1:1)=2.*dz*cmplx(uzhatlow_re,uzhatlow_im)         ! auxiliary to compute phi on boundary
+        rhs(:,:,2)=3.*dz2*cmplx(phi(:,:,2),b1(:,:,2))+rhs(:,:,1)
+        i1=3
+      else
+        i1=1
+      endif
+      rhs(:,:,i1:nz)=dz2*cmplx(phi(:,:,i1:nz),b1(:,:,i1:nz))
+!
+      !do iky = 1, ny
+        !call transp_xz(phi(:,iky,:),  phit)
+        !call transp_xz(b1(:,iky,:), b1t)
+!
+!  Solution of z dependent problem.
+!
+      a=1.; b=-2.; c=1.; c(1)=2.
+      !!!call tridag_neumann(a,b,c,k2dz2,rhs,phi,b1)
+        !call transp_zx(phit, phi(:,iky,:))
+        !call transp_zx(b1t, b1(:,iky,:))
+!
+!  Inverse transform in xy
+!
+      call fourier_transform_xy(phi(:,:,1:nz),b1(:,:,1:nz),linv=.true.)   ! potential in physical space in phi
+      f(l1:l2,m1:m2,n1:n2,iphiuu)=phi(:,:,1:nz)
+!
+    endsubroutine inverse_laplacian_z_2nd_neumann
 !***********************************************************************
     subroutine decide_fourier_routine
 !
