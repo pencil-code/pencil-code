@@ -712,18 +712,21 @@ module Energy
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
 
-      call calc_diagnostics_energy(p)
+      call calc_diagnostics_energy(f,p)
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
       use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
 !  Calculate temperature related diagnostics
 !
+      call keep_compiler_quiet(f)
+
       if (ldiagnos) then
         call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)

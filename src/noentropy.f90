@@ -348,20 +348,23 @@ module Energy
         endif
      endif
 
-     call calc_diagnostics_energy(p)
+     call calc_diagnostics_energy(f,p)
 !
      call keep_compiler_quiet(f)
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
       
       use Diagnostics
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       real, dimension(nx) :: ufpres
       integer :: i
+!
+      call keep_compiler_quiet(f)
 !
 !  Calculate energy related diagnostics.
 !

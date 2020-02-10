@@ -1412,15 +1412,18 @@ module Energy
 !
       if (lborder_profiles) call set_border_entropy(f,df,p)
 
-      call calc_diagnostics_energy(p)
+      call calc_diagnostics_energy(f,p)
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
       use Slices_methods, only: store_slices
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+
+      call keep_compiler_quiet(f)
 
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(p)

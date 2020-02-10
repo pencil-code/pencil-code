@@ -590,16 +590,19 @@ module Energy
 !
 !  Diagnostics.
 !
-     call calc_diagnostics_energy(p)
+     call calc_diagnostics_energy(f,p)
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
       use Diagnostics
       use Slices_methods, only: store_slices
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+
+      call keep_compiler_quiet(f)
 
       if (ldiagnos) then
         call sum_mn_name(p%TT,idiag_TTm)

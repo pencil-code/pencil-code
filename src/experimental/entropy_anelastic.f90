@@ -3623,10 +3623,12 @@ module Energy
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 
     endsubroutine calc_diagnostics_energy

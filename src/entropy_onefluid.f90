@@ -467,6 +467,8 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
+      call calc_diagnostics_energy(f,p)
+!
 !  ``cs2/dx^2'' for timestep
 !
       if (lhydro.and.ldensity.and.lfirst.and.ldt) then
@@ -476,12 +478,15 @@ module Energy
 
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_diagnostics_energy(p)
+    subroutine calc_diagnostics_energy(f,p)
 
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
 !  Calculate entropy related diagnostics.
 !
+      call keep_compiler_quiet(f)
+
       if (ldiagnos) then
         call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
