@@ -616,7 +616,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !
 ! Qualifies the position of a point w.r.t the neighboring processors for quintic
 ! interpolation (six-points-stencil).
-! If the calling proc is the first (lrestr_par_low=T) or last (lrestr_par_up)
+! If the calling proc is the first (lrestr_par_low=T) or last (lrestr_par_up=T)
 ! proc in the considered direction, a position near the margin of its domain is
 ! not special, likewise not if it is not the first or last in the perpendicular
 ! direction (lrestr_perp=F).
@@ -681,7 +681,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
     function qualify_position_bilin(ind,nl,nu) result (qual)
 !
 ! Qualifies the position of a point w.r.t the neighboring processors for
-! cubic interpolation (two-points-stencil).
+! linear interpolation (two-points-stencil).
 !
       integer, intent(IN) :: ind, nl, nu
       integer :: qual
@@ -730,6 +730,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
       integer :: ip, jp, indth, indph, sz1, sz2, ma, na, me, ne, i1, i2, indth_in, indph_in, ind
       real :: dth, dph, dthp, dphp, qth1, qth2, qph1, qph2
+      real, parameter :: eps=0.
       logical :: okt, okp
       integer :: igapt, igapp
       character(LEN=240) :: txt
@@ -823,16 +824,19 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
       do ip=1,sz1
         do jp=1,sz2
+          !!if (iproc_world==0) write(iproc_world+300,*) thphprime(:,ip,jp)
 !
 !  For all points in strip,
 !
           okt=.false.; okp=.false.
-          if ( y(ma)<=thphprime(1,ip,jp) ) then
+          !!!if ( y(ma)<=thphprime(1,ip,jp) ) then
+          if ( y(ma)-eps*dy<=thphprime(1,ip,jp) ) then
 !
 !  detect between which y lines it lies.
 !
             do indth=ma+1,me
-              if ( y(indth)>=thphprime(1,ip,jp) ) then
+              if ( y(indth)+eps*dy>=thphprime(1,ip,jp) ) then
+              !!!if ( y(indth)>=thphprime(1,ip,jp) ) then
                 okt=.true.
                 if (itype==BIQUIN) then
                   igapt=qualify_position_biquin(indth,m1,m2,lfirst_proc_y,llast_proc_y,lfirst_proc_z.or.llast_proc_z) 
@@ -847,12 +851,14 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
           endif
 
           if (okt) then
-            if ( z(na)<=thphprime(2,ip,jp) ) then
+            !!!if ( z(na)<=thphprime(2,ip,jp) ) then
+            if ( z(na)-eps*dz<=thphprime(2,ip,jp) ) then
 !
 !  detect between which z lines it lies.
 !
               do indph=na+1,ne
-                if ( z(indph)>=thphprime(2,ip,jp) ) then
+                if ( z(indph)+eps*dz>=thphprime(2,ip,jp) ) then
+                !!!if ( z(indph)>=thphprime(2,ip,jp) ) then
                   okp=.true.
                   indcoeffs%inds(ip,jp,1:2) = (/indth,indph/)
                   if (itype==BIQUIN) then
@@ -973,7 +979,8 @@ print*, 'DOUBLE GAP: iproc=', iproc
               endif
               
             endif
-            !if (iproc_world>=30.and.iproc_world<=50) write(iproc_world,*) thphprime(:,ip,jp)
+          else
+            !!if (iproc_world==1) write(iproc_world+100,*) thphprime(:,ip,jp), 9, 9
           endif
 
         enddo
