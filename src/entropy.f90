@@ -149,6 +149,7 @@ module Energy
   logical :: lFenth_as_aux=.false.
   logical :: lss_flucz_as_aux=.false.
   logical :: lTT_flucz_as_aux=.false.
+  logical :: lchi_t1_noprof=.false.
   real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -229,7 +230,7 @@ module Energy
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
-      lcalc_cs2mz_mean_diag
+      lcalc_cs2mz_mean_diag, lchi_t1_noprof
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3548,7 +3549,7 @@ module Energy
           if (lss_flucz_as_aux) then
             if (idiag_ssf2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
           endif
-          if (idiag_TTupmz  /=0) call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTupmz)
+          if (idiag_TTupmz  /=0) call xysum_mn_name_z(uzmask*p%TT,idiag_TTupmz)
           if (idiag_TT2upmz /=0) call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2upmz)
           if (lTT_flucz_as_aux) then
             if (idiag_TTf2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
@@ -3572,7 +3573,7 @@ module Energy
           if (lss_flucz_as_aux) then
             if (idiag_ssf2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
           endif
-          if (idiag_TTdownmz  /=0) call xysum_mn_name_z(uzmask*p%TT*p%uu(:,3),idiag_TTdownmz)
+          if (idiag_TTdownmz  /=0) call xysum_mn_name_z(uzmask*p%TT,idiag_TTdownmz)
           if (idiag_TT2downmz /=0) call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2downmz)
           if (lTT_flucz_as_aux) then
             if (idiag_TTf2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
@@ -5513,11 +5514,11 @@ module Energy
 !
       if (lchit_fluct.and.chi_t1/=0.) then
         if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver_as_aux) then
-          if ((lgravr.or.lgravx.or.lgravz).and..not.lsphere_in_a_box) then
+          if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
             call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
                                  stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
           else
-            chit_prof_fluct=0.; gradchit_prof_fluct=0.
+            chit_prof_fluct=chi_t1; gradchit_prof_fluct=0.
           endif
         endif
 
