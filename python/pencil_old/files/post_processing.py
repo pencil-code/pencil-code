@@ -8,7 +8,7 @@
 # 
 #
 
-import pencil as pc
+import pencil_old as pc
 import numpy as np
 
 def post_compute(variables = ['b2m'], datadir = 'data'):

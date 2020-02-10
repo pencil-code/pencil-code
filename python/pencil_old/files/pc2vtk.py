@@ -4,7 +4,7 @@
 #
 # Author: Simon Candelaresi (iomsn@physto.se, iomsn1@googlemail.com).
 
-import pencil as pc
+import pencil_old as pc
 import numpy as np
 import struct
 

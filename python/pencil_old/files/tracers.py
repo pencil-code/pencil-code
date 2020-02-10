@@ -10,7 +10,7 @@ import struct
 import array
 import numpy as np
 import os
-import pencil as pc
+import pencil_old as pc
 import multiprocessing as mp
 
 

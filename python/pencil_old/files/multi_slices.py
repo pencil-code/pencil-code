@@ -30,7 +30,7 @@
 
 import numpy
 import pylab as P
-import pencil as pc
+import pencil_old as pc
 import sys
 import time
 import Tkinter as Tk # for GUI

@@ -573,7 +573,7 @@ def make_movie_cart(field='uu1', datadir='data/', proc=-1, extension='xz',
 
     import pylab as plt
     import sys
-    from pencil.files.var import read_var
+    from pencil_old.files.var import read_var
 
     mkmvvar = read_var(trimall=True)    
     r2d,phi2d = np.meshgrid(mkmvvar.x,mkmvvar.y)

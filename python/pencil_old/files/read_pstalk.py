@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import pencil as pc
+import pencil_old as pc
 import numpy as np
 
-from pencil.files.npfile import npfile
+from pencil_old.files.npfile import npfile
 import os
 import sys
 from scipy.io import FortranFile

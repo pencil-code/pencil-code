@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import pencil as pc
+import pencil_old as pc
 import numpy as np
 
 from ..files.npfile import npfile

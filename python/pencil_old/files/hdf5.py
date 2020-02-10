@@ -10,7 +10,7 @@ import h5py
 import os
 import datetime
 import numpy as N
-from pencil.files.npfile import npfile
+from pencil_old.files.npfile import npfile
 
 VERSION='v0.2'
 

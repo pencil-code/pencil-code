@@ -25,7 +25,7 @@
 import numpy as np
 import os
 from scipy.interpolate import interp1d 
-import pencil as pc
+import pencil_old as pc
 from scipy.io import FortranFile as ftn
 
 def interp_var(
@@ -231,7 +231,7 @@ pers=[
     > vi local_remesh.py
 file to contain:
 
-import pencil_old as pco
+import pencil_old_old as pco
 fnew=pco.interp_var(
                    target_path='/path/to/mature_run',
                    source_path='/path/to/new_run'
