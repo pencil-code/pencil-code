@@ -3567,7 +3567,7 @@ module Hydro
           elsewhere
             uus=0.
           endwhere
-          if (idiag_ffdownmz/=0) call xysum_mn_name_z(uus/abs(uus),idiag_ffdownmz)
+          if (idiag_ffdownmz/=0) call xysum_mn_name_z(-uus/abs(p%uu(:,3)),idiag_ffdownmz)
           call xysum_mn_name_z(uus,idiag_uzdownmz)
           if (idiag_ruzdownmz/=0) call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
           if (idiag_uz2downmz/=0) call xysum_mn_name_z(uus**2,idiag_uz2downmz)
