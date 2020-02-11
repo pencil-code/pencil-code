@@ -19,9 +19,10 @@ module Yinyang_mpi
 !
 ! Variables for z-averages.
 !
-  integer, dimension(2,3) :: thrange_gap=0
-  integer, dimension(3) :: yinprocs=-1
-  type(ind_coeffs), dimension(3) :: indweights_zaver_gap
+  integer, parameter :: n_contrib_procs=4   ! supposed to be 3
+  integer, dimension(2,n_contrib_procs) :: thrange_gap=0
+  integer, dimension(n_contrib_procs) :: yinprocs=-1
+  type(ind_coeffs), dimension(n_contrib_procs) :: indweights_zaver_gap
 !
   integer, dimension(2) :: thrange_cap=0, capzprocs=-1
   type(ind_coeffs) :: indweights_zaver_cap
@@ -221,7 +222,7 @@ module Yinyang_mpi
 !   11-mar-16/MR: coded
 !
       use General, only: indgen, yy_transform_strip_other, find_proc, itoa
-      use Mpicomm, only: mpireduce_sum_int, mpisend_int, mpirecv_int, mpiwait, mpibarrier
+      use Mpicomm, only: mpireduce_sum_int, mpisend_int, mpirecv_int, mpiwait, mpibarrier, MPI_COMM_GRID, MPI_COMM_YZPLANE
       use Messages, only: warning
       use Cdata
 
@@ -232,53 +233,78 @@ module Yinyang_mpi
       real, dimension(:,:,:), allocatable :: thphprime
       real, dimension(:), allocatable :: yloc, zloc
       integer, dimension(:), allocatable :: requests
-      integer :: nok, noks, noks_all, nyl, nzl, iprocy, iprocz, ifound, request, &
-                 iproc_yin, iproc_yang, newlines, offset, nlines_tot, irequest
+      integer :: nok, noks, noks_all, nyl, nzgap, iprocy, iprocz, ifound, request, &
+                 n_interproc_gaps, n_interproc_gaps_all, &
+                 iproc_yin, iproc_yang, newlines, offset, npoints_tot, irequest, iyl, iyu, igyl, igyu
       integer, dimension(2) :: rng
       logical :: lwith_ghosts
       logical, save :: lcalled=.false.
 return !!!
       if (lcalled) then
         nycap_=nycap
-        return                    ! routine has already been called
+        return                               ! routine has already been called
       else
         lcalled=.true.
       endif
 
-      nzgrid_eff=4./3.*nzgrid     ! total number of points on full Yin-phi coordinate line.
-                                  ! could be reduced in polar caps.
+      nzgap=floor(2.*xyz0(3)/dz)-1           ! number of points in gap.
+      nzgrid_eff=nzgrid+nzgap                ! total number of points on full Yin-phi coordinate line.
+                                             ! could be reduced in polar caps.
+
       if (lyang) then
 
+        npoints_tot=nlines*nprocy*nzgap        ! total number of points on lines continued into gap
         lwith_ghosts = nlines==my
-        noks=0
+        noks=0; n_interproc_gaps=0
 
         if (ipz>=nprocz/3-1 .and. ipz<=2*nprocz/3) then
 !
-!  These procs may see phi coordinate lines which continue from Yin grid into
+!  These Yang procs may see phi coordinate lines which continue from Yin grid into
 !  the gap.
 !
-          nzl=nzgrid/3            ! number of points in gap.
-          allocate(thphprime(2,nlines,nzl),yloc(nlines),zloc(nzl))
-
-          yloc=xyz0(2)+(indgen(nlines)-1)*dy      ! valid only for equidistant grids!
-          if (lwith_ghosts) yloc=yloc-nghost*dy   !    ~
-          zloc=xyz1(3)+indgen(nzl)*dz
-
-          nlines_tot=nlines*nprocy*nzl
+          allocate(thphprime(2,nlines,nzgap),yloc(nlines),zloc(nzgap))
+          zloc=xyz1(3)+indgen(nzgap)*dz        ! valid only for equidistant grids!
 
           nlines=0
           ifound=0; offset=0
+          igyl=1
 !
 !  Loop over y-beam of processors with iprocz=0 in Yin grid.
 !
           do iprocy=0,nprocy-1
 !  
-            iproc_yin=find_proc(ipx,iprocy,0)
+            if (lwith_ghosts) then
+              if (iprocy==0) then
+                iyl=m1; iyu=my
+                igyu=igyl+ny+nghost-1
+              elseif (iprocy==nprocy-1) then
+                iyl=1; iyu=m2
+                igyu=igyl+ny+nghost-1
+              else
+                iyl=1; iyu=my
+                igyu=igyl+my-1
+              endif
+            else
+              iyl=1; iyu=ny
+              igyu=igyl+ny-1
+            endif
+
+            yloc(iyl:iyu)=ygrid(igyl:igyu)
+!if (ipz==2) print*, 'iprocy, yloc=', iprocy, yloc(iyl),yloc(iyu)            
+            if (lwith_ghosts) then
+              igyl=igyu-2
+              if (iprocy==0) yloc(1:nghost)=xyz0(2)-indgen(nghost)*dy     ! valid only for equidistant grids!
+              if (iprocy==nprocy-1) yloc(iyu:)=xyz1(2)+indgen(nghost)*dy  ! valid only for equidistant grids!
+            else
+              igyl=igyu+1
+            endif
+
+            iproc_yin=find_proc(ipx,iprocy,0)         ! root proc of z-beam (ipx,iprocy)
 !
 !  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
 !
             call yy_transform_strip_other(yloc,zloc,thphprime)
-            nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,th_range=thrange_gap(:,ifound+1))
+            nok=prep_interp(thphprime,intcoeffs,BILIN,ngap=n_interproc_gaps,th_range=thrange_gap(:,ifound+1))
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_gap: y-range of
@@ -286,6 +312,7 @@ return !!!
 !  indices refer to local numbering of proc iproc_yin
 !            
             if (nok>0) then
+print'(a,4(1x,i4))', 'iproc_world,iproc_yin,nok,n_interproc_gap=', iproc_world,iproc_yin,nok,n_interproc_gaps
 
               ifound=ifound+1
               newlines=thrange_gap(2,ifound)-thrange_gap(1,ifound)+1
@@ -314,14 +341,13 @@ return !!!
             else
               rng=(/0,0/)
             endif
-!print*, 'SEND: iproc_yin, iproc_world=', iproc_yin, iproc_world
+!if (rng(1)/=0) print*, 'SEND: iproc_yin, iproc_world, rng=', iproc_yin, iproc_world, rng
 !  Tell z-root proc of Yin grid, which of its phi coordinate lines are detected
 !  within executing proc (maybe none).
 !
             call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_WORLD)
 
             if (ifound>3) stop               ! lines from at most 3 Yin procs expected.
-            yloc=yloc+Lxyz_loc(2)+dy/nprocy  ! shift y coordinates to next z-root proc of Yin grid.
 
           enddo
 
@@ -330,20 +356,25 @@ return !!!
 !print*, 'GAP: iproc_world,yinprocs=', iproc_world,yinprocs
         endif
 
-        call mpireduce_sum_int(noks, noks_all) ! sum up number of claimed gap points over Yang grid.
-        if (iproc==0.and.noks_all<nlines_tot) &
+        call mpireduce_sum_int(noks, noks_all,comm=MPI_COMM_YZPLANE) ! sum up number of claimed gap points over Yang grid.
+        call mpireduce_sum_int(n_interproc_gaps, n_interproc_gaps_all,comm=MPI_COMM_YZPLANE) ! sum up number of claimed points in interprocessor gaps over Yang grid.
+!if (iproc==0) print*, 'GAP: iproc_world,noks_all,n_interproc_gaps_all,npoints_tot=', iproc_world, noks_all, n_interproc_gaps_all, npoints_tot
+        if (iproc==0.and.noks_all-n_interproc_gaps_all/4<npoints_tot) &
           call warning('initialize_zaver_yy',  &
-                       'only'//itoa(noks_all)//' points in Yin grid gap claimed by Yang procs (goal:' &
-                       //itoa(nlines_tot)//')')
+                       'only '//trim(itoa(noks_all))//' points in Yin grid gap claimed by Yang procs (goal: ' &
+                       //trim(itoa(npoints_tot))//')',ncpus)
 
+        call mpi_barrier(MPI_COMM_GRID)
+
+        nok=0; n_interproc_gaps=0
         if (ipz<=nprocz/3 .or. ipz>=2*nprocz/3-1) then
 !
 !  These procs may see Yin-phi coordinate lines which lie completely inside Yang
 !  grid that is, in the polar caps.
 !
-          nycap=nygrid/2.-1                   ! number of Yin-phi coordinate lines in polar cap
-                                              ! could be reduced for bigger pole
-                                              ! distance of closest line.
+          nycap=floor(xyz0(2)/dy)-1           ! number of Yin-phi coordinate lines in polar cap
+                                              ! could be reduced for bigger pole distance
+                                              ! of closest line.
           if (lwith_ghosts) nycap=nycap+nghost
 
           allocate(thphprime(2,nycap,nzgrid_eff),yloc(nycap),zloc(nzgrid_eff))
@@ -377,7 +408,7 @@ return !!!
 !  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
 !
           call yy_transform_strip_other(yloc,zloc,thphprime)
-          nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,th_range=thrange_cap)
+          nok=prep_interp(thphprime,intcoeffs,BILIN,ngap=n_interproc_gaps,th_range=thrange_cap)
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_cap: y-range of
@@ -403,12 +434,13 @@ return !!!
           endif
 
           if (iproc==caproot) then      ! if proc is cap collector
+
             lcaproot=.true.
             allocate(thranges_cap(2,0:nprocy-1,capzprocs(1):capzprocs(2)))
 !if (iproc==caproot) print*,'iproc_world, nycap=', iproc_world, nycap
             allocate(requests(nprocy*(capzprocs(2)-capzprocs(1)+1)-1))
 !
-!  Cap collector receives from each Yang procs in cap, which of the cap lines
+!  Cap collector receives from each Yang proc in cap, which of the cap lines
 !  are detected
 !  within proc (maybe none) and stores this in thranges_cap..
 !
@@ -439,11 +471,13 @@ return !!!
 !print*, 'iproc_world, offset_cap,nlines=', iproc_world, offset_cap,nlines
         endif
 
-        call mpireduce_sum_int(nok, noks_all)  ! sum up number of claimed cap points (both caps) over Yang.
-        if (iproc==0.and.noks_all<2*nycap*nzgrid_eff) &
+        call mpireduce_sum_int(nok, noks_all,comm=MPI_COMM_YZPLANE)    ! sum up number of claimed cap points (both caps) over all Yang procs.
+        call mpireduce_sum_int(n_interproc_gaps, n_interproc_gaps_all,comm=MPI_COMM_YZPLANE) ! sum up number of claimed points in interprocessor gaps over Yang grid.
+!if (iproc==0) print*, 'CAP: iproc_world,noks_all,n_interproc_gaps_all,npoints_tot=', iproc_world, noks_all, n_interproc_gaps_all, 2*nycap*nzgrid_eff
+        if (iproc==0.and.noks_all-n_interproc_gaps_all/4<2*nycap*nzgrid_eff) &
           call warning('initialize_zaver_yy',  &
-                       'only'//itoa(noks_all)//' points in polar caps claimed by Yang procs (goal:' &          
-                       //itoa(2*nycap*nzgrid_eff)//')')
+                       'only '//trim(itoa(noks_all))//' points in polar caps claimed by Yang procs (goal: ' &
+                       //trim(itoa(2*nycap*nzgrid_eff))//')',ncpus)  ! ncpus is the global rank of the Yang grid root processor
 
         nycap_=nycap
 
