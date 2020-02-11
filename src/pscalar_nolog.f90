@@ -47,7 +47,7 @@ module Pscalar
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='nothing', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
-  integer :: ll_sh=0, mm_sh=0, n_xprof=0
+  integer :: ll_sh=-1, mm_sh=-1, n_xprof=0
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
@@ -82,7 +82,7 @@ module Pscalar
       lpscalar_diff_simple, &
       lpscalar_per_unitvolume, lpscalar_per_unitvolume_diff, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
-      om_gradC, lgradC_profile, lnotpassive, lupw_cc, lremove_mean
+      om_gradC, lgradC_profile, lnotpassive, lupw_cc, lremove_mean, ll_sh, mm_sh
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -104,9 +104,11 @@ module Pscalar
   integer :: idiag_ccmxy=0, idiag_ccmxz=0
   integer :: idiag_cluz_uzlcm=0, idiag_gcguzm=0
 !
+  real, dimension(:,:), allocatable :: spharm 
+
   contains
 !***********************************************************************
-    subroutine register_pscalar()
+    subroutine register_pscalar
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: icc; increase nvar accordingly
@@ -134,8 +136,17 @@ module Pscalar
 !
 !  24-nov-02/tony: coded
 !  20-may-03/axel: reinitialize_cc added
+!         17/MR  : added bump for lpscalar_sink defined by spherical harmonics,
+!                  specified by ll_sh, mm_sh >=0.
 !
+      use Sub, only: ylm_other, ylm
+      use General, only: yin2yang_coors
+
       real, dimension (mx,my,mz,mfarray) :: f
+
+      real, dimension(:,:), allocatable :: yz
+      integer :: iyz
+      real :: sphder
 !
 !  Print the number of passive scalars.
 !
@@ -152,6 +163,38 @@ module Pscalar
       if (lroot .and. diffcc_shock /= 0.) print*, 'initialize_pscalar: shock diffusion, diffcc_shock = ', diffcc_shock
 !
       if (lnotpassive) scalaracc=3./5./hoverr**2
+!
+      if (lyinyang) then
+        if (lpscalar_sink.and.Rpscalar_sink/=0) &
+          call warning('initialize_pscalar','passive scalar sink not correctly implemented on Yin-Yang grid') 
+        if (lnotpassive) &
+          call warning('initialize_pscalar','lnotpassive=T not correctly implemented on Yin-Yang grid') 
+        if (lgradC_profile) &
+          call warning('initialize_pscalar','lgradC_profile=T not correctly implemented on Yin-Yang grid') 
+      endif
+
+      if (lpscalar_sink.and.pscalar_sink/=0..and.ll_sh>=0.and.mm_sh>=0) then
+
+          allocate(spharm(ny,nz))
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+                spharm(m-m1+1,n-n1+1)=ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh,sphder)
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                spharm(m-m1+1,n-n1+1)=ylm(ll_sh,mm_sh,sphder)
+              enddo
+            enddo
+          endif
+ 
+      endif
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -246,7 +289,7 @@ module Pscalar
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case('spher-harm')
           if (.not.lspherical_coords) call fatal_error("init_lncc", &
-              "spher-harm only meaningful for spherical coordinates"//trim(initcc))
+              'initial condition "spher-harm" only meaningful for spherical coordinates'//trim(initcc))
           !tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1)) + (xyz1(1) - 0.5*xyz0(1))*x(l1:l2)         ! S(r)
           tmpx=sin((2.*pi/(Lxyz(1))*n_xprof)*(x(l1:l2)-xyz0(1)))
 
@@ -292,7 +335,7 @@ module Pscalar
 !
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine pencil_criteria_pscalar()
+    subroutine pencil_criteria_pscalar
 !
 !  All pencils that the Pscalar module depends on are specified here.
 !
@@ -486,6 +529,7 @@ module Pscalar
       use Diagnostics
       use Special, only: special_calc_pscalar
       use Sub
+      use General, only: transform_thph_yy,yin2yang_coors
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -502,6 +546,7 @@ module Pscalar
 !
       character(len=2) :: id
       integer :: icc2
+      real, dimension(nx,3) :: tmp
 !
 !  Identify module and boundary conditions.
 !
@@ -542,7 +587,11 @@ module Pscalar
 !
         if (lpscalar_sink) then
           if (Rpscalar_sink==0) then
-            bump=pscalar_sink
+            if (ll_sh/=-1.and.mm_sh/=-1) then
+              bump=pscalar_sink*spharm(m-m1+1,n-n1+1)
+            else
+              bump=pscalar_sink
+            endif
           else
             bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
           endif
@@ -738,6 +787,7 @@ module Pscalar
       endif
 !
 ! AH: notpassive, an angular momentum+gravity workaround
+!
       if (lnotpassive) then
         if (lhydro) then
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc(:,1) &
@@ -928,10 +978,10 @@ module Pscalar
 !  31-jan-11/ccyang: generalized to multiple scalars
 !
       use Slices_methods, only: assign_slices_vec, process_slices, log2d
-
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
-      character(LEN=labellen) :: sname
+      character(LEN=fmtlen) :: sname
 !
 !  Loop over slices.
 !
