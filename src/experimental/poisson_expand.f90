@@ -670,6 +670,16 @@ module Poisson
 !
     endsubroutine inverse_laplacian_fft_z
 !***********************************************************************
+    subroutine inverse_laplacian_z_2nd_neumann(f)
+!
+!  15-may-2006/anders+jeff: dummy
+!
+      real, dimension(:,:,:,:), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine inverse_laplacian_z_2nd_neumann
+!***********************************************************************
     subroutine get_acceleration(acceleration)
 !
       use General, only: keep_compiler_quiet
