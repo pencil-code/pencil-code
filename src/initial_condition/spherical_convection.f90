@@ -34,12 +34,14 @@ module InitialCondition
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
+  logical :: lwrite_hcond_profile=.true.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile
+      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, &
+      lwrite_hcond_profile
 !
   contains
 !***********************************************************************
@@ -306,13 +308,15 @@ module InitialCondition
 !
 !  Write kappa and gkappa to file to be read by run.in
 !
-      if (lroot) then 
-        call safe_character_assign(wfile,'hcond_glhc.dat')
-        open(unit,file=wfile,status='unknown')
-        do ix=1,nxgrid
-          write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
-        enddo
-        close(unit)
+      if (lwrite_hcond_profile) then
+        if (lroot) then 
+          call safe_character_assign(wfile,'hcond_glhc.dat')
+          open(unit,file=wfile,status='unknown')
+          do ix=1,nxgrid
+            write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
+          enddo
+          close(unit)
+        endif
       endif
 !
 !  Write cs2 to a file to be used in cooling
