@@ -674,6 +674,8 @@ module Poisson
 !
 !  15-may-2006/anders+jeff: dummy
 !
+      use General, only: keep_compiler_quiet
+!
       real, dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
