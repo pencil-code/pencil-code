@@ -1595,8 +1595,8 @@ module Magnetic
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
 !
 !  Register va as auxilliary array if asked for also requires
-!  MAUX CONTRIBUTION 1
-!  COMMUNICATED AUXILIARIES 1
+!  ! MAUX CONTRIBUTION 1
+!  ! COMMUNICATED AUXILIARIES 1
 !  in cparam.local
 !
       if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
