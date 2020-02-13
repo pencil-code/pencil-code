@@ -124,7 +124,7 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine output_snap(a,nv,file)
+    subroutine output_snap(a,nv1,nv2,file)
 !
 !  Write snapshot file, always write time and mesh, could add other things.
 !
@@ -137,32 +137,36 @@ module Io
       use General, only: get_range_no, ioptest
 !
       real, dimension (:,:,:,:),  intent(IN) :: a
-      integer,                    intent(IN) :: nv
+      integer,           optional,intent(IN) :: nv1,nv2
       character (len=*), optional,intent(IN) :: file
 !
       real :: t_sp   ! t in single precision for backwards compatibility
+      integer :: na, ne
 !
       t_sp = real (t)
-      if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize
       if (present(file)) then
         call delete_file(trim(directory_snap)//'/'//file)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='new')
       endif
+
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+      if (lroot .and. (ip <= 8)) print *, 'output_snap: nv1,nv2 =', na,ne
 !
       if (lwrite_2d) then
         if (nx == 1) then
-          write (lun_output) a(l1,:,:,:)
+          write (lun_output) a(l1,:,:,na:ne)
         elseif (ny == 1) then
-          write (lun_output) a(:,m1,:,:)
+          write (lun_output) a(:,m1,:,na:ne)
         elseif (nz == 1) then
-          write (lun_output) a(:,:,n1,:)
+          write (lun_output) a(:,:,n1,na:ne)
         else
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
-        write (lun_output) a
+        write (lun_output) a(:,:,:,na:ne)
       endif
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
@@ -541,6 +545,8 @@ module Io
 !                                = MAXT, tstart unspecified: use maximum time of all var.dat 
 !                                                        for start
 !                                > 0, tstart specified: use this value
+!  13-feb-20/MR: added possibility to omit a range of variables when reading the snapshot,
+!                range is defined as [ivar_omi1,ivar_omi2]
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
@@ -557,51 +563,125 @@ module Io
       real(KIND=rkind4), dimension (mz), intent(out) :: z
 
       real :: t_test   ! t in single precision for backwards compatibility
-
       logical :: ltest
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp
+      integer :: len1d
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
 !      if (ip<=8) print *, 'read_snap_single: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
+!
         if (nx == 1) then
-          read (lun_input) a(4,:,:,:)
+          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(nghost+1,:,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
+          else
+            read (lun_input) a(nghost+1,:,:,:)
+          endif
         elseif (ny == 1) then
-          read (lun_input) a(:,4,:,:)
+          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,nghost+1,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
+          else
+            read (lun_input) a(:,nghost+1,:,:)
+          endif
         elseif (nz == 1) then
-          read (lun_input) a(:,:,4,:)
+          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,:,nghost+1,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
+          else
+            read (lun_input) a(:,:,nghost+1,:)
+          endif
         else
           call fatal_error ('read_snap_single', 'lwrite_2d used for 3-D simulation!')
         endif
       else
 !
+        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
+!
 !  Possibility of reading data with different numbers of ghost zones.
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
         if (nghost_read_fewer==0) then
-          read (lun_input) a
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
+          else
+            read (lun_input) a
+          endif
         elseif (nghost_read_fewer>0) then
-          read (lun_input) &
-              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                1+nghost_read_fewer:my-nghost_read_fewer, &
-                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          if (ivar_omit1==1) then
+            read (lun_input) tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
+          elseif (ivar_omit1>1) then
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
+          else
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          endif
 !
 !  The following 3 possibilities allow us to replicate 1-D data input
 !  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
 !
-        elseif (nghost_read_fewer==-1) then
-          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
-          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-        elseif (nghost_read_fewer==-2) then
-          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
-          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-        elseif (nghost_read_fewer==-3) then
-          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
-          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
         else
-          call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
+          len1d=2*nghost+1
+          if (nghost_read_fewer==-1) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(:,1:len1d,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
+                               a(:,1:len1d,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(:,1:len1d,1:len1d,:)
+            endif
+            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+          elseif (nghost_read_fewer==-2) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,:,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
+                               a(1:len1d,:,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,:,1:len1d,:)
+            endif
+            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+          elseif (nghost_read_fewer==-3) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,1:len1d,:,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
+                               a(1:len1d,1:len1d,:, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,1:len1d,:,:)
+            endif
+            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+          else
+            call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
+          endif
         endif
       endif
+      if (ivar_omit1>0) deallocate(tmp)
 
       if (ip <= 8) print *, 'read_snap_single: read ', file
       if (mode == 1) then
@@ -709,47 +789,120 @@ module Io
 
       real :: t_test   ! t in single precision for backwards compatibility
       logical :: ltest
+      integer :: len1d
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
 !      if (ip<=8) print *, 'read_snap_double: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
-          read (lun_input) a(4,:,:,:)
+          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(nghost+1,:,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
+          else
+            read (lun_input) a(nghost+1,:,:,:)
+          endif
         elseif (ny == 1) then
-          read (lun_input) a(:,4,:,:)
+          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,nghost+1,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
+          else
+            read (lun_input) a(:,nghost+1,:,:)
+          endif
         elseif (nz == 1) then
-          read (lun_input) a(:,:,4,:)
+          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,:,nghost+1,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
+          else
+            read (lun_input) a(:,:,nghost+1,:)
+          endif
         else
           call fatal_error ('read_snap_double', 'lwrite_2d used for 3-D simulation!')
         endif
       else
 !
+        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
+!
 !  Possibility of reading data with different numbers of ghost zones.
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
         if (nghost_read_fewer==0) then
-          read (lun_input) a
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
+          else
+            read (lun_input) a
+          endif
         elseif (nghost_read_fewer>0) then
-          read (lun_input) &
-              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                1+nghost_read_fewer:my-nghost_read_fewer, &
-                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          if (ivar_omit1==1) then
+            read (lun_input) tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
+          elseif (ivar_omit1>1) then
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
+          else
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          endif
 !
 !  The following 3 possibilities allow us to replicate 1-D data input
 !  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
 !
-        elseif (nghost_read_fewer==-1) then
-          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
-          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-        elseif (nghost_read_fewer==-2) then
-          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
-          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-        elseif (nghost_read_fewer==-3) then
-          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
-          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
         else
-          call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
+          len1d=2*nghost+1
+          if (nghost_read_fewer==-1) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(:,1:len1d,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
+                               a(:,1:len1d,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(:,1:len1d,1:len1d,:)
+            endif
+            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+          elseif (nghost_read_fewer==-2) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,:,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
+                               a(1:len1d,:,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,:,1:len1d,:)
+            endif
+            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+          elseif (nghost_read_fewer==-3) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,1:len1d,:,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
+                               a(1:len1d,1:len1d,:, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,1:len1d,:,:)
+            endif
+            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+          else
+            call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
+          endif
         endif
       endif
 

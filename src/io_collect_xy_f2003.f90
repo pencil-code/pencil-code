@@ -154,7 +154,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -163,16 +163,17 @@ module Io
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
       use Mpicomm, only: globalize_xy, collect_grid
+      use General, only: ioptest
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer,           optional,intent(IN) :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga = 676
-      integer :: alloc_err
+      integer :: alloc_err,na,ne
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -182,12 +183,15 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+!
       if (lfirst_proc_xy) then
-        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
 !
         ! receive data from the xy-plane of the pz-layer
-        call globalize_xy (a, ga)
+        call globalize_xy (a(:,:,:,na:ne), ga)
 
         open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='stream', form='unformatted')
         write (lun_output) ga
@@ -195,7 +199,7 @@ module Io
 !
       else
         ! send data to root processor
-        call globalize_xy (a)
+        call globalize_xy (a(:,:,:,na:ne))
       endif
 !
       ! write additional data:
@@ -1096,7 +1100,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 1)
+      call output_snap (a, nv2=nv, file=file, mode=1)
       call output_snap_finalize
 !
     endsubroutine output_globals

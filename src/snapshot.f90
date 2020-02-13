@@ -54,7 +54,7 @@ module Snapshot
       character (len=intlen) :: ch
 
       integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, iax, iay, iaz, &
-                 iex, iey, iez, l2s, l2is, m2s, m2is, n2s, n2is
+                 iex, iey, iez, l2s, l2is, m2s, m2is, n2s, n2is, nv1, nv2
       real, dimension(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,mvar_down+maux_down) :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
@@ -74,6 +74,22 @@ module Snapshot
       if (lsnap_down) then
 !
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+!
+!  Set the range for the variable index.
+!  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
+!  That is, two disjoint index ranges needed.
+!
+        if (mvar_down>0) then
+          nv1=1
+          if (mvar_down==mvar) then
+            nv2=mvar+maux_down
+          else
+            nv2=mvar_down
+          endif
+        else
+          nv1=mvar+1; nv2=mvar+maux_down
+        endif
+
         if (maux_down>0) call update_auxiliaries(a)
 !
 !  Number of downsampled data points on local processor in each direction
@@ -98,10 +114,7 @@ module Snapshot
 !
 !  Copy downsampled data from *inner* grid points
 !
-        buffer(iax:iex,iay:iey,iaz:iez,1:mvar_down) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,1:mvar_down) 
-        if (maux_down>0) &
-          buffer(iax:iex,iay:iey,iaz:iez,mvar_down+1:mvar_down+maux_down) &
-          = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,mvar+1:mvar+maux_down) 
+        buffer(iax:iex,iay:iey,iaz:iez,1:nv2-nv1+1) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,nv1:nv2) 
 !
 !  Generate ghost zone data
 !  TBDone: periodic BC
@@ -191,7 +204,7 @@ module Snapshot
         call safe_character_assign(file,'VARd'//ch)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, &
               FORM='unformatted', status='replace')
-        call output_snap(buffer,mvar_down+maux_down)
+        call output_snap(buffer,1,nv2-nv1+1)
         close(lun_output)
 !
 !  Restore grid (including auxiliaries)
@@ -269,9 +282,9 @@ module Snapshot
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
-          call output_snap(a,msnap,file=file)
+          call output_snap(a,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
-          call output_snap_finalize()
+          call output_snap_finalize
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
@@ -290,9 +303,9 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost)) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        call output_snap(a,msnap,file=file)
+        call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)
-        call output_snap_finalize()
+        call output_snap_finalize
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -345,10 +358,10 @@ module Snapshot
 !  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
       if (lread_oldsnap_nomag) then
-        print*,'read old snapshot file (but without magnetic field)'
+        if (lroot) print*,'read old snapshot file (but without magnetic field)'
         call input_snap('var.dat',f,msnap-3,mode)
-        if (lpersist) call input_persistent()
-        call input_snap_finalize()
+        if (lpersist) call input_persistent
+        call input_snap_finalize
         ! shift the rest of the data
         if (iaz<mvar) then
           do ivar=iaz+1,mvar
@@ -360,10 +373,10 @@ module Snapshot
 !  Read data without passive scalar into new run with passive scalar.
 !
       elseif (lread_oldsnap_nopscalar) then
-        print*,'read old snapshot file (but without passive scalar)'
+        if (lroot) print*,'read old snapshot file (but without passive scalar)'
         call input_snap(chsnap,f,msnap-1,mode)
-        if (lpersist) call input_persistent()
-        call input_snap_finalize()
+        if (lpersist) call input_persistent
+        call input_snap_finalize
         ! shift the rest of the data
 !
 !      If we are using the pscalar_nolog module then ilncc is zero 
@@ -381,11 +394,12 @@ module Snapshot
 !  Read data without testfield into new run with testfield.
 !
       elseif (lread_oldsnap_notestfield) then
-        print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
+        if (lroot) print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=', &
+                          iaatest,iaztestpq,mvar,msnap
         print*,'read old snapshot file (but without testfield),ntestfield=',ntestfield
         call input_snap(chsnap,f,msnap-ntestfield,mode)
-        if (lpersist) call input_persistent()
-        call input_snap_finalize()
+        if (lpersist) call input_persistent
+        call input_snap_finalize
         ! shift the rest of the data
         if (iaztestpq<msnap) then
           do ivar=iaztestpq+1,msnap
@@ -397,10 +411,10 @@ module Snapshot
 !  Read data without testscalar into new run with testscalar.
 !
       elseif (lread_oldsnap_notestscalar) then
-        print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
+        if (lroot) print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
         call input_snap(chsnap,f,msnap-ntestscalar,mode)
-        if (lpersist) call input_persistent()
-        call input_snap_finalize()
+        if (lpersist) call input_persistent
+        call input_snap_finalize
         ! shift the rest of the data
         if (iaztestpq<msnap) then
           do ivar=iaztestpq+1,msnap
@@ -414,7 +428,7 @@ module Snapshot
       else
         call input_snap(chsnap,f,msnap,mode)
         if (lpersist) call input_persistent(chsnap)
-        call input_snap_finalize()
+        call input_snap_finalize
       endif
 !
 !  Read data using lnrho, and now convert to rho.
@@ -525,7 +539,9 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
       if (lspec.or.llwrite_only) then
+
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
+
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')

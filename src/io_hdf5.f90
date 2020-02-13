@@ -189,7 +189,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode, ltruncate, label)
+    subroutine output_snap(a, nv1, nv2, file, mode, ltruncate, label)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
@@ -197,16 +197,17 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !  28-Oct-2016/PABourdin: redesigned
 !
+      use General, only: ioptest
       use File_io, only: parallel_file_exists
 !
-      integer, intent(in) :: nv
+      integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      integer :: pos
+      integer :: pos,na,ne
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
 !
@@ -228,25 +229,28 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+!
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
       if ((dataset == 'f') .or. (dataset == 'timeavg')) then
         call create_group_hdf5 ('data')
         ! write components of f-array
-        do pos=1, nv
+        do pos=na,ne
           if (index_get(pos) == '') cycle
           call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
         enddo
       elseif (dataset == 'globals') then
         call create_group_hdf5 ('data')
         ! write components of global array
-        do pos=1, nv
+        do pos=na,ne
           if (index_get(mvar_io + pos) == '') cycle
           call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo
       else
         ! write other type of data array
-        call output_hdf5 (dataset, a, nv)
+        call output_hdf5 (dataset, a(:,:,:,na:ne), ne-na+1)
       endif
       call file_close_hdf5
 !

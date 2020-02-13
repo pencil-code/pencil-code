@@ -360,12 +360,22 @@ program run
     mvar_io=mvar
   endif
 !
-!  set slots to be written in downsampled f if 0 use mvar_io
+!  set slots to be written in downsampled f, if not specified by input, use mvar_io
 !
   if (ldownsampl) then
-    if (mvar_down<0) mvar_down=mvar
-    if (maux_down<0) maux_down=maux
+    if (mvar_down<0) then
+      mvar_down=mvar
+    else
+      mvar_down=min(mvar,mvar_down)
+    endif  
+    if (maux_down<0) then
+      maux_down=maux
+    else
+      maux_down=min(maux,maux_down)
+    endif
     if (mvar_down+maux_down==0) ldownsampl=.false.
+    if (mvar_down<mvar.and.maux_down>0) &
+      call warning('run','mvar_down<mvar, so no downsampled auxiliaries are output')
   endif
 !
 ! Shall we read also auxiliary variables or fewer variables (ex: turbulence

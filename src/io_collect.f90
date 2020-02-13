@@ -196,7 +196,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -204,9 +204,10 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use Mpicomm, only: globalize_xy, collect_grid
+      use General, only: ioptest
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer,           optional,intent(IN) :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
@@ -214,7 +215,7 @@ module Io
       real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=676
-      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size
+      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size, na, ne
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
@@ -222,8 +223,11 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+!
       if (lroot) then
-        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
         if (lwrite_2d) then
           allocate (buffer1D(mxgrid), stat=alloc_err)
         else
@@ -246,9 +250,9 @@ module Io
           if (pz == 0) z_start = 1
           if (pz == nprocz-1) z_end = mz
           ! receive data from the xy-plane of the pz-layer
-          call globalize_xy (a(:,:,z_start:z_end,:), ga(:,:,z_start:z_end,:), source_pz=pz)
+          call globalize_xy (a(:,:,z_start:z_end,na:ne), ga(:,:,z_start:z_end,:), source_pz=pz)
           ! iterate through variables
-          do pa = 1, nv
+          do pa = 1, ne-na+1
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
               if (lwrite_2d) then
@@ -273,7 +277,7 @@ module Io
         if (ipz == 0) z_start = 1
         if (ipz == nprocz-1) z_end = mz
         ! send data to root processor
-        call globalize_xy (a(:,:,z_start:z_end,:), dest_proc=-ipz*nprocxy)
+        call globalize_xy (a(:,:,z_start:z_end,na:ne), dest_proc=-ipz*nprocxy)
       endif
 !
       ! write additional data:
@@ -1292,7 +1296,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals

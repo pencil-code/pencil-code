@@ -317,28 +317,33 @@ module Io
 !
     endsubroutine check_success
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
 !  10-Feb-2012/PABourdin: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
+      use General, only: ioptest
       use Mpicomm, only: globalize_xy, collect_grid, mpi_precision
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer, optional, intent(in) :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: handle, alloc_err
+      integer :: handle, alloc_err, na, ne, nv
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_mpi2')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
+!
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+      nv=ne-na+1
 !
       local_size(io_dims) = nv
       global_size(io_dims) = nv
@@ -368,12 +373,12 @@ module Io
 !
       if (lwrite_2D) then
         if (ny == 1) then
-          call MPI_FILE_WRITE_ALL (handle, a(:,m1,:,:), 1, local_type, status, mpi_err)
+          call MPI_FILE_WRITE_ALL (handle, a(:,m1,:,na:ne), 1, local_type, status, mpi_err)
         else
-          call MPI_FILE_WRITE_ALL (handle, a(:,:,n1,:), 1, local_type, status, mpi_err)
+          call MPI_FILE_WRITE_ALL (handle, a(:,:,n1,na:ne), 1, local_type, status, mpi_err)
         endif
       else
-        call MPI_FILE_WRITE_ALL (handle, a, 1, local_type, status, mpi_err)
+        call MPI_FILE_WRITE_ALL (handle, a(:,:,:,na:ne), 1, local_type, status, mpi_err)
       endif
       call check_success ('output', 'write', file)
 !
@@ -1313,7 +1318,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals

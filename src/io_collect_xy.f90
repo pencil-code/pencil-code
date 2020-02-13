@@ -195,7 +195,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -203,9 +203,10 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !   6-mar-2015/MR: changed direct access writing to sequential
 !
+      use General, only: ioptest
       use Mpicomm, only: globalize_xy, collect_grid
 !
-      integer, intent(in) :: nv
+      integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
@@ -213,7 +214,7 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
-      integer :: alloc_err,rec_len,io_len
+      integer :: alloc_err,rec_len,io_len,na,ne
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -223,16 +224,19 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+
       if (lfirst_proc_xy) then
-        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
 !
         ! receive data from the xy-plane of the pz-layer
-        call globalize_xy (a, ga)
+        call globalize_xy (a(:,:,:,na:ne), ga)
 
         if (ldirect_access) then
           inquire (IOLENGTH=io_len) t_sp
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
+          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * (ne-na+1) * io_len
           open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=rec_len)
           write(lun_output, rec=1) ga
           if (lwrite_add) then
@@ -1217,7 +1221,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals
