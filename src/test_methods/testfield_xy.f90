@@ -220,7 +220,7 @@ module Testfield
       logical :: need_output
 !
 !  In this routine we will reset headtt after the first pencil,
-!  so we need to reset it afterwards.
+!  so we need to restore it afterwards.
 !
       headtt_save=headtt
       fac=1./nzgrid
@@ -322,9 +322,9 @@ module Testfield
 !     hence the following mapping by idiags_map, where a negative sign indicates that the sign of the coefficient must
 !     be inverted:
 !
-!     running index   1   2   3     4    5    6   7     8   9   10   11   12   13  14   15   16   17  18
+!     running index   1   2   3     4    5    6     7    8   9    10   11   12    13  14   15   16   17  18
 !
-      idiags_map = (/ 1,  3, -2,    7,   9,  -8, -4,   -6,  5,  10,  12, -11,  16, 18, -17, -13, -15, 14, &
+      idiags_map = (/ 1,  3, -2,    7,   9,  -8,   -4,  -6,  5,   10,  12, -11,   16, 18, -17, -13, -15, 14, &
 !
 !     running index  19   20   21   22  23   24   25   26  27
 !
@@ -332,6 +332,7 @@ module Testfield
                      19,  21, -20,  25, 27, -26, -22, -24, 23 /)      !tb checked
 !
       tmp=uxbtestm(:,:,(/1,3,2/),:); tmp(:,:,2,:)=-tmp(:,:,2,:)
+!      tmp=uxbtestm(:,:,(/1,3,2/),:); tmp(:,:,3,:)=-tmp(:,:,3,:)
 
       call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
@@ -345,12 +346,10 @@ module Testfield
       if (ldiagnos .and. needed2d(1)) then
         where(idiags(1:idiag_base_end)/=0) fname(idiags(1:idiag_base_end)) =  sign(1.,float(idiags_map)) &
                                                                              *fname(idiags(1:idiag_base_end))
-        if (lroot) then
-          do i=1,nprocz; do j=1,nz
-            where(idiags_x(1:idiag_base_end)/=0) &
-              fnamex(j,i,idiags_x(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamex(j,i,idiags_x(1:idiag_base_end))
-          enddo; enddo
-        endif
+        do i=1,nprocz; do j=1,nz
+          where(idiags_x(1:idiag_base_end)/=0) &
+            fnamex(j,i,idiags_x(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamex(j,i,idiags_x(1:idiag_base_end))
+        enddo; enddo
       endif
       
       if (l2davgfirst .and. needed2d(2)) then
