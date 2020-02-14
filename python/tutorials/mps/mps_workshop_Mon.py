@@ -65,8 +65,7 @@ dir1,dir2
 import matplotlib.pyplot as plt
 get_ipython().run_line_magic('ls', '')
 ts = pc.read.ts()
-pars=pc.read.param(quiet=True)
-parr = pc.read.param(quiet=True,param2=True)
+par=pc.read.param(quiet=True)
 print(ts.__dict__.keys())
 plt.plot(ts.t,ts.brms)
 #if plot does not display try:
@@ -94,7 +93,7 @@ plt.figure()
 # various option for subplot or subplots permit combining plots
 fig, ax = plt.subplots(2, sharex=True)
 ax[0].plot(ts.urms)
-ax[1].plot(ts.brms*pars.unit_magnetic*1e6)
+ax[1].plot(ts.brms*par.unit_magnetic*1e6)
 ax[0].set_ylabel(r'$u$ [kms]')
 ax[1].set_ylabel(r'$b$ [$\mu$G]')
 ax[1].set_xlabel(r'$t$ [kpc]')
