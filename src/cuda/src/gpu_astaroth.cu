@@ -52,6 +52,8 @@ float *halo;
 float *d_halo;
 float *output;
 
+static float *uu_x, *uu_y, *uu_z, *lnrho;
+
 #include "dfdf.cuh"
 
 //Device pointer for partial results of the reductions.
@@ -202,15 +204,27 @@ void load_dconsts()
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DXDZ_DIV, &diffmn_dxdz, sizeof(float)) );
 }
 /***********************************************************************************************/
+extern "C" void initGPU(){
+
+        int device;
+        cudaGetDevice(&device);
+        //cudaSetDevice(device); //Not yet enabled
+
+        //Ensure that we're using a clean device
+        cudaDeviceReset();
+}
+/***********************************************************************************************/
+extern "C" void registerGPU(float* f){ 
+	
+	uu_x=f;
+	uu_y=f+mw;
+	uu_z=f+2*mw;
+	lnrho=f+3*mw;
+}
+/***********************************************************************************************/
 extern "C" void initializeGPU(){ 
 
-	int device;
-	cudaGetDevice(&device);
-	//cudaSetDevice(device); //Not yet enabled
-
-	//Ensure that we're using a clean device
-	cudaDeviceReset();
-
+printf("mx,my,mz,nx,ny,nz,nghost= %d %d %d %d %d %d %d \n", mx,my,mz,nx,ny,nz,nghost);
 /*if (iproc==0){
 printf("mx,my,mz,nx,ny,nz,nghost= %d %d %d %d %d %d %d \n", mx,my,mz,nx,ny,nz,nghost);
 printf("nxgrid,nygrid,nzgrid= %d %d %d \n", nxgrid,nygrid,nzgrid);
@@ -286,7 +300,6 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
         printf("idiag_uymax= %d \n", idiag_uymax);
         printf("idiag_uzmax= %d \n", idiag_uzmax);
 	}*/
-
 	// Load constants into device memory.
 	load_dconsts();
 
@@ -308,24 +321,23 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 /***********************************************************************************************/
 float max_advec()
 {
-        float uxmax, uymax, uzmax=0, maxadvec_;
+        float uxmax, uymax, uzmax, maxadvec_;
         get_maxscal_from_device(uxmax,d_uu_x);
         get_maxscal_from_device(uymax,d_uu_y);
-        //get_maxscal_from_device(uzmax,d_uu_z);
+        get_maxscal_from_device(uzmax,d_uu_z);
 //printf("UYMAX= %f \n", uymax);
-//return;
         if (lmaximal_cdt) {
                 maxadvec_=max(abs(uxmax)/dx,max(abs(uymax)/dy,abs(uzmax)/dz));
                 /*advec_uu[ix]=max(abs(p%uu(:,1))*dline_1[0][ix],
-                                         abs(p%uu(:,2))*dline_1[1][ix],
-                                         abs(p%uu(:,3))*dline_1[2][ix]);*/
+                                   abs(p%uu(:,2))*dline_1[1][ix],
+                                   abs(p%uu(:,3))*dline_1[2][ix]);*/
         }
         else
         {
                 maxadvec_=(abs(uxmax)/dx+abs(uymax)/dy+abs(uzmax)/dz);
                 /*advec_uu[ix]=abs(p%uu(:,1))*dline_1[0][ix]+
-                         abs(p%uu(:,2))*dline_1[1][ix]+
-                         abs(p%uu(:,3))*dline_1[2][ix]; */
+                               abs(p%uu(:,2))*dline_1[1][ix]+
+                               abs(p%uu(:,3))*dline_1[2][ix]; */
         }
 //printf("maxadvec_= %f \n", maxadvec_);
         return maxadvec_;
@@ -333,12 +345,12 @@ float max_advec()
 /***********************************************************************************************/
 float max_diffus()
 {
-        float maxdiffus_;
+        float maxdiffus_=0.;
         for (int i=0;i<nx;i++) maxdiffus_=max(maxdiffus_,nu*dxyz_2[i]);
         return maxdiffus_;
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full=false){
+extern "C" void substepGPU(int isubstep, bool full=false){
 
 //int offset=mx*my*nghost + mx*nghost + nghost;     // index of first element in comp domain
 /*if (iproc==0) {
@@ -418,8 +430,8 @@ printf("\n");*/
   for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
   printf("\n");
 */
-/*int offset=mx*my*nghost + mx*nghost + nghost;
 float lnrhoslice[nx];
+/*int offset=mx*my*nghost + mx*nghost + nghost;
 cudaMemcpy(&lnrhoslice,d_lnrho+offset,nx*sizeof(float),cudaMemcpyDeviceToHost);
 for (int ii=0; ii<nx; ii++) printf(" %f", lnrhoslice[ii]);
 printf("\n");*/
@@ -450,7 +462,23 @@ cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
                 set_dt(dt1_);
         }
         checkErr(cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)));
-
+int ii,jj,kk,offset;
+float v0;
+printf("vor substep %d \n", isubstep);
+if (isubstep==-1) {
+for (ii=3; ii<nx+3; ii++)
+  for (jj=3; jj<ny+3; jj++){
+    offset=ii + jj*mx;
+    for (kk=0; kk<mz; kk++)
+    {
+      //cudaMemcpy(&(lnrhoslice[kk]),d_lnrho+offset,sizeof(float),cudaMemcpyDeviceToHost);
+      cudaMemcpy(&(lnrhoslice[kk]),d_uu_x+offset,sizeof(float),cudaMemcpyDeviceToHost);
+      offset+=mx*my;
+      if (kk==0){v0=lnrhoslice[kk];}
+      if (lnrhoslice[kk]!=v0 && kk<13) printf("ii,jj,kk= %d, %d, %d %15.8e\n", ii, jj, kk, lnrhoslice[kk]-v0);
+    }
+  }
+}
         printf("Calling rungekutta2N_cuda\n");
 	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
                           d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
@@ -461,6 +489,23 @@ cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
 	swap_ptrs(&d_uu_y, &d_uu_y_dest);
 	swap_ptrs(&d_uu_z, &d_uu_z_dest);
 
+printf("nach substep %d \n", isubstep);
+//if (isubstep==1) {
+for (ii=3; ii<nx+3; ii++) 
+  for (jj=3; jj<ny+3; jj++){
+    offset=ii + jj*mx;
+    for (kk=0; kk<mz; kk++)
+    { 
+      //cudaMemcpy(&(lnrhoslice[kk]),d_lnrho+offset,sizeof(float),cudaMemcpyDeviceToHost);
+      cudaMemcpy(&(lnrhoslice[kk]),d_uu_y+offset,sizeof(float),cudaMemcpyDeviceToHost);
+      offset+=mx*my;
+      if (kk>=3&&kk<13){
+      if (kk==3){v0=lnrhoslice[kk];}
+      if (lnrhoslice[kk]!=v0) printf("ii,jj,kk= %d, %d, %d %15.8e\n", ii, jj, kk, lnrhoslice[kk]-v0);
+      }
+    }
+  }
+//}
 /*if (iproc==0) {
 cudaMemcpy(&val1, (void *) (d_uu_x+offset), sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val2, (void *) (d_uu_x+offset+1), sizeof(float), cudaMemcpyDeviceToHost);
@@ -499,6 +544,22 @@ printf("\n");*/
        		copyInnerHalos(uu_y, d_uu_y);
        		copyInnerHalos(uu_z, d_uu_z);
 	}
+printf("nach backtransfer, substep %d \n", isubstep);
+if (isubstep==1) {
+for (ii=3; ii<nx+3; ii++)
+  for (jj=3; jj<ny+3; jj++){
+    offset=ii + jj*mx;
+    for (kk=0; kk<mz; kk++)
+    {
+      lnrhoslice[kk]=*(uu_y+offset);
+      offset+=mx*my;
+      if (kk>=3&&kk<13){
+      if (kk==3){v0=lnrhoslice[kk];}
+      if (lnrhoslice[kk]!=v0) printf("ii,jj,kk= %d, %d, %d %15.8e\n", ii, jj, kk, lnrhoslice[kk]-v0);
+      }
+    }
+  }
+}
 
         if (ldiagnos) timeseries_diagnostics_cuda(it, dt, t);
 }
