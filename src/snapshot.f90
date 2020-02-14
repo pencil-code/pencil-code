@@ -579,6 +579,7 @@ module Snapshot
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
         if (lr_spec)  call powerscl(f,'lr')
+        if (np_spec)  call powerscl(f,'np')
         if (TT_spec)  call powerscl(f,'TT')
         if (ss_spec)  call powerscl(f,'ss')
         if (cc_spec)  call powerscl(f,'cc')

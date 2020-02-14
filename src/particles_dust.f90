@@ -344,6 +344,7 @@ module Particles
       use Particles_caustics, only: register_particles_caustics
       use Particles_tetrad, only: register_particles_tetrad
       use Particles_potential, only: register_particles_potential
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
@@ -364,6 +365,7 @@ module Particles
 !
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp, &
           communicated = lcommunicate_np)
+      call put_shared_variable('inp', inp, caller='register_particles')
       if (lpeh_radius) then
         lnocalc_rhop = .false.
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
