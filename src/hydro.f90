@@ -672,7 +672,7 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
-  real, dimension(nx) :: Fmax,advec_uu
+  real, dimension(nx) :: Fmax,advec_uu=0.
 !
   contains
 !***********************************************************************
