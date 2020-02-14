@@ -244,11 +244,7 @@ class DataCube(object):
                 if param.lshear:
                     deltay = tmp['persist/shear_delta_y'][(0)]
         else:
-            try:
-                run2D = param.lwrite_2d
-            except:
-                param2 = read.param(datadir=datadir, param2=True, quiet=quiet)
-                run2D = param2.lwrite_2d
+            run2D = param.lwrite_2d
 
             if dim.precision == 'D':
                 precision = 'd'

@@ -245,7 +245,7 @@ class Tracers(object):
             var = read.var(var_file=varfile, datadir=datadir, magic=magic,
                            quiet=True, trimall=True)
             grid = read.grid(datadir=datadir, quiet=True, trim=True)
-            param2 = read.param(datadir=datadir, param2=True, quiet=True)
+            param2 = read.param(datadir=datadir, quiet=True)
             self.t[t_idx] = var.t
 
             # Extract the requested vector trace_field.

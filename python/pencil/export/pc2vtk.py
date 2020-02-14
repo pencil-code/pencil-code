@@ -121,7 +121,7 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
 
         grid = read.grid(datadir=datadir, proc=proc, trim=trimall, quiet=True)
 
-        params = read.param(param2=True, quiet=True)
+        params = read.param(quiet=True)
 
         # Add external magnetic field.
         if (b_ext == True):
@@ -234,7 +234,7 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
     dim = read.dim(datadir=datadir, proc=proc)
 
     # Read the user given parameters for the slice positions.
-    params = read.param(param2=True, quiet=True)
+    params = read.param(quiet=True)
 
     # Read the slice file for all specified variables and extensions.
     slices = read.slices(field=field, extension=extension, datadir=datadir, proc=proc)

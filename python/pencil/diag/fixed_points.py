@@ -429,7 +429,7 @@ class FixedPoint(object):
         self.t[0] = var.t
         grid = read.grid(datadir=datadir, quiet=True, trim=True)
         field = getattr(var, trace_field)
-        param2 = read.param(datadir=datadir, param2=True, quiet=True)
+        param2 = read.param(datadir=datadir, quiet=True)
         if any(np.array(int_q) == 'ee'):
             ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
 
