@@ -87,7 +87,7 @@ endif
 
 if ( $mpi && ($lyinyang == T) ) then
   @ ncpus = 2 * $ncpus
-  echo "Yin-Yang grid run."
+  echo "YIN-YANG GRID RUN"
 endif
 echo "$ncpus CPUs"
 
