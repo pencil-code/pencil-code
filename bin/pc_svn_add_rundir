@@ -1,6 +1,6 @@
 #!/bin/csh
 # CVS: $Id$
-
+#
 # Name:   svn-add-rundir
 # Author: joishi (joishi@amnh.org) (modified from W. Dobler's cvs-add-rundir)
 # Date:   23-may-2006
@@ -9,7 +9,8 @@
 #   directory above (`..') is already under SVN.
 # Usage:
 #   [create new run directory; pc_setupsrc; mkinpars; tune parameters]
-#   newrundir>  cvs-add-rundir
+#   newrundir>  svn-add-rundir
+#
 set rundir = `pwd`
 set commit = 0
 set extended = 0
