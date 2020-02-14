@@ -3148,7 +3148,6 @@ module Hydro
       call timing('calc_0d_diagnostics_hydro','before ldiagnos',mnloop=.true.)
 
       if (ldiagnos) then
-        if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
@@ -3563,11 +3562,11 @@ module Hydro
         if (idiag_ffdownmz/=0 .or. idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. &
           idiag_uz2upmz/=0 .or. idiag_fkinzupmz/=0) then
           where (p%uu(:,3) < 0.)
-            uus = p%uu(:,3)
+            uus = 1.
           elsewhere
             uus=0.
           endwhere
-          if (idiag_ffdownmz/=0) call xysum_mn_name_z(-uus/abs(p%uu(:,3)),idiag_ffdownmz)
+          if (idiag_ffdownmz/=0) call xysum_mn_name_z(uus,idiag_ffdownmz)
           call xysum_mn_name_z(uus,idiag_uzdownmz)
           if (idiag_ruzdownmz/=0) call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
           if (idiag_uz2downmz/=0) call xysum_mn_name_z(uus**2,idiag_uz2downmz)
