@@ -5506,16 +5506,16 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
         if (ch=='*') then
           datapos=scan(str(i+1:),'TtFf')
           read(str(i+1:i+datapos-1),*) mult
-          lvec(j+1:j+mult) = str(datapos:datapos)=='T' .or. str(datapos:datapos)=='t'
+          i=i+datapos
+          lvec(j+1:j+mult) = str(i:i)=='T' .or. str(i:i)=='t'
           j=j+mult
-          i=datapos
         elseif (ch=='T'.or.ch=='t') then
           j=j+1
           lvec(j)=.true.
         elseif (ch=='F'.or.ch=='f') then
           j=j+1
           lvec(j)=.false.
-        else !invalid
+        else !comma or blank
         endif
         i=i+1
         if (i>len(str)) exit 
@@ -5564,7 +5564,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       inquire(file='tmp',exist=lfound)
       if (lfound) then
         open(1,file='tmp')
-        read(1,*,err=1,end=1) res
+        read(1,'(a)',err=1,end=1) res
         goto 2
 1       lfound=.false.
 2       close(1,status='delete')
