@@ -29,6 +29,7 @@ FFLAGS_GENERAL=
 # Default double flags (can be overwritten in machine-specific section).
 #
 FFLAGS_DOUBLE = -r8
+#FFLAGS_DOUBLE = -fdefault-real-8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 
 ## Overwrite settings that are local to each run directory
