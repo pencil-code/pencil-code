@@ -28,7 +28,7 @@ module Cparam
 !
   integer, parameter :: penc_name_len=16
 !
-  include '../src/cparam_pencils.inc'
+  include 'cparam_pencils.inc'
 !
 !  Derived and fixed parameters.
 !
