@@ -372,6 +372,8 @@ module Particles
       endif
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated = lparticles_sink .or. lcommunicate_rhop)
+      !if necessary:
+      !call put_shared_variable('irhop', irhop, caller='register_particles')
       if (lcalc_uup .or. ldragforce_stiff) then
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx = iuup

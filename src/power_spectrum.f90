@@ -2143,7 +2143,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     use Sub, only: curli, grad
     use SharedVariables, only: get_shared_variable
 !
-  integer, pointer :: inp
+  integer, pointer :: inp, irhop
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
@@ -2193,6 +2193,9 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   elseif (sp=='np') then
     call get_shared_variable('inp', inp, caller='powerscl')
     a_re=f(l1:l2,m1:m2,n1:n2,inp)
+  elseif (sp=='rp') then
+    call get_shared_variable('irhop', irhop, caller='powerscl')
+    a_re=f(l1:l2,m1:m2,n1:n2,irhop)
   elseif (sp=='TT') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
   elseif (sp=='ss') then
