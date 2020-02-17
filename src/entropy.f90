@@ -3367,23 +3367,27 @@ module Energy
 
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
-
-        if (idiag_dtchi/=0) &
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)    !!diffus_chi
-        if (idiag_dtH/=0) then
-          if (lthdiff_Hmax) then
-            call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)       !!ss0
-          else
-            call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)       !!Hmax
+        
+        if (.not.lgpu) then
+          if (idiag_dtchi/=0) &
+              call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+          if (idiag_dtH/=0) then
+            if (lthdiff_Hmax) then
+              call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)
+            else
+              call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+            endif
           endif
-        endif
-        if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)        !!Hmax
-        if (idiag_tauhmin/=0) then
-          if (lthdiff_Hmax) then
-            call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.) !!ss0
-          else
-            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.) !!Hmax
+          if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
+          if (idiag_tauhmin/=0) then
+            if (lthdiff_Hmax) then
+              call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.)
+            else
+              call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
+            endif
           endif
+          if (idiag_dtc/=0) &
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
         if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
@@ -3397,8 +3401,6 @@ module Energy
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
         call max_mn_name(p%yH,idiag_yHmax)
         call sum_mn_name(p%yH,idiag_yHm)
-        if (idiag_dtc/=0) &
-            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.) !!advec_cs2
         if (idiag_ethm/=0)   call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
