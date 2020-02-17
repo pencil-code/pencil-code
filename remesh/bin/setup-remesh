@@ -101,7 +101,7 @@ end
 #
 #  LINK the necessarry files from local remesh directory
 #
-foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/scripts)
+foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/syscalls.f90 $srcdir/syscalls_ansi.c $srcdir/general.f90 $srcdir/general.h $srcdir/headers_c.h $srcdir/scripts)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .
