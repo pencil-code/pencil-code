@@ -766,8 +766,7 @@ module Particles_drag
 !
       gasmass: if (gz_par_coeff > 0.0) then
 !       For stratified gas
-        if (gamma /= 1.0) call fatal_error('find_mp_swarm', 'polytropic gas is not considered. ')
-        mass = sqrt(twopi) * (cs0 / Omega) * product(lxyz(1:2), lactive_dimension(1:2))
+        mass = sqrt(twopi / gamma) * (cs0 / Omega) * product(lxyz(1:2), lactive_dimension(1:2))
       else gasmass
 !       For uniform gas
         mass = product(lxyz, lactive_dimension)
