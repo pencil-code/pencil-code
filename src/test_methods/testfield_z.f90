@@ -291,7 +291,7 @@ module Testfield
       if (lrun) then
         select case (itestfield)
         case ('Beltrami'); iE0=1
-        case ('B11-B22_lin'); iE0=0; ltestfield_linear=.true.
+        case ('B11-B22_lin','linear'); iE0=0; ltestfield_linear=.true.
         case ('B11-B21+B=0'); iE0=3
         case ('B11-B22+B=0'); iE0=5
         case ('B11-B21'); iE0=0
@@ -580,7 +580,7 @@ module Testfield
 !
         select case (itestfield)
           case ('Beltrami');    call set_bbtest_Beltrami(B0test,jtest)
-          case ('B11-B22_lin'); call set_bbtest_B11_B22_lin(B0test,jtest)
+          case ('B11-B22_lin','linear'); call set_bbtest_B11_B22_lin(B0test,jtest)
           case ('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
           case ('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
           case ('B11-B21');     call set_bbtest_B11_B21(B0test,jtest)
@@ -1593,7 +1593,7 @@ module Testfield
 !
     endsubroutine set_bbtest_B11_B22
 !***********************************************************************
-    subroutine set_bbtest_B11_B22_lin (B0test,jtest)
+    subroutine set_bbtest_B11_B22_lin(B0test,jtest)
 !
 !  set testfield
 !
