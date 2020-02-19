@@ -143,6 +143,7 @@ class Param(object):
                 class Foo(object):
                     pass
             for par in pars_list:
+                keep_list = []
                 if par in keep_list:
                     key_list = []
                     # Strip out nested objects that will not be required
