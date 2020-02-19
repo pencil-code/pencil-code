@@ -213,7 +213,7 @@ module InitialCondition
               BB_phi = ampl*gg/(R/r_b*tau)*sin(theta)
               f(l,m,n,iax) = BB_r*(x(l)-x_b)/R + BB_theta*(x(l)-x_b)*(z(n)-z_b)/(R2d*R) - BB_phi*(y(m)-y_b)/R2d
               f(l,m,n,iay) = BB_r*(y(m)-y_b)/R + BB_theta*(y(m)-y_b)*(z(n)-z_b)/(R2d*R) + BB_phi*(x(l)-x_b)/R2d
-              f(l,m,n,iaz) = BB_r*(z(n)-z_b)/R - BB_theta*R2d**2/(R2d*R)
+              f(l,m,n,iaz) = BB_r*(z(n)-z_b)/R - BB_theta*R2d/R
 !             R = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
 !             ! check if this point lies in the bubble
 !             if (R .le. r_b) then
