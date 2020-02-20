@@ -80,7 +80,7 @@ module Particles_radius
       ldust_condensation, xi_accretion, ldust_accretion, &
       tstart_condensation_par
 !
-  integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
+  integer :: idiag_apm=0, idiag_ap2m=0, idiag_ap3m=0,idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
   integer :: idiag_ieffp=0
 !
@@ -768,6 +768,10 @@ module Particles_radius
               if (lcondensation_simplified) then
                 if (ldust_accretion) then
                   dapdt = xi_accretion*p%rho(ix)/rho0
+!                  if (ldust_depletion) then
+!                    ap3m
+!                    dapdt = dapdt + xi_accretion*(1.- ap3m)
+!                  endif
                 else
                   dapdt = GS_condensation/fp(k,iap)
                 endif
@@ -921,6 +925,7 @@ module Particles_radius
       if (ldiagnos) then
         if (idiag_apm /= 0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
         if (idiag_ap2m /= 0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+        if (idiag_ap3m /= 0) call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m)
         if (idiag_apmin /= 0) &
             call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
         if (idiag_apmax /= 0) call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
@@ -1002,6 +1007,7 @@ module Particles_radius
       if (lreset) then
         idiag_apm = 0
         idiag_ap2m = 0
+        idiag_ap3m = 0
         idiag_apmin = 0
         idiag_apmax = 0
         idiag_dvp12m = 0
@@ -1017,6 +1023,7 @@ module Particles_radius
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
         call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
+        call parse_name(iname,cname(iname),cform(iname),'ap3m',idiag_ap3m)
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
