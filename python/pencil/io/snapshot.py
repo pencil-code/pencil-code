@@ -502,7 +502,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                     print(key,type(persist[key][0]))
                     sys.stdout.flush()
                 arr = np.empty(nprocs,dtype=type(persist[key][0]))
-                arr[:] = persist[key][()]
+                arr[:] = persist[key][(0)]
                 pers_grp.create_dataset(key, data=(arr))
     ds.close()
 #    return 0
