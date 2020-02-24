@@ -77,6 +77,7 @@ module Hydro
   character (len=labellen) :: kinematic_flow='none'
   real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
+  real :: wind_ampz=0., wind_z=0., wind_radius=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
@@ -96,6 +97,7 @@ module Hydro
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
+      wind_ampz, wind_z, wind_radius, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
       ampl_kinflow, relhel_uukin, chi_uukin, del_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
@@ -1901,12 +1903,18 @@ endif
             exp_kinflow2=.5*exp_kinflow
             pom2=x(l1:l2)**2+y(m)**2
             profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+            if (wind_radius/=0.) then
+              if (headtt) print*,'also add BDMSST93-wind along r'
+              tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
+            else
+              tmp_mn=0.
+            endif
 ! uu
           if (lpenc_loc(i_uu)) then
             local_Omega=ampl_kinflow*profx_kinflow1
-            p%uu(:,1)=-local_Omega*y(m)
-            p%uu(:,2)=+local_Omega*x(l1:l2)
-            p%uu(:,3)=0.
+            p%uu(:,1)=-local_Omega*y(m)    +tmp_mn*x(l1:l2)
+            p%uu(:,2)=+local_Omega*x(l1:l2)+tmp_mn*y(m)
+            p%uu(:,3)=0.                   +tmp_mn*z(n)
           endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
