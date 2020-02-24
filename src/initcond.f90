@@ -5004,7 +5004,8 @@ module Initcond
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
-        f(:,:,:,i1:i2)=0
+        !(should not be overwritten, I'd say/AB)
+        !f(:,:,:,i1:i2)=0
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
       else
 !
@@ -5262,7 +5263,7 @@ module Initcond
             call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
           endif
         enddo !i
-        f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
+        f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
 !
 !  notification
 !

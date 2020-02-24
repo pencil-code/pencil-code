@@ -85,7 +85,8 @@ module Param_IO
       lmodify,modify_filename, dvid, ldivu_perp, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, nfilter, lserial_io, der2_type, &
-      lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
+      lread_oldsnap, lwrite_var_anyway, &
+      lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &

@@ -173,7 +173,8 @@ module Cdata
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lwrite_avg1d_binary = .false.
-  logical :: lread_oldsnap=.false., lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
+  logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
+  logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
   logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.
