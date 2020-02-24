@@ -95,6 +95,7 @@ program start
   use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
+
 !
   implicit none
 !
@@ -171,9 +172,9 @@ program start
 !
   headtt=lroot
 !
-!  Initialize start time.
+!  Initialize start time, unless lread_oldsnap=T
 !
-  t=tstart
+  if (.not.lread_oldsnap) t=tstart
 !
 !  Will we write all slots of f?
 !
@@ -598,7 +599,7 @@ program start
 !  to overwrite an existing var.dat.
 !
   lnoerase = control_file_exists("NOERASE")
-  if (.not.lnowrite .and. .not.lnoerase) then
+  if ( (.not.lnowrite .and. .not.lnoerase) .or. lwrite_var_anyway) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.false.)
