@@ -346,7 +346,8 @@ module Particles
       use Particles_potential, only: register_particles_potential
       use SharedVariables, only: put_shared_variable
 !
-      integer k
+      use General, only: itoa
+      integer k,ind_tmp
       character(len=intlen) :: sdust
 !
       if (lroot) call svn_id( &
