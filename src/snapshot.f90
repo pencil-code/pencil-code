@@ -579,7 +579,13 @@ module Snapshot
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
         if (lr_spec)  call powerscl(f,'lr')
-        if (np_spec)  call powerscl(f,'np')
+        if (np_spec) then
+          call powerscl(f,'np')
+          do ispec=1,ndustrad                         !
+             sdust='['//trim(itoa(ispec-1))//']'      !
+             call powerscl(f,'ap'//sdust)             !
+          enddo                                       !
+        endif
         if (rhop_spec)call powerscl(f,'rp')
         if (TT_spec)  call powerscl(f,'TT')
         if (ss_spec)  call powerscl(f,'ss')

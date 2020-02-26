@@ -370,6 +370,17 @@ module Particles
         lnocalc_rhop = .false.
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
       endif
+
+      !====================
+      ! Loop over grain sizes:
+      do k=1,ndustrad
+        sdust='['//trim(itoa(k-1))//']'
+        if (ndustspec==1) sdust=''
+        call farray_register_auxiliary('ap'//sdust,ind_tmp)
+        iapn(k) = ind_tmp
+      enddo
+      !====================
+
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated = lparticles_sink .or. lcommunicate_rhop)
       call put_shared_variable('irhop', irhop, caller='register_particles')

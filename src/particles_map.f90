@@ -1343,7 +1343,7 @@ module Particles_map
 !
       real, dimension(nx) :: rhop_swarm_mn
       real :: weight0, weight, weight_x, weight_y, weight_z
-      integer :: k, ix0, iy0, iz0, ixx, iyy, izz
+      integer :: ik, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
       logical :: lsink, lmapsink
 !
@@ -1368,6 +1368,137 @@ module Particles_map
           f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
         enddo
       endif
+!
+!  Calculate the number of particles in each grid cell, for each particle size.
+!
+      loop_ap: do ik=1,ndustrad
+        if ( iapn(ik) /=0 ) then
+          f(:,:,:,iapn(ik))=0.0
+          if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!
+            do k=1,npar_loc
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              ixx0=ix0; iyy0=iy0; izz0=iz0
+              ixx1=ix0; iyy1=iy0; izz1=iz0
+              if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+              if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+              if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+              if (nxgrid/=1) ixx1=ixx0+1
+              if (nygrid/=1) iyy1=iyy0+1
+              if (nzgrid/=1) izz1=izz0+1
+!
+              weight0=1.0
+!
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
+                weight=weight0
+                if (nxgrid/=1) then
+                  weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
+                  weight=weight*weight_x
+                endif
+                if (nygrid/=1) then
+                  weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
+                  weight=weight*weight_y
+                endif
+                if (nzgrid/=1) then
+                  weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
+                  weight=weight*weight_z
+                endif
+!
+                f(ixx,iyy,izz,iapn(ik))=f(ixx,iyy,izz,iapn(k)) + weight
+!
+              enddo; enddo; enddo
+            enddo
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+          elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+            do k=1,npar_loc
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              if (nxgrid/=1) then
+                ixx0=ix0-1; ixx1=ix0+1
+              else
+                ixx0=ix0  ; ixx1=ix0
+              endif
+              if (nygrid/=1) then
+                iyy0=iy0-1; iyy1=iy0+1
+              else
+                iyy0=iy0  ; iyy1=iy0
+              endif
+              if (nzgrid/=1) then
+                izz0=iz0-1; izz1=iz0+1
+              else
+                izz0=iz0  ; izz1=iz0
+              endif
+!
+              weight0=1.0
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                  weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                     0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                else
+                  if (nxgrid/=1) &
+                      weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                endif
+                if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                  weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                     0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                else
+                  if (nygrid/=1) &
+                      weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                endif
+                if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                  weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                     0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                else
+                  if (nzgrid/=1) &
+                      weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                endif
+!
+                weight=weight0
+!
+                if (nxgrid/=1) weight=weight*weight_x
+                if (nygrid/=1) weight=weight*weight_y
+                if (nzgrid/=1) weight=weight*weight_z
+!
+                f(ixx,iyy,izz,iapn(ik))=f(ixx,iyy,izz,iapn(ik)) + weight
+!
+              enddo; enddo; enddo
+            enddo
+!
+!  Nearest Grid Point (NGP) method.
+!
+          else
+            if (lparticles_radius.or.lparticles_number) then
+              do k=1,npar_loc
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+!
+                f(ix0,iy0,iz0,iapn(ik))=f(ix0,iy0,iz0,iapn(ik)) + weight0
+!
+              enddo
+            else
+              f(l1:l2,m1:m2,n1:n2,iapn(ik))=f(l1:l2,m1:m2,n1:n2,iapn(ik))
+            endif
+          endif
+!
+!  Fold first ghost zone of f.
+!
+          if (lparticlemesh_cic.or.lparticlemesh_tsc) then 
+            call fold_f(f,iapn(ik),iapn(ik))
+          endif
+        endif
+     enddo loop_ap
 !
 !  Calculate the smooth number of particles in each grid cell. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
