@@ -380,7 +380,7 @@ module Particles
       do k=1,ndustrad
         sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
-        call farray_register_auxiliary('ap'//sdust,ind_tmp)
+        call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
         iapn(k) = ind_tmp
       enddo
       !====================
