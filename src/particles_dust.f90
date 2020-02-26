@@ -346,6 +346,9 @@ module Particles
       use Particles_potential, only: register_particles_potential
       use SharedVariables, only: put_shared_variable
 !
+      integer k
+      character(len=intlen) :: sdust
+!
       if (lroot) call svn_id( &
           "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
