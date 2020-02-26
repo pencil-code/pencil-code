@@ -223,6 +223,8 @@ module Special
 !
 !   where h = eta + Lb, with Lb the function of the botton; either add the bottom function to an eta initial condition 
 !
+!  04-dec-19/wlad+ali: coded
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -251,6 +253,8 @@ module Special
 !    du/dt = -(u.del)u - grad[g(h-Lb)],
 !
 !   where h is the height, and Lb is the bottom function. We use rho=h-LB=eta
+!
+!  04-dec-19/wlad+ali: coded
 !
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
