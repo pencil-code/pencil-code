@@ -18,7 +18,7 @@ Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,    
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
 Philippe Bourdin,     bourdin/mps.mpg.de,            PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, Austrian Academy of Sciences
 Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        axelbrandenburg, Nordita
-Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 746 003 7611,  ,                         iomsn1,      University of Dundee
+Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,                            iomsn1,      University of Glasgow
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529,     +47 9845 2367,            mppiyali,    University of Oslo
 Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, NORDITA
