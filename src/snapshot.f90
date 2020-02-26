@@ -509,6 +509,7 @@ module Snapshot
       use Struct_func, only: structure
 !AXEL use Sub, only: update_snaptime, read_snaptime, curli
       use Sub, only: update_snaptime, curli
+      use General, only: itoa
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
@@ -521,6 +522,7 @@ module Snapshot
 !AXEL real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
+      character(len=intlen) :: sdust
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall
 !
