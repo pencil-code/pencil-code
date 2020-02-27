@@ -405,8 +405,8 @@ endif
 !
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
 !      
+          call mpirecv_real(frgn_setup%extents,6,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
           do j=1,3
-            call mpirecv_real(frgn_setup%extents(:,j),2,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
             if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
               lok=.false. !MR: alleviate to selection
