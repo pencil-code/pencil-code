@@ -52,19 +52,44 @@ module Special
   implicit none
 !
   include '../special.h'
+!
 ! Global arrays
+!
   real :: gravity=1.0
+  real :: fcoriolis=2.0       ! Omega=1
+  real :: gamma_parameter=1.0
+!
+! Different pre-defined forms of the bottom function
+!
   real :: c0=0.,cx1=0.,cx2=0.
   real :: cy1=0.,cy2=0.
   real :: cx1y1=0.,cx1y2=0.,cx2y1=0.
   real :: cx2y2=0.
+!
+! Parameters for the storm model
+!
+  real :: tstorm=1.0,tstorm1
+  real :: tmass_relaxation=1.0,tmass_relaxation1
+!
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: bottom_function
   real, dimension (nx,ny,2) :: gradlb
+  real, dimension (nx,ny) :: gamma_rr2
   logical :: ladvection_bottom=.true.,lcompression_bottom=.true.
+  logical :: lcoriolis_force=.true.
+  logical :: lmass_relaxation=.true.
+  logical :: lgamma_plane=.true.
+  logical :: lcalc_storm=.true.
 !
   namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
-       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2
+       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
+       gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm
+!
+  type InternalPencils
+     real, dimension(nx) :: gr2
+  endtype InternalPencils
+!
+  type (InternalPencils) :: q
 !
 ! Diagnostics
 !
@@ -120,6 +145,13 @@ module Special
              + 2*cx2y2*x(l1:l2)**2*y(m)
       enddo
 !
+      do m=m1,m2
+        gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
+      enddo
+!
+      tstorm1 = 1./tstorm
+      tmass_relaxation1 = 1./tmass_relaxation
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -146,16 +178,14 @@ module Special
 !   14-jul-09/wlad: coded
 !
       use Mpicomm
-      use Gravity, only: potential
-      use EquationOfState, only: gamma,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: pot
-      integer :: i
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+    if (lgamma_plane) q%gr2 = gamma_rr2(:,m-m1+1)
+!
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -191,12 +221,6 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine special_before_boundary(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
       use File_io, only: parallel_unit
@@ -225,6 +249,8 @@ module Special
 !
 !  04-dec-19/wlad+ali: coded
 !
+      use EquationOfState, only: rho0
+!      
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -240,7 +266,15 @@ module Special
       if (lcompression_bottom) then
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - bottom_function(l1:l2,m)*p%divu
       endif
-!      
+!
+!  Storm function as defined in Brueshaber        
+!
+      if (lcalc_storm) call calc_storm(f,df,p)
+!
+      if (lmass_relaxation) then
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-rho0)*tmass_relaxation1
+      endif
+!
     endsubroutine special_calc_density
 !***********************************************************************     
     subroutine special_calc_hydro(f,df,p)
@@ -269,18 +303,18 @@ module Special
       df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - gravity * p%grho(:,i) 
     enddo
 !
-!  Add the bottom term. 
-!   
+!  Add the Coriolis parameter (fcoriolis=2*Omega)
+!
+    if (lcoriolis_force) then 
+      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) + fcoriolis*p%uu(:,2)
+      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - fcoriolis*p%uu(:,1)
+    endif
+!
+    if (lgamma_plane) then
+      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) + q%gr2*p%uu(:,2)
+      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - q%gr2*p%uu(:,1)
+    endif
     
-    !gradLb(1) = 0. !alpha
-    !gradLb(2) = 0.
-    !gradLb(3) = 0. 
-!
-    !do i=1,3
-    !  ju = i+iuu-1
-    !  df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) + gravity * gradLb(i)
-    !enddo
-!
     if (lfirst.and.ldt) then 
       advec_cg2 = (gravity*(p%rho+bottom_function(l1:l2,m)))**2 * dxyz_2
       if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
@@ -291,6 +325,22 @@ module Special
     call keep_compiler_quiet(p)
 !
   endsubroutine special_calc_hydro
+!***********************************************************************
+  subroutine calc_storm(f,df,p)
+!
+!  DOCUMENT ME!
+!    
+!  28-feb-20/wlad+ali: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!     
+      !storm_function = maximum_mass_injection_rate * exp(-(R/Rstorm)**2 - ((t-t0)*tstorm1)**2)
+!
+      !df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
+!    
+  endsubroutine calc_storm
 !***********************************************************************
   subroutine rprint_special(lreset,lwrite)
 !
