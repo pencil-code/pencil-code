@@ -130,13 +130,17 @@ module power_spectrum
 !
     endsubroutine powerGWs
 !***********************************************************************
-    subroutine powerscl(f,sp)
+    subroutine powerscl(f,sp,iapn_index)
 !
+      use General, only: ioptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=2) :: sp
+      integer, optional :: iapn_index
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(ioptest(iapn_index))
 !
     endsubroutine powerscl
 !***********************************************************************
