@@ -2131,7 +2131,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   !
   endsubroutine powerGWs
 !***********************************************************************
-  subroutine powerscl(f,sp)
+  subroutine powerscl(f,sp,iapn_index)
 !
 !  Calculate power spectrum of scalar quantity (on spherical shells) of the
 !  variable specified by `sp', e.g. spectra of cc, rho, etc.
@@ -2143,7 +2143,8 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     use Sub, only: curli, grad
     use SharedVariables, only: get_shared_variable
 !
-  integer, pointer :: inp, irhop
+  integer, intent(in), optional :: iapn_index
+  integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
@@ -2193,6 +2194,9 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   elseif (sp=='np') then
     call get_shared_variable('inp', inp, caller='powerscl')
     a_re=f(l1:l2,m1:m2,n1:n2,inp)
+  elseif (sp=='na') then
+    call get_shared_variable('iapn', iapn, caller='powerscl')
+    a_re=f(l1:l2,m1:m2,n1:n2,iapn(iapn_index))
   elseif (sp=='rp') then
     call get_shared_variable('irhop', irhop, caller='powerscl')
     a_re=f(l1:l2,m1:m2,n1:n2,irhop)

@@ -522,7 +522,6 @@ module Snapshot
 !AXEL real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
-      character(len=intlen) :: sdust
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall
 !
@@ -583,10 +582,9 @@ module Snapshot
         if (lr_spec)  call powerscl(f,'lr')
         if (np_spec)  call powerscl(f,'np')
         if (np_ap_spec) then
-          do ispec=1,ndustrad                         !
-             sdust='['//trim(itoa(ispec-1))//']'      !
-             call powerscl(f,'np_ap'//sdust)          !
-          enddo                                       !
+          do n=1,ndustrad
+            call powerscl(f,'na',n)
+          enddo
         endif
         if (rhop_spec)call powerscl(f,'rp')
         if (TT_spec)  call powerscl(f,'TT')
