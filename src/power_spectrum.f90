@@ -2139,6 +2139,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !  one could in principle reuse the df array for memory purposes.
 !
     use Fourier, only: fft_xyz_parallel
+    use General, only: itoa
     use Mpicomm, only: mpireduce_sum
     use Sub, only: curli, grad
     use SharedVariables, only: get_shared_variable
@@ -2280,7 +2281,12 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !AB: the following line does not make sense for passive scalars
 !-- spectrum_sum=.5*spectrum_sum
-    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (sp=='na') then
+       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
+            trim(itoa(iapn_index))//'.dat',position='append')
+    else
+       open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    endif
     write(1,*) t
     write(1,'(1p,8e10.2)') spectrum_sum
     close(1)
