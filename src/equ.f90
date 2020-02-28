@@ -252,17 +252,17 @@ module Equ
 !  Calculate the characteristic velocity
 !  for slope limited diffusion
 !
-      if (lslope_limit_diff.and.lfirst) then
-        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
+!      if (lslope_limit_diff.and.lfirst) then
+!        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
 !print*,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-        call update_char_vel_energy(f)
-        call update_char_vel_magnetic(f)
-        call update_char_vel_hydro(f)
+!        call update_char_vel_energy(f)
+!        call update_char_vel_magnetic(f)
+!        call update_char_vel_hydro(f)
         !call update_char_vel_density(f)
         !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
 !  JW: for hydro it is done without sqrt
         !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-      endif
+!      endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is
 !  derived from the basic thermodynamical variables), we need to fill in the

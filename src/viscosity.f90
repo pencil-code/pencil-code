@@ -57,6 +57,9 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
+  real, dimension (mx) :: x12
+  real, dimension (my) :: y12
+  real, dimension (mz) :: z12
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_nu_non_newtonian=.false.
@@ -110,7 +113,7 @@ module Viscosity
   logical :: lno_visc_heat_zbound=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
-  real :: h_slope_limited=0.
+  real :: h_slope_limited=0., w_sld_cs=0.
   character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
@@ -126,7 +129,7 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth
+      no_visc_heat_z0,no_visc_heat_zwidth, w_sld_cs
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -213,20 +216,20 @@ module Viscosity
 !
 !  Needed for slope limited diffusion
 !
-      if (lvisc_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
-        endif
-        call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
+!      if (lvisc_slope_limited) then
+!        if (iFF_diff==0) then
+!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+!        endif
+!        call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
 !        iFF_char_c=iFF_div_uu+2
 !        if (iFF_div_aa >0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
 !        if (iFF_div_ss >0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
 !        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
 
-        call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
-        call farray_register_auxiliary('Flux_diff_char_speed',iFF_char_c)
-      endif
+!        call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
+!        call farray_register_auxiliary('Flux_diff_char_speed',iFF_char_c)
+!      endif
 !
 !  Register nusmag as auxilliary variable
 !
@@ -654,8 +657,11 @@ module Viscosity
 !  which might be need also needed for other quantities
 !
       lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
-      if (lvisc_slope_limited.and.lroot) &
-         print*,'viscous force: slope-limited diffusion'
+      if (lvisc_slope_limited) then
+        if (lroot) print*,'viscous force: slope-limited diffusion'
+        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+        call generate_halfgrid(x12,y12,z12)
+      endif
 !
 !  debug output
 !
@@ -943,7 +949,8 @@ module Viscosity
           lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
           lvisc_spitzer .or. lvisc_hyper3_cmu_const_strt_otf) &
           lpenc_requested(i_rho1)=.true.
-      if (lvisc_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
+      if (lvisc_hyper3_csmesh .or. lvisc_slope_limited) lpenc_requested(i_cs2)=.true.
+      if (lvisc_slope_limited) lpenc_requested(i_rho)=.true.
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
         lpenc_requested(i_del6u_strict)=.true.
@@ -1995,20 +2002,50 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
 !
+!!!!!!-------NEW Try------------------------------
+
+      !!! adding the slope limit diffusive flux to total diffusive flux
 !
-        if (lfirst) then
-           p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)
+!
+!       tmp3 :  divergence of flux
+!       tmp4 :  heating, switch to turn on heating calc.
+!
+        if (lviscosity_heat) then
+          call calc_slope_diff_flux(f,iux,p,tmp3,tmp4,'viscose')
+          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          call calc_slope_diff_flux(f,iuy,p,tmp3,tmp4,'viscose')
+          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          call calc_slope_diff_flux(f,iuz,p,tmp3,tmp4,'viscose')
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+        else
+          call calc_slope_diff_flux(f,iux,p,tmp3)
+          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+          call calc_slope_diff_flux(f,iuy,p,tmp3)
+          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+          call calc_slope_diff_flux(f,iuz,p,tmp3)
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+        endif
+
+
+!!!!!!---------------
+
+
+!        if (lfirst) then
+!           p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)
 !        if (ldiagnos) print*, 'max(char_c)=', maxval(f(l1:l2,m,n,iFF_char_c))
-           p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!           p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
 !!print*,'div flux', f(501:506,m,n,iFF_div_uu)
 !!print*, 'velo', f(501:506,m,n,iuu)
 
 !
 !  Heating term
 !
-          if (lpencil(i_visc_heat)) & 
-            p%visc_heat=p%visc_heat-f(l1:l2,m,n,iFF_heat)
-        endif 
+!          if (lpencil(i_visc_heat)) & 
+!            p%visc_heat=p%visc_heat-f(l1:l2,m,n,iFF_heat)
+!        endif 
       endif
 !
 !  Calculate Lambda effect
@@ -2101,69 +2138,69 @@ module Viscosity
 !  using a slope limiting procedure then storing in the
 !  auxiliary variables in the f array (done above).
 !
-      if (lvisc_slope_limited.and.lfirst) then
+!      if (lvisc_slope_limited.and.lfirst) then
 !
-        if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
+!        if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
 !
-        do j=1,3
+!        do j=1,3
 !
-          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
+!          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
 !
-          do n=n1,n2; do m=m1,m2
+!          do n=n1,n2; do m=m1,m2
 !
 !  Divergence of flux = force/mass = acceleration.
 !
-            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
+!            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
 !
 !  Heating term.
 !
-            if (lviscosity_heat) then
+!            if (lviscosity_heat) then
 !
 ! grad(rho) or grad(lnrho)    (reference state?)
 !
-              call grad(f,ilnrho,gr)
+!              call grad(f,ilnrho,gr)
 !
 ! compactify the non-zero components in the first dimensionality elements of gr
 !
-              call reduce_grad_dim(gr)
-              if (ldensity_nolog) then
-                call getrho(f(:,m,n,irho),rho)
-                do k=1,dimensionality
+!              call reduce_grad_dim(gr)
+!              if (ldensity_nolog) then
+!                call getrho(f(:,m,n,irho),rho)
+!                do k=1,dimensionality
 !
 ! now grad(ln(rho))
 !
-                  gr(:,k)=gr(:,k)/rho
-                enddo
-              endif
+!                  gr(:,k)=gr(:,k)/rho
+!                enddo
+!              endif
 !
 ! grad(u_j)
 !
-              call grad(f,iuu+j-1,guj)
+!              call grad(f,iuu+j-1,guj)
 !
 ! compactify the non-zero components in the first dimensionality elements of guj
 !
-              call reduce_grad_dim(guj)
+!              call reduce_grad_dim(guj)
 !
 !  grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
 !
-              do k=1,dimensionality
-                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)
-              enddo
+!              do k=1,dimensionality
+!                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)
+!              enddo
 !
 ! loop inside has length dimensionality
 ! \partial_k(rho*u_j) f_jk/rho = energy/time/mass (summation over j by loop)
 !
 !
-              do k=1,dimensionality
-                if (dim_mask(k) == 1) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 2) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 3) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
+!              do k=1,dimensionality
+!                if (dim_mask(k) == 1) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
+!                if (dim_mask(k) == 2) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
+!                if (dim_mask(k) == 3) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
 
 !                call stagger_to_base_interp_3rd(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
 !f(:,m  ,n,iFF_diff1-1+k)=n+(/1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12./)
@@ -2171,22 +2208,22 @@ module Viscosity
 
  !               f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)*tmp
 !print*, 'k,tmp=', k, tmp
-              enddo
+!              enddo
 !              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &
 !                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
 !
 ! no cooling admitted (Why?)
 !
-              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
-            endif
+!              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
+!            endif
  
-          enddo; enddo
-        enddo
+!          enddo; enddo
+!        enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
 !f(l1:l2,m1:m2,n1:n2,iFF_heat)=0.   !!!
-      endif
+!      endif
 
     endsubroutine viscosity_after_boundary
 !***********************************************************************
@@ -2345,14 +2382,19 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
-        !!!if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)   !What is intended here? p%fvisc is a vector!!
-        if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc(:,1),idiag_fviscm)
+        if (idiag_fviscm/=0)   then
+          call dot2(p%fvisc,fvisc2)
+          call sum_mn_name(fvisc2,idiag_fviscm,lsqrt=.true.)
+        endif
         if (idiag_ufviscm/=0)  &
            call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
            p%uu(:,2)*p%fvisc(:,2)+ &
            p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
-        if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
+        if (idiag_fviscmax/=0)  then
+           call dot2(p%fvisc,fvisc2)
+           call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
+        endif
         if (idiag_fviscrmsx/=0) then
            call dot2(p%fvisc,fvisc2)
            call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
@@ -2377,9 +2419,9 @@ module Viscosity
         if (idiag_Sij2m/=0) call sum_mn_name(p%sij2,idiag_Sij2m)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
 !
-        if (lslope_limit_diff) then
-          if (idiag_slope_c_max/=0) call max_mn_name(p%char_speed_slope,idiag_slope_c_max)
-        endif
+!        if (lslope_limit_diff) then
+!          if (idiag_slope_c_max/=0) call max_mn_name(p%char_speed_slope,idiag_slope_c_max)
+!        endif
 !
 !  Viscous heating for Smagorinsky viscosity.
 !
@@ -2647,4 +2689,345 @@ module Viscosity
 
     endsubroutine pushpars2c
 !***********************************************************************
+    subroutine calc_slope_diff_flux(f,j,p,div_flux, &
+                                    heat_sl,heat_sl_type)
+      intent(in) :: f,j
+      intent(out) :: div_flux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: flux_im12,flux_ip12
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: div_flux, dens_m12, dens_p12
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
+      real, dimension (nx) :: fim1,fip1,rfac,q1
+!
+      real, dimension (nx), optional, intent(out) :: heat_sl
+      character(LEN=*), optional, intent(in) :: heat_sl_type
+!
+      real :: nlf=1.
+      type (pencil_case), intent(in) :: p
+      integer :: j,k
+
+
+!
+! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
+!
+        fim1=0
+        fip1=0
+        fim12_l=0
+        fim12_r=0
+        fip12_l=0
+        fip12_r=0
+        cmax_ip12=0
+        cmax_im12=0
+        if(present(heat_sl)) heat_sl=0.0
+!
+!  Generate halfgrid points
+!
+      do k=1,3
+!
+!print*, 'JOERN: visc III.I'
+        call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
+                                   fim1,fip1,k)
+        call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+!print*, 'JOERN: visc III.II'
+        do ix=1,nx
+          rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+                     fim1(ix))+tini)
+          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
+        enddo
+        flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
+        do ix=1,nx
+          rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     f(ix+nghost,m,n,j))+tini)
+          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
+        enddo
+        flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
+
+!
+!
+!   Calculating heating
+!
+        if (present(heat_sl)) then
+
+          select case (heat_sl_type)
+
+            case('viscose')
+              if (ldensity_nolog) then
+                call calc_lin_interpol(f,irho,dens_m12,dens_p12,k)
+              else
+                call calc_lin_interpol(f,ilnrho,dens_m12,dens_p12,k)
+              endif
+
+              if (k == 1 .and. nxgrid /= 1) &
+                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
+                              /(x12(l1:l2)-x12(l1-1:l2-1)) &
+                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
+                              /(x12(l1+1:l2+1)-x12(l1:l2))
+
+              if (k == 2 .and. nygrid /= 1) &
+                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
+                              /(y12(m)-y12(m-1)) &
+                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
+                              /(y12(m+1)-y12(m))
+
+              if (k == 3 .and. nzgrid /= 1) &
+                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
+                              /(z12(n)-z12(n-1)) &
+                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
+                              /(z12(n+1)-z12(n))
+
+            case ('ohmic')
+              call fatal_error('viscosity:calc_slope_diff_flux','ohmic heating types not yet implemented')
+!
+            case default
+              call fatal_error('viscosity:calc_slope_diff_flux','other heating types not yet implemented')
+!
+          endselect
+        endif
+
+      enddo
+!
+! Now calculate the 2nd order divergence
+!
+!print*, 'JOERN: visc III.V'
+      if (lspherical_coords) then
+        div_flux=0.0
+        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
+        +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
+                sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
+      else if (lcartesian_coords) then
+        div_flux=0.0
+        if (nxgrid /= 1) then
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1))
+        endif
+        if (nygrid /= 1) then
+          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
+                   /(y12(m)-y12(m-1))
+        endif
+        if (nzgrid /= 1) then
+          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+                   /(z12(n)-z12(n-1))
+        endif
+       else
+         call fatal_error('viscosity:calc_slope_diff_flux','Not coded for cylindrical')
+       endif
+!print*, 'JOERN: visc III.VI'
+!
+    endsubroutine calc_slope_diff_flux
+!*******************************************************************************
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
+                                     fip1,k)
+!
+! Reconstruction of a scalar by slope limited linear interpolation
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
+      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ix
+      real :: tmp0,tmp1,tmp2,tmp3
+! x-component
+      select case (k)
+        case(1)
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))
+            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))
+            delfx(ix) = minmod_alt(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)
+            fim12_r(ix) = f(i,m,n,j)-delfx(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfx(ix)
+            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)
+            fim1(ix) = f(i-1,m,n,j)
+            fip1(ix) = f(i+1,m,n,j)
+          enddo
+! y-component
+        case(2)
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+            delfym1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+            delfy(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+            delfyp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+            fim1(ix) = f(i,m-1,n,j)
+            fip1(ix) = f(i,m+1,n,j)
+          enddo
+! z-component
+        case(3)
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+            delfzm1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+            delfz(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+            delfzp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+            fim1(ix) = f(i,m,n-1,j)
+            fip1(ix) = f(i,m,n+1,j)
+          enddo
+        case default
+          call fatal_error('viscosity:slope_lim_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine slope_lim_lin_interpol
+!***********************************************************************
+    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+      intent(in) :: f,k
+      intent(out) :: cmax_im12,cmax_ip12
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: ux2_tmp,uy2_tmp,uz2_tmp
+      real, dimension (0:nx) :: ux2_xtmp,uy2_xtmp,uz2_xtmp
+      type (pencil_case), intent(in) :: p
+      integer :: k
+!
+      select case (k)
+        case(1)
+          ! x-component
+          ux2_xtmp=0.5*(f(l1-1:l2,m,n,iux)**2+f(l1:l2+1,m,n,iux)**2)
+          uy2_xtmp=0.5*(f(l1-1:l2,m,n,iuy)**2+f(l1:l2+1,m,n,iuy)**2)
+          uz2_xtmp=0.5*(f(l1-1:l2,m,n,iuz)**2+f(l1:l2+1,m,n,iuz)**2)
+          cmax_im12(:,1)=sqrt(ux2_xtmp(0:nx-1)+uy2_xtmp(0:nx-1)+uz2_xtmp(0:nx-1))+w_sld_cs*sqrt(p%cs2)
+          cmax_ip12(:,1)=sqrt(ux2_xtmp(1:nx)  +uy2_xtmp(1:nx)  +uz2_xtmp(1:nx)  )+w_sld_cs*sqrt(p%cs2)
+        case(2)
+          ! y-component
+          ux2_tmp=0.5*(f(l1:l2,m-1,n,iux)**2+f(l1:l2,m,n,iux)**2)
+          uy2_tmp=0.5*(f(l1:l2,m-1,n,iuy)**2+f(l1:l2,m,n,iuy)**2)
+          uz2_tmp=0.5*(f(l1:l2,m-1,n,iuz)**2+f(l1:l2,m,n,iuz)**2)
+          cmax_im12(:,2)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
+
+          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m+1,n,iux)**2)
+          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m+1,n,iuy)**2)
+          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m+1,n,iuz)**2)
+          cmax_ip12(:,2)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
+
+        case(3)
+          ! z-component
+          ux2_tmp=0.5*(f(l1:l2,m,n-1,iux)**2+f(l1:l2,m,n,iux)**2)
+          uy2_tmp=0.5*(f(l1:l2,m,n-1,iuy)**2+f(l1:l2,m,n,iuy)**2)
+          uz2_tmp=0.5*(f(l1:l2,m,n-1,iuz)**2+f(l1:l2,m,n,iuz)**2)
+          cmax_im12(:,3)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
+!
+          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n+1,iux)**2)
+          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n+1,iuy)**2)
+          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m,n+1,iuz)**2)
+          cmax_ip12(:,3)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
+        endselect
+    endsubroutine characteristic_speed
+!***********************************************************************
+    real function minmod_alt(a,b)
+!
+!  minmod=max(0,min(abs(a),sign(1,a)*b))
+!
+      real :: a,b
+!
+      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+!
+    endfunction minmod_alt
+!***********************************************************************
+    subroutine generate_halfgrid(x12,y12,z12)
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      real, dimension (mx), intent(out) :: x12
+      real, dimension (my), intent(out) :: y12
+      real, dimension (mz), intent(out) :: z12
+!
+      if (nxgrid == 1) then
+        x12 = x
+      else
+        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+      endif
+!
+      if (nygrid == 1) then
+        y12 = y
+      else
+        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+      endif
+!
+      if (nzgrid == 1) then
+        z12 = z
+      else
+        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+      endif
+!
+    endsubroutine generate_halfgrid
+!*******************************************************************************
+    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
+!
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12, fip12
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12, fip12
+      integer :: j,k
+
+      select case (k)
+! x-component
+        case(1)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1-1:l2-1,m,n,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1+1:l2+1,m,n,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1-1:l2-1,m,n,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1+1:l2+1,m,n,j))
+          endif
+! y-component
+        case(2)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m-1,n,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m+1,n,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m-1,n,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m+1,n,j))
+          endif
+! z-component
+        case(3)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n-1,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n+1,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n-1,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n+1,j))
+          endif
+        case default
+          call fatal_error('viscosity:calc_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine calc_lin_interpol
+!*******************************************************************************
 endmodule Viscosity
