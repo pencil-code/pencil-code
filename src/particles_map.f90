@@ -1407,7 +1407,7 @@ module Particles_map
                   weight=weight*weight_z
                 endif
 !
-                f(ixx,iyy,izz,iapn(ik))=f(ixx,iyy,izz,iapn(k)) + weight
+                f(ixx,iyy,izz,iapn(ik))=f(ixx,iyy,izz,iapn(ik)) + weight
 !
               enddo; enddo; enddo
             enddo
