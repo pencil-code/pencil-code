@@ -378,11 +378,11 @@ module Particles
       !====================
       ! Loop over grain sizes:
       do k=1,ndustrad
-        sdust='['//trim(itoa(k-1))//']'
-        if (ndustspec==1) sdust=''
+        sdust=trim(itoa(k))
         call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
         iapn(k) = ind_tmp
       enddo
+      call put_shared_variable('iapn', iapn, caller='register_particles')
       !====================
 
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
