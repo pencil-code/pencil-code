@@ -194,8 +194,8 @@ module Hydro
       logical :: lok
       character(LEN=128) :: messg
       integer, dimension(3) :: intbuf
-      real, dimension(2) :: floatbuf
-      integer :: j,ll,name_len,ipx_foreign,nx_foreign
+      real, dimension(6) :: floatbuf
+      integer :: ind,j,ll,name_len,ipx_foreign,nx_foreign
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -405,8 +405,10 @@ endif
 !
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
 !      
-          call mpirecv_real(frgn_setup%extents,6,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_real(floatbuf,6,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          ind=1
           do j=1,3
+            frgn_setup%extents(:,j)=floatbuf(ind:ind+1); ind=ind+2
             if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
               messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
               lok=.false. !MR: alleviate to selection
