@@ -21,6 +21,6 @@ SHOCK     =   shock_highorder
 
 
 SPECIAL           = special/shallow_water
-INITIAL_CONDITION = initial_condition/plane_beach
+INITIAL_CONDITION = initial_condition/shallow_water_bottom
 
 REAL_PRECISION = double
