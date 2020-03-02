@@ -24,6 +24,7 @@
 ;             Also for downsampled snapshots (VARd<n>)
 ;       ivar: Number of the varfile, to be appended optionally.      [integer]
 ;   allprocs: Load data from the allprocs directory.                 [integer]
+;    /nohdf5: Don't read HDF5 file although available.         
 ;   /reduced: Load reduced collective varfiles.
 ;
 ;     object: Optional structure in which to return the loaded data. [structure]
@@ -83,7 +84,7 @@ pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
     bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo, pptoo=pptoo, $
-    allprocs=allprocs, reduced=reduced,                           $
+    allprocs=allprocs, reduced=reduced, nohdf5=nohdf5,            $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, grid=grid, param=param, par2=par2, ivar=ivar,        $
@@ -115,6 +116,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, unshear, 0
   default, ghost, 0
   default, noaux, 0
+  default, nohdf5, 0
   default, bcx, 'none'
   default, bcy, 'none'
   default, bcz, 'none'
@@ -153,10 +155,10 @@ COMPILE_OPT IDL2,HIDDEN
     if (n_elements(ivar) eq 1) then begin
       default, varfile_, 'VAR'
       varfile = varfile_ + strcompress (string (ivar), /remove_all)
-      if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
+      if ( ~nohdf5 and file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
     endif else begin
       default_varfile = 'var.dat'
-      if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
+      if ( ~nohdf5 and file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
       default, varfile_, default_varfile
       varfile = varfile_
     endelse
@@ -175,9 +177,23 @@ COMPILE_OPT IDL2,HIDDEN
     t = pc_read ('time', file=varfile, datadir=datadir)
     object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
     if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
+    testdata=''
     for pos = 0, num_quantities-1 do begin
-      if (quantities[pos] eq 'dummy') then continue
-      object = create_struct (object, quantities[pos], pc_read (quantities[pos], trimall=trimall, processor=proc, dim=dim))
+
+      quan=quantities[pos]
+      if stregex(quan,'aatest',/bool) or stregex(quan,'uutest',/bool) then begin
+        testdata=strmid(quan,0,2)+'test' & itestdata=2 & quan=testdata+'1'
+      endif else if (quan eq 'dummy') then begin
+        if testdata ne '' then begin
+          quan=testdata+strtrim(string(itestdata),2) 
+          itestdata++
+        endif else $
+          continue
+      endif else $
+        testdata=''
+
+      label=quan
+      object = create_struct (label, pc_read (quan, trimall=trimall, processor=proc, dim=dim),object)
     end
     h5_close_file
     pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
@@ -680,7 +696,14 @@ COMPILE_OPT IDL2,HIDDEN
       endif else begin
         ; multiple processor distributed files
         if (param.lshear) then begin
+          incomp=1
+          on_ioerror, incomplete
           readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+          incomp=0
+incomplete:
+          if incomp then $
+            print, 't, xloc, yloc, zloc, dx, dy, dz, deltay=', t, xloc, yloc, zloc, dx, dy, dz, deltay
+          on_ioerror, NULL
         endif else begin
           readu, file, t, xloc, yloc, zloc, dx, dy, dz
         endelse
