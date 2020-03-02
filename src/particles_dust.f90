@@ -384,6 +384,11 @@ module Particles
           call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
           iapn(k) = ind_tmp
         enddo
+      else
+        if (np_ap_spec) then
+          call fatal_error('register_particles',&
+              'Must set lnp_ap_as_aux=T in &particles_init_pars for corr. spec.')
+        endif
       end if
       call put_shared_variable('iapn', iapn, caller='register_particles')
       !====================
