@@ -163,7 +163,7 @@ module Particles
 !
   integer :: icondensationRate=0
   integer :: iwaterMixingRatio=0
-  logical :: lcondensation_rate=.false.
+  logical :: lcondensation_rate=.false., lnp_ap_as_aux=.false.
 !
 !  Interactions with special/shell
 !
@@ -234,7 +234,7 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, &
       remove_particle_criteria_size, remove_particle_criteria_edtog, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
-      lnocollapse_zdir_onecell, qgaussz, r0gaussz
+      lnocollapse_zdir_onecell, qgaussz, r0gaussz, lnp_ap_as_aux
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -374,14 +374,17 @@ module Particles
         lnocalc_rhop = .false.
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
       endif
-
-      !====================
-      ! Loop over grain sizes:
-      do k=1,ndustrad
-        sdust=trim(itoa(k))
-        call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
-        iapn(k) = ind_tmp
-      enddo
+!
+! Store number of particles per grid cell if requested
+!
+      if (lnp_ap_as_aux) then
+        ! Loop over grain sizes:
+        do k=1,ndustrad
+          sdust=trim(itoa(k))
+          call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
+          iapn(k) = ind_tmp
+        enddo
+      end if
       call put_shared_variable('iapn', iapn, caller='register_particles')
       !====================
 
