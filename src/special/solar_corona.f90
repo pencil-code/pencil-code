@@ -4598,9 +4598,9 @@ module Special
           b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
           b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
           if (ldensity_nolog) then
-          rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
+            rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
           else
-          rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
+            rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
           endif
           cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
           cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
