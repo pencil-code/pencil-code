@@ -14,7 +14,6 @@
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
 ! PENCILS PROVIDED visc_heat; nu; gradnu(3), nu_smag, gnu_smag(3)
-! PENCILS PROVIDED char_speed_slope
 !
 !***************************************************************
 module Viscosity
@@ -151,7 +150,7 @@ module Viscosity
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
-  integer :: idiag_slope_c_max=0! DIAG_DOC: Max value of characteric speed
+!  integer :: idiag_slope_c_max=0! DIAG_DOC: Max value of characteric speed
                                 ! DIAG_DOC: of slope limited diffusion
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
@@ -799,7 +798,8 @@ module Viscosity
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
-        idiag_fviscmax=0; idiag_fviscmin=0; idiag_slope_c_max=0
+        idiag_fviscmax=0; idiag_fviscmin=0
+!idiag_slope_c_max=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -823,7 +823,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
-        call parse_name(iname,cname(iname),cform(iname),'slope_c_max',idiag_slope_c_max)
+!        call parse_name(iname,cname(iname),cform(iname),'slope_c_max',idiag_slope_c_max)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
         call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
       enddo
@@ -886,7 +886,10 @@ module Viscosity
           lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_cspeed.or. &
           (lvisc_simplified.and.lboussinesq) ) then
-        if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
+        if ((lenergy.and.lviscosity_heat) .or. & 
+             idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0 .or. &
+             idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) &
+             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
@@ -950,7 +953,8 @@ module Viscosity
           lvisc_spitzer .or. lvisc_hyper3_cmu_const_strt_otf) &
           lpenc_requested(i_rho1)=.true.
       if (lvisc_hyper3_csmesh .or. lvisc_slope_limited) lpenc_requested(i_cs2)=.true.
-      if (lvisc_slope_limited) lpenc_requested(i_rho)=.true.
+      if (lvisc_slope_limited .and. lviscosity_heat) lpenc_requested(i_rho)=.true.
+!      if (lvisc_slope_limited) lpenc_requested(i_rho)=.true.
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
         lpenc_requested(i_del6u_strict)=.true.
@@ -1020,14 +1024,15 @@ module Viscosity
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_visc_heatm/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
-        lpenc_diagnos(i_sij2)=.true.
+!        lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_sij2)=.true.
+!        lpenc_diagnos(i_sij2)=.true.
+! JW: There are also viscosities, which do not need sij
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
-      if (idiag_epsK/=0.or.idiag_epsKmz/=0) then
+      if (idiag_epsK/=0.or.idiag_epsKmz/=0.or.idiag_epsK_LES/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
@@ -1070,20 +1075,22 @@ module Viscosity
         lpenc_diagnos(i_fvisc)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
-      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
-        lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_sij)=.true.
-      endif
+!      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
+!        lpenc_diagnos(i_rho)=.true.
+!        lpenc_diagnos(i_sij)=.true.
+!      endif
+! JW: There are also viscosities, which do not need sij or rho
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
-      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
-          idiag_fviscsmmxy/=0) then
-        lpenc_diagnos2d(i_nu_smag)=.true.
-        lpenc_diagnos2d(i_uu)=.true.
-        lpenc_diagnos2d(i_rho)=.true.
-        lpenc_diagnos2d(i_sij)=.true.
-      endif
+!      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
+!          idiag_fviscsmmxy/=0) then
+!        lpenc_diagnos2d(i_nu_smag)=.true.
+!        lpenc_diagnos2d(i_uu)=.true.
+!        lpenc_diagnos2d(i_rho)=.true.
+!        lpenc_diagnos2d(i_sij)=.true.
+!      endif
+! JW: There are also viscosities, which do not need sij or rho
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
 !
@@ -2010,24 +2017,29 @@ module Viscosity
 !       tmp3 :  divergence of flux
 !       tmp4 :  heating, switch to turn on heating calc.
 !
-        if (lviscosity_heat) then
-          call calc_slope_diff_flux(f,iux,p,tmp3,tmp4,'viscose')
-          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuy,p,tmp3,tmp4,'viscose')
-          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuz,p,tmp3,tmp4,'viscose')
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-        else
-          call calc_slope_diff_flux(f,iux,p,tmp3)
-          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-          call calc_slope_diff_flux(f,iuy,p,tmp3)
-          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-          call calc_slope_diff_flux(f,iuz,p,tmp3)
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+!       use sld only in last sub timestep
+!
+        if (llast) then
+          if (lviscosity_heat) then
+            call calc_slope_diff_flux(f,iux,p,tmp3,tmp4,'viscose')
+            p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+            call calc_slope_diff_flux(f,iuy,p,tmp3,tmp4,'viscose')
+            p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+            call calc_slope_diff_flux(f,iuz,p,tmp3,tmp4,'viscose')
+            p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          else
+            call calc_slope_diff_flux(f,iux,p,tmp3)
+            p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+            call calc_slope_diff_flux(f,iuy,p,tmp3)
+            p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+            call calc_slope_diff_flux(f,iuz,p,tmp3)
+            p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+          endif
         endif
+
 
 
 !!!!!!---------------
@@ -2726,11 +2738,11 @@ module Viscosity
 !
       do k=1,3
 !
-!print*, 'JOERN: visc III.I'
         call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
                                    fim1,fip1,k)
+!
         call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
-!print*, 'JOERN: visc III.II'
+!
         do ix=1,nx
           rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
                      fim1(ix))+tini)
@@ -2790,7 +2802,6 @@ module Viscosity
 !
 ! Now calculate the 2nd order divergence
 !
-!print*, 'JOERN: visc III.V'
       if (lspherical_coords) then
         div_flux=0.0
         div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
@@ -2815,7 +2826,6 @@ module Viscosity
        else
          call fatal_error('viscosity:calc_slope_diff_flux','Not coded for cylindrical')
        endif
-!print*, 'JOERN: visc III.VI'
 !
     endsubroutine calc_slope_diff_flux
 !*******************************************************************************
