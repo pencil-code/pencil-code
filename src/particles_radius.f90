@@ -39,7 +39,7 @@ module Particles_radius
   real :: modified_vapor_diffusivity=6.74e-6, n0_mean = 1.e8
   real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: xi_accretion = 0.
+  real :: xi_accretion = 0., lambda = 1.
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -48,7 +48,6 @@ module Particles_radius
   logical :: ldt_condensation=.false., ldt_condensation_off=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
-  logical :: reinitialize_ap=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
   logical :: ldust_accretion = .false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
@@ -62,7 +61,7 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, rpbeta0, lparticles_radius_rpbeta, &
-      lfixed_particles_radius
+      lfixed_particles_radius, lambda
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -73,7 +72,7 @@ module Particles_radius
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
       lconstant_radius_w_chem, &
-      reinitialize_ap, initap, &
+      initap, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
@@ -283,6 +282,16 @@ module Particles_radius
             endif lsqp
           endif lspd
 !
+! exponential distribution, which could be extended to the Gamma distribution
+        case ('exponential')
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
+              'exponential=', a0_initdist
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = lambda*exp(-lambda*(fp(npar_low:npar_high,iap)-a0_initdist))
+        
+!
+
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution.
 !  Initialize particle radii by a direct probabilistic calculation using
 !  gaussian noise for ln(a/a0)/sigma.
@@ -424,41 +433,6 @@ module Particles_radius
 !  Set initial particle radius if lparticles_mass=T
 !
       if (lparticles_mass) fp(:,iapinit) = fp(:,iap)
-!
-! Reinitialize particle radius if reinitialize_ap=T
-! 09-Feb-17/Xiangyu: adapted from set_particles_radius
-      if (reinitialize_ap) then
-        do j = 1,ninit
-          select case (initap(j))
-!
-          case ('constant')
-            if (initial .and. lroot) print*, 'set_particles_radius: constant radius'
-            ind = 1
-            do k = npar_low,npar_high
-              if (npart_radii > 1) then
-                call random_number_wrapper(radius_fraction)
-                ind = ceiling(npart_radii*radius_fraction)
-              endif
-              fp(k,iap) = ap0(ind)
-            enddo
-!
-          case ('constant-1')
-            if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
-            do k = npar_low,npar_high
-              if (ipar(k) == 1) fp(k,iap) = ap1
-            enddo
-!
-          case ('lognormal')
-!
-            if (initial .and. lroot) print*, 'set_particles_radius: '// &
-                'lognormal=', a0_initdist
-            call random_number_wrapper(r_mpar_loc)
-            call random_number_wrapper(p_mpar_loc)
-            tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-            fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
-          endselect
-        enddo
-      endif
 !
       if (lparticles_radius_rpbeta) &
         fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
