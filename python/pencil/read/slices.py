@@ -7,8 +7,6 @@
 Contains the classes and methods to read slice files.
 """
 
-import sys
-
 def slices(*args, **kwargs):
     """
     Read Pencil Code slice data.
@@ -112,6 +110,7 @@ class SliceSeries(object):
         """
 
         import os
+        import sys
         import numpy as np
         from scipy.io import FortranFile
         from .. import read
@@ -278,9 +277,8 @@ class SliceSeries(object):
                         continue
 
                     islice = 0
-                    self.t = np.zeros(1, dtype=precision)
-                    self.t = [0]
-                    slice_series = [0]
+                    self.t = []
+                    slice_series = []
 
                     if not quiet:
                         print('  -> Reading... ')
@@ -295,10 +293,10 @@ class SliceSeries(object):
 
                         if old_file:
                             self.t.append(list(raw_data[-1]))
-                            slice_series.extend(list(raw_data[:-1]))
+                            slice_series.append(raw_data[:-1])
                         else:
                             self.t.append(list(raw_data[-2:-1]))
-                            slice_series.extend(list(raw_data[:-2]))
+                            slice_series.append(raw_data[:-2])
                         islice += 1
                     if not quiet:
                         print('  -> Done')
@@ -308,14 +306,14 @@ class SliceSeries(object):
                     if not quiet:
                         print('Reshaping array')
                         sys.stdout.flush()
-                    self.t = np.array(self.t[1:], dtype=precision)[:, 0]
+                    self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
                     # Separate the data in chunks if too big
-                    if slice_series[1:].size > vlarge:
+                    if slice_series.size > vlarge:
                         vscaled = (int(vlarge/vsize/hsize)+1)*vsize*hsize
-                        nchunks = int(slice_series[1:].size/vscaled)
+                        nchunks = int(slice_series.size/vscaled)
                         endslice = vscaled*nchunks
-                        subslice_series = np.array_split(slice_series[1:endslice+1], nchunks, axis=0)
+                        subslice_series = np.array_split(slice_series[:endslice+1], nchunks, axis=0)
                         ichunk_size = int(subslice_series[0].size/vsize/hsize)
                         slice_tmp = subslice_series[0].reshape(ichunk_size, vsize, hsize)
                         if not quiet:
@@ -323,14 +321,14 @@ class SliceSeries(object):
                             print(field,"chunk_size",nchunks)
                             print("subslice_series[0].size", subslice_series[0].size)
                             sys.stdout.flush()
-                        for subslice in subslice_series[1:]: 
+                        for subslice in subslice_series: 
                             ichunk_size = int(subslice.size/vsize/hsize)
                             subslice = subslice.reshape(ichunk_size, vsize, hsize)
                             slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
                             if not quiet:
                                 print("slice_tmp.shape",slice_tmp.shape)
                                 sys.stdout.flush()
-                        if not nchunks*vscaled==slice_series[1:].size:
+                        if not nchunks*vscaled==slice_series.size:
                             ichunk_size = int(slice_series[endslice+1:].size/vsize/hsize)
                             subslice = slice_series[endslice+1:].reshape(ichunk_size, vsize, hsize)
                             slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
@@ -339,7 +337,7 @@ class SliceSeries(object):
                                 sys.stdout.flush()
                         slice_series = slice_tmp
                     else:
-                        slice_series = slice_series[1:].reshape(islice, vsize, hsize)
+                        slice_series = slice_series.reshape(islice, vsize, hsize)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
