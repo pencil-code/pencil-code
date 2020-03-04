@@ -31,12 +31,12 @@ module PointMasses
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
-  real, dimension(nqpar) :: frac_smooth=0.3
+  real, dimension(nqpar) :: frac_smooth=0.4
   real, dimension(nqpar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
   real :: GNewton1, GNewton=impossible, density_scale=0.001
-  real :: cdtq=0.1
+  real :: cdtq=0.1,dt_pointmasses_frac=1e-3
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5
@@ -62,7 +62,7 @@ module PointMasses
   logical :: lcorrect_gravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
-  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
+  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='plummer'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
 !
   logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
@@ -85,7 +85,7 @@ module PointMasses
       ldt_pointmasses, cdtq, lretrograde, &
       eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart
+      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,dt_pointmasses_frac
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
@@ -97,12 +97,13 @@ module PointMasses
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
-      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis
+      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,dt_pointmasses_frac
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
   integer, dimension(nqpar)   :: idiag_torqext_gas=0,idiag_torqext_par=0
   integer, dimension(nqpar)   :: idiag_torqint_gas=0,idiag_torqint_par=0
+  integer, dimension(nqpar)   :: idiag_period=0
   integer                     :: idiag_totenergy=0
 !
   contains
@@ -1028,6 +1029,7 @@ module PointMasses
               if (idiag_vvq(ks,j)/=0) &
                   call point_par_name(fq(ks,jvel),idiag_vvq(ks,j))
             enddo
+            if (idiag_period(ks)/=0) call point_par_name(2*pi*fq(ks,ixq)/fq(ks,ivyq),idiag_period(ks))
           endif
         enddo
       endif
@@ -1178,14 +1180,17 @@ module PointMasses
 !  one time-step and additionally we use the free-fall time-scale.
 !
           if (lfirst.and.ldt.and.ldt_pointmasses) then
-            if (.not.lcallpointmass) then     
-              v_ij=sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
-              dt1_max(l1-nghost)= &
-                   max(dt1_max(l1-nghost),v_ij/sqrt(r2_ij)/cdtq)
-            endif
+            !if (.not.lcallpointmass) then     
+            !  v_ij=sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
+            !  dt1_max(l1-nghost)= &
+            !       max(dt1_max(l1-nghost),v_ij/sqrt(r2_ij)/cdtq)
+            !endif
+            !dt1_max(l1-nghost)= &
+            !     max(dt1_max(l1-nghost), &
+            !     sqrt(Omega2_pm)/cdtq,dt_pointmasses_frac*sqrt(Omega2_pm)/(2*pi)/cdtq)
             dt1_max(l1-nghost)= &
                  max(dt1_max(l1-nghost), &
-                 sqrt(Omega2_pm/cdtq))
+                 sqrt(Omega2_pm)/(2*pi*dt_pointmasses_frac))
           endif
 !
         endif !if (ipar(k)/=ks)
@@ -1588,27 +1593,13 @@ module PointMasses
 !
       real, dimension (mx,nqpar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3)     :: ggp,ggt
-      real, dimension (mx)       :: Omega2_pm,rrp
-      real                       :: rr,rp1,rhill,rhill1
-      integer                    :: ks,i
+      real, dimension (mx)       :: grav_particle,rrp
+      integer                    :: ks
 !
       intent(out) :: ggt
 !
       ggt=0.
       do ks=1,nqpar
-!
-!  Hill radius
-!
-        if (lcartesian_coords) then 
-          rp1 = sqrt(fq(ks,ixq)**2+fq(ks,iyq)**2+fq(ks,izq)**2)
-        elseif (lcylindrical_coords) then
-          rp1 = sqrt(fq(ks,ixq)**2+              fq(ks,izq)**2)
-        elseif (lspherical_coords) then
-          rp1 =      fq(ks,ixq)
-        endif
-!
-        rhill  = rp1*(GNewton*pmass(ks)/3.)**(1./3)
-        rhill1 = 1./rhill
 !
 !  Spherical and cylindrical distances
 !
@@ -1623,58 +1614,8 @@ module PointMasses
           rrp = rp_mn(:,ks)
         endif
 !
-!  Gravity field from the particle ks
-!
-        select case (ipotential_pointmass(ks))
-!
-        case ('plummer')
-!
-!  Potential of a Plummer sphere
-!
-          if (ks==iprimary) call fatal_error("get_total_gravity",&
-               "The primary can only be newtonian, please switch ipotential_pointmass")
-          Omega2_pm =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
-!
-        case ('boley')
-!
-!  Correct potential outside Hill sphere
-!
-          if (ks==iprimary) call fatal_error("get_total_gravity",&
-               "The primary can only be newtonian, please switch ipotential_pointmass")
-          do i=1,mx
-            if (rrp(i) .gt. rhill) then
-              Omega2_pm(i) = -GNewton*pmass(ks)*rrp(i)**(-3)
-            else
-              Omega2_pm(i) =  GNewton*pmass(ks)*(3*rrp(i)*rhill1 - 4)*rhill1**3
-            endif
-          enddo
-!
-        case ('newton-hill','newton','newtonian')
-!
-!  Newtonian potential; same as boley but constant inside rsmooth
-!
-          if (ks==iprimary.and.r_smooth(ks)/=0) call fatal_error("get_total_gravity",&
-               "Use r_smooth=0 for the primary's potential")
-!
-          do i=1,mx
-            rr=max(rrp(i),r_smooth(ks))
-            if (rr > 0) then
-              Omega2_pm(i) = -GNewton*pmass(ks)*rr**(-3)
-            else                ! can happen during pencil_check
-              Omega2_pm(i) = 0.
-            endif
-          enddo
-!                                                                                                                                     
-        case default
-!                                                                                                                                     
-!  Catch unknown values                                                                                                               
-!                                                                                                                                     
-          if (lroot) print*, 'get_total_gravity: '//&
-               'No such value for ipotential_pointmass: ', trim(ipotential_pointmass(ks))
-          call fatal_error("","")
-        endselect
-!
-        call get_gravity_field_pointmasses(Omega2_pm,ggp,ks)
+        grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
+        call get_gravity_field_pointmasses(grav_particle,ggp,ks)
 !
         if ((ks==iprimary).and.lnogravz_star) &
             ggp(:,3) = 0.
@@ -2087,6 +2028,7 @@ module PointMasses
         idiag_totenergy=0
         idiag_torqext_gas=0;idiag_torqext_par=0
         idiag_torqint_gas=0;idiag_torqint_par=0
+        idiag_period=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2104,7 +2046,7 @@ module PointMasses
                  trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
             call parse_name(iname,cname(iname),cform(iname),&
                  'v'//trim(str)//'q'//trim(sks),idiag_vvq(ks,j))
-          enddo
+          enddo          
 !
 !  Run through parse list again
 !
@@ -2128,6 +2070,8 @@ module PointMasses
                'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
           call parse_name(iname,cname(iname),cform(iname),&
                'torqint_par_'//trim(sks),idiag_torqint_par(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'period'//trim(sks),idiag_period(ks))
         enddo
 !
         if (lwr) then
@@ -2137,6 +2081,7 @@ module PointMasses
           call pointmass_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
           call pointmass_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
           call pointmass_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
+          call pointmass_index_append('i_period'//trim(sks),idiag_period(ks))
         endif
       enddo
 !
