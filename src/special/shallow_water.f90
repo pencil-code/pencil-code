@@ -71,6 +71,10 @@ module Special
   real :: tstorm=1.0,tstorm1
   real :: tmass_relaxation=1.0,tmass_relaxation1
 !
+! Mass relaxation
+!
+  real :: eta0=0.0
+!
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: bottom_function
   real, dimension (nx,ny,2) :: gradlb
@@ -83,7 +87,8 @@ module Special
 !
   namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
-       gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm
+       gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
+       lmass_relaxation,eta0
 !
   type InternalPencils
      real, dimension(nx) :: gr2
@@ -272,7 +277,7 @@ module Special
       if (lcalc_storm) call calc_storm(f,df,p)
 !
       if (lmass_relaxation) then
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-rho0)*tmass_relaxation1
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-eta0)*tmass_relaxation1
       endif
 !
     endsubroutine special_calc_density
