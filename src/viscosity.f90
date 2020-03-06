@@ -2394,23 +2394,6 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
-        if (idiag_fviscm/=0)   then
-          call dot2(p%fvisc,fvisc2)
-          call sum_mn_name(fvisc2,idiag_fviscm,lsqrt=.true.)
-        endif
-        if (idiag_ufviscm/=0)  &
-           call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
-           p%uu(:,2)*p%fvisc(:,2)+ &
-           p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
-        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
-        if (idiag_fviscmax/=0)  then
-           call dot2(p%fvisc,fvisc2)
-           call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
-        endif
-        if (idiag_fviscrmsx/=0) then
-           call dot2(p%fvisc,fvisc2)
-           call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
-        endif
 !        if (lvisc_smag_simplified) then
 !          if (ldensity) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !        endif
@@ -2427,13 +2410,7 @@ module Viscosity
           endwhere
           call max_mn_name(Reshock,idiag_Reshock)
         endif
-        if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_Sij2m/=0) call sum_mn_name(p%sij2,idiag_Sij2m)
-        if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
-!
-!        if (lslope_limit_diff) then
-!          if (idiag_slope_c_max/=0) call max_mn_name(p%char_speed_slope,idiag_slope_c_max)
-!        endif
 !
 !  Viscous heating for Smagorinsky viscosity.
 !
@@ -2456,6 +2433,26 @@ module Viscosity
             call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
           endif
         endif
+      endif
+!
+!
+! For slope-limted diffusion viscocity diagnostics need to be written
+! out at the last time step
+!
+
+      if (ldiagnos) then
+        if (idiag_fviscm/=0 .or. idiag_fviscmax/=0 .or. idiag_fviscrmsx/=0) &
+        call dot2(p%fvisc,fvisc2)
+        if (idiag_fviscm/=0) call sum_mn_name(fvisc2,idiag_fviscm,lsqrt=.true.)
+        if (idiag_ufviscm/=0)  &
+           call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
+           p%uu(:,2)*p%fvisc(:,2)+ &
+           p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
+        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
+        if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
+        if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
+        if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
       endif
 !
 !  1D-averages.
