@@ -168,8 +168,10 @@ if [ $same_source ]; then
     ln -s `readlink $olddir/src/read_all_videofiles.x` .
     ln -s `readlink $olddir/src/start.x` .
     ln -s `readlink $olddir/src/run.x` .
+    ln -s `readlink $olddir/src/special.so` .
   else
     ln -s $olddir/src/*.x .
+    ln -s $olddir/src/*.so .
   fi
   cp $olddir/src/*.inc .
   [ -f $olddir/src/revision.txt ] && cp $olddir/src/revision.txt .
