@@ -645,7 +645,7 @@ sub run_system_cmd {
     clear_error();
 
     if (@environment_args) {
-        @cmd_line = ('env', @environment_args, @cmd_line);
+        @cmd_line = ('env', @environment_args, ' ;', @cmd_line);
     }
 
     if ($debug) {
