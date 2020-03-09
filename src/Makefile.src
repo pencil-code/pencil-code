@@ -2459,12 +2459,17 @@ ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
         FC_HDF5_FULL := $(LD)
         LD := $(notdir $(LD))
 	ifeq ($(LD),)
-		# try our best guess (parallel version)
-                LD = h5pfc
+                ifdef ($(FC_HDF5))
+                    LD := $(FC_HDF5)
+		else 
+                # try our best guess (parallel version)
+                    LD := h5pfc
+                    FC_HDF5 := h5pfc
+                endif
+        else
+		# set HDF5 compiler and linker
+	        FC_HDF5 := $(LD)
 	endif
-
-	# set HDF5 compiler and linker
-        FC_HDF5 := $(LD)
 endif
 #
 #  RULES SECTION
