@@ -13542,6 +13542,9 @@ these configuration files, before you apply them in an active simulation run.
                & flag for calculating the heat conductivity $K$ (and also
                  $\grad \log K$) globally using the global arrays facility.
                  Only valid when \var{iheatcond}=\code{`K-profile'}.\\
+  \var{lread_hcond} [F]
+               & flag for reading the conductivity profile and its derivative 
+                 from the file ``hcond_glhc.dat" or ``hcond_glhc.ascii". \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
