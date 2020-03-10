@@ -471,8 +471,15 @@ class DataCube(object):
 
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
+        aatest = []
+        uutest = []
         for key in index.__dict__.keys():
-            if key != 'global_gg' and key != 'keys':
+            if 'aatest' in key:
+                aatest.append(key)
+            if 'uutest' in key:
+                uutest.append(key)
+            if key != 'global_gg' and key != 'keys' and 'aatest' not in key\
+                                  and  'uutest' not in key:
                 value = index.__dict__[key]
                 setattr(self, key, self.f[value-1, ...])
         # Special treatment for vector quantities.
@@ -480,6 +487,20 @@ class DataCube(object):
             self.uu = self.f[index.ux-1:index.uz, ...]
         if hasattr(index, 'aa'):
             self.aa = self.f[index.ax-1:index.az, ...]
+        # Special treatment for test method vector quantities.
+        #Note index 1,2,3,...,0 last vector may be the zero field/flow
+        if hasattr(index, 'aatest1'):
+            naatest = int(len(aatest)/3)
+            for j in range(0,naatest):
+                key = 'aatest'+str(np.mod(j+1,naatest))
+                value = index.__dict__['aatest1'] + 3*j
+                setattr(self, key, self.f[value-1:value+2, ...])
+        if hasattr(index, 'uutest1'):
+            nuutest = int(len(uutest)/3)
+            for j in range(0,nuutest):
+                key = 'uutest'+str(np.mod(j+1,nuutest))
+                value = index.__dict__['uutest'] + 3*j
+                setattr(self, key, self.f[value-1:value+2, ...])
 
         self.t = t
         self.dx = dx
