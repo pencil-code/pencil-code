@@ -44,6 +44,9 @@ def param(*args, **kwargs):
 
     *nest_dict*
       Reads parameters as nested dictionary.
+
+    *append_units*
+      Derives dimensional units from standard code units.
     """
 
     param_tmp = Param()
@@ -65,7 +68,7 @@ class Param(object):
 
 
     def read(self, datadir='data', param1=False, param2=False, quiet=True,
-             asdict=True, nest_dict=True):
+             asdict=True, nest_dict=True, append_units=True):
         """
         Read Pencil Code simulation parameters.
         Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
@@ -93,6 +96,9 @@ class Param(object):
 
         *nest_dict*
           Reads parameters as nested dictionary.
+
+        *append_units*
+          Derives dimensional units from standard code units.
         """
 
         import os
@@ -187,6 +193,18 @@ class Param(object):
                     print("Param.read: nl2python returned nothing!"+
                           " Is $PENCIL_HOME/bin in the path?")
                     return -1
+
+        if append_units:
+            setattr(self,'unit_time', self.unit_length/self.unit_velocity)
+            setattr(self,'unit_mass', self.unit_density*self.unit_length**3)
+            setattr(self,'unit_flux', self.unit_mass/self.unit_time**3)
+            setattr(self,'unit_energy', self.unit_mass*self.unit_velocity**2)
+            setattr(self,'unit_energy_density',
+                                        self.unit_density*self.unit_velocity**2)
+            setattr(self,'unit_entropy',
+                                    self.unit_velocity**2/self.unit_temperature)
+            setattr(self,'unit_current',
+                                   self.unit_magnetic*self.unit_length/self.mu0)
 
         return 0
 
@@ -334,3 +352,4 @@ class Param(object):
             if 'run' in super_name_list: super_name_list.remove('run')
             if 'init' in super_name_list: super_name_list.remove('init')
         return params, param_conflicts, super_name_list
+
