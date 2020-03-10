@@ -2308,6 +2308,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=gcc  #(meera)
 #CFLAGS=-O3 -DFUNDERSC=1  #(meera)
 ##
+## Christer's Beskow setup (FC_HDF5 needed for HDF5 to work)
+#FC=ftn
+#F77=$(FC)
+#FC_HDF5=ftn
+#CC=icc
+#FFLAGS=-O3 -mcmodel=large  -dynamic -fp-model strict
+#CFLAGS=-O3 -DFUNDERSC=1 -mcmodel=large -dynamic -D_Float128=__float128
+#FFLAGS_DOUBLE=-r8
+##
 ## joishi's laptop
 ##
 ##FC=gfortran #(ebisu)
@@ -2462,7 +2471,7 @@ ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
               FC_HDF5_FULL := $(LD)
               LD := $(notdir $(LD))
 	      ifeq ($(LD),)
-                # try our best guess (parallel version)
+		# try our best guess (parallel version)
                     LD := h5pfc
 	      endif
 	      # set HDF5 compiler and linker
