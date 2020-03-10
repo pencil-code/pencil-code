@@ -93,7 +93,7 @@ class Dim(object):
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             import h5py
 
-            with h5py.File(os.path.join(datadir, 'grid.h5'), 'r') as tmp:
+            with h5py.File(os.path.join(datadir, 'allprocs','var.h5'), 'r') as tmp:
                 self.mx = tmp['settings']['mx'][0]
                 self.my = tmp['settings']['my'][0]
                 self.mz = tmp['settings']['mz'][0]
