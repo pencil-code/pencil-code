@@ -2463,10 +2463,10 @@ ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
 	export HDF5_FC:=$(FC)
 	export HDF5_FLINKER:=$(LD)
-        ifdef ($(FC_HDF5))
+	ifneq ($(FC_HDF5),)
               LD := $(FC_HDF5)
-	else 
-	      # find HDF5 compiler (parallel version first)
+	else
+		# find HDF5 compiler (parallel version first)
 	      LD := $(shell which h5pfc 2> /dev/null || which h5fc 2> /dev/null)
               FC_HDF5_FULL := $(LD)
               LD := $(notdir $(LD))
