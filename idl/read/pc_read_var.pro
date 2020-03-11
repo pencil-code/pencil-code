@@ -181,7 +181,9 @@ COMPILE_OPT IDL2,HIDDEN
     for pos = 0, num_quantities-1 do begin
 
       quan=quantities[pos]
-      if stregex(quan,'aatest',/bool) or stregex(quan,'uutest',/bool) then begin
+      if stregex(quan,'aatest',/bool) or $
+         stregex(quan,'uutest',/bool) or $
+         stregex(quan,'np_ap',/bool) then begin
         testdata=strmid(quan,0,2)+'test' & itestdata=2 & quan=testdata+'1'
       endif else if (quan eq 'dummy') then begin
         if testdata ne '' then begin
