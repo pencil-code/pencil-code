@@ -26,7 +26,7 @@ module Particles
 !
   use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, indgen
   use Messages
   use Particles_cdata
   use Particles_map
@@ -340,7 +340,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_index_append
       use Particles_caustics, only: register_particles_caustics
       use Particles_tetrad, only: register_particles_tetrad
       use Particles_potential, only: register_particles_potential
@@ -375,24 +375,29 @@ module Particles
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
       endif
 !
-! Store number of particles per grid cell if requested
+!  Store the number of particles per grid cell if requested.
 !
-      if (lnp_ap_as_aux) then
-        ! Loop over grain sizes:
-        do k=1,ndustrad
-          sdust=trim(itoa(k))
-          call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
-          iapn(k) = ind_tmp
-        enddo
-      else
-        if (np_ap_spec) then
-          call fatal_error('register_particles',&
-              'Must set lnp_ap_as_aux=T in &particles_init_pars for corr. spec.')
+      if (np_ap_spec) then
+        if (lnp_ap_as_aux) then
+          !! Loop over grain sizes:
+          !do k=1,ndustrad
+          !  sdust=trim(itoa(k))
+          !  call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
+          !  iapn(k) = ind_tmp
+          !enddo
+          !
+          call farray_register_auxiliary('np_ap',iapn(1),vector=ndustrad)
+          iapn = iapn(1) + indgen(ndustrad) - 1
+          call farray_index_append('n_np_ap',ndustrad)
+        else
+          call fatal_error('register_particles','Must set lnp_ap_as_aux=T in &part&
+               &icles_init_pars to calculate particle-size-dependent spectra.')
         endif
       end if
       call put_shared_variable('iapn', iapn, caller='register_particles')
-      !====================
-
+!
+!  Rhop
+!
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated = lparticles_sink .or. lcommunicate_rhop)
       call put_shared_variable('irhop', irhop, caller='register_particles')
