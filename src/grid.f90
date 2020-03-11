@@ -1373,6 +1373,11 @@ module Grid
 !
       if (lroot.or..not.lcollective_IO) call remove_prof('z')
       lwrite_prof=.true.
+
+      if (lslope_limit_diff) then
+        if (lroot) print*,'initialize_grid: Set up half grid x12, y12, z12'
+        call generate_halfgrid(x12,y12,z12)
+      endif
 !
     endsubroutine initialize_grid
 !***********************************************************************
@@ -2522,5 +2527,33 @@ module Grid
       endif
 
     endsubroutine grid_bound_data
+!***********************************************************************
+    subroutine generate_halfgrid(x12,y12,z12)
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      real, dimension (mx), intent(out) :: x12
+      real, dimension (my), intent(out) :: y12
+      real, dimension (mz), intent(out) :: z12
+!
+      if (nxgrid == 1) then
+        x12 = x
+      else
+        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+      endif
+!
+      if (nygrid == 1) then
+        y12 = y
+      else
+        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+      endif
+!
+      if (nzgrid == 1) then
+        z12 = z
+      else
+        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+      endif
+!
+    endsubroutine generate_halfgrid
 !***********************************************************************
 endmodule Grid

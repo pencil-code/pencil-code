@@ -149,7 +149,8 @@ module Equ
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
-                     lslope_limit_diff .or. lvisc_smag .or. &
+!                     lslope_limit_diff .or. lvisc_smag .or. &
+                     lvisc_smag .or. &
                      lyinyang !!!.or.lgpu
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.

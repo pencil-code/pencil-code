@@ -56,9 +56,6 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
-  real, dimension (mx) :: x12
-  real, dimension (my) :: y12
-  real, dimension (mz) :: z12
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_nu_non_newtonian=.false.
@@ -215,6 +212,8 @@ module Viscosity
 !
 !  Needed for slope limited diffusion
 !
+      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
+
 !      if (lvisc_slope_limited) then
 !        if (iFF_diff==0) then
 !          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
@@ -655,11 +654,8 @@ module Viscosity
 !  Slope limited diffusion is switch on for characteristic velocity,
 !  which might be need also needed for other quantities
 !
-      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
       if (lvisc_slope_limited) then
         if (lroot) print*,'viscous force: slope-limited diffusion'
-        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-        call generate_halfgrid(x12,y12,z12)
       endif
 !
 !  debug output
@@ -2752,6 +2748,10 @@ module Viscosity
           q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
+!
+!   Flux is defined with a positive sign !!!!
+!   div and heating is then also defined with a positive sign to compensate.
+!
 
 !
 !
@@ -2787,7 +2787,7 @@ module Viscosity
                               /(z12(n+1)-z12(n))
 
             case ('ohmic')
-              call fatal_error('viscosity:calc_slope_diff_flux','ohmic heating types not yet implemented')
+              call fatal_error('viscosity:calc_slope_diff_flux','ohmic heating type not yet implemented')
 !
             case default
               call fatal_error('viscosity:calc_slope_diff_flux','other heating types not yet implemented')
@@ -2799,30 +2799,50 @@ module Viscosity
 !
 ! Now calculate the 2nd order divergence
 !
-      if (lspherical_coords) then
-        div_flux=0.0
-        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
-        +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
-                sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
-            +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
-      else if (lcartesian_coords) then
-        div_flux=0.0
-        if (nxgrid /= 1) then
+      div_flux=0.0
+      if (nxgrid /= 1) then
+!        if (lspherical_coords) then
+!          div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+!                  /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
+!        elseif (lcylindrical_coords) then
+!          div_flux=div_flux+(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
+!                  /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
+!        else
+!
+!! JW: At least for spherical coordinates, the Cartesian form works much better.
+!
           div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                   /(x12(l1:l2)-x12(l1-1:l2-1))
-        endif
-        if (nygrid /= 1) then
+                  /(x12(l1:l2)-x12(l1-1:l2-1))
+!        endif
+      endif
+!
+      if (nygrid /= 1) then
+!        if (lspherical_coords) then
+!          div_flux=div_flux+(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
+!                  /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
+!        elseif (lcylindrical_coords) then
+!          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
+!                  /(x(l1:l2)*(y12(m)-y12(m-1)))
+!        else
+!
+!! JW: At least for spherical coordinates, the Cartesian form works much better.
+!
           div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
                    /(y12(m)-y12(m-1))
-        endif
-        if (nzgrid /= 1) then
+!        endif
+      endif
+      if (nzgrid /= 1) then
+!        if (lspherical_coords) then
+!          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+!                  /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
+!        else
+!
+!! JW: At least for spherical coordinates, the Cartesian form works much better.
+!
           div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-                   /(z12(n)-z12(n-1))
-        endif
-       else
-         call fatal_error('viscosity:calc_slope_diff_flux','Not coded for cylindrical')
-       endif
+                  /(z12(n)-z12(n-1))
+!        endif
+      endif
 !
     endsubroutine calc_slope_diff_flux
 !*******************************************************************************
@@ -2964,34 +2984,6 @@ module Viscosity
 !
     endfunction minmod_alt
 !***********************************************************************
-    subroutine generate_halfgrid(x12,y12,z12)
-!
-! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
-!
-      real, dimension (mx), intent(out) :: x12
-      real, dimension (my), intent(out) :: y12
-      real, dimension (mz), intent(out) :: z12
-!
-      if (nxgrid == 1) then
-        x12 = x
-      else
-        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
-      endif
-!
-      if (nygrid == 1) then
-        y12 = y
-      else
-        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
-      endif
-!
-      if (nzgrid == 1) then
-        z12 = z
-      else
-        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
-      endif
-!
-    endsubroutine generate_halfgrid
-!*******************************************************************************
     subroutine calc_lin_interpol(f,j,fim12,fip12,k)
 !
 ! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)

@@ -78,6 +78,10 @@ module Cdata
   real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
+  real, dimension (mx) :: x12    ! for slope-limted-diffusion
+  real, dimension (my) :: y12    ! for slope-limted-diffusion
+  real, dimension (mz) :: z12    ! for slope-limted-diffusion
+
 !
 !  Grid parameters.
 !
