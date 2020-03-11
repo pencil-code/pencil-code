@@ -58,9 +58,9 @@ module Special
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
-  real, dimension (mx) :: x12
-  real, dimension (my) :: y12
-  real, dimension (mz) :: z12
+!  real, dimension (mx) :: x12
+!  real, dimension (my) :: y12
+!  real, dimension (mz) :: z12
 !
   real, dimension(nx,ny,2) :: A_init
 !
