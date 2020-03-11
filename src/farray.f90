@@ -329,8 +329,8 @@ module FArrayManager
       if (.not. present (array) .and. present (vector)) then
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
+        l = len(trim(component))
         if (vector == 3) then
-          l = len(trim(component))
           if (l == 3) then
             ! double endings: iuu, iaa, etc.
             if (component(2:2) == component(3:3)) l = 2
