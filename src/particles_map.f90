@@ -1798,7 +1798,7 @@ module Particles_map
       call get_shared_variable('ap0',ap0,ierr)
       loop_ap__cic:do ik=1,ndustrad
         if ((fp(k,iap) > ap0(ik)*0.99) .and. (fp(k,iap) < ap0(ik)*1.01)) then
-          index = ik
+          index = iapn(ik)
           exit loop_ap__cic
         endif
       enddo loop_ap__cic
