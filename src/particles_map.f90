@@ -1494,27 +1494,23 @@ module Particles_map
 !  Nearest Grid Point (NGP) method.
 !
         else
-          if (lparticles_radius.or.lparticles_number) then
-            do k=1,npar_loc
+          do k=1,npar_loc
 !
             call map_xxp_grid__loop_ap(fp,k,iapn_ik)
 !
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
-              f(ix0,iy0,iz0,iapn_ik)=f(ix0,iy0,iz0,iapn_ik) + 1.0
+            f(ix0,iy0,iz0,iapn_ik)=f(ix0,iy0,iz0,iapn_ik) + 1.0
 !
-            enddo
-          else
-            ! THIS MAKES NO SENSE / CS
-            f(l1:l2,m1:m2,n1:n2,iapn_ik)=f(l1:l2,m1:m2,n1:n2,iapn_ik)
-          endif
+          enddo
         endif
 !
 !  Fold first ghost zone of f.
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) then
-            ! THIS MAKES NO SENSE / CS
-          call fold_f(f,iapn_ik,iapn_ik)
+          do ik=1,ndustrad
+            call fold_f(f,iapn(ik),iapn(ik))
+          enddo
         endif
       end if calculate__np_ap_spec
 !
