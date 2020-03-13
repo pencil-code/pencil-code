@@ -617,7 +617,8 @@ module Magnetic_meanfield
 !
       if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
           alpha_effect/=0.0 .or. delta_effect/=0.0 .or. &
-          gamma_effect/=0.0 ) &
+          gamma_effect/=0.0 .or. lread_alpha_tensor_z .or. &
+          lread_eta_tensor_z) &
           lpenc_requested(i_mf_EMF)=.true.
       if (delta_effect/=0.0) lpenc_requested(i_oxJ)=.true.
 !
@@ -961,7 +962,14 @@ module Magnetic_meanfield
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x(l1:l2)-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
-        case ('z/H*exp(-z2/2h2)'); alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+        case ('z/H*exp(-z2/2h2)')
+          if (alpha_rmax/=0.) then
+            rr=sqrt(x(l1:l2)**2+y(m)**2)
+            pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
+            alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
+          else
+            alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+          endif
         case ('z/H*exp(-z2/2h2)*spiral')
           rr=sqrt(x(l1:l2)**2+y(m)**2)
           pp=atan2(y(m),x(l1:l2))
@@ -1086,7 +1094,9 @@ module Magnetic_meanfield
                   *(alpha_tensor(i,j)+alpha_tensor_y(m,i,j))*p%bb(:,j)
               elseif (lread_alpha_tensor_z) then
                 if (i<=2.and.j<=2) then
-                  p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
+                  !p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
+!AB: working with alpha_total is questionable in this case
+                  p%mf_EMF(:,i)=p%mf_EMF(:,i)+1. &
                       *alpha_tensor_z(n-n1+1,i,j)*p%bb(:,j)
                 endif
               else
@@ -1314,6 +1324,7 @@ module Magnetic_meanfield
           call ysum_mn_name_xz(alpha_total,idiag_alpmxz)
         endif
       endif
+!print*,'AXEL1',n,p%mf_EMF(:,1),p%mf_EMF(:,2)
 !
     endsubroutine calc_pencils_magn_mf
 !***********************************************************************
@@ -1369,7 +1380,8 @@ module Magnetic_meanfield
       if (lmagn_mf .and. &
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
         alpha_effect/=0.0 .or. delta_effect/=0.0) .or. &
-        gamma_effect/=0.0 ) then
+        gamma_effect/=0.0 .or. lread_alpha_tensor_z .or. &
+        lread_eta_tensor_z) then
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
