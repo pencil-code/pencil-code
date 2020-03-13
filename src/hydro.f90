@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
-!
+! PENCILS PROVIDED char_speed_sld(3,2)
 !***************************************************************
 !
 module Hydro
@@ -143,7 +143,7 @@ module Hydro
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
-  real :: omega_ini=0.0
+  real :: omega_ini=0.0, w_sld_cs=0.0
   logical :: loutest,ldiffrot_test=.false.
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
@@ -167,7 +167,7 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh, delta_u, n_xprof
+      ll_sh, mm_sh, delta_u, n_xprof, w_sld_cs
 !
 !  Run parameters.
 !
@@ -247,7 +247,7 @@ module Hydro
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
-      lcdt_tauf, cdt_tauf, ulev,&
+      lcdt_tauf, cdt_tauf, ulev, w_sld_cs, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp
 !
@@ -2147,8 +2147,15 @@ module Hydro
       if (lfargo_advection) then
         lpenc_requested(i_uu_advec)=.true.
         lpenc_requested(i_uuadvec_guu)=.true.
-      endif
+      endif!
 !
+!  characteristic speed for slope limited diffusion
+!
+      if (lslope_limit_diff) then
+        lpenc_requested(i_cs2)=.true.
+        if (lmagnetic) lpenc_requested(i_va2)=.true.
+      endif
+
 !  video pencils
 !
       if (lwrite_slices) then
@@ -2422,7 +2429,7 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
@@ -2629,6 +2636,29 @@ module Hydro
           p%uuadvec_guu(:,3)=p%uuadvec_guu(:,3)+r1_mn*(p%uu(:,3)*p%uu(:,1)+p%uu(:,3)*p%uu(:,2)*cotth(m))
         endif
       endif
+!
+!   for slope limited diffusion
+!
+     if (lpenc_loc(i_char_speed_sld)) then
+       p%char_speed_sld=0.
+       if (llast) then
+         do kk=1,3
+           if ((kk == 1 .and. nxgrid /= 1) .or. &
+               (kk == 2 .and. nygrid /= 1) .or. &
+               (kk == 3 .and. nzgrid /= 1)) then
+!
+             call characteristic_speed(f,p,c_sld_im12,c_sld_ip12,kk)
+             p%char_speed_sld(:,kk,1)=c_sld_im12+w_sld_cs*sqrt(p%cs2)
+             p%char_speed_sld(:,kk,2)=c_sld_ip12+w_sld_cs*sqrt(p%cs2)
+             if (lmagnetic) then
+               p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+               p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+             endif
+           endif
+        enddo
+      endif
+    endif
+!
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************

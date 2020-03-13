@@ -109,7 +109,7 @@ module Viscosity
   logical :: lno_visc_heat_zbound=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
-  real :: h_slope_limited=0., w_sld_cs=0.
+  real :: h_slope_limited=0. !, w_sld_cs=0.
   character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
@@ -125,7 +125,8 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth, w_sld_cs
+      no_visc_heat_z0,no_visc_heat_zwidth
+!, w_sld_cs
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -948,9 +949,14 @@ module Viscosity
           lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
           lvisc_spitzer .or. lvisc_hyper3_cmu_const_strt_otf) &
           lpenc_requested(i_rho1)=.true.
-      if (lvisc_hyper3_csmesh .or. lvisc_slope_limited) lpenc_requested(i_cs2)=.true.
-      if (lvisc_slope_limited .and. lviscosity_heat) lpenc_requested(i_rho)=.true.
-!      if (lvisc_slope_limited) lpenc_requested(i_rho)=.true.
+      if (lvisc_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
+!
+      if (lvisc_slope_limited) then
+         lpenc_requested(i_char_speed_sld)=.true.
+!         lpenc_requested(i_cs2)=.true.
+         if (lviscosity_heat) lpenc_requested(i_rho)=.true.
+!         if (lmagnetic) lpenc_requested(i_va2)=.true.
+      endif
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
         lpenc_requested(i_del6u_strict)=.true.
@@ -2694,339 +2700,5 @@ module Viscosity
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine calc_slope_diff_flux(f,j,p,div_flux, &
-                                    heat_sl,heat_sl_type)
-      intent(in) :: f,j
-      intent(out) :: div_flux
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: flux_im12,flux_ip12
-      real, dimension (nx,3) :: cmax_im12,cmax_ip12
-      real, dimension (nx) :: div_flux, dens_m12, dens_p12
-      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
-      real, dimension (nx) :: fim1,fip1,rfac,q1
-!
-      real, dimension (nx), optional, intent(out) :: heat_sl
-      character(LEN=*), optional, intent(in) :: heat_sl_type
-!
-      real :: nlf=1.
-      type (pencil_case), intent(in) :: p
-      integer :: j,k
-
-
-!
-! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
-!
-        fim1=0
-        fip1=0
-        fim12_l=0
-        fim12_r=0
-        fip12_l=0
-        fip12_r=0
-        cmax_ip12=0
-        cmax_im12=0
-        if(present(heat_sl)) heat_sl=0.0
-!
-!  Generate halfgrid points
-!
-      do k=1,3
-!
-        call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
-                                   fim1,fip1,k)
-!
-        call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
-!
-        do ix=1,nx
-          rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
-                     fim1(ix))+tini)
-          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
-        enddo
-        flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
-        do ix=1,nx
-          rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
-                     f(ix+nghost,m,n,j))+tini)
-          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
-        enddo
-        flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
-!
-!   Flux is defined with a positive sign !!!!
-!   div and heating is then also defined with a positive sign to compensate.
-!
-
-!
-!
-!   Calculating heating
-!
-        if (present(heat_sl)) then
-
-          select case (heat_sl_type)
-
-            case('viscose')
-              if (ldensity_nolog) then
-                call calc_lin_interpol(f,irho,dens_m12,dens_p12,k)
-              else
-                call calc_lin_interpol(f,ilnrho,dens_m12,dens_p12,k)
-              endif
-
-              if (k == 1 .and. nxgrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(x12(l1:l2)-x12(l1-1:l2-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(x12(l1+1:l2+1)-x12(l1:l2))
-
-              if (k == 2 .and. nygrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(y12(m)-y12(m-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(y12(m+1)-y12(m))
-
-              if (k == 3 .and. nzgrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(z12(n)-z12(n-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(z12(n+1)-z12(n))
-
-            case ('ohmic')
-              call fatal_error('viscosity:calc_slope_diff_flux','ohmic heating type not yet implemented')
-!
-            case default
-              call fatal_error('viscosity:calc_slope_diff_flux','other heating types not yet implemented')
-!
-          endselect
-        endif
-
-      enddo
-!
-! Now calculate the 2nd order divergence
-!
-      div_flux=0.0
-      if (nxgrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-!                  /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
-!        elseif (lcylindrical_coords) then
-!          div_flux=div_flux+(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
-!                  /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
-!        else
-!
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
-!
-          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                  /(x12(l1:l2)-x12(l1-1:l2-1))
-!        endif
-      endif
-!
-      if (nygrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
-!                  /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
-!        elseif (lcylindrical_coords) then
-!          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
-!                  /(x(l1:l2)*(y12(m)-y12(m-1)))
-!        else
-!
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
-!
-          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
-                   /(y12(m)-y12(m-1))
-!        endif
-      endif
-      if (nzgrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-!                  /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
-!        else
-!
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
-!
-          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-                  /(z12(n)-z12(n-1))
-!        endif
-      endif
-!
-    endsubroutine calc_slope_diff_flux
-!*******************************************************************************
-    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
-                                     fip1,k)
-!
-! Reconstruction of a scalar by slope limited linear interpolation
-! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
-!
-      intent(in) :: f,k,j
-      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
-      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
-      real, dimension (0:nx+1) :: delfx
-      integer :: j,k
-      integer :: i,ix
-      real :: tmp0,tmp1,tmp2,tmp3
-! x-component
-      select case (k)
-        case(1)
-          do i=l1-1,l2+1
-            ix=i-nghost
-            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))
-            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))
-            delfx(ix) = minmod_alt(tmp1,tmp2)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)
-            fim12_r(ix) = f(i,m,n,j)-delfx(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfx(ix)
-            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)
-            fim1(ix) = f(i-1,m,n,j)
-            fip1(ix) = f(i+1,m,n,j)
-          enddo
-! y-component
-        case(2)
-          do i=l1,l2
-            ix=i-nghost
-            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
-            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
-            delfym1(ix) = minmod_alt(tmp0,tmp1)
-            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
-            delfy(ix) = minmod_alt(tmp1,tmp2)
-            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
-            delfyp1(ix) = minmod_alt(tmp2,tmp3)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
-            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
-            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
-            fim1(ix) = f(i,m-1,n,j)
-            fip1(ix) = f(i,m+1,n,j)
-          enddo
-! z-component
-        case(3)
-          do i=l1,l2
-            ix=i-nghost
-            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
-            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
-            delfzm1(ix) = minmod_alt(tmp0,tmp1)
-            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
-            delfz(ix) = minmod_alt(tmp1,tmp2)
-            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
-            delfzp1(ix) = minmod_alt(tmp2,tmp3)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
-            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
-            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
-            fim1(ix) = f(i,m,n-1,j)
-            fip1(ix) = f(i,m,n+1,j)
-          enddo
-        case default
-          call fatal_error('viscosity:slope_lim_lin_interpol','wrong component')
-        endselect
-!
-    endsubroutine slope_lim_lin_interpol
-!***********************************************************************
-    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
-      intent(in) :: f,k
-      intent(out) :: cmax_im12,cmax_ip12
-!
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: cmax_im12,cmax_ip12
-      real, dimension (nx) :: ux2_tmp,uy2_tmp,uz2_tmp
-      real, dimension (0:nx) :: ux2_xtmp,uy2_xtmp,uz2_xtmp
-      type (pencil_case), intent(in) :: p
-      integer :: k
-!
-      select case (k)
-        case(1)
-          ! x-component
-          ux2_xtmp=0.5*(f(l1-1:l2,m,n,iux)**2+f(l1:l2+1,m,n,iux)**2)
-          uy2_xtmp=0.5*(f(l1-1:l2,m,n,iuy)**2+f(l1:l2+1,m,n,iuy)**2)
-          uz2_xtmp=0.5*(f(l1-1:l2,m,n,iuz)**2+f(l1:l2+1,m,n,iuz)**2)
-          cmax_im12(:,1)=sqrt(ux2_xtmp(0:nx-1)+uy2_xtmp(0:nx-1)+uz2_xtmp(0:nx-1))+w_sld_cs*sqrt(p%cs2)
-          cmax_ip12(:,1)=sqrt(ux2_xtmp(1:nx)  +uy2_xtmp(1:nx)  +uz2_xtmp(1:nx)  )+w_sld_cs*sqrt(p%cs2)
-        case(2)
-          ! y-component
-          ux2_tmp=0.5*(f(l1:l2,m-1,n,iux)**2+f(l1:l2,m,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m-1,n,iuy)**2+f(l1:l2,m,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m-1,n,iuz)**2+f(l1:l2,m,n,iuz)**2)
-          cmax_im12(:,2)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
-
-          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m+1,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m+1,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m+1,n,iuz)**2)
-          cmax_ip12(:,2)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
-
-        case(3)
-          ! z-component
-          ux2_tmp=0.5*(f(l1:l2,m,n-1,iux)**2+f(l1:l2,m,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n-1,iuy)**2+f(l1:l2,m,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n-1,iuz)**2+f(l1:l2,m,n,iuz)**2)
-          cmax_im12(:,3)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
-!
-          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n+1,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n+1,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m,n+1,iuz)**2)
-          cmax_ip12(:,3)=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)+w_sld_cs*sqrt(p%cs2)
-        endselect
-    endsubroutine characteristic_speed
-!***********************************************************************
-    real function minmod_alt(a,b)
-!
-!  minmod=max(0,min(abs(a),sign(1,a)*b))
-!
-      real :: a,b
-!
-      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
-!
-    endfunction minmod_alt
-!***********************************************************************
-    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
-!
-! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
-!
-      intent(in) :: f,k,j
-      intent(out) :: fim12, fip12
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: fim12, fip12
-      integer :: j,k
-
-      select case (k)
-! x-component
-        case(1)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1-1:l2-1,m,n,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1+1:l2+1,m,n,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1-1:l2-1,m,n,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1+1:l2+1,m,n,j))
-          endif
-! y-component
-        case(2)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m-1,n,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m+1,n,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m-1,n,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m+1,n,j))
-          endif
-! z-component
-        case(3)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n-1,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n+1,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n-1,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n+1,j))
-          endif
-        case default
-          call fatal_error('viscosity:calc_lin_interpol','wrong component')
-        endselect
-!
-    endsubroutine calc_lin_interpol
-!*******************************************************************************
 endmodule Viscosity

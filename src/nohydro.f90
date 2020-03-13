@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
 ! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
+! PENCILS PROVIDED char_speed_sld(3,2)
 !
 !***************************************************************
 module Hydro
@@ -45,7 +46,7 @@ module Hydro
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
-  real :: ampl_fcont_uu=1.
+  real :: ampl_fcont_uu=1., w_sld_cs=0.0
   logical :: lforcing_cont_uu=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
@@ -176,6 +177,13 @@ module Hydro
         endif
       endif
 !
+!  characteristic speed for slope limited diffusion
+!
+      if (lslope_limit_diff) then
+        lpenc_requested(i_cs2)=.true.
+        if (lmagnetic) lpenc_requested(i_va2)=.true.
+      endif
+!
 !  disgnostic pencils
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
@@ -242,6 +250,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
+      integer :: kk
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p
@@ -273,6 +282,24 @@ module Hydro
       if (lpenc_loc(i_del2u)) p%del2u=0.0
 ! curlo
       if (lpenc_loc(i_curlo)) p%curlo=0.0
+
+      if (lpenc_loc(i_char_speed_sld)) then
+        p%char_speed_sld=0.
+        if (llast) then
+          do kk=1,3
+            if ((kk == 1 .and. nxgrid /= 1) .or. &
+                (kk == 2 .and. nygrid /= 1) .or. &
+                (kk == 3 .and. nzgrid /= 1)) then
+              p%char_speed_sld(:,kk,1)=w_sld_cs*sqrt(p%cs2)
+              p%char_speed_sld(:,kk,2)=w_sld_cs*sqrt(p%cs2)
+              if (lmagnetic) then
+                p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+                p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+              endif
+            endif
+         enddo
+       endif
+     endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
