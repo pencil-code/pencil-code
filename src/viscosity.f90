@@ -123,7 +123,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
+      h_slope_limited, islope_limiter, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth
 !, w_sld_cs
@@ -213,7 +213,7 @@ module Viscosity
 !
 !  Needed for slope limited diffusion
 !
-      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
+      if (any(ivisc=='nu-slope-limited')) lslope_limit_diff = .true.
 
 !      if (lvisc_slope_limited) then
 !        if (iFF_diff==0) then
@@ -307,6 +307,7 @@ module Viscosity
       lvisc_smag_cross_simplified=.false.
       lvisc_snr_damp=.false.
       lvisc_spitzer=.false.
+      lvisc_slope_limited=.false.
 !
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -468,6 +469,9 @@ module Viscosity
           if (lroot) print*,'viscous force: temperature dependent nu'
           lpenc_requested(i_sij)=.true.
           lvisc_spitzer=.true.
+        case ('nu-slope-limited')
+          if (lroot) print*,'viscous force: slope-limited diffusion'
+          lvisc_slope_limited=.true.
         case ('none',' ')
           ! do nothing
         case default
@@ -652,13 +656,6 @@ module Viscosity
 !
       if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
 !
-!  Slope limited diffusion is switch on for characteristic velocity,
-!  which might be need also needed for other quantities
-!
-      if (lvisc_slope_limited) then
-        if (lroot) print*,'viscous force: slope-limited diffusion'
-      endif
-!
 !  debug output
 !
       if (lroot.and.ip<14) print*,'xmask_vis=',xmask_vis
@@ -796,7 +793,6 @@ module Viscosity
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
         idiag_fviscmax=0; idiag_fviscmin=0
-!idiag_slope_c_max=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -820,7 +816,6 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
-!        call parse_name(iname,cname(iname),cform(iname),'slope_c_max',idiag_slope_c_max)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
         call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
       enddo
@@ -953,9 +948,7 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
          lpenc_requested(i_char_speed_sld)=.true.
-!         lpenc_requested(i_cs2)=.true.
          if (lviscosity_heat) lpenc_requested(i_rho)=.true.
-!         if (lmagnetic) lpenc_requested(i_va2)=.true.
       endif
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
