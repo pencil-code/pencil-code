@@ -2652,7 +2652,7 @@ module Hydro
              p%char_speed_sld(:,kk,2)=c_sld_ip12+w_sld_cs*sqrt(p%cs2)
              if (lmagnetic) then
                p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
-               p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+               p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,2)+sqrt(p%va2)
              endif
            endif
         enddo

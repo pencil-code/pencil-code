@@ -23,6 +23,7 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
+! PENCILS PROVIDED char_speed_sld(3,2)
 !
 !***************************************************************
 !
@@ -101,7 +102,7 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
-  real :: u_out_kep=0.0, w_sldchar_hyd=1.0
+  real :: u_out_kep=0.0, w_sldchar_hyd=1.0, w_sld_cs=0.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
@@ -1210,10 +1211,30 @@ module Hydro
       type (pencil_case),                intent(OUT):: p
       logical, dimension(:),             intent(IN) :: lpenc_loc
 !
+      integer :: kk
+
       if (llinearized_hydro) then
         call calc_pencils_hydro_linearized(f,p,lpenc_loc)
       else
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
+      endif
+!
+      if (lpenc_loc(i_char_speed_sld)) then
+        p%char_speed_sld=0.
+        if (llast) then
+          do kk=1,3
+            if ((kk == 1 .and. nxgrid /= 1) .or. &
+                (kk == 2 .and. nygrid /= 1) .or. &
+                (kk == 3 .and. nzgrid /= 1)) then
+              p%char_speed_sld(:,kk,1)=w_sld_cs*sqrt(p%cs2)
+              p%char_speed_sld(:,kk,2)=w_sld_cs*sqrt(p%cs2)
+              if (lmagnetic) then
+                p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
+                p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,2)+sqrt(p%va2)
+              endif
+            endif
+          enddo
+        endif
       endif
 !
       endsubroutine calc_pencils_hydro_pencpar
