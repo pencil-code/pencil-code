@@ -43,7 +43,7 @@
    !ampllnrho=1.
    !kx_lnrho=0.0314159265358979
    !6.2831853071795864
-   rho_const=0.0
+   !rho_const=0.0
    ldensity_nolog=T
 /
 &special_init_pars
