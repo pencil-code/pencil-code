@@ -7826,17 +7826,20 @@ source.
 When you have added new stuff to the code, don't forget to mention this
 in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
-\paragraph
 \index{multiple special modules}
-{Use of more than one special module} at a time requires that the environment
+\paragraph
+{Using more than one special module} at a time requires that the environment
 variables {\tt \$MODULE_PREFIX}, {\tt \$MODULE_INFIX} and {\tt \$MODULE_SUFFIX}
 are set properly at runtime. They can be derived from the {\it qualified names}
 of module functions which have in general the form 
  $\langle${\it prefix}$\rangle\langle${\it module name}$\rangle\langle${\it infix}$\rangle\langle${\it function name}$\rangle\langle${\it suffix}$\rangle$
-with its details depending on the Fortran compiler used. They can be learned by employing the {\it nm} command, say, by {\it nm src/general.o | more}.
-The environment variables are most conveniently set in the users {\tt .bashrc} or a proper configuration file of the {\sc Pencil Code}.
-In the {\tt Makefile.local} file the requested special modules are simply specified as a list of names as\\
-{\tt Special = special/$\langle${\it module 1}$\rangle\langle${\it module 2}}$\rangle\ldots}$.
+with its details depending on the Fortran compiler used. These can be learned by employing the {\tt nm} command, say, by 
+\begin{alltt}
+ \prompt{unix> }  nm src/general.o | more .
+\end{alltt}
+The environment variables are most conveniently set in the user's {\tt .bashrc}, {\tt .cshrc} or a proper configuration file of the {\sc Pencil Code} (section {\tt environment}).
+In the {\tt Makefile.local} file, the requested special modules are simply specified as a list of names:
+{\tt SPECIAL = special/$\langle${\it module 1}$\rangle$ special/$\langle${\it module 2}$\rangle\ldots$}.
  
 \subsection{Adding switchable modules}
 
