@@ -7793,11 +7793,14 @@ add a new Special module.  Doing so is relatively straight forward and
 there is even a special directory for such additions.
 
 To create your own special module, copy \file{nospecial.f90} from the src/
-directory to a new name in the src/special/ directory.  It is currently only
-possible to have one special modules at a time and so several new bits of
-physics are often put in to one special module. For this reasons a name
-should be chosen that relates to the problem to be solved rather than
-the specific physics being implemented.
+directory to a new name in the src/special/ directory.  
+In many cases, users may want to put all new bits of physics, needed for the
+specific problem at hand, into a single special module. The name chosen for it
+should then relate to that problem. It is also possible to employ several
+(at present up to five) different special modules at a time in a single setup
+which allows to let naming follow the specific physics being implemented
+(for technicalities
+in this case, see the end of this section).
 
 The first thing to do in your new module is to change the lspecial=.false.
 header to say lspecial=.true.
@@ -7823,6 +7826,18 @@ source.
 When you have added new stuff to the code, don't forget to mention this
 in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
+\paragraph
+\index{multiple special modules}
+{Use of more than one special module} at a time requires that the environment
+variables {\tt \$MODULE_PREFIX}, {\tt \$MODULE_INFIX} and {\tt \$MODULE_SUFFIX}
+are set properly at runtime. They can be derived from the {\it qualified names}
+of module functions which have in general the form 
+ $\langle${\it prefix}$\rangle\langle${\it module name}$\rangle\langle${\it infix}$\rangle\langle${\it function name}$\rangle\langle${\it suffix}$\rangle$
+with its details depending on the Fortran compiler used. They can be learned by employing the {\it nm} command, say, by {\it nm src/general.o | more}.
+The environment variables are most conveniently set in the users {\tt .bashrc} or a proper configuration file of the {\sc Pencil Code}.
+In the {\tt Makefile.local} file the requested special modules are simply specified as a list of names as\\
+{\tt Special = special/$\langle${\it module 1}$\rangle\langle${\it module 2}}$\rangle\ldots}$.
+ 
 \subsection{Adding switchable modules}
 
 In some cases where a piece of physics is thought to be more fundamental,
