@@ -1769,7 +1769,6 @@ module Energy
       use EquationOfState, only : eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
 !
       real :: fact
       real, dimension (nx,3):: gradTT
