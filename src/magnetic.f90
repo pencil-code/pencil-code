@@ -3054,7 +3054,7 @@ module Magnetic
 !
 !  Find bb if as communicated auxiliary.
 !
-      getbb: if (lbb_as_comaux.or.lalfven_as_aux) then
+      getbb: if (lbb_as_comaux.or.lalfven_as_aux.or.lslope_limit_diff) then
         call zero_ghosts(f, iax, iaz)
         call update_ghosts(f, iax, iaz)
         mn_loop: do imn = 1, ny * nz
@@ -3074,7 +3074,7 @@ module Magnetic
 !
 !  Find alfven speed as communicated auxiliary
 !
-          if (lalfven_as_aux) then
+          if (lalfven_as_aux.or.lslope_limit_diff) then
             if (ldensity_nolog) then
               rho1=1./f(l1:l2,m,n,irho)
             else
@@ -3088,7 +3088,8 @@ module Magnetic
               print*, 'magnetic_before_boundary: m, y(m), n, z(n)=', m, y(m), n, z(n)
               tmp=abs(tmp)
             endif
-            f(l1:l2,m,n,ialfven)= tmp
+            if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
+            if (lslope_limit_diff) f(l1:l2,m,n,isld_char)= tmp
           endif
         enddo mn_loop
       endif getbb
@@ -6127,23 +6128,6 @@ module Magnetic
           enddo
         enddo
       endif
-!
-!    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
-!
-     if (lslope_limit_diff .and. llast) then
-!
-        lpenc_loc((/i_va2,i_bb,i_b2,i_rho1/))=.true.
-        do n=n1,n2
-        do m=m1,m2
-!
-          call calc_pencils_density(f,p,lpenc_loc)
-          call calc_pencils_magnetic(f,p,lpenc_loc)
-!
-           f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(p%va2)
-       enddo
-       enddo
-     endif
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
