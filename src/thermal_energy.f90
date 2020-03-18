@@ -66,7 +66,7 @@ module Energy
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, lSD93, nu_z, cs_z, &
       lconst_cooling_time, TTref, tau_cool, &
-      ljeans_floor, njeans
+      ljeans_floor, njeans, w_sldchar_ene
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -647,13 +647,25 @@ module Energy
 !  04-nov-10/anders+evghenii: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      real, dimension (mx) :: cs2 
 !
       call keep_compiler_quiet(f)
 !
-      if (lenergy_slope_limited) &
-        call fatal_error('energy_after_boundary', &
-                         'Slope-limited diffusion not implemented')
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       do m=1,my
+       do n=1,mz
+         call eoscalc(f,mx,cs2=cs2)
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+       enddo
+       enddo
+     endif
+!
+!      if (lenergy_slope_limited) &
+!        call fatal_error('energy_after_boundary', &
+!                         'Slope-limited diffusion not implemented')
 !
     endsubroutine energy_after_boundary
 !***********************************************************************

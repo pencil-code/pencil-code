@@ -298,10 +298,23 @@ module Energy
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !
+      use EquationOfState, only: cs20
+!
 !  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
-
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+      if (lslope_limit_diff .and. llast) then
+        do m=1,my
+        do n=1,mz
+          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs20)
+        enddo
+        enddo
+      endif
+!
       call keep_compiler_quiet(f)
 
     endsubroutine energy_after_boundary

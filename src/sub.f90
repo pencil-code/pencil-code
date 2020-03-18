@@ -103,7 +103,6 @@ module Sub
   public :: finalize_aver
   public :: meanyz
   public :: calc_all_diff_fluxes
-  public :: characteristic_speed
   public :: calc_slope_diff_flux
   public :: periodic_fold_back
   public :: lower_triangular_index
@@ -7134,69 +7133,36 @@ nameloop: do
 !
     endsubroutine finalize_aver_4D
 !*******************************************************************************
-    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+    subroutine characteristic_speed(f,cmax_im12,cmax_ip12,k)
 !
 !  calculate characteristic speed for slope limited diffusion
-!  pencils cs2 needed to be set modules, where the diffusion is used
-!  the same also for va2 if lmagnetic
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
 
-      intent(in) :: f,k !,w_sld_cs
+      intent(in) :: f,k
       intent(out) :: cmax_im12,cmax_ip12
 !
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cmax_im12,cmax_ip12
-      real, dimension (nx) :: ux2_tmp,uy2_tmp,uz2_tmp
-      real, dimension (0:nx) :: ux2_xtmp,uy2_xtmp,uz2_xtmp
-!      real :: w_sld_cs
-      type (pencil_case), intent(in) :: p
-      integer :: k
+      integer :: k, ii
 !
       select case (k)
         case(1)
-          ! x-component
-          ux2_xtmp=0.5*(f(l1-1:l2,m,n,iux)**2+f(l1:l2+1,m,n,iux)**2)
-          uy2_xtmp=0.5*(f(l1-1:l2,m,n,iuy)**2+f(l1:l2+1,m,n,iuy)**2)
-          uz2_xtmp=0.5*(f(l1-1:l2,m,n,iuz)**2+f(l1:l2+1,m,n,iuz)**2)
-          cmax_im12=sqrt(ux2_xtmp(0:nx-1)+uy2_xtmp(0:nx-1)+uz2_xtmp(0:nx-1))!+w_sld_cs*sqrt(p%cs2)
-          cmax_ip12=sqrt(ux2_xtmp(1:nx)  +uy2_xtmp(1:nx)  +uz2_xtmp(1:nx)  )!+w_sld_cs*sqrt(p%cs2)
-!         if (lmagnetic) then
-!            cmax_im12=cmax_im12+sqrt(p%va2)
-!            cmax_ip12=cmax_ip12+sqrt(p%va2)
-!          endif
-        case(2)
-          ! y-component
-          ux2_tmp=0.5*(f(l1:l2,m-1,n,iux)**2+f(l1:l2,m,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m-1,n,iuy)**2+f(l1:l2,m,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m-1,n,iuz)**2+f(l1:l2,m,n,iuz)**2)
-          cmax_im12=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)!+w_sld_cs*sqrt(p%cs2)
+          ! x-direction
+          cmax_im12=0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char))
 
-          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m+1,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m+1,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m+1,n,iuz)**2)
-          cmax_ip12=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)!+w_sld_cs*sqrt(p%cs2)
-!          if (lmagnetic) then
-!            cmax_im12=cmax_im12+sqrt(p%va2)
-!            cmax_ip12=cmax_ip12+sqrt(p%va2)
-!          endif
+        case(2)
+          ! y-direction
+! 
+          cmax_im12=0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char))
 
         case(3)
-          ! z-component
-          ux2_tmp=0.5*(f(l1:l2,m,n-1,iux)**2+f(l1:l2,m,n,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n-1,iuy)**2+f(l1:l2,m,n,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n-1,iuz)**2+f(l1:l2,m,n,iuz)**2)
-          cmax_im12=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)!+w_sld_cs*sqrt(p%cs2)
 !
-          ux2_tmp=0.5*(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n+1,iux)**2)
-          uy2_tmp=0.5*(f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n+1,iuy)**2)
-          uz2_tmp=0.5*(f(l1:l2,m,n,iuz)**2+f(l1:l2,m,n+1,iuz)**2)
-          cmax_ip12=sqrt(ux2_tmp+uy2_tmp+uz2_tmp)!+w_sld_cs*sqrt(p%cs2)
-!          if (lmagnetic) then
-!            cmax_im12=cmax_im12+sqrt(p%va2)
-!            cmax_ip12=cmax_ip12+sqrt(p%va2)
-!          endif
+          cmax_im12=0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char))
 !
         endselect
     endsubroutine characteristic_speed
@@ -7218,14 +7184,14 @@ nameloop: do
       real, dimension (nx) :: div_flux, dens_m12, dens_p12
       real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
       real, dimension (nx) :: fim1,fip1,rfac,q1
+      real, dimension (nx) :: cmax_im12,cmax_ip12
 !
       real, dimension (nx), optional, intent(out) :: heat_sl
       character(LEN=*), optional, intent(in) :: heat_sl_type
 !
-      real :: nlf=1., h_slope_limited=2.0
+      real :: nlf=2., h_slope_limited=2.0
       type (pencil_case), intent(in) :: p
       integer :: j,k
-
 
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
@@ -7249,19 +7215,22 @@ nameloop: do
 !
           call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
                                    fim1,fip1,k)
+!
+          call characteristic_speed(f,cmax_im12,cmax_ip12,k)
+!
         endif
         do ix=1,nx
           rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
                      fim1(ix))+tini)
           q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
-        flux_im12(:,k)=0.5*p%char_speed_sld(:,k,1)*q1*(fim12_r-fim12_l)
+        flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
         do ix=1,nx
           rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      f(ix+nghost,m,n,j))+tini)
           q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
-        flux_ip12(:,k)=0.5*p%char_speed_sld(:,k,2)*q1*(fip12_r-fip12_l)
+        flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
 !
 !   Flux is defined with a positive sign !!!!
 !   div and heating is then also defined with a positive sign to compensate.

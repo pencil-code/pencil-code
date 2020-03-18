@@ -956,17 +956,29 @@ module Magnetic
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
 !
-      if (lmagnetic_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+!      if (lmagnetic_slope_limited) then
+!        if (iFF_diff==0) then
+!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+!        endif
+!        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
+!        iFF_char_c=iFF_div_aa+2
+!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+!        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
+!      endif
+!
+      if (any(iresistivity=='eta-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char_speed',isld_char)
+          if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char_speed'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
         endif
-        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
-        iFF_char_c=iFF_div_aa+2
-        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
-        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
+
 !
 !  Register nusmag as auxilliary variable
 !
@@ -1231,6 +1243,7 @@ module Magnetic
       lresi_cspeed=.false.
       lresi_vAspeed=.false.
       lresi_eta_proptouz=.false.
+      lmagnetic_slope_limited=.false.
 !
       do i=1,nresi_max
         select case (iresistivity(i))
@@ -1369,6 +1382,9 @@ module Magnetic
         case ('eta-proptouz')
           if (lroot) print*, 'resistivity: eta proportional to uz'
           lresi_eta_proptouz=.true.
+        case ('eta-slope-limited')
+          if (lroot) print*,'resistivity: slope-limited diffusion'
+          lmagnetic_slope_limited=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -1657,8 +1673,6 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
-!
-      lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
       if (lremove_meanaxy) then
         myl=my
@@ -3754,7 +3768,7 @@ module Magnetic
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
-      real, dimension (nx) :: eta_mn,etaSS,phi
+      real, dimension (nx) :: eta_mn,etaSS
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB
@@ -4419,13 +4433,48 @@ module Magnetic
         dAdt = dAdt-LLambda_aa*p%aa
       endif
 !
-      if (lmagnetic_slope_limited.and.lfirst) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
-        if (lohmic_heat) then
-          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
+!      if (lmagnetic_slope_limited.and.lfirst) then
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
+!        if (lohmic_heat) then
+!          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
+!          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
+!        endif
+!      endif
+!
+!   Slope limited diffusion for magnetic field
+!
+        if (lmagnetic_slope_limited.and.llast) then
+          do j=1,3
+            call calc_slope_diff_flux(f,iax+(j-1),p,tmp1)
+            tmp2(:,j)=tmp1
+          enddo
+          fres=fres+tmp2
+!
+!   Heating is just jj*divF_sld
+!
+          if (lohmic_heat) then
+            call dot(tmp2,p%jj,tmp1)
+            if (lentropy) then
+              if (pretend_lnTT) then
+                df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                  p%cv1*tmp1*p%rho1*p%TT1
+              else
+                df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                        tmp1*p%rho1*p%TT1
+              endif
+            else if (ltemperature) then
+              if (ltemperature_nolog) then
+                df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
+                        p%cv1*tmp1*p%rho1
+              else
+                df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+                        p%cv1*tmp1*p%rho1*p%TT1
+              endif
+            else if (lthermal_energy) then
+             df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + tmp1
+            endif
+          endif
         endif
-      endif
 !
 !  Special contributions to this module are called here.
 !
@@ -4771,7 +4820,9 @@ module Magnetic
 !
         if (lisotropic_advection) then
           if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-            advec_va2=sqrt(p%va2*dxyz_2)
+!            advec_va2=sqrt(p%va2*dxyz_2)
+            advec_va2=p%va2*dxyz_2
+!JW: no sqrt needed, advec_va2 is quadratic
         endif
 !
 !mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
@@ -5942,6 +5993,7 @@ module Magnetic
       use Yinyang_mpi, only: zsum_yy
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
+      use Density, only: calc_pencils_density
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
@@ -5952,6 +6004,8 @@ module Magnetic
       real, dimension(nx) :: tmp
       real, dimension(mx,3) :: aamx
       real, dimension(mx,mz) :: aamxz
+      type(pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc=.false.
 !
 !  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
@@ -6074,26 +6128,43 @@ module Magnetic
         enddo
       endif
 !
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+!
+        lpenc_loc((/i_va2,i_bb,i_b2,i_rho1/))=.true.
+        do n=n1,n2
+        do m=m1,m2
+!
+          call calc_pencils_density(f,p,lpenc_loc)
+          call calc_pencils_magnetic(f,p,lpenc_loc)
+!
+           f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(p%va2)
+       enddo
+       enddo
+     endif
+!
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
 !  using a slope limiting procedure then storing in the
 !  auxilaries variables in the f array (done above).
 !
-      if (lmagnetic_slope_limited.and.lfirst) then
+!      if (lmagnetic_slope_limited.and.lfirst) then
 !
-        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!        f(:,:,:,iFF_diff1:iFF_diff2)=0.
 !
-        do j=1,3
-
-          call calc_all_diff_fluxes(f,iaa+j-1,islope_limiter,h_slope_limited)
-
-          do n=n1,n2; do m=m1,m2
-            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
-          enddo; enddo
-
-        enddo
-
-      endif
+!        do j=1,3
+!
+!          call calc_all_diff_fluxes(f,iaa+j-1,islope_limiter,h_slope_limited)
+!
+!          do n=n1,n2; do m=m1,m2
+!            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
+!          enddo; enddo
+!
+!        enddo
+!
+!      endif
 !
 !  Compute eta_smag and put into auxilliary variable
 !

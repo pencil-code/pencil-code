@@ -1766,6 +1766,7 @@ module Energy
 !  17-apr-15/MR: coded
 !
       use Sub, only: grad, finalize_aver
+      use EquationOfState, only : eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -1773,6 +1774,7 @@ module Energy
       real :: fact
       real, dimension (nx,3):: gradTT
       real, dimension (nx)  :: temp
+      real, dimension (mx)  :: cs2
 !
       integer :: nl
 !
@@ -1811,10 +1813,22 @@ module Energy
 !
       endif
 !
-      if (lenergy_slope_limited) &
-        call fatal_error('energy_after_boundary', &
-                         'Slope-limited diffusion not implemented')
-
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       do m=1,my
+       do n=1,mz
+         call eoscalc(f,mx,cs2=cs2)
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+       enddo
+       enddo
+     endif
+!
+!      if (lenergy_slope_limited) &
+!        call fatal_error('energy_after_boundary', &
+!                         'Slope-limited diffusion not implemented')
+!
     endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)

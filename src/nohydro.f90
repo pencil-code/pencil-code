@@ -14,7 +14,6 @@
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
 ! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
-! PENCILS PROVIDED char_speed_sld(3,2)
 !
 !***************************************************************
 module Hydro
@@ -177,13 +176,6 @@ module Hydro
         endif
       endif
 !
-!  characteristic speed for slope limited diffusion
-!
-      if (lslope_limit_diff) then
-        lpenc_requested(i_cs2)=.true.
-        if (lmagnetic) lpenc_requested(i_va2)=.true.
-      endif
-!
 !  disgnostic pencils
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
@@ -282,24 +274,6 @@ module Hydro
       if (lpenc_loc(i_del2u)) p%del2u=0.0
 ! curlo
       if (lpenc_loc(i_curlo)) p%curlo=0.0
-
-      if (lpenc_loc(i_char_speed_sld)) then
-        p%char_speed_sld=0.
-        if (llast) then
-          do kk=1,3
-            if ((kk == 1 .and. nxgrid /= 1) .or. &
-                (kk == 2 .and. nygrid /= 1) .or. &
-                (kk == 3 .and. nzgrid /= 1)) then
-              p%char_speed_sld(:,kk,1)=w_sld_cs*sqrt(p%cs2)
-              p%char_speed_sld(:,kk,2)=w_sld_cs*sqrt(p%cs2)
-              if (lmagnetic) then
-                p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
-                p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,2)+sqrt(p%va2)
-              endif
-            endif
-         enddo
-       endif
-     endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -416,9 +390,15 @@ module Hydro
 !  dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
 !
       call keep_compiler_quiet(f)
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+           f(:,:,:,isld_char)=0.
+     endif
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************

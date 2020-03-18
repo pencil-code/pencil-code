@@ -211,10 +211,20 @@ module Viscosity
       if (lroot) call svn_id( &
           "$Id$")
 !
+!  Register characteristic speed: sld_char_speed as auxilliary variable
 !  Needed for slope limited diffusion
 !
-      if (any(ivisc=='nu-slope-limited')) lslope_limit_diff = .true.
-
+      if (any(ivisc=='nu-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char_speed',isld_char)
+          if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char_speed'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
+        endif
+      endif
+!
 !      if (lvisc_slope_limited) then
 !        if (iFF_diff==0) then
 !          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
@@ -947,7 +957,7 @@ module Viscosity
       if (lvisc_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
 !
       if (lvisc_slope_limited) then
-         lpenc_requested(i_char_speed_sld)=.true.
+!         lpenc_requested(i_char_speed_sld)=.true.
          if (lviscosity_heat) lpenc_requested(i_rho)=.true.
       endif
 !

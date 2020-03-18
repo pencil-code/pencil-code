@@ -452,17 +452,17 @@ module Energy
       if (lroot) call svn_id( &
           "$Id$")
 !
-      if (lenergy_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
-        endif
-        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
-        iFF_char_c=iFF_div_ss
-        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
-      endif
+!      if (lenergy_slope_limited) then
+!        if (iFF_diff==0) then
+!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+!        endif
+!        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
+!        iFF_char_c=iFF_div_ss
+!        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
+!      endif
 !
 !  Possible to calculate pressure gradient directly from the pressure, in which
 !  case we must open an auxiliary slot in f to store the pressure. This method
@@ -3720,12 +3720,13 @@ module Energy
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum, stop_it
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div
-      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1
+      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1, eoscalc
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
       real, dimension (mx,my,mz) :: cs2p, ruzp
       real, dimension (mz) :: ruzmz
+      real, dimension (mx) :: cs2
 !
       integer :: l,m,n,lf
       real :: fact, cv1, cp1, tmp1
@@ -3910,17 +3911,29 @@ module Energy
 !  auxilaries variables in the f array. Finally the divergence
 !  of the flux is calculated and stored in the f array.
 !
-      if (lenergy_slope_limited.and.lfirst) then
-  
-        f(:,:,:,iFF_diff1:iFF_diff2)=0.
-        call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
+!      if (lenergy_slope_limited.and.lfirst) then
+!  
+!        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!        call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
 !if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8))','iss,IPROC=', iproc, f(4,10,:,iss)
 !if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8)/)','iFF_diff1,IPROC=', iproc, f(4,10,:,iFF_diff1)
-        do n=n1,n2; do m=m1,m2
-          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
-        enddo; enddo
-
-      endif
+!        do n=n1,n2; do m=m1,m2
+!          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
+!        enddo; enddo
+!
+!      endif
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       do m=1,my
+       do n=1,mz
+         call eoscalc(f,mx,cs2=cs2)
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+       enddo
+       enddo
+     endif
 !
 !  Compute running average of entropy
 !

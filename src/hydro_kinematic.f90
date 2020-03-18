@@ -19,7 +19,6 @@
 ! PENCILS PROVIDED der6u(3); curlo(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
-! PENCILS PROVIDED char_speed_sld(3,2)
 !***********************************************************************
 module Hydro
 !
@@ -90,7 +89,7 @@ module Hydro
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
-  real :: w_sld_cs=0.0
+  real :: w_sldchar_hyd=1.0
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -2289,24 +2288,6 @@ endif
       endif
       if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
 !
-      if (lpenc_loc(i_char_speed_sld)) then
-        p%char_speed_sld=0.
-        if (llast) then
-          do kk=1,3
-            if ((kk == 1 .and. nxgrid /= 1) .or. &
-                (kk == 2 .and. nygrid /= 1) .or. &
-                (kk == 3 .and. nzgrid /= 1)) then
-              p%char_speed_sld(:,kk,1)=w_sld_cs*sqrt(p%cs2)
-              p%char_speed_sld(:,kk,2)=w_sld_cs*sqrt(p%cs2)
-              if (lmagnetic) then
-                p%char_speed_sld(:,kk,1)=p%char_speed_sld(:,kk,1)+sqrt(p%va2)
-                p%char_speed_sld(:,kk,2)=p%char_speed_sld(:,kk,2)+sqrt(p%va2)
-              endif
-            endif
-          enddo
-        endif
-      endif
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_hydro_pencpar
@@ -2465,6 +2446,21 @@ endif
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       if (lkinflow_as_aux) then
+         do m=1,my
+         do n=1,mz
+           f(:,m,n,isld_char)=w_sldchar_hyd* &
+            sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
+         enddo
+         enddo
+       else
+         f(:,:,:,isld_char)=0.
+       endif
 !
       call keep_compiler_quiet(f)
 !
