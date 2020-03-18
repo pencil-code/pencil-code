@@ -3720,7 +3720,7 @@ module Energy
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum, stop_it
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div
-      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1, eoscalc
+      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
@@ -3927,9 +3927,17 @@ module Energy
 !    Not staggered yet
 !
      if (lslope_limit_diff .and. llast) then
+       call get_cv1(cv1)
+       cs2=0.
        do m=1,my
        do n=1,mz
-         call eoscalc(f,mx,cs2=cs2)
+         if (ldensity_nolog) then
+           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
+                          -lnrho0)+cv1*f(:,m,n,iss))
+         else
+           cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
+                          -lnrho0)+cv1*f(:,m,n,iss))
+         endif
          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo
        enddo
