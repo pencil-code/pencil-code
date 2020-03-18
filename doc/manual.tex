@@ -7789,7 +7789,7 @@ modules.
 \index{Special module}
 
 If you want to add new physics to the code, you will in many cases want to
-add a new Special module.  Doing so is relatively straight forward and
+add a new Special module.  Doing so is relatively straightforward and
 there is even a special directory for such additions.
 
 To create your own special module, copy \file{nospecial.f90} from the src/
@@ -7840,7 +7840,10 @@ with its details depending on the Fortran compiler used. These can be learned by
 The environment variables are most conveniently set in the user's {\tt .bashrc}, {\tt .cshrc} or a proper configuration file of the {\sc Pencil Code} (section {\tt environment}).
 In the {\tt Makefile.local} file, the requested special modules are simply specified as a list of names:
 {\tt SPECIAL = special/$\langle${\it module 1}$\rangle$ special/$\langle${\it module 2}$\rangle\ldots$}.
- 
+In contrast to the case with only a single special module, where the namelists' names are \\
+{\tt special_init_pars} and {\tt special_run_pars},
+these are individualized for multiple special modules, viz. $\langle${\it module name}$\rangle${\tt _init_pars} etc. .
+
 \subsection{Adding switchable modules}
 
 In some cases where a piece of physics is thought to be more fundamental,
