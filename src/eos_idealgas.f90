@@ -1433,7 +1433,6 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !   12-feb-15/MR  : changes for reference state
 !
-      use Diagnostics, only: max_mn_name, sum_mn_name
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
