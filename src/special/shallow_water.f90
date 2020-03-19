@@ -333,17 +333,33 @@ module Special
 !***********************************************************************
   subroutine calc_storm(f,df,p)
 !
-!  DOCUMENT ME!
+!  Called inside a loop
 !    
 !  28-feb-20/wlad+ali: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(nx) :: rr,storm_function 
+      integer :: i 
       type (pencil_case), intent(in) :: p
 !     
-      !storm_function = maximum_mass_injection_rate * exp(-(R/Rstorm)**2 - ((t-t0)*tstorm1)**2)
+      do istorm=1,nstorm 
+        rr = sqrt((x(l1:l2)-xc(istorm))**2 + (y(m)-yc(istorm))**2)
 !
-      !df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
+        do i=1,nx
+          if (&
+               (rr(i) < 2.2*Rstorm(istorm)).or.&
+               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+               )
+            storm_function(i) = smax(istorm) * &
+                 exp(- ( rr(i)           /Rstorm(istorm))**2 &
+                     - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+          else
+            storm_function(i) = 0.
+          endif
+        enddo
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
+      enddo
 !    
   endsubroutine calc_storm
 !***********************************************************************
