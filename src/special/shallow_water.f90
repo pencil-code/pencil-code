@@ -68,8 +68,10 @@ module Special
 !
 ! Parameters for the storm model
 !
-  real :: tstorm=1.0,tstorm1
   real :: tmass_relaxation=1.0,tmass_relaxation1
+  integer, parameter :: nstorm=100
+  real, dimension(nstorm) :: tstorm,tstorm1,Rstorm,tpeak,xc,yc,smax
+
 !
 ! Mass relaxation
 !
@@ -340,7 +342,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(nx) :: rr,storm_function 
-      integer :: i 
+      integer :: i,istorm 
       type (pencil_case), intent(in) :: p
 !     
       do istorm=1,nstorm 
@@ -350,7 +352,7 @@ module Special
           if (&
                (rr(i) < 2.2*Rstorm(istorm)).or.&
                (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
-               )
+               ) then
             storm_function(i) = smax(istorm) * &
                  exp(- ( rr(i)           /Rstorm(istorm))**2 &
                      - ((t-tpeak(istorm))/tstorm(istorm))**2)  
