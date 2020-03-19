@@ -171,6 +171,7 @@ module Special
          xc(istorm)     = r*cos(p)
          yc(istorm)     = r*sin(p)
          tpeak(istorm)  = t + .5*tstorm(istorm)
+         smax(istorm)   = 0.5
       enddo
 !
       tstorm1 = 1./tstorm
