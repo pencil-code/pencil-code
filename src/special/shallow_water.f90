@@ -127,9 +127,12 @@ module Special
 !
       use Cdata
       use Mpicomm
+      use General, only: random_number_wrapper
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: r,p
+      integer :: istorm
 !
       do m=1,my
         bottom_function(:,m) = c0 &
@@ -154,6 +157,20 @@ module Special
 !
       do m=m1,m2
         gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
+      enddo
+!
+!  Initialize storms
+!
+      do istorm=1,nstorm
+         tstorm(istorm) = 3.0
+         Rstorm(istorm) = 0.05
+         call random_number_wrapper(r)
+         call random_number_wrapper(p)
+         r=r_int +r*(r_ext-r_int)
+         p=2*pi*p
+         xc(istorm)     = r*cos(p)
+         yc(istorm)     = r*sin(p)
+         tpeak(istorm)  = t + .5*tstorm(istorm)
       enddo
 !
       tstorm1 = 1./tstorm
