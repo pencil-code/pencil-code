@@ -2450,17 +2450,18 @@ endif
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
-       if (lkinflow_as_aux) then
-         do m=1,my
-         do n=1,mz
-           f(:,m,n,isld_char)=w_sldchar_hyd* &
+      if (lslope_limit_diff .and. llast) then
+        if (lkinflow_as_aux) then
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,isld_char)=w_sldchar_hyd* &
             sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
-         enddo
-         enddo
-       else
-         f(:,:,:,isld_char)=0.
-       endif
+          enddo
+          enddo
+        else
+          f(:,:,:,isld_char)=0.
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
