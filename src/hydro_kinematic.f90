@@ -2445,7 +2445,7 @@ endif
 !  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      intent(inout) :: f
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
