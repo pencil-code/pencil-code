@@ -1,0 +1,10 @@
+-rw-r--r-- 1 xyli xyli 2411 Oct 18 15:51 k.dat
+-rw-r--r-- 1 xyli xyli   28 Oct 18 15:51 parameters.pro
+-rw-r--r-- 1 xyli xyli  446 Feb 14 21:21 print.in
+-rw-rw-r-- 1 xyli xyli 1820 Feb 14 21:21 run.in
+-rwxr-xr-x 1 xyli xyli  204 Oct 18 15:51 runscript.in
+-rw-rw-r-- 1 xyli xyli  564 Oct 24 14:16 src/cparam.local
+-rw-rw-r-- 1 xyli xyli  662 Feb  9 08:41 src/Makefile.local
+-rw-rw-r-- 1 xyli xyli 1529 Feb 14 21:21 start.in
+-rwxr-xr-x 1 xyli xyli  195 Oct 18 15:51 startscript.in
+-rw-r--r-- 1 xyli xyli   21 Oct 18 15:51 video.in
