@@ -69,6 +69,7 @@ module Io
   integer :: lun_output=91
   ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
   integer, parameter :: MINT=1, MAXT=2
+  logical :: snap_is_link=.false.
 !
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
@@ -550,6 +551,7 @@ module Io
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use Syscalls, only: islink
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -569,6 +571,7 @@ module Io
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
 !      if (ip<=8) print *, 'read_snap_single: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
 !
@@ -775,6 +778,7 @@ module Io
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use Syscalls, only: islink
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -793,7 +797,9 @@ module Io
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp
 !
       if (lserial_io) call start_serialize
+
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
 !      if (ip<=8) print *, 'read_snap_double: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -992,7 +998,12 @@ module Io
 !
       use Mpicomm, only: end_serialize
 !
-      close (lun_input)
+      if (snap_is_link) then
+        close (lun_input, status='DELETE')
+      else
+        close (lun_input)
+      endif
+
       if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
