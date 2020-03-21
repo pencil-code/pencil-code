@@ -4,11 +4,11 @@
 #  Author: Anders Johansen
 #
 #  Usage:
-#    pc_copyvar var1 var2 source dest [-e | -execute=1]
-#    pc_copyvar var1 var2 dest [-e | -execute=1]
-#    pc_copyvar var1 var2 [-e | -execute=1]
+#    pc_copyvar var1 var2 source dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 [-e | -execute=1] [-s]
 #
-#  Example:
+#  Examples:
 #    pc_copyvar var.dat VAR9 ../othersim
 #      copies all var.dat files from current directory to VAR9 in '../othersim'
 #    pc_copyvar v v onesim othersim
@@ -24,6 +24,10 @@
 #    p, pvar      - pvar.dat
 #    og, ogvar    - ogvar.dat (overlapping grid)
 #    naked number - VAR*
+#
+#  Options:
+#    -s               -  create symbolic link instead of copy
+#    -execute=1, -e   -  really execute copy or link
 #
 set data=data/
 set narg=0
