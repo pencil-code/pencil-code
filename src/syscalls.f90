@@ -259,4 +259,17 @@ module Syscalls
 !
     endfunction is_nan_4D
 !***********************************************************************
+    logical function islink(filename)
+!
+!  Tests whether filename is a symbolic link.
+!
+!  21-mar-20/MR: coded
+!
+      character(LEN=*), intent(IN) :: filename
+      integer :: islink_c
+
+      islink = islink_c(trim(filename)//char(0))==1
+
+    endfunction islink
+!***********************************************************************
 endmodule Syscalls

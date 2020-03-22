@@ -24,6 +24,21 @@
 
 /* ---------------------------------------------------------------------- */
 
+int FTNIZE(islink_c) (char *filename)
+{
+//  Tests whether filename is a symbolic link.
+//  21-mar-20/MR: coded
+
+  struct stat fileStat;
+  int ret = -1;
+
+  if (lstat(filename, &fileStat) == 0) { 
+    ret = (fileStat.st_mode & S_IFMT) == S_IFLNK ? 1 : 0;   
+  }
+  return ret;
+}
+/* ---------------------------------------------------------------------- */
+
 void FTNIZE(file_size_c)
      (char *filename, FINT *bytes)
 /* Determines the size of a file.
@@ -135,18 +150,13 @@ void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
  void *p1;
  char *name;
 
- dlerror();
- pointer = dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); //RTLD_LAZY); 
-//printf("pointer = %d\n", pointer);
- if (pointer==NULL) printf("error = %s\n", dlerror());
+ //dlerror();
+ //pointer = dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); //RTLD_LAZY); 
 
- return pointer;  //dlopen(filename, RTLD_LAZY); 
  if (*flag==ALLNOW)
- {
-   //return dlopen(filename, RTLD_NOW); 
- }
+   return dlopen(filename, RTLD_GLOBAL||RTLD_NOW); 
  else
-   //return dlopen(filename, RTLD_LAZY); 
+   return dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); 
  return NULL;
 }
 /* ---------------------------------------------------------------------- */
@@ -164,7 +174,7 @@ void FTNIZE(dlclose_c)(void **handle)
 char* FTNIZE(dlerror_c)(void)
 {
  char *error=dlerror();
-printf("error = %s\n", dlerror());
+ printf("error = %s\n", error);
  return error;
 }       
 /* ---------------------------------------------------------------------- */
