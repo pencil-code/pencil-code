@@ -96,7 +96,7 @@
     use General, only: parser
     use Messages, only: fatal_error
 
-    integer, parameter :: RTLD_LAZY=0, RTLD_NOW=0  !!!
+    integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
 
     character(LEN=128) :: line
     integer :: i,j
