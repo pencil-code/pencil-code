@@ -414,7 +414,7 @@ module Param_IO
 !
     endsubroutine read_all_init_pars
 !***********************************************************************
-    subroutine read_all_run_pars(logging)
+    subroutine read_all_run_pars
 !
 !  Read input parameters.
 !
@@ -424,6 +424,8 @@ module Param_IO
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_runpars' to 'read_all_run_pars'
+!  22-mar-20/MR: removed unneeded call to write_all_run_pars and corresp. param.
+!                llogging
 !
       use Dustvelocity, only: copy_bcs_dust
       use File_io, only: parallel_open, parallel_close, read_namelist
@@ -432,7 +434,6 @@ module Param_IO
       use Particles_main, only: read_all_particles_run_pars
       use Sub, only: parse_bc
 !
-      logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'
       integer :: idum
 !
@@ -514,10 +515,6 @@ module Param_IO
 !  Set debug logical (easier to use than the combination of ip and lroot).
 !
       ldebug = lroot .and. (ip < 7)
-!
-!  Write parameters to log file, if requested.
-!
-      if (loptest(logging)) call write_all_run_pars
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -826,6 +823,7 @@ module Param_IO
 !  11-jun-19/MR: full list of runpars only output into param2.nml, otherwise
 !                (in particular when outout in params.log) only the difference
 !                to the runpars of the preceding run.
+!  22-mar-20/MR: added missing full output of run pars at first call of run.x
 !
       use Particles_main, only: write_all_particles_run_pars
       use Syscalls, only: system_cmd
@@ -934,6 +932,11 @@ module Param_IO
             call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml |"// &
                             " diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
             call delete_file('data/param2.nml.sv')
+          else
+!
+!  Append param2.log to params.log for first time run.x is executed.
+!
+            call system_cmd("cat data/param2.nml >> data/params.log")
           endif
         endif
 !

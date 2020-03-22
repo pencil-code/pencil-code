@@ -519,7 +519,7 @@ program run
     call particles_initialize_modules(f)
   endif
 !
-!  Write data to file for IDL.
+!  Write data to file for IDL (param2.nml).
 !
   call write_all_run_pars('IDL')
 !
@@ -632,7 +632,7 @@ program run
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
         dt=0.0
-        call read_all_run_pars(logging=.true.)
+        call read_all_run_pars
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
