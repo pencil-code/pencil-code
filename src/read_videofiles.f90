@@ -231,7 +231,7 @@ program read_videofiles
       real :: slice_pos
       logical :: lexists
 !
-      if (ipxyz <= 0) return
+      if (ipxyz < 0) return
       print *, "read_slice: "//trim(suffix)
 !
       ipx_start = 0
