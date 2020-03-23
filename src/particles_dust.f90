@@ -378,7 +378,8 @@ module Particles
 !  Store the number of particles per grid cell if requested.
 !
       if (np_ap_spec) then
-        if (lnp_ap_as_aux) then
+         lnp_ap_as_aux = .true. ! TEMPORARY...TO RUN MODELS THAT DIDN'T HAVE THIS FLAG.
+         if (lnp_ap_as_aux) then
           !! Loop over grain sizes:
           !do k=1,ndustrad
           !  sdust=trim(itoa(k))
@@ -386,7 +387,7 @@ module Particles
           !  iapn(k) = ind_tmp
           !enddo
           !
-          call farray_register_auxiliary('np_ap',iapn(1),vector=ndustrad)
+          call farray_register_auxiliary('np_ap',iapn(1),vector=ndustrad,aux=.true.)
           iapn = iapn(1) + indgen(ndustrad) - 1
           call farray_index_append('n_np_ap',ndustrad)
         else
