@@ -564,6 +564,7 @@ module Energy
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: blob, write_zprof
+      use File_io, only: file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1029,9 +1030,6 @@ module Energy
       if (hcond0==impossible) hcond0=0.
 
       if (lroot) then
-        if (lheatc_Kprof .and. hcond0==0..and..not.lread_hcond) then
-          call warning('initialize_energy', 'hcond0 is zero and no profile read in')
-        endif
         if (lheatc_sfluct .and. (chi_t==0.0)) then
           call warning('initialize_energy','chi_t is zero')
         endif
@@ -1093,10 +1091,25 @@ module Energy
         call fatal_error("initialize_energy",&
              "Dynamical diffusion requires mesh hyper heat conductivity, switch iheatcond='hyper3-mesh'")
 !
-! Compute profiles of hcond and corresponding grad(log(hcond)).
+!  Compute profiles of hcond and corresponding grad(log(hcond)).
 !
       if (lheatc_Kprof) then
 !
+!  For backwards compatibility!
+! 
+        if (.not.lread_hcond) then
+          if (lhcond_global) then
+            if (file_exists('hcond_glhc.dat').or.file_exists('hcond_glhc.ascii')) then
+              call warning('initialize_energy','lhcond_global=T, but file hcond_glhc.* exists:'// &
+                           ' assuming lread_hcond=T and lhcond_global=F !!!')
+              lhcond_global=.false.; lread_hcond=.true.
+            endif
+          endif
+    
+          if (lroot.and.hcond0==0..and..not.lread_hcond) &
+            call warning('initialize_energy', 'hcond0 is zero and no profile read in')
+        endif
+
         if (lread_hcond) then
           if (coord_system=='spherical' .or. lconvection_gravx) then   ! .or. lgravx ?
             call read_hcond(nx,nxgrid,ipx,hcondxtop,hcondxbot)   ! no scaling by hcond0!
