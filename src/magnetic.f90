@@ -513,6 +513,11 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   resistive time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dteta3=0     ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v3}}\,
+                                ! DIAG_DOC:   \delta x^6/\eta^{\rm hyper}_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to
+                                ! DIAG_DOC:   hyper resistive time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_dtHr=0       ! DIAG_DOC:
   integer :: idiag_dtFr=0       ! DIAG_DOC:
   integer :: idiag_dtBr=0       ! DIAG_DOC:
@@ -5304,6 +5309,7 @@ module Magnetic
       if (.not.lgpu) then
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+        if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
       endif
       call sum_mn_name(p%cosjb,idiag_cosjbm)
       call sum_mn_name(p%coshjb,idiag_coshjbm)
@@ -8870,7 +8876,7 @@ module Magnetic
         idiag_hjparallelm=0;idiag_hjperpm=0
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
         ivid_aps=0; ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
-        ivid_jb=0; ivid_beta1=0; ivid_poynting=0    
+        ivid_jb=0; ivid_beta1=0; ivid_poynting=0; idiag_dteta3=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -8880,6 +8886,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ab_int',idiag_ab_int)
         call parse_name(iname,cname(iname),cform(iname),'jb_int',idiag_jb_int)
         call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
+        call parse_name(iname,cname(iname),cform(iname),'dteta3',idiag_dteta3)
         call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
         call parse_name(iname,cname(iname),cform(iname),'exabot',idiag_exabot)
