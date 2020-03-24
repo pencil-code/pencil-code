@@ -818,7 +818,7 @@ else begin
   makeobject="object = create_struct(name=objectname," + $
              "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
              "'varnames', 'varlens']," + $
-             "t,x,y,z,dx,dy,dz,npar_found,iipar" + $
+             "t,x,y,z,dx,dy,dz,npar_found,iipar," + $
              "varcontent.idlvar, varcontent.skip )"
 endelse
 
