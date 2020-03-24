@@ -55,7 +55,8 @@ module Magnetic_meanfield
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
-  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width=impossible, qpx_width=impossible
+  real :: alpha_eps=0.0, alpha_pom0=0.0
+  real :: x_surface=0., x_surface2=0., z_surface=0., qp_width=impossible, qpx_width=impossible
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin=0.
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
@@ -105,7 +106,7 @@ module Magnetic_meanfield
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
       gamma_effect, gamma_quenching, &
-      alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
+      alpha_eps, alpha_pom0, alpha_width, alpha_width2, alpha_aniso, &
       alpha_tensor, eta_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
@@ -967,6 +968,7 @@ module Magnetic_meanfield
             rr=sqrt(x(l1:l2)**2+y(m)**2)
             pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
             alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
+            if (alpha_pom0/=0.) alpha_tmp=alpha_tmp/(1.+(rr/alpha_pom0)**4)**.25
           else
             alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
           endif
