@@ -296,7 +296,6 @@ module Energy
   integer :: idiag_ssmr=0       ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
-  integer :: idiag_uduum=0
   integer :: idiag_Kkramersm=0  ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
@@ -6621,7 +6620,7 @@ module Energy
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
-        idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
+        idiag_ufpresm=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
@@ -6670,7 +6669,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
-        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
 !

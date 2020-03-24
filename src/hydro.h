@@ -24,7 +24,7 @@
   public :: hydro_after_timestep
   public :: calc_gradu
   public :: pushpars2c, pushdiags2c
-  public :: calc_diagnostics_hydro
+  public :: calc_diagnostics_hydro, df_diagnos_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

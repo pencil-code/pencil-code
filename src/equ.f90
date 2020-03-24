@@ -1029,6 +1029,7 @@ module Equ
 !  This must be done at the end of all calls that might modify df.
 !
         if (ldiagnos) then
+          if (lhydro) call df_diagnos_hydro(df,p)
           if (lmagnetic) call df_diagnos_magnetic(df,p)
         endif
 !

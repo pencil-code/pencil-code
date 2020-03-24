@@ -288,6 +288,7 @@ module Hydro
   integer :: idiag_uxm=0        ! DIAG_DOC: $\left<u_x\right>$
   integer :: idiag_uym=0        ! DIAG_DOC: $\left<u_y\right>$
   integer :: idiag_uzm=0        ! DIAG_DOC: $\left<u_z\right>$
+  integer :: idiag_uduum=0      ! DIAG_DOC: $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$
   integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
   integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
   integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
@@ -2212,7 +2213,7 @@ module Hydro
           idiag_rux2mz/=0 .or. idiag_ruy2mz/=0 .or. idiag_ruz2mz/=0 .or. &
           idiag_ruxmx/=0 .or. idiag_ruymx/=0 .or. idiag_ruzmx/=0 .or. &
           idiag_ruxuymz/=0 .or. idiag_ruxuzmz/=0 .or. idiag_ruyuzmz/=0 .or. &
-          idiag_ruxuy2mz/=0 .or. idiag_ruxuz2mz/=0 .or. idiag_ruyuz2mz/=0) &
+          idiag_ruxuy2mz/=0 .or. idiag_ruxuz2mz/=0 .or. idiag_ruyuz2mz/=0 .or. idiag_uduum/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_rux2mx /= 0 .or. idiag_ruy2mx /= 0 .or. idiag_ruz2mx /= 0 .or. &
           idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) lpenc_diagnos(i_rho) = .true.
@@ -3438,28 +3439,26 @@ module Hydro
             call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
 !
         endif
-        if (.not.lgpu) then
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-          if (idiag_u2tm/=0) then
-            call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
-            call sum_mn_name(u2t,idiag_u2tm)
-          endif
+        if (idiag_u2tm/=0) then
+          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
+          call sum_mn_name(u2t,idiag_u2tm)
+        endif
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-          if (idiag_outm/=0) then
-            call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
-            call sum_mn_name(out,idiag_outm)
-          endif
+        if (idiag_outm/=0) then
+          call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
+          call sum_mn_name(out,idiag_outm)
+        endif
 !
 !  integrate velocity in time, to calculate correlation time later
 !
-          if (idiag_uotm/=0) then
-            call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
-            call sum_mn_name(uot,idiag_uotm)
-          endif
+        if (idiag_uotm/=0) then
+          call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
+          call sum_mn_name(uot,idiag_uotm)
         endif
 !
         if (lfargo_advection.and.idiag_nshift/=0) then
@@ -3841,6 +3840,26 @@ module Hydro
       endif
 
     endsubroutine calc_diagnostics_hydro
+!******************************************************************************
+    subroutine df_diagnos_hydro(df,p)
+
+      use Diagnostics, only: sum_mn_name
+
+      type(pencil_case), intent(in) :: p
+      real, dimension(:,:,:,:) :: df
+
+      real, dimension (nx) :: uduu
+      integer :: i
+
+      if (idiag_uduum/=0) then
+        uduu=0.
+        do i = 1,3
+          uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
+        enddo
+        call sum_mn_name(p%rho*uduu,idiag_uduum)
+      endif
+
+    endsubroutine df_diagnos_hydro
 !******************************************************************************
     subroutine time_integrals_hydro(f,p)
 !
@@ -4766,6 +4785,7 @@ module Hydro
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
+        idiag_uduum=0
         idiag_uxmx=0
         idiag_uymx=0
         idiag_uzmx=0
@@ -5201,6 +5221,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
+        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
 
       if (idiag_u2tm/=0) then
