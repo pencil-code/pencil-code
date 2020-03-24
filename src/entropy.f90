@@ -3346,16 +3346,6 @@ module Energy
 !
 !  Calculate entropy related diagnostics.
 !
-      if (ldiagnos) then
-        if (idiag_uduum/=0) then
-            uduu=0.
-            do i = 1, 3
-              uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
-            enddo
-            call sum_mn_name(p%rho*uduu,idiag_uduum)
-        endif
-      endif
-!
       call calc_diagnostics_energy(f,p)
 
     endsubroutine denergy_dt
