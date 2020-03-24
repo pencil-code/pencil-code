@@ -7222,13 +7222,13 @@ nameloop: do
         do ix=1,nx
           rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
                      fim1(ix))+tini)
-          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
+          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
         do ix=1,nx
           rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      f(ix+nghost,m,n,j))+tini)
-          q1(ix)=(min1(1.0,h_slope_limited*rfac(ix)))**nlf
+          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
 !
