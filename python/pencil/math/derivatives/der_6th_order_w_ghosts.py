@@ -282,10 +282,10 @@ def zder6_6th(f, dz):
     fac = 1/dz**6
     n1 = 3
     n2 = f.shape[-3] - 3
-    d6fdy = np.zeros_like(f)
+    d6fdz = np.zeros_like(f)
 
     if (n2 > n1):
-        d6fdy[..., n1:n2, :, :] = fac*(-20.0*f[..., n1:n2, :, :]
+        d6fdz[..., n1:n2, :, :] = fac*(-20.0*f[..., n1:n2, :, :]
                                        +15.0*(f[..., n1+1:n2+1, :, :]
                                               +f[..., n1-1:n2-1, :, :])
                                        -6.0*(f[..., n1+2:n2+2, :, :]
@@ -293,4 +293,4 @@ def zder6_6th(f, dz):
                                        +(f[..., n1+3:n2+3, :, :]
                                          +f[..., n1-3:n2-3, :, :]))
 
-    return d6fdy
+    return d6fdz
