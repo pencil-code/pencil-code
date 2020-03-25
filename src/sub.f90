@@ -7220,14 +7220,24 @@ nameloop: do
 !
         endif
         do ix=1,nx
-          rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+          if (j==ilnrho) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
                      fim1(ix))+tini)
+          else
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+                     fim1(ix))+tini)
+          endif
           q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
         do ix=1,nx
-          rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+          if (j==ilnrho) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     exp(f(ix+nghost,m,n,j)))+tini)
+          else
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      f(ix+nghost,m,n,j))+tini)
+          endif
           q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
@@ -7344,66 +7354,134 @@ nameloop: do
       integer :: j,k
       integer :: i,ix
       real :: tmp0,tmp1,tmp2,tmp3
+!
 ! x-component
+!
       select case (k)
         case(1)
-          do i=l1-1,l2+1
-            ix=i-nghost
-            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))
-            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))
-            delfx(ix) = minmod_alt(tmp1,tmp2)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)
-            fim12_r(ix) = f(i,m,n,j)-delfx(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfx(ix)
-            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)
-            fim1(ix) = f(i-1,m,n,j)
-            fip1(ix) = f(i+1,m,n,j)
-          enddo
+          if (j==ilnrho) then
+            do i=l1-1,l2+1
+              ix=i-nghost
+              tmp1=exp(f(i,m,n,j)) -exp(f(i-1,m,n,j))
+              tmp2=exp(f(i+1,m,n,j))-exp(f(i,m,n,j))
+              delfx(ix) = minmod_alt(tmp1,tmp2)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(ix-1)
+              fim12_r(ix) = exp(f(i,m,n,j))-delfx(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))+delfx(ix)
+              fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(ix+1)
+              fim1(ix) = exp(f(i-1,m,n,j))
+              fip1(ix) = exp(f(i+1,m,n,j))
+            enddo
+          else
+            do i=l1-1,l2+1
+              ix=i-nghost
+              tmp1=f(i,m,n,j)-f(i-1,m,n,j)
+              tmp2=f(i+1,m,n,j)-f(i,m,n,j)
+              delfx(ix) = minmod_alt(tmp1,tmp2)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)
+              fim12_r(ix) = f(i,m,n,j)-delfx(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfx(ix)
+              fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)
+              fim1(ix) = f(i-1,m,n,j)
+              fip1(ix) = f(i+1,m,n,j)
+            enddo
+          endif
+!
 ! y-component
+!
         case(2)
-          do i=l1,l2
-            ix=i-nghost
-            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
-            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
-            delfym1(ix) = minmod_alt(tmp0,tmp1)
-            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
-            delfy(ix) = minmod_alt(tmp1,tmp2)
-            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
-            delfyp1(ix) = minmod_alt(tmp2,tmp3)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
-            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
-            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
-            fim1(ix) = f(i,m-1,n,j)
-            fip1(ix) = f(i,m+1,n,j)
-          enddo
+          if (j==ilnrho) then
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
+              tmp1=exp(f(i,m,n,j))   -exp(f(i,m-1,n,j))
+              delfym1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
+              delfy(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+              delfyp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
+              fim12_r(ix) = exp(f(i,m,n,j))  -delfy(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))  +delfy(ix)
+              fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
+              fim1(ix) = exp(f(i,m-1,n,j))
+              fip1(ix) = exp(f(i,m+1,n,j))
+            enddo
+          else
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+              tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+              delfym1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+              delfy(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+              delfyp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+              fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+              fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+              fim1(ix) = f(i,m-1,n,j)
+              fip1(ix) = f(i,m+1,n,j)
+            enddo
+          endif
+!
 ! z-component
+!
         case(3)
-          do i=l1,l2
-            ix=i-nghost
-            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
-            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
-            delfzm1(ix) = minmod_alt(tmp0,tmp1)
-            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
-            delfz(ix) = minmod_alt(tmp1,tmp2)
-            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
-            delfzp1(ix) = minmod_alt(tmp2,tmp3)
-          enddo
-          do i=l1,l2
-            ix=i-nghost
-            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
-            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
-            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
-            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
-            fim1(ix) = f(i,m,n-1,j)
-            fip1(ix) = f(i,m,n+1,j)
-          enddo
+          if (j==ilnrho) then
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
+              tmp1=exp(f(i,m,n,j))-exp(f(i,m,n-1,j))
+              delfzm1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
+              delfz(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+              delfzp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
+              fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
+              fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
+              fim1(ix) = exp(f(i,m,n-1,j))
+              fip1(ix) = exp(f(i,m,n+1,j))
+            enddo
+          else
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+              tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+              delfzm1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+              delfz(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+              delfzp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+              fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+              fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+              fim1(ix) = f(i,m,n-1,j)
+              fip1(ix) = f(i,m,n+1,j)
+            enddo
+          endif
         case default
           call fatal_error('sub:slope_lim_lin_interpol','wrong component')
         endselect
