@@ -3094,7 +3094,7 @@ module Magnetic
               tmp=abs(tmp)
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
-            if (lslope_limit_diff) f(l1:l2,m,n,isld_char)= tmp
+            if (lslope_limit_diff) f(l1:l2,m,n,isld_char)=w_sldchar_mag*tmp
           endif
         enddo mn_loop
       endif getbb
