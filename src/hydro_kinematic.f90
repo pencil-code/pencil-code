@@ -2301,6 +2301,16 @@ endif
       call keep_compiler_quiet(p)
 
     endsubroutine calc_diagnostics_hydro
+!******************************************************************************
+    subroutine df_diagnos_hydro(df,p)
+
+      type(pencil_case), intent(in) :: p
+      real, dimension(:,:,:,:) :: df
+
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+
+    endsubroutine df_diagnos_hydro
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !
