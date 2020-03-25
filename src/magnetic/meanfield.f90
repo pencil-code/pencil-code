@@ -1116,12 +1116,9 @@ module Magnetic_meanfield
 !  the r and theta components to zero (in spherical coordinates).
 !
         if (lalpha_Omega_approx) then
-          if (lspherical_coords) then
-            p%mf_EMF(:,1:2)=0.
-          else
-            call fatal_error("calc_pencils_magn_mf: ", &
+          p%mf_EMF(:,1:2)=0.
+          call fatal_error("calc_pencils_magn_mf: ", &
               "lalpha_Omega_approx not implemented for this case")
-          endif
         endif
 !
 !  Apply eta tensor, but subtract part from etat for stability reasons.
@@ -1142,8 +1139,14 @@ module Magnetic_meanfield
         if (ldelta_profile) then
           p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
         else
-          p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
-          p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
+          if (lspherical_coords) then
+! assuming 1D in theta, delta is only delta_theta, J is only J_theta
+            p%mf_EMF(:,1)=p%mf_EMF(:,1)+delta_effect*delta_tmp*p%jj(:,3)
+            p%mf_EMF(:,3)=p%mf_EMF(:,3)-delta_effect*delta_tmp*p%jj(:,1)
+          else
+            p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
+            p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
+          endif
         endif
 !
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
