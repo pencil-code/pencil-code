@@ -272,17 +272,29 @@ module Density
         call farray_register_pde('lnrho',ilnrho)
       endif
 
-      if (ldensity_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+      if (any(idiff=='density-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char_speed',isld_char)
+          if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char_speed'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
         endif
-        call farray_register_auxiliary('Div_flux_diff_rho',iFF_div_rho)
-        iFF_char_c=iFF_div_rho
-        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
       endif
+
+
+!      if (ldensity_slope_limited) then
+!        if (iFF_diff==0) then
+!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+!        endif
+!        call farray_register_auxiliary('Div_flux_diff_rho',iFF_div_rho)
+!        iFF_char_c=iFF_div_rho
+!        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+!        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+!      endif
 !
 !  Fluctuating density = \rho - \mean_xy(\rho)
 !
@@ -550,6 +562,7 @@ module Density
       ldiff_hyper3_polar=.false.
       ldiff_hyper3_strict=.false.
       ldiff_hyper3_mesh=.false.
+      ldensity_slope_limited=.false.
 !
 !  initialize lnothing. It is needed to prevent multiple output.
 !
@@ -589,6 +602,9 @@ module Density
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
+        case ('density-slope-limited')
+          if (lroot) print*,'mass diffusion: slope limited'
+            ldensity_slope_limited=.true.
         case ('','none')
           if (lroot .and. (.not. lnothing)) &
               print*,'diffusion: nothing (i.e. no mass diffusion)'
@@ -908,8 +924,6 @@ module Density
       endif
 !
       call initialize_density_methods
-
-      lslope_limit_diff=lslope_limit_diff .or. ldensity_slope_limited
 !
 !  Find the total mass for later use if lconserve_total_mass = .true.
 !
@@ -1703,15 +1717,15 @@ module Density
 !  Slope limited diffusion following Rempel (2014).
 !  No distinction between log and nolog density at the moment!
 !
-      if (ldensity_slope_limited.and.lfirst) then
-
-        call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
-
-        do n=n1,n2; do m=m1,m2
-          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_rho),.true.)
-        enddo; enddo
-
-      endif
+!      if (ldensity_slope_limited.and.lfirst) then
+!
+!        call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
+!
+!        do n=n1,n2; do m=m1,m2
+!          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_rho),.true.)
+!        enddo; enddo
+!
+!      endif
 !
    endsubroutine density_after_boundary
 !***********************************************************************
@@ -2550,14 +2564,18 @@ module Density
         if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
-
-      if (ldensity_slope_limited.and.lfirst) then
-        fdiff=fdiff-f(l1:l2,m,n,iFF_div_rho)
-        if (ldt) then
-          chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
-          !!!diffus_diffrho=diffus_diffrho+chi_sld
+!
+!   Slope limited diffusion for magnetic field
+!
+      if (ldensity_slope_limited.and.llast) then
+        if (ldensity_nolog) then
+          call calc_slope_diff_flux(f,irho,p,tmp)
+          fdiff=fdiff+tmp
+        else
+          call calc_slope_diff_flux(f,ilnrho,p,tmp)
+          fdiff=fdiff+tmp*p%rho1
         endif
-      endif
+     endif
 !
 !  Interface for your personal subroutines calls
 !
