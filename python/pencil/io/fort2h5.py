@@ -132,7 +132,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             os.chdir(olddir)
             if snap_by_proc:
                 if not l_mpi:
-                    procs = np.array_split(np.arange(nprocs),size)
+                    procs = np.arange(nprocs)
                 if len(procs) > 0:
                     for proc in procs:
                         if not quiet:
