@@ -329,13 +329,16 @@ def parameters(datadir='./data', par2=False, warning=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-31
-    # Last Modified: 2019-10-03
+    # Last Modified: 2020-03-26
     # Function to convert a string to the correct type.
     def convert(v):
         if v == 'T' or v == ".TRUE.":
             return True
         elif v == 'F' or v == ".FALSE.":
             return False
+        elif ',' in v:
+            re, im = v.split(',')
+            return complex(float(re), float(im))
         else:
             try:
                 return int(v)
@@ -346,15 +349,18 @@ def parameters(datadir='./data', par2=False, warning=True):
                     return v.strip("' ")
     # Function to parse the values.
     def parse(v):
-        v = v.split(',')
+        if '(' in v:
+            v = (v + ',').split("),")[:-1]
+        else:
+            v = v.split(',')
         u = []
         for w in v:
             w = w.strip()
             if '*' in w:
                 nrep, sep, x = w.partition('*')
-                u += int(nrep) * [convert(x)]
+                u += int(nrep) * [convert(x.lstrip('('))]
             else:
-                u += [convert(w)]
+                u += [convert(w.lstrip('('))]
         if len(u) == 1:
             return u[0]
         else:
