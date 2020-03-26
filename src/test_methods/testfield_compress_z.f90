@@ -259,9 +259,9 @@ module Testfield
       ntestfield = 3*njtest
       ntestflow = 3*njtest
       ntestlnrho = njtest
-      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_register_pde('aatest',iaatest,vector=3,array=njtest)
       call farray_index_append('ntestfield',ntestfield)
-      call farray_register_pde('uutest',iuutest,array=ntestflow)
+      call farray_register_pde('uutest',iuutest,vector=3,array=njtest)
       call farray_index_append('ntestflow',ntestflow)
       call farray_register_pde('lnrhotest',ihhtest,array=njtest)
       call farray_index_append('ntestlnrho',njtest)
@@ -456,9 +456,9 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxbtest==0) &
-          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
-        if (iuxbtest/=0) then
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3,array=njtest)
+        else
           if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
           call farray_index_append('iuxbtest',iuxbtest)
         endif
@@ -467,9 +467,9 @@ module Testfield
 !  possibility of using jxb as auxiliary array
 !
       if (ljxb_as_aux) then
-        if (ijxbtest==0) &
-          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
-        if (ijxbtest/=0) then
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3,array=njtest)
+        else
           if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
           call farray_index_append('ijxbtest',ijxbtest)
         endif
@@ -478,9 +478,9 @@ module Testfield
 !  possibility of using ugu as auxiliary array
 !
       if (lugu_as_aux) then
-        if (iugutest==0) &
-          call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
-        if (iugutest/=0) then
+        if (iugutest==0) then
+          call farray_register_auxiliary('ugu',iugutest,vector=3,array=njtest)
+        else
           if (lroot) print*, 'initialize_testfield: iugutest = ', iugutest
           call farray_index_append('iugutest',iugutest)
         endif
@@ -489,9 +489,9 @@ module Testfield
 !  possibility of using ugh as auxiliary array
 !
       if (lugh_as_aux) then
-        if (iughtest==0) &
-          call farray_register_auxiliary('ugh',iughtest,vector=njtest)
-        if (iughtest/=0) then
+        if (iughtest==0) then
+          call farray_register_auxiliary('ugh',iughtest,array=njtest)
+        else
           if (lroot) print*, 'initialize_testfield: iughtest = ', iughtest
           call farray_index_append('iughtest',iughtest)
         endif
