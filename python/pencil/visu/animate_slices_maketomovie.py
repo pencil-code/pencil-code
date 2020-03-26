@@ -18,7 +18,9 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to modify the slice
     """
-    
+    import os 
+    from .. io import npfile
+   
     datadir = os.path.expanduser(datadir)
     if proc < 0:
         filename = datadir+'/slice_'+field+'.'+extension
