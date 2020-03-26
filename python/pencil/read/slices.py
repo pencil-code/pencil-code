@@ -176,7 +176,11 @@ class SliceSeries(object):
                         hsize = ds['1/data'].shape[1]
                         slice_series = np.zeros([nt,vsize,hsize])
                         for it in range(0,nt):
-                            slice_series[it] = ds[str(it+1)+'/data'][()]
+                            if ds.__contains__(str(it+1)):
+                                slice_series[it] = ds[str(it+1)+'/data'][()]
+                            else:
+                                print('no data at {} in '.format(it+1)+
+                                      file_name)
                         if self.t.size == 0:
                             self.t = []
                             for it in range(0,nt):
