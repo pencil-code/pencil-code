@@ -34,10 +34,11 @@ module InitialCondition
   real :: logtausmin = -4.0, logtausmax = -1.0
   real :: dlnndlntaus = -4.0
   real :: dlnrhodlnr = -0.1
-  real :: si_kx = 0.0, si_ky = 0.0
+  real :: si_kx = 0.0, si_kz = 0.0
+  complex :: si_ev = (0.0, 0.0)
 !
   namelist /initial_condition_pars/ &
-    ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_ky
+    ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev
 !
   contains
 !***********************************************************************
@@ -122,8 +123,9 @@ module InitialCondition
 !
       integer, dimension(npar_species) :: ip
       integer :: npps, npx, npz, ix, iz, is, k
-      real :: dxp, dzp, xp, yp, zp
-      real :: ar, ai
+      real :: dxp, dzp, xp, yp, zp, dxp1, dzp1
+      real :: ar, ai, c1
+      real :: argx, argz, sinp, sinm, cosp, cosm
 !
       call keep_compiler_quiet(f)
 !
@@ -167,17 +169,35 @@ module InitialCondition
 !
 ! Assign particle positions and IDs.
 !
+      c1 = si_kx**2 + si_kz**2
+      if (c1 > 0.0) c1 = 0.5 / c1
+!
       k = 0
       yp = xyz0(2) + 0.5 * Lxyz(2)
+!
       zloop: do iz = 1, npz
         zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
+        argz = si_kz * zp
+!
         xloop: do ix = 1, npx
           xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
+          argx = si_kx * xp
+!
+          sinp = sin(argx + argz)
+          sinm = sin(argx - argz)
+          cosp = cos(argx + argz)
+          cosm = cos(argx - argz)
+!
           sloop: do is = 1, npar_species
+            ar = real(si_ev)
+            ai = aimag(si_ev)
+            dxp1 = -c1 * si_kx * (si_ev * (sinp + sinm) + ai * (cosp + cosm))
+            dzp1 = -c1 * si_kz * (ar * (sinp - sinm) + ai * (cosp - cosm))
+!
             k = k + 1
-            fp(k,ixp) = xp
+            fp(k,ixp) = xp + dxp1
             fp(k,iyp) = yp
-            fp(k,izp) = zp
+            fp(k,izp) = zp + dzp1
             ip(is) = ip(is) + 1
             ipar(k) = ip(is)
           enddo sloop
