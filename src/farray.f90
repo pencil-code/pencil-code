@@ -157,6 +157,8 @@ module FArrayManager
 !               variable not written into var.dat
 ! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
+      use General, only: ioptest
+
       character (len=*), intent(in) :: varname
       integer, target, intent(out)  :: ivar
       integer, intent(in)  :: vartype
@@ -165,7 +167,7 @@ module FArrayManager
       integer, optional, intent(out) :: ierr
 !
       type (farray_contents_list), pointer :: item, new
-      integer :: ncomponents, narray
+      integer :: ncomponents, narray, nvars
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
         call fatal_error("farray_register_variable", &
@@ -173,11 +175,10 @@ module FArrayManager
           "farray_acquire_scratch_area routine.")
       endif
 !
-      ncomponents=1
       if (present(ierr)) ierr=0
-      if (present(vector)) ncomponents=vector
-      narray=1
-      if (present(array)) narray=array
+      ncomponents=ioptest(vector,1)
+      narray=ioptest(array,1)
+      nvars=ncomponents*narray
 !
       item => find_by_name(varname)
 !
@@ -217,7 +218,7 @@ module FArrayManager
 !
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
-            if (nvar+ncomponents*narray>mvar) then
+            if (nvar+nvars>mvar) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -229,7 +230,7 @@ module FArrayManager
             "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
-            if (naux+ncomponents*narray>maux) then
+            if (naux+nvars>maux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -243,7 +244,7 @@ module FArrayManager
             "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
             endif
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            if (naux_com+ncomponents*narray>maux_com) then
+            if (naux_com+nvars>maux_com) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -258,7 +259,7 @@ module FArrayManager
             "headers to cparam.local.")
             endif
           case (iFARRAY_TYPE_GLOBAL)
-            if (nglobal+ncomponents*narray>mglobal) then
+            if (nglobal+nvars>mglobal) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -280,23 +281,23 @@ module FArrayManager
         new%varname     = varname
         new%vartype     = vartype
         new%ncomponents = ncomponents
-        allocate(new%ivar(ncomponents*narray))
+        allocate(new%ivar(nvars))
         new%ivar(1)%p => ivar
 !
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
             ivar=nvar+1
-            nvar=nvar+ncomponents*narray
+            nvar=nvar+nvars
           case (iFARRAY_TYPE_COMM_AUXILIARY)
             ivar=mvar+naux_com+1
-            naux=naux+ncomponents*narray
-            naux_com=naux_com+ncomponents*narray
+            naux=naux+nvars
+            naux_com=naux_com+nvars
           case (iFARRAY_TYPE_AUXILIARY)
             ivar=mvar+maux_com+(naux-naux_com)+1
-            naux=naux+ncomponents*narray
+            naux=naux+nvars
           case (iFARRAY_TYPE_GLOBAL)
             ivar=mvar+maux+nglobal+1
-            nglobal=nglobal+ncomponents*narray
+            nglobal=nglobal+nvars
         endselect
 !
         call save_analysis_info(new)
