@@ -129,12 +129,12 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             if not quiet:
                 print('rank {}:'.format(rank)+'saving '+file_name)
                 sys.stdout.flush()
-            os.chdir(olddir)
             if snap_by_proc:
                 if not l_mpi:
                     procs = np.arange(nprocs)
                 if len(procs) > 0:
                     for proc in procs:
+                        os.chdir(olddir)
                         if not quiet:
                             print('rank {}:'.format(rank)+'saving '+file_name+
                                           ' on proc{}'.format(proc))
@@ -614,8 +614,6 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             cmd = 'pc_newrun -s '+newdir
             if rank == size-1:
                 os.system(cmd)
-                cmd = 'rm -rf '+os.path.join(newdir,'data','proc')+'*'
-                os.system(cmd)
             if comm:
                 comm.Barrier()
         os.chdir(newdir)
@@ -736,24 +734,29 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #check consistency between Fortran binary and h5 data
     os.chdir(newdir)
     dim = None
-    if rank == size-1:
-        dim = read.dim()
-    if l_mpi:
-        dim=comm.bcast(dim, root=size-1)
-    if not quiet:
-        print(rank,dim)
-        sys.stdout.flush()
-    try:
-        dim.mvar == settings['mvar']
-        dim.mx   == settings['mx']
-        dim.my   == settings['my']
-        dim.mz   == settings['mz']
-    except ValueError:
+    if sim.is_sim_dir():
         if rank == size-1:
-            print("ERROR: new simulation dimensions do not match.")
-            sys.stdout.flush()
-        return -1
-    dim = None
+            try:
+                dim = read.dim()
+            except ValueError:
+                pass
+        if l_mpi:
+            dim=comm.bcast(dim, root=size-1)
+        if dim:
+            if not quiet:
+                print(rank,dim)
+                sys.stdout.flush()
+            try:
+                dim.mvar == settings['mvar']
+                dim.mx   == settings['mx']
+                dim.my   == settings['my']
+                dim.mz   == settings['mz']
+            except ValueError:
+                if rank == size-1:
+                    print("ERROR: new simulation dimensions do not match.")
+                    sys.stdout.flush()
+                return -1
+            dim = None
     if rank == size-1:
         print('precision is ',precision)
         sys.stdout.flush()
