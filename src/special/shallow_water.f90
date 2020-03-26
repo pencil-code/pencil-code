@@ -69,7 +69,7 @@ module Special
 ! Parameters for the storm model
 !
   real :: tmass_relaxation=1.0,tmass_relaxation1
-  integer, parameter :: nstorm=100
+  integer, parameter :: nstorm=10
   real, dimension(nstorm) :: tstorm,tstorm1,Rstorm,tpeak,xc,yc,smax
 
 !
@@ -131,7 +131,7 @@ module Special
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: r,p
+      real :: r,p,s
       integer :: istorm
 !
       do m=1,my
@@ -163,15 +163,16 @@ module Special
 !
       do istorm=1,nstorm
          tstorm(istorm) = 3.0
-         Rstorm(istorm) = 0.05
+         Rstorm(istorm) = 0.3
          call random_number_wrapper(r)
          call random_number_wrapper(p)
-         r=r_int + sqrt(r) *(r_ext-r_int)
+         r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
          p=2*pi*p
          xc(istorm)     = r*cos(p)
          yc(istorm)     = r*sin(p)
          tpeak(istorm)  = t + .5*tstorm(istorm)
-         smax(istorm)   = 0.5
+         call random_number_wrapper(s)
+         smax(istorm)   = 2*s-1
       enddo
 !
       tstorm1 = 1./tstorm
