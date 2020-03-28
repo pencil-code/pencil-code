@@ -7167,8 +7167,9 @@ nameloop: do
         endselect
     endsubroutine characteristic_speed
 !***********************************************************************
-    subroutine calc_slope_diff_flux(f,j,p,div_flux, &
+    subroutine calc_slope_diff_flux(f,j,p,div_flux,&
                                     heat_sl,heat_sl_type)
+!                                    heat_sl,heat_sl_type,flux_mag)
 !
 !  Calculate diffusiv flux, divergence of diffusiv flux and
 !  the heating (optional) for variables in the f array.
@@ -7189,6 +7190,8 @@ nameloop: do
       real, dimension (nx), optional, intent(out) :: heat_sl
       character(LEN=*), optional, intent(in) :: heat_sl_type
 !
+!      real, dimension (nx,3), optional, intent(out) :: flux_mag
+!
       real :: nlf=2., h_slope_limited=2.0
       type (pencil_case), intent(in) :: p
       integer :: j,k
@@ -7197,6 +7200,7 @@ nameloop: do
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
         if(present(heat_sl)) heat_sl=0.0
+!        if(present(flux_mag)) flux_mag=0.0
 !
 !  Generate halfgrid points
 !
@@ -7245,8 +7249,6 @@ nameloop: do
 !   Flux is defined with a positive sign !!!!
 !   div and heating is then also defined with a positive sign to compensate.
 !
-
-!
 !
 !   Calculating heating
 !
@@ -7279,16 +7281,26 @@ nameloop: do
                                +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
                               /(z12(n+1)-z12(n))
 !
+            case('none')
+!
             case default
               call fatal_error('sub:calc_slope_diff_flux','other heating types not yet implemented')
 !
           endselect
         endif
-
+!
+!      Calculate magnetic diff flux
+!
+!        if (present(flux_mag)) then
+!
+!          flux_mag(:,k)=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+!
+!        endif
       enddo
 !
 ! Now calculate the 2nd order divergence
 !
+!      if (.not.present(flux_mag)) then
       div_flux=0.0
       if (nxgrid /= 1) then
 !        if (lspherical_coords) then
@@ -7304,7 +7316,7 @@ nameloop: do
           div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
                   /(x12(l1:l2)-x12(l1-1:l2-1))
 !        endif
-      endif
+!      endif
 !
       if (nygrid /= 1) then
 !        if (lspherical_coords) then
@@ -7331,7 +7343,8 @@ nameloop: do
 !
           div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
                   /(z12(n)-z12(n-1))
-!        endif
+        endif
+!      endif
       endif
 !
     endsubroutine calc_slope_diff_flux

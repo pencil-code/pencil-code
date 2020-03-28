@@ -2823,6 +2823,11 @@ module Hydro
         enddo
       endif
 !
+!   Slope limited difussion
+!   Setting characteristic speed to zero in the beginning
+!
+     if (lslope_limit_diff .and. llast) f(:,:,:,isld_char)=0.
+!
 !  For FARGO (orbital advection) algorithm.
 !  Calculate the average velocity at the first sub-timestep.
 !
@@ -4023,12 +4028,13 @@ module Hydro
 !
 !
 !    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
+!    Not staggered yet, happpens later
 !
      if (lslope_limit_diff .and. llast) then
+!     if (lslope_limit_diff) then
        do m=1,my
        do n=1,mz
-           f(:,m,n,isld_char)=w_sldchar_hyd* &
+           f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_hyd* &
             sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
        enddo
        enddo

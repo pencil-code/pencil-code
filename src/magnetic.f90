@@ -364,8 +364,7 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanaxy, lremove_meanaxz, &
       eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
-      h_slope_limited,w_sldchar_mag, eta_cspeed, &
+      ladd_efield,ampl_efield, h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
@@ -975,6 +974,7 @@ module Magnetic
 !
       if (any(iresistivity=='eta-slope-limited')) then
         lslope_limit_diff = .true.
+!        lbb_as_aux=.true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char_speed',isld_char)
           if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
@@ -3048,6 +3048,7 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts, zero_ghosts
       use Sub, only: gij, curl_mn, dot2_mn
+      use EquationOfState, only: rho0
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
@@ -3059,7 +3060,7 @@ module Magnetic
 !
 !  Find bb if as communicated auxiliary.
 !
-      getbb: if (lbb_as_comaux.or.lalfven_as_aux.or.lslope_limit_diff) then
+      getbb: if (lbb_as_comaux.or.lalfven_as_aux.or.(lslope_limit_diff.and. llast)) then
         call zero_ghosts(f, iax, iaz)
         call update_ghosts(f, iax, iaz)
         mn_loop: do imn = 1, ny * nz
@@ -3079,11 +3080,15 @@ module Magnetic
 !
 !  Find alfven speed as communicated auxiliary
 !
-          if (lalfven_as_aux.or.lslope_limit_diff) then
-            if (ldensity_nolog) then
-              rho1=1./f(l1:l2,m,n,irho)
+          if (lalfven_as_aux.or.(lslope_limit_diff .and. llast)) then
+            if (ldensity) then
+              if (ldensity_nolog) then
+                rho1=1./f(l1:l2,m,n,irho)
+              else
+                rho1=1./exp(f(l1:l2,m,n,ilnrho))
+              endif
             else
-              rho1=1./exp(f(l1:l2,m,n,ilnrho))
+               rho1=1./rho0
             endif
             call dot2_mn(bb,b2)
             tmp= b2*mu01*rho1
@@ -3094,7 +3099,9 @@ module Magnetic
               tmp=abs(tmp)
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
-            if (lslope_limit_diff) f(l1:l2,m,n,isld_char)=w_sldchar_mag*tmp
+            if (lslope_limit_diff .and. llast) then
+              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+            endif
           endif
         enddo mn_loop
       endif getbb
@@ -3770,6 +3777,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
+      real, dimension (nx,3) :: bx_flux,by_flux,bz_flux
       real, dimension (nx,3) :: dAdt, gradeta_shock
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
@@ -4450,13 +4458,34 @@ module Magnetic
 !   Slope limited diffusion for magnetic field
 !
         if (lmagnetic_slope_limited.and.llast) then
+!        if (lmagnetic_slope_limited) then
           do j=1,3
             call calc_slope_diff_flux(f,iax+(j-1),p,tmp1)
             tmp2(:,j)=tmp1
           enddo
           fres=fres+tmp2
 !
-!   Heating is just jj*divF_sld
+!   Using diffusive flux of B on A
+!   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
+!     where Dsld is the SLD operator
+!   old way:  DA_i/dt = ... partial_j Dsld_j A_l
+!
+!        if (lmagnetic_slope_limited.and.llast) then
+!
+!          tmp1=0.
+!          call calc_slope_diff_flux(f,ibx,p,tmp1,tmp1,'none',bx_flux)
+!          call calc_slope_diff_flux(f,iby,p,tmp1,tmp1,'none',by_flux)
+!          call calc_slope_diff_flux(f,ibz,p,tmp1,tmp1,'none',bz_flux)
+!
+!          tmp2(:,1)=  by_flux(:,3) - bz_flux(:,2)
+!          tmp2(:,2)=  bz_flux(:,1) - bx_flux(:,3)
+!          tmp2(:,3)=  bx_flux(:,2) - by_flux(:,1)
+!
+!          fres=fres+tmp2
+!
+!
+!     Heating is just jj*divF_sld
+!!!     Heating is just jj*(-e_ijk Dsld_k B_l)
 !
           if (lohmic_heat) then
             call dot(tmp2,p%jj,tmp1)
