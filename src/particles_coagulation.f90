@@ -1333,7 +1333,7 @@ module Particles_coagulation
 !
       call random_number_wrapper(r)
       dt1_coag_par = -r_total/log(r)
-      dt1_max = dt1_coag_par
+      dt1_max = max(dt1_max,dt1_coag_par)
 !
     endsubroutine particles_coag_timestep_zd
 !***********************************************************************
