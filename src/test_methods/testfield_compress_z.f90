@@ -187,6 +187,9 @@ module Testfield
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_h0rms=0      ! DIAG_DOC: $\left<h_{0}^2\right>^{1/2}$
+  integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
+  integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
+  integer :: idiag_h0max=0      ! DIAG_DOC: $\operatorname{max}h_{0}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
@@ -439,7 +442,7 @@ module Testfield
 !  set lrescaling_testfield=T if linit_aatest=T
 !
       if (linit_aatest) lrescaling_testfield=.true.
-      if (.not.(lmagnetic.and.lhydro.and.ldensity)) then
+      if (luse_main_run .and. .not.(lmagnetic.and.lhydro.and.ldensity)) then
         luse_main_run=.false.
         call warning('initialize_testfield',  &
                      'Main run missing or incomplete -> switched to kinematic mode')
@@ -1303,11 +1306,20 @@ module Testfield
           call dot2(upq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_u0rms,lsqrt=.true.)
         endif
+        if (idiag_u0max/=0) then
+          call dot2(upq(:,:,iE0),bpq2)
+          call max_mn_name(bpq2,idiag_u0max,lsqrt=.true.)
+        endif
         if (idiag_h0rms/=0) call sum_mn_name(hpq(:,iE0)**2,idiag_h0rms,lsqrt=.true.)
+        call max_mn_name(hpq(:,iE0),idiag_h0max)
 !
         if (idiag_b0rms/=0) then
           call dot2(bpq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
+        endif
+        if (idiag_b0max/=0) then
+          call dot2(bpq(:,:,iE0),bpq2)
+          call max_mn_name(bpq2,idiag_b0max,lsqrt=.true.)
         endif
 !
         if (idiag_u11rms/=0) then
@@ -1970,7 +1982,8 @@ mn:   do n=n1,n2
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0; idiag_h0rms=0
+        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0
+        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0 
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
@@ -2076,6 +2089,9 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'h0rms',idiag_h0rms)
+        call parse_name(iname,cname(iname),cform(iname),'u0max',idiag_u0max)
+        call parse_name(iname,cname(iname),cform(iname),'b0max',idiag_b0max)
+        call parse_name(iname,cname(iname),cform(iname),'h0max',idiag_h0max)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
         call parse_name(iname,cname(iname),cform(iname),'E12rms',idiag_E12rms)
