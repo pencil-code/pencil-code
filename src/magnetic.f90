@@ -976,9 +976,9 @@ module Magnetic
         lslope_limit_diff = .true.
 !        lbb_as_aux=.true.
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char_speed',isld_char)
-          if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char_speed'
+          call farray_register_auxiliary('sld_char',isld_char)
+          if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
           aux_count=aux_count+1
         endif
@@ -3101,7 +3101,14 @@ module Magnetic
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
               f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-            endif
+!           Fill nearest ghost points with boundary points
+              f(l1-1,m,n,isld_char) =f(l1-1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(1))
+              f(l2+1,m,n,isld_char) =f(l2+1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(nx))
+              if (m==m1) f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              if (m==m2) f(l1:l2,m+1,n,isld_char) =f(l1:l2,m+1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              if (n==n1) f(l1:l2,m,n-1,isld_char) =f(l1:l2,n-1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              if (n==n2) f(l1:l2,m,n+1,isld_char) =f(l1:l2,n+1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+           endif
           endif
         enddo mn_loop
       endif getbb

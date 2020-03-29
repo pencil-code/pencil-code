@@ -205,6 +205,7 @@ indices_aux = [ $
   { name:'iStX', label:'StX', dims:1 }, $
   { name:'iStTim', label:'StTim', dims:1 }, $
   { name:'iStXim', label:'StXim', dims:1 }, $
+  { name:'isld_char', label:'SLD characteristic speed', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
   { name:'isigma', label:'Column density', dims:1 }, $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $

@@ -217,9 +217,9 @@ module Viscosity
       if (any(ivisc=='nu-slope-limited')) then
         lslope_limit_diff = .true.
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char_speed',isld_char)
-          if (lroot) write(15,*) 'sld_char_speed = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char_speed'
+          call farray_register_auxiliary('sld_char',isld_char)
+          if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
           aux_count=aux_count+1
         endif
