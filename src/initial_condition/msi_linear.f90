@@ -184,8 +184,8 @@ module InitialCondition
       c1x = c1x * si_kx
       c2x = c2x * si_kx**3
 !
-      ar = real(si_ev(8::4))
-      ai = aimag(si_ev(8::4))
+      ar = real(si_ev(8::4)) / eps0
+      ai = aimag(si_ev(8::4)) / eps0
       a1 = 0.25 * (ar**2 - ai**2)
       a2 = 0.5 * ar * ai
       a3 = 0.25 * (ar**2 + ai**2)
