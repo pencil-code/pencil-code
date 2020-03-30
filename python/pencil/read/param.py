@@ -286,12 +286,13 @@ class Param(object):
         # Contain the nest names for each parameter set
         super_name_list = []
         for rawline in open(file_name):
-            if ' \n' in rawline and not '=' in rawline:
-                continue
+            if ' ' in rawline[1]:
+                rawline = lastrawline+rawline
+            lastrawline = rawline
             line = rawline.rstrip('\n')
-            if line == ' ':
+            if line == '     ':
                 continue
-            if " '," in line and not '=' in line:
+            if " '," in line[:3] and not '=' in line:
                 continue
             if line[1] == "&" or line[0] == "&":
                 super_name = line[2:].lower().rsplit('_pars'
