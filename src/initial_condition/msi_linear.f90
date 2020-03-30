@@ -35,10 +35,10 @@ module InitialCondition
   real :: logtausmin = -4.0, logtausmax = -1.0
   real :: dlnndlntaus = -4.0
   real :: dlnrhodlnr = -0.1
-  real :: si_kx = 0.0, si_kz = 0.0
+  real :: si_kx = 0.0, si_kz = 0.0, si_amp = 1E-6
 !
   namelist /initial_condition_pars/ &
-    ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev
+    ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
 !
   contains
 !***********************************************************************
@@ -184,8 +184,8 @@ module InitialCondition
       c1x = c1x * si_kx
       c2x = c2x * si_kx**3
 !
-      ar = real(si_ev(8::4)) / eps0
-      ai = aimag(si_ev(8::4)) / eps0
+      ar = si_amp * real(si_ev(8::4)) / eps0
+      ai = si_amp * aimag(si_ev(8::4)) / eps0
       a1 = 0.25 * (ar**2 - ai**2)
       a2 = 0.5 * ar * ai
       a3 = 0.25 * (ar**2 + ai**2)
@@ -252,7 +252,7 @@ module InitialCondition
 !
       real, dimension(npar_species) :: rhopj, vpx, vpy
       real :: argx, argz, sinkx, coskx, sinkz, coskz
-      real :: dvpx, dvpy, dvpz
+      real :: dv, dvpx, dvpy, dvpz
 !
       integer :: k, p, i
       real :: ux, uy, hgas, zp
@@ -266,6 +266,7 @@ module InitialCondition
 !
 ! Assign the mass and velocity of each particle.
 !
+      dv = si_amp * eta_vK
       ploop: do k = 1, npar_loc
         argx = si_kx * fp(k,ixp)
         argz = si_kz * fp(k,izp)
@@ -276,9 +277,9 @@ module InitialCondition
 !
         p = npar_species * (ipar(k) - 1) / npar + 1
         i = 4 * p + 1
-        dvpx = eta_vK * (real(si_ev(i)) * coskx - aimag(si_ev(i)) * sinkx) * coskz
-        dvpy = eta_vK * (real(si_ev(i+1)) * coskx - aimag(si_ev(i+1)) * sinkx) * coskz
-        dvpz = -eta_vK * (real(si_ev(i+2)) * sinkx + aimag(si_ev(i+2)) * coskx) * sinkz
+        dvpx = dv * (real(si_ev(i)) * coskx - aimag(si_ev(i)) * sinkx) * coskz
+        dvpy = dv * (real(si_ev(i+1)) * coskx - aimag(si_ev(i+1)) * sinkx) * coskz
+        dvpz = -dv * (real(si_ev(i+2)) * sinkx + aimag(si_ev(i+2)) * coskx) * sinkz
 !
         fp(k,irhopswarm) = rhopj(p)
         fp(k,ivpx) = fp(k,ivpx) + vpx0(p) + dvpx
