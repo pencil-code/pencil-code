@@ -290,10 +290,6 @@ class Param(object):
                 rawline = lastrawline+rawline
             lastrawline = rawline
             line = rawline.rstrip('\n')
-            if line == '     ':
-                continue
-            if " '," in line[:3] and not '=' in line:
-                continue
             if line[1] == "&" or line[0] == "&":
                 super_name = line[2:].lower().rsplit('_pars'
                                             )[0].rsplit('_init'
