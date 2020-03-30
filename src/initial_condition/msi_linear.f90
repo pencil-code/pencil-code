@@ -124,8 +124,11 @@ module InitialCondition
       integer, dimension(npar_species) :: ip
       integer :: npps, npx, npz, ix, iz, is, k
       real :: dxp, dzp, xp, yp, zp, dxp1, dzp1
-      real :: ar, ai, c1
-      real :: argx, argz, sinp, sinm, cosp, cosm
+      real :: ar, ai, a1, a2, a3, c1, c2
+      real :: argx, argz
+      real :: sinp, sinm, cosp, cosm
+      real :: sinp2, sinm2, cosp2, cosm2
+      real :: sin2kz, cos2kx, sin2kx
 !
       call keep_compiler_quiet(f)
 !
@@ -167,10 +170,22 @@ module InitialCondition
       if (lroot) print *, "initialize_initial_condition: npx, npz = ", npx, npz
       if (lroot) print *, "initialize_initial_condition: dxp, dzp = ", dxp, dzp
 !
-! Assign particle positions and IDs.
+! Compute repeated constants.
 !
       c1 = si_kx**2 + si_kz**2
-      if (c1 > 0.0) c1 = 0.5 / c1
+      c2 = c1**2
+      coeff: if (c1 > 0.0) then
+        c1 = 0.5 / c1
+        c2 = 1.0 / c2
+      endif coeff
+!
+      ar = real(si_ev)
+      ai = aimag(si_ev)
+      a1 = 0.25 * (ar**2 - ai**2)
+      a2 = 0.5 * ar * ai
+      a3 = 0.25 * (ar**2 + ai**2)
+!
+! Assign particle positions and IDs.
 !
       k = 0
       yp = xyz0(2) + 0.5 * Lxyz(2)
@@ -178,21 +193,31 @@ module InitialCondition
       zloop: do iz = 1, npz
         zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
         argz = si_kz * zp
+        sin2kz = sin(2.0 * argz)
 !
         xloop: do ix = 1, npx
           xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
           argx = si_kx * xp
+          cos2kx = cos(2.0 * argx)
+          sin2kx = sin(2.0 * argx)
 !
           sinp = sin(argx + argz)
           sinm = sin(argx - argz)
           cosp = cos(argx + argz)
           cosm = cos(argx - argz)
 !
+          sinp2 = sin(2.0 * (argx + argz))
+          sinm2 = sin(2.0 * (argx - argz))
+          cosp2 = cos(2.0 * (argx + argz))
+          cosm2 = cos(2.0 * (argx - argz))
+!
           sloop: do is = 1, npar_species
-            ar = real(si_ev)
-            ai = aimag(si_ev)
-            dxp1 = -c1 * si_kx * (si_ev * (sinp + sinm) + ai * (cosp + cosm))
-            dzp1 = -c1 * si_kz * (ar * (sinp - sinm) + ai * (cosp - cosm))
+            dxp1 = -c1 * si_kx * (ar * (sinp + sinm) + ai * (cosp + cosm) &
+                                - a1 * (sinp2 + sinm2) - a2 * (cosp2 + cosm2)) &
+                   + c2 * si_kx**3 * (a2 * cos2kx + a1 * sin2kx)
+            dzp1 = -c1 * si_kz * (ar * (sinp - sinm) + ai * (cosp - cosm) &
+                                - a1 * (sinp2 - sinm2) - a2 * (cosp2 - cosm2)) &
+                   + c2 * si_kz**3 * a3 * sin2kz
 !
             k = k + 1
             fp(k,ixp) = xp + dxp1
