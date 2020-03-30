@@ -238,9 +238,9 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_vvp(f, fp)
 !
-!  Initialize particles' mass and velocity.
+! Initialize particles' mass and velocity.
 !
-!  10-mar-20/ccyang: coded
+! 30-mar-20/ccyang: coded
 !
       use EquationOfState, only: rho0
       use SharedVariables, only: get_shared_variable
@@ -251,27 +251,42 @@ module InitialCondition
       real, dimension(:), pointer :: tausp_species, tausp1_species
 !
       real, dimension(npar_species) :: rhopj, vpx, vpy
+      real :: argx, argz, sinkx, coskx, sinkz, coskz
+      real :: dvpx, dvpy, dvpz
 !
-      integer :: k, p
+      integer :: k, p, i
       real :: ux, uy, hgas, zp
 !
       call keep_compiler_quiet(f)
 !
-!  Find the mass of each particle.
+! Find the mass of each particle.
 !
       rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
       if (lroot) print *, "initial_condition_vvp: rhopj = ", rhopj
 !
-!  Assign the mass and velocity of each particle.
+! Assign the mass and velocity of each particle.
 !
       ploop: do k = 1, npar_loc
+        argx = si_kx * fp(k,ixp)
+        argz = si_kz * fp(k,izp)
+        sinkx = sin(argx)
+        coskx = cos(argx)
+        sinkz = sin(argz)
+        coskz = cos(argz)
+!
         p = npar_species * (ipar(k) - 1) / npar + 1
+        i = 4 * p + 1
+        dvpx = eta_vK * (real(si_ev(i)) * coskx - aimag(si_ev(i)) * sinkx) * coskz
+        dvpy = eta_vK * (real(si_ev(i+1)) * coskx - aimag(si_ev(i+1)) * sinkx) * coskz
+        dvpz = -eta_vK * (real(si_ev(i+2)) * sinkx + aimag(si_ev(i+2)) * coskx) * sinkz
+!
         fp(k,irhopswarm) = rhopj(p)
-        fp(k,ivpx) = fp(k,ivpx) + vpx0(p) 
-        fp(k,ivpy) = fp(k,ivpy) + vpy0(p)
+        fp(k,ivpx) = fp(k,ivpx) + vpx0(p) + dvpx
+        fp(k,ivpy) = fp(k,ivpy) + vpy0(p) + dvpy
+        fp(k,ivpz) = fp(k,ivpz) + dvpz
       enddo ploop
 !
-!  Override the stopping times in particles_dust.
+! Override the stopping times in particles_dust.
 !
       multisp: if (npar_species > 1) then
         call get_shared_variable("tausp_species", tausp_species)
