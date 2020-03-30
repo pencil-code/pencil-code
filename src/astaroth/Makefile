@@ -15,7 +15,7 @@ OPTFLAGS = -O1
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 #  Original
-CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -Isubmodule/build -g -G -lm
+CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
@@ -44,13 +44,17 @@ else
 endif
 
 PCHEADER_DIR=.
-export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
+#export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
+export CUDA_NVCC_FLAGS='-shared -fPIC'
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) submodule/build/src/core/libastaroth_core.so  $(MAIN_OBJ) $(OBJECTS)
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
 
 submodule/build/src/core/libastaroth_core.so: $(ACSOURCES) $(ACHEADERS)
-	mkdir -p submodule/build && cd submodule/build && export DSL_MODULE=pc_mhd_solver && cmake -DAUTO_OPTIMIZATION=OFF -DMULTIGPU_ENABLED=OFF -DBUILD_DEBUG=OFF -DBUILD_SHARED=ON -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF -DVERBOSE_PRINTING=OFF .. && make -I../../.. -j # VERBOSE=1 # Build the core Astaroth library
+	mkdir -p submodule/build && cd submodule/build && export DSL_MODULE=pc_mhd_solver && cmake -DAUTO_OPTIMIZATION=OFF -DMULTIGPU_ENABLED=ON -DBUILD_DEBUG=OFF -DBUILD_SHARED=ON -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF -DVERBOSE_PRINTING=OFF .. \
+	&& make -I../../.. VERBOSE=1 # Build the core Astaroth library
+
+#-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 
 include Makefile.depend
 include Makefile.extern
@@ -68,12 +72,12 @@ $(PC_HEADERS): .sentinel
 #diagnostics/PC_modulediags.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepardecs.h
-	#@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
+#@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
 	@for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 	then ../scripts/phys_modules2c par $$file equationofstate; \
         else ../scripts/phys_modules2c par $$file; fi; done
-	#@rm -f diagnostics/PC_modulediags_init.h
-	#@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
+#@rm -f diagnostics/PC_modulediags_init.h
+#@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
 	@touch .sentinel
 
 #        @for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
