@@ -30,12 +30,12 @@ module InitialCondition
 !
 ! Input Parameters
 !
+  complex, dimension(4*(npar_species+1)) :: si_ev = (0.0, 0.0)
   logical :: ltaus_log_center = .true.
   real :: logtausmin = -4.0, logtausmax = -1.0
   real :: dlnndlntaus = -4.0
   real :: dlnrhodlnr = -0.1
   real :: si_kx = 0.0, si_kz = 0.0
-  complex :: si_ev = (0.0, 0.0)
 !
   namelist /initial_condition_pars/ &
     ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev
@@ -116,19 +116,20 @@ module InitialCondition
 !
 ! Initialize particles' positions.
 !
-! 10-mar-20/ccyang: coded
+! 30-mar-20/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
 !
       integer, dimension(npar_species) :: ip
+      real, dimension(npar_species) :: ar, ai, a1, a2, a3
       integer :: npps, npx, npz, ix, iz, is, k
       real :: dxp, dzp, xp, yp, zp, dxp1, dzp1
-      real :: ar, ai, a1, a2, a3, c1, c2
       real :: argx, argz
       real :: sinp, sinm, cosp, cosm
       real :: sinp2, sinm2, cosp2, cosm2
       real :: sin2kz, cos2kx, sin2kx
+      real :: c1x, c1z, c2x, c2z
 !
       call keep_compiler_quiet(f)
 !
@@ -172,15 +173,19 @@ module InitialCondition
 !
 ! Compute repeated constants.
 !
-      c1 = si_kx**2 + si_kz**2
-      c2 = c1**2
-      coeff: if (c1 > 0.0) then
-        c1 = 0.5 / c1
-        c2 = 1.0 / c2
+      c1x = si_kx**2 + si_kz**2
+      c2x = c1x**2
+      coeff: if (c1x > 0.0) then
+        c1x = 0.5 / c1x
+        c2x = 1.0 / c2x
       endif coeff
+      c1z = c1x * si_kz
+      c2z = c2x * si_kz**3
+      c1x = c1x * si_kx
+      c2x = c2x * si_kx**3
 !
-      ar = real(si_ev)
-      ai = aimag(si_ev)
+      ar = real(si_ev(8::4))
+      ai = aimag(si_ev(8::4))
       a1 = 0.25 * (ar**2 - ai**2)
       a2 = 0.5 * ar * ai
       a3 = 0.25 * (ar**2 + ai**2)
@@ -212,12 +217,12 @@ module InitialCondition
           cosm2 = cos(2.0 * (argx - argz))
 !
           sloop: do is = 1, npar_species
-            dxp1 = -c1 * si_kx * (ar * (sinp + sinm) + ai * (cosp + cosm) &
-                                - a1 * (sinp2 + sinm2) - a2 * (cosp2 + cosm2)) &
-                   + c2 * si_kx**3 * (a2 * cos2kx + a1 * sin2kx)
-            dzp1 = -c1 * si_kz * (ar * (sinp - sinm) + ai * (cosp - cosm) &
-                                - a1 * (sinp2 - sinm2) - a2 * (cosp2 - cosm2)) &
-                   + c2 * si_kz**3 * a3 * sin2kz
+            dxp1 = -c1x * (ar(is) * (sinp + sinm) + ai(is) * (cosp + cosm) &
+                         - a1(is) * (sinp2 + sinm2) - a2(is) * (cosp2 + cosm2)) &
+                   + c2x * (a2(is) * cos2kx + a1(is) * sin2kx)
+            dzp1 = -c1z * (ar(is) * (sinp - sinm) + ai(is) * (cosp - cosm) &
+                         - a1(is) * (sinp2 - sinm2) - a2(is) * (cosp2 - cosm2)) &
+                   + c2z * a3(is) * sin2kz
 !
             k = k + 1
             fp(k,ixp) = xp + dxp1
