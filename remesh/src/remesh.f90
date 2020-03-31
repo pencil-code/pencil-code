@@ -807,6 +807,8 @@ endprogram remesh
         write(ch(1:3),'(i3)') cpu
       elseif (cpu.lt.10000) then
         write(ch(1:4),'(i4)') cpu
+      elseif (cpu.lt.100000) then
+        write(ch(1:5),'(i5)') cpu
       else
         print*,'cpu=',cpu
         stop "ch: cpu too large"
