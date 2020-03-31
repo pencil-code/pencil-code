@@ -4,8 +4,8 @@
 ; pc_convert_hdf5 : converts all currently used files ('var.dat', 'pvar.dat', etc.)
 ;
 ; Optional:
-; /old : converts only old files that currently not used ('VAR0', 'PVAR0', etc.)
-; /all : converts all files, including old ones, see above
+; /old : converts only old files that are currently not used ('VAR0', 'PVAR0', etc.)
+; /all : converts all files, including 'var.dat' and old snapshots (see above)
 ; /delete : deletes the binray files after conversion
 ;
 ; History:
