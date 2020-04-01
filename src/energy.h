@@ -9,7 +9,7 @@
   public :: init_energy, denergy_dt, energy_after_boundary
   public :: pencil_criteria_energy, pencil_interdep_energy
   public :: calc_pencils_energy, fill_farray_pressure
-  public :: impose_energy_floor
+  public :: impose_energy_floor, energy_before_boundary
   public :: dynamical_thermal_diffusion
   public :: split_update_energy
   public :: expand_shands_energy

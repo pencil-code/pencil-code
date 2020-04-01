@@ -3712,6 +3712,41 @@ module Energy
 !
     endsubroutine calc_ssmeanxy
 !***********************************************************************
+    subroutine energy_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   1-apr-20/joern: coded
+!
+      use EquationOfState, only : lnrho0, cs20, get_cv1
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: cs2
+      real :: cv1
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       call get_cv1(cv1)
+       cs2=0.
+       do m=1,my
+       do n=1,mz
+         if (ldensity_nolog) then
+           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
+                          -lnrho0)+cv1*f(:,m,n,iss))
+         else
+           cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
+                          -lnrho0)+cv1*f(:,m,n,iss))
+         endif
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+       enddo
+       enddo
+     endif
+
+!
+    endsubroutine energy_before_boundary
+!***********************************************************************
     subroutine energy_after_boundary(f)
 !
 !  Calculate <s>, which is needed for diffusion with respect to xy-flucts.
@@ -3728,7 +3763,6 @@ module Energy
 !
       real, dimension (mx,my,mz) :: cs2p, ruzp
       real, dimension (mz) :: ruzmz
-      real, dimension (mx) :: cs2
 !
       integer :: l,m,n,lf
       real :: fact, cv1, cp1, tmp1
@@ -3924,26 +3958,6 @@ module Energy
 !        enddo; enddo
 !
 !      endif
-!
-!    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
-!
-     if (lslope_limit_diff .and. llast) then
-       call get_cv1(cv1)
-       cs2=0.
-       do m=1,my
-       do n=1,mz
-         if (ldensity_nolog) then
-           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
-                          -lnrho0)+cv1*f(:,m,n,iss))
-         else
-           cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
-                          -lnrho0)+cv1*f(:,m,n,iss))
-         endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
-       enddo
-       enddo
-     endif
 !
 !  Compute running average of entropy
 !

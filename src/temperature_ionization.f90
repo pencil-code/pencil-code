@@ -765,32 +765,45 @@ module Energy
 
     endsubroutine calc_diagnostics_energy
 !***********************************************************************
-    subroutine energy_after_boundary(f)
+    subroutine energy_before_boundary(f)
 !
-!  dummy routine
+!  Actions to take before boundary conditions are set.
 !
-      use EquationOfState, only : eoscalc
+!   1-apr-20/joern: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      use EquationOfState, only : gamma_m1, get_cp1
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2
-!
-      call keep_compiler_quiet(f)
+      real :: cp1
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
      if (lslope_limit_diff .and. llast) then
+       call get_cp1(cp1)
+       cs2=0.
        do m=1,my
        do n=1,mz
-         call eoscalc(f,mx,cs2=cs2)
+         if (ltemperature_nolog) then
+           cs2 = gamma_m1/cp1*f(:,m,n,iTT)
+         else
+           cs2 = gamma_m1/cp1*exp(f(:,m,n,ilnTT))
+         endif
          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo
        enddo
      endif
 !
-!      if (lenergy_slope_limited) &
-!        call fatal_error('energy_after_boundary', &
-!                         'Slope-limited diffusion not implemented')
+    endsubroutine energy_before_boundary
+!***********************************************************************
+    subroutine energy_after_boundary(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine energy_after_boundary
 !***********************************************************************

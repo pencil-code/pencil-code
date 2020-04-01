@@ -640,6 +640,36 @@ module Energy
 
     endsubroutine calc_diagnostics_energy
 !***********************************************************************
+    subroutine energy_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   1-apr-20/joern: coded
+!
+      use EquationOfState, only : gamma_m1, gamma
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: cs2
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       cs2=0.
+       do m=1,my
+       do n=1,mz
+         if (ldensity_nolog) then
+           cs2 = gamma*gamma_m1*f(:,m,n,ieth)/f(:,m,n,irho)
+         else
+           cs2 = gamma*gamma_m1*f(:,m,n,ieth)*exp(-f(:,m,n,ilnrho))
+         endif
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+       enddo
+       enddo
+     endif
+!
+    endsubroutine energy_before_boundary
+!***********************************************************************
     subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
@@ -647,25 +677,8 @@ module Energy
 !  04-nov-10/anders+evghenii: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: cs2 
 !
       call keep_compiler_quiet(f)
-!
-!    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
-!
-     if (lslope_limit_diff .and. llast) then
-       do m=1,my
-       do n=1,mz
-         call eoscalc(f,mx,cs2=cs2)
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
-       enddo
-       enddo
-     endif
-!
-!      if (lenergy_slope_limited) &
-!        call fatal_error('energy_after_boundary', &
-!                         'Slope-limited diffusion not implemented')
 !
     endsubroutine energy_after_boundary
 !***********************************************************************

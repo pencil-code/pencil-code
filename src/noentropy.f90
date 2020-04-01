@@ -296,7 +296,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine energy_after_boundary(f)
+    subroutine energy_before_boundary(f)
 !
       use EquationOfState, only: cs20
 !
@@ -315,6 +315,14 @@ module Energy
         enddo
         enddo
       endif
+!
+    endsubroutine energy_before_boundary
+!***********************************************************************
+    subroutine energy_after_boundary(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 !
       call keep_compiler_quiet(f)
 

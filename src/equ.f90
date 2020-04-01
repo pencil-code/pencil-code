@@ -190,6 +190,7 @@ module Equ
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
+      if (lenergy)       call energy_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
