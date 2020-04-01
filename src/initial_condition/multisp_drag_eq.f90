@@ -45,7 +45,7 @@ module InitialCondition
 !
 !  Initialize any module variables which are parameter dependent.
 !
-!  02-oct-19/ccyang: coded
+!  17-feb-20/ccyang: coded
 !
       use EquationOfState, only: cs0
 !
@@ -58,13 +58,8 @@ module InitialCondition
 !
 !  Assemble stopping times.
 !
-      if (npar_species > 1) then
-        dlogtaus = (logtausmax - logtausmin) / real(npar_species - 1)
-      else
-        dlogtaus = 0.5 * (logtausmax + logtausmin)
-      endif
-!
-      taus = logtausmin + real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus
+      dlogtaus = (logtausmax - logtausmin) / real(npar_species)
+      taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
       if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
       taus = 10.0**taus
 !
