@@ -69,8 +69,9 @@ module Special
 ! Parameters for the storm model
 !
   real :: tmass_relaxation=1.0,tmass_relaxation1
+  real :: tduration=3.0,rsize_storm=0.3 
   integer, parameter :: nstorm=10
-  real, dimension(nstorm) :: tstorm,tstorm1,Rstorm,tpeak,xc,yc,smax
+  real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
 
 !
 ! Mass relaxation
@@ -90,7 +91,7 @@ module Special
   namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
        gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,eta0
+       lmass_relaxation,eta0,tduration,rsize_storm
 !
   type InternalPencils
      real, dimension(nx) :: gr2
@@ -131,8 +132,9 @@ module Special
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: r,p,s
-      integer :: istorm
+      real :: r,p,srand,trand
+      integer :: istorm,ismax
+      real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
 !
       do m=1,my
         bottom_function(:,m) = c0 &
@@ -162,17 +164,34 @@ module Special
 !  Initialize storms
 !
       do istorm=1,nstorm
-         tstorm(istorm) = 3.0
-         Rstorm(istorm) = 0.3
+!         
+!  All storms have the same duration and size
+!
+         tstorm(istorm) = tduration 
+         rstorm(istorm) = rsize_storm
+!         
+!  Randomize their location in radius and azimuth
+!
          call random_number_wrapper(r)
          call random_number_wrapper(p)
          r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
          p=2*pi*p
          xc(istorm)     = r*cos(p)
          yc(istorm)     = r*sin(p)
-         tpeak(istorm)  = t + .5*tstorm(istorm)
-         call random_number_wrapper(s)
-         smax(istorm)   = 2*s-1
+!
+! Randomize the initial time from 0 to 3. 
+!
+         call random_number_wrapper(trand)
+         trand = trand*tduration        
+         tstorm_start(istorm) = trand
+         tpeak(istorm)  = tstorm_start(istorm) + .5*tstorm(istorm)
+!         
+! Maximum strength of the storm - pick randomly between the values
+! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
+!
+         call random_number_wrapper(srand)
+         ismax = nint(srand*6)
+         smax(istorm)   = smax_values(ismax)
       enddo
 !
       tstorm1 = 1./tstorm
@@ -369,11 +388,11 @@ module Special
 !
         do i=1,nx
           if (&
-               (rr(i) < 2.2*Rstorm(istorm)).or.&
+               (rr(i) < 2.2*rstorm(istorm)).or.&
                (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
                ) then
             storm_function(i) = smax(istorm) * &
-                 exp(- ( rr(i)           /Rstorm(istorm))**2 &
+                 exp(- ( rr(i)           /rstorm(istorm))**2 &
                      - ((t-tpeak(istorm))/tstorm(istorm))**2)  
           else
             storm_function(i) = 0.
