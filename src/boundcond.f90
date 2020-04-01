@@ -192,7 +192,19 @@ module Boundcond
       logical :: lbcxslc,lbcyslc,lbczslc
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
-
+!
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical
+        !components of vectors
+        bcy='nil'; bcz='nil'
+      endif
+!
+      call check_consistency_of_lperi('initialize_boundcond')
+!
       lbcxslc=any(bcx12=='slc'); lbcyslc=any(bcy12=='slc'); lbczslc=any(bcz12=='slc')
       if (lbcxslc.and..not.lactive_dimension(1)) return
       if (lbcyslc.and..not.lactive_dimension(2)) return
@@ -314,6 +326,97 @@ module Boundcond
 
     endsubroutine initialize_boundcond
 !***********************************************************************
+    subroutine check_consistency_of_lperi(label)
+!
+!  Check consistency of lperi.
+!
+!  18-jul-03/axel: coded
+!
+      character (len=*) :: label
+      logical :: lwarning=.true.
+      integer :: j
+!
+!  Identifier.
+!
+      if (lroot.and.ip<5) print*,'check_consistency_of_lperi: called from',label
+!
+!  Make the warnings less dramatic looking, if we are only in start
+!  and exit this routine altogether if, in addition, ip > 13.
+!
+      if (label=='check_consistency_of_lperi'.and.ip>13) return
+      if (label=='check_consistency_of_lperi') lwarning=.false.
+!
+      if (nvar > 0) then
+!
+!  Check x direction.
+!
+        j=1
+        if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
+            any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
+            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
+!
+!  Check y direction.
+!
+        j=2
+        if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcy(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
+!
+!  Check z direction.
+!
+        j=3
+        if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcz(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
+      endif
+!
+!  Print final warning.
+!  Make the warnings less dramatic looking, if we are only in start.
+!
+      if (lroot .and. (.not. lwarning)) then
+        if (label=='check_consistency_of_lperi') then
+          print*,'[bad BCs in start.in only affects post-processing' &
+               //' of start data, not the run]'
+        else
+          print*,'check_consistency_of_lperi(run.in): you better stop and check!'
+          print*,'------------------------------------------------------'
+          print*
+        endif
+      endif
+!
+    endsubroutine check_consistency_of_lperi
+!***********************************************************************
+    subroutine warning_lperi(lwarning,bc,lperi,j)
+!
+!  Print consistency warning of lperi.
+!
+!  18-jul-03/axel: coded
+!
+      character (len=*), dimension(:), intent(in) :: bc
+      logical, dimension(3) :: lperi
+      logical :: lwarning
+      integer :: j
+!
+      if (lroot) then
+        if (lwarning) then
+          print*
+          print*,'------------------------------------------------------'
+          print*,'W A R N I N G'
+          lwarning=.false.
+        else
+          print*
+        endif
+!
+        print*,'warning_lperi: inconsistency, j=', j, ', lperi(j)=',lperi(j)
+        print*,'bc=',bc
+        print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
+        print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
+      endif
+!
+    endsubroutine warning_lperi
+!***********************************************************************
     subroutine get_slice_data(pos,iproc_slc,label,slcdat,nt)
 !
       use General, only: itoa
@@ -334,6 +437,7 @@ module Boundcond
       if (lhydro) then
         file=trim(slicedir)//'/slice_uu1.'//trim(label)
         call input_slice(file,pos_slc,slcdat,iux,nt)
+!print*, 'pos,pos_slc=', pos,pos_slc
 !print*, 'iproc, ux:', minval(slcdat(:,:,iux)), maxval(slcdat(:,:,iux))
         if (abs(pos-pos_slc)>dz) &
           call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
@@ -962,6 +1066,7 @@ module Boundcond
 !            if ((bcy12(j,k)=='p') .and. lchemistry .and. ldustdensity) bcy12(j,k)=''
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bcy12(j,k)
+
             if (ip_ok) then
            
               is_vec = var_is_vec(j)
@@ -1541,7 +1646,8 @@ module Boundcond
                 ! BCZ_DOC: do nothing; assume that everything is set
               case ('slc')
                 call set_from_slice_z(f,topbot,j)
-                call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+                !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+                call bc_sym_z(f,-1,topbot,j,rel=.true.)
               case default
                 bc%bcname=bcz12(j,k)
                 bc%ivar=j
@@ -6179,6 +6285,8 @@ module Boundcond
             endif
           else
             if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
+!print*, 'bc_ss_flux_x: iproc, lnrho, ss=', iproc, maxval(f(l1,:,:,ilnrho)), &
+!minval(f(l1,:,:,ilnrho)), maxval(f(l1,:,:,iss)), minval(f(l1,:,:,iss))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then

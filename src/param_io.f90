@@ -354,16 +354,6 @@ module Param_IO
         lyinyang=.false.
       endif
 !
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        if (lroot.and..not.lrun) &
-          call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
-        lperi(2:3) = .false.; lpole = .false.
-        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
-        bcy='nil'; bcz='nil'
-      endif
-!
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
@@ -389,8 +379,6 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
         print*, 'lperi= ', lperi
       endif
-!
-      call check_consistency_of_lperi('read_all_init_pars')
 !
 !  Option to use maximal rather than total distance for courant time
 !
@@ -499,15 +487,6 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
 !
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
-        lperi(2:3) = .false.; lpole = .false.
-        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
-        bcy='nil'; bcz='nil'
-      endif
-!
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
@@ -540,8 +519,6 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
         print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
       endif
-!
-      call check_consistency_of_lperi('read_all_run_pars')
 !
 !  Ensure that right precision information is written in dim.dat.
 !
@@ -943,97 +920,6 @@ module Param_IO
       endif
 !
     endsubroutine write_all_run_pars
-!***********************************************************************
-    subroutine check_consistency_of_lperi(label)
-!
-!  Check consistency of lperi.
-!
-!  18-jul-03/axel: coded
-!
-      character (len=*) :: label
-      logical :: lwarning=.true.
-      integer :: j
-!
-!  Identifier.
-!
-      if (lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
-!
-!  Make the warnings less dramatic looking, if we are only in start
-!  and exit this routine altogether if, in addition, ip > 13.
-!
-      if (label=='check_consistency_of_lperi'.and.ip>13) return
-      if (label=='check_consistency_of_lperi') lwarning=.false.
-!
-      if (nvar > 0) then
-!
-!  Check x direction.
-!
-        j=1
-        if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
-            any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
-            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
-!
-!  Check y direction.
-!
-        j=2
-        if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
-            any(bcy(1:nvar)/='p').and.lperi(j)) &
-            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
-!
-!  Check z direction.
-!
-        j=3
-        if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
-            any(bcz(1:nvar)/='p').and.lperi(j)) &
-            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
-      endif
-!
-!  Print final warning.
-!  Make the warnings less dramatic looking, if we are only in start.
-!
-      if (lroot .and. (.not. lwarning)) then
-        if (label=='check_consistency_of_lperi') then
-          print*,'[bad BCs in start.in only affects post-processing' &
-               //' of start data, not the run]'
-        else
-          print*,'check_consistency_of_lperi(run.in): you better stop and check!'
-          print*,'------------------------------------------------------'
-          print*
-        endif
-      endif
-!
-    endsubroutine check_consistency_of_lperi
-!***********************************************************************
-    subroutine warning_lperi(lwarning,bc,lperi,j)
-!
-!  Print consistency warning of lperi.
-!
-!  18-jul-03/axel: coded
-!
-      character (len=*), dimension(:), intent(in) :: bc
-      logical, dimension(3) :: lperi
-      logical :: lwarning
-      integer :: j
-!
-      if (lroot) then
-        if (lwarning) then
-          print*
-          print*,'------------------------------------------------------'
-          print*,'W A R N I N G'
-          lwarning=.false.
-        else
-          print*
-        endif
-!
-        print*,'warning_lperi: inconsistency, j=', j, ', lperi(j)=',lperi(j)
-        print*,'bc=',bc
-        print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
-          any(bc=='p'.or. bc=='she'), .not.lperi(j)
-        print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
-          any(bc=='p'.or. bc=='she'), .not.lperi(j)
-      endif
-!
-    endsubroutine warning_lperi
 !***********************************************************************
     subroutine write_IDL_logicals(unit)
 !
