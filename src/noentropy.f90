@@ -298,7 +298,7 @@ module Energy
 !***********************************************************************
     subroutine energy_before_boundary(f)
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs0
 !
 !  Dummy routine.
 !
@@ -307,11 +307,11 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-      if (lslope_limit_diff .and. llast) then
+      if (lslope_limit_diff .and. llast .and. ldensity) then
 !      if (lslope_limit_diff) then
         do m=1,my
         do n=1,mz
-          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs20)
+          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs0
         enddo
         enddo
       endif
