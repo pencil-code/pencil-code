@@ -101,16 +101,73 @@ module InitialCondition
 !
 ! Initialize the velocity field.
 !
-!  10-mar-20/ccyang: coded
+!  30-mar-20/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension(nx) :: argx, sinkx, coskx, dux, duy, duz
+      real :: argz, sinkz, coskz
 !
 ! Assign the equilibrium velocities to the gas
 !
       f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux) + ux0
       f(l1:l2,m1:m2,n1:n2,iuy) = f(l1:l2,m1:m2,n1:n2,iuy) + uy0
 !
+! Perturb the gas.
+!
+      argx = si_kx * x(l1:l2)
+      sinkx = sin(argx)
+      coskx = cos(argx)
+!
+      duz = si_amp * eta_vK
+      dux = duz * (real(si_ev(1)) * coskx - aimag(si_ev(1)) * sinkx)
+      duy = duz * (real(si_ev(2)) * coskx - aimag(si_ev(2)) * sinkx)
+      duz = duz * (real(si_ev(3)) * sinkx + aimag(si_ev(3)) * coskx)
+!
+      nloop: do n = n1, n2
+        argz = si_kz * z(n)
+        sinkz = sin(argz)
+        coskz = cos(argz)
+!
+        mloop: do m = m1, m2
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + dux * coskz
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + duy * coskz
+          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) - duz * sinkz
+        enddo mloop
+      enddo nloop
+!
     endsubroutine initial_condition_uu
+!***********************************************************************
+    subroutine initial_condition_lnrho(f)
+!
+! Initialize logarithmic density.
+!
+!  30-mar-20/ccyang: coded
+!
+      use EquationOfState, only: rho0
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension(nx) :: argx, drho
+      real :: coskz
+!
+! Perturb the gas density.
+!
+      argx = si_kx * x(l1:l2)
+      drho = si_amp * rho0 * (real(si_ev(4)) * cos(argx) - aimag(si_ev(4)) * sin(argx))
+!
+      nloop: do n = n1, n2
+        coskz = cos(si_kz * z(n))
+        do m = m1, m2
+          f(l1:l2,m,n,irho) = rho0 + drho * coskz
+        enddo
+      enddo nloop
+!
+! Convert to logarithmic density.
+!
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(f(l1:l2,m1:m2,n1:n2,irho))
+!
+    endsubroutine initial_condition_lnrho
 !***********************************************************************
     subroutine initial_condition_xxp(f, fp)
 !
