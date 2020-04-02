@@ -53,7 +53,7 @@ module Energy
   real :: mu=1.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
-  real :: beta_bouss=-1.0
+  real :: beta_bouss=-1.0, h_slope_limited=2.0
   integer :: temp_zmask_count=1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
@@ -110,7 +110,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      temp_zaver_range, &
+      temp_zaver_range, h_slope_limited, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
       hcond0_kramers, nkramers
 !
@@ -266,7 +266,8 @@ module Energy
 ! 18-may-12/MR: shared variable PrRa fetched from hydro
 !
       use BorderProfiles, only: request_border_driving
-      use FArrayManager, only: farray_register_pde, farray_index_append
+      use FArrayManager, only: farray_register_pde, farray_index_append, &
+                               farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
 !  Register TT or lnTT, depending on whether or not ltemperature_nolog
@@ -298,6 +299,17 @@ module Energy
 !
       if (lroot) call svn_id( &
            "$Id$")
+!
+      if (any(iheatcond=='temperature-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
+        endif
+      endif
 !
 !  Writing files for use with IDL.
 !
@@ -368,6 +380,7 @@ module Energy
       lheatc_hyper3=.false.
       lheatc_hyper3_mesh=.false.
       lheatc_hyper3_polar=.false.
+      lenergy_slope_limited=.false.
 !
 !  initialize lnothing. It is needed to prevent multiple output.
 !
@@ -427,6 +440,9 @@ module Energy
         case ('kramers')
           lheatc_kramers=.true.
           if (lroot) print*, 'heat conduction: kramers'
+        case ('temperature-slope-limited')
+          lenergy_slope_limited=.true.
+          if (lroot) print*, 'heat conduction: slope limited diffusion'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -1216,7 +1232,7 @@ module Energy
       use EquationOfState, only: gamma_m1, lpres_grad
       use ImplicitPhysics, only: heatcond_TT
       use Special, only: special_calc_energy
-      use Sub, only: identify_bcs
+      use Sub, only: identify_bcs, calc_slope_diff_flux
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1319,6 +1335,18 @@ module Energy
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
       if (lheatc_Ktherm) call calc_heatcond_Ktherm (df,p)
       if (lheatc_kramers) call calc_heatcond_kramers (df,p)
+!
+!     Slope-limited diffusion
+!
+      if (lenergy_slope_limited.and.llast) then
+        if (ltemperature_nolog) then
+          call calc_slope_diff_flux(f,iTT,p,h_slope_limited,tmp)
+          thdiff=thdiff+tmp
+        else
+          call calc_slope_diff_flux(f,ilnTT,p,h_slope_limited,tmp)
+          thdiff=thdiff+tmp
+       endif
+     endif
 !
 !  Hyper diffusion.
 !

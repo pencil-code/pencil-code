@@ -109,7 +109,7 @@ module Viscosity
   logical :: lno_visc_heat_zbound=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
-  real :: h_slope_limited=0. !, w_sld_cs=0.
+  real :: h_slope_limited=2.0
   character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
@@ -2026,21 +2026,21 @@ module Viscosity
 !
         if (llast) then
           if (lviscosity_heat) then
-            call calc_slope_diff_flux(f,iux,p,tmp3,tmp4,'viscose')
+            call calc_slope_diff_flux(f,iux,p,h_slope_limited,tmp3,tmp4,'viscose')
             p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
             if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-            call calc_slope_diff_flux(f,iuy,p,tmp3,tmp4,'viscose')
+            call calc_slope_diff_flux(f,iuy,p,h_slope_limited,tmp3,tmp4,'viscose')
             p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
             if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-            call calc_slope_diff_flux(f,iuz,p,tmp3,tmp4,'viscose')
+            call calc_slope_diff_flux(f,iuz,p,h_slope_limited,tmp3,tmp4,'viscose')
             p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
             if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
           else
-            call calc_slope_diff_flux(f,iux,p,tmp3)
+            call calc_slope_diff_flux(f,iux,p,h_slope_limited,tmp3)
             p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-            call calc_slope_diff_flux(f,iuy,p,tmp3)
+            call calc_slope_diff_flux(f,iuy,p,h_slope_limited,tmp3)
             p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-            call calc_slope_diff_flux(f,iuz,p,tmp3)
+            call calc_slope_diff_flux(f,iuz,p,h_slope_limited,tmp3)
             p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
           endif
         endif

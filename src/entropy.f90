@@ -150,7 +150,7 @@ module Energy
   logical :: lss_flucz_as_aux=.false.
   logical :: lTT_flucz_as_aux=.false.
   logical :: lchi_t1_noprof=.false.
-  real :: h_slope_limited=0.
+  real :: h_slope_limited=2.0
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -224,7 +224,7 @@ module Energy
       center1_x, center1_y, center1_z, &
       lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
+      cool_type,ichit,xchit,pclaw,h_slope_limited,islope_limiter, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
@@ -451,17 +451,16 @@ module Energy
       if (lroot) call svn_id( &
           "$Id$")
 !
-!      if (lenergy_slope_limited) then
-!        if (iFF_diff==0) then
-!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
-!        endif
-!        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
-!        iFF_char_c=iFF_div_ss
-!        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
-!      endif
+      if (any(iheatcond=='entropy-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
+        endif
+      endif
 !
 !  Possible to calculate pressure gradient directly from the pressure, in which
 !  case we must open an auxiliary slot in f to store the pressure. This method
@@ -934,6 +933,7 @@ module Energy
       lheatc_hyper3ss_aniso=.false.
       lheatc_smagorinsky=.false.
       lheatc_chit=.false.
+      lenergy_slope_limited=.false.
 !
       lnothing=.false.
 !
@@ -1012,6 +1012,9 @@ module Energy
         case ('smagorinsky')
           lheatc_smagorinsky=.true.
           if (lroot) print*, 'heat conduction: smagorinsky'
+        case ('entropy-slope-limited')
+          lenergy_slope_limited=.true.
+          if (lroot) print*, 'heat conduction: slope limited diffusion'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -1262,8 +1265,6 @@ module Energy
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
-!
-      lslope_limit_diff=lslope_limit_diff .or. lenergy_slope_limited
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -3149,7 +3150,6 @@ module Energy
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
-!  21-oct-15/MR: added timestep adaptation for slope-limited diffusion
 ! 
       use Diagnostics
       use EquationOfState, only: gamma1
@@ -3166,7 +3166,7 @@ module Energy
       intent(inout) :: df
 !
       real :: ztop,xi,profile_cor
-      real, dimension(nx) :: uduu
+      real, dimension(nx) :: uduu,tmp1
       integer :: j,i
 !
       Hmax = 0.
@@ -3298,15 +3298,18 @@ module Energy
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
-
+!
       if (lfirst.and.ldt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
-      !!!if (lenergy_slope_limited.and.lfirst) &
-      !!!  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
 !
-      !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
+!     Slope-limited diffusion
+!
+      if (lenergy_slope_limited.and.llast) then
+        call calc_slope_diff_flux(f,iss,p,h_slope_limited,tmp1)
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp1
+     endif
 !
 !  Explicit heating/cooling terms.
 !
@@ -3940,24 +3943,6 @@ module Energy
         tmp1=sum(f(l1:l2,m1:m2,n1:n2,iss))/nwgrid
         call mpiallreduce_sum(tmp1,ss_volaverage)
       endif
-!
-!  Slope limited diffusion following Rempel (2014)
-!  First calculating the flux in a subroutine below
-!  using a slope limiting procedure then storing in the
-!  auxilaries variables in the f array. Finally the divergence
-!  of the flux is calculated and stored in the f array.
-!
-!      if (lenergy_slope_limited.and.lfirst) then
-!  
-!        f(:,:,:,iFF_diff1:iFF_diff2)=0.
-!        call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
-!if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8))','iss,IPROC=', iproc, f(4,10,:,iss)
-!if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8)/)','iFF_diff1,IPROC=', iproc, f(4,10,:,iFF_diff1)
-!        do n=n1,n2; do m=m1,m2
-!          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
-!        enddo; enddo
-!
-!      endif
 !
 !  Compute running average of entropy
 !

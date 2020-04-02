@@ -7167,7 +7167,7 @@ nameloop: do
         endselect
     endsubroutine characteristic_speed
 !***********************************************************************
-    subroutine calc_slope_diff_flux(f,j,p,div_flux,&
+    subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,div_flux, &
                                     heat_sl,heat_sl_type)
 !                                    heat_sl,heat_sl_type,flux_mag)
 !
@@ -7177,7 +7177,7 @@ nameloop: do
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
 
-      intent(in) :: f,j
+      intent(in) :: f,j,h_slope_limited
       intent(out) :: div_flux
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7192,7 +7192,7 @@ nameloop: do
 !
 !      real, dimension (nx,3), optional, intent(out) :: flux_mag
 !
-      real :: nlf=2., h_slope_limited=2.0
+      real :: nlf=2., h_slope_limited
       type (pencil_case), intent(in) :: p
       integer :: j,k
 

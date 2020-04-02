@@ -129,7 +129,7 @@ module Density
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
   logical :: ldensity_slope_limited=.false.
-  real :: h_slope_limited=0., chi_sld_thresh=0.
+  real :: h_slope_limited=2.0, chi_sld_thresh=0.
   character (len=labellen) :: islope_limiter=''
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
@@ -2565,14 +2565,14 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 !
-!   Slope limited diffusion for magnetic field
+!   Slope limited diffusion for density
 !
       if (ldensity_slope_limited.and.llast) then
         if (ldensity_nolog) then
-          call calc_slope_diff_flux(f,irho,p,tmp)
+          call calc_slope_diff_flux(f,irho,p,h_slope_limited,tmp)
           fdiff=fdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnrho,p,tmp)
+          call calc_slope_diff_flux(f,ilnrho,p,h_slope_limited,tmp)
           fdiff=fdiff+tmp*p%rho1
         endif
      endif

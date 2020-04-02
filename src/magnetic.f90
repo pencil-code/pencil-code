@@ -312,7 +312,7 @@ module Magnetic
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
-  real :: h_slope_limited=0.
+  real :: h_slope_limited=2.0
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1.
@@ -4469,7 +4469,7 @@ module Magnetic
         if (lmagnetic_slope_limited.and.llast) then
 !        if (lmagnetic_slope_limited) then
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,tmp1)
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_slope_limited,tmp1)
             tmp2(:,j)=tmp1
           enddo
           fres=fres+tmp2
