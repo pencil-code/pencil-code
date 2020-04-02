@@ -159,7 +159,7 @@ SUBROUTINE QuadraticRoots(a, z)
   END IF
 
   IF (a(2) /= ZERO) THEN              ! see Numerical Recipes, sec. 5.5
-    w = -(a(2) + SIGN(r,a(2)))
+    w = -(a(2) + SIGN(real(r),a(2)))
     z(1) = CMPLX(TWO*a(1)/w,  ZERO, DP)
     z(2) = CMPLX(HALF*w/a(3), ZERO, DP)
     outputCode=22           ! two real roots
