@@ -883,6 +883,7 @@ module Magnetic
   integer :: idiag_poynzmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}$
   integer :: idiag_jbmxy=0      ! ZAVG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
   integer :: idiag_abmxy=0      ! ZAVG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
+  integer :: idiag_ubmxy=0      ! ZAVG_DOC: $\left< \Uv\cdot\Bv \right>_{z}$
   integer :: idiag_examxy1=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
   integer :: idiag_examxy2=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
   integer :: idiag_examxy3=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
@@ -2661,6 +2662,7 @@ module Magnetic
           .or. idiag_abuxmz/=0 .or. idiag_abuymz/=0 .or. idiag_abuzmz/=0 &
          ) lpenc_diagnos(i_ab)=.true.
       if (idiag_abmxy/=0) lpenc_diagnos2d(i_ab)=.true.
+      if (idiag_ubmxy/=0) lpenc_diagnos2d(i_ub)=.true.
 !
       if (idiag_uam/=0 .or. idiag_uamz/=0) lpenc_diagnos(i_ua)=.true.
       if (idiag_djuidjbim/=0 &
@@ -5893,6 +5895,7 @@ module Magnetic
         call zsum_mn_name_xy(p%bb,idiag_bz2mxy,(/0,0,2/))
         call zsum_mn_name_xy(p%jb,idiag_jbmxy)
         call zsum_mn_name_xy(p%ab,idiag_abmxy)
+        call zsum_mn_name_xy(p%ub,idiag_ubmxy)
         call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
         call zsum_mn_name_xy(p%exa,idiag_examxy2,(/0,1,0/))
         call zsum_mn_name_xy(p%exa,idiag_examxy3,(/0,0,1/))
@@ -8873,7 +8876,7 @@ module Magnetic
         idiag_bx1mxz=0; idiag_by1mxz=0; idiag_bz1mxz=0
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0; idiag_jbmxy=0
         idiag_jxmxz=0; idiag_jymxz=0; idiag_jzmxz=0
-        idiag_abmxy=0; idiag_b2mxz=0;
+        idiag_abmxy=0; idiag_b2mxz=0; idiag_ubmxy=0;
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_axmxy=0; idiag_aymxy=0; idiag_azmxy=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
@@ -9415,6 +9418,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jbmxy',idiag_jbmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'abmxy',idiag_abmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ubmxy',idiag_ubmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy1',idiag_examxy1)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy2',idiag_examxy2)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy3',idiag_examxy3)
