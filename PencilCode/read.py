@@ -329,7 +329,8 @@ def parameters(datadir='./data', par2=False, warning=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-31
-    # Last Modified: 2020-03-26
+    # Last Modified: 2020-04-03
+
     # Function to convert a string to the correct type.
     def convert(v):
         if v == 'T' or v == ".TRUE.":
@@ -347,6 +348,7 @@ def parameters(datadir='./data', par2=False, warning=True):
                     return float(v)
                 except ValueError:
                     return v.strip("' ")
+
     # Function to parse the values.
     def parse(v):
         if '(' in v:
@@ -365,28 +367,33 @@ def parameters(datadir='./data', par2=False, warning=True):
             return u[0]
         else:
             return u
+
     # Read the parameter file.
     if par2:
         f = open(datadir.strip() + "/param2.nml")
     else:
         f = open(datadir.strip() + "/param.nml")
     keys, values = [], []
-    for line in f:
-        line = line.strip()
-        if len(line) <= 0: continue
-        if '=' in line:
-            k, s, v = line.partition('=')
-            k = k.strip().lower()
-            if k not in keys:
-                keys.append(k)
-                values.append(parse(v.strip(" ,\n")))
-            elif warning:
-                print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
-        elif line[0] != '&' and line[0] != '/':
-            u = parse(line.strip(" ,\n"))
-            if type(values[-1]) is not str and type(u) is not list: u = [u]
-            values[-1] += u
+    line = ""
+    for next_line in f:
+        lead = next_line.lstrip()
+        if len(lead) > 0: lead = lead[0]
+        if '=' in next_line or lead == '&' or lead == '/':
+            line = line.strip().replace('\n', '')
+            if len(line) > 0:
+                print(line)
+                k, s, v = line.partition('=')
+                k = k.strip().lower()
+                if k not in keys:
+                    keys.append(k)
+                    values.append(parse(v.strip(" ,\n")))
+                elif warning:
+                    print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
+            line = next_line if '=' in next_line else ""
+        else:
+            line += next_line
     f.close()
+
     # Define a container class and return the parameters in it.
     class Parameter:
         """A container class to hold the parameters of the Pencil Code data. """
