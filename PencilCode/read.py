@@ -381,7 +381,6 @@ def parameters(datadir='./data', par2=False, warning=True):
         if '=' in next_line or lead == '&' or lead == '/':
             line = line.strip().replace('\n', '')
             if len(line) > 0:
-                print(line)
                 k, s, v = line.partition('=')
                 k = k.strip().lower()
                 if k not in keys:
