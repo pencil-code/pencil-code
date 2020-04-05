@@ -1588,6 +1588,16 @@ else if ($hn =~ co[0-9]*) then
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
   set mpirun = srun
+#---------------------------------------------------  
+else if ($hn =~ *.sng.lrz.de) then
+  echo "Supermuc-NG at Leibniz-Rechenzentrum"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirun = srun
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
