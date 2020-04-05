@@ -53,7 +53,7 @@ module Energy
   real :: mu=1.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
-  real :: beta_bouss=-1.0, h_slope_limited=2.0
+  real :: beta_bouss=-1.0, h_sld_ene=2.0
   integer :: temp_zmask_count=1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
@@ -110,7 +110,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      temp_zaver_range, h_slope_limited, &
+      temp_zaver_range, h_sld_ene, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
       hcond0_kramers, nkramers
 !
@@ -262,8 +262,9 @@ module Energy
 !  Initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly.
 !
-!  6-nov-01/wolf: coded
-! 18-may-12/MR: shared variable PrRa fetched from hydro
+!  06-nov-01/wolf: coded
+!  18-may-12/MR: shared variable PrRa fetched from hydro
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager, only: farray_register_pde, farray_index_append, &
@@ -1340,10 +1341,10 @@ module Energy
 !
       if (lenergy_slope_limited.and.llast) then
         if (ltemperature_nolog) then
-          call calc_slope_diff_flux(f,iTT,p,h_slope_limited,tmp)
+          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,tmp)
           thdiff=thdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnTT,p,h_slope_limited,tmp)
+          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,tmp)
           thdiff=thdiff+tmp
        endif
      endif

@@ -129,8 +129,7 @@ module Density
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
   logical :: ldensity_slope_limited=.false.
-  real :: h_slope_limited=2.0, chi_sld_thresh=0.
-  character (len=labellen) :: islope_limiter=''
+  real :: h_sld_dens=2.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ &
@@ -173,8 +172,8 @@ module Density
       ieos_profile, width_eos_prof, beta_glnrho_global,&
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
-      lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
-      h_slope_limited, chi_sld_thresh, islope_limiter, lrho_flucz_as_aux
+      lsubtract_init_stratification, ireference_state, &
+      h_sld_dens, lrho_flucz_as_aux
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -261,6 +260,7 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !   21-oct-15/MR: changes for slope-limited diffusion
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
@@ -282,19 +282,6 @@ module Density
           aux_count=aux_count+1
         endif
       endif
-
-
-!      if (ldensity_slope_limited) then
-!        if (iFF_diff==0) then
-!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
-!        endif
-!        call farray_register_auxiliary('Div_flux_diff_rho',iFF_div_rho)
-!        iFF_char_c=iFF_div_rho
-!        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-!        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
-!      endif
 !
 !  Fluctuating density = \rho - \mean_xy(\rho)
 !
@@ -605,6 +592,7 @@ module Density
         case ('density-slope-limited')
           if (lroot) print*,'mass diffusion: slope limited'
             ldensity_slope_limited=.true.
+            lmassdiff_fix=.true.
         case ('','none')
           if (lroot .and. (.not. lnothing)) &
               print*,'diffusion: nothing (i.e. no mass diffusion)'
@@ -1613,6 +1601,8 @@ module Density
 !   10-feb-15/MR: extended calc of <grad(log(rho))> to linear density;
 !                 mass conservation slightly simplified
 !   21-oct-15/MR: changes for slope-limited diffusion
+!   03-apr-20/joern: restructured and fixed slope-limited diffusion:
+!                    removed from here.
 !
       use Sub, only: grad, finalize_aver, calc_all_diff_fluxes, div
 !
@@ -1713,19 +1703,6 @@ module Density
 
       lupdate_mass_source = lmass_source .and. t>=tstart_mass_source .and. &
                             (tstop_mass_source==-1.0 .or. t<=tstop_mass_source)
-!
-!  Slope limited diffusion following Rempel (2014).
-!  No distinction between log and nolog density at the moment!
-!
-!      if (ldensity_slope_limited.and.lfirst) then
-!
-!        call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
-!
-!        do n=n1,n2; do m=m1,m2
-!          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_rho),.true.)
-!        enddo; enddo
-!
-!      endif
 !
    endsubroutine density_after_boundary
 !***********************************************************************
@@ -2384,6 +2361,7 @@ module Density
 !  25-may-18/fred: updated mass diffusion correction and set default
 !                  not default for hyperdiff, but correction applies
 !                  to all fdiff if lmassdiff_fix=T
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Deriv, only: der6
       use Special, only: special_calc_density
@@ -2396,7 +2374,7 @@ module Density
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: fdiff  !GPU := df(l1:l2,m,n,irho|ilnrho)
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: density_rhs,diffus_diffrho3,advec_hypermesh_rho
@@ -2569,10 +2547,10 @@ module Density
 !
       if (ldensity_slope_limited.and.llast) then
         if (ldensity_nolog) then
-          call calc_slope_diff_flux(f,irho,p,h_slope_limited,tmp)
+          call calc_slope_diff_flux(f,irho,p,h_sld_dens,tmp)
           fdiff=fdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnrho,p,h_slope_limited,tmp)
+          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,tmp)
           fdiff=fdiff+tmp*p%rho1
         endif
      endif

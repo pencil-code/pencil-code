@@ -298,9 +298,9 @@ module Energy
 !***********************************************************************
     subroutine energy_before_boundary(f)
 !
-      use EquationOfState, only: cs0
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
-!  Dummy routine.
+      use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 !

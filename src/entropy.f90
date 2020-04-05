@@ -150,8 +150,7 @@ module Energy
   logical :: lss_flucz_as_aux=.false.
   logical :: lTT_flucz_as_aux=.false.
   logical :: lchi_t1_noprof=.false.
-  real :: h_slope_limited=2.0
-  character (len=labellen) :: islope_limiter=''
+  real :: h_sld_ene=2.0
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -224,7 +223,7 @@ module Energy
       center1_x, center1_y, center1_z, &
       lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw,h_slope_limited,islope_limiter, &
+      cool_type,ichit,xchit,pclaw,h_sld_ene, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
@@ -3307,7 +3306,7 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        call calc_slope_diff_flux(f,iss,p,h_slope_limited,tmp1)
+        call calc_slope_diff_flux(f,iss,p,h_sld_ene,tmp1)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp1
      endif
 !

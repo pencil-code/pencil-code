@@ -312,8 +312,7 @@ module Magnetic
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
-  real :: h_slope_limited=2.0
-  character (LEN=labellen) :: islope_limiter=''
+  real :: h_sld_magn=2.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1.
   real :: rhoref=impossible, rhoref1
@@ -364,7 +363,7 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanaxy, lremove_meanaxz, &
       eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield, h_slope_limited,w_sldchar_mag, eta_cspeed, &
+      ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
@@ -923,8 +922,9 @@ module Magnetic
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
 !
-!  1-may-02/wolf: coded
-! 15-oct-15/MR: changes for slope-limited diffusion
+!  01-may-02/wolf: coded
+!  15-oct-15/MR: changes for slope-limited diffusion
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
@@ -960,18 +960,6 @@ module Magnetic
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
-!
-!      if (lmagnetic_slope_limited) then
-!        if (iFF_diff==0) then
-!          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-!          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
-!        endif
-!        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
-!        iFF_char_c=iFF_div_aa+2
-!        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-!        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
-!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
-!      endif
 !
       if (any(iresistivity=='eta-slope-limited')) then
         lslope_limit_diff = .true.
@@ -3103,7 +3091,7 @@ module Magnetic
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
               f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-!           Fill nearest ghost points with boundary points
+!           Fill nearest ghost points with boundary points, only important at real boundary
               f(l1-1,m,n,isld_char) =f(l1-1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(1))
               f(l2+1,m,n,isld_char) =f(l2+1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(nx))
               if (m==m1) f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
@@ -3768,6 +3756,7 @@ module Magnetic
 !  15-oct-15/MR: changes for slope-limited diffusion
 !  14-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !   4-aug-17/axel: implemented terms for ultrarelativistic EoS
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -4456,20 +4445,12 @@ module Magnetic
         dAdt = dAdt-LLambda_aa*p%aa
       endif
 !
-!      if (lmagnetic_slope_limited.and.lfirst) then
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
-!        if (lohmic_heat) then
-!          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
-!          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
-!        endif
-!      endif
-!
 !   Slope limited diffusion for magnetic field
 !
         if (lmagnetic_slope_limited.and.llast) then
 !        if (lmagnetic_slope_limited) then
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,h_slope_limited,tmp1)
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,tmp1)
             tmp2(:,j)=tmp1
           enddo
           fres=fres+tmp2
@@ -6033,6 +6014,7 @@ module Magnetic
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !  15-oct-15/MR: changes for slope-limited diffusion
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet incomplete
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion, now in daa_dt
 !
       use Deriv, only: der_z,der2_z
       use Sub, only: finalize_aver, div, calc_all_diff_fluxes, dot2_mn
@@ -6173,27 +6155,6 @@ module Magnetic
           enddo
         enddo
       endif
-!
-!  Slope limited diffusion following Rempel (2014)
-!  First calculating the flux in a subroutine below
-!  using a slope limiting procedure then storing in the
-!  auxilaries variables in the f array (done above).
-!
-!      if (lmagnetic_slope_limited.and.lfirst) then
-!
-!        f(:,:,:,iFF_diff1:iFF_diff2)=0.
-!
-!        do j=1,3
-!
-!          call calc_all_diff_fluxes(f,iaa+j-1,islope_limiter,h_slope_limited)
-!
-!          do n=n1,n2; do m=m1,m2
-!            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
-!          enddo; enddo
-!
-!        enddo
-!
-!      endif
 !
 !  Compute eta_smag and put into auxilliary variable
 !
