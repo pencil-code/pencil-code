@@ -213,6 +213,7 @@ module Viscosity
 !
       if (any(ivisc=='nu-slope-limited')) then
         lslope_limit_diff = .true.
+        if (dimensionality<3)lisotropic_advection=.true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'

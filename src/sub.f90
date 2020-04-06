@@ -7212,6 +7212,8 @@ nameloop: do
         fim12_r=0.
         fip12_l=0.
         fip12_r=0.
+        cmax_im12=0.
+        cmax_ip12=0.
 !
         if ((k == 1 .and. nxgrid /= 1) .or. &
             (k == 2 .and. nygrid /= 1) .or. &
@@ -7303,49 +7305,43 @@ nameloop: do
 !      if (.not.present(flux_mag)) then
       div_flux=0.0
       if (nxgrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-!                  /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
-!        elseif (lcylindrical_coords) then
-!          div_flux=div_flux+(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
-!                  /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
-!        else
-!
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
-!
+        if (lspherical_coords) then
+          div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                  /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
+        elseif (lcylindrical_coords) then
+          div_flux=div_flux+(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
+                  /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
+        else
           div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
                   /(x12(l1:l2)-x12(l1-1:l2-1))
-!        endif
-!      endif
+        endif
+      endif
 !
       if (nygrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
-!                  /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
-!        elseif (lcylindrical_coords) then
-!          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
-!                  /(x(l1:l2)*(y12(m)-y12(m-1)))
-!        else
+        if (lspherical_coords) then
+          div_flux=div_flux+(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
+                  /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1))+tini)
 !
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
+        elseif (lcylindrical_coords) then
+          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
+                  /(x(l1:l2)*(y12(m)-y12(m-1)))
 !
+        else
           div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
                    /(y12(m)-y12(m-1))
-!        endif
+        endif
       endif
       if (nzgrid /= 1) then
-!        if (lspherical_coords) then
-!          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-!                  /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
-!        else
-!
-!! JW: At least for spherical coordinates, the Cartesian form works much better.
-!
+        if (lspherical_coords) then
+          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+                  /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
+        else
+
           div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
                   /(z12(n)-z12(n-1))
         endif
-!      endif
       endif
+!      endif
 !
     endsubroutine calc_slope_diff_flux
 !*******************************************************************************

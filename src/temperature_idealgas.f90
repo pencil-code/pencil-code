@@ -302,6 +302,7 @@ module Energy
            "$Id$")
 !
       if (any(iheatcond=='temperature-slope-limited')) then
+        if (dimensionality<3)lisotropic_advection=.true.
         lslope_limit_diff = .true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
