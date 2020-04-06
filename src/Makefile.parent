@@ -80,48 +80,15 @@ semiauto-conf:
 # Compile tools for collecting, downscaling, and distributing data cubes
 tools: default
 
-pc_collect:
+pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid :
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_collect.x )
-pc_reduce:
+	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/$@.x )
+pc_meanfield_collect pc_h5collect :
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_reduce.x )
-pc_distribute:
+	  $(MAKE) FROM_PARENT=src/ experimental/$@.x )
+read_all_videofiles read_videofiles combine_videofiles read_vectorfiles start run :
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_distribute.x )
-pc_distribute_z:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_distribute_z.x )
-pc_extract:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_extract.x )
-pc_configtest:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_configtest.x )
-pc_tecplot:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot.x )
-pc_tecplot_solid:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot_solid.x )
-pc_meanfield_collect:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ experimental/pc_meanfield_collect.x )
-pc_h5collect:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ experimental/pc_h5collect.x )
-read_all_videofiles:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ read_all_videofiles.x )
-read_videofiles:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ read_videofiles.x )
-combine_videofiles:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ combine_videofiles.x )
-read_vectorfiles:
-	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ read_vectorfiles.x )
+	  $(MAKE) FROM_PARENT=src/ $@.x )
 fast:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ fast )
