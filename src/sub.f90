@@ -7182,7 +7182,7 @@ nameloop: do
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: flux_im12,flux_ip12
-      real, dimension (nx) :: div_flux, dens_m12, dens_p12
+      real, dimension (nx) :: div_flux, dens_m1, dens_p1, dens
       real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
       real, dimension (nx) :: fim1,fip1,rfac,q1
       real, dimension (nx) :: cmax_im12,cmax_ip12
@@ -7259,29 +7259,78 @@ nameloop: do
           select case (heat_sl_type)
 
             case('viscose')
-              if (ldensity_nolog) then
-                call calc_lin_interpol(f,irho,dens_m12,dens_p12,k)
-              else
-                call calc_lin_interpol(f,ilnrho,dens_m12,dens_p12,k)
+!
+!           contribution to visose heating derives from (i: component, j: direction)
+!           rho*u_i*del_j Fij_sld -> del_j (rho*u_i*Fij_sld) - del_j(rho*u_i)*Fij_sld
+!           first term does not contribute to heating
+!           second term correpond to 2nd order gradient of of each rho*u component
+!
+              if (k == 1 .and. nxgrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1-1:l2-1,m,n,irho)
+                  dens_p1=f(l1+1:l2+1,m,n,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1-1:l2-1,m,n,ilnrho))
+                  dens_p1=exp(f(l1+1:l2+1,m,n,ilnrho))
+                endif
+                heat_sl=heat_sl &
+                       +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                           /(x(l1:l2)-x(l1-1:l2-1)) &
+                       +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(x(l1+1:l2+1)-x(l1:l2))
               endif
-
-              if (k == 1 .and. nxgrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(x12(l1:l2)-x12(l1-1:l2-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(x12(l1+1:l2+1)-x12(l1:l2))
-
-              if (k == 2 .and. nygrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(y12(m)-y12(m-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(y12(m+1)-y12(m))
-
-              if (k == 3 .and. nzgrid /= 1) &
-                heat_sl=heat_sl+0.5*dens_m12*flux_im12(:,k)*(f(l1:l2,m,n,j)-fim1) &
-                              /(z12(n)-z12(n-1)) &
-                               +0.5*dens_p12*flux_ip12(:,k)*(fip1-f(l1:l2,m,n,j)) &
-                              /(z12(n+1)-z12(n))
+!
+              if (k == 2 .and. nygrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1:l2,m-1,n,irho)
+                  dens_p1=f(l1:l2,m+1,n,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1:l2,m-1,n,ilnrho))
+                  dens_p1=exp(f(l1:l2,m+1,n,ilnrho))
+                endif
+                if (lspherical_coords .or. lcylindrical_coords) then
+                  heat_sl=heat_sl &
+                         +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                             /(x(l1:l2)*(y(m)-y(m-1))) &
+                         +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                             /(x(l1:l2)*(y(m+1)-y(m)))
+                else
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(y(m)-y(m-1)) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(y(m+1)-y(m))
+                endif
+              endif
+!
+              if (k == 3 .and. nzgrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1:l2,m,n-1,irho)
+                  dens_p1=f(l1:l2,m,n+1,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1:l2,m,n-1,ilnrho))
+                  dens_p1=exp(f(l1:l2,m,n+1,ilnrho))
+                endif
+                if (lspherical_coords) then
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(x(l1:l2)*sin(y(m))*(z(n)-z(n-1))) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(x(l1:l2)*sin(y(m))*(z(n+1)-z(n)))
+                else
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(z(n)-z(n-1)) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(z(n+1)-z(n))
+                endif
+              endif
 !
             case('none')
 !
