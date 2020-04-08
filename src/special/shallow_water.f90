@@ -69,8 +69,9 @@ module Special
 ! Parameters for the storm model
 !
   real :: tmass_relaxation=1.0,tmass_relaxation1
-  real :: tduration=3.0,rsize_storm=0.3 
-  integer, parameter :: nstorm=10
+  real :: tduration=3.0,rsize_storm=0.03
+  real :: tau_int=6.0 
+  integer, parameter :: nstorm=50
   real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
 
 !
@@ -87,6 +88,7 @@ module Special
   logical :: lmass_relaxation=.true.
   logical :: lgamma_plane=.true.
   logical :: lcalc_storm=.true.
+  logical :: lupdate_storm=.true.
 !
   namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
@@ -190,7 +192,7 @@ module Special
 ! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
 !
          call random_number_wrapper(srand)
-         ismax = nint(srand*6)
+         ismax = nint(srand*5 + 1)
          smax(istorm)   = smax_values(ismax)
       enddo
 !
@@ -316,6 +318,8 @@ module Special
 !
       if (lcalc_storm) call calc_storm(f,df,p)
 !
+      ! if (lupdate_storm) call update_storm(f,df,p)
+!      
       if (lmass_relaxation) then
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-eta0)*tmass_relaxation1
       endif
@@ -402,6 +406,68 @@ module Special
       enddo
 !    
   endsubroutine calc_storm
+!***********************************************************************
+  
+!
+! Coded by Ali H. (04/06/2020):
+!
+
+  subroutine update_storm(f,df,p)
+
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, dimension (mx,my,mz,mvar), intent(inout) :: df
+    real, dimension(nx) :: rr_updated,storm_function_updated
+    real :: r_updated,p_updated,srand_updated,trand_updated 
+    real, dimension(6) :: smax_values_2=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
+    integer :: i,istorm,ismax_updated
+    type (pencil_case), intent(in) :: p
+
+    do istorm=1,nstorm
+
+          if (t > (tpeak(istorm) + 2.2*tstorm(istorm) + tau_int)) then
+                  
+            call random_number_wrapper(trand_updated)
+            call random_number_wrapper(r_updated)
+            call random_number_wrapper(p_updated)
+            call random_number_wrapper(srand_updated)
+                  
+            ismax_updated = nint(srand_updated*5 + 1)
+            smax(istorm)   = smax_values_2(ismax_updated)
+                  
+            r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
+            p_updated=2*pi*p_updated
+            
+            xc(istorm)     = r_updated*cos(p_updated)
+            yc(istorm)     = r_updated*sin(p_updated)
+            rr_updated = sqrt((x(l1:l2)-xc(istorm))**2 &
+                             + (y(m)-yc(istorm))**2)
+            
+            tpeak(istorm) = trand_updated*tstorm(istorm) &
+                            + t + 2.2*tstorm(istorm)
+
+              do i=1,nx
+                if (&
+                  (rr_updated(i) < 2.2*rstorm(istorm)).or.&
+                  (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+                   ) then
+                  storm_function_updated(i) = smax(istorm) * &
+                   exp(- ( rr_updated(i)  /rstorm(istorm))**2 &
+                   - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+                else
+                  storm_function_updated(i) = 0.
+                endif
+              enddo
+              df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) &
+                                + storm_function_updated
+          endif
+    enddo
+
+
+  endsubroutine update_storm
+
+
+!***********************************************************************
+
 !***********************************************************************
   subroutine rprint_special(lreset,lwrite)
 !
