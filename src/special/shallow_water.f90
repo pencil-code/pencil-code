@@ -422,53 +422,48 @@ module Special
     real, dimension(6) :: smax_values_2=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
     integer :: i,istorm,ismax_updated
     type (pencil_case), intent(in) :: p
-
+!
     do istorm=1,nstorm
-
-          if (t > (tpeak(istorm) + 2.2*tstorm(istorm) + tau_int)) then
-                  
-            call random_number_wrapper(trand_updated)
-            call random_number_wrapper(r_updated)
-            call random_number_wrapper(p_updated)
-            call random_number_wrapper(srand_updated)
-                  
-            ismax_updated = nint(srand_updated*5 + 1)
-            smax(istorm)   = smax_values_2(ismax_updated)
-                  
-            r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
-            p_updated=2*pi*p_updated
-            
-            xc(istorm)     = r_updated*cos(p_updated)
-            yc(istorm)     = r_updated*sin(p_updated)
-            rr_updated = sqrt((x(l1:l2)-xc(istorm))**2 &
-                             + (y(m)-yc(istorm))**2)
-            
-            tpeak(istorm) = trand_updated*tstorm(istorm) &
+!
+      if (t > (tpeak(istorm) + 2.2*tstorm(istorm) + tau_int)) then
+!
+        call random_number_wrapper(trand_updated)
+        call random_number_wrapper(r_updated)
+        call random_number_wrapper(p_updated)
+        call random_number_wrapper(srand_updated)
+!
+        ismax_updated = nint(srand_updated*5 + 1)
+        smax(istorm)   = smax_values_2(ismax_updated)
+!
+        r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
+        p_updated=2*pi*p_updated
+!
+        xc(istorm)     = r_updated*cos(p_updated)
+        yc(istorm)     = r_updated*sin(p_updated)
+        rr_updated = sqrt((x(l1:l2)-xc(istorm))**2 &
+             + (y(m)-yc(istorm))**2)
+!
+        tpeak(istorm) = trand_updated*tstorm(istorm) &
                             + t + 2.2*tstorm(istorm)
-
-              do i=1,nx
-                if (&
-                  (rr_updated(i) < 2.2*rstorm(istorm)).or.&
-                  (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
-                   ) then
-                  storm_function_updated(i) = smax(istorm) * &
-                   exp(- ( rr_updated(i)  /rstorm(istorm))**2 &
-                   - ((t-tpeak(istorm))/tstorm(istorm))**2)  
-                else
-                  storm_function_updated(i) = 0.
-                endif
-              enddo
-              df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) &
-                                + storm_function_updated
+!
+        do i=1,nx
+          if (&
+               (rr_updated(i) < 2.2*rstorm(istorm)).or.&
+               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+               ) then
+            storm_function_updated(i) = smax(istorm) * &
+                 exp(- ( rr_updated(i)  /rstorm(istorm))**2 &
+                 - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+          else
+            storm_function_updated(i) = 0.
           endif
+        enddo
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) &
+            + storm_function_updated
+      endif
     enddo
-
-
+!
   endsubroutine update_storm
-
-
-!***********************************************************************
-
 !***********************************************************************
   subroutine rprint_special(lreset,lwrite)
 !
