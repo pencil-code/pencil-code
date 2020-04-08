@@ -407,13 +407,14 @@ module Special
 !    
   endsubroutine calc_storm
 !***********************************************************************
-  
-!
-! Coded by Ali H. (04/06/2020):
-!
-
   subroutine update_storm(f,df,p)
-
+!
+!  This subroutine... solves all the problems in atmospheric physics
+!    
+!  06-apr-20/ali: coded
+!
+      use General, only: random_number_wrapper
+!
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     real, dimension(nx) :: rr_updated,storm_function_updated
