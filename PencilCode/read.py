@@ -329,7 +329,7 @@ def parameters(datadir='./data', par2=False, warning=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-31
-    # Last Modified: 2020-04-03
+    # Last Modified: 2020-04-09
 
     # Function to convert a string to the correct type.
     def convert(v):
@@ -383,6 +383,7 @@ def parameters(datadir='./data', par2=False, warning=True):
             if len(line) > 0:
                 k, s, v = line.partition('=')
                 k = k.strip().lower()
+                if "'" not in v: v = v.replace(' ', '')
                 if k not in keys:
                     keys.append(k)
                     values.append(parse(v.strip(" ,\n")))
