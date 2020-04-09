@@ -714,7 +714,7 @@ if [ -f "$src/Makefile.local" ]; then
     if [ "$link_all" -eq 1]; then link_astaroth_files; fi
   fi
 fi
-create_Makefile_inc
+if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
 #copy_local_files
 print_status
-prepare_for_compile
+if [ "$link_all" -eq 1 ]; then prepare_for_compile; fi
