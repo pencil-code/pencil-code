@@ -210,6 +210,7 @@ module Viscosity
 !
 !  Register characteristic speed: sld_char as auxilliary variable
 !  Needed for slope limited diffusion
+!  sld_char is actually a squared velocity
 !
       if (any(ivisc=='nu-slope-limited')) then
         lslope_limit_diff = .true.

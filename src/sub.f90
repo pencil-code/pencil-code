@@ -7150,19 +7150,19 @@ nameloop: do
       select case (k)
         case(1)
           ! x-direction
-          cmax_im12=0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char))
-          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char))
+          cmax_im12=sqrt(0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char)))
 
         case(2)
           ! y-direction
 ! 
-          cmax_im12=0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char))
-          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char))
+          cmax_im12=sqrt(0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char)))
 
         case(3)
 !
-          cmax_im12=0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char))
-          cmax_ip12=0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char))
+          cmax_im12=sqrt(0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char)))
 !
         endselect
     endsubroutine characteristic_speed

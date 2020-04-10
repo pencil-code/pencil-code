@@ -3742,7 +3742,7 @@ module Energy
            cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
                           -lnrho0)+cv1*f(:,m,n,iss))
          endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
        enddo
        enddo
      endif

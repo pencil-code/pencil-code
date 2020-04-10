@@ -1814,7 +1814,7 @@ module Energy
          else
            cs2 = gamma_m1/cp1*exp(f(:,m,n,ilnTT))
          endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
        enddo
        enddo
      endif

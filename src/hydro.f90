@@ -2837,7 +2837,7 @@ module Hydro
        do m=1,my
        do n=1,mz
            f(:,m,n,isld_char)=w_sldchar_hyd* &
-            sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
+            (f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
        enddo
        enddo
      endif

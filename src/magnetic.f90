@@ -3091,14 +3091,14 @@ module Magnetic
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
-              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*tmp
 !           Fill nearest ghost points with boundary points, only important at real boundary
-              f(l1-1,m,n,isld_char) =f(l1-1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(1))
-              f(l2+1,m,n,isld_char) =f(l2+1,m,n,isld_char)+w_sldchar_mag*sqrt(tmp(nx))
-              if (m==m1) f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-              if (m==m2) f(l1:l2,m+1,n,isld_char) =f(l1:l2,m+1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-              if (n==n1) f(l1:l2,m,n-1,isld_char) =f(l1:l2,n-1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-              if (n==n2) f(l1:l2,m,n+1,isld_char) =f(l1:l2,n+1,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              f(l1-1,m,n,isld_char) =f(l1-1,m,n,isld_char)+w_sldchar_mag*tmp(1)
+              f(l2+1,m,n,isld_char) =f(l2+1,m,n,isld_char)+w_sldchar_mag*tmp(nx)
+              if (m==m1) f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*tmp
+              if (m==m2) f(l1:l2,m+1,n,isld_char) =f(l1:l2,m+1,n,isld_char)+w_sldchar_mag*tmp
+              if (n==n1) f(l1:l2,m,n-1,isld_char) =f(l1:l2,n-1,n,isld_char)+w_sldchar_mag*tmp
+              if (n==n2) f(l1:l2,m,n+1,isld_char) =f(l1:l2,n+1,n,isld_char)+w_sldchar_mag*tmp
            endif
           endif
         enddo mn_loop
@@ -4483,21 +4483,21 @@ module Magnetic
             if (lentropy) then
               if (pretend_lnTT) then
                 df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                  p%cv1*tmp1*p%rho1*p%TT1
+                  p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
               else
                 df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                        tmp1*p%rho1*p%TT1
+                        max(0.0,tmp1)*p%rho1*p%TT1
               endif
             else if (ltemperature) then
               if (ltemperature_nolog) then
                 df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
-                        p%cv1*tmp1*p%rho1
+                        p%cv1*max(0.0,tmp1)*p%rho1
               else
                 df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-                        p%cv1*tmp1*p%rho1*p%TT1
+                        p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
               endif
             else if (lthermal_energy) then
-             df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + tmp1
+             df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
             endif
           endif
         endif
