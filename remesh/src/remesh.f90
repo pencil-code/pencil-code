@@ -43,7 +43,8 @@ program remesh
 !
   character (len=130) :: file,destination,file_new,varfile='var.dat'
   character (len=130) :: file2,dimfile,dimfile_loc,dimfile2_loc,gridfile
-  character (len=4)   :: ch,overwrite='yes'
+  character (len=4)   :: overwrite='yes'
+  character (len=6)   :: ch
   character (len=1)   :: prec
   integer :: i,j,k,itx=1,ity=1,itz=1
   integer :: kk,jj,ii,cpu
@@ -794,7 +795,7 @@ endprogram remesh
 !      
 !  12-nov-02/nils: adapted from sub.f90
 !
-      character (len=4)  :: ch
+      character (len=6)  :: ch
       integer :: cpu
 !
       ch='    '
@@ -809,6 +810,8 @@ endprogram remesh
         write(ch(1:4),'(i4)') cpu
       elseif (cpu.lt.100000) then
         write(ch(1:5),'(i5)') cpu
+      elseif (cpu.lt.1000000) then
+        write(ch(1:6),'(i6)') cpu
       else
         print*,'cpu=',cpu
         stop "ch: cpu too large"
