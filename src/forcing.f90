@@ -84,7 +84,8 @@ module Forcing
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
 ! For random forcing
-  logical :: lavoid_xymean=.false., lavoid_ymean=.false., lavoid_zmean=.false.
+  logical :: lavoid_xymean=.false., lavoid_ymean=.false., lavoid_zmean=.false., &
+             ldiscrete_phases=.false.
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
@@ -152,7 +153,8 @@ module Forcing
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
-       lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
+       lavoid_xymean,lavoid_ymean,lavoid_zmean, ldiscrete_phases, &
+       omega_tidal, R0_tidal, phi_tidal, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force
 !
@@ -1265,6 +1267,7 @@ module Forcing
 !  pre-calculate for the contributions e^(ikx*x), e^(iky*y), e^(ikz*z),
 !  as well as the phase factor.
 !
+      
       fx=exp(cmplx(0.,kx*x+phase))*ffnorm
       fy=exp(cmplx(0.,ky*y))
       fz=exp(cmplx(0.,kz*z))
@@ -1611,15 +1614,21 @@ module Forcing
 
       use Mpicomm, only: stop_it
 
-      real,    dimension (3), intent(in ) :: kk,coef1,coef2,coef3,fda
+      real,    dimension (3), intent(in ) :: coef1,coef2,coef3,kk,fda
       real,                   intent(in ) :: phase, fact
       complex, dimension (mx),intent(out) :: fx
       complex, dimension (my),intent(out) :: fy
       complex, dimension (mz),intent(out) :: fz
 
-      real :: kz
+      real :: kz, phase_x
 
-      fx=exp(cmplx(0.,kk(1)*k1_ff*x+phase))*fact
+      if (ldiscrete_phases) then
+        phase_x=nint(phase/(kk(1)*k1_ff*dx))*dx
+        fx=exp(cmplx(0.,kk(1)*k1_ff*(x+phase_x)))*fact
+      else
+        fx=exp(cmplx(0.,kk(1)*k1_ff*x+phase))*fact
+      endif
+
       fy=exp(cmplx(0.,kk(2)*k1_ff*y))
 !
 !  symmetry of forcing function about z direction
