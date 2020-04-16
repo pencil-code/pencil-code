@@ -1,6 +1,12 @@
 ! $Id$
 !
-!  Solve for a set of two ODEs, used to test time step
+!  Solve the lucky droplet model for many realizations.
+!  The different realizations correspond to "meshpoints".
+!  To add the contributions for each step, we use the usual
+!  time step in the Pencil Code, so t is just the step, and
+!  the accumulated collision times (after 125 steps or so)
+!  for all realizations at the same time are the values in
+!  the f-array.
 !
 !  16-apr-20/axel: adapted from nospecial.f90
 !
@@ -37,9 +43,9 @@ module Special
     gam_lucky
 !
   ! run parameters
-  logical :: lMFT=.false.
+  logical :: lMFT=.false., lrA=.false., lrB=.false.
   namelist /special_run_pars/ &
-    gam_lucky, lMFT
+    gam_lucky, lMFT, lrA, lrB
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -173,7 +179,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rrr, tauk
+      real, dimension (nx) :: rrr, tauk, lamk
       real, dimension (nx) :: tt, qq
       type (pencil_case) :: p
 !
@@ -196,12 +202,26 @@ module Special
         qq=alog(tt)
       endif
 !
-!  Produce random numbers
+!  Selection of different combinations of rA and rB
 !
-      tauk=1./t**gam_lucky
-      if (.not.lMFT) then
+      if (lrA.and.lrB) then
+        lamk=(t**onethird+1.)**2*(t**twothird-1.)
+      elseif (lrA.and..not.lrB) then
+        lamk=(t**onethird+1.)**2*t**twothird
+      elseif (.not.lrA.and.lrB) then
+        lamk=t**twothird*(t**twothird-1.)
+      else
+        lamk=t**gam_lucky
+      endif
+!
+!  Produce exponentially distributed random numbers,
+!  but can also do mean-field theory as a test.
+!
+      if (lMFT) then
+        tauk=lamk
+      else
         call random_number_wrapper(rrr)
-        tauk=-alog(rrr)*tauk
+        tauk=-alog(rrr)/lamk
       endif
       df(l1:l2,m,n,ispecial)=df(l1:l2,m,n,ispecial)+tauk
 !
