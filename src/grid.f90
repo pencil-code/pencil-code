@@ -653,6 +653,7 @@ module Grid
                 dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
             y = y00 + g2 -0.5*(g2lo+g2up-pi)
           else
+!if(iproc<2) print*, 'iproc, y00, g2-g2lo=', iproc, y00, g2-g2lo
             y = y00 + g2-g2lo
           endif
           yprim = g2der1
@@ -2210,7 +2211,24 @@ module Grid
 !
     endsubroutine inverse_grid
 !***********************************************************************
-    subroutine construct_serial_arrays
+    subroutine symmetrize_grid(grid,ngrid,idim)
+
+      integer                :: ngrid,idim
+      real, dimension(ngrid) :: grid
+
+      if ( lequidist(idim) .and. xyz0(idim)+xyz1(idim)<epsi ) then
+        if ( mod(ngrid,4)==0 ) then
+           grid(ngrid:3*ngrid/4+1:-1)=xyz1(idim)-grid(ngrid/2+1:grid(3*ngrid/4))
+           grid(1:ngrid/2)=-grid(ngrid:ngrid/2+1:-1)
+        else
+           grid(1:ngrid/2)=-grid(ngrid:ngrid/2+2:-1)
+           grid(1:ngrid/2+1)=0.
+        endif
+      endif
+
+    endsubroutine symmetrize_grid
+!***********************************************************************
+    subroutine construct_serial_arrays(lprecise_symmetry)
 !
 !  The arrays xyz are local only, yet sometimes the serial array is
 !  needed. Construct here the serial arrays out of the local ones,
@@ -2224,7 +2242,10 @@ module Grid
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
+      use General, only: loptest
 !
+      logical, optional :: lprecise_symmetry
+
       real, dimension(nx) :: xrecv, x1recv, x2recv
       real, dimension(ny) :: yrecv, y1recv, y2recv
       real, dimension(nz) :: zrecv, z1recv, z2recv
@@ -2282,6 +2303,8 @@ module Grid
 !  Serial array constructed. Broadcast the result. Repeat the
 !  procedure for y and z arrays.
 !
+      if (loptest(lprecise_symmetry)) call symmetrize_grid(xgrid,nxgrid,1)
+
       call mpibcast_real(xgrid,nxgrid,comm=MPI_COMM_WORLD)
       call mpibcast_real(dx1grid,nxgrid,comm=MPI_COMM_WORLD)
       call mpibcast_real(dxtgrid,nxgrid,comm=MPI_COMM_WORLD)
@@ -2313,6 +2336,9 @@ module Grid
           endif
         enddo
       endif
+
+      if (loptest(lprecise_symmetry)) call symmetrize_grid(ygrid,nygrid,2)
+
       call mpibcast_real(ygrid,nygrid)
       call mpibcast_real(dy1grid,nygrid)
       call mpibcast_real(dytgrid,nygrid)
@@ -2344,6 +2370,9 @@ module Grid
           endif
         enddo
       endif
+
+      if (loptest(lprecise_symmetry)) call symmetrize_grid(zgrid,nzgrid,3)
+
       call mpibcast_real(zgrid,nzgrid)
       call mpibcast_real(dz1grid,nzgrid)
       call mpibcast_real(dztgrid,nzgrid)
