@@ -2218,7 +2218,7 @@ module Grid
 
       if ( lequidist(idim) .and. xyz0(idim)+xyz1(idim)<epsi ) then
         if ( mod(ngrid,4)==0 ) then
-           grid(ngrid:3*ngrid/4+1:-1)=xyz1(idim)-grid(ngrid/2+1:grid(3*ngrid/4))
+           grid(ngrid:3*ngrid/4+1:-1)=xyz1(idim)-grid(ngrid/2+1:3*ngrid/4)
            grid(1:ngrid/2)=-grid(ngrid:ngrid/2+1:-1)
         else
            grid(1:ngrid/2)=-grid(ngrid:ngrid/2+2:-1)
