@@ -806,6 +806,7 @@ module Hydro
           case ('no-uy'); f(:,:,:,iuy)=0.
           case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
+          case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
           endselect
         enddo
       endif
