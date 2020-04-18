@@ -1635,6 +1635,12 @@ module Hydro
                 ampluu(j)*cos(pi*z(n)/Lxyz(3))*sin(2*pi*y(m)/Lxyz(2))
           enddo; enddo
 !
+        case ('siny/x2')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ &
+                ampluu(j)*sin(y(m))/x(l1:l2)**2
+          enddo; enddo
+!
         case ('linear-shear')
 !
 !  Linear shear
