@@ -1444,7 +1444,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=mpif90 #(norlx65)
 #FFLAGS=-O1 -finit-real=nan #(norlx65)
-#FFLAGS=-O1 -finit-real=nan -fno-underscoring #(norlx65)
+#FFLAGS=-O3 -finit-real=nan -fno-underscoring #(norlx65)
+#FFLAGS=-O0 -finit-real=nan -fno-underscoring -fbounds-check #(norlx65)
+#FFLAGS=-O0 -finit-real=nan -fno-underscoring -g -fbacktrace -fbounds-check #(norlx65)
+#FFLAGS=-O0 -finit-real=nan -fno-underscoring -g -fbacktrace #(norlx65)
 #CC=mpicc #(norlx65)
 #CFLAGS=-O1 #(norlx65)
 #LD_MPI= #(norlx65)
