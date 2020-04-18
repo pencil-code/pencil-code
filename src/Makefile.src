@@ -2001,22 +2001,27 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-r8 #(shas013*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(shas013*)
 ##
-## Beskow - Cray XC40 - (Stockholm)
+## Beskow - Cray XC40 - (Stockholm) #1
 ## 1516 24-nodes per cabinet 2.1GHz Opterons
 ##
 #FC=ftn #(beskow*)
 #F90=$(FC) #(beskow*)
 #CC=cc #(beskow*)
-#CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
+##CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(beskow*)
 ##
 ## Tegner
 ##
-#FC=gfortran #(tegner*)
+##FC=Intel_MPI #(tegner*)
+##FC=gfortran #(tegner*)
+#mpiifort #(tegner*)
 #F90=$(FC) #(tegner*)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(tegner)
-#CC=gcc     #(tegner)
-#CFLAGS=-O1 -DFUNDERSC=1   #(tegner)
-##LD_MPI= openmpi/4.0-test #(tegner)
+##CC=gcc     #(tegner)
+#CC=icc     #(tegner)
+##CFLAGS=-O1 -DFUNDERSC=1   #(tegner)
+#CFLAGS=-O1 #(tegner)
+#LD_MPI= #(tegner)
 ##
 ##  the following 2 lines are for the default Cray compiler
 ##  which has bugs!
@@ -2030,7 +2035,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##NS: added compiler option -ffree-line-length-0
 ##NS: to allow for long lines in source codes (max col no def was 132)
 ##FFLAGS=-O3 -ffree-line-length-0 -large #(beskow*)
-#FFLAGS=-O3 -ffree-line-length-0 #(beskow*)
+#FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(beskow*)
 ##NS: use following for debugging the code
 ##FFLAGS=-O3 -fcheck=all #(beskow*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(beskow*)
