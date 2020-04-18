@@ -171,6 +171,7 @@ module Chiral
         case ('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
 !
@@ -179,6 +180,32 @@ module Chiral
       if (linitial_condition) call initial_condition_chiral(f)
 !
     endsubroutine init_chiral
+!***********************************************************************
+    subroutine chiral_list(fact,f,i)
+!
+!  Read intial conditions from file
+!
+!  13-apr-20/axel: coded
+!
+      integer :: nrow, irow, ix, iy, i, l, m, n=1
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl, fact
+!
+      open(1,file='chiral_list.dat')
+      read(1,*) nrow
+      do irow=1,nrow
+        read(1,*) ix,iy,ampl
+        if (ix/nx==ipx.and.iy/ny==ipy) then
+          l=l1+mod(ix,nx)
+          m=m1+mod(iy,ny)
+          n=n1
+          print*,'AXEL: ',ix,iy,ipx,ipy,l,m
+          f(l,m,n,i)=f(l,m,n,i)+fact*ampl
+        endif
+      enddo
+      close(1)
+!
+    endsubroutine chiral_list
 !***********************************************************************
     subroutine pencil_criteria_chiral()
 !
