@@ -208,6 +208,7 @@ module Hydro
   logical :: lno_radial_advection=.false.
   logical :: lfargoadvection_as_shift=.true.
   logical :: lhelmholtz_decomp=.false.
+  logical :: limpose_only_horizontal_uumz=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -248,7 +249,8 @@ module Hydro
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
       lcdt_tauf, cdt_tauf, ulev, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
-      lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp
+      lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
+      limpose_only_horizontal_uumz
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -6731,7 +6733,8 @@ module Hydro
         endif
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumz(n,1)-uumz_prof(n-nghost,1))
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumz(n,2)-uumz_prof(n-nghost,2))
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-uumz_prof(n-nghost,3))
+        if (.not.limpose_only_horizontal_uumz) &
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-uumz_prof(n-nghost,3))
       endif
 !
 !  no profile matches
