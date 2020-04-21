@@ -444,7 +444,7 @@ endif
 
 HDF5_MODULES = io_hdf5 special/meanfield_e_tensor
 
-ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
+ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
   ifneq ($(MODULE_CMD),)
     HDF5_LOADED := $(shell (module list |& grep hdf5) || (module list |& grep hf5) )
     ifeq ($(HDF5_LOADED),)
@@ -2469,7 +2469,7 @@ ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPPFLAGS)
 #
 #  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPPFLAGS) below this point!
 #
-ifneq ($(filter $(SPECIAL) $(IO), $(HDF5_MODULES)),)
+ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
 	export HDF5_FC:=$(FC)
 	export HDF5_FLINKER:=$(LD)
@@ -2918,8 +2918,6 @@ diagnostics_outlog.o: diagnostics_outlog.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
 io_collect_xy_f2003.o: io_collect_xy_f2003.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
-io_hdf5.o: io_hdf5.f90
-	$(FC) $(ALL_COMP_FLAGS) -o io_hdf5.o -c io_hdf5.f90
 file_io_f95.o: file_io_f95.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90

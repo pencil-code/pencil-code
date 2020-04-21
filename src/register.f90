@@ -1172,7 +1172,7 @@ module Register
         enddo
 !
         if (lroot .and. (IO_strategy /= "HDF5")) then
-          ! output in phiavg.list the list of fields after the taking into
+          ! output in phiavg.list the list of fields after taking into
           ! account of possible shorthands in phiaver.in
           open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz
