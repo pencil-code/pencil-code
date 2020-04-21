@@ -87,7 +87,7 @@ program run
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
-  use Snapshot
+  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap, wsnap_down, output_form
   use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
@@ -271,20 +271,6 @@ program run
   if (lparticles) call particles_register_modules
 !
   call register_gpu(f) 
-!
-!  Only after register it is possible to write the correct dim.dat
-!  file with the correct number of variables
-!
-  if (.not.luse_oldgrid) then
-    call wgrid('grid.dat')
-    call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
-  elseif (lwrite_dim_again) then
-    call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
-  endif
 !
 !  Inform about verbose level.
 !
@@ -479,11 +465,6 @@ program run
   if (nygrid==1) then; yprim=1.0; else; yprim=1./dy_1; endif
   if (nzgrid==1) then; zprim=1.0; else; zprim=1./dz_1; endif
 !
-!  Determine slice positions and whether slices are to be written on this
-!  processor. This can only be done after the grid has been established.
-!
-  call setup_slices
-!
 !  Initialize the list of neighboring processes.
 !
   call update_neighbors     !MR: Isn't this only needed for particles?
@@ -517,6 +498,25 @@ program run
   if (lparticles) then
     !!!call particles_rprint_list(.false.) ! already done
     call particles_initialize_modules(f)
+  endif
+!
+!  Determine slice positions and whether slices are to be written on this
+!  processor. This can only be done after the grid has been established.
+!
+  call setup_slices
+!
+!  Only after register it is possible to write the correct dim.dat
+!  file with the correct number of variables
+!
+  if (.not.luse_oldgrid) then
+    call wgrid('grid.dat')
+    call wdim('dim.dat')
+    if (ip<11) print*,'Lz=',Lz
+    if (ip<11) print*,'z=',z
+  elseif (lwrite_dim_again) then
+    call wdim('dim.dat')
+    if (ip<11) print*,'Lz=',Lz
+    if (ip<11) print*,'z=',z
   endif
 !
 !  Write data to file for IDL (param2.nml).
@@ -846,12 +846,15 @@ program run
 !
     if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
 !
-!  Save snapshot every isnap steps in case the run gets interrupted.
+!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
 !
-    lsave = control_file_exists('SAVE', DELETE=.true.)
+    if (lout) &
+      lsave = control_file_exists('SAVE', DELETE=.true.)
+
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
+        lsave = .false.
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
