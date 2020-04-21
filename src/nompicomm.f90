@@ -21,6 +21,10 @@ module Mpicomm
      module procedure mpirecv_logical_arr
   endinterface
 !
+  interface mpirecv_char
+    module procedure mpirecv_char_scl
+  endinterface
+!
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
@@ -578,6 +582,20 @@ module Mpicomm
       tau_zx_all(:,:,ipy)=tau_zx
 !
     endsubroutine radboundary_zx_periodic_ray
+!***********************************************************************
+    subroutine mpirecv_char_scl(str,proc_src,tag_id,comm)
+!
+!  Receive character scalar from other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      character(LEN=*) :: str
+      integer :: proc_src, tag_id
+      integer, optional :: comm
+!
+      if (ALWAYS_FALSE) print*, str, proc_src, tag_id, comm
+!
+    endsubroutine mpirecv_char_scl
 !***********************************************************************
     subroutine mpirecv_logical_scl(bcast_array,proc_src,tag_id)
 !
