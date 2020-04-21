@@ -465,6 +465,11 @@ program run
   if (nygrid==1) then; yprim=1.0; else; yprim=1./dy_1; endif
   if (nzgrid==1) then; zprim=1.0; else; zprim=1./dz_1; endif
 !
+!  Determine slice positions and whether slices are to be written on this
+!  processor. This can only be done after the grid has been established.
+!
+  call setup_slices
+!
 !  Initialize the list of neighboring processes.
 !
   call update_neighbors     !MR: Isn't this only needed for particles?
@@ -499,11 +504,6 @@ program run
     !!!call particles_rprint_list(.false.) ! already done
     call particles_initialize_modules(f)
   endif
-!
-!  Determine slice positions and whether slices are to be written on this
-!  processor. This can only be done after the grid has been established.
-!
-  call setup_slices
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
