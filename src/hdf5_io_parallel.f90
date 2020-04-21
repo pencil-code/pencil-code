@@ -158,7 +158,7 @@ module HDF5_IO
     subroutine check_error(code, message, dataset, caller)
 !
 !   7-May-2019/MR: made caller optional, added module variable scaller,
-!                  so caller needs to be set only once in a asubroutine
+!                  so caller needs to be set only once in a subroutine
 !
       integer, intent(in) :: code
       character (len=*), intent(in) :: message

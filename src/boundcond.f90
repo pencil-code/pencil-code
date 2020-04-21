@@ -293,35 +293,35 @@ module Boundcond
 !  Restricted to slice position 'm'!
 !
         if (IO_strategy/='HDF5') then
-        if (lread_slice_xy ) then
-          call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
-        endif
-        if (lread_slice_xy2) then 
-          call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
-        endif
-        if (lread_slice_xz ) then 
-          call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
-        endif
-        if (lread_slice_xz2) then 
-          call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
-        endif
-        if (lread_slice_yz ) then 
-          call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
-        endif
-        if (lread_slice_yz2) then 
-          call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
-        endif
+          if (lread_slice_xy ) then
+            call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
+          endif
+          if (lread_slice_xy2) then 
+            call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
+          endif
+          if (lread_slice_xz ) then 
+            call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
+          endif
+          if (lread_slice_xz2) then 
+            call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
+          endif
+          if (lread_slice_yz ) then 
+            call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
+          endif
+          if (lread_slice_yz2) then 
+            call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
+          endif
 
-        call mpibarrier
-      else
-        call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
-      endif      
+          call mpibarrier
+        else
+          call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
+        endif      
       endif      
 
     endsubroutine initialize_boundcond
