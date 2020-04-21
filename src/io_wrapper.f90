@@ -24,11 +24,13 @@ module Io
                      IO_strategy_ => IO_strategy, lcollective_IO_ => lcollective_IO
     use Messages, only: warning
     use File_io, only: file_exists
+    use Syscalls, only: system_cmd
 
     if (lstart.or.file_exists('IO_LOCK')) then
       if (lstart) then
         call warning('register_io','Alternative IO strategy for input will be ignored in start.x'// &
                      ' AND in subsequent executions of run.x')
+        if (lroot) call system_cmd("touch IO_LOCK")
       else
         call warning('register_io','IO_LOCK file found - alternative IO strategy for input will be ignored.')
       endif
