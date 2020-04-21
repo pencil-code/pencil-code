@@ -234,7 +234,7 @@ echo "Done"
 if (-e "NEWDIR") then
   if (-s "NEWDIR") then
     # Remove LOCK files before going to other directory
-    rm -f LOCK data/LOCK
+    rm -f LOCK data/LOCK IO_LOCK
     set olddir=$cwd
     set newdir=`cat NEWDIR`
     touch "$datadir/directory_change.log"

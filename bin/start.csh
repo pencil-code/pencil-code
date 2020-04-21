@@ -49,7 +49,7 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
-  rm -f LOCK data/LOCK
+  rm -f LOCK data/LOCK IO_LOCK
   exit 0
 endif
 
