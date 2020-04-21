@@ -26,24 +26,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
-!
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
-!
   interface read_snap
     module procedure read_snap_double
     module procedure read_snap_single
@@ -64,19 +46,16 @@ module Io
     module procedure input_proc_bounds_single
   endinterface
 !
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
   ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
   integer, parameter :: MINT=1, MAXT=2
   logical :: snap_is_link=.false.
 !
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+!
   logical :: lcollective_IO=.false.
   character (len=labellen) :: IO_strategy="dist"
 !
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   contains
@@ -94,7 +73,6 @@ module Io
 !  identify version number
 !
       if (lroot) call svn_id("$Id$")
-      ldistribute_persist = .true.
 !
     endsubroutine register_io
 !***********************************************************************

@@ -199,7 +199,6 @@ module Cdata
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
   integer :: ivar_omit1=0, ivar_omit2=0
-  logical :: luse_alt_io=.false.
 !
 ! Debugging
 !

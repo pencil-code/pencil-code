@@ -1,140 +1,141 @@
-module IO_wrapper
 !
-  use Cparam, only: mx,my,mz,mparray,ikind8,max_int
-  use Cdata, only: luse_alt_io
+module Io
+!
+  use Cparam, only: mx,my,mz,mparray,labellen
+  use Cdata, only: lstart, lroot
 !
   implicit none
 
-  private
-  public :: initialize_io_wrapper
+  include 'io.h'
 !
-  external caller1, caller2_str1, caller3_str1, caller4_str1, caller5_str12, caller7_str67, caller0, dlclose_c
-  integer(KIND=ikind8), external :: dlopen_c, dlsym_c
-  character(LEN=128), external :: dlerror_c
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+!
+  logical :: lcollective_IO
+  character (len=labellen) :: IO_strategy
 
-  interface read_persist_wrap
-    module procedure read_persist_logical_0D_wrap
-    module procedure read_persist_logical_1D_wrap
-    module procedure read_persist_int_0D_wrap
-    module procedure read_persist_int_1D_wrap
-    module procedure read_persist_real_0D_wrap
-    module procedure read_persist_real_1D_wrap
-  endinterface
-
-  integer, parameter :: N_ROUTINES=13, &
-                        I_INPUT_SNAP=1, I_INPUT_SNAP_FINALIZE=2, &
-                        I_INPUT_PART_SNAP=3, I_INPUT_POINTMASS=4, &
-                        I_INPUT_GLOBALS=5, I_READ_PERSIST_ID=6, &
-                        I_READ_PERSIST_LOGICAL_0D=7, &
-                        I_READ_PERSIST_LOGICAL_1D=8, &
-                        I_READ_PERSIST_INT_0D=9, &
-                        I_READ_PERSIST_INT_1D=10, &
-                        I_READ_PERSIST_REAL_0D=11, &
-                        I_READ_PERSIST_REAL_1D=12, &
-                        I_RGRID=13 
-
-  character(LEN=29), dimension(N_ROUTINES) :: routines=(/'input_snap                   ', &
-                                                         'input_snap_finalize          ', &
-                                                         'input_part_snap              ', &
-                                                         'input_pointmass              ', &
-                                                         'input_globals                ', &
-                                                         'read_persist_id              ', &
-                                                         'read_persist_logical_0d      ', &
-                                                         'read_persist_logical_1d      ', &
-                                                         'read_persist_int_0d          ', &
-                                                         'read_persist_int_1d          ', &
-                                                         'read_persist_real_0d         ', &
-                                                         'read_persist_real_1d         ', &
-                                                         'rgrid                        ' /)
-  integer(KIND=ikind8) :: libhandle
-  integer(KIND=ikind8), dimension(n_routines) :: sub_handles
+  logical :: lswitched_to_out=.false.
 
   contains
 !****************************************************************************
-  subroutine initialize_io_wrapper
+  subroutine register_io
 
-    use Messages, only: warning,fatal_error
+    use Io_in, only: register_io_ => register_io, &
+                     IO_strategy_ => IO_strategy, lcollective_IO_ => lcollective_IO
+    use Messages, only: warning
+    use File_io, only: file_exists
 
-    integer, parameter :: unit=11
-    integer, parameter :: RTLD_LAZY=0, RTLD_NOW=0  !!!
-
-    integer :: j
-    integer(KIND=ikind8) :: sub_handle
-    character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
-    character(LEN=128) :: error
-
-    if (luse_alt_io) then
-
-      libhandle=dlopen_c('src/io_alt.so'//char(0),RTLD_NOW)
-
-      if (libhandle==0) then
-        call warning('initialize_io_wrapper','Could not open src/io_alt.so. Continue w/o alternative I/O')
-        luse_alt_io=.false.
-        return
+    if (lstart.or.file_exists('IO_LOCK')) then
+      if (lstart) then
+        call warning('register_io','Alternative IO strategy for input will be ignored in start.x'// &
+                     ' AND in subsequent executions of run.x')
+      else
+        call warning('register_io','IO_LOCK file found - alternative IO strategy for input will be ignored.')
       endif
-
-      call getenv("MODULE_PREFIX", mod_prefix)
-      call getenv("MODULE_INFIX", mod_infix)
-      call getenv("MODULE_SUFFIX", mod_suffix)
-
-      do j=1,N_ROUTINES
-        sub_handle=dlsym_c(libhandle,trim(mod_prefix)//'io'// &
-            trim(mod_infix)//trim(routines(j))//trim(mod_suffix)//char(0))
-        if (sub_handle==0) &
-          call fatal_error('initialize_io_wrapper','Error for symbol '// &
-                           trim(routines(j))//' in module IO: '//trim(dlerror_c()))
-        sub_handles(j) = sub_handle
-      enddo
-
+      call switch_io
+    else 
+      IO_strategy = IO_strategy_
+      lcollective_IO = lcollective_IO_
+      call register_io_
     endif
 
-  endsubroutine initialize_io_wrapper
+  endsubroutine register_io
 !***********************************************************************
-  subroutine finalize_io_wrapper
+  subroutine switch_io
 
-    if (luse_alt_io) call dlclose_c(libhandle)
+    use Io_out, only: register_io_ => register_io, &
+                      IO_strategy_ => IO_strategy, &
+                      lcollective_IO_ => lcollective_IO, &
+                      directory_names_ => directory_names
 
-  endsubroutine finalize_io_wrapper
+
+    if (.not.lswitched_to_out) then
+      lswitched_to_out=.true.
+      IO_strategy = IO_strategy_
+      lcollective_IO = lcollective_IO_
+
+      call directory_names_ 
+      call register_io_
+    endif
+
+  endsubroutine switch_io
 !***********************************************************************
-    subroutine input_snap_wrap(file,a,nv,mode)
+  subroutine finalize_io
 !
-!  manages reading of snapshot from different precision
-!
-!  24-oct-13/MR: coded
-!
-      use IO, only: input_snap
+     use Io_in, only: finalize_io_in => finalize_io
+     use Io_out, only: finalize_io_out => finalize_io
+     use Syscalls, only: system_cmd
 
+     call finalize_io_in
+     call finalize_io_out
+     !call system_cmd("sed -i -e's/^\( *IO_IN\)/#\1/' src/Makefile.local")
+
+     if (lroot) call system_cmd("touch IO_LOCK")
+
+  endsubroutine finalize_io
+!***********************************************************************
+    subroutine log_filename_to_file(filename, flist)
+!
+     use Io_in, only: log_filename_to_file_in => log_filename_to_file
+     use Io_out, only: log_filename_to_file_out => log_filename_to_file
+!
+      character (len=*) :: filename, flist
+
+      if (lswitched_to_out) then
+        call log_filename_to_file_out(filename, flist)
+      else
+        call log_filename_to_file_in(filename, flist)
+      endif
+
+    endsubroutine log_filename_to_file
+!***********************************************************************
+    subroutine directory_names
+!
+     use Io_in, only: directory_names_in => directory_names
+     use Io_out, only: directory_names_out => directory_names
+
+      if (lswitched_to_out) then
+        call directory_names_out
+      else
+        call directory_names_in
+      endif
+
+    endsubroutine directory_names
+!***********************************************************************
+    subroutine input_snap(file,a,nv,mode)
+!
+      use Io_in, only: input_snap_in => input_snap
+      use Io_out, only: input_snap_out => input_snap
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real, dimension (mx,my,mz,nv), intent(out) :: a
 
-      if (luse_alt_io) then
-        call caller4_str1(sub_handles(I_INPUT_SNAP),file,a,nv,mode)
+      if (lswitched_to_out) then
+        call input_snap_out(file,a,nv,mode)
       else
-        call input_snap(file,a,nv,mode)
+        call input_snap_in(file,a,nv,mode)
       endif
 
-    endsubroutine input_snap_wrap
+    endsubroutine input_snap
 !***********************************************************************
-    subroutine input_snap_finalize_wrap
+    subroutine input_snap_finalize
 !
-!  Close snapshot file.
-!
-      use IO, only: input_snap_finalize
+      use Io_in, only: input_snap_finalize_in => input_snap_finalize
+      use Io_out, only: input_snap_finalize_out => input_snap_finalize
 
-      if (luse_alt_io) then
-        call caller0(sub_handles(I_INPUT_SNAP_FINALIZE))
+      if (lswitched_to_out) then
+        call input_snap_finalize_out
       else
-        call input_snap_finalize
+        call input_snap_finalize_in
       endif
 
-    endsubroutine input_snap_finalize_wrap
+    endsubroutine input_snap_finalize
 !***********************************************************************
-    subroutine input_part_snap_wrap(ipar, ap, mv, nv, npar_total, file, label)
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
 !
-!  Read particle snapshot file, mesh and time are read in 'input_snap'.
-!
-      use IO, only: input_part_snap
+      use Io_in, only: input_part_snap_in => input_part_snap
+      use Io_out, only: input_part_snap_out => input_part_snap
 
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
@@ -143,188 +144,441 @@ module IO_wrapper
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 
-      if (luse_alt_io) then
-        call caller7_str67(sub_handles(I_INPUT_PART_SNAP),ipar,ap,mv,nv,npar_total,file,label)
+      if (lswitched_to_out) then
+        call input_part_snap_out(ipar, ap, mv, nv, npar_total, file, label)
       else
-        call input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+        call input_part_snap_in(ipar, ap, mv, nv, npar_total, file, label)
       endif
 
-    endsubroutine input_part_snap_wrap
+    endsubroutine input_part_snap
 !***********************************************************************
-    subroutine input_pointmass_wrap(file, labels, fq, mv, nc)
+    subroutine input_pointmass(file, labels, fq, mv, nc)
 !
-!  Read pointmass snapshot file.
-!
-      use IO, only: input_pointmass
+      use Io_in, only: input_pointmass_in => input_pointmass
+      use Io_out, only: input_pointmass_out => input_pointmass
 
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(out) :: fq
 
-      if (luse_alt_io) then
-        !!!call caller5_str12(sub_handles(I_INPUT_POINTMASS),file,labels,fq,mv,nc)
+      if (lswitched_to_out) then
+        call input_pointmass_out(file, labels, fq, mv, nc)
       else
-        call input_pointmass(file,labels,fq,mv,nc)
+        call input_pointmass_in(file, labels, fq, mv, nc)
       endif
 
-    endsubroutine input_pointmass_wrap
+    endsubroutine input_pointmass
 !***********************************************************************
-    subroutine input_globals_wrap(file, a, nv)
+    subroutine input_globals(file, a, nv)
 !
-!  Read globals snapshot file, ignoring mesh.
-!
-      use IO, only: input_globals
+      use Io_in, only: input_globals_in => input_globals
+      use Io_out, only: input_globals_out => input_globals
 
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
 
-      if (luse_alt_io) then
-        call caller3_str1(sub_handles(I_INPUT_GLOBALS),file,a,nv)
+      if (lswitched_to_out) then
+        call input_globals_out(file, a, nv)
       else
-        call input_globals(file,a,nv)
+        call input_globals_in(file, a, nv)
       endif
 
-    endsubroutine input_globals_wrap    
+    endsubroutine input_globals
 !***********************************************************************
-    logical function read_persist_id_wrap(label, id, lerror_prone)
+    logical function init_read_persist(file)
 !
-!  Read persistent block ID from snapshot file.
+      use Io_in, only: init_read_persist_in => init_read_persist
+      use Io_out, only: init_read_persist_out => init_read_persist
 !
-      use IO, only: read_persist_id
+      character (len=*), intent(in), optional :: file
+!
+      if (lswitched_to_out) then
+        init_read_persist=init_read_persist_out(file)
+      else
+        init_read_persist=init_read_persist_in(file)
+      endif
 
+    endfunction init_read_persist
+!***********************************************************************
+    logical function read_persist_id(label, id, lerror_prone) 
+
+      use Io_in, only: read_persist_id_in => read_persist_id
+      use Io_out, only: read_persist_id_out => read_persist_id 
+!
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
       logical, intent(in), optional :: lerror_prone
 
-      if (luse_alt_io) then
-        call caller3_str1(sub_handles(I_READ_PERSIST_ID),label,id,lerror_prone)
+      if (lswitched_to_out) then
+        read_persist_id = read_persist_id_out(label, id, lerror_prone)
       else
-        read_persist_id_wrap=read_persist_id(label,id,lerror_prone)
+        read_persist_id = read_persist_id_in(label, id, lerror_prone)
       endif
 !
-    endfunction read_persist_id_wrap
+    endfunction read_persist_id
 !***********************************************************************
-    logical function read_persist_logical_0D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-      use IO, only: read_persist
+    subroutine rgrid(file)
 
+      use Io_in, only: rgrid_in => rgrid
+      use Io_out, only: rgrid_out => rgrid
+!
+      character (len=*) :: file
+!
+      if (lswitched_to_out) then
+        call rgrid_out(file)
+      else
+        call rgrid_in(file)
+      endif
+
+    endsubroutine rgrid
+!***********************************************************************
+    subroutine rproc_bounds(file)
+
+      use Io_in, only: rproc_bounds_in => rproc_bounds
+      use Io_out, only: rproc_bounds_out => rproc_bounds
+!
+      character (len=*) :: file
+!
+     if (lswitched_to_out) then
+        call rproc_bounds_out(file)
+      else
+        call rproc_bounds_in(file)
+      endif
+!
+    endsubroutine rproc_bounds
+!***********************************************************************
+    subroutine wgrid(file,mxout,myout,mzout)
+
+      use Io_in, only: wgrid_ => wgrid
+!
+      character (len=*) :: file
+      integer, optional :: mxout,myout,mzout
+      
+      call switch_io
+      call wgrid_(file,mxout,myout,mzout)
+
+    endsubroutine wgrid
+!***********************************************************************
+    subroutine wproc_bounds(file)
+
+      use Io_out, only: wproc_bounds_ => wproc_bounds
+!
+      character (len=*) :: file
+!
+      call switch_io
+      call wproc_bounds_(file)
+
+    endsubroutine wproc_bounds
+!***********************************************************************
+    subroutine output_snap(a,nv1,nv2,file) 
+
+      use Io_out, only: output_snap_ => output_snap 
+!
+      real, dimension (:,:,:,:),  intent(IN) :: a
+      integer,           optional,intent(IN) :: nv1,nv2
+      character (len=*), optional,intent(IN) :: file
+!
+      call switch_io
+      call output_snap_(a,nv1,nv2,file)
+!
+    endsubroutine output_snap
+!***********************************************************************
+    subroutine output_snap_finalize
+
+      use Io_out, only: output_snap_finalize_ => output_snap_finalize
+
+      call switch_io
+      call output_snap_finalize_ 
+!
+    endsubroutine output_snap_finalize
+!***********************************************************************
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate) 
+
+      use Io_out, only: output_part_snap_ => output_part_snap 
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: ap
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      call switch_io
+      call output_part_snap_(ipar, ap, mv, nv, file, label, ltruncate)
+!
+    endsubroutine output_part_snap
+!***********************************************************************
+    subroutine output_stalker_init(num, nv, snap, ID) 
+
+      use Io_out, only: output_stalker_init_ => output_stalker_init 
+!
+      integer, intent(in) :: num, nv, snap
+      integer, dimension(nv), intent(in) :: ID
+!
+      call switch_io
+      call output_stalker_init_(num, nv, snap, ID)
+!
+    endsubroutine output_stalker_init
+!***********************************************************************
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize) 
+
+      use Io_out, only: output_stalker_ => output_stalker 
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: mv, nv
+      real, dimension (mv), intent(in) :: data
+      integer, intent(in), optional :: nvar
+      logical, intent(in), optional :: lfinalize
+!
+      call switch_io
+      call output_stalker_(label, mv, nv, data, nvar, lfinalize)
+!
+    endsubroutine output_stalker
+!***********************************************************************
+    subroutine output_part_finalize
+
+      use Io_out, only: output_part_finalize_ => output_part_finalize
+
+      call switch_io
+      call output_part_finalize_ 
+!
+    endsubroutine output_part_finalize
+!***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc) 
+
+      use Io_out, only: output_pointmass_ => output_pointmass 
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(in) :: fq
+!
+      call switch_io
+      call output_pointmass_(file, labels, fq, mv, nc)
+!
+    endsubroutine output_pointmass
+!***********************************************************************
+    subroutine output_globals(file, a, nv, label) 
+
+      use Io_out, only: output_globals_ => output_globals 
+
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
+      character (len=*) :: file
+      character (len=*), intent(in), optional :: label
+!
+      call switch_io
+      call output_globals_(file, a, nv, label)
+
+    endsubroutine output_globals
+!***********************************************************************
+    logical function persist_exists(label)
+
+      use Io_in, only: persist_exists_ => persist_exists 
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists=persist_exists_(label)
+!
+    endfunction persist_exists
+!***********************************************************************
+    logical function init_write_persist(file)
+
+      use Io_out, only: init_write_persist_ => init_write_persist
+!
+      character (len=*), intent(in), optional :: file
+!
+      call switch_io
+      init_write_persist=init_write_persist_(file)
+
+    endfunction init_write_persist
+!***********************************************************************
+    logical function write_persist_id(label, id) 
+
+      use Io_out, only: write_persist_id_ => write_persist_id 
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+!
+      call switch_io
+      write_persist_id = write_persist_id_(label, id)
+!
+    endfunction write_persist_id
+!***********************************************************************
+    logical function read_persist_logical_0D(label, value)
+
+      use Io_in, only: read_persist_logical_0D_in => read_persist_logical_0D
+      use Io_out, only: read_persist_logical_0D_out => read_persist_logical_0D
+!
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_LOGICAL_0D),label,value)
-      else
-        read_persist_logical_0D_wrap=read_persist(label,value)
+      if (lswitched_to_out) then
+        read_persist_logical_0D = read_persist_logical_0D_out(label, value)
+      else  
+        read_persist_logical_0D = read_persist_logical_0D_in(label, value)
       endif
 !
-    endfunction read_persist_logical_0D_wrap
+    endfunction read_persist_logical_0D
 !***********************************************************************
-    logical function read_persist_logical_1D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-      use IO, only: read_persist
+    logical function read_persist_logical_1D(label, value)
 
+      use Io_in, only: read_persist_logical_1D_in => read_persist_logical_1D
+      use Io_out, only: read_persist_logical_1D_out => read_persist_logical_1D
+!
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_LOGICAL_1D),label,value)
-      else
-        read_persist_logical_1D_wrap=read_persist(label,value)
+      if (lswitched_to_out) then
+        read_persist_logical_1D = read_persist_logical_1D_out(label, value)
+      else  
+        read_persist_logical_1D = read_persist_logical_1D_in(label, value)
       endif
 !
-    endfunction read_persist_logical_1D_wrap
+    endfunction read_persist_logical_1D
 !***********************************************************************
-    logical function read_persist_int_0D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-      use IO, only: read_persist
+    logical function read_persist_int_0D(label, value)
 
+      use Io_in, only: read_persist_int_0D_in => read_persist_int_0D
+      use Io_out, only: read_persist_int_0D_out => read_persist_int_0D
+!
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_INT_0D),label,value)
+      if (lswitched_to_out) then
+        read_persist_int_0D = read_persist_int_0D_out(label, value)
       else
-        read_persist_int_0D_wrap=read_persist(label,value)
+        read_persist_int_0D = read_persist_int_0D_in(label, value)
       endif
 !
-    endfunction read_persist_int_0D_wrap
+    endfunction read_persist_int_0D
 !***********************************************************************
-    logical function read_persist_int_1D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-      use IO, only: read_persist
+    logical function read_persist_int_1D(label, value)
 
+      use Io_in, only: read_persist_int_1D_in => read_persist_int_1D
+      use Io_out, only: read_persist_int_1D_out => read_persist_int_1D
+!
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
-!
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_INT_1D),label,value)
+
+      if (lswitched_to_out) then
+        read_persist_int_1D = read_persist_int_1D_out(label, value)
       else
-        read_persist_int_1D_wrap=read_persist(label,value)
+        read_persist_int_1D = read_persist_int_1D_in(label, value)
       endif
 !
-    endfunction read_persist_int_1D_wrap
+    endfunction read_persist_int_1D
 !***********************************************************************
-    logical function read_persist_real_0D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-!  13-Dec-2011/Bourdin.KIS: coded
-!  23-oct-2013/MR: modified for reading of different precision
-!
-      use IO, only: read_persist
+    logical function read_persist_real_0D(label, value)
 
+      use Io_in, only: read_persist_real_0D_in => read_persist_real_0D
+      use Io_out, only: read_persist_real_0D_out => read_persist_real_0D
+!
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_REAL_0D),label,value)
+      if (lswitched_to_out) then
+       read_persist_real_0D = read_persist_real_0D_out(label, value)
       else
-        read_persist_real_0D_wrap=read_persist(label,value)
+        read_persist_real_0D = read_persist_real_0D_in(label, value)
       endif
 !
-    endfunction read_persist_real_0D_wrap
+    endfunction read_persist_real_0D
 !***********************************************************************
-    logical function read_persist_real_1D_wrap(label, value)
-!
-!  Read persistent data from snapshot file.
-!
-      use IO, only: read_persist
+    logical function read_persist_real_1D(label, value)
 
+      use Io_in, only: read_persist_real_1D_in => read_persist_real_1D
+      use Io_out, only: read_persist_real_1D_out => read_persist_real_1D
+!
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      if (luse_alt_io) then
-        call caller2_str1(sub_handles(I_READ_PERSIST_REAL_1D),label,value)
+      if (lswitched_to_out) then
+        read_persist_real_1D = read_persist_real_1D_out(label, value)
       else
-        read_persist_real_1D_wrap=read_persist(label,value)
+        read_persist_real_1D = read_persist_real_1D_in(label, value)
       endif
 !
-    endfunction read_persist_real_1D_wrap
+    endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine rgrid_wrap(file)
-!
-!  Read processor-local part of grid coordinates.
-!
-      use IO, only: rgrid
+    logical function write_persist_logical_0D(label, id, value)
 
-      character (len=*) :: file
+      use Io_out, only: write_persist_logical_0D_ => write_persist_logical_0D
 !
-      if (luse_alt_io) then
-        call caller1(sub_handles(I_RGRID),file)
-      else
-        call rgrid(file)
-      endif
-
-    endsubroutine rgrid_wrap
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      logical, intent(in) :: value
+!
+      call switch_io
+      write_persist_logical_0D = write_persist_logical_0D_(label, id, value)
+!
+    endfunction write_persist_logical_0D
 !***********************************************************************
-end module 
+    logical function write_persist_logical_1D(label, id, value)
+
+      use Io_out, only: write_persist_logical_1D_ => write_persist_logical_1D
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      logical, dimension(:), intent(in) :: value
+!
+      call switch_io
+      write_persist_logical_1D = write_persist_logical_1D_(label, id, value)
+!
+    endfunction write_persist_logical_1D
+!***********************************************************************
+    logical function write_persist_int_0D(label, id, value)
+
+      use Io_out, only: write_persist_int_0D_ => write_persist_int_0D
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      integer, intent(in) :: value
+!
+      call switch_io
+      write_persist_int_0D = write_persist_int_0D_(label, id, value)
+!
+    endfunction write_persist_int_0D
+!***********************************************************************
+    logical function write_persist_int_1D(label, id, value)
+
+      use Io_out, only: write_persist_int_1D_ => write_persist_int_1D
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      integer, dimension(:), intent(in) :: value
+!
+      call switch_io
+      write_persist_int_1D = write_persist_int_1D_(label, id, value)
+!
+    endfunction write_persist_int_1D
+!***********************************************************************
+    logical function write_persist_real_0D(label, id, value)
+
+      use Io_out, only: write_persist_real_0D_ => write_persist_real_0D
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      real, intent(in) :: value
+!
+      call switch_io
+      write_persist_real_0D = write_persist_real_0D_(label, id, value)
+!
+    endfunction write_persist_real_0D
+!***********************************************************************
+    logical function write_persist_real_1D(label, id, value)
+
+      use Io_out, only: write_persist_real_1D_ => write_persist_real_1D
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      real, dimension(:), intent(in) :: value
+!
+      call switch_io
+      write_persist_real_1D = write_persist_real_1D_(label, id, value)
+!
+    endfunction write_persist_real_1D
+!***********************************************************************
+end module Io

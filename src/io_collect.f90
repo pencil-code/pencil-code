@@ -31,35 +31,14 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
+  logical :: lread_add=.true., lwrite_add=.true.
 !
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
-!
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="collect"
 !
-  logical :: lread_add=.true., lwrite_add=.true.
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   contains
@@ -349,7 +328,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -358,6 +337,8 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
+      logical, intent(in), optional :: lfinalize
+      integer, intent(in), optional :: nvar
 !
       call fatal_error ('output_stalker', 'not implemented for "io_collect"', .true.)
 !
@@ -1333,7 +1314,7 @@ module Io
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
-        write (lun_output, '(A)') trim (fpart)
+        write (lun_output, '(A,1x,e16.8)') trim (fpart),t
         close (lun_output)
       endif
 !
