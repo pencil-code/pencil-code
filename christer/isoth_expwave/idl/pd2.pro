@@ -15,10 +15,10 @@ pro pd2, pvars
     print, "PVAR = ", pvars[i]
 
     if hdf5 then begin
-      xp = pc_read('part/vpx', file=pvars[i])
-      yp = pc_read('part/vpy', file=pvars[i])
-      zp = pc_read('part/vpz', file=pvars[i])
-      ap = pc_read('part/ap',  file=pvars[i])
+      xp = pc_read('part/xp', file=pvars[i])
+      yp = pc_read('part/yp', file=pvars[i])
+      zp = pc_read('part/zp', file=pvars[i])
+      ap = pc_read('part/ap', file=pvars[i])
       nap = n_elements(ap)
     endif else begin
       pc_read_pvar, varfile=pvars[i], rmv=rmv, array=array
