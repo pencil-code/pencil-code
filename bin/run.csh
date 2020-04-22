@@ -46,8 +46,11 @@ newdir:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
-foreach sdir ($subdirs)
-  if (! -d "$sdir") then
+# In case, start.csh has not created these dirs (e.g. because of alternative I/O)
+# do it now.
+#
+foreach sdir ($subdirs $procdirs)
+  if (! -d "$datadir"/"$sdir") then
     mkdir "$datadir"/"$sdir"
   endif
 end

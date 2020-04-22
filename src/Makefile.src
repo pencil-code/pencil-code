@@ -434,7 +434,7 @@ else
   GPU_INTERFACE=
 endif
 #
-ifeq ($(IO),io_hdf5)
+ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
   ifeq ($(HDF5_IO),nohdf5_io)
     # choose default HDF5 IO strategy (parallel)
