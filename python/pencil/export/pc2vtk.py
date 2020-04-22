@@ -1,6 +1,6 @@
 # pc2vtk.py
 #
-# Convert data from PencilCode format to vtk. Adopted from pc2vtk.pro.
+# Convert data from Pencil Code format to vtk. Adopted from pc2vtk.pro.
 #
 # Author: Simon Candelaresi (iomsn1@googlemail.com).
 """
@@ -15,7 +15,7 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
 
     call signature::
 
-      pc2vtk(var_file='', datadir='data', proc=-1,
+      var2vtk(var_file='', datadir='data', proc=-1,
              variables='', b_ext=False,
              destination='work', quiet=True, trimall=True, ti=-1, tf=-1)
 
