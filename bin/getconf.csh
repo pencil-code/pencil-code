@@ -2112,14 +2112,15 @@ endif
 
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
-set subdirs = ("allprocs" "reduced" "averages" "idl")
 set HDF5=`grep -Ec '^ *IO *= *io_hdf5' src/Makefile.local`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "slices" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+  set subdirs = ("allprocs" "reduced" "averages" "idl")
 endif
+
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"

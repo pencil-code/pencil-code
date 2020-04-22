@@ -46,6 +46,11 @@ newdir:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
+foreach sdir ($subdirs)
+  if (! -d "$sdir") then
+    mkdir "$datadir"/"$sdir"
+  endif
+end
 #
 #  If necessary, distribute var.dat from the server to the various nodes
 #
@@ -170,6 +175,7 @@ else
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time $mpirun -x LD_LIBRARY_PATH -x PATH $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time srun -n 1 $run_x $x_ops
 endif
