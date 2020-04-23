@@ -249,7 +249,7 @@ program pc_distribute
           call wsnap (filename, f, mvar_io, enum=.false., noghost=.true.)
 !
         ! write grid:
-        call wgrid ('grid.dat')
+        call wgrid ('grid.dat',lwrite=.true.)
 !
       enddo
     enddo

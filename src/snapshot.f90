@@ -166,7 +166,7 @@ module Snapshot
 !
 !  At first call, write downsampled grid and its global and local dimensions
 !
-          call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
+          call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost,lwrite=.true.)
           call wdim('dim_down.dat', iex+nghost, iey+nghost, iez+nghost, &
               ceiling(float(nxgrid)/isx)+2*nghost, ceiling(float(nygrid)/isy)+2*nghost, ceiling(float(nzgrid)/isz)+2*nghost, &
               mvar_down, maux_down)

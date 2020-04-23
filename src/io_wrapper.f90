@@ -14,7 +14,7 @@ module Io
   logical :: lcollective_IO
   character (len=labellen) :: IO_strategy
 
-  logical :: lswitched_to_out=.false.
+  logical :: lswitched_to_out=.false., lwr_grid=.false.
 
   contains
 !****************************************************************************
@@ -22,6 +22,8 @@ module Io
 
     use Io_in, only: register_io_ => register_io, &
                      IO_strategy_ => IO_strategy, lcollective_IO_ => lcollective_IO
+    use Io_out, only: IO_strategy_out => IO_strategy
+
     use Messages, only: warning
     use File_io, only: file_exists
     use Syscalls, only: system_cmd
@@ -39,6 +41,7 @@ module Io
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
       call register_io_
+      if (IO_strategy_out=='dist') lwr_grid = .true.
     endif
 
   endsubroutine register_io
@@ -49,7 +52,6 @@ module Io
                       IO_strategy_ => IO_strategy, &
                       lcollective_IO_ => lcollective_IO, &
                       directory_names_ => directory_names
-
 
     if (.not.lswitched_to_out) then
       lswitched_to_out=.true.
@@ -251,15 +253,17 @@ module Io
 !
     endsubroutine rproc_bounds
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 
-      use Io_in, only: wgrid_ => wgrid
+      use Io_out, only: wgrid_ => wgrid
+      use General, only: loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
-      
+      logical, optional :: lwrite
+!
       call switch_io
-      call wgrid_(file,mxout,myout,mzout)
+      call wgrid_(file,mxout,myout,mzout,loptest(lwrite,lwr_grid))
 
     endsubroutine wgrid
 !***********************************************************************
@@ -582,5 +586,20 @@ module Io
       write_persist_real_1D = write_persist_real_1D_(label, id, value)
 !
     endfunction write_persist_real_1D
+!***********************************************************************
+    subroutine write_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+!
+      !use HDF5_IO_out, only: output_slice_ => output_slice
+
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character (len=*), intent(in) :: label, suffix
+      real, intent(in) :: pos
+      integer, intent(in) :: grid_pos
+      real, dimension (:,:), pointer :: data
+
+      !call output_slice_(lwrite, time, label, suffix, pos, grid_pos, data)
+
+    endsubroutine write_slice
 !***********************************************************************
 end module Io

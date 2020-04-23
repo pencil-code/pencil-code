@@ -1389,7 +1389,7 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write processor-local part of grid coordinates.
 !
@@ -1402,62 +1402,65 @@ module Io
 !   5-oct-2016/MR: modifications for output of downsampled grid
 !
       use Mpicomm, only: collect_grid
-      use General, only: ioptest
+      use General, only: ioptest, loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       integer :: mxout1,myout1,mzout1
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      mxout1=ioptest(mxout,mx)
-      myout1=ioptest(myout,my)
-      mzout1=ioptest(mzout,mz)
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        mxout1=ioptest(mxout,mx)
+        myout1=ioptest(myout,my)
+        mzout1=ioptest(mzout,mz)
 !
-      t_sp = real (t)
-
-      open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
-      write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
-      write(lun_output) dx,dy,dz
-      write(lun_output) Lx,Ly,Lz
-      write(lun_output) dx_1(:mxout1),dy_1(:myout1),dz_1(:mzout1)
-      write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
-      close(lun_output)
-!
-      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
-
-      ! write also a global "data/allprocs/grid.dat"
-      if (lroot) then
-        if (ldownsampling) then
-          allocate (gx(ceiling(real(nxgrid)/downsampl(1))+2*nghost), &
-                    gy(ceiling(real(nygrid)/downsampl(2))+2*nghost), &
-                    gz(ceiling(real(nzgrid)/downsampl(3))+2*nghost), stat=alloc_err)
-        else
-          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        endif
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = real (t)
-      endif
 
-      call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
-      
-      call collect_grid(dx_1(:mxout1), dy_1(:myout1), dz_1(:mzout1), gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
-      
-      call collect_grid(dx_tilde(:mxout1), dy_tilde(:myout1), dz_tilde(:mzout1), gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
-        deallocate(gx,gy,gz) 
+        open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
+        write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
+        write(lun_output) dx,dy,dz
+        write(lun_output) Lx,Ly,Lz
+        write(lun_output) dx_1(:mxout1),dy_1(:myout1),dz_1(:mzout1)
+        write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
+        close(lun_output)
+!
+        if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
+
+        ! write also a global "data/allprocs/grid.dat"
+        if (lroot) then
+          if (ldownsampling) then
+            allocate (gx(ceiling(real(nxgrid)/downsampl(1))+2*nghost), &
+                      gy(ceiling(real(nygrid)/downsampl(2))+2*nghost), &
+                      gz(ceiling(real(nzgrid)/downsampl(3))+2*nghost), stat=alloc_err)
+          else
+            allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          endif
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+          open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
+          t_sp = real (t)
+        endif
+
+        call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
+        
+        call collect_grid(dx_1(:mxout1), dy_1(:myout1), dz_1(:mzout1), gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
+        
+        call collect_grid(dx_tilde(:mxout1), dy_tilde(:myout1), dz_tilde(:mzout1), gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+          deallocate(gx,gy,gz) 
+       endif
      endif
 !
     endsubroutine wgrid
@@ -1583,7 +1586,7 @@ module Io
       
       close(lun_input)
 !
-      if (lotherprec) call wgrid(file)         ! perhaps not necessary
+      if (lotherprec) call wgrid(file,lwrite=.true.)         ! perhaps not necessary
 !
 !  debug output
 !

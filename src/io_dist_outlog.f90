@@ -1403,7 +1403,7 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write processor-local part of grid coordinates.
 !
@@ -1415,9 +1415,11 @@ module Io
 !  25-Aug-2016/PABourdin: now a global "grid.dat" is always written from all IO modules
 !
       use Mpicomm, only: collect_grid
+      use General, only: loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       integer :: mxout1,myout1,mzout1
       integer :: io_err
@@ -1426,61 +1428,63 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-     if (present(mzout)) then
-        mxout1=mxout
-        myout1=myout
-        mzout1=mzout
-      else
-        mxout1=mx
-        myout1=my
-        mzout1=mz
-      endif
+      if (loptest(lwrite,.not.luse_old_grid)) then
+        if (present(mzout)) then
+          mxout1=mxout
+          myout1=myout
+          mzout1=mzout
+        else
+          mxout1=mx
+          myout1=my
+          mzout1=mz
+        endif
 !
-      t_sp = real (t)
-
-      open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
-      if (io_err /= 0) call fatal_error('wgrid', &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?", .true.)
-      lerror = outlog(io_err,"openw",trim(directory)//'/'//file,location='wgrid')
-      write(lun_output,IOSTAT=io_err) t_sp,x(1:mxout1),y(1:myout1),z(1:mzout1),dx,dy,dz
-      lerror = outlog(io_err,"main data block")
-      write(lun_output,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"dx,dy,dz")
-      write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
-      lerror = outlog(io_err,"Lx,Ly,Lz")
-      write(lun_output,IOSTAT=io_err) dx_1(1:mxout1),dy_1(1:myout1),dz_1(1:mzout1)
-      lerror = outlog(io_err,"dx_1,dy_1,dz_1")
-      write(lun_output,IOSTAT=io_err) dx_tilde(1:mxout1),dy_tilde(1:myout1),dz_tilde(1:mzout1)
-      lerror = outlog(io_err,"dx_tilde,dy_tilde,dz_tilde")
-      close(lun_output,IOSTAT=io_err)
-      lerror = outlog(io_err,'close')
-!
-      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
-
-      ! write also a global "data/allprocs/grid.dat"
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = real (t)
-      endif
 
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
+        open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
+        if (io_err /= 0) call fatal_error('wgrid', &
+            "Cannot open " // trim(file) // " (or similar) for writing" // &
+            " -- is data/ visible from all nodes?", .true.)
+        lerror = outlog(io_err,"openw",trim(directory)//'/'//file,location='wgrid')
+        write(lun_output,IOSTAT=io_err) t_sp,x(1:mxout1),y(1:myout1),z(1:mzout1),dx,dy,dz
+        lerror = outlog(io_err,"main data block")
+        write(lun_output,IOSTAT=io_err) dx,dy,dz
+        lerror = outlog(io_err,"dx,dy,dz")
+        write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
+        lerror = outlog(io_err,"Lx,Ly,Lz")
+        write(lun_output,IOSTAT=io_err) dx_1(1:mxout1),dy_1(1:myout1),dz_1(1:mzout1)
+        lerror = outlog(io_err,"dx_1,dy_1,dz_1")
+        write(lun_output,IOSTAT=io_err) dx_tilde(1:mxout1),dy_tilde(1:myout1),dz_tilde(1:mzout1)
+        lerror = outlog(io_err,"dx_tilde,dy_tilde,dz_tilde")
+        close(lun_output,IOSTAT=io_err)
+        lerror = outlog(io_err,'close')
+!
+        if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
+        ! write also a global "data/allprocs/grid.dat"
+        if (lroot) then
+          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+          open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
+          t_sp = real (t)
+        endif
 
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
+
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
+
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+        endif
       endif
 !
     endsubroutine wgrid
@@ -1621,7 +1625,7 @@ module Io
       close(lun_input,IOSTAT=io_err)
       lerror = outlog(io_err,'close')
 !
-      if (lread_from_other_prec.and.lotherprec) call wgrid(file)         ! perhaps not necessary
+      if (lread_from_other_prec.and.lotherprec) call wgrid(file,lwrite=.true.)         ! perhaps not necessary
 !
 !  debug output
 !

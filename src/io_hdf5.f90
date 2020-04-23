@@ -1125,27 +1125,31 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write grid coordinates.
 !
 !  27-Oct-2018/PABourdin: coded
 !
       use File_io, only: file_exists
+      use General, only: loptest
 !
       character (len=*), intent(in) :: file
       integer, intent(in), optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       character (len=fnlen) :: filename
       logical :: lexists
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 !
-      filename = trim (datadir)//'/grid.h5'
-      lexists = file_exists (filename)
-      call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
-      call output_settings
-      call file_close_hdf5
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        filename = trim (datadir)//'/grid.h5'
+        lexists = file_exists (filename)
+        call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+        call output_settings
+        call file_close_hdf5
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************
