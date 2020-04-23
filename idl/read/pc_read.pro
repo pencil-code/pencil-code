@@ -42,11 +42,10 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 	vector = [] & quantity=strtrim(quantity,2)
 	for i=0,n_elements(vectors)-1 do $
                 if stregex(quantity,vectors[i],/bool) then vector=[vector,i]
-
 	if is_defined(vector) then begin
                 numpos = stregex(quantity,'[1-9]')
                 if numpos ge 0 then quantity = strmid(quantity,0,numpos)+strtrim(string((fix(strmid(quantity,numpos))-1)/3+1),2)
-		quantity = quantity + [ 'x', 'y', 'z' ]
+		quantity = strmid(quantity,1,1) + [ 'x', 'y', 'z' ]
 	endif
 
 	num_quantities = n_elements (quantity)
