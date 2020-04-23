@@ -508,12 +508,8 @@ program run
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
 !
-  if (.not.luse_oldgrid) then
-    call wgrid('grid.dat')
-    call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
-  elseif (lwrite_dim_again) then
+  call wgrid('grid.dat')
+  if (.not.luse_oldgrid.or.lwrite_dim_again) then
     call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
