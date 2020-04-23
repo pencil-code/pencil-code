@@ -98,16 +98,17 @@ COMPILE_OPT IDL2,HIDDEN
     message, "pc_read_2d_aver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     last = pc_read ('last', filename=dir+'.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
-    times = pc_read (groups+'/time')
+    times = pc_read (groups[0]+'/time')
+    for it=1, last do times=[times,pc_read(groups[it]+'/time')]
     in = (where (times ge tmin))[0:*:njump]
     num = n_elements (in)
     if (num le 0) then message, 'pc_read_2d_aver: ERROR: "'+h5_file+'" no data available after given "tmin"!'
     groups = groups[in]
     times = times[in]
     if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
-    found = where (strlowcase (vars) ne 'time', num)
+    found = where (strlowcase (vars) ne 'time', numb)
     vars = vars[found]
-    object = { t:times, last:last, pos:1+long (groups), num_quantities:num, labels:vars }
+    object = { t:times, last:last, pos:1+long (groups), num_quantities:numb, labels:vars }
     object = create_struct (object, 'x', grid.x[dim.l1:dim.l2])
 ;
 ; Note: dir is the direction of averaging, hence for dir='z', the second variable is y,
@@ -118,12 +119,16 @@ COMPILE_OPT IDL2,HIDDEN
     end else if (dir eq 'y') then begin
       object = create_struct (object, 'z', grid.z[dim.n1:dim.n2])
     end
-    for pos = 0, num-1 do begin
-      object = create_struct (object, vars[pos], pc_read (groups+'/'+vars[pos]))
+    for pos = 0, numb-1 do begin
+       variable=pc_read (groups[0]+'/'+vars[pos])
+       variable=spread(variable,2,num)
+       for it=1, num-1 do variable[*,*,it]=pc_read (groups[it]+'/'+vars[pos])
+      object = create_struct (object, vars[pos], variable)
     end
     h5_close_file
     return
   end
+
 ;
   if strpos(varfile,'0.dat') ge 0 then begin
     default, in_file, dir+'aver0.in'
