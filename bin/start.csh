@@ -125,7 +125,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f ERROR COMPLETED
+rm -f ERROR COMPLETED IO_LOCK
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 touch pc_commands.log
@@ -172,7 +172,7 @@ else
 endif
 
 # remove LOCK files
-rm -f LOCK data/LOCK IO_LOCK
+rm -f LOCK data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):
