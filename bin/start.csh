@@ -134,7 +134,8 @@ date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
-#gdb $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
+#time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $start_x $x_ops
+#srun -n4 $start_x $x_ops
 set start_status=$status        # save for exit
 echo ""
 date
@@ -171,7 +172,7 @@ else
 endif
 
 # remove LOCK files
-rm -f LOCK data/LOCK
+rm -f LOCK data/LOCK IO_LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):

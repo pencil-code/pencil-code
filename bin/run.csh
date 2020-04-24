@@ -186,7 +186,9 @@ set run_status=$status          # save for exit
 date
 
 # Create symlinks for deprecated slices
-pc_deprecated_slice_links
+if (! $HDF5) then
+  pc_deprecated_slice_links
+endif
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
