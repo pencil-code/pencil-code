@@ -891,6 +891,9 @@ module Param_IO
           call write_implicit_diff_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
+!
+          write(unit,NML=IO_pars)
+
           if (unit /= 6) close(unit)
 
         else                                    ! output in params.log, stdout or other file

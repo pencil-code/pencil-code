@@ -54,12 +54,14 @@ module Io
                       directory_names_ => directory_names
 
     if (.not.lswitched_to_out) then
+
       lswitched_to_out=.true.
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
 
       call directory_names_ 
       call register_io_
+
     endif
 
   endsubroutine switch_io

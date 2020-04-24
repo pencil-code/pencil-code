@@ -1428,7 +1428,7 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (loptest(lwrite,.not.luse_old_grid)) then
+      if (loptest(lwrite,.not.luse_oldgrid)) then
         if (present(mzout)) then
           mxout1=mxout
           myout1=myout

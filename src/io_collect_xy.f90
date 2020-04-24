@@ -1273,7 +1273,7 @@ module Io
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
-      if (loptest(lwrite,.not.luse_old_grid)) then
+      if (loptest(lwrite,.not.luse_oldgrid)) then
         if (lroot) then
           allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
