@@ -92,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07, rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
-  real, pointer :: g1, rp1, rp1_pot, t_ramp_mass, t_start_secondary
+  real, pointer :: g1, rp1, rp1_smooth, t_ramp_mass, t_start_secondary
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3, istep_pass=3
@@ -977,9 +977,9 @@ module Particles
         call get_shared_variable('rp1',rp1,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
             'there was a problem when getting rp1')
-        call get_shared_variable('rp1_pot',rp1_pot,ierr)
+        call get_shared_variable('rp1_smooth',rp1_smooth,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting rp1_pot')
+            'there was a problem when getting rp1_smooth')
         call get_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
             'there was a problem when getting t_ramp_mass')
@@ -3803,7 +3803,7 @@ module Particles
         else
           call fatal_error("secondary_body_gravity","not coded for Cartesian")
         endif
-        gp = -g1*(rr2+rp1_pot**2)**(-1.5)
+        gp = -g1*(rr2+rp1_smooth**2)**(-1.5)
 !
         if (lcylindrical_coords) then
           ggp(1) =  gp * (fp(k,ixp)-rp1*cosp)
