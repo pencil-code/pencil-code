@@ -141,28 +141,20 @@ COMPILE_OPT IDL2,HIDDEN
 ; Name and path of varfile to read.
 ;
   if (keyword_set(ogrid)) then begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'OGVAR'
-      varfile = varfile_ + strcompress (string (ivar), /remove_all)
-      if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
-    endif else begin
-      default_varfile = 'ogvar.dat'
-      if (file_test (datadir+'/allprocs/ogvar.h5')) then default_varfile = 'ogvar.h5'
-      default, varfile_, default_varfile
-      varfile = varfile_
-    endelse
+    if (n_elements(ivar) eq 1) then $
+      default, varfile_, 'OGVAR' + strcompress (string (ivar), /remove_all) $
+    else $
+      default, varfile_, 'ogvar.dat'
   endif else begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'VAR'
-      varfile = varfile_ + strcompress (string (ivar), /remove_all)
-      if ( ~nohdf5 and file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
-    endif else begin
-      default_varfile = 'var.dat'
-      if ( ~nohdf5 and file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
-      default, varfile_, default_varfile
-      varfile = varfile_
-    endelse
+    if (n_elements(ivar) eq 1) then $
+      default, varfile_, 'VAR' + strcompress (string (ivar), /remove_all) $
+    else $
+      default, varfile_, 'var.dat'
   endelse
+;
+; Identify youngest of snapshot files.
+;
+  varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5)
 ;
 ; Load HDF5 varfile if requested or available.
 ;
@@ -213,8 +205,10 @@ COMPILE_OPT IDL2,HIDDEN
   if (keyword_set(reduced)) then allprocs = 1
   if (not is_defined(allprocs)) then begin
     allprocs = 0
-    if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
-    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+    if (strpos(varpath,'allprocs') ne -1) and (n_elements (proc) eq 0) then $
+      allprocs=1 $
+    else $
+      if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
   endif
 ;
 ; Check if allprocs is set.
