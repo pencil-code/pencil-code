@@ -21,6 +21,10 @@ module Mpicomm
      module procedure mpirecv_logical_arr
   endinterface
 !
+  interface mpisend_char
+    module procedure mpisend_char_scl
+  endinterface
+!
   interface mpirecv_char
     module procedure mpirecv_char_scl
   endinterface
@@ -583,6 +587,16 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
+    subroutine mpisend_char_scl(str,proc_src,tag_id,comm)
+!
+      character(LEN=*) :: str
+      integer :: proc_src, tag_id
+      integer, optional :: comm
+!
+      if (ALWAYS_FALSE) print*, str, proc_src, tag_id, comm
+!
+    endsubroutine mpisend_char_scl
+!***********************************************************************
     subroutine mpirecv_char_scl(str,proc_src,tag_id,comm)
 !
 !  Receive character scalar from other processor.
@@ -605,26 +619,6 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_logical_scl
-!***********************************************************************
-    subroutine mpirecv_char(str,proc_src,tag_id,comm)
-!
-      character(LEN=*) :: str
-      integer :: proc_src, tag_id
-      integer, optional :: comm
-!
-      if (ALWAYS_FALSE) print*, str, proc_src, tag_id, comm
-!
-    endsubroutine mpirecv_char
-!***********************************************************************
-    subroutine mpisend_char(str,proc_src,tag_id,comm)
-!
-      character(LEN=*) :: str
-      integer :: proc_src, tag_id
-      integer, optional :: comm
-!
-      if (ALWAYS_FALSE) print*, str, proc_src, tag_id, comm
-!
-    endsubroutine mpisend_char
 !***********************************************************************
     subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
