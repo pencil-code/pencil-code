@@ -23,7 +23,9 @@ def param(*args, **kwargs):
 
     call signature:
 
-    read(datadir='data', param2=False, quiet=True, asdict=True, nest_dict=False)
+    read(datadir='data', param1=False, param2=False, quiet=True,
+         conflicts_quiet=False, asdict=True, nest_dict=True, append_units=True)
+
 
     Keyword arguments:
 
@@ -38,6 +40,9 @@ def param(*args, **kwargs):
 
     *quiet*
       Flag for switching of output.
+
+    *conflicts_quiet*
+      Flag for switching off printing duplicate labels.
 
     *asdict*
       Reads parameters as dictionary.
@@ -68,6 +73,7 @@ class Param(object):
 
 
     def read(self, datadir='data', param1=False, param2=False, quiet=True,
+             conflicts_quiet=False,
              asdict=True, nest_dict=True, append_units=True):
         """
         Read Pencil Code simulation parameters.
@@ -75,7 +81,9 @@ class Param(object):
 
         call signature:
 
-        read(datadir='data', param2=False, quiet=True, asdict=True, nest_dict=False)
+        read(datadir='data', param1=False, param2=False, quiet=True,
+             conflicts_quiet=False, asdict=True, nest_dict=True,
+             append_units=True)
 
         Keyword arguments:
 
@@ -89,7 +97,10 @@ class Param(object):
           Selects the set of parameters only from run.
 
         *quiet*
-          Flag for switching of output.
+          Flag for switching off output.
+
+        *conflicts_quiet*
+          Flag for switching off printing duplicate labels.
 
         *asdict*
           Reads parameters as dictionary.
@@ -139,10 +150,11 @@ class Param(object):
             if len(param_conflicts) > 0:
                 keep_list = []
                 for key in param_conflicts.keys():
-                    print(key,'as',param_conflicts[key][0],'in',
-                          param_conflicts[key][1],'conflicts with',
-                          param_conflicts[key][2],'in',
-                          param_conflicts[key][3])
+                    if not conflicts_quiet:
+                        print(key,'as',param_conflicts[key][0],'in',
+                              param_conflicts[key][1],'conflicts with',
+                              param_conflicts[key][2],'in',
+                              param_conflicts[key][3])
                     keep_list.append(param_conflicts[key][1])
                     keep_list.append(param_conflicts[key][3])
                 # Create object container for nested contents
@@ -168,7 +180,8 @@ class Param(object):
                     if key in keep_list:
                         ext_object = Foo()
                         for subkey in param_list[key].keys():
-                            print(subkey, 'is nested under', key)
+                            if not quiet:
+                                print(subkey, 'is nested under', key)
                             setattr(ext_object, subkey, param_list[key][subkey])
                         setattr(self, key, ext_object)
                 else:
