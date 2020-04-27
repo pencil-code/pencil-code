@@ -11,6 +11,8 @@ write snapshots in hdf5 (data/allprocs/VAR*.h5 files), video slices to
 data/slices/uu1_xy.h5, etc. and averages to data/averages/xy.h5, etc
 """
 
+import time
+
 def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
            precision, lpersist, quiet, nghost, settings, param, grid,
            x, y, z, lshear, lremove_old_snapshots, indx,
@@ -22,9 +24,10 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
 
     call signature:
 
-    var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir,
+    var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
            precision, lpersist, quiet, nghost, settings, param, grid,
-           x, y, z, lshear, lremove_old_snapshots, indx
+           x, y, z, lshear, lremove_old_snapshots, indx,
+           trimall=False, l_mpi=False, driver=None, comm=None, rank=0, size=1
           )
 
     Keyword arguments:
@@ -43,6 +46,9 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
 
     *fromdatadir*:
       Directory from which the data is collected.
+
+    *snap_by_proc*:
+      Read and write snapshots by procdir of the fortran binary tree
 
     *precision*:
       Single 'f' or double 'd' precision for new data.
@@ -75,11 +81,29 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
       If True the old snapshots will be deleted once the new snapshot has
       been saved.
 
-    *indx*
+    *indx*:
       List of variable indices in the f-array.
 
+    *trimall*:
+      Strip ghost zones from snapshots
+
+    *l_mpi*:
+      Applying MPI parallel process
+
+    *driver*:
+      HDF5 file io driver either None or mpio 
+
+    *comm*:
+      MPI library calls
+
+    *rank*:
+      Integer ID of processor
+
+    *size*:
+      Number of MPI processes
     """
     import os
+    from os.path import exists, join
     import numpy as np
     import h5py
     import glob
@@ -87,15 +111,8 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
     from .. import sim
     from . import write_h5_snapshot
     import sys
-    #not reqd - grid.h5 now used
-    ##move var.h5 out of the way, if it exists for reading binary
-    #os.chdir(newdir)
-    #if os.path.exists(todatadir+'/var.h5'):
-    #    cmd='mv '+todatadir+'/var.h5 '+todatadir+'/var.bak'
-    #    try:
-    #        os.system(cmd)
-    #    except OSError:
-    #        pass
+    import time
+    import subprocess as sub
 
     if isinstance(allfile_names, list):
         allfile_names = allfile_names
@@ -116,7 +133,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
             #    varfile_names = file_names[size-rank-1]
             #else:
             os.chdir(olddir)
-            iprocs = np.array_split(np.arange(nprocs),size)
+            iprocs = np.array(np.array_split(np.arange(nprocs),nprocs/size)).T
             procs = iprocs[rank]
             print('rank {} procs:'.format(rank),procs)
             sys.stdout.flush()
@@ -133,11 +150,13 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                 if not l_mpi:
                     procs = np.arange(nprocs)
                 if len(procs) > 0:
+                    proctime = time.time()
                     for proc in procs:
                         os.chdir(olddir)
-                        if not quiet:
+                        if np.mod(proc,size) == size-1:
                             print('rank {}:'.format(rank)+'saving '+file_name+
-                                          ' on proc{}'.format(proc))
+                                          ' on proc{}\n'.format(proc),
+                                   time.ctime())
                             sys.stdout.flush()
                         procdim = read.dim(proc=proc)
                         var = read.var(file_name, datadir=fromdatadir,
@@ -156,20 +175,31 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                                     persist[key] = var.__getattribute__(key)[()]
                                     if (type(persist[key][0])==str):
                                         persist[key][0] = \
-                                              var.__getattribute__(key)[0].encode()
+                                           var.__getattribute__(key)[0].encode()
                                 except:
                                     continue
                         else:
                             persist = None
+                        if np.mod(proc,size) == size-1:
+                            print('rank {}:'.format(rank)+'loaded '+file_name+
+                                  ' on proc{} in {} seconds'.format(
+                                  proc,time.time()-proctime))
+                            sys.stdout.flush()
                         #write data to h5
                         os.chdir(newdir)
                         write_h5_snapshot(var.f, file_name=file_name,
-                                          datadir=todatadir, precision=precision,
-                                          nghost=nghost, persist=persist, proc=proc,
-                                          procdim=procdim, settings=settings,
-                                          param=param, grid=grid, lghosts=True,
-                                          indx=indx, t=var.t, x=x, y=y, z=z,
-                                          lshear=lshear, driver=driver, comm=comm)
+                                    datadir=todatadir, precision=precision,
+                                    nghost=nghost, persist=persist, proc=proc,
+                                    procdim=procdim, settings=settings,
+                                    param=param, grid=grid, lghosts=True,
+                                    indx=indx, t=var.t, x=x, y=y, z=z,
+                                    lshear=lshear, driver=driver, comm=comm)
+                        if np.mod(proc,size) == size-1:
+                            print('rank {}:'.format(rank)+'written '+file_name+
+                                  ' on proc{} in {} seconds'.format(
+                                  proc,time.time()-proctime))
+                            sys.stdout.flush()
+                        proctime = time.time()
             else:
                 var = read.var(file_name, datadir=fromdatadir, quiet=quiet,
                                lpersist=lpersist, trimall=trimall)
@@ -201,14 +231,16 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                                   lshear=lshear, driver=None, comm=None)
             if lremove_old_snapshots:
                 os.chdir(olddir)
-                cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', file_name)
-                os.system(cmd)
+                cmd = "rm -f "+join(fromdatadir, 'proc*', file_name)
+                process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                output, error = process.communicate()
+                print(cmd,output,error)
+                #os.system(cmd)
             del(var)
 
 def slices2h5(newdir, olddir, grid,
-              todatadir='data/slices', fromdatadir='data',
-              precision='d', quiet=True, lremove_old_slices=False,
-              lsplit_slices=False,
+              todatadir='data/slices', fromdatadir='data', precision='d',
+              quiet=True, lremove_old_slices=False, lsplit_slices=False,
               l_mpi=False, driver=None, comm=None, rank=0, size=1,
               vlarge=1000000000):
 
@@ -218,8 +250,10 @@ def slices2h5(newdir, olddir, grid,
     call signature:
 
     slices2h5(newdir, olddir, grid,
-              todatadir='data/slices', fromdatadir='data',
-              precision='d', quiet=True, lremove_old_slices=False)
+              todatadir='data/slices', fromdatadir='data', precision='d',
+              quiet=True, lremove_old_slices=False, lsplit_slices=False,
+              l_mpi=False, driver=None, comm=None, rank=0, size=1,
+              vlarge=1000000000):
 
     Keyword arguments:
 
@@ -241,23 +275,44 @@ def slices2h5(newdir, olddir, grid,
     *precision*:
       Single 'f' or double 'd' precision for new data.
 
-    *quiet*
+    *quiet*:
       Option not to print output.
 
     *lremove_old_slices*:
       If True the old video slices will be deleted once the new slices have
       been saved.
 
-    *lsplit_slices*
+    *lsplit_slices*:
       Read the video slices in iterative chunks for large memory
+
+    *l_mpi*:
+      Applying MPI parallel process
+
+    *driver*:
+      HDF5 file io driver either None or mpio 
+
+    *comm*:
+      MPI library calls
+
+    *rank*:
+      Integer ID of processor
+
+    *size*:
+      Number of MPI processes
+
+    *vlarge*:
+      Limit size of file without chunking
     """
 
     import os
+    from os.path import exists, join
     import numpy as np
     from .. import read
     from .. import sim
     from . import write_h5_slices
     import sys
+    import subprocess as sub
+
     #copy old video slices to new h5 sim
     os.chdir(olddir)
     #identify the coordinates and positions of the slices
@@ -302,8 +357,8 @@ def slices2h5(newdir, olddir, grid,
             coordinates[key] = num
     if l_mpi:
         import glob
-        slice_lists = glob.glob(os.path.join(fromdatadir,'slice_*'))
-        slice_lists.remove(os.path.join(fromdatadir,'slice_position.dat'))
+        slice_lists = glob.glob(join(fromdatadir,'slice_*'))
+        slice_lists.remove(join(fromdatadir,'slice_position.dat'))
         slice_lists = np.array_split(slice_lists,size)
         slice_list = slice_lists[rank]
         if not quiet:
@@ -325,7 +380,10 @@ def slices2h5(newdir, olddir, grid,
                 if lremove_old_slices:
                     os.chdir(olddir)
                     cmd = "rm -f "+field_ext
-                    os.system(cmd)
+                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                    output, error = process.communicate()
+                    print(cmd,output,error)
+                    #os.system(cmd)
     else:
         vslice = read.slices(quiet=quiet)
         #write new slices in hdf5
@@ -334,8 +392,11 @@ def slices2h5(newdir, olddir, grid,
                         precision=precision, quiet=quiet)
         if lremove_old_slices:
             os.chdir(olddir)
-            cmd = "rm -f "+os.path.join(fromdatadir, 'proc*', 'slice_*')
-            os.system(cmd)
+            cmd = "rm -f "+join(fromdatadir, 'proc*', 'slice_*')
+            process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+            output, error = process.communicate()
+            print(cmd,output,error)
+            #os.system(cmd)
     del(vslice)
 
 def aver2h5(newdir, olddir,
@@ -350,8 +411,10 @@ def aver2h5(newdir, olddir,
     call signature:
 
     aver2h5(newdir, olddir,
-            todatadir='data/slices', fromdatadir='data', l2D=True,
-            precision='d', quiet=True, lremove_old_averages=False)
+            todatadir='data/averages', fromdatadir='data', l2D=True,
+            precision='d', quiet=True, lremove_old_averages=False,
+            aver_by_proc=False,
+            laver2D=False, l_mpi=False, driver=None, comm=None, rank=0, size=1):
 
     Keyword arguments:
 
@@ -387,26 +450,42 @@ def aver2h5(newdir, olddir,
     *laver2D*
       If True apply to each plane_list 'y', 'z' and load each variable
       sequentially
+
+    *l_mpi*:
+      Applying MPI parallel process
+
+    *driver*:
+      HDF5 file io driver either None or mpio 
+
+    *comm*:
+      MPI library calls
+
+    *rank*:
+      Integer ID of processor
+
+    *size*:
+      Number of MPI processes
     """
 
     import os
+    from os.path import exists, join
     import numpy as np
     from .. import read
     from .. import sim
     from . import write_h5_averages
     import sys
+    import subprocess as sub
 
     if laver2D:
         os.chdir(olddir)
         for xl in ['y','z']:
-            if os.path.exists(xl+'aver.in'):
-                if os.path.exists(os.path.join(fromdatadir,'t2davg.dat')):
-                    f = open(os.path.join(fromdatadir,'t2davg.dat'))
+            if exists(xl+'aver.in'):
+                if exists(join(fromdatadir,'t2davg.dat')):
+                    f = open(join(fromdatadir,'t2davg.dat'))
                     niter = int(f.readline().split(' ')[-1].strip('\n'))-1
                 else:
                     if not aver_by_proc:
-                        av = read.aver(plane_list=xl, proc=0,
-                                       var_index=0)
+                        av = read.aver(plane_list=xl, proc=0, var_index=0)
                         niter = av.t.size
                     else:
                         niter = None
@@ -439,9 +518,10 @@ def aver2h5(newdir, olddir,
                     sys.stdout.flush()
                     av = read.aver(plane_list=xl, iter_list=iter_list)
                     os.chdir(newdir)
-                    write_h5_averages(av, file_name=xl, datadir=todatadir, nt=niter,
-                                      precision=precision, append=False, indx=iter_list,
-                                      quiet=quiet, driver=driver, comm=comm, rank=rank,
+                    write_h5_averages(av, file_name=xl, datadir=todatadir,
+                                      nt=niter, precision=precision,
+                                      append=False, indx=iter_list, quiet=quiet,
+                                      driver=driver, comm=comm, rank=rank,
                                       size=size)
                     del(av)
     else:
@@ -449,7 +529,7 @@ def aver2h5(newdir, olddir,
         os.chdir(olddir)
         plane_list = []
         for xl in ['xy','xz','yz']:
-            if os.path.exists(xl+'aver.in'):
+            if exists(xl+'aver.in'):
                 plane_list.append(xl)
         if rank == size-1 or not l_mpi:
             if len(plane_list) > 0:
@@ -464,13 +544,16 @@ def aver2h5(newdir, olddir,
                 del(av)
             if lremove_old_averages:
                 os.chdir(olddir)
-                cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
-                os.system(cmd)
+                cmd = "rm -f "+join(fromdatadir, '*averages.dat')
+                process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                output, error = process.communicate()
+                print(cmd,output,error)
+                #os.system(cmd)
             if l2D:
                 plane_list = []
                 os.chdir(olddir)
                 for xl in ['x','y','z']:
-                    if os.path.exists(xl+'aver.in'):
+                    if exists(xl+'aver.in'):
                         plane_list.append(xl)
                 if len(plane_list) > 0:
                     for key in plane_list:
@@ -485,9 +568,12 @@ def aver2h5(newdir, olddir,
         if l_mpi:
             comm.Barrier()
         os.chdir(olddir)
-        cmd = "rm -f "+os.path.join(fromdatadir, '*averages.dat')
+        cmd = "rm -f "+join(fromdatadir, '*averages.dat')
         if rank == 0:
-            os.system(cmd)
+            process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+            output, error = process.communicate()
+            print(cmd,output,error)
+            #os.system(cmd)
 
 def sim2h5(newdir='.', olddir='.', varfile_names=None,
            todatadir='data/allprocs', fromdatadir='data',
@@ -520,8 +606,8 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
 
     Keyword arguments:
 
-    *newdir*:
-      String path to simulation destination directory.
+    *olddir*:
+      String path to simulation source directory.
       Path may be relative or absolute.
 
     *newdir*:
@@ -556,17 +642,47 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     *lshear*:
       Flag for the shear.
 
-    *lremove_old*:
-      If True the old snapshots will be deleted once the new snapshot has
-      been saved.
-      A warning is given without execution to avoid unintended removal.
-
     *execute*:
       optional confirmation required if lremove_old.
 
+    *lremove_old_snapshots*:
+      If True the old snapshot data will be deleted once the new h5 data
+      has been saved.
+
+    *lremove_old_slices*:
+      If True the old video slice data will be deleted once the new h5 data
+      has been saved.
+
+    *lremove_old_averages*:
+      If True the old averages data will be deleted once the new h5 data
+      has been saved.
+
+    *aver_by_proc*
+      Option to read old binary files by processor and write in
+      parallel
+
+    *laver2D*
+      If True apply to each plane_list 'y', 'z' and load each variable
+      sequentially
+
+    *l_mpi*:
+      Applying MPI parallel process
+
+    *driver*:
+      HDF5 file io driver either None or mpio 
+
+    *comm*:
+      MPI library calls
+
+    *rank*:
+      Integer ID of processor
+
+    *size*:
+      Number of MPI processes
     """
 
     import os
+    from os.path import exists, join
     import numpy as np
     import h5py
     import glob
@@ -574,6 +690,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     from .. import sim
     from . import write_h5_grid
     import sys
+    import subprocess as sub
 
     try:
         from mpi4py import MPI
@@ -610,10 +727,13 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             sys.stdout.flush()
         return -1
     if newdir != olddir:
-        if not os.path.exists(newdir):
+        if not exists(newdir):
             cmd = 'pc_newrun -s '+newdir
             if rank == size-1:
-                os.system(cmd)
+                process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                output, error = process.communicate()
+                print(cmd,output,error)
+                #os.system(cmd)
             if comm:
                 comm.Barrier()
         os.chdir(newdir)
@@ -736,10 +856,11 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     dim = None
     if sim.is_sim_dir():
         if rank == size-1:
-            try:
-                dim = read.dim()
-            except ValueError:
-                pass
+            if exists(join(newdir,'data','dim.dat')):
+                try:
+                    dim = read.dim()
+                except ValueError:
+                    pass
         if l_mpi:
             dim=comm.bcast(dim, root=size-1)
         if dim:
@@ -757,6 +878,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
                     sys.stdout.flush()
                 return -1
             dim = None
+    os.chdir(olddir)
     if rank == size-1:
         print('precision is ',precision)
         sys.stdout.flush()
@@ -790,17 +912,26 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if lvids:
         if lremove_deprecated_vids:
             for ext in ['bb.','uu.','ux.','uy.','uz.','bx.','by.','bz.']:
-                cmd = 'rm -f '+os.path.join(fromdatadir,'proc*','slice_'+ext+'*')
+                cmd = 'rm -f '+join(fromdatadir,'proc*','slice_'+ext+'*')
                 if rank == 0:
-                    os.system(cmd)
-                cmd = 'rm -f '+os.path.join(fromdatadir,'slice_'+ext+'*')
+                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                    output, error = process.communicate()
+                    print(cmd,output,error)
+                    #os.system(cmd)
+                cmd = 'rm -f '+join(fromdatadir,'slice_'+ext+'*')
                 if rank == 0:
-                    os.system(cmd)
+                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                    output, error = process.communicate()
+                    print(cmd,output,error)
+                    #os.system(cmd)
         if comm:
             comm.Barrier()
         cmd = 'src/read_all_videofiles.x'
         if rank == size-1 and lread_all_videoslices:
-            os.system(cmd)
+            process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+            output, error = process.communicate()
+            print(cmd,output,error)
+            #os.system(cmd)
         if comm:
             comm.Barrier()
         slices2h5(newdir, olddir, grid,
@@ -825,22 +956,28 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
         write_h5_grid(file_name='grid', datadir='data', precision=precision,
                       nghost=nghost, settings=settings, param=param, grid=grid,
                       unit=None, quiet=quiet)
-        source_file = os.path.join(olddir,fromdatadir,'proc0/varN.list')
-        target_file = os.path.join(newdir,todatadir,'varN.list')
-        if os.path.exists(source_file):
+        source_file = join(olddir,fromdatadir,'proc0/varN.list')
+        target_file = join(newdir,todatadir,'varN.list')
+        if exists(source_file):
             cmd='cp '+source_file+' '+target_file
-            os.system(cmd)
+            process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+            output, error = process.communicate()
+            print(cmd,output,error)
+            #os.system(cmd)
         items=['def_var.pro', 'index.pro', 'jobid.dat', 'param.nml',
                'particle_index.pro', 'pc_constants.pro', 'pointmass_index.pro',
                'pt_positions.dat', 'sn_series.dat', 'svnid.dat',
                'time_series.dat', 'tsnap.dat', 'tspec.dat', 'tvid.dat',
                't2davg.dat', 'var.general', 'variables.pro', 'varname.dat']
         for item in items:
-            source_file = os.path.join(olddir,fromdatadir,item)
-            target_file = os.path.join(newdir,fromdatadir,item)
-            if os.path.exists(source_file):
-                if not os.path.exists(target_file):
+            source_file = join(olddir,fromdatadir,item)
+            target_file = join(newdir,fromdatadir,item)
+            if exists(source_file):
+                if not exists(target_file):
                     cmd='cp '+source_file+' '+target_file
-                    os.system(cmd)
+                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                    output, error = process.communicate()
+                    print(cmd,output,error)
+                    #os.system(cmd)
     print('Simulation Fortran to h5 completed on rank {}.'.format(rank))
     sys.stdout.flush()
