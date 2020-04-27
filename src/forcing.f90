@@ -954,6 +954,7 @@ module Forcing
         case ('gaussianpot');     call forcing_gaussianpot(f,force)
         case ('white_noise');     call forcing_white_noise(f)
         case ('GP');              call forcing_GP(f)
+        case ('Galloway-Proctor-92'); call forcing_GP92(f)
         case ('irrotational');    call forcing_irro(f,force)
         case ('helical', '2');    call forcing_hel(f)
         case ('helical_both');    call forcing_hel_both(f)
@@ -3142,6 +3143,92 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
     endsubroutine forcing_GP
 !***********************************************************************
+    subroutine forcing_GP92(f)
+!
+!  Add Galloway-Proctor (1992) forcing function.
+!
+!  23-mar-20/axel: adapted from forcing_GP92
+!
+      use Mpicomm
+      use Sub
+!
+      real :: irufm
+      real, dimension (nx) :: ruf,rho
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: cosx,sinx
+      real :: cost,sint,cosym,sinym,fsum_tmp,fsum
+      integer :: j,jf
+      real :: fact
+!
+!  The default for omega_ff is now (12-jan-2018) changed from 1 to 0.
+!
+      if (ip<=6) print*,'forcing_GP: t=',t
+      cost=cos(omega_ff*t)
+      sint=sin(omega_ff*t)
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=sqrt(1.5)*force*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      do m=m1,m2
+        cosx=cos(k1_ff*x+cost)
+        sinx=sin(k1_ff*x+cost)
+        cosym=cos(k1_ff*y(m)+sint)
+        sinym=sin(k1_ff*y(m)+sint)
+        forcing_rhs(:,1)=-fact*sinym
+        forcing_rhs(:,2)=-fact*cosx(l1:l2)
+        forcing_rhs(:,3)=+fact*(sinx(l1:l2)+cosym)
+        do n=n1,n2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          do j=1,3
+            jf=j+ifff-1
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (idiag_rufm/=0) then
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
+          !
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip<=9) print*,'forcing_GP: forcing OK'
+!
+    endsubroutine forcing_GP92
+!***********************************************************************
     subroutine forcing_TG(f)
 !
 !  Add Taylor-Green forcing function.
@@ -5104,7 +5191,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx), optional, intent(in) :: rho1
 !
       real, dimension (nx) :: tmp
-      real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, kz, nu, arg
+      real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1
+      real :: kf, kx, ky, kz, nu, arg, ecost, esint
       integer :: i2d1=1,i2d2=2,i2d3=3
 !
         select case (iforcing_cont(i))
@@ -5350,6 +5438,16 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=-fact*                sinyt(m,i)
           force(:,2)=+fact* sinxt(l1:l2,i)
           force(:,3)=-fact*(cosxt(l1:l2,i)+cosyt(m,i))
+!
+!  Galloway-Proctor (GP) forcing
+!
+        case ('Galloway-Proctor-92')
+          fact=ampl_ff(i)
+          ecost=eps_fcont(i)*cos(omega_fcont(i)*t)
+          esint=eps_fcont(i)*sin(omega_fcont(i)*t)
+          force(:,1)=fact*(sin(kf_fcont(i)*z(n)+esint)+cos(kf_fcont(i)*y(m)+ecost))
+          force(:,2)=fact* cos(kf_fcont(i)*z(n)+esint)
+          force(:,3)=fact* sin(kf_fcont(i)*y(m)+ecost)
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
