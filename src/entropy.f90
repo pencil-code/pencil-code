@@ -296,6 +296,8 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_Kkramersm=0  ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
+  integer :: idiag_chikrammin=0 ! DIAG_DOC: $\min (\chi_{\rm kramers})$
+  integer :: idiag_chikrammax=0 ! DIAG_DOC: $\max (\chi_{\rm kramers})$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -1201,6 +1203,7 @@ module Energy
       else
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
         idiag_fradz_kramers=0; idiag_fradx_kramers=0; idiag_fradxy_kramers=0
+        idiag_chikrammin=0; idiag_chikrammax=0
       endif
 
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) &
@@ -4969,19 +4972,24 @@ module Energy
       if (pretend_lnTT) thdiff = p%cv1*thdiff
 !
 !  Here chix = K/(cp rho) is needed for diffus_chi calculation.
+!  and for some diagnostics
 !
       chix = p%cp1*Krho1
     
       if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
 
-      if (ldiagnos) call sum_mn_name(Krho1,idiag_Kkramersm)
+      if (ldiagnos) then
+        if (idiag_Kkramersm/=0) call sum_mn_name(Krho1,idiag_Kkramersm)
+        if (idiag_chikrammax/=0) call max_mn_name(chix,idiag_chikrammax)
+        if (idiag_chikrammin/=0) call max_mn_name(-chix,idiag_chikrammin,lneg=.true.)
+      endif
 !
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
         if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-Krho1*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
-        call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
-        call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
+        if (idiag_Kkramersmz/=0) call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
+        if (idiag_Kkramersmx/=0) call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
         if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
@@ -6615,6 +6623,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_chikrammin=0; idiag_chikrammax=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
       endif
 !
@@ -6659,6 +6668,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
+        call parse_name(iname,cname(iname),cform(iname),'chikrammin',idiag_chikrammin)
+        call parse_name(iname,cname(iname),cform(iname),'chikrammax',idiag_chikrammax)
       enddo
 !
       if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
