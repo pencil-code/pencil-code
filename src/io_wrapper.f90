@@ -48,10 +48,11 @@ module Io
 !***********************************************************************
   subroutine switch_io
 
-    use Io_out, only: register_io_ => register_io, &
-                      IO_strategy_ => IO_strategy, &
-                      lcollective_IO_ => lcollective_IO, &
-                      directory_names_ => directory_names
+     use Io_out, only: register_io_ => register_io, &
+                       IO_strategy_ => IO_strategy, &
+                       lcollective_IO_ => lcollective_IO, &
+                       directory_names_ => directory_names
+     use Syscalls, only: system_cmd
 
     if (.not.lswitched_to_out) then
 
@@ -62,6 +63,8 @@ module Io
       call directory_names_ 
       call register_io_
 
+     if (lroot) call system_cmd("touch IO_LOCK")
+
     endif
 
   endsubroutine switch_io
@@ -70,13 +73,10 @@ module Io
 !
      use Io_in, only: finalize_io_in => finalize_io
      use Io_out, only: finalize_io_out => finalize_io
-     use Syscalls, only: system_cmd
 
      call finalize_io_in
      call finalize_io_out
      !call system_cmd("sed -i -e's/^\( *IO_IN\)/#\1/' src/Makefile.local")
-
-     if (lroot) call system_cmd("touch IO_LOCK")
 
   endsubroutine finalize_io
 !***********************************************************************
