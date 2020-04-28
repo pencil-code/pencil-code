@@ -13,7 +13,7 @@ from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, curl2, grad, del2, del6
 import numpy as np
 
-def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
+def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3):
     """
     Computes the fluid Reynolds number from the advective and effective
     viscous expressions in the momentum equation.
@@ -61,27 +61,25 @@ def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
         del2u = np.zeros_like(uu)
         for j in range(0,3):
             del2u[j] = del2(uu[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                            coordinate_system=param.coordinate_system)
+                            coordinate_system=param.coord_system)
         for ivisc in param.ivisc:
+            ivisc = str.strip(ivisc,'\n')
             if 'nu-const' not in ivisc and 'shock' not in ivisc\
-                                       and 'hyper' not in ivisc:
+                                   and 'hyper' not in ivisc and len(ivisc) > 0:
                 print('fluid_reynolds WARNING: '+ivisc+' not implemented\n'+
                 'terms may be missing from the standard rate of strain tensor')
         fvisc = fvisc + param.nu*del2u
-    #effect of compressibility             
-    if param.ldensity and not lnrho:
-        print('fluid_reynolds WARNING: no lnrho provided\n'+
-              'rate of strain tensor likely incomplete')
         del(del2u)
     tmp0 = grad(uu[0],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                coordinate_system=param.coordinate_system)
+                coordinate_system=param.coord_system)
     tmp1 = grad(uu[1],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                coordinate_system=param.coordinate_system)
+                coordinate_system=param.coord_system)
     tmp2 = grad(uu[2],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                coordinate_system=param.coordinate_system)
-    if lnrho:
+                coordinate_system=param.coord_system)
+    #effect of compressibility             
+    if len(lnrho) > 0:
         divu = div(uu,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                   coordinate_system=param.coordinate_system)
+                   coordinate_system=param.coord_system)
         divu[ :nghost,:,:] = divu[-2*nghost:-nghost,:,:]
         divu[-nghost:,:,:] = divu[ nghost: 2*nghost,:,:]
         divu[:, :nghost,:] = divu[:,-2*nghost:-nghost,:]
@@ -89,7 +87,7 @@ def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
         divu[:,:, :nghost] = divu[:,:,-2*nghost:-nghost]
         divu[:,:,-nghost:] = divu[:,:, nghost: 2*nghost]
         gradlnrho = grad(lnrho,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                         coordinate_system=param.coordinate_system)
+                         coordinate_system=param.coord_system)
         Sglnrho = np.zeros_like(uu)
         Sglnrho[0] = dot(tmp0,gradlnrho) +\
                         (tmp0[0]+tmp1[0]+tmp2[0]-th2*divu)*gradlnrho[0] 
@@ -98,18 +96,21 @@ def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
         Sglnrho[2] = dot(tmp2,gradlnrho) +\
                         (tmp0[2]+tmp1[2]+tmp2[2]-th2*divu)*gradlnrho[2]
         graddivu = grad(divu,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                        coordinate_system=param.coordinate_system)
+                        coordinate_system=param.coord_system)
         fvisc = fvisc + param.nu*(th1*graddivu+Sglnrho)
         del(Sglnrho)
+    elif param.ldensity:
+        print('fluid_reynolds WARNING: no lnrho provided\n'+
+              'rate of strain tensor likely incomplete')
     #shock contribution
     if lshock:
-        if not shock:
+        if len(shock) == 0:
             print('fluid_reynolds WARNING: no shock provided\n'+
                   'rate of strain tensor likely incomplete')
         else:
             divugradlnrho = np.zeros_like(uu)
             gradshock = grad(shock,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                             coordinate_system=param.coordinate_system)
+                             coordinate_system=param.coord_system)
             for j in range(0,3):
                 divugradlnrho[j] = param.nu_shock*divu*gradshock[j] +\
                           param.nu_shock*shock*(divu*gradlnrho[j] + graddivu[j])
@@ -121,8 +122,10 @@ def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
         #uij5glnrho to be included
         del6u = np.zeros_like(uu)
         for j in range(0,3):
-            del6u[j] = del6(uu[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
-                            coordinate_system=param.coordinate_system)
+            del6u[j] = del6(uu[j],grid.dx,grid.dy,grid.dz)
+            #del6 for non-cartesian tba
+            #del6u[j] = del6(uu[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
+            #                coordinate_system=param.coord_system)
             fvisc = fvisc + param.nu_hyper3*del6u/4**6
         del(del6u)
     fvisc2 = np.sqrt(dot2(fvisc))
@@ -141,7 +144,7 @@ def fluid_reynolds(uu, param, grid, lnrho=None, shock=None, nghost=3):
     Re[np.where(Re==0)] = Re[np.where(Re>0)].min()
     return Re
 
-def magnetic_reynolds(uu, param, grid, aa=None, bb=None, jj=None, nghost=3):
+def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(), nghost=3):
     """
     Computes the magnetic Reynolds number from the advective and effective
     resistive expressions in the induction equation.
@@ -173,55 +176,61 @@ def magnetic_reynolds(uu, param, grid, aa=None, bb=None, jj=None, nghost=3):
      *nghost*:
        The number of ghost zones appropriate to the order of accuracy
     """
-    if not bb and not aa and not jj:
+    if len(bb) ==0 and len(aa) ==0 and len(jj) ==0:
         print('magnetic_reynolds WARNING: no aa, bb nor jj provided\n'+
               'aa or bb must be provided or aa for only hyper resistivity') 
     #resistive force
     lres, lhyper3 = False, False
     for iresi in param.iresistivity:
-        if 'hyper' not in iresi and not '\n' in iresi:
+        iresi = str.strip(iresi,'\n')
+        if 'hyper' not in iresi and len(iresi) > 0:
             lres = True
-        if 'hyper3' in ivisc:
+        if 'hyper3' in iresi:
             lhyper3 = True
-    fresi = np.zeros_like(aa)
+    fresi = np.zeros_like(uu)
     if lres:
-        if not jj:
-            if not aa:
+        if len(jj) == 0:
+            if len(aa) == 0:
                 print('magnetic_reynolds WARNING: calculating jj without aa\n',
                       'provide aa or jj directly for accurate boundary values')
-                jj = curl(bb,,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
-                            coordinate_system=param.coordinate_system)
+                jj = curl(bb,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+                            coordinate_system=param.coord_system)
             else:
-                jj = curl2(aa,,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
-                            coordinate_system=param.coordinate_system)
+                jj = curl2(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+                            coordinate_system=param.coord_system)
         fresi = fresi + param.eta*param.mu0*jj
         for iresi in param.iresistivity:
-            if 'eta-const' not in iresi and 'hyper' not in iresi:
+            iresi = str.strip(iresi,'\n')
+            if 'eta-const' not in iresi and 'hyper' not in iresi\
+                                        and len(iresi) > 0:
                 print('magnetic_reynolds WARNING: '+iresi+' not implemented\n'+
                       'terms may be missing from the standard resistive forces')
     if lhyper3 and not lres:
-        if not not aa:
-        print('magnetic_reynolds WARNING: no aa provided\n'+
-              'aa must be provided for hyper resistivity')
-        return 1
-    else:
-        del6a = np.zeros_like(aa)
-        for j in range(0,3):
-            del6a[j] = del6(aa[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,                                coordinate_system=param.coordinate_system)
-        #effective at l > 5 grid.dx
-        fresi = fresi + param.eta_hyper3*del6a/4**6
-        del(del6a)
+        if len(aa) == 0:
+            print('magnetic_reynolds WARNING: no aa provided\n'+
+                  'aa must be provided for hyper resistivity')
+            return 1
+        else:
+            del6a = np.zeros_like(aa)
+            for j in range(0,3):
+                del6a[j] = del6(aa[j],grid.dx,grid.dy,grid.dz)
+                #del6 for non-cartesian tba
+                #del6a[j] = del6(aa[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
+                #                coordinate_system=param.coord_system)
+            #effective at l > 5 grid.dx
+            fresi = fresi + param.eta_hyper3*del6a/4**6
+            del(del6a)
     fresi2 = np.sqrt(dot2(fresi))
     del(fresi)
     #advective force
-    if not bb:
-        if not aa:
+    if len(bb) == 0:
+        if len(aa) == 0:
             print('magnetic_reynolds WARNING: calculating uu x bb without bb\n',
                   'provide aa or bb directly to proceed')
             return 1
         else:
-            bb = curl(aa,,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
-                      coordinate_system=param.coordinate_system)
+            bb = curl(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+                      coordinate_system=param.coord_system)
     advec = cross(uu,bb)
     advec2 = np.sqrt(dot2(advec))
     del(advec)
@@ -230,6 +239,5 @@ def magnetic_reynolds(uu, param, grid, aa=None, bb=None, jj=None, nghost=3):
     Rm = advec2/fresi2
     #set minimum floor to exclude zero-valued Rm 
     Rm[np.where(Rm==0)] = Rm[np.where(Rm>0)].min()
-    print('lorentz2:',psutil.virtual_memory()[2],tm.ctime())
     return Rm
     
