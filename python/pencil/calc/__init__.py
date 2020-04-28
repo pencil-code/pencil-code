@@ -13,4 +13,5 @@ from .accuracy import *
 from .draglift import *
 from .tensors import *
 from .aver2h5 import *
-from .helmholz import *
+from .Helmholz import *
+from .Reynolds import *
