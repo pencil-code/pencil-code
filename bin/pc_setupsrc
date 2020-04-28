@@ -654,7 +654,7 @@ do
   ;;
   --min)
     link_all=0
-    shift
+    break
   ;;
   --)
     shift
