@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #coding: utf-8
-# Helmholz.py
+# Helmholtz.py
 # Written by Fred Gent (fred.gent.ncl@gmail.com)
 """
-Perform a Helmholz decomposition on a vector field returning a pair of 
+Perform a Helmholtz decomposition on a vector field returning a pair of 
 orthogonal vectors with zero divergence and zero curl respectively.
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, grad
 
-def helmholz_fft(field, grid, params, nghost=3, nonperi_bc=None):
+def helmholtz_fft(field, grid, params, nghost=3, nonperi_bc=None):
     """
     Creates the decomposition vector pair for the supplied vector field.
 
