@@ -690,23 +690,37 @@ n=0
 remove_broken_links
 link_scripts
 link_root_makefile
+#
 make_src_dir
 if [ "$link_all" -eq 1 ]; then link_src_files; fi
-make_special_dir
-if [ "$link_all" -eq 1 ]; then link_special_files; fi
+#
 make_pre_and_post_processing_dir
 if [ "$link_all" -eq 1 ]; then link_pre_and_post_processing_files; fi
+#
 make_magnetic_dir
 if [ "$link_all" -eq 1 ]; then link_magnetic_files; fi
-make_test_methods_dir
-if [ "$link_all" -eq 1 ]; then link_test_methods_files; fi
-make_inactive_dir
-if [ "$link_all" -eq 1 ]; then link_inactive_files; fi
-make_experimental_dir
-if [ "$link_all" -eq 1 ]; then link_experimental_files; fi
-make_initial_condition_dir
-if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
+
 if [ -f "$src/Makefile.local" ]; then
+  if [ "`grep '^[^#]*= *special' $src/Makefile.local`" != "" ]; then
+    make_special_dir
+    if [ "$link_all" -eq 1 ]; then link_special_files; fi
+  fi
+  if [ "`grep '^[^#]*= *test_methods' $src/Makefile.local`" != "" ]; then
+    make_test_methods_dir
+    if [ "$link_all" -eq 1 ]; then link_test_methods_files; fi
+  fi
+  if [ "`grep '^[^#]*= *inactive' $src/Makefile.local`" != "" ]; then 
+    make_inactive_dir
+    if [ "$link_all" -eq 1 ]; then link_inactive_files; fi
+  fi
+  if [ "`grep '^[^#]*= *experimental' $src/Makefile.local`" != "" ]; then 
+    make_experimental_dir
+    if [ "$link_all" -eq 1 ]; then link_experimental_files; fi
+  fi
+  if [ "`grep '^[^#]*= *initial_condition' $src/Makefile.local`" != "" ]; then 
+    make_initial_condition_dir
+    if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
+  fi
   if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
     make_cuda_dir
     make_astaroth_dir
