@@ -61,6 +61,7 @@ module Testfield
   logical :: reinitialize_from_mainrun=.false.
   logical :: lremove_mean_flow_NLTFM_all=.false.
   logical :: lremove_mean_flow_NLTFM_zero=.false.
+  logical :: lremove_zmeans_NLTFM_zero=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true., lugu=.true., lupw_uutest=.false.
   logical :: luxb_as_aux=.false., ljxb_as_aux=.false., lugu_as_aux=.false.
   logical :: linit_aatest=.false.
@@ -88,6 +89,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
        lremove_mean_flow_NLTFM_zero, lremove_mean_flow_NLTFM_all, &
+       lremove_zmeans_NLTFM_zero, &
        Btest_ext, zextent, lsoca, lsoca_jxb, &
        lugu, itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
@@ -168,6 +170,8 @@ module Testfield
   integer :: idiag_uy11m=0      ! DIAG_DOC: $\left<u_{11_y}\right>$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
+  integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
+  integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
@@ -486,7 +490,7 @@ module Testfield
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
+        if (lroot) print*, 'init_aatest: Unknown type: ', trim(initaatest(j))
         call stop_it("")
 
       endselect
@@ -675,7 +679,7 @@ module Testfield
 
       endif
 !
-!  loop over all fields, but do it backwards,
+!  loop over all test problems, but do it backwards,
 !  so we compute the zero field first
 !
       advec_uu=0.; advec_va2=0.
@@ -717,7 +721,8 @@ module Testfield
           endif
         endif
 !
-!  do diffusion terms (Weyl gauge causes instability!)
+!  do diffusion terms (Weyl gauge causes instability!), 
+!  restricted to etatest=const.
 !
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest
 !
@@ -736,7 +741,7 @@ module Testfield
           call coriolis_cartesian(df,uutest,iuxtest)
         elseif (Omega/=0.) then
 !
-!  only Coriolis force so far without main run
+!  without main run only Coriolis force so far 
 !
           df(l1:l2,m,n,iuxtest  )=df(l1:l2,m,n,iuxtest  )+2*Omega*uutest(:,2)
           df(l1:l2,m,n,iuxtest+1)=df(l1:l2,m,n,iuxtest+1)-2*Omega*uutest(:,1)
@@ -1321,36 +1326,32 @@ module Testfield
       if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need njtest=5 for u0ref')
 
-      if (.false.) then      !lcalc_aameanz.or.lremove_meanaz) then
+      if (lremove_zmeans_NLTFM_zero) then
 !
-!  Remove averages from the test solutions. Not needed, but kept here for
-!  possible safety tests.
+!  Remove averages from the zero test solution.
 !
-        do jtest=1,njtest
-
-          iaxtest=iaatest+3*(jtest-1)
-          iuxtest=iuutest+3*(jtest-1)
-          do j=1,3
-            do n=1,mz
-              aatestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iaxtest+j-1))
-              uutestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iuxtest+j-1))
-            enddo
+        jtest=iE0
+        iaxtest=iaatest+3*(jtest-1)
+        iuxtest=iuutest+3*(jtest-1)
+        do j=1,3
+          do n=1,mz
+            aatestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iaxtest+j-1))
+            uutestmz(n,j)=fac*sum(f(l1:l2,m1:m2,n,iuxtest+j-1))
           enddo
-          call finalize_aver(nprocxy,12,aatestmz)
-          call finalize_aver(nprocxy,12,uutestmz)
-!
-          do j=1,3
-            do n=1,mz
-              f(:,:,n,iaxtest+j-1) = f(:,:,n,iaxtest+j-1)-aatestmz(n,j)
-              f(:,:,n,iuxtest+j-1) = f(:,:,n,iuxtest+j-1)-uutestmz(n,j)
-            enddo
-          enddo
-
         enddo
-      endif
-
+        call finalize_aver(nprocxy,12,aatestmz)
+        call finalize_aver(nprocxy,12,uutestmz)
 !
-!  Initialize reference solutions (0-solutions) with fluctuations of main run.
+        do j=1,3
+          do n=1,mz
+            f(:,:,n,iaxtest+j-1) = f(:,:,n,iaxtest+j-1)-aatestmz(n,j)
+            f(:,:,n,iuxtest+j-1) = f(:,:,n,iuxtest+j-1)-uutestmz(n,j)
+          enddo
+        enddo
+
+      endif
+!
+!  Initialize reference solutions (zero solutions) with fluctuations of main run.
 !
       if (linitialize0_from_mainrun) then
         if (lcalc_aameanz.and.lcalc_uumeanz) then
@@ -1845,7 +1846,7 @@ mn:   do n=n1,n2
         ivid_bb11=0
       endif
 !
-!  check for those quantities that we want to evaluate online
+!  check for 0D diagnostics
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
