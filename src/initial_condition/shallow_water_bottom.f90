@@ -20,9 +20,9 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: eta0, k_eta, x0_drop, y0_drop
+  real :: eta0, k_eta, x0_drop, y0_drop, Omega_SB
 !
-  namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop
+  namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB
 !
   contains
 !***********************************************************************
@@ -63,10 +63,15 @@ module InitialCondition
 !
       do n=n1,n2
         do m=m1,m2
-          eta = eta0 * exp(-k_eta * ( & 
-               (x(l1:l2)-x0_drop)**2 + (y(m)-y0_drop)**2 & 
-               ))
-          f(l1:l2,m,n,ilnrho) = log(eta)
+          f(l1:l2,m,n,iux) = -Omega_SB * y(m)
+          f(l1:l2,m,n,iuy) = Omega_SB * x(l1:l2)
+          f(l1:l2,m,n,irho) = 1.5 * Omega_SB**2 * (x(l1:l2)**2 + &
+                              y(m)**2) - Omega_SB**2 * &
+                              (x(l1:l2)**2 + y(m)**2)**2
+          ! eta = eta0 * exp(-k_eta * ( &  
+          !      (x(l1:l2)-x0_drop)**2 + (y(m)-y0_drop)**2 & 
+          !      ))
+          ! f(l1:l2,m,n,ilnrho) = log(eta)
         enddo
       enddo
 !
