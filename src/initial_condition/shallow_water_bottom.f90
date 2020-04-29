@@ -123,8 +123,6 @@ module InitialCondition
             enddo
           enddo
 !
-        case('gaussian-blob')
-!
         case default
            call fatal_error("init_condition_uu",&
                 "No such value for init_condition_uu")
