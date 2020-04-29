@@ -20,9 +20,13 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: eta0, k_eta, x0_drop, y0_drop, Omega_SB
+  real :: eta0, k_eta, x0_drop, y0_drop
+  real :: Omega_SB=1.0,gamma_parameter
 !
-  namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB
+  character (len=labellen), dimension(ninit) :: init_shallow='nothing'
+!
+  namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB, &
+       init_shallow,gamma_parameter
 !
   contains
 !***********************************************************************
@@ -56,26 +60,69 @@ module InitialCondition
 !     h = eta + Lb
 !     rho is eta       
 !
-!  with eta=a*exp(-k*(x-x0)**2)
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: eta
+      real, dimension (nx) :: eta,r2
 !
       do n=n1,n2
         do m=m1,m2
-          f(l1:l2,m,n,iux) = -Omega_SB * y(m)
-          f(l1:l2,m,n,iuy) = Omega_SB * x(l1:l2)
-          f(l1:l2,m,n,irho) = 1.5 * Omega_SB**2 * (x(l1:l2)**2 + &
-                              y(m)**2) - Omega_SB**2 * &
-                              (x(l1:l2)**2 + y(m)**2)**2
-          ! eta = eta0 * exp(-k_eta * ( &  
-          !      (x(l1:l2)-x0_drop)**2 + (y(m)-y0_drop)**2 & 
-          !      ))
-          ! f(l1:l2,m,n,ilnrho) = log(eta)
+!
+           select case (init_shallow)
+!
+           case('solid-body')   
+!
+! gamma_parameter = Omega/a**2 where a is the planetary radius
+!
+              r2 = x(l1:l2)**2 + y(m)**2
+              f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) + &
+                   Omega_SB**2 * (                    &
+                   1.5*r2 - 0.25*gamma_parameter * r2**2         &
+                                 )
+!
+           case('gaussian-blob')   
+!
+!  with eta=a*exp(-k*(x-x0)**2) 
+!
+              eta = eta0 * exp(-k_eta * ( &  
+                   (x(l1:l2)-x0_drop)**2 + (y(m)-y0_drop)**2 & 
+                   ))
+              f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) + log(eta)
+!
+           case default
+              call fatal_error("init_condition_lnrho",&
+                   "No such value for init_condition_lnrho")
+   
+           endselect
         enddo
       enddo
 !
     endsubroutine initial_condition_lnrho
+!***********************************************************************
+    subroutine initial_condition_uu(f)
+!
+!  Initial condition given by 
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      do n=n1,n2
+        do m=m1,m2
+           select case (init_shallow)
+!
+           case('solid-body')
+              f(l1:l2,m,n,iux) = -Omega_SB * y(m)
+              f(l1:l2,m,n,iuy) =  Omega_SB * x(l1:l2)
+!
+           case('gaussian-blob')
+!
+           case default
+              call fatal_error("init_condition_uu",&
+                   "No such value for init_condition_uu")
+
+           endselect
+!
+        enddo
+      enddo
+!
+    endsubroutine initial_condition_uu
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
