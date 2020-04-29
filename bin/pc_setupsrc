@@ -705,7 +705,7 @@ if [ -f "$src/Makefile.local" ]; then
     make_special_dir
     if [ "$link_all" -eq 1 ]; then link_special_files; fi
   fi
-  if [ "`grep '^[^#]*= *test_methods' $src/Makefile.local`" != "" ]; then
+  if [ "`grep '^[^#]*= *test_methods' $src/Makefile.local`" != "" ] || [ "`grep '^[^#]*=.*testfield' $src/Makefile.local`" != "" ]; then
     make_test_methods_dir
     if [ "$link_all" -eq 1 ]; then link_test_methods_files; fi
   fi
