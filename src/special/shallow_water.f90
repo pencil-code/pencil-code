@@ -56,7 +56,8 @@ module Special
 ! Global arrays
 !
   real :: gravity=1.0
-  real :: fcoriolis=2.0       ! Omega=1
+  real :: fcoriolis
+  real :: Omega_SB=1.0
   real :: gamma_parameter=0.001
 !
 ! Different pre-defined forms of the bottom function
@@ -91,9 +92,9 @@ module Special
   logical :: lupdate_storm=.true.
 !
   namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
-       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
+       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,eta0,tduration,rsize_storm,lupdate_storm
+       lmass_relaxation,eta0,tduration,rsize_storm,lupdate_storm,Omega_SB
 !
   type InternalPencils
      real, dimension(nx) :: gr2
@@ -158,6 +159,10 @@ module Special
              + 2*cx1y2*x(l1:l2)*y(m) + cx2y1*x(l1:l2)**2 &
              + 2*cx2y2*x(l1:l2)**2*y(m)
       enddo
+!
+! Define the Coriolis parameters
+!
+      fcoriolis = 2*Omega_SB
 !
       do m=m1,m2
         gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
