@@ -47,6 +47,7 @@
    ldensity_nolog=T
 /
 &special_init_pars
+  init_shallow='gaussian-blob'
 /
 &shock_init_pars
 /
