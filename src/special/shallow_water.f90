@@ -360,8 +360,8 @@ module Special
     endif
 !
     if (lgamma_plane) then
-      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) + q%gr2*p%uu(:,2)
-      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - q%gr2*p%uu(:,1)
+      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) - q%gr2*p%uu(:,2)
+      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) + q%gr2*p%uu(:,1)
     endif
     
     if (lfirst.and.ldt) then 
