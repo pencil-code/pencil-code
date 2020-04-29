@@ -312,7 +312,7 @@ module Magnetic
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
-  real :: h_sld_magn=2.0
+  real :: h_sld_magn=2.0,nlf_sld_magn=1.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1.
   real :: rhoref=impossible, rhoref1
@@ -368,7 +368,7 @@ module Magnetic
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
-      lnoinduction, lA_relprof_global
+      lnoinduction, lA_relprof_global, nlf_sld_magn
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4451,7 +4451,7 @@ module Magnetic
         if (lmagnetic_slope_limited.and.llast) then
 !        if (lmagnetic_slope_limited) then
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,tmp1)
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1)
             tmp2(:,j)=tmp1
           enddo
           fres=fres+tmp2

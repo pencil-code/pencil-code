@@ -109,7 +109,7 @@ module Viscosity
   logical :: lno_visc_heat_zbound=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
-  real :: h_sld_visc=2.0
+  real :: h_sld_visc=2.0, nlf_sld_visc=1.0
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, nu_tdep_toffset, &
@@ -122,7 +122,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      h_sld_visc, lnusmag_as_aux, &
+      h_sld_visc,nlf_sld_visc, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth
 !
@@ -2004,21 +2004,21 @@ module Viscosity
 !       use sld only in last sub timestep
 !
         if (lviscosity_heat) then
-          call calc_slope_diff_flux(f,iux,p,h_sld_visc,tmp3,tmp4,'viscose')
+          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
           p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,tmp3,tmp4,'viscose')
+          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
           p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,tmp3,tmp4,'viscose')
+          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
           p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
         else
-          call calc_slope_diff_flux(f,iux,p,h_sld_visc,tmp3)
+          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3)
           p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,tmp3)
+          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3)
           p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,tmp3)
+          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3)
           p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
         endif
       endif
