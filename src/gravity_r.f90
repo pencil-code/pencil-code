@@ -547,7 +547,9 @@ module Gravity
 !
       if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
 !
-      if (idiag_torque/=0) call calc_torque(p)
+      if (ldiagnos) then
+         if (idiag_torque/=0) call calc_torque(p)
+      endif
 !
       call keep_compiler_quiet(f)
 !
