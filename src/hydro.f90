@@ -6478,8 +6478,8 @@ module Hydro
         zbot=rdampext
         if (lcartesian_coords) then
           prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iux)**2
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuy)**2
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iux)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuy)
         endif
 !
 !  Latitudinal shear profile
