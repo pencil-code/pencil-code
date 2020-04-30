@@ -254,8 +254,7 @@ module Hydro
       lcdt_tauf, cdt_tauf, ulev, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
-      limpose_only_horizontal_uumz, Om_inner
-      limpose_only_horizontal_uumz, luu_fluc_as_aux
+      limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
