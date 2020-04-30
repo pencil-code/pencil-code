@@ -2581,7 +2581,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   real, dimension (nx,3) :: gcc
   real, dimension (nx) :: pdf_var,gcc2
   integer, dimension (n_pdf) :: pdf_yy
-  real :: pdf_min,pdf_max,pdf_mean,pdf_rms,pdf_dx,pdf_dx1,pdf_scl
+  real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
   character (len=120) :: pdf_file=''
   character (len=*) :: variabl
   logical :: logscale=.false.
@@ -2618,6 +2618,10 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
        call dot2_mn(gcc,gcc2)
        pdf_var=sqrt(gcc2)
        logscale=.true.
+     elseif (variabl=='special') then
+       call get_shared_variable('ispecial', ispecial, caller='pdf')
+       pdf_var=f(l1:l2,m,n,ispecial)
+       logscale=.false.
      elseif (variabl=='lnspecial') then
        call get_shared_variable('ispecial', ispecial, caller='pdf')
        pdf_var=alog(f(l1:l2,m,n,ispecial))
