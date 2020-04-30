@@ -955,6 +955,7 @@ module Particles_coagulation
               npj = fp(j,inpswarm)
               mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
               npk = fp(k,inpswarm)
+!              
 !
 !  Identify the swarm with the highest particle number density
 !
@@ -980,7 +981,8 @@ module Particles_coagulation
 !
               if (npk == npj) then
 ! 13-June-18/Xiang-Yu: coded
-                if (npk*dx*dy*dz<1.0 .and. lremove_particle) then
+!                if (npk*dx*dy*dz<1.0 .and. lremove_particle) then
+                if (lremove_particle) then
                   if (fp(swarm_index1,iap)>=fp(swarm_index2,iap)) then
                     fp(swarm_index1,ivpx:ivpz)=(rhopbig*fp(swarm_index1,ivpx:ivpz) + &
                         rhopsma*fp(swarm_index2,ivpx:ivpz))/(rhopsma+rhopbig)
@@ -1029,6 +1031,10 @@ module Particles_coagulation
                 vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
                 fp(swarm_index1,ivpx:ivpz)=vpnew
               endif
+!
+!11-Feb-20/Xiang-Yu:for the purpose of particle removing scheme, for all cases, not only for "nx=ny".              
+              npnew=(rhopsma+rhopbig)/(2.*mpnew)
+!11-Feb-20/Xiang-Yu.
 !
 ! 10-July-18/Xiang-Yu coded: remove superparticle containing less than one droplet.
               if (npnew*dx*dy*dz<1.0 .and. lremove_particle2) then
@@ -1327,7 +1333,7 @@ module Particles_coagulation
 !
       call random_number_wrapper(r)
       dt1_coag_par = -r_total/log(r)
-      dt1_max = dt1_coag_par
+      dt1_max = max(dt1_max,dt1_coag_par)
 !
     endsubroutine particles_coag_timestep_zd
 !***********************************************************************

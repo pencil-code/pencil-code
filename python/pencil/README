@@ -1,0 +1,76 @@
+
+        ___                     _  _
+       / _ \  ___  _ __    ___ (_)| |
+      / /_)/ / _ \| '_ \  / __|| || |
+     / ___/ |  __/| | | || (__ | || |
+     \/      \___||_| |_| \___||_||_|
+
+
+#############################
+## DESCRIPTION
+##
+This python package contains a set of subroutines for postprocessing your Pencil Code data.
+Pencil will do all imports and diagnostics on your pencil code data in the best and easiest way possible.
+Therefore, 'pc' will store all calcuated data in separate files and reload if necessary.
+
+#############################
+## EASY START
+##
+1. Add $PENCIL_HOME/python to your $PYTHONPATH or enshure this is already done by using 'echo $PYTHONPATH' in your bash shell.
+
+2. Start Python (or better ipython) from your simulation main folder and try:
+   import pencil as pc
+
+3. Try to read your time series:
+
+   ts = pc.read.ts()
+
+   this reads in the time_series.dat with all its data. Check out what's available:
+
+   ts.keys
+
+4. Try to read in the latest var.dat file:
+
+  var = pc.read.var()
+
+  Check out what's available again with:
+
+  var.keys
+
+  var should store the latest snapshot (f-array) from the var.dat file including
+  some meta information.
+
+5. Try to read in an earlier snapshot. First check which snapshots are available by getting your simulation as an object
+
+   sim = pc.get_sim()
+
+6. Get the varlist:
+
+   vars = sim.get_varlist()
+   print(vars)
+
+   then read the second snapshot:
+
+   var_2nd = pcn.read.var(varfile=vars[1])
+
+Now you can investigate further your data.
+
+Note that because python is C-indexed instead of Fortran-indexed, and
+matplotlib assumes [y, x] ordering for 2D plotting, the f-array returned is in
+the opposite order from how it is in pencil: var.f.shape will return
+(nvar, nz, ny, nx).
+
+#############################
+## WHAT IS WHERE?
+##
+
+~ io           input und output functions, like save data or call IDL scripts
+~ diag         diagnostic scripts and functions that produce physical meaningfull output
+~ visu         visualization routines, here you find also helpers for e.g. exporting figures
+~ calc         complex math functions and further calculations and helpers
+~ math         basic math functions, like products and derivatives, but also numerical helpers, like is_number
+~ sim          handling simulations as python objects and do stuff with simulations objects, like grouping and sorting
+~ read         read data and parameters from your pencil code simulation, many of these functions can be accessed directly from simulation objects
+~ tool_kit     all nice workarounds get stored here (e.g., resubmit script), but your dirty tools here!
+~ export       exporter (e.g., vtk, xml)
+~ backpack     third party modules, tribute goes to the authors!

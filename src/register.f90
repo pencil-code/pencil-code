@@ -881,11 +881,11 @@ module Register
       if (nname>0) then
         call allocate_fnames(nname)
         ldummy = read_name_format(print_in_file,cname,nname)
+      elseif ( nname==0 ) then
+        call fatal_error('rprint_list','You must have a "'// &
+                          trim(print_in_file)// &               ! Why is that required?
+                         '" file in the run directory with valid print requests!')
       endif
-      if ( nname==0 ) &
-          call fatal_error('rprint_list','You must have a "'// &
-          trim(print_in_file)// &      ! Why is that required?
-          '" file in the run directory with valid print requests!')
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !
@@ -1087,7 +1087,7 @@ module Register
       call rprint_cosmicrayflux   (lreset,LWRITE=lroot)
       call rprint_gravity         (lreset,LWRITE=lroot)
       call rprint_selfgravity     (lreset,LWRITE=lroot)
-      call rprint_special         (lreset,LWRITE=lroot)
+      call rprint_special         (lreset,lroot)
       call rprint_shock           (lreset,LWRITE=lroot)
       call rprint_solid_cells     (lreset,LWRITE=lroot)
       call rprint_viscosity       (lreset,LWRITE=lroot)
@@ -1108,10 +1108,10 @@ module Register
       use Cdata
       use Diagnostics
       use General, only: loptest
-      use IO, only: IO_strategy
       use Energy, only: expand_shands_energy
       use FArrayManager, only: farray_index_append
       use Hydro, only: expand_shands_hydro
+      use Io, only: IO_strategy
       use Magnetic,only: expand_shands_magnetic
 !
       integer :: iname,irz
@@ -1172,7 +1172,7 @@ module Register
         enddo
 !
         if (lroot .and. (IO_strategy /= "HDF5")) then
-          ! output in phiavg.list the list of fields after the taking into
+          ! output in phiavg.list the list of fields after taking into
           ! account of possible shorthands in phiaver.in
           open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz

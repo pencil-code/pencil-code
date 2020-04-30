@@ -127,7 +127,7 @@ module FArrayManager
 !
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,array,ierr)
+    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,array,aux,ierr)
 !
 !  Register an auxiliary variable in the f array.
 !
@@ -135,7 +135,7 @@ module FArrayManager
 !
       character (len=*), intent(in) :: varname
       integer, intent(out)  :: ivar
-      logical, optional, intent(in) :: communicated
+      logical, optional, intent(in) :: communicated, aux
       integer, optional, intent(in) :: vector, array
       integer, optional, intent(out) :: ierr
 !
@@ -147,24 +147,27 @@ module FArrayManager
         vartype = iFARRAY_TYPE_AUXILIARY
       endif
 !
-      call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
+      call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,aux=aux,ierr=ierr)
 !
     endsubroutine farray_register_auxiliary
 !***********************************************************************
-    subroutine farray_register_variable(varname,ivar,vartype,vector,array,ierr)
+    subroutine farray_register_variable(varname,ivar,vartype,vector,array,aux,ierr)
 !
 ! 12-may-12/MR: avoid writing of auxiliary variable index into index.pro if
 !               variable not written into var.dat
 ! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
+      use General, only: ioptest
+
       character (len=*), intent(in) :: varname
       integer, target, intent(out)  :: ivar
       integer, intent(in)  :: vartype
       integer, optional, intent(in) :: vector, array
+      logical, optional, intent(in) :: aux
       integer, optional, intent(out) :: ierr
 !
       type (farray_contents_list), pointer :: item, new
-      integer :: ncomponents, narray
+      integer :: ncomponents, narray, nvars
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
         call fatal_error("farray_register_variable", &
@@ -172,11 +175,10 @@ module FArrayManager
           "farray_acquire_scratch_area routine.")
       endif
 !
-      ncomponents=1
       if (present(ierr)) ierr=0
-      if (present(vector)) ncomponents=vector
-      narray=1
-      if (present(array)) narray=array
+      ncomponents=ioptest(vector,1)
+      narray=ioptest(array,1)
+      nvars=ncomponents*narray
 !
       item => find_by_name(varname)
 !
@@ -216,7 +218,7 @@ module FArrayManager
 !
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
-            if (nvar+ncomponents*narray>mvar) then
+            if (nvar+nvars>mvar) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -228,7 +230,7 @@ module FArrayManager
             "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
-            if (naux+ncomponents*narray>maux) then
+            if (naux+nvars>maux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -242,7 +244,7 @@ module FArrayManager
             "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
             endif
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            if (naux_com+ncomponents*narray>maux_com) then
+            if (naux_com+nvars>maux_com) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -257,7 +259,7 @@ module FArrayManager
             "headers to cparam.local.")
             endif
           case (iFARRAY_TYPE_GLOBAL)
-            if (nglobal+ncomponents*narray>mglobal) then
+            if (nglobal+nvars>mglobal) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -279,23 +281,23 @@ module FArrayManager
         new%varname     = varname
         new%vartype     = vartype
         new%ncomponents = ncomponents
-        allocate(new%ivar(ncomponents*narray))
+        allocate(new%ivar(nvars))
         new%ivar(1)%p => ivar
 !
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
             ivar=nvar+1
-            nvar=nvar+ncomponents*narray
+            nvar=nvar+nvars
           case (iFARRAY_TYPE_COMM_AUXILIARY)
             ivar=mvar+naux_com+1
-            naux=naux+ncomponents*narray
-            naux_com=naux_com+ncomponents*narray
+            naux=naux+nvars
+            naux_com=naux_com+nvars
           case (iFARRAY_TYPE_AUXILIARY)
             ivar=mvar+maux_com+(naux-naux_com)+1
-            naux=naux+ncomponents*narray
+            naux=naux+nvars
           case (iFARRAY_TYPE_GLOBAL)
             ivar=mvar+maux+nglobal+1
-            nglobal=nglobal+ncomponents*narray
+            nglobal=nglobal+nvars
         endselect
 !
         call save_analysis_info(new)
@@ -306,13 +308,13 @@ module FArrayManager
         if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
                                     vartype==iFARRAY_TYPE_AUXILIARY )) return
 !
-        call farray_index_append('i'//varname,ivar,vector=vector,array=array)
+        call farray_index_append('i'//varname,ivar,vector=vector,array=array,aux=aux)
 !
       endif
 !
     endsubroutine farray_register_variable
 !***********************************************************************
-    subroutine farray_index_append(varname,ivar,vector,array)
+    subroutine farray_index_append(varname,ivar,vector,array,aux)
 !
 ! 14-Oct-2018/PAB: coded
 !
@@ -321,16 +323,21 @@ module FArrayManager
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, optional, intent(in) :: vector, array
+      logical, optional, intent(in) :: aux
 !
       character (len=len(varname)) :: component
       integer :: pos, l
+      logical :: use_aux
+!
+      use_aux=.false.
+      if (present(aux)) use_aux=aux
 !
       call index_append(trim(varname),ivar,vector=vector,array=array)
       if (.not. present (array) .and. present (vector)) then
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
-        if (vector == 3) then
-          l = len(trim(component))
+        l = len(trim(component))
+        if (vector == 3 .and. use_aux.eqv..false.) then
           if (l == 3) then
             ! double endings: iuu, iaa, etc.
             if (component(2:2) == component(3:3)) l = 2

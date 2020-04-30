@@ -82,13 +82,6 @@ module Special
 !
   include 'special.h'
 !
-!  Do this here because shared variables for this array doesn't work on Beskow.
-!
-  integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm,   specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -313,11 +306,7 @@ module Special
 !!      use FArrayManager, only: farray_index_append
 !
 !!      integer :: iname
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      logical :: lreset,lwrite
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)
@@ -551,6 +540,36 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_chemistry
+!***********************************************************************
+    subroutine special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,kind)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrumhel
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum,spectrumhel)
+      call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
+  
+    endsubroutine special_calc_spectra
+!***********************************************************************
+    subroutine special_calc_spectra_byte(f,spectrum,spectrumhel,lfirstcall,kind,len)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrumhel
+      logical :: lfirstcall
+      integer(KIND=ikind1), dimension(3) :: kind
+      integer :: len
+
+      !call keep_compiler_quiet(char(kind))
+      call keep_compiler_quiet(len)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum,spectrumhel)
+      call keep_compiler_quiet(lfirstcall)
+      
+    endsubroutine special_calc_spectra_byte
 !***********************************************************************
     subroutine special_before_boundary(f)
 !

@@ -31,35 +31,14 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
+  logical :: lread_add=.true., lwrite_add=.true.
 !
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
-!
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="collect"
 !
-  logical :: lread_add=.true., lwrite_add=.true.
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   contains
@@ -196,7 +175,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -204,17 +183,18 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use Mpicomm, only: globalize_xy, collect_grid
+      use General, only: ioptest
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer,           optional,intent(IN) :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz
+      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=676
-      integer :: pz, pa, io_len, alloc_err, z_start, z_end
+      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size, na, ne
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
@@ -222,12 +202,25 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+!
       if (lroot) then
-        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
+        if (lwrite_2d) then
+          allocate (buffer1D(mxgrid), stat=alloc_err)
+        else
+          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
+        endif
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+        if (lwrite_2d) then
+          io_size=mxgrid*io_len
+        else
+          io_size=mxgrid*mygrid*io_len
+        endif
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=io_size)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -236,17 +229,26 @@ module Io
           if (pz == 0) z_start = 1
           if (pz == nprocz-1) z_end = mz
           ! receive data from the xy-plane of the pz-layer
-          call globalize_xy (a(:,:,z_start:z_end,:), ga(:,:,z_start:z_end,:), source_pz=pz)
+          call globalize_xy (a(:,:,z_start:z_end,na:ne), ga(:,:,z_start:z_end,:), source_pz=pz)
           ! iterate through variables
-          do pa = 1, nv
+          do pa = 1, ne-na+1
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
-              buffer = ga(:,:,iz,pa)
-              write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+              if (lwrite_2d) then
+                buffer1D = ga(:,m1,iz,pa)
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
+              else
+                buffer = ga(:,:,iz,pa)
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+              endif
             enddo
           enddo
         enddo
-        deallocate (ga, buffer)
+        if (lwrite_2d) then
+          deallocate (ga, buffer1D)
+        else
+          deallocate (ga, buffer)
+        endif
 !
       else
         z_start = n1
@@ -254,7 +256,7 @@ module Io
         if (ipz == 0) z_start = 1
         if (ipz == nprocz-1) z_end = mz
         ! send data to root processor
-        call globalize_xy (a(:,:,z_start:z_end,:), dest_proc=-ipz*nprocxy)
+        call globalize_xy (a(:,:,z_start:z_end,na:ne), dest_proc=-ipz*nprocxy)
       endif
 !
       ! write additional data:
@@ -326,7 +328,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -335,6 +337,8 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
+      logical, intent(in), optional :: lfinalize
+      integer, intent(in), optional :: nvar
 !
       call fatal_error ('output_stalker', 'not implemented for "io_collect"', .true.)
 !
@@ -382,9 +386,9 @@ module Io
 !
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz
+      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, z_start, io_len, alloc_err
+      integer :: pz, pa, z_start, io_len, alloc_err, io_size
       integer(kind=8) :: rec_len
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -392,11 +396,21 @@ module Io
       if (present (mode)) lread_add = (mode == 1)
 !
       if (lroot) then
-        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        if (lwrite_2d) then
+          allocate (buffer1D(mxgrid), stat=alloc_err)
+        else
+          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
+        endif
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,buffer', .true.)
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=mxgrid*mygrid*io_len, status='old')
+        if (lwrite_2d) then
+          io_size=mxgrid*io_len
+        else
+          io_size=mxgrid*mygrid*io_len
+        endif
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=io_size, status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
@@ -412,14 +426,23 @@ module Io
           do pa = 1, nv
             ! iterate through xy-planes and read each plane separately
             do iz = z_start, mz
-              read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
-              ga(:,:,iz,pa) = buffer
+              if (lwrite_2d) then
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
+                ga(:,m1,iz,pa) = buffer1D
+              else
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+                ga(:,:,iz,pa) = buffer
+              endif
             enddo
           enddo
           ! distribute data in the xy-plane of the pz-layer
           call localize_xy (a, ga, dest_pz=pz)
         enddo
-        deallocate (ga, buffer)
+        if (lwrite_2d) then
+          deallocate (ga, buffer1D)
+        else
+          deallocate (ga, buffer)
+        endif
 !
       else
         ! receive data from root processor
@@ -912,6 +935,18 @@ module Io
 !
     endfunction init_read_persist
 !***********************************************************************
+    logical function persist_exists(label)
+!
+!  Dummy routine
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = .false.
+!
+    endfunction persist_exists
+!***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
@@ -1242,7 +1277,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals
@@ -1279,7 +1314,7 @@ module Io
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
-        write (lun_output, '(A)') trim (fpart)
+        write (lun_output, '(A,1x,e16.8)') trim (fpart),t
         close (lun_output)
       endif
 !
@@ -1294,16 +1329,18 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write grid coordinates.
 !
 !  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
+      use General, only: loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
@@ -1311,28 +1348,30 @@ module Io
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        if (lroot) then
+          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = real (t)
-      endif
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+          t_sp = real (t)
+        endif
 
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
 
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
 
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+        endif
       endif
 !
     endsubroutine wgrid

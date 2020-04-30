@@ -23,13 +23,18 @@
       real :: t,fac1,fac2,maxval1,maxval2
 !
       character (len=120) :: dir,wfile,rfile1,rfile2
-      character (len=20), parameter :: field='Jrad'
+      character (len=20) :: field
 !
 !  read name of the field (must coincide with file extension)
 !
-      write(*,'(a)',ADVANCE='NO') 'enter name of variable (Jrad): '
-      read*,fac1,fac2
-!     read*,field
+      field = 'Jrad'
+      write(*,'(a)',ADVANCE='NO') 'enter name of variable (e.g. Jrad): '
+      read*,field
+!
+      fac1 = 1.0
+      fac2 = 1.0
+!      write(*,'(a)',ADVANCE='NO') 'enter two factors for multiplication (e.g. 1.0, 1.0): '
+!      read*,fac1,fac2 ! [PABourdin] What is this? Please document and fix above question.
 !
       dir='data/slice_'
       dir='data/proc0/slice_'

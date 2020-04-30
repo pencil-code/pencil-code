@@ -87,7 +87,7 @@ program run
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
-  use Snapshot
+  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap, wsnap_down, output_form
   use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
@@ -133,9 +133,9 @@ program run
 !
   call initialize_messages
 !
-!  Initialize use of multiple special modules.
+!  Initialize use of multiple special modules if relevant.
 !
-!  call initialize_mult_special
+  call initialize_mult_special
 !
 !  Define the lenergy logical
 !
@@ -272,20 +272,6 @@ program run
 !
   call register_gpu(f) 
 !
-!  Only after register it is possible to write the correct dim.dat
-!  file with the correct number of variables
-!
-  if (.not.luse_oldgrid) then
-    call wgrid('grid.dat')
-    call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
-  elseif (lwrite_dim_again) then
-    call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
-  endif
-!
 !  Inform about verbose level.
 !
   if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
@@ -360,12 +346,22 @@ program run
     mvar_io=mvar
   endif
 !
-!  set slots to be written in downsampled f if 0 use mvar_io
+!  set slots to be written in downsampled f, if not specified by input, use mvar_io
 !
   if (ldownsampl) then
-    if (mvar_down<0) mvar_down=mvar
-    if (maux_down<0) maux_down=maux
+    if (mvar_down<0) then
+      mvar_down=mvar
+    else
+      mvar_down=min(mvar,mvar_down)
+    endif  
+    if (maux_down<0) then
+      maux_down=maux
+    else
+      maux_down=min(maux,maux_down)
+    endif
     if (mvar_down+maux_down==0) ldownsampl=.false.
+    if (mvar_down<mvar.and.maux_down>0) &
+      call warning('run','mvar_down<mvar, so no downsampled auxiliaries are output')
   endif
 !
 ! Shall we read also auxiliary variables or fewer variables (ex: turbulence
@@ -383,14 +379,19 @@ program run
 !  With lreset_seed (which is not the default) we can reset the seed during
 !  the run. This is necessary when lreinitialize_uu=T, inituu='gaussian-noise'.
 !
+  call get_nseed(nseed)
   if (lreset_seed) then
     seed(1)=-((seed0-1812+1)*10+iproc_world)
-    call random_seed_wrapper(PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    call random_seed_wrapper(PUT=seed,CHANNEL=2)
   else
-    call get_nseed(nseed)
-    call random_seed_wrapper (GET=seed)
+    call random_seed_wrapper(GET=seed,CHANNEL=1)
     seed = seed0
-    call random_seed_wrapper (PUT=seed)
+    call random_seed_wrapper(PUT=seed,CHANNEL=1)
+!
+    call random_seed_wrapper(GET=seed2,CHANNEL=2)
+    seed2 = seed0
+    call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  Write particle block dimensions to file (may have been changed for better
@@ -420,8 +421,6 @@ program run
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
   if (lpointmasses) call pointmasses_read_snapshot('qvar.dat')
-!
-  call get_nseed(nseed)
 !
 !  Set initial time to zero if requested. This is dangerous, however!
 !  One may forget removing this entry after having set this once.
@@ -506,7 +505,17 @@ program run
     call particles_initialize_modules(f)
   endif
 !
-!  Write data to file for IDL.
+!  Only after register it is possible to write the correct dim.dat
+!  file with the correct number of variables
+!
+  call wgrid('grid.dat')
+  if (.not.luse_oldgrid.or.lwrite_dim_again) then
+    call wdim('dim.dat')
+    if (ip<11) print*,'Lz=',Lz
+    if (ip<11) print*,'z=',z
+  endif
+!
+!  Write data to file for IDL (param2.nml).
 !
   call write_all_run_pars('IDL')
 !
@@ -619,7 +628,7 @@ program run
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
         dt=0.0
-        call read_all_run_pars(logging=.true.)
+        call read_all_run_pars
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
@@ -771,7 +780,7 @@ program run
 !
 !  Add forcing and/or do rescaling (if applicable).
 !
-    if (lforcing) call addforce(f)
+    if (lforcing.and..not.lgpu) call addforce(f)
     if (lparticles_lyapunov) call particles_stochastic
 !    if (lspecial) call special_stochastic
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
@@ -833,12 +842,15 @@ program run
 !
     if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
 !
-!  Save snapshot every isnap steps in case the run gets interrupted.
+!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
 !
-    lsave = control_file_exists('SAVE', DELETE=.true.)
+    if (lout) &
+      lsave = control_file_exists('SAVE', DELETE=.true.)
+
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
+        lsave = .false.
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &

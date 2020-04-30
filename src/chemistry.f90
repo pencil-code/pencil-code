@@ -3088,6 +3088,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion2) then
+            call fatal_error('dchemistry_dt',&
+                'The correction vel. is not properly implemented - pleas fix!')
             do k = 1,nchemspec
               call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
@@ -3223,29 +3225,21 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !
         do ii = 1,nchemspec
-          if (idiag_Ym(ii)/= 0) then
-            call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
-          endif
-          if (idiag_Ymax(ii)/= 0) then
-            call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
-          endif
-          if (idiag_Ymin(ii)/= 0) then
+          call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
+          call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
+          if (idiag_Ymin(ii)/= 0) &
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
-          endif
-          if (idiag_TYm(ii)/= 0) then
+          if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          endif
-          if (idiag_diffm(ii)/= 0) then
+          if (idiag_diffm(ii)/= 0) &
             call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
-          endif
         enddo
 !
-        if (idiag_cpfull /= 0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
-        if (idiag_cvfull /= 0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
+        call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
+        call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
-        if (idiag_lambdam /= 0) call sum_mn_name(lambda_full(l1:l2,m,n), &
-            idiag_lambdam)
-        if (idiag_num /= 0) call sum_mn_name(f(l1:l2,m,n,iviscosity), idiag_num)
+        call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
+        call sum_mn_name(f(l1:l2,m,n,iviscosity), idiag_num)
 !
 !  Sample for hard coded diffusion diagnostics
 !
@@ -3257,8 +3251,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       if (l1davgfirst) then
         do ii = 1,nchemspec
-          if (idiag_Ymz(ii)/= 0) &
-            call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
+          call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
         enddo
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)

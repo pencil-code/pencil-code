@@ -103,6 +103,7 @@ module Sub
   public :: finalize_aver
   public :: meanyz
   public :: calc_all_diff_fluxes
+  public :: calc_slope_diff_flux
   public :: periodic_fold_back
   public :: lower_triangular_index
 !
@@ -4347,17 +4348,22 @@ module Sub
 !  MR: perhaps to be merged with step
 !
 !  23-jan-02/wolf: coded
+!  06-feb-20/MR: smoother for large arguments
 !
       real, dimension(:) :: x
-      real, dimension(size(x,1)) :: der_step,arg
+      real, dimension(size(x)) :: der_step,arg
       real :: x0,width
+!
+      arg = abs((x-x0)/(width+tini))
+      where (abs(arg)>=8.) 
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
-      arg = abs((x-x0)/(width+tini))
-      arg = min(arg,8.)         ! cosh^2(8) = 3e+27
-      der_step = 0.5/(width*cosh(arg)**2)
+        der_step = 2./width*exp(-2.*abs(arg))
+      elsewhere
+        der_step = 0.5/(width*cosh(arg)**2)
+      endwhere
 !
       endfunction der_step
 !***********************************************************************
@@ -4970,7 +4976,7 @@ nameloop: do
       use Mpicomm, only: lroot
       use General, only: random_seed_wrapper
 !
-      integer :: nseed
+      integer, intent(out) :: nseed
 !
       call random_seed_wrapper(SIZE=nseed)
 !
@@ -7126,7 +7132,476 @@ nameloop: do
         endif
 !
     endsubroutine finalize_aver_4D
+!*******************************************************************************
+    subroutine characteristic_speed(f,cmax_im12,cmax_ip12,k)
+!
+!  calculate characteristic speed for slope limited diffusion
+!
+!  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
+
+      intent(in) :: f,k
+      intent(out) :: cmax_im12,cmax_ip12
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: cmax_im12,cmax_ip12
+      integer :: k, ii
+!
+      select case (k)
+        case(1)
+          ! x-direction
+          cmax_im12=sqrt(0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char)))
+
+        case(2)
+          ! y-direction
+! 
+          cmax_im12=sqrt(0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char)))
+
+        case(3)
+!
+          cmax_im12=sqrt(0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char)))
+          cmax_ip12=sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char)))
+!
+        endselect
+    endsubroutine characteristic_speed
 !***********************************************************************
+    subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,nlf,div_flux, &
+                                    heat_sl,heat_sl_type)
+!                                    heat_sl,heat_sl_type,flux_mag)
+!
+!  Calculate diffusiv flux, divergence of diffusiv flux and
+!  the heating (optional) for variables in the f array.
+!  setting heat_sl enable heating calculation 
+!
+!  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
+
+      intent(in) :: f,j,h_slope_limited,nlf
+      intent(out) :: div_flux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: flux_im12,flux_ip12
+      real, dimension (nx) :: div_flux, dens_m1, dens_p1, dens
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
+      real, dimension (nx) :: fim1,fip1,rfac,q1
+      real, dimension (nx) :: cmax_im12,cmax_ip12
+!
+      real, dimension (nx), optional, intent(out) :: heat_sl
+      character(LEN=*), optional, intent(in) :: heat_sl_type
+!
+!      real, dimension (nx,3), optional, intent(out) :: flux_mag
+!
+      real :: nlf, h_slope_limited
+      type (pencil_case), intent(in) :: p
+      integer :: j,k
+
+!
+! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
+!
+        if(present(heat_sl)) heat_sl=0.0
+!        if(present(flux_mag)) flux_mag=0.0
+!
+!  Generate halfgrid points
+!
+      do k=1,3
+!
+        fim1=0.
+        fip1=0.
+        fim12_l=0.
+        fim12_r=0.
+        fip12_l=0.
+        fip12_r=0.
+        cmax_im12=0.
+        cmax_ip12=0.
+!
+        if ((k == 1 .and. nxgrid /= 1) .or. &
+            (k == 2 .and. nygrid /= 1) .or. &
+            (k == 3 .and. nzgrid /= 1)) then
+!
+          call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
+                                   fim1,fip1,k)
+!
+          call characteristic_speed(f,cmax_im12,cmax_ip12,k)
+!
+        endif
+        do ix=1,nx
+          if (j==ilnrho) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
+                     fim1(ix))+tini)
+          else
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+                     fim1(ix))+tini)
+          endif
+          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+        enddo
+        flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
+        do ix=1,nx
+          if (j==ilnrho) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     exp(f(ix+nghost,m,n,j)))+tini)
+          else
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     f(ix+nghost,m,n,j))+tini)
+          endif
+          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+        enddo
+        flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
+!
+!   Flux is defined with a positive sign !!!!
+!   div and heating is then also defined with a positive sign to compensate.
+!
+!
+!   Calculating heating
+!
+        if (present(heat_sl)) then
+
+          select case (heat_sl_type)
+
+            case('viscose')
+!
+!           contribution to visose heating derives from (i: component, j: direction)
+!           rho*u_i*del_j Fij_sld -> del_j (rho*u_i*Fij_sld) - del_j(rho*u_i)*Fij_sld
+!           first term does not contribute to heating
+!           second term correpond to 2nd order gradient of of each rho*u component
+!
+              if (k == 1 .and. nxgrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1-1:l2-1,m,n,irho)
+                  dens_p1=f(l1+1:l2+1,m,n,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1-1:l2-1,m,n,ilnrho))
+                  dens_p1=exp(f(l1+1:l2+1,m,n,ilnrho))
+                endif
+                heat_sl=heat_sl &
+                       +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                           /(x(l1:l2)-x(l1-1:l2-1)) &
+                       +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(x(l1+1:l2+1)-x(l1:l2))
+              endif
+!
+              if (k == 2 .and. nygrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1:l2,m-1,n,irho)
+                  dens_p1=f(l1:l2,m+1,n,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1:l2,m-1,n,ilnrho))
+                  dens_p1=exp(f(l1:l2,m+1,n,ilnrho))
+                endif
+                if (lspherical_coords .or. lcylindrical_coords) then
+                  heat_sl=heat_sl &
+                         +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                             /(x(l1:l2)*(y(m)-y(m-1))) &
+                         +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                             /(x(l1:l2)*(y(m+1)-y(m)))
+                else
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(y(m)-y(m-1)) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(y(m+1)-y(m))
+                endif
+              endif
+!
+              if (k == 3 .and. nzgrid /= 1) then
+                if (ldensity_nolog) then
+                  dens   =f(l1:l2,m,n,irho)
+                  dens_m1=f(l1:l2,m,n-1,irho)
+                  dens_p1=f(l1:l2,m,n+1,irho)
+                else
+                  dens   =exp(f(l1:l2,m,n,ilnrho))
+                  dens_m1=exp(f(l1:l2,m,n-1,ilnrho))
+                  dens_p1=exp(f(l1:l2,m,n+1,ilnrho))
+                endif
+                if (lspherical_coords) then
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(x(l1:l2)*sin(y(m))*(z(n)-z(n-1))) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(x(l1:l2)*sin(y(m))*(z(n+1)-z(n)))
+                else
+                  heat_sl=heat_sl &
+                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
+                                          /(z(n)-z(n-1)) &
+                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
+                                          /(z(n+1)-z(n))
+                endif
+              endif
+!
+            case('none')
+!
+            case default
+              call fatal_error('sub:calc_slope_diff_flux','other heating types not yet implemented')
+!
+          endselect
+        endif
+!
+!      Calculate magnetic diff flux
+!
+!        if (present(flux_mag)) then
+!
+!          flux_mag(:,k)=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+!
+!        endif
+      enddo
+!
+! Now calculate the 2nd order divergence
+!
+!      if (.not.present(flux_mag)) then
+      div_flux=0.0
+      if (nxgrid /= 1) then
+        if (lspherical_coords) then
+          div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                  /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
+        elseif (lcylindrical_coords) then
+          div_flux=div_flux+(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
+                  /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
+        else
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                  /(x12(l1:l2)-x12(l1-1:l2-1))
+        endif
+      endif
+!
+      if (nygrid /= 1) then
+        if (lspherical_coords) then
+          div_flux=div_flux+(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
+                  /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1))+tini)
+!
+        elseif (lcylindrical_coords) then
+          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
+                  /(x(l1:l2)*(y12(m)-y12(m-1)))
+!
+        else
+          div_flux=div_flux+(flux_ip12(:,2)-flux_im12(:,2))&
+                   /(y12(m)-y12(m-1))
+        endif
+      endif
+      if (nzgrid /= 1) then
+        if (lspherical_coords) then
+          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+                  /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
+        else
+
+          div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+                  /(z12(n)-z12(n-1))
+        endif
+      endif
+!      endif
+!
+    endsubroutine calc_slope_diff_flux
+!*******************************************************************************
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
+                                     fip1,k)
+!
+! Reconstruction of a scalar by slope limited linear interpolation
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+!  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
+      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ix
+      real :: tmp0,tmp1,tmp2,tmp3
+!
+! x-component
+!
+      select case (k)
+        case(1)
+          if (j==ilnrho) then
+            do i=l1-1,l2+1
+              ix=i-nghost
+              tmp1=exp(f(i,m,n,j)) -exp(f(i-1,m,n,j))
+              tmp2=exp(f(i+1,m,n,j))-exp(f(i,m,n,j))
+              delfx(ix) = minmod_alt(tmp1,tmp2)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(ix-1)
+              fim12_r(ix) = exp(f(i,m,n,j))-delfx(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))+delfx(ix)
+              fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(ix+1)
+              fim1(ix) = exp(f(i-1,m,n,j))
+              fip1(ix) = exp(f(i+1,m,n,j))
+            enddo
+          else
+            do i=l1-1,l2+1
+              ix=i-nghost
+              tmp1=f(i,m,n,j)-f(i-1,m,n,j)
+              tmp2=f(i+1,m,n,j)-f(i,m,n,j)
+              delfx(ix) = minmod_alt(tmp1,tmp2)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)
+              fim12_r(ix) = f(i,m,n,j)-delfx(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfx(ix)
+              fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)
+              fim1(ix) = f(i-1,m,n,j)
+              fip1(ix) = f(i+1,m,n,j)
+            enddo
+          endif
+!
+! y-component
+!
+        case(2)
+          if (j==ilnrho) then
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
+              tmp1=exp(f(i,m,n,j))   -exp(f(i,m-1,n,j))
+              delfym1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
+              delfy(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+              delfyp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
+              fim12_r(ix) = exp(f(i,m,n,j))  -delfy(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))  +delfy(ix)
+              fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
+              fim1(ix) = exp(f(i,m-1,n,j))
+              fip1(ix) = exp(f(i,m+1,n,j))
+            enddo
+          else
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+              tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+              delfym1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+              delfy(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+              delfyp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+              fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+              fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+              fim1(ix) = f(i,m-1,n,j)
+              fip1(ix) = f(i,m+1,n,j)
+            enddo
+          endif
+!
+! z-component
+!
+        case(3)
+          if (j==ilnrho) then
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
+              tmp1=exp(f(i,m,n,j))-exp(f(i,m,n-1,j))
+              delfzm1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
+              delfz(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+              delfzp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
+              fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
+              fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
+              fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
+              fim1(ix) = exp(f(i,m,n-1,j))
+              fip1(ix) = exp(f(i,m,n+1,j))
+            enddo
+          else
+            do i=l1,l2
+              ix=i-nghost
+              tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+              tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+              delfzm1(ix) = minmod_alt(tmp0,tmp1)
+              tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+              delfz(ix) = minmod_alt(tmp1,tmp2)
+              tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+              delfzp1(ix) = minmod_alt(tmp2,tmp3)
+            enddo
+            do i=l1,l2
+              ix=i-nghost
+              fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+              fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+              fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+              fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+              fim1(ix) = f(i,m,n-1,j)
+              fip1(ix) = f(i,m,n+1,j)
+            enddo
+          endif
+        case default
+          call fatal_error('sub:slope_lim_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine slope_lim_lin_interpol
+!***********************************************************************
+
+    real function minmod_alt(a,b)
+!
+!  minmod=max(0,min(abs(a),sign(1,a)*b))
+!
+      real :: a,b
+!
+      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+!
+    endfunction minmod_alt
+!***********************************************************************
+    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
+!
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12, fip12
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12, fip12
+      integer :: j,k
+
+      select case (k)
+! x-component
+        case(1)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1-1:l2-1,m,n,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1+1:l2+1,m,n,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1-1:l2-1,m,n,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1+1:l2+1,m,n,j))
+          endif
+! y-component
+        case(2)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m-1,n,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m+1,n,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m-1,n,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m+1,n,j))
+          endif
+! z-component
+        case(3)
+          if (j == ilnrho) then
+            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n-1,j)))
+            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n+1,j)))
+          else
+            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n-1,j))
+            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n+1,j))
+          endif
+        case default
+          call fatal_error('sub:calc_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine calc_lin_interpol
+!*******************************************************************************
     subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
 !
 !  Calculates diffusive flux from variable differences diffs acc. to Eqs. (6)-(10) in Rempel (2014).

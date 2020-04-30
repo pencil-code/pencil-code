@@ -434,9 +434,11 @@ module Density
 !
     endsubroutine boussinesq
 !***********************************************************************
-    subroutine inverse_laplacian_z(phi)
+    subroutine inverse_laplacian_z(phi,bctype,bval_bot,bval_top)
 !
 !  10-avr-2012/dintrans: coded
+!         2017/MR: optional parameters for various BCs added
+!                  (not yet used)
 !  Fourth-order in the vertical direction that uses pendag().
 !  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
@@ -444,7 +446,13 @@ module Density
       use Mpicomm, only: transp_xz, transp_zx
       use General, only: pendag
 !
-      real, dimension(nx,ny,nz) :: phi, b1
+      real,                   dimension(nx,ny,nz),      intent(INOUT):: phi
+      character(LEN=labellen),dimension(2),    optional,intent(IN)   :: bctype
+      real,                   dimension(nx,ny),optional,intent(IN)   :: bval_bot,bval_top
+
+      real, dimension(nx,ny,nz) :: b1
+      !real, dimension(nx,ny) :: bval_bot_hat, bval_top_hat
+
       integer, parameter :: nxt = nx / nprocz
       real, dimension(nzgrid,nxt) :: phit, b1t
       real, dimension (nzgrid) :: a_tri, b_tri, c_tri, d_tri, e_tri, r_tri, u_tri
@@ -472,6 +480,10 @@ module Density
 !
       b1 = 0.
       call fourier_transform_xy(phi, b1)
+!
+      !bval_bot_hat = 0.; bval_top_hat = 0.
+      !call fourier_transform_xy(bval_bot, bval_bot_hat)
+      !call fourier_transform_xy(bval_top, bval_top_hat)
 !
 !  Convolution in z
 !
@@ -777,13 +789,31 @@ module Density
 
     endsubroutine impose_density_ceiling
 !***********************************************************************
-    subroutine push2c(p_par)
+    subroutine calc_diagnostics_density(f,p)
 
-      integer, parameter :: npars=1
-      integer(KIND=ikind8), dimension(npars) :: p_par
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
 
-      call keep_compiler_quiet(p_par)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 
-    endsubroutine push2c
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
+    endsubroutine pushpars2c
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Density

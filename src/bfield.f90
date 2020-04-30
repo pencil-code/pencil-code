@@ -666,6 +666,18 @@ module Magnetic
       endif avg1d
 !
     endsubroutine daa_dt
+!******************************************************************************
+    subroutine calc_diagnostics_magnetic(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+!
+      intent(in) :: f, p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_magnetic
 !***********************************************************************
    subroutine magnetic_after_timestep(f,df,dtsub)
 !
@@ -1437,11 +1449,11 @@ module Magnetic
 !
 !  Dummy routine
 !
-      integer :: id
-      logical :: done
+      integer, optional :: id
+      logical, optional :: done
 !
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(done)
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************

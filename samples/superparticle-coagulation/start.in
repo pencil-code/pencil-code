@@ -27,6 +27,10 @@
 &particles_init_pars
   initxxp='random', initvvp='random'
   delta_vp0=0.0
+  lparticlemesh_cic=F
+  lparticlemesh_tsc=F
+  lnocalc_np=T
+  lnocalc_rhop=T
 /
 &particles_radius_init_pars
   initap='lognormal', a0_initdist=10e-6, sigma_initdist=0.2

@@ -32,34 +32,12 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
-!
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
-!
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="collect_xy"
 !
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   contains
@@ -195,7 +173,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -203,9 +181,10 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !   6-mar-2015/MR: changed direct access writing to sequential
 !
+      use General, only: ioptest
       use Mpicomm, only: globalize_xy, collect_grid
 !
-      integer, intent(in) :: nv
+      integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
@@ -213,7 +192,7 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
-      integer :: alloc_err,rec_len,io_len
+      integer :: alloc_err,rec_len,io_len,na,ne
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -223,16 +202,19 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+
       if (lfirst_proc_xy) then
-        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
 !
         ! receive data from the xy-plane of the pz-layer
-        call globalize_xy (a, ga)
+        call globalize_xy (a(:,:,:,na:ne), ga)
 
         if (ldirect_access) then
           inquire (IOLENGTH=io_len) t_sp
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
+          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * (ne-na+1) * io_len
           open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=rec_len)
           write(lun_output, rec=1) ga
           if (lwrite_add) then
@@ -316,7 +298,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -325,6 +307,8 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
+      logical, intent(in), optional :: lfinalize
+      integer, intent(in), optional :: nvar
 !
       call fatal_error ('output_stalker', 'not implemented for "io_collect_xy"', .true.)
 !
@@ -887,6 +871,18 @@ module Io
 !
     endfunction init_read_persist
 !***********************************************************************
+    logical function persist_exists(label)
+!
+!  Dummy routine
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = .false.
+!
+    endfunction persist_exists
+!***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
@@ -1205,7 +1201,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals
@@ -1242,7 +1238,7 @@ module Io
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
-        write (lun_output, '(A)') trim (fpart)
+        write (lun_output, '(A,1x,e16.8)') trim (fpart), t
         close (lun_output)
       endif
 !
@@ -1257,7 +1253,7 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write grid coordinates.
 !
@@ -1265,9 +1261,11 @@ module Io
 !
       use Mpicomm, only: collect_grid
       use File_IO, only: delete_file
+      use General, only: loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
@@ -1275,29 +1273,31 @@ module Io
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        if (lroot) then
+          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        call delete_file(trim(directory_collect)//'/'//file)
-        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='new')
-        t_sp = real (t)
-      endif
+          call delete_file(trim(directory_collect)//'/'//file)
+          open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='new')
+          t_sp = real (t)
+        endif
 
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
 
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
 
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+        endif
       endif
 !
     endsubroutine wgrid

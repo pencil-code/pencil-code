@@ -270,7 +270,7 @@ module Particles_main
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
-      if (lparticles_grad) call set_particle_grad(f,fp,1,npar_loc,init=.true.)
+      if (lparticles_grad) call set_particle_grad(f,fp,1,npar_loc,ineargrid,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
       if (lparticles_density)       call init_particles_density(f,fp)
       call init_particles(f,fp,ineargrid)

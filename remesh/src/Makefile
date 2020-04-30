@@ -29,10 +29,12 @@ FFLAGS_GENERAL=
 # Default double flags (can be overwritten in machine-specific section).
 #
 FFLAGS_DOUBLE = -r8
+#FFLAGS_DOUBLE = -fdefault-real-8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
+
 MPICOMM   = mpicomm_
 LDMPI=
 
@@ -40,12 +42,8 @@ include Makefile.inc  ## needed ?
 
 ## Default settings
 FC=f90
-FFLAGS=-O3
+FFLAGS=-O1
 CFLAGS=-O3 -DFUNDERSC=1
-
-ifeq ($(REAL_PRECISION),double)
-  FFLAGS := $(FFLAGS) $(FFLAGS_DOUBLE) 
-endif
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -197,7 +195,7 @@ endif
 ## do first "module load intel" 
 ##
 #FC=ifort #(sisu*)
-#FFLAGS=-O3 #(sisu*)
+#FFLAGS=-O1 #(sisu*)
 #CC=icc #(sisu*)
 #CFLAGS=  #(sisu*)
 #LD_MPI=  #(sisu*)
@@ -209,6 +207,7 @@ endif
 ##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
 ##FFLAGS=-O3 -ffree -e m  #(sisu*)
 ##FFLAGS_DOUBLE=-s default64 #(sisu*)
+##FFLAGS_DOUBLE=-r8 #(sisu*)
 ##CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Hermit - CrayXE6 - (Stuttgart)
@@ -258,6 +257,10 @@ endif
 ### End machine dependent
 
 
+ifeq ($(REAL_PRECISION),double)
+  FFLAGS := $(FFLAGS) $(FFLAGS_DOUBLE) 
+endif
+
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 
@@ -282,7 +285,7 @@ code:
 	make remesh.x
 #	make remesh.x remesh_ext.x
 
-technical=cparam.o cdata.o common.o
+technical=cparam.o cdata.o common.o syscalls.o syscalls_ansi.o general.o
 remesh=remesh.o $(technical)
 #remesh_ext=remesh_ext.o $(technical)
 
@@ -297,7 +300,10 @@ remesh.o:    remesh.f90 common.local $(technical)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
-common.o:     common.f90 common.local cdata.o cparam.o
+common.o:    common.f90 common.local cdata.o cparam.o
+syscalls.o:  syscalls.f90 syscalls_ansi.o
+syscalls_ansi.o:  syscalls_ansi.c
+general.o:   general.f90 cdata.o cparam.o syscalls.o
 #deriv.o:     deriv.f90 cdata.o
 
 # Clean up, but leave makefile and TAGS

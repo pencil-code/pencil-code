@@ -130,7 +130,7 @@ program pc_collect
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
 !
-!  Allow modules to do any physics modules do parameter dependent
+!  Allow all physics modules to do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !

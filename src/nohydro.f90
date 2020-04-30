@@ -45,7 +45,7 @@ module Hydro
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
-  real :: ampl_fcont_uu=1.
+  real :: ampl_fcont_uu=1., w_sld_cs=0.0
   logical :: lforcing_cont_uu=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
@@ -242,6 +242,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
+      integer :: kk
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p
@@ -343,6 +344,28 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
+    subroutine calc_diagnostics_hydro(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_hydro
+!******************************************************************************
+    subroutine df_diagnos_hydro(df,p)
+
+      use Diagnostics, only: sum_mn_name
+
+      type(pencil_case), intent(in) :: p
+      real, dimension(:,:,:,:) :: df
+
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+
+    endsubroutine df_diagnos_hydro
+!***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !
 !   1-jul-08/axel: dummy
@@ -379,9 +402,15 @@ module Hydro
 !  dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
 !
       call keep_compiler_quiet(f)
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+           f(:,:,:,isld_char)=0.
+     endif
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -772,22 +801,6 @@ module Hydro
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-    subroutine input_persistent_hydro(id,done)
-!
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
-!
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(done)
-!
-    endsubroutine input_persistent_hydro
-!***********************************************************************
-    logical function output_persistent_hydro()
-!
-      output_persistent_hydro = .false.
-!
-    endfunction output_persistent_hydro
-!***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
       integer, intent(out) :: iostat
@@ -819,6 +832,22 @@ module Hydro
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_hydro_run_pars
+!***********************************************************************
+    subroutine input_persistent_hydro(id,done)
+!
+      integer, optional :: id
+      logical, optional :: done
+!
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    logical function output_persistent_hydro()
+!
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !

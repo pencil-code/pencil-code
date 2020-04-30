@@ -129,7 +129,6 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!
       do j=1,ninit
         select case (initss(j))
 !
@@ -216,6 +215,16 @@ module Energy
       call keep_compiler_quiet(bij)
 !
     endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(f,p)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_energy
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !

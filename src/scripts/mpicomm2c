@@ -1,0 +1,4 @@
+rm -f mpicomm_c.h
+echo '# define finalize_isendrcv_bdry '$MODULE_PREFIX'mpicomm'$MODULE_INFIX'finalize_isendrcv_bdry'$MODULE_SUFFIX >> mpicomm_c.h
+echo 'extern "C" void *finalize_isendrcv_bdry(REAL *f, int *iarg1, int *iarg2);' >> mpicomm_c.h
+

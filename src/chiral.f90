@@ -47,17 +47,18 @@ module Chiral
        xposXX_chiral,yposXX_chiral,zposXX_chiral, &
        xposYY_chiral,yposYY_chiral,zposYY_chiral
 !
-  real :: chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
+  real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
+  logical :: lupw_chiral=.false.
 !
   namelist /chiral_run_pars/ &
-       chiral_diff,chiral_crossinhibition,chiral_fidelity, &
-       chiral_reaction,limposed_gradient,gradX0,gradY0, &
-       chiral_fishernu, chiral_fisherk, &
-       llorentzforceEP, &
+       chiral_diffXX, chiral_diff, chiral_crossinhibition, chiral_fidelity, &
+       chiral_reaction, limposed_gradient, gradX0, gradY0, &
+       chiral_fishernu, chiral_fisherK, &
+       lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
 !
@@ -98,7 +99,12 @@ module Chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  set to zero and then call the same initial condition
+!  default: chiral_diffXX=chiral_diff
+!
+      if (chiral_diffXX==impossible) chiral_diffXX=chiral_diff
+      if (headt) print*,'chiral_diffXX,chiral_diff=',chiral_diffXX,chiral_diff
+!
+!  set f to zero and then call the same initial condition
 !  that was used in start.csh
 !
       call keep_compiler_quiet(f)
@@ -165,6 +171,7 @@ module Chiral
         case ('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
+        case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral)
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
 !
@@ -173,6 +180,32 @@ module Chiral
       if (linitial_condition) call initial_condition_chiral(f)
 !
     endsubroutine init_chiral
+!***********************************************************************
+    subroutine chiral_list(fact,f,i)
+!
+!  Read intial conditions from file
+!
+!  13-apr-20/axel: coded
+!
+      integer :: nrow, irow, ix, iy, i, l, m, n=1
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl, fact
+!
+      open(1,file='chiral_list.dat')
+      read(1,*) nrow
+      do irow=1,nrow
+        read(1,*) ix,iy,ampl
+        if (ix/nx==ipx.and.iy/ny==ipy) then
+          l=l1+mod(ix,nx)
+          m=m1+mod(iy,ny)
+          n=n1
+          print*,'AXEL: ',ix,iy,ipx,ipy,l,m
+          f(l,m,n,i)=f(l,m,n,i)+fact*ampl
+        endif
+      enddo
+      close(1)
+!
+    endsubroutine chiral_list
 !***********************************************************************
     subroutine pencil_criteria_chiral()
 !
@@ -271,8 +304,10 @@ module Chiral
 !
 !  advection term
 !
-      call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
-      call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
+      !call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
+      !call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
+      call u_dot_grad(f,iXX_chiral,gXX_chiral,p%uu,ugXX_chiral,UPWIND=lupw_chiral)
+      call u_dot_grad(f,iYY_chiral,gYY_chiral,p%uu,ugYY_chiral,UPWIND=lupw_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
 !
@@ -280,8 +315,8 @@ module Chiral
 !
       call del2(f,iXX_chiral,del2XX_chiral)
       call del2(f,iYY_chiral,del2YY_chiral)
-      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diff*del2XX_chiral
-      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff*del2YY_chiral
+      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diffXX*del2XX_chiral
+      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff  *del2YY_chiral
 !
 !  For Euler Potentials, possibility to add Lorentz force
 !
@@ -347,6 +382,16 @@ module Chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
 !
+      case('SIR')
+      if (headtt) print*,"chiral_reaction='SIR equation'"
+      if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
+      XX_chiral=f(l1:l2,m,n,iXX_chiral)
+      YY_chiral=f(l1:l2,m,n,iYY_chiral)
+      dXX_chiral=-chiral_fishernu*XX_chiral*YY_chiral
+      dYY_chiral=+chiral_fishernu*XX_chiral*YY_chiral-chiral_fisherK*YY_chiral
+      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
+      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
+!
       case ('nothing')
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
 !
@@ -360,7 +405,7 @@ module Chiral
 !  For the timestep calculation, need maximum diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chiral=chiral_diff*dxyz_2
+        diffus_chiral=max(chiral_diffXX,chiral_diff)*dxyz_2
         if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
                                       maxval(diffus_chiral)
         maxdiffus=max(maxdiffus,diffus_chiral)

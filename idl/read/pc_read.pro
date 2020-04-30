@@ -25,6 +25,8 @@
 ;       Az = pc_read ('az', processor=2) ;; read data of processor 2
 ;       ux = pc_read ('ux', start=[47,11,13], count=[16,8,4]) ;; read subvolume
 ;       aa = pc_read ('aa') ;; read all three components of a vector-field
+;       xp = pc_read ('part/xp', file='pvar.h5') ;; get x position of particles
+;       ID = pc_read ('stalker/ID', file='PSTALK0.h5') ;; stalker particle IDs
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
@@ -36,11 +38,15 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 
 	common pc_read_common, file
 
-	vectors = [ 'aa', 'uu', 'bb', 'jj' ]
-	vector = where (vectors eq strlowcase (quantity))
-	if (vector[0] ge 0) then begin
-		quantity = strmid (quantity, 0, strlen (quantity) - 1) + [ 'x', 'y', 'z' ]
-	end
+	vectors = [ '^aa$', '^uu$', '^bb$', '^jj$']   ;, '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
+	vector = [] & quantity=strtrim(quantity,2)
+	for i=0,n_elements(vectors)-1 do $
+                if stregex(quantity,vectors[i],/bool) then vector=[vector,i]
+	if is_defined(vector) then begin
+                numpos = stregex(quantity,'[1-9]')
+                if numpos ge 0 then quantity = strmid(quantity,0,numpos)+strtrim(string((fix(strmid(quantity,numpos))-1)/3+1),2)
+		quantity = strmid(quantity,1,1) + [ 'x', 'y', 'z' ]
+	endif
 
 	num_quantities = n_elements (quantity)
 	if (num_quantities gt 1) then begin
@@ -76,18 +82,12 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 	end else begin
 		if (not keyword_set (file)) then begin
 			; no file is open
-			if (not keyword_set (datadir)) then datadir = pc_get_datadir (datadir)
-			if (file_test (datadir+'/allprocs/var.h5')) then begin
-				filename = 'var.h5'
-				file = datadir+'/allprocs/var.h5'
-			end else begin
-				; no HDF5 file found
-				if (not file_test (datadir+'/proc0/var.dat') and not file_test (datadir+'/allprocs/var.dat')) then begin
-					message, 'pc_read: ERROR: please either give a filename or open a HDF5 file!'
-				end
+                        filename=identify_varfile(path=file)
+			if strpos(filename,'.h5') eq -1 then begin
+                                undefine, file
 				; read old file format
 				return, pc_read_old (quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
-			end
+                        endif
 		end
 	end
 

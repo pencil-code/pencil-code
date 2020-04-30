@@ -69,7 +69,7 @@ module Slices_methods
     use General, only: ioptest
 !
     type (slice_data)             , intent(INOUT):: slices
-    real, dimension(:,:,:), target, intent(OUT)  :: xy,xz,yz,xy2,xy3,xy4,xz2
+    real, dimension(:,:,:), target, intent(IN)   :: xy,xz,yz,xy2,xy3,xy4,xz2
     integer, optional             , intent(IN)   :: ncomp
 
     integer :: nc
@@ -94,24 +94,31 @@ module Slices_methods
 
     endsubroutine assign_slices_sep_vec
 !***********************************************************************
-    subroutine assign_slices_f_scal(slices,f,ind)
+    subroutine assign_slices_f_scal(slices,f,ind1,ind2)
 !
 !  Copying of scalar data from f-array to arrays assigned to the slice pointers 
 !  according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
+!  28-may-19/MR: added optional argument ind2
 !
+      use General, only: ioptest
+
       type (slice_data)          , intent(OUT):: slices
       real, dimension(mx,my,mz,*), intent(IN) :: f
-      integer                    , intent(IN) :: ind
+      integer                    , intent(IN) :: ind1
+      integer         , optional , intent(IN) :: ind2
 
-      if (lwrite_slice_yz)  slices%yz =f(ix_loc,m1:m2  ,n1:n2  ,ind)
-      if (lwrite_slice_xz)  slices%xz =f(l1:l2 ,iy_loc ,n1:n2  ,ind)
-      if (lwrite_slice_xy)  slices%xy =f(l1:l2 ,m1:m2  ,iz_loc ,ind)
-      if (lwrite_slice_xy2) slices%xy2=f(l1:l2 ,m1:m2  ,iz2_loc,ind) 
-      if (lwrite_slice_xy3) slices%xy3=f(l1:l2 ,m1:m2  ,iz3_loc,ind)
-      if (lwrite_slice_xy4) slices%xy4=f(l1:l2 ,m1:m2  ,iz4_loc,ind)
-      if (lwrite_slice_xz2) slices%xz2=f(l1:l2 ,iy2_loc,n1:n2  ,ind) 
+      integer :: ind2_
+
+      ind2_=ioptest(ind2,ind1)
+      if (lwrite_slice_yz)  slices%yz =f(ix_loc,m1:m2  ,n1:n2  ,ind1) !:ind2_)
+      if (lwrite_slice_xz)  slices%xz =f(l1:l2 ,iy_loc ,n1:n2  ,ind1) !:ind2_)
+      if (lwrite_slice_xy)  slices%xy =f(l1:l2 ,m1:m2  ,iz_loc ,ind1) !:ind2_)
+      if (lwrite_slice_xy2) slices%xy2=f(l1:l2 ,m1:m2  ,iz2_loc,ind1) !:ind2_) 
+      if (lwrite_slice_xy3) slices%xy3=f(l1:l2 ,m1:m2  ,iz3_loc,ind1) !:ind2_)
+      if (lwrite_slice_xy4) slices%xy4=f(l1:l2 ,m1:m2  ,iz4_loc,ind1) !:ind2_)
+      if (lwrite_slice_xz2) slices%xz2=f(l1:l2 ,iy2_loc,n1:n2  ,ind1) !:ind2_) 
 
       slices%ready=.true.
 

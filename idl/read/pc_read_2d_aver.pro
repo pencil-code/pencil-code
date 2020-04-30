@@ -25,7 +25,8 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write, single=single
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, $
+    write=write, single=single, dim=dim, grid=grid
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -90,35 +91,44 @@ COMPILE_OPT IDL2,HIDDEN
   default, xtitle, 'x'
   default, ytitle, dir eq 'y' ? 'z' : 'y'
 ;
+  if (size (grid, /type) eq 0) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+;
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+dir+'.h5')) then begin
     message, "pc_read_2d_aver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
     last = pc_read ('last', filename=dir+'.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
-    times = pc_read (groups+'/time')
+    times = pc_read (groups[0]+'/time')
+    for it=1, last do times=[times,pc_read(groups[it]+'/time')]
     in = (where (times ge tmin))[0:*:njump]
     num = n_elements (in)
     if (num le 0) then message, 'pc_read_2d_aver: ERROR: "'+h5_file+'" no data available after given "tmin"!'
     groups = groups[in]
     times = times[in]
     if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
-    found = where (strlowcase (vars) ne 'time', num)
+    found = where (strlowcase (vars) ne 'time', numb)
     vars = vars[found]
-    object = { t:times, last:last, pos:1+long (groups), num_quantities:num, labels:vars }
+    object = { t:times, last:last, pos:1+long (groups), num_quantities:numb, labels:vars }
+    object = create_struct (object, 'x', grid.x[dim.l1:dim.l2])
+;
+; Note: dir is the direction of averaging, hence for dir='z', the second variable is y,
+;       for dir='y', the second variable is z.
+;
     if (dir eq 'z') then begin
-      object = create_struct (object, 'z', grid.z[dim.n1:dim.n2])
-    end else if (dir eq 'y') then begin
       object = create_struct (object, 'y', grid.y[dim.m1:dim.m2])
-    end else begin
-      object = create_struct (object, 'x', grid.x[dim.l1:dim.l2])
+    end else if (dir eq 'y') then begin
+      object = create_struct (object, 'z', grid.z[dim.n1:dim.n2])
     end
-    for pos = 0, num-1 do begin
-      object = create_struct (object, vars[pos], pc_read (groups+'/'+vars[pos]))
+    for pos = 0, numb-1 do begin
+       variable=pc_read (groups[0]+'/'+vars[pos])
+       variable=spread(variable,2,num)
+       for it=1, num-1 do variable[*,*,it]=pc_read (groups[it]+'/'+vars[pos])
+      object = create_struct (object, vars[pos], variable)
     end
     h5_close_file
     return
   end
+
 ;
   if strpos(varfile,'0.dat') ge 0 then begin
     default, in_file, dir+'aver0.in'
@@ -148,14 +158,6 @@ COMPILE_OPT IDL2,HIDDEN
     if tag_exists(par,'LYINYANG') then $
       if (par.lyinyang) then yinyang=1
   endif
-  if (readgrid or (xshift ne 0)) then begin
-    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
-    xax=grid.x
-    if (dir eq 'y') then $
-      yax=grid.z $
-    else $
-      yax=grid.y
-  endif
 ;
 ;  Some z-averages are erroneously calculated together with time series
 ;  diagnostics. The proper time is thus found in time_series.dat.
@@ -176,6 +178,25 @@ COMPILE_OPT IDL2,HIDDEN
     ny=locdim.ny
     nygrid=dim.ny
   endelse
+
+  nycap=0
+
+  if (readgrid or (xshift ne 0) or yinyang) then begin
+    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+    xax=grid.x
+    if (dir eq 'y') then $
+      yax=grid.z $
+    else $
+      yax=grid.y
+
+    if yinyang then begin
+      nycap=floor(grid.y[0]/grid.dy)-1
+      yintl=reverse(yax[0]-grid.dy*(indgen(nycap)+1))       ; only valid fo requidistant grid
+      yinto=yax[nygrid-1]+grid.dy*(indgen(nycap)+1)
+      yax=[yintl,yax,yinto]
+    endif
+
+  endif
 ;
 ;  Read variables from '*aver.in' file
 ;
@@ -234,7 +255,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Define filenames to read data from - either from a single processor or
 ;  from all of them.
 ;
-  nycap=0
   if ((ipxread eq -1) and (ipyread eq -1)) then begin
     nxg = nxgrid
     if (dir eq 'y') then begin
@@ -246,14 +266,13 @@ COMPILE_OPT IDL2,HIDDEN
       ipxarray = indgen(nprocx*nprocy) mod nprocx
       ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
       iproc = ipxarray+ipyarray*nprocx
-      nyg = nygrid
       if yinyang then begin
         ncpus=nprocx*nprocy*nprocz
         iproc=[iproc,ncpus+indgen(nprocx),2*ncpus-nprocx+indgen(nprocx)]
         ipxarray=[ipxarray,indgen(nprocx),indgen(nprocx)]
-        nycap=fix(nygrid/2.-1)
-        nyg+=2*nycap
-      endif
+        nyg=nygrid+2*nycap
+      endif else $
+        nyg=nygrid
     end
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
   endif else begin
@@ -304,6 +323,7 @@ COMPILE_OPT IDL2,HIDDEN
     close, lun
     free_lun, lun
     nit=dummy_int-1
+    if nit le 0 then message, 'Error: Supposedly no averages existent'
   endif
 ;
   if (nit gt 0) then begin
@@ -319,8 +339,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     tt=fltarr(nret)*one
 ;
-  endif else $
-    message, 'Error: Supposedly no averages existent'
+  endif
 ;
 ;  Define axes (default to indices if no axes are supplied).
 ;
@@ -395,7 +414,6 @@ COMPILE_OPT IDL2,HIDDEN
 
       ipx=ipxarray[ip]
       iye=iya+nyl-1
-
       openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
       it=0 & nread=0 & filepos=-1.d0
 
@@ -687,8 +705,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;  of data that should be saved.
 ;
   if (nit ne 0) then begin
-    makeobject="object = create_struct(name=objectname,['t'," + $
-        arraytostring(variables,quote="'",/noleader) + "],"+"tt,"+$
+    if (yinyang) then begin 
+      coornames="'r','theta',"
+      coors="xax,yax,"
+    endif else begin
+      coornames="" & coors=""
+    endelse
+
+    makeobject="object = create_struct(name=objectname,['t',"+coornames + $
+        arraytostring(variables,quote="'",/noleader) + "],"+"tt,"+coors+$
         arraytostring(variables,/noleader) + ")"
 ;
     if (execute(makeobject) ne 1) then begin

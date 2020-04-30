@@ -37,6 +37,11 @@ module Magnetic
   include 'record_types.h'
   include 'magnetic.h'
 !
+  interface input_persistent_magnetic
+     module procedure input_persist_magnetic_id
+     module procedure input_persist_magnetic
+  endinterface
+!
 ! Slice precalculation buffers
 !
   real, target, dimension (nx,ny,3) :: bb_xy,jj_xy
@@ -2742,15 +2747,17 @@ module Magnetic
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
-    subroutine input_persistent_magnetic(id,lun,done)
+    subroutine input_persist_magnetic_id(id,done)
 !
 !  Read in the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing
 !
-!   5-apr-08/axel: adapted from input_persistent_forcing
+!   5-apr-08/axel: adapted from input_persist_forcing
 !  01-Jun-2015/Bourdin.KIS: reworked
 !
-      integer :: id,lun
+      use IO, only: read_persist
+!
+      integer :: id
       logical :: done
 !
       select case (id)
@@ -2762,7 +2769,25 @@ module Magnetic
           done = .true.
       endselect
 !
-    endsubroutine input_persistent_magnetic
+    endsubroutine input_persist_magnetic_id
+!***********************************************************************
+    subroutine input_persist_magnetic()
+!
+!  Read in the stored phase and amplitude for the correction of the Beltrami wave forcing.
+!
+!  13-Oct-2019/PABourdin: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('MAGNETIC_PHASE', phase_beltrami)
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: phase_beltrami = ', phase_beltrami
+!
+      error = read_persist ('MAGNETIC_AMPL', ampl_beltrami)
+      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ampl_beltrami = ', ampl_beltrami
+!
+    endsubroutine input_persist_magnetic
 !***********************************************************************
     logical function output_persistent_magnetic(lun)
 !

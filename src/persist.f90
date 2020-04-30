@@ -26,6 +26,11 @@ module Persist
 !
   include 'record_types.h'
 !
+  interface input_persistent_general
+     module procedure input_persist_general_by_id
+     module procedure input_persist_general_by_label
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine input_persistent(file)
@@ -36,7 +41,7 @@ module Persist
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added input_persistent_magnetic
 !
-      use IO, only: init_read_persist, read_persist_id
+      use IO, only: init_read_persist, read_persist_id, IO_strategy
       use Hydro, only: input_persistent_hydro
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
@@ -48,6 +53,16 @@ module Persist
       logical :: done
 !
       if (lroot .and. (ip <= 8)) print *, 'input_persistent: START '//trim (file)
+!
+      if (IO_strategy == 'HDF5') then
+        if (.not. read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) return
+        call input_persistent_general
+        call input_persistent_hydro
+        call input_persistent_interstellar
+        call input_persistent_forcing
+        call input_persistent_magnetic
+        return
+      endif
 !
       if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
         if (.not. present (file)) return
@@ -119,31 +134,67 @@ module Persist
 !
     endsubroutine output_persistent
 !***********************************************************************
-    subroutine input_persistent_general(id,done)
+    subroutine input_persist_general_by_id(id,done)
 !
 !  Reads seed from a snapshot.
+!  A read is performed depending on id
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed
+      use Cdata, only: seed, nseed, ichannel1, ichannel2
       use General, only: random_seed_wrapper
       use IO, only: read_persist
 !
+      integer :: ichannel
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
       select case (id)
         case (id_record_RANDOM_SEEDS)
-          call random_seed_wrapper (GET=seed)
+          call random_seed_wrapper (GET=seed,CHANNEL=1)
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
-          call random_seed_wrapper (PUT=seed)
+          call random_seed_wrapper (PUT=seed,CHANNEL=1)
+          done = .true.
+        case (id_record_RANDOM_SEEDS2)
+          call random_seed_wrapper (GET=seed2,CHANNEL=2)
+          if (read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) return
+          call random_seed_wrapper (PUT=seed2,CHANNEL=2)
           done = .true.
         case (id_record_SHEAR_DELTA_Y)
           if (read_persist ('SHEAR_DELTA_Y', deltay)) return
           done = .true.
       endselect
 !
-    endsubroutine input_persistent_general
+    endsubroutine input_persist_general_by_id
+!***********************************************************************
+    subroutine input_persist_general_by_label()
+!
+!  Reads seed from a snapshot.
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!
+      use Cdata, only: seed, nseed, ichannel1, ichannel2
+      use General, only: random_seed_wrapper
+      use IO, only: persist_exists, read_persist
+!
+      integer :: ichannel
+      logical :: error
+!
+      if (persist_exists ('RANDOM_SEEDS')) then
+        call random_seed_wrapper (GET=seed,CHANNEL=1)
+        error = read_persist ('RANDOM_SEEDS', seed(1:nseed))
+        if (.not. error) call random_seed_wrapper (PUT=seed)
+      endif
+!
+      if (persist_exists ('RANDOM_SEEDS2')) then
+        call random_seed_wrapper (GET=seed2,CHANNEL=2)
+        error = read_persist ('RANDOM_SEEDS2', seed2(1:nseed))
+        if (.not. error) call random_seed_wrapper (PUT=seed2)
+      endif
+!
+      error = read_persist ('SHEAR_DELTA_Y', deltay)
+!
+    endsubroutine input_persist_general_by_label
 !***********************************************************************
     logical function output_persistent_general()
 !
@@ -151,16 +202,24 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, lshear, deltay
+      use Cdata, only: seed, nseed, ichannel1, ichannel2, lshear, deltay
       use General, only: random_seed_wrapper
       use IO, only: write_persist
+!
+      integer :: ichannel
 !
       output_persistent_general = .false.
 !
       ! Don't write the seeds, if they are unchanged from their default value.
-      call random_seed_wrapper (GET=seed)
+      call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
+            output_persistent_general = .true.
+      endif
+!
+      call random_seed_wrapper (GET=seed2,CHANNEL=2)
+      if (any (seed2(1:nseed) /= seed0)) then
+        if (write_persist ('RANDOM_SEEDS2', id_record_RANDOM_SEEDS2, seed2(1:nseed))) &
             output_persistent_general = .true.
       endif
 !

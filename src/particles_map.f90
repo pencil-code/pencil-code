@@ -1343,9 +1343,9 @@ module Particles_map
 !
       real, dimension(nx) :: rhop_swarm_mn
       real :: weight0, weight, weight_x, weight_y, weight_z
-      integer :: k, ix0, iy0, iz0, ixx, iyy, izz
-      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
-      logical :: lsink, lmapsink
+      integer :: ik, k, ix0, iy0, iz0, ixx, iyy, izz
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm, iapn_ik
+      logical :: lsink, lmapsink, max_iapn_use
 !
 !  Possible to map sink particles by temporarily switching irhop to irhops.
 !
@@ -1368,6 +1368,151 @@ module Particles_map
           f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
         enddo
       endif
+!
+!  Calculate the number of particles in each grid cell, for each particle size.
+!
+      max_iapn_use=.false.
+      loop_ap: do ik=1,ndustrad
+        if ( iapn(ik) /=0 ) then
+          f(:,:,:,iapn(ik))=0.0
+          max_iapn_use=.true.
+        else
+          max_iapn_use=.false.
+        endif
+      enddo loop_ap
+!
+      calculate__np_ap_spec: if ( max_iapn_use ) then
+        if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!
+          do k=1,npar_loc
+!
+            call map_xxp_grid__loop_ap(fp,k,iapn_ik)
+!
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            ixx0=ix0; iyy0=iy0; izz0=iz0
+            ixx1=ix0; iyy1=iy0; izz1=iz0
+            if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+            if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+            if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+            if (nxgrid/=1) ixx1=ixx0+1
+            if (nygrid/=1) iyy1=iyy0+1
+            if (nzgrid/=1) izz1=izz0+1
+!
+            weight0=1.0
+!
+            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
+              weight=weight0
+              if (nxgrid/=1) then
+                weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
+                weight=weight*weight_x
+              endif
+              if (nygrid/=1) then
+                weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
+                weight=weight*weight_y
+              endif
+              if (nzgrid/=1) then
+                weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
+                weight=weight*weight_z
+              endif
+!
+              f(ixx,iyy,izz,iapn_ik)=f(ixx,iyy,izz,iapn_ik) + weight
+!
+            enddo; enddo; enddo
+          enddo
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+        elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+          do k=1,npar_loc
+!
+            call map_xxp_grid__loop_ap(fp,k,iapn_ik)
+!
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            if (nxgrid/=1) then
+              ixx0=ix0-1; ixx1=ix0+1
+            else
+              ixx0=ix0  ; ixx1=ix0
+            endif
+            if (nygrid/=1) then
+              iyy0=iy0-1; iyy1=iy0+1
+            else
+              iyy0=iy0  ; iyy1=iy0
+            endif
+            if (nzgrid/=1) then
+              izz0=iz0-1; izz1=iz0+1
+            else
+              izz0=iz0  ; izz1=iz0
+            endif
+!
+            weight0=1.0
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+              if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                   0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+              else
+                if (nxgrid/=1) &
+                    weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+              endif
+              if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                   0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+              else
+                if (nygrid/=1) &
+                    weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+              endif
+              if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                   0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+              else
+                if (nzgrid/=1) &
+                    weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+              endif
+!
+              weight=weight0
+!
+              if (nxgrid/=1) weight=weight*weight_x
+              if (nygrid/=1) weight=weight*weight_y
+              if (nzgrid/=1) weight=weight*weight_z
+!
+              f(ixx,iyy,izz,iapn_ik)=f(ixx,iyy,izz,iapn_ik) + weight
+!
+            enddo; enddo; enddo
+          enddo
+!
+!  Nearest Grid Point (NGP) method.
+!
+        else
+          do k=1,npar_loc
+!
+            call map_xxp_grid__loop_ap(fp,k,iapn_ik)
+!
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+!
+            f(ix0,iy0,iz0,iapn_ik)=f(ix0,iy0,iz0,iapn_ik) + 1.0
+!
+          enddo
+        endif
+!
+!  Fold first ghost zone of f.
+!
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) then
+          do ik=1,ndustrad
+            call fold_f(f,iapn(ik),iapn(ik))
+          enddo
+        endif
+      end if calculate__np_ap_spec
 !
 !  Calculate the smooth number of particles in each grid cell. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -1632,6 +1777,29 @@ module Particles_map
       if (lmapsink) irhop=irhopm
 !
     endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine map_xxp_grid__loop_ap(fp,k,index)
+!
+!  Find the radius bin of particle(k):
+!
+!  10-mar-20/christer: coded
+!
+      use SharedVariables, only: get_shared_variable
+      integer, intent(in) :: k
+      integer, intent(out) :: index
+      integer :: ik,ierr
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, pointer :: ap0(:)
+!
+      call get_shared_variable('ap0',ap0,ierr)
+      loop_ap__cic:do ik=1,ndustrad
+        if ((fp(k,iap) > ap0(ik)*0.99) .and. (fp(k,iap) < ap0(ik)*1.01)) then
+          index = iapn(ik)
+          exit loop_ap__cic
+        endif
+      enddo loop_ap__cic
+!
+    endsubroutine map_xxp_grid__loop_ap
 !***********************************************************************
     subroutine map_vvp_grid(f,fp,ineargrid)
 !
@@ -1945,7 +2113,7 @@ module Particles_map
 !
         if (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)) then
           call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
-            interp%pol_uu)
+              interp%pol_uu)
         else
           interp_uu=0.0
         endif
@@ -2008,10 +2176,6 @@ module Particles_map
            do k=k1,k2
               interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
            enddo
-           if (lsolid_ogrid) then
-                 call interp_field_pencil_wrap(f,iTT+1,iTT+mogaux,&
-                      fp,ineargrid,interp_gradTT,interp%pol_TT)
-           endif
         endif
       endif
 !
@@ -2225,11 +2389,14 @@ module Particles_map
         rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
              +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
         do k=k1_imn(imn),k2_imn(imn)
-           if(rp2(k)>r2_ogrid) then
-              if(iTT > 0 .or. i1<=iTT) then
+          if(rp2(k)>r2_ogrid) then
+!
+!  NILS: Commented out the line below  since we should enter here even
+!  NILS: when iTT=0 (e.g. for interpolation of velocity).
+!              if(iTT > 0 .or. i1<=iTT) then
                  call interpolate_linear( &
                       f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
-              endif
+ !             endif
            else
               call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
               call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)

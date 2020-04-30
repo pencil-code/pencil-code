@@ -49,7 +49,7 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
-  rm -f LOCK data/LOCK
+  rm -f LOCK data/LOCK IO_LOCK
   exit 0
 endif
 
@@ -112,7 +112,7 @@ if (! -e NOERASE) then
   if (-e $datadir/time_series.h5 && ! -z $datadir/time_series.h5) \
       mv $datadir/time_series.h5 $datadir/time_series.`timestr`.h5
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
-        $datadir/averages/* >& /dev/null
+        $datadir/averages/* $datadir/slices/* >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
   rm -f ioerrors.log >& /dev/null
 endif
@@ -125,15 +125,17 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f ERROR COMPLETED
+rm -f ERROR COMPLETED IO_LOCK
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 touch pc_commands.log
 echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
+echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
-#gdb $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
+#time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $start_x $x_ops
+#srun -n4 $start_x $x_ops
 set start_status=$status        # save for exit
 echo ""
 date

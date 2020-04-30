@@ -24,11 +24,11 @@ module Particles_grad
 !
   include 'particles_grad.h'
 !
-!
-  namelist /particles_grad_init_pars/ &
+  !namelist /particles_grad_init_pars/ 
 !
   real :: fluid_mu,rhodust
-  namelist /particles_radius_run_pars/ &
+
+  namelist /particles_grad_run_pars/ &
           fluid_mu,rhodust
 !
   integer :: idiag_sigmap11max=0,idiag_sigmap12max=0,idiag_sigmap13max=0, &
@@ -37,7 +37,7 @@ module Particles_grad
 !
   contains
 !***********************************************************************
-    subroutine register_particles_grad()
+    subroutine register_particles_grad
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -62,10 +62,10 @@ module Particles_grad
 !
 ! This module always demands gradu stored as an auxiliary array
 !
-      igradu11=igradu+0; igradu12=igradu+1; igradu13=igradu+2
-      igradu21=igradu+3; igradu22=igradu+4; igradu23=igradu+5
-      igradu31=igradu+6; igradu32=igradu+7; igradu33=igradu+8
-      call farray_register_auxiliary('gradu',igradu,vector=9)
+      call farray_register_auxiliary('guij',iguij,vector=9)
+      igradu11=iguij+0; igradu12=iguij+1; igradu13=iguij+2
+      igradu21=iguij+3; igradu22=iguij+4; igradu23=iguij+5
+      igradu31=iguij+6; igradu32=iguij+7; igradu33=iguij+8
 !
     endsubroutine register_particles_grad
 !***********************************************************************
@@ -80,22 +80,20 @@ module Particles_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_grad
 !***********************************************************************
-    subroutine pencil_criteria_par_grad()
+    subroutine pencil_criteria_par_grad
 !
 !  All pencils that the Particles_grad module depends on are specified here.
 !
 !  17-sep-15/dhruba: coded
 !
-
 !
     endsubroutine pencil_criteria_par_grad
 !***********************************************************************
-    subroutine set_particle_grad(f,fp,npar_low,npar_high,init)
+    subroutine set_particle_grad(f,fp,npar_low,npar_high,ineargrid,init)
 !
 !  Set radius of new particles.
 !
@@ -106,6 +104,7 @@ module Particles_grad
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer :: npar_low,npar_high
+      integer, dimension(mpar_loc,3) :: ineargrid
       logical, optional :: init
 !
       integer :: i, j, k, ij, kend, ind, ibin
@@ -113,6 +112,7 @@ module Particles_grad
       integer :: imn
       real, dimension(nx,3,3) :: gradu
       real, dimension(3,3) :: gradup
+      real, dimension(9) :: gradup_lin
 !
       initial=.false.
       if (present(init)) then
@@ -129,7 +129,7 @@ module Particles_grad
         n=nn(imn)
         m=mm(imn)
         call gij(f,iuu,gradu,1)
-        ij=igradu-1
+        ij=iguij-1
         do i=1,3; do j=1,3
             ij=ij+1
             f(l1:l2,m,n,ij) = gradu(:,i,j) 
@@ -151,9 +151,9 @@ module Particles_grad
 ! Now interpolate gradu to the location of the particles. 
 !
       do k=1,npar_loc
-        call interpolate_linear(f,igradu11,igradu33,&
+        call interpolate_linear(f,igradu11,igradu33, &
           fp(k,ixp:izp),gradup_lin,ineargrid(k,:),0,0)
-        fp(k,isigmap11:isigmap33) =  graduplin
+        fp(k,isigmap11:isigmap33) =  gradup_lin
       enddo
 !
     endsubroutine set_particle_grad
@@ -176,12 +176,15 @@ module Particles_grad
       logical :: lfirstcall=.true., lheader
       integer :: k,i,k1,k2
       real :: radius,one_over_tau
-      real,dimension(3,3) :: sigmap,gradup,dsigma
+      real,dimension(3,3) :: sigmap,gradup,dsigma,dsigmap
+      real, dimension(9) :: gradup_lin
       real,dimension(9) :: dsigmaplin
 !
       intent (in) :: f
       intent (out) :: dfp
       intent (inout) :: fp
+!
+      real :: one_by_tau
 !
 !  Print out header information in first time step.
 !
@@ -193,6 +196,7 @@ module Particles_grad
       lfirstcall=.false.
 !
       if (npar_imn(imn) /= 0) then
+
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
@@ -207,6 +211,7 @@ module Particles_grad
           call matrix2linarray(dsigmap, dsigmaplin)
           dfp(k,isigmap11:isigmap33) =  dfp(k,isigmap11:isigmap33) + dsigmaplin 
         enddo
+      endif
 !
     endsubroutine dsigmap_dt_pencil
 !***********************************************************************
@@ -261,7 +266,7 @@ module Particles_grad
       integer, intent(out) :: iostat
       integer :: pos
 !
-      read(parallel_unit, NML=particles_grad_init_pars, IOSTAT=iostat)
+      !read(parallel_unit, NML=particles_grad_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_grad_init_pars
 !***********************************************************************
@@ -269,7 +274,7 @@ module Particles_grad
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_grad_init_pars)
+      !write(unit, NML=particles_grad_init_pars)
 !
     endsubroutine write_particles_grad_init_pars
 !***********************************************************************

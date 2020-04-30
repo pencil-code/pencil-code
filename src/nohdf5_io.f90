@@ -538,7 +538,7 @@ module HDF5_IO
 !  'data/procN/slice_position.dat' is distributed, but may not be synchronized
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
 !
-!  27-Oct-2018/PABourdin: cleaned up
+!  24-May-2019/MR: cloned from output_slice_position
 !
       character(LEN=*) :: directory
       integer, intent(out) :: ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_
@@ -849,9 +849,9 @@ module HDF5_IO
         close(lun_output)
       else
         open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
         write(lun_output,'(1pe12.5)') time
-        write(lun_output,'(1p,8e14.5e3)') data(:,1:nc)
+        write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,1:nc)
         close(lun_output)
       endif
 !
@@ -912,12 +912,12 @@ module HDF5_IO
         close(lun_output)
       else
         open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
         write(lun_output,'(1pe12.5)') time
         if (label == 'z') then
-          write(lun_output,'(1p,8e14.5e3)') ( data(ia,:,:), ia=1, nc )
+          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') ( data(ia,:,:), ia=1, nc )
         else
-          write(lun_output,'(1p,8e14.5e3)') data(:,:,1:nc)
+          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,:,1:nc)
         endif
         close(lun_output)
       endif

@@ -883,7 +883,7 @@ module Interstellar
 !
     endsubroutine select_cooling
 !*****************************************************************************
-    subroutine input_persistent_interstellar(id,done)
+    subroutine input_persist_interstellar_id(id,done)
 !
 !  Read in the stored time of the next SNI
 !
@@ -898,7 +898,7 @@ module Interstellar
 !
       integer :: i
 !
-!      if (lcollective_IO) call fatal_error ('input_persistent_interstellar', &
+!      if (lcollective_IO) call fatal_error ('input_persist_interstellar', &
 !          "The interstellar persistent variables can't be read collectively!")
 !
       select case (id)
@@ -952,9 +952,77 @@ module Interstellar
       endselect
 !
       if (lroot) &
-          print *, 'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
+          print *, 'input_persist_interstellar: ', t_next_SNI, t_next_SNII
 !
-    endsubroutine input_persistent_interstellar
+    endsubroutine input_persist_interstellar_id
+!*****************************************************************************
+    subroutine input_persist_interstellar()
+!
+!  Read in the stored time of the next SNI.
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      if (.not. l_persist_overwrite_lSNI) then
+        call warning('input_persist_interstellar','lSNI from run.in overwritten. ' // &
+            'Set l_persist_overwrite_lSNI=T to update', 0)
+        error = read_persist ('ISM_TOGGLE_SNI', lSNI)
+        if (lroot .and. .not. error) print *, 'input_persist_interstellar: lSNI = ', lSNI
+      endif
+!
+      if (.not. l_persist_overwrite_lSNII) then
+        call warning('input_persist_interstellar','lSNII from run.in overwritten. ' // &
+            'Set l_persist_overwrite_lSNII=T to update', 0)
+        error = read_persist ('ISM_TOGGLE_SNII', lSNII)
+        if (lroot .and. .not. error) print *, 'input_persist_interstellar: lSNII = ', lSNII
+      endif
+!
+      if (.not. l_persist_overwrite_tSNI) then
+        call warning('input_persist_interstellar','t_next_SNI from run.in overwritten. ' // &
+            'Set l_persist_overwrite_tSNI=T to update', 0)
+        error = read_persist ('ISM_T_NEXT_SNI', t_next_SNI)
+        if (lroot .and. .not. error) print *, 'input_persist_interstellar: t_next_SNI = ', t_next_SNI
+      endif
+!
+      if (.not. l_persist_overwrite_tSNII) then
+        call warning('input_persist_interstellar','t_next_SNII from run.in overwritten. ' // &
+            'Set l_persist_overwrite_tSNII=T to update', 0)
+        error = read_persist ('ISM_T_NEXT_SNII', t_next_SNII)
+        if (lroot .and. .not. error) print *, 'input_persist_interstellar: t_next_SNII = ', t_next_SNII
+      endif
+!
+      if (.not. l_persist_overwrite_xcluster) then
+        call warning('input_persist_interstellar','x_cluster from run.in overwritten. ' // &
+            'Set l_persist_overwrite_xcluster=T to update', 0)
+        error = read_persist ('ISM_X_CLUSTER', x_cluster)
+        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: x_cluster = ', x_cluster
+      endif
+!
+      if (.not. l_persist_overwrite_ycluster) then
+        call warning('input_persist_interstellar','y_cluster from run.in overwritten. ' // &
+            'Set l_persist_overwrite_ycluster=T to update', 0)
+        error = read_persist ('ISM_Y_CLUSTER', y_cluster)
+        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: y_cluster = ', y_cluster
+      endif
+!
+      if (.not. l_persist_overwrite_zcluster) then
+        call warning('input_persist_interstellar','z_cluster from run.in overwritten. ' // &
+            'Set l_persist_overwrite_zcluster=T to update', 0)
+        error = read_persist ('ISM_Z_CLUSTER', z_cluster)
+        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: z_cluster = ', z_cluster
+      endif
+!
+      if (.not. l_persist_overwrite_tcluster) then
+        call warning('input_persist_interstellar','t_cluster from run.in overwritten. ' // &
+            'Set l_persist_overwrite_tcluster=T to update', 0)
+        error = read_persist ('ISM_T_CLUSTER', t_cluster)
+        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: t_cluster = ', t_cluster
+      endif
+!
+    endsubroutine input_persist_interstellar
 !*****************************************************************************
     logical function output_persistent_interstellar()
 !

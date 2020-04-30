@@ -4,11 +4,11 @@
 #  Author: Anders Johansen
 #
 #  Usage:
-#    pc_copyvar var1 var2 source dest [-e | -execute=1]
-#    pc_copyvar var1 var2 dest [-e | -execute=1]
-#    pc_copyvar var1 var2 [-e | -execute=1]
+#    pc_copyvar var1 var2 source dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 [-e | -execute=1] [-s]
 #
-#  Example:
+#  Examples:
 #    pc_copyvar var.dat VAR9 ../othersim
 #      copies all var.dat files from current directory to VAR9 in '../othersim'
 #    pc_copyvar v v onesim othersim
@@ -25,11 +25,17 @@
 #    og, ogvar    - ogvar.dat (overlapping grid)
 #    naked number - VAR*
 #
+#  Options:
+#    -s               -  create symbolic link instead of copy
+#    -execute=1, -e   -  really execute copy or link
+#
 set data=data/
 set narg=0
 set cp=cp
 set execute=0
+set link=0
 set e=0
+set s=0
 #
 #  Sort through all command line input.
 #
@@ -57,6 +63,12 @@ if ( $narg < 2 ) then
   echo "       pc_copyvar var1 var2 [-e | -execute=1]"
   exit
 endif
+if ($e != 0) then
+  set execute=1
+endif
+if ($s != 0) then
+  set link=1
+endif
 #
 #  Snapshots names and source and destination directories.
 #
@@ -75,9 +87,6 @@ endif
 #
 #  Abbrevations.
 #
-if ($e != 0) then
-  set execute=1
-endif
 if ( $var1 =~ "v" || $var1 =~ "var") then
   set var1='var.dat'
 endif
@@ -114,6 +123,12 @@ set remsource=`echo $source | grep -c ":"`
 set remdest=`echo $dest | grep -c ":"`
 if ($remdest > 0 || $remsource > 0) then
   set cp="scp"
+  set link=0
+endif
+if ($link) then
+  if (`echo $source | grep -c "^\/"` == 0) then
+    set source=`pwd`"/"$source 
+  endif
 endif
 #
 #  Inform what is about to happen.
@@ -124,7 +139,11 @@ if ($execute) then
 else
   echo "This command would execute"
 endif
-echo "  $cp $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
+if ($link) then
+  echo "  rm -f $dest/${data}proc*/$var2; ln -s $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
+else
+  echo "  $cp $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
+endif
 if ($execute) echo ""
 #
 #  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
@@ -142,8 +161,13 @@ if ($execute) then
          mkdir $dest/${data}$procdir
        endif
     endif
-    echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
-    $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+    if ($link) then
+      echo "rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+      rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+    else
+      echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+      $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+    endif
   end
 else
   echo ""

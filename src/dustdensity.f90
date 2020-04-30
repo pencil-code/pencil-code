@@ -690,7 +690,7 @@ module Dustdensity
           endif
           do k=1,ndustspec
             if (a1 == 0) then
-              f(:,:,:,ind(k))=f(:,:,:,ind(k))&
+              f(:,:,:,ind(k))=f(:,:,:,ind(k)) &
                   +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2) !/md(k)
             else
               if (a1>ad(k)) then

@@ -615,7 +615,6 @@ module Energy
 !   2-feb-03/axel: added possibility of ionization
 !  29-jul-14/axel: imported reduced sound speed from entropy module
 !
-      use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
       use Special, only: special_calc_energy
       use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
@@ -731,29 +730,41 @@ module Energy
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
+
+      call calc_diagnostics_energy(f,p)
+!
+    endsubroutine denergy_dt
+!***********************************************************************
+    subroutine calc_diagnostics_energy(f,p)
+
+      use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
 !
 !  Calculate temperature related diagnostics
 !
+      call keep_compiler_quiet(f)
+
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
+        call sum_mn_name(p%TT,idiag_TTm)
+        call max_mn_name(p%yH,idiag_yHmax)
         if (idiag_yHmin/=0) call max_mn_name(-p%yH,idiag_yHmin,lneg=.true.)
-        if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
+        call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_ethm/=0) call sum_mn_name(p%ee/p%rho1,idiag_ethm)
-        if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
-        if (idiag_cv/=0) call sum_mn_name(p%cv,idiag_cv)
-        if (idiag_cp/=0) call sum_mn_name(p%cp,idiag_cp)
-        if (idiag_dtc/=0) then
+        call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%cv,idiag_cv)
+        call sum_mn_name(p%cp,idiag_cp)
+        if (idiag_dtc/=0) &
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        endif
-        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        call sum_mn_name(p%ee,idiag_eem)
+        call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)
-        if (idiag_ppmax/=0) call max_mn_name(p%pp,idiag_ppmax)
+        call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
-        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
       endif
 !
@@ -770,22 +781,49 @@ module Energy
         call xysum_mn_name_z(p%ee,idiag_eemz)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
       endif
+
+    endsubroutine calc_diagnostics_energy
+!***********************************************************************
+    subroutine energy_before_boundary(f)
 !
-    endsubroutine denergy_dt
+!  Actions to take before boundary conditions are set.
+!
+!   1-apr-20/joern: coded
+!
+      use EquationOfState, only : gamma_m1, get_cp1
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: cs2
+      real :: cp1
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+     if (lslope_limit_diff .and. llast) then
+       call get_cp1(cp1)
+       cs2=0.
+       do m=1,my
+       do n=1,mz
+         if (ltemperature_nolog) then
+           cs2 = gamma_m1/cp1*f(:,m,n,iTT)
+         else
+           cs2 = gamma_m1/cp1*exp(f(:,m,n,ilnTT))
+         endif
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
+       enddo
+       enddo
+     endif
+!
+    endsubroutine energy_before_boundary
 !***********************************************************************
     subroutine energy_after_boundary(f)
 !
 !  dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
-      if (lenergy_slope_limited) &
-        call fatal_error('energy_after_boundary', &
-                         'Slope-limited diffusion not implemented')
-
     endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)

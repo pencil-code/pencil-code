@@ -117,6 +117,7 @@ module File_io
       enddo
       tmp_prefix = get_tmp_prefix()
       !tmp_prefix = 'data/'
+
       write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc_world
 !
       ! Write temporary file into local RAM disk (/tmp).
@@ -336,6 +337,16 @@ module File_io
 !
     endsubroutine find_namelist
     !endfunction find_namelist
+!***********************************************************************
+    subroutine flush_file(unit)
+
+      use General, only: keep_compiler_quiet
+
+      integer, intent(IN) :: unit
+
+      call keep_compiler_quiet(unit)
+
+    endsubroutine flush_file
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

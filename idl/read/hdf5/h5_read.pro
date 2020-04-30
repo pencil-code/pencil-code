@@ -1,6 +1,6 @@
 function h5_read, label, start=start, count=count, transpose=transpose, filename=filename, close=close
 
-	common h5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name, group_name, group_content
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 

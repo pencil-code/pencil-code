@@ -95,6 +95,7 @@ program start
   use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
+
 !
   implicit none
 !
@@ -118,9 +119,9 @@ program start
 !
   call initialize_messages
 !
-!  Initialize use of multiple special modules
+!  Initialize use of multiple special modules if relevant.
 !
-!  call initialize_mult_special
+  call initialize_mult_special
 !
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
@@ -171,9 +172,9 @@ program start
 !
   headtt=lroot
 !
-!  Initialize start time.
+!  Initialize start time, unless lread_oldsnap=T
 !
-  t=tstart
+  if (.not.lread_oldsnap) t=tstart
 !
 !  Will we write all slots of f?
 !
@@ -227,10 +228,10 @@ program start
         endif
       else
         if (lpole(i)) then ! overwrite xyz0 and xyz1 to 0:pi 
-          if (lperi(i)) call fatal_error('start',&
-            'lperi and lpole cannot be used together in same component')
           if (.not. lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
+          if (lperi(i)) call fatal_error('start',&
+            'lperi and lpole cannot be used together in same component')
           if (i==2) then
             xyz0(i) = 0.
             Lxyz(i) = pi 
@@ -245,12 +246,11 @@ program start
         endif
       endif
     else                            ! Lxyz was set
-      if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
+      if (xyz1(i)/=impossible) & ! both Lxyz and xyz1 are set
         call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
-      endif
     endif
   enddo
-
+!
   if (lyinyang) then
     if (lroot) &
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
@@ -293,7 +293,8 @@ program start
 !  Initialise random number generator in processor-independent fashion
 !
   call get_nseed(nseed)   ! get state length of random number generator
-  call random_seed_wrapper(GET=seed)
+  call random_seed_wrapper(GET=seed,CHANNEL=1)
+  if (ichannel2>1) call random_seed_wrapper(GET=seed2,CHANNEL=2)
 !
 !  Generate grid and initialize specific grid variables.
 !
@@ -376,7 +377,7 @@ program start
 !
 !  Write grid.dat file.
 !
-  call wgrid('grid.dat')
+  call wgrid('grid.dat',lwrite=.true.)
   if (lparticles) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  Update the list of neighboring processes.
@@ -451,9 +452,11 @@ program start
 !  The default is seed0=1812 for some obscure Napoleonic reason
 !  Fred: NB, when using persistent variables take care whether seeds need
 !        to be synchronous or not for init_*
+!  Maybe we want to allow the  2 channels to be initialized separately.
 !
   seed(1)=-((seed0-1812+1)*10+iproc_world)
-  call random_seed_wrapper(PUT=seed)
+  if (ichannel1<2) call random_seed_wrapper(PUT=seed,CHANNEL=1)
+  if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
 !
 !  Set random seed independent of processor prior to initial conditions.
 !  Do this only if seed0 is modified from its original value.
@@ -462,7 +465,8 @@ program start
 !
   if (seed0/=1812) then
     seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
+    if (ichannel1<2) call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  The following init routines only need to add to f.
@@ -572,7 +576,8 @@ program start
 !
   if (lseed_global.and.seed0==1812) then
     seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
+    if (ichannel1<2) call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  Final update of ghost cells, after that 'f' must not be altered, anymore.
@@ -594,7 +599,7 @@ program start
 !  to overwrite an existing var.dat.
 !
   lnoerase = control_file_exists("NOERASE")
-  if (.not.lnowrite .and. .not.lnoerase) then
+  if ( (.not.lnowrite .and. .not.lnoerase) .or. lwrite_var_anyway) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.false.)

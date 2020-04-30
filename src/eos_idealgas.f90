@@ -44,7 +44,7 @@ module EquationOfState
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
-  real :: gamma1   !(=1/gamma)
+  real :: gamma1      !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2bot=impossible, cs2top=impossible
@@ -105,9 +105,6 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_eos
 !
       leos_idealgas=.true.
-!
-      iyH=0
-      ilnTT=0
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_eos: ionization nvar = ', nvar
@@ -234,7 +231,7 @@ module EquationOfState
 !
       if (lroot) then
         print*, 'units_eos: unit_temperature=', unit_temperature
-        print*, 'units_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
+        print*, 'units_eos: cp, lnTT0, cs0, pp0, Rgas=', cp, lnTT0, cs0, pp0, Rgas
       endif
 !
     endsubroutine units_eos
@@ -1436,7 +1433,6 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !   12-feb-15/MR  : changes for reference state
 !
-      use Diagnostics, only: max_mn_name, sum_mn_name
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -2211,7 +2207,7 @@ module EquationOfState
       use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
       use General, only: loptest
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
+      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,chi
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
@@ -2230,9 +2226,7 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      call get_shared_variable('hcond0',hcond0,caller='bc_ss_flux')
-      call get_shared_variable('hcond1',hcond1)
-      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Fbot',Fbot,caller='bc_ss_flux')
       call get_shared_variable('Ftop',Ftop)
       call get_shared_variable('FbotKbot',FbotKbot)
       call get_shared_variable('FtopKtop',FtopKtop)
@@ -2254,11 +2248,6 @@ module EquationOfState
 !  ===============
 !
       case ('bot')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
 !
 !  calculate Fbot/(K*cs2)
 !
@@ -4910,12 +4899,15 @@ module EquationOfState
 !***********************************************************************
     subroutine pushpars2c(p_par)
 !
-    integer, parameter :: n_pars=3
+    integer, parameter :: n_pars=6
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr_c(cs20,p_par(1))
     call copy_addr_c(gamma,p_par(2))
-    call copy_addr_c(cv1,p_par(3))
+    call copy_addr_c(cv,p_par(3))
+    call copy_addr_c(cp,p_par(4))
+    call copy_addr_c(lnrho0,p_par(5))
+    call copy_addr_c(lnTT0,p_par(6))
 !
     endsubroutine pushpars2c
 !***********************************************************************

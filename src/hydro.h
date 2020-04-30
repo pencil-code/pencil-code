@@ -3,9 +3,9 @@
 !
 ! functions
   public :: register_hydro, initialize_hydro
-  public :: input_persistent_hydro, output_persistent_hydro
   public :: read_hydro_init_pars, write_hydro_init_pars
   public :: read_hydro_run_pars,  write_hydro_run_pars
+  public :: input_persistent_hydro, output_persistent_hydro
   public :: rprint_hydro
   public :: get_slices_hydro
   public :: init_uu, duu_dt, hydro_after_boundary, calc_pencils_hydro
@@ -24,6 +24,7 @@
   public :: hydro_after_timestep
   public :: calc_gradu
   public :: pushpars2c, pushdiags2c
+  public :: calc_diagnostics_hydro, df_diagnos_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
@@ -36,5 +37,3 @@
     module procedure calc_pencils_hydro_pencpar
     module procedure calc_pencils_hydro_std
   endinterface calc_pencils_hydro
-!
-

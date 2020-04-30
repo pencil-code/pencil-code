@@ -235,9 +235,9 @@ contains
       character (len=fnlen) :: filename
 !
       t_sp = t
+      filename = trim (datadir_snap)//'/'//trim (file)
       if ((ip<=8) .and. lroot .and. imn==1) &
-           print*,'output_pencil_scal('//filename//')'
-      filename = trim (datadir_snap)//'/'//trim (filename)
+           print*,'output_pencil_scal('//trim(filename)//')'
 !
       if (ndim /= 1) &
            call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")

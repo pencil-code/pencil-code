@@ -7,6 +7,7 @@ module Cparam
   implicit none
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte real kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
   integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
 !
@@ -27,7 +28,7 @@ module Cparam
 !
   integer, parameter :: penc_name_len=16
 !
-  include '../src/cparam_pencils.inc'
+  include 'cparam_pencils.inc'
 !
 !  Derived and fixed parameters.
 !
@@ -101,9 +102,9 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
-  real, parameter :: huge_real=huge(0.0)
-  double precision, parameter :: huge_double=huge(0.0d0)
-  real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
+  real, parameter :: huge_real=huge(0.)
+  double precision, parameter :: huge_double=huge(0.d0)
+  real, parameter :: max_real=huge_real/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist
 !
 !  Tiny and huge numbers.

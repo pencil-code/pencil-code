@@ -24,6 +24,7 @@
 ;             Also for downsampled snapshots (VARd<n>)
 ;       ivar: Number of the varfile, to be appended optionally.      [integer]
 ;   allprocs: Load data from the allprocs directory.                 [integer]
+;    /nohdf5: Don't read HDF5 file although available.         
 ;   /reduced: Load reduced collective varfiles.
 ;
 ;     object: Optional structure in which to return the loaded data. [structure]
@@ -83,7 +84,7 @@ pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
     bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo, pptoo=pptoo, $
-    allprocs=allprocs, reduced=reduced,                           $
+    allprocs=allprocs, reduced=reduced, nohdf5=nohdf5,            $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, grid=grid, param=param, par2=par2, ivar=ivar,        $
@@ -115,6 +116,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, unshear, 0
   default, ghost, 0
   default, noaux, 0
+  default, nohdf5, 0
   default, bcx, 'none'
   default, bcy, 'none'
   default, bcz, 'none'
@@ -139,30 +141,20 @@ COMPILE_OPT IDL2,HIDDEN
 ; Name and path of varfile to read.
 ;
   if (keyword_set(ogrid)) then begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'OGVAR'
-      varfile=varfile_+strcompress(string(ivar),/remove_all)
-      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
-    endif else begin
-      default_varfile = 'ogvar.dat'
-      if (file_test (datadir+'/allprocs/ogvar.h5')) then default_varfile = 'ogvar.h5'
-      default, varfile_, default_varfile
-      varfile=varfile_
-      ivar=-1
-    endelse
+    if (n_elements(ivar) eq 1) then $
+      default, varfile_, 'OGVAR' + strcompress (string (ivar), /remove_all) $
+    else $
+      default, varfile_, 'ogvar.dat'
   endif else begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'VAR'
-      varfile=varfile_+strcompress(string(ivar),/remove_all)
-      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
-    endif else begin
-      default_varfile = 'var.dat'
-      if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
-      default, varfile_, default_varfile
-      varfile=varfile_
-      ivar=-1
-    endelse
+    if (n_elements(ivar) eq 1) then $
+      default, varfile_, 'VAR' + strcompress (string (ivar), /remove_all) $
+    else $
+      default, varfile_, 'var.dat'
   endelse
+;
+; Identify youngest of snapshot files.
+;
+  varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5)
 ;
 ; Load HDF5 varfile if requested or available.
 ;
@@ -177,11 +169,28 @@ COMPILE_OPT IDL2,HIDDEN
     t = pc_read ('time', file=varfile, datadir=datadir)
     object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
     if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
+    testdata=''
     for pos = 0, num_quantities-1 do begin
-      if (quantities[pos] eq 'dummy') then continue
-      object = create_struct (object, quantities[pos], pc_read (quantities[pos], trimall=trimall, processor=proc, dim=dim))
+
+      quan=quantities[pos]
+      if stregex(quan,'aatest',/bool) or $
+         stregex(quan,'uutest',/bool) or $
+         stregex(quan,'np_ap',/bool) then begin
+        testdata=strmid(quan,0,2)+'test' & itestdata=2 & quan=testdata+'1'
+      endif else if (quan eq 'dummy') then begin
+        if testdata ne '' then begin
+          quan=testdata+strtrim(string(itestdata),2) 
+          itestdata++
+        endif else $
+          continue
+      endif else $
+        testdata=''
+
+      label=quan
+      object = create_struct (label, pc_read (quan, trimall=trimall, processor=proc, dim=dim),object)
     end
     h5_close_file
+    pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
     return
   end
 ;
@@ -196,8 +205,10 @@ COMPILE_OPT IDL2,HIDDEN
   if (keyword_set(reduced)) then allprocs = 1
   if (not is_defined(allprocs)) then begin
     allprocs = 0
-    if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
-    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+    if (strpos(varpath,'allprocs') ne -1) and (n_elements (proc) eq 0) then $
+      allprocs=1 $
+    else $
+      if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
   endif
 ;
 ; Check if allprocs is set.
@@ -222,8 +233,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Get necessary dimensions quietly.
 ;
-logrid=0
-if (keyword_set(ogrid)) then logrid=1  
+  logrid=0
+  if (keyword_set(ogrid)) then logrid=1  
   if (n_elements(dim) eq 0) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
   if (n_elements(param) eq 0) then $
@@ -283,7 +294,7 @@ if (keyword_set(ogrid)) then logrid=1
   if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     procdim=dim
   endif else begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled
+    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled, ogrid=logrid
   endelse
 ;
 ; ... and check pc_precision is set for all Pencil Code tools.
@@ -349,7 +360,7 @@ if (keyword_set(ogrid)) then logrid=1
 ; data written with IO_STRATEGY=IO_DIST
 ;
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
-  endelse
+ endelse
 ;
 ; Initialize / set default returns for ALL variables.
 ;
@@ -543,7 +554,7 @@ if (keyword_set(ogrid)) then logrid=1
             print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
             strtrim(str((yinyang+1)*nprocs)), ' (', $
             strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled
+        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled, ogrid=logrid
       endelse
     endelse
 ;
@@ -639,7 +650,6 @@ if (keyword_set(ogrid)) then logrid=1
 ;
     close, file
     openr, file, filename, f77=f77, swap_endian=swap_endian
-
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
@@ -682,7 +692,14 @@ if (keyword_set(ogrid)) then logrid=1
       endif else begin
         ; multiple processor distributed files
         if (param.lshear) then begin
+          incomp=1
+          on_ioerror, incomplete
           readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+          incomp=0
+incomplete:
+          if incomp then $
+            print, 't, xloc, yloc, zloc, dx, dy, dz, deltay=', t, xloc, yloc, zloc, dx, dy, dz, deltay
+          on_ioerror, NULL
         endif else begin
           readu, file, t, xloc, yloc, zloc, dx, dy, dz
         endelse

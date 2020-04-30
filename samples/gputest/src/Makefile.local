@@ -11,9 +11,11 @@ GPU       =   gpu_astaroth
 
 HYDRO     =   hydro
 DENSITY   =   density
-EOS       = noeos
+MAGNETIC  =   magnetic
+ENTROPY   =   entropy
+EOS       =   eos_idealgas
 
-FORCING   = noforcing
+FORCING   =   forcing
 SHEAR     = noshear
 
-REAL_PRECISION = single
+#REAL_PRECISION = double

@@ -66,14 +66,6 @@ module Special
   integer :: idiag_d2Lambrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda)\Bv]^2\right>^{1/2}$
   integer :: idiag_d2Lamrms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda]^2\right>^{1/2}$
 !
-! Variables needed for when we include power_spectrum.
-!
-  integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
-  public :: specStr, specStrhel
-!
   contains
 !
 !***********************************************************************

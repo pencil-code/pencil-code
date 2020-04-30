@@ -26,5 +26,8 @@ endif
 
 set dir=src/$dir
 cd ..
-$dir/$0:t.x
-
+if ($# == 0) then
+  $dir/$0:t.x
+else
+  $dir/$0:t.x $*
+endif

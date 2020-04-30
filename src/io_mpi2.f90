@@ -33,35 +33,13 @@ module Io
   include 'record_types.h'
   include 'mpif.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
-!
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
-!
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="MPI-IO"
 !
   logical :: lread_add=.true., lwrite_add=.true.
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   integer :: local_type, global_type, mpi_err, io_dims
@@ -317,28 +295,33 @@ module Io
 !
     endsubroutine check_success
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode)
+    subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
 !  10-Feb-2012/PABourdin: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
+      use General, only: ioptest
       use Mpicomm, only: globalize_xy, collect_grid, mpi_precision
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer, optional, intent(in) :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: handle, alloc_err
+      integer :: handle, alloc_err, na, ne, nv
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_mpi2')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
+!
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+      nv=ne-na+1
 !
       local_size(io_dims) = nv
       global_size(io_dims) = nv
@@ -368,12 +351,12 @@ module Io
 !
       if (lwrite_2D) then
         if (ny == 1) then
-          call MPI_FILE_WRITE_ALL (handle, a(:,m1,:,:), 1, local_type, status, mpi_err)
+          call MPI_FILE_WRITE_ALL (handle, a(:,m1,:,na:ne), 1, local_type, status, mpi_err)
         else
-          call MPI_FILE_WRITE_ALL (handle, a(:,:,n1,:), 1, local_type, status, mpi_err)
+          call MPI_FILE_WRITE_ALL (handle, a(:,:,n1,na:ne), 1, local_type, status, mpi_err)
         endif
       else
-        call MPI_FILE_WRITE_ALL (handle, a, 1, local_type, status, mpi_err)
+        call MPI_FILE_WRITE_ALL (handle, a(:,:,:,na:ne), 1, local_type, status, mpi_err)
       endif
       call check_success ('output', 'write', file)
 !
@@ -447,7 +430,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -456,6 +439,8 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
+      logical, intent(in), optional :: lfinalize
+      integer, intent(in), optional :: nvar
 !
       call fatal_error ('output_stalker', 'not implemented for "io_mpi2"', .true.)
 !
@@ -997,6 +982,18 @@ module Io
 !
     endfunction init_read_persist
 !***********************************************************************
+    logical function persist_exists(label)
+!
+!  Dummy routine
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = .false.
+!
+    endfunction persist_exists
+!***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
@@ -1301,7 +1298,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, 0)
+      call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
     endsubroutine output_globals
@@ -1338,7 +1335,7 @@ module Io
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
-        write (lun_output, '(A)') trim (fpart)
+        write (lun_output, '(A,1x,e16.8)') trim (fpart), t
         close (lun_output)
       endif
 !
@@ -1353,16 +1350,18 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write grid coordinates.
 !
 !  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
+      use General, only: loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
@@ -1370,28 +1369,30 @@ module Io
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        if (lroot) then
+          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = real (t)
-      endif
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+          t_sp = real (t)
+        endif
 
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
 
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
 
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+        endif
       endif
 !
     endsubroutine wgrid

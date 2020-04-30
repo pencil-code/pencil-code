@@ -371,8 +371,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      iostat = 0
-      read(parallel_unit, NML=special_init_pars)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************

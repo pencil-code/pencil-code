@@ -76,7 +76,7 @@ module Param_IO
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
   integer :: niter_poisson  ! dummy
-!
+! 
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       coord_system, lpole, lfix_unit_std, &
@@ -85,7 +85,8 @@ module Param_IO
       lmodify,modify_filename, dvid, ldivu_perp, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, nfilter, lserial_io, der2_type, &
-      lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
+      lread_oldsnap, lwrite_var_anyway, &
+      lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
@@ -109,7 +110,7 @@ module Param_IO
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
       sigmaSB_set, c_light_set, k_B_set, m_u_set, &
-      lnoghost_strati
+      lnoghost_strati, ichannel1, ichannel2, tag_foreign
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -121,11 +122,13 @@ module Param_IO
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
+      bb2_spec, jj2_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, &
-      GWd_spec,GWe_spec,GWf_spec,   GWg_spec, &
+      SCL_spec, VCT_spec, Tpq_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, sp_spec, isaveglobal, lr_spec, r2u_spec, &
+      np_spec, np_ap_spec, rhop_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
       ladv_der_as_aux, lkinflow_as_aux, &
       ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
@@ -135,7 +138,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
-      lread_oldsnap_rho2lnrho, lwrite_dim_again, luse_alt_io, &
+      lread_oldsnap_rho2lnrho, lwrite_dim_again, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
@@ -174,7 +177,7 @@ module Param_IO
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
-      lignore_nonequi
+      lignore_nonequi, tag_foreign, tau_aver1, fmt_avgs
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -351,19 +354,10 @@ module Param_IO
         lyinyang=.false.
       endif
 !
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        if (lroot.and..not.lrun) &
-          call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
-        lperi(2:3) = .false.; lpole = .false.
-        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
-        bcy='nil'; bcz='nil'
-      endif
-!
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
+      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)
       call parse_bc(bcz,bcz12)
@@ -385,8 +379,6 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
         print*, 'lperi= ', lperi
       endif
-!
-      call check_consistency_of_lperi('read_all_init_pars')
 !
 !  Option to use maximal rather than total distance for courant time
 !
@@ -410,7 +402,7 @@ module Param_IO
 !
     endsubroutine read_all_init_pars
 !***********************************************************************
-    subroutine read_all_run_pars(logging)
+    subroutine read_all_run_pars
 !
 !  Read input parameters.
 !
@@ -420,6 +412,8 @@ module Param_IO
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_runpars' to 'read_all_run_pars'
+!  22-mar-20/MR: removed unneeded call to write_all_run_pars and corresp. param.
+!                llogging
 !
       use Dustvelocity, only: copy_bcs_dust
       use File_io, only: parallel_open, parallel_close, read_namelist
@@ -428,7 +422,6 @@ module Param_IO
       use Particles_main, only: read_all_particles_run_pars
       use Sub, only: parse_bc
 !
-      logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'
       integer :: idum
 !
@@ -494,15 +487,6 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
 !
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
-        lperi(2:3) = .false.; lpole = .false.
-        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
-        bcy='nil'; bcz='nil'
-      endif
-!
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
@@ -511,13 +495,10 @@ module Param_IO
 !
       ldebug = lroot .and. (ip < 7)
 !
-!  Write parameters to log file, if requested.
-!
-      if (loptest(logging)) call write_all_run_pars
-!
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
+      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)
       call parse_bc(bcz,bcz12)
@@ -539,8 +520,6 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
       endif
 !
-      call check_consistency_of_lperi('read_all_run_pars')
-!
 !  Ensure that right precision information is written in dim.dat.
 !
       lwrite_dim_again = lwrite_dim_again .or. lread_from_other_prec
@@ -554,6 +533,8 @@ module Param_IO
           idum=ivar_omit1; ivar_omit1=ivar_omit2; ivar_omit2=idum
         endif
       endif
+
+      if (tag_foreign>0) lforeign=.true.
 !
     endsubroutine read_all_run_pars
 !***********************************************************************
@@ -819,10 +800,11 @@ module Param_IO
 !  11-jun-19/MR: full list of runpars only output into param2.nml, otherwise
 !                (in particular when outout in params.log) only the difference
 !                to the runpars of the preceding run.
+!  22-mar-20/MR: added missing full output of run pars at first call of run.x
 !
       use Particles_main, only: write_all_particles_run_pars
       use Syscalls, only: system_cmd
-      use File_io, only: file_exists,delete_file
+      use File_io, only: file_exists,delete_file,flush_file
 !
       character (len=*), optional :: file
 !
@@ -909,6 +891,11 @@ module Param_IO
           call write_implicit_diff_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
+!
+          write(unit,NML=IO_pars)
+
+          if (unit /= 6) close(unit)
+
         else                                    ! output in params.log, stdout or other file
           ! Add separator, comment, and time.
           call date_time_string(date)
@@ -916,6 +903,8 @@ module Param_IO
           write(unit,'(A,A)') ' ! ', trim(line)
           write(unit,'(A,A)') ' ! Date: ', trim(date)
           write(unit,*) '! t=', t
+          call flush_file(unit)
+          if (unit /= 6) close(unit)
 !
 !  Diff to old param2.nml.
 !
@@ -923,105 +912,17 @@ module Param_IO
             call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml |"// &
                             " diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
             call delete_file('data/param2.nml.sv')
+          else
+!
+!  Append param2.log to params.log for first time run.x is executed.
+!
+            call system_cmd("cat data/param2.nml >> data/params.log")
           endif
         endif
-!
-        if (unit /= 6) close(unit)
 !
       endif
 !
     endsubroutine write_all_run_pars
-!***********************************************************************
-    subroutine check_consistency_of_lperi(label)
-!
-!  Check consistency of lperi.
-!
-!  18-jul-03/axel: coded
-!
-      character (len=*) :: label
-      logical :: lwarning=.true.
-      integer :: j
-!
-!  Identifier.
-!
-      if (lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
-!
-!  Make the warnings less dramatic looking, if we are only in start
-!  and exit this routine altogether if, in addition, ip > 13.
-!
-      if (label=='check_consistency_of_lperi'.and.ip>13) return
-      if (label=='check_consistency_of_lperi') lwarning=.false.
-!
-      if (nvar > 0) then
-!
-!  Check x direction.
-!
-        j=1
-        if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
-            any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
-            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
-!
-!  Check y direction.
-!
-        j=2
-        if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
-            any(bcy(1:nvar)/='p').and.lperi(j)) &
-            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
-!
-!  Check z direction.
-!
-        j=3
-        if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
-            any(bcz(1:nvar)/='p').and.lperi(j)) &
-            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
-      endif
-!
-!  Print final warning.
-!  Make the warnings less dramatic looking, if we are only in start.
-!
-      if (lroot .and. (.not. lwarning)) then
-        if (label=='check_consistency_of_lperi') then
-          print*,'[bad BCs in start.in only affects post-processing' &
-               //' of start data, not the run]'
-        else
-          print*,'check_consistency_of_lperi(run.in): you better stop and check!'
-          print*,'------------------------------------------------------'
-          print*
-        endif
-      endif
-!
-    endsubroutine check_consistency_of_lperi
-!***********************************************************************
-    subroutine warning_lperi(lwarning,bc,lperi,j)
-!
-!  Print consistency warning of lperi.
-!
-!  18-jul-03/axel: coded
-!
-      character (len=*), dimension(:), intent(in) :: bc
-      logical, dimension(3) :: lperi
-      logical :: lwarning
-      integer :: j
-!
-      if (lroot) then
-        if (lwarning) then
-          print*
-          print*,'------------------------------------------------------'
-          print*,'W A R N I N G'
-          lwarning=.false.
-        else
-          print*
-        endif
-!
-        print*,'warning_lperi: inconsistency, j=', j, ', lperi(j)=',lperi(j)
-        print*,'bc=',bc
-        print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
-          any(bc=='p'.or. bc=='she'), .not.lperi(j)
-        print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
-          any(bc=='p'.or. bc=='she'), .not.lperi(j)
-      endif
-!
-    endsubroutine warning_lperi
 !***********************************************************************
     subroutine write_IDL_logicals(unit)
 !
@@ -1034,6 +935,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " ldensity=", ldensity, ","
       write(unit,'(A,L1,A)') " lentropy=", lentropy, ","
       write(unit,'(A,L1,A)') " ltemperature=", ltemperature, ","
+      write(unit,'(A,L1,A)') " lgrav=", lgrav, ","
       write(unit,'(A,L1,A)') " lshock=", lshock, ","
       write(unit,'(A,L1,A)') " lmagnetic=", lmagnetic, ","
       write(unit,'(A,L1,A)') " lforcing=", lforcing, ","

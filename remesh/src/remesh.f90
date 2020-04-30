@@ -33,6 +33,8 @@ program remesh
 !
   use Cdata
   use Cparam
+  use Syscalls, only: system_cmd
+  use General, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
   use Common
 !
   implicit none
@@ -41,8 +43,8 @@ program remesh
 !
   character (len=130) :: file,destination,file_new,varfile='var.dat'
   character (len=130) :: file2,dimfile,dimfile_loc,dimfile2_loc,gridfile
-  character (len=130) :: dimfile2
-  character (len=4)   :: ch,overwrite='yes'
+  character (len=4)   :: overwrite='yes'
+  character (len=6)   :: ch
   character (len=1)   :: prec
   integer :: i,j,k,itx=1,ity=1,itz=1
   integer :: kk,jj,ii,cpu
@@ -62,17 +64,53 @@ program remesh
   real, dimension (mmy,mprocs) :: rry
   real, dimension (mmz,mprocs) :: rrz
   real :: tdummy, t_sp
-  integer :: cpu_local
+  real :: facx, facy, facz, x0loc, y0loc, z0loc, w1, w2,dang,dang_old
+  integer :: cpu_local,iyy,icpu
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
-  logical exist, lshort
+  logical :: exist, lshort
+  integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv
+  character(LEN=128) :: clperi
+
+  clperi=get_from_nml_str('LPERI',exist,trim(datadir)//'/param2.nml',lvec=.true.)
+  if (.not.exist) then
+    print*, 'lperi could not be identified!'
+    stop
+  endif
+  call convert_nml(trim(clperi),lperi)
+!
+  lyinyang=get_from_nml_log('LYINYANG',exist,trim(datadir)//'/param.nml')
+  if (.not.exist) then
+    print*, 'lyinyang could not be identified!'
+    lyinyang=.false.
+  endif
+
+  if (lyinyang) then
+!
+!  Read rel_dang for Yin-Yang grid.
+!
+    rel_dang=get_from_nml_real('REL_DANG',exist,trim(datadir)//'/param2.nml')
+    if (.not.exist) then
+      print*, 'rel_dang could not be identified!'
+      stop
+    endif
+    dang_old=rel_dang*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi
+
+    if (remesh_pary/=remesh_parz) then
+      print*,'remesh_pary/=remesh_parz - this is not recommendable for Yin-Yang grids!'
+      dang=dang_old/sqrt(float(remesh_pary*remesh_parz))
+    else
+      dang=dang_old/remesh_pary
+    endif
+
+  endif
 !
   print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 !
 !  Print out parameters of conversion
 !
-  print*,'increase processor numbers in x, y and z by muly,mulz=',mulx,muly,mulz
-  print*,'remesh by factor remesh_par=',remesh_parx,remesh_pary,remesh_parz
+  print*,'increase processor numbers in [xyz] by mul[xyz]=',mulx,muly,mulz
+  print*,'remesh by factor remesh_par[xyz]=',remesh_parx,remesh_pary,remesh_parz
 !
 !  Read input parameters from remesh.in
 !
@@ -94,14 +132,10 @@ program remesh
 !  Confirm remeshing
 !
   write(*,*)
-  write(*,*)
-  write(*,*)
-  write(*,*) 'Do you really want to overwrite ', trim(destination),' ?'
-  write(*,*) '(Answer yes or no)'
-  write(*,*)
-  read(*,*,end=999) overwrite
-999 continue
-  if ( overwrite .eq. 'yes') then
+  write(*,*) 'Do you really want to overwrite ', trim(destination),'?'
+  write(*,'(a$)') ' (Answer yes or no): '
+  read(*,*,end=9) overwrite
+9 if ( overwrite .eq. 'yes') then
 !
 ! Read global dim.dat in order to find precision
 !
@@ -110,55 +144,119 @@ program remesh
     open(1,FILE=dimfile,FORM='formatted')
     read(1,*) dummy,dummy,dummy,dummy,dummy
     read(1,*) prec
-    read(1,*) dummy,dummy,dummy
-    read(1,*) dummy,dummy,dummy
     close(1)
 !
-!  Determin new size of global array
+!  Determine new size of global array
 !
     mxout_grid=remesh_parx*nxgrid+2*nghost
     myout_grid=remesh_pary*nygrid+2*nghost
     mzout_grid=remesh_parz*nzgrid+2*nghost
 !
-!  Determin new size of local array
+!  Determine new size of local array
 !
     mxout=remesh_parx*nx+2*nghost
     myout=remesh_pary*ny+2*nghost
     mzout=remesh_parz*nz+2*nghost
-!
-!  Write size of global array to destination/data/dim.dat
-!
+
     nprocxx=nprocx*mulx
     nprocyy=nprocy*muly
     nproczz=nprocz*mulz
-    call safe_character_assign(dimfile2,&
-        trim(destination)//'/'//trim(datadir)//'/dim.dat')
-    if (ip<8) print*,'Writing '//trim(dimfile2)
-    open(1,file=dimfile2)
+!
+!  Write size of global array to destination/data/dim.dat
+!
+    call safe_character_assign(dimfile,&
+         trim(destination)//'/'//trim(datadir)//'/dim.dat')
+    if (ip<8) print*,'Writing '//trim(dimfile)
+    open(1,file=dimfile)
     write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
     write(1,'(a)') prec
     write(1,'(3i3)') nghost, nghost, nghost
+!
 ! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 
 !  of the remeshed dim.dat file.
 !  This should work fine for all cases.
+!
     write(1,'(4i3)') nprocxx, nprocyy, nproczz, 1
     close(1)
 !
+! Factor for d[xyz].
+!
+    if (remesh_parx/=1.) then
+      if (lperi(1)) then
+        facx=1./remesh_parx
+      else
+        facx=(nxgrid-1.)/(remesh_parx*nxgrid-1.)    ! because dx=Lx/(nxgrid-1) !
+      endif
+    endif
+    if (remesh_pary/=1.) then
+      if (lperi(2)) then
+        facy=1./remesh_pary
+      else
+        facy=(nygrid-1.)/(remesh_pary*nygrid-1.)
+      endif
+    endif
+    if (remesh_parz/=1.) then
+      if (lperi(3)) then
+        facz=1./remesh_parz
+      else
+        facz=(nzgrid-1.)/(remesh_parz*nzgrid-1.)
+      endif
+    endif
+!
 !  Loop over number of CPU's in original run
 !
-    do cpu=0,ncpus-1
-      print*,'Remeshing processor',cpu+1,'of',ncpus,'processors'
-      ipx = modulo(cpu, nprocx)
-      ipy = modulo(cpu/nprocx, nprocy)
-      ipz = cpu/(nprocx*nprocy)
+yinyang_loop: &
+    do iyy=0,ncpus,ncpus
+    do icpu=0,ncpus-1
+    
+      ipx = modulo(icpu, nprocx)
+      ipy = modulo(icpu/nprocx, nprocy)
+      ipz = icpu/(nprocx*nprocy)
+      cpu=icpu+iyy
 !
-!  Read varfile (this is typically var.dat) 
+!  Create name of varfile (this is typically var.dat) 
 !
       ip=10
       call chn(cpu,ch)
       call safe_character_assign(file,&
           trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
+!
+! Check for existence of varfile.
+!
+      inquire(FILE=trim(file),EXIST=exist)
+      if (exist) then
+!
+!  File found for iyy=ncpus, i.e. iproc=ncpus --> a Yin-Yang grid supposed.
+!
+        if (lyinyang.and.iyy==ncpus.and..not.lyang) then
+          lyang=.true.
+          print*, 'This run is treated as a Yin-Yang one!'
+          if (muly/=mulz) then
+            print*, 'muly/=mulz --> nprocz=3*nprocy violated for new layout!'
+            stop
+          endif
+        endif
+      elseif (iyy==0 .or. lyang) then
+        print *, 'Varfile for iproc=', cpu, 'not found!'
+        stop
+      else
+!
+!  File not found for proc=ncpus: If Yin-Yang run stop, 
+!                                 otherwise leave loop.
+        if (lyinyang) then
+          print *, 'Varfile for iproc=', cpu, 'not found!'
+          stop
+        else
+          exit
+        endif
+      endif
+
+      print*,'Remeshing processor',cpu+1,'of',ncpus+iyy,'processors'
+      if (lyang) print*, '(Yang grid)'
+!
+!  Read varfile (this is typically var.dat).
+!
       open(1,file=file,form='unformatted')
 !
 ! Possibility to jump here from below
@@ -218,9 +316,9 @@ program remesh
       do counz=0,mulz-1
         do couny=0,muly-1
           do counx=0,mulx-1
-            iproc_new&
-                =ipz*nprocy*nprocx*mulz*muly*mulx+counz*muly*mulx*nprocx*nprocy&
-                +ipy*nprocx*muly*mulx+couny*mulx*nprocx&
+            iproc_new &
+                =ipz*nprocy*nprocx*mulz*muly*mulx+counz*muly*mulx*nprocx*nprocy &
+                +ipy*nprocx*muly*mulx+couny*mulx*nprocx &
                 +ipx*mulx+counx
 !!$            iproc_new=ipz*(nprocy*mulz*muly)+ipy*muly &
 !!$                +couny+nprocy*muly*counz
@@ -230,59 +328,133 @@ program remesh
         enddo
       enddo
 !
-!  Calculate new grid
+!  Calculate new grid.
+!  Should now also work for *coarsening* the grid.
 !
-      dx=dx/remesh_parx
-      dy=dy/remesh_pary
-      dz=dz/remesh_parz
+      if (remesh_parx/=1.) then
+        if (lperi(1)) then
+          x0loc=x(l1)-dx/2.
+          dx=dx*facx
+          x0loc=x0loc+dx/2.
+        else
+          x0loc=x(l1)
+          dx=dx*facx
+        endif
 !
 !  Correspondingly for the inverse mesh spacing 
 !  Do this currently only for uniform meshes.
+!  TB checked!
 !
-      rdx_1=dx_1(1)*remesh_parx
-      rdy_1=dy_1(1)*remesh_pary
-      rdz_1=dz_1(1)*remesh_parz
-!
-      rdx_tilde=dx_tilde(1)*remesh_parx
-      rdy_tilde=dy_tilde(1)*remesh_pary
-      rdz_tilde=dz_tilde(1)*remesh_parz
-!
-      itx=l1
-      do i=ll1,ll2,remesh_parx
-        do ii=0,remesh_parx-1
-          rx(i+ii)=x(itx)+ii*dx
+        rdx_1=dx_1(1)/facx
+        rdx_tilde=dx_tilde(1)/facx
+
+        do i=ll1,ll2
+          rx(i)=x0loc+(i-ll1)*dx
         enddo
-        itx=itx+1
-      enddo
 !
-      ity=m1
-      do j=mm1,mm2,remesh_pary
-        do jj=0,remesh_pary-1
-          ry(j+jj)=y(ity)+jj*dy
-        enddo
-        ity=ity+1
-      enddo
+!  Finding the ghost points in x.
 !
-      itz=n1
-      do k=nn1,nn2,remesh_parz
-        do kk=0,remesh_parz-1
-          rz(k+kk)=z(itz)+kk*dz
+        do i=1,nghost
+          rx(i)=rx(l1)-(nghost+1-i)*dx
+          rx(ll2+i)=rx(ll2)+i*dx
         enddo
-        itz=itz+1
-      enddo
+      else
+        rx(1:mx)=x; rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
+      endif
+!     
+      if (remesh_pary/=1.) then
+
+        if (lperi(2)) then
+          y0loc=y(m1)-dy/2.
+          dy=dy*facy
+          y0loc=y0loc+dy/2.
+        else
+          y0loc=y(m1)
+          dy=dy*facy
+        endif
+      
+        rdy_1=dy_1(1)/facy
+        rdy_tilde=dy_tilde(1)/facy
+
+        do j=mm1,mm2
+          ry(j)=y0loc+(j-mm1)*dy
+        enddo
+!
+!  Finding the ghost points in y.
+!
+        do i=1,nghost
+          ry(i)=ry(m1)-(nghost+1-i)*dy
+          ry(mm2+i)=ry(mm2)+i*dy
+        enddo
+      else
+        ry(1:my)=y; rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
+      endif
+!
+      if (remesh_parz/=1.) then
+
+        if (lperi(3)) then
+          z0loc=z(n1)-dz/2.
+          dz=dz*facz
+          z0loc=z0loc+dz/2.
+        else
+          z0loc=z(n1)
+          dz=dz*facz
+        endif
+      
+        rdz_1=dz_1(1)/facz
+        rdz_tilde=dz_tilde(1)/facz
+
+        do k=nn1,nn2
+          rz(k)=z0loc+(k-nn1)*dz
+        enddo
 !
 !  Finding the ghost points
 !
-      do i=1,nghost
-        rx(i)=rx(l1)-(nghost+1-i)*dx
-        ry(i)=ry(m1)-(nghost+1-i)*dy
-        rz(i)=rz(n1)-(nghost+1-i)*dz
-        rx(ll2+i)=rx(ll2)+i*dx
-        ry(mm2+i)=ry(mm2)+i*dy
-        rz(nn2+i)=rz(nn2)+i*dz
-      enddo
+        do i=1,nghost
+          rz(i)=rz(n1)-(nghost+1-i)*dz
+          rz(nn2+i)=rz(nn2)+i*dz
+        enddo
+      else
+        rz(1:mz)=z; rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
+      endif
 !
-!  Increasing the number of mesh points
+!  Interpolating f-array to increased number of mesh points if only one
+!  direction is remeshed.
+!  Yet to be tested.
+!
+      if (.false.) then
+      if (remesh_parx>1 .and. remesh_pary==1 .and. remesh_parz==1) then
+        do i=1,mmx_grid
+          do ii=2,mx
+            if (rx(i)<=x(ii).and.rx(i)>=x(ii-1)) exit
+          enddo
+          w2=(rx(i)-x(ii-1))/dx; w1=(x(ii)-rx(i))/dx
+          f(i,1:my,1:mz,:)=a(ii-1,1:my,1:mz,:)*w1+a(ii,1:my,1:mz,:)*w2
+        enddo
+      endif
+
+      if (remesh_parx==1 .and. remesh_pary>1 .and. remesh_parz==1) then
+        do i=1,mmy_grid
+          do ii=2,my
+            if (ry(i)<=y(ii).and.ry(i)>=y(ii-1)) exit
+          enddo
+          w2=(ry(i)-y(ii-1))/dy; w1=(y(ii)-ry(i))/dy
+          f(1:mx,i,1:mz,:)=a(1:mx,ii-1,1:mz,:)*w1+a(1:mx,ii,1:mz,:)*w2
+        enddo
+      endif
+
+      if (remesh_parx==1 .and. remesh_pary==1 .and. remesh_parz>1) then
+        do i=1,mmz_grid
+          do ii=2,mz
+            if (rz(i)<=z(ii).and.rz(i)>=z(ii-1)) exit
+          enddo
+          w2=(rz(i)-z(ii-1))/dz; w1=(z(ii)-rz(i))/dz
+          f(1:mx,1:my,i,:)=a(1:mx,1:my,ii-1,:)*w1+a(1:mx,1:my,ii,:)*w2
+        enddo
+      endif
+      endif
+!
+!  Scattering f-array to increased number of mesh points. 
 !
       itx=remesh_parx
       do i=0,mxout-(2-remesh_parx),remesh_parx
@@ -313,6 +485,7 @@ program remesh
                   else
                     addx=1
                   endif
+
                   if (remesh_pary .eq. 3) then
                     addy=jj 
                     if (ity .eq. 3)    addy=1
@@ -359,43 +532,50 @@ program remesh
 !
         itx=itx+1
       enddo
+!   
+!if (cpu<4) print*, 'cpu,f=', cpu,f(:,8,8,2)
 !
-! SC: the spreading into different processors is now done afte the remeshing
-! in all dimensions
+! SC: the spreading into different processors is now done after the remeshing
+!     in all dimensions.
 !
-! Spreading result to different processors
+! Spreading results to different processors.
 !
-      do counx=1,mulx
-        do couny=1,muly
-          do counz=1,mulz
+      if (any((/mulx,muly,mulz/)/=1)) then
+        do counx=1,mulx
+          do couny=1,muly
+            do counz=1,mulz
 !                cpu_local=(couny-1)+muly*(counz-1)+1
-            cpu_local=(counx-1)+mulx*(couny-1)+mulx*muly*(counz-1)+1
-            xstart=1+(counx-1)*nnx
-            xstop=counx*nnx+2*nghost
-            ystart=1+(couny-1)*nny
-            ystop=couny*nny+2*nghost
-            zstart=1+(counz-1)*nnz
-            zstop=counz*nnz+2*nghost
+              cpu_local=(counx-1)+mulx*(couny-1)+mulx*muly*(counz-1)+1
+              xstart=1+(counx-1)*nnx
+              xstop=counx*nnx+2*nghost
+              ystart=1+(couny-1)*nny
+              ystop=couny*nny+2*nghost
+              zstart=1+(counz-1)*nnz
+              zstop=counz*nnz+2*nghost
 !
 !NILS: This is not OK if mulx>1....should be fixed
 ! SC: @NILS: is it OK now?
 ! SC: changed 'ff' array from 'ff(i+addx,...)' to 'ff(:,...)'
 ! SC: added to 'f' array 'xstart:xstop'
-            ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
+              ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
 !--             if (itx .eq. 2) then
-            rrx(:,cpu_local)=rx(xstart:xstop)
-            rry(:,cpu_local)=ry(ystart:ystop)
-            rrz(:,cpu_local)=rz(zstart:zstop)
-            !--             endif
+              rrx(:,cpu_local)=rx(xstart:xstop)
+              rry(:,cpu_local)=ry(ystart:ystop)
+              rrz(:,cpu_local)=rz(zstart:zstop)
+!--             endif
+            enddo
           enddo
         enddo
-      enddo
+      else
+        ff(:mmx_grid,:mmy_grid,:mmz_grid,:mvar,1)=f
+        rrx(:mmx_grid,1)=rx; rry(:mmy_grid,1)=ry; rrz(:mmz_grid,1)=rz
+      endif
 !
 ! SC: former end of the itx loop
 !
-!  Smoothing data if muly or mulz is greater than 1
+!  Smoothing data if any of the remesh_par* is unequal to 1.
 !
-      if ((remesh_parx*remesh_pary*remesh_parz) .gt. 1) then
+      if (any((/remesh_parx,remesh_pary,remesh_parz/)/=1.)) then
         do j=1,mprocs
           do i=1,mvar
             call rmwig(ff(:,:,:,:,j),i,1.,.false.)
@@ -421,25 +601,14 @@ program remesh
         close(91)
       enddo
 !
-!  Read dim.dat for local processor
-!
-      call chn(cpu,ch)
-      call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
-      if (ip<8) print*,'Reading ',dimfile_loc
-      open(1,FILE=dimfile_loc,FORM='formatted')
-      read(1,*) dummy,dummy,dummy,dummy,dummy
-      read(1,*) prec
-      read(1,*) dummy,dummy,dummy
-      read(1,*) ipxx,ipyy,ipzz
-      close(1)
-!
 !  Write dim.dat for new local processor(s)
 !
       do i=1,mprocs
 
-        ipxx = modulo(cpu_global(i), nprocxx)
-        ipyy = modulo(cpu_global(i)/nprocxx, nprocyy)
-        ipzz = cpu_global(i)/(nprocxx*nprocyy)
+        iproc_new=cpu_global(i)
+        ipxx = modulo(iproc_new, nprocxx)
+        ipyy = modulo(iproc_new/nprocxx, nprocyy)
+        ipzz = iproc_new/(nprocxx*nprocyy)
         call chn(cpu_global(i),ch)
         call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
@@ -472,6 +641,7 @@ program remesh
       enddo
 !
     enddo
+    enddo yinyang_loop
   elseif (overwrite .eq. 'no') then
     print*,'OK, -maybe some other time'
   else
@@ -482,7 +652,7 @@ endprogram remesh
 !***********************************************************************
     subroutine rmwig_1d(f,df,ivar,awig_input,idir)
 !
-!  Remove small scale oscillations (`wiggles') in the x direction from
+!  Remove small scale oscillations (`wiggles') in the direction idir from
 !  the ivar component of f (normally lnrho).
 !  Unlike the version in the actual code, this one does not need
 !  updating of the ghost zones, because remeshing works on data
@@ -625,7 +795,7 @@ endprogram remesh
 !      
 !  12-nov-02/nils: adapted from sub.f90
 !
-      character (len=4)  :: ch
+      character (len=6)  :: ch
       integer :: cpu
 !
       ch='    '
@@ -638,6 +808,10 @@ endprogram remesh
         write(ch(1:3),'(i3)') cpu
       elseif (cpu.lt.10000) then
         write(ch(1:4),'(i4)') cpu
+      elseif (cpu.lt.100000) then
+        write(ch(1:5),'(i5)') cpu
+      elseif (cpu.lt.1000000) then
+        write(ch(1:6),'(i6)') cpu
       else
         print*,'cpu=',cpu
         stop "ch: cpu too large"

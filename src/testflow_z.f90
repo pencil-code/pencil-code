@@ -439,11 +439,11 @@ module Testflow
 !  arrays are already allocated and must not be allocated again.
 !
       if (lugu_as_aux) then
-        if (iugu==0) then
-          call farray_register_auxiliary('ugu',iugu,vector=3*njtestflow)
-        else
-          if (lroot) print*, 'initialize_testflow: iugu = ', iugu
-          call farray_index_append('iugu',iugu)
+        if (iugutest==0) &
+          call farray_register_auxiliary('ugu',iugutest,vector=3*njtestflow)
+        if (iugutest/=0) then
+          if (lroot) print*, 'initialize_testflow: iugu = ', iugutest
+          call farray_index_append('iugutest',iugutest)
         endif
       endif
 !
@@ -648,7 +648,7 @@ module Testflow
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
       real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-quantities
-      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct,diffus_nu
+      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct,diffus_nu,advec_uu
 !
       logical :: ltestflow_out
 !
@@ -701,6 +701,7 @@ module Testflow
 !  do each of the njtestflow test flows at a time
 !  jtest=0  refers to primary turbulence (u^(0), h^(0))
 !
+      advec_uu=0.
       do jtest=0,njtestflow_loc
 !
 !  identify boundary conditions
@@ -920,9 +921,9 @@ module Testflow
 !  check for testflow timestep
 !
           if (lfirst.and.ldt) &
-            advec_uu=max(advec_uu,abs(uutest(:,1))*dx_1(l1:l2)+ &
-                                  abs(uutest(:,2))*dy_1(  m  )+ &
-                                  abs(uutest(:,3))*dz_1(  n  ))
+            advec_uu=max(advec_uu,abs(uutest(:,1))*dline_1(:,1)+ &
+                                  abs(uutest(:,2))*dline_1(:,2)+ &
+                                  abs(uutest(:,3))*dline_1(:,3))
         endif
 
         iuxtest=iuxtest+4
@@ -936,6 +937,7 @@ module Testflow
 !
       if (lfirst.and.ldt) then
         advec_cs2=max(advec_cs2,cs2test*dxyz_2)
+        maxadvec=maxadvec+advec_uu
         diffus_nu=nutest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_nu)
       endif
@@ -2020,19 +2022,19 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
         ifound=0
         if ( itestflow/='W11-W22' ) &
-          ifound = fparse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)
+          ifound = fparse_name(iname,cname(iname),'gal',idiag_gal,cform(iname))
 
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam',idiag_aklam)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gamma',idiag_gamma)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu',idiag_nu)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zeta',idiag_zeta)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi',idiag_xi)
+        ifound = ifound + fparse_name(iname,cname(iname),'aklam',idiag_aklam,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'gamma',idiag_gamma,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'nu',idiag_nu,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'zeta',idiag_zeta,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'xi',idiag_xi,cform(iname))
 
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklamQ',idiag_aklamQ)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gammaQ',idiag_gammaQ)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nuQ',idiag_nuQ)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zetaQ',idiag_zetaQ)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xiQ',idiag_xiQ)
+        ifound = ifound + fparse_name(iname,cname(iname),'aklamQ',idiag_aklamQ,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'gammaQ',idiag_gammaQ,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'nuQ',idiag_nuQ,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'zetaQ',idiag_zetaQ,cform(iname))
+        ifound = ifound + fparse_name(iname,cname(iname),'xiQ',idiag_xiQ,cform(iname))
 !
         do i=1,3
           do j=1,3
@@ -2040,20 +2042,20 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
             cind2 = gen_ind(i,j)
 
             if ( itestflow/='W11-W22' ) &
-              ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gal'//cind2,idiag_galij(i,j))
+              ifound = ifound + fparse_name(iname,cname(iname),'gal'//cind2,idiag_galij(i,j),cform(iname))
 
-            if (j<3) ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam'//cind2,idiag_aklamij(i,j))
-            ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu'//cind2,idiag_nuij(i,j))
+            if (j<3) ifound = ifound + fparse_name(iname,cname(iname),'aklam'//cind2,idiag_aklamij(i,j),cform(iname))
+            ifound = ifound + fparse_name(iname,cname(iname),'nu'//cind2,idiag_nuij(i,j),cform(iname))
 !
           enddo
 
           cind1 = gen_ind(i)
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gamma'//cind1,idiag_gammai(i))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zeta'//cind1,idiag_zetai(i))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi'//cind1,idiag_xii(i))
+          ifound = ifound + fparse_name(iname,cname(iname),'gamma'//cind1,idiag_gammai(i),cform(iname))
+          ifound = ifound + fparse_name(iname,cname(iname),'zeta'//cind1,idiag_zetai(i),cform(iname))
+          ifound = ifound + fparse_name(iname,cname(iname),'xi'//cind1,idiag_xii(i),cform(iname))
 
-          if (i<3) ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklamQ'//cind1,idiag_aklamQi(i))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nuQ'//cind1,idiag_nuQi(i))
+          if (i<3) ifound = ifound + fparse_name(iname,cname(iname),'aklamQ'//cind1,idiag_aklamQi(i),cform(iname))
+          ifound = ifound + fparse_name(iname,cname(iname),'nuQ'//cind1,idiag_nuQi(i),cform(iname))
 
         enddo
 
@@ -2071,17 +2073,17 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 
           endif
 !
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'u'//name,idiag_upqrms(j))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'h'//name,idiag_hpqrms(j))
+          ifound = ifound + fparse_name(iname,cname(iname),'u'//name,idiag_upqrms(j),cform(iname))
+          ifound = ifound + fparse_name(iname,cname(iname),'h'//name,idiag_hpqrms(j),cform(iname))
 
           if ( j>0 ) then
 !
             do i=1,3
-              ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'F'//cind2,idiag_Fipq(i,j))
+              ifound = ifound + fparse_name(iname,cname(iname),'F'//cind2,idiag_Fipq(i,j),cform(iname))
             enddo
 !
             cind = gen_ind(j)
-            ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'Q'//cind,idiag_Qpq(j))
+            ifound = ifound + fparse_name(iname,cname(iname),'Q'//cind,idiag_Qpq(j),cform(iname))
 
           endif
 

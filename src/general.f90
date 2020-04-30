@@ -159,7 +159,7 @@ module General
 !
 !  State and default generator of random numbers.
 !
-  integer, save, dimension(mseed) :: rstate=0
+  integer, save, dimension(mseed) :: rstate=0, rstate2=0
   character (len=labellen) :: random_gen='min_std'
 
   include 'general.h'
@@ -330,13 +330,14 @@ module General
       gn(2)=sqrt(-2*log(r))*cos(twopi*p)
     endsubroutine gaunoise_number
 !***********************************************************************
-    subroutine random_number_wrapper_0(a)
+    subroutine random_number_wrapper_0(a,channel)
 !
 !  Fills a with a random number calculated with one of the generators
 !  available with random_gen.
 !
       use Cdata, only: lroot
 !
+      integer, optional :: channel
       real, intent(out) :: a
 !
       select case (random_gen)
@@ -346,7 +347,16 @@ module General
         case ('min_std')
           a=ran0(rstate(1))
         case ('nr_f90')
-          a=mars_ran()
+          if (present(channel)) then
+            if (channel/=1) then
+              a=mars_ran2()
+            else
+              a=mars_ran()
+            endif
+          else
+            a=mars_ran()
+          endif
+!
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -355,7 +365,7 @@ module General
 !
     endsubroutine random_number_wrapper_0
 !***********************************************************************
-    subroutine random_number_wrapper_1(a)
+    subroutine random_number_wrapper_1(a,channel)
 !
 !  Fills a with an array of random numbers calculated with one of the
 !  generators available with random_gen.
@@ -363,6 +373,7 @@ module General
       use Cdata, only: lroot
 !
       real, dimension(:), intent(out) :: a
+      integer, optional :: channel
       integer :: i
 !
       select case (random_gen)
@@ -374,9 +385,21 @@ module General
             a(i)=ran0(rstate(1))
           enddo
         case ('nr_f90')
-          do i=1,size(a,1)
-            a(i)=mars_ran()
-          enddo
+          if (present(channel)) then
+            if (channel/=1) then
+              do i=1,size(a,1)
+                a(i)=mars_ran2()
+              enddo
+            else
+              do i=1,size(a,1)
+                a(i)=mars_ran()
+              enddo
+            endif
+          else
+            do i=1,size(a,1)
+              a(i)=mars_ran()
+            enddo
+          endif
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -385,7 +408,7 @@ module General
 !
     endsubroutine random_number_wrapper_1
 !***********************************************************************
-    subroutine random_number_wrapper_3(a)
+    subroutine random_number_wrapper_3(a,channel)
 !
 !  Fills a with a matrix of random numbers calculated with one of the
 !  generators available with random_gen.
@@ -393,6 +416,7 @@ module General
       use Cdata, only: lroot
 !
       real, dimension(:,:,:), intent(out) :: a
+      integer, optional :: channel
       integer :: i,j,k
 !
       select case (random_gen)
@@ -407,6 +431,23 @@ module General
           do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
             a(i,j,k)=mars_ran()
           enddo; enddo; enddo
+
+          if (present(channel)) then
+            if (channel/=1) then
+              do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+                a(i,j,k)=mars_ran2()
+              enddo; enddo; enddo
+            else
+              do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+                a(i,j,k)=mars_ran()
+              enddo; enddo; enddo
+            endif
+
+          else
+            do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+              a(i,j,k)=mars_ran()
+            enddo; enddo; enddo
+          endif
         case default
           if (lroot) print*, 'No such random number generator: ', random_gen
           STOP 1                ! Return nonzero exit status
@@ -444,11 +485,12 @@ module General
 !
     endsubroutine normal_deviate
 !***********************************************************************
-    subroutine random_seed_wrapper(size,put,get)
+    subroutine random_seed_wrapper(size,put,get,channel)
 !
 !  Mimics the f90 random_seed routine.
 !
       integer, optional :: size
+      integer, optional :: channel
       integer, optional, dimension(:) :: put,get
 !
       real :: dummy
@@ -469,15 +511,44 @@ module General
       case default ! 'nr_f90'
         nseed=2
         if (present(size)) size=nseed
-        if (present(get)) get(1:nseed)=rstate(1:nseed)
+        if (present(get)) then
+          if (present(channel)) then
+            if (channel/=1) then
+              get(1:nseed)=rstate2(1:nseed)
+            else
+              get(1:nseed)=rstate(1:nseed)
+            endif
+          else
+            get(1:nseed)=rstate(1:nseed)
+          endif
+        endif
+!
         if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
-            dummy = mars_ran(put(1))
+!
+            if (present(channel)) then
+              if (channel/=1) then
+                dummy = mars_ran2(put(1))
+              else
+                dummy = mars_ran(put(1))
+              endif
+            else
+              dummy = mars_ran(put(1))
+            endif
           else
-            rstate(1:nseed)=put(1:nseed)
+            if (present(channel)) then
+              if (channel/=1) then
+                rstate2(1:nseed)=put(1:nseed)
+              else
+                rstate(1:nseed)=put(1:nseed)
+              endif
+            else
+              rstate(1:nseed)=put(1:nseed)
+            endif
           endif
         endif
+!
       endselect
 !
     endsubroutine random_seed_wrapper
@@ -558,6 +629,56 @@ module General
       mars_ran=am*ior(iand(im,ieor(rstate(1),rstate(2))),1)
 !
     endfunction mars_ran
+!***********************************************************************
+    function mars_ran2(init)
+!
+!  Same as mars_ran, but with another seed (for now)
+!
+!   8-nov-19/nils+axel: adapted from mars_ran
+!
+      use Cdata, only: iproc
+!
+      implicit none
+!
+      integer, optional, intent(in) :: init
+!
+      real :: mars_ran2
+      real, save :: am   ! will be constant on a given platform
+      integer, parameter :: ia=16807, im=2147483647, iq=127773, ir=2836
+      integer :: k
+      integer, save :: init1=1812
+      logical, save :: first_call=.true.
+!
+!  Initialize.
+!
+      if (present(init) .or. (rstate2(1) == 0) .or. (rstate2(2) <= 0)) then
+        if (present(init)) init1 = init
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
+        rstate2(1)=ieor(777755555,abs(init1))
+        rstate2(2)=ior(ieor(888889999,abs(init1)),1)
+      elseif (first_call) then
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
+      endif
+!
+!  Marsaglia shift sequence with period 2^32-1.
+!
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),13))
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),-17))
+      rstate2(1)=ieor(rstate2(1),ishft(rstate2(1),5))
+!
+!  Park-Miller sequence by Schrage's method, period 2^31-2.
+!
+      k=rstate2(2)/iq
+      rstate2(2)=ia*(rstate2(2)-k*iq)-ir*k
+      if (rstate2(2) < 0) rstate2(2)=rstate2(2)+im
+!
+!  Combine the two generators with masking to ensure nonzero value.
+!
+      mars_ran2=am*ior(iand(im,ieor(rstate2(1),rstate2(2))),1)
+!
+    endfunction mars_ran2
 !***********************************************************************
     function nr_ran(iseed1)
 !
@@ -5385,16 +5506,16 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
         if (ch=='*') then
           datapos=scan(str(i+1:),'TtFf')
           read(str(i+1:i+datapos-1),*) mult
-          lvec(j+1:j+mult) = str(datapos:datapos)=='T' .or. str(datapos:datapos)=='t'
+          i=i+datapos
+          lvec(j+1:j+mult) = str(i:i)=='T' .or. str(i:i)=='t'
           j=j+mult
-          i=datapos
         elseif (ch=='T'.or.ch=='t') then
           j=j+1
           lvec(j)=.true.
         elseif (ch=='F'.or.ch=='f') then
           j=j+1
           lvec(j)=.false.
-        else !invalid
+        else !comma or blank
         endif
         i=i+1
         if (i>len(str)) exit 
@@ -5443,7 +5564,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       inquire(file='tmp',exist=lfound)
       if (lfound) then
         open(1,file='tmp')
-        read(1,*,err=1,end=1) res
+        read(1,'(a)',err=1,end=1) res
         goto 2
 1       lfound=.false.
 2       close(1,status='delete')

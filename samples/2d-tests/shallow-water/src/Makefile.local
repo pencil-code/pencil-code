@@ -1,0 +1,26 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+MPICOMM   = nompicomm
+GLOBAL    = noglobal
+VISCOSITY =   viscosity
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+EOS       = noeos
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     = noshear
+SHOCK     =   shock_highorder
+
+
+SPECIAL           = special/shallow_water
+INITIAL_CONDITION = initial_condition/shallow_water_bottom
+
+REAL_PRECISION = double

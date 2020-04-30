@@ -26,10 +26,8 @@
 /
 &entropy_run_pars
   Fbot=8.438707582986615E-006
-  iheatcond='K-profile',hcond0=1e-8 ! not used but needed to get 
-				    ! into calc_heatcond
+  iheatcond='K-profile', lread_hcond=T
   lupw_ss=T
-  lhcond_global=T
   chi_t=2.5e-4
   chit_prof1=0., chit_prof2=0. ! chit=3e-4 at the surface
   xbot=0.75, xtop=0.98, widthss=0.01

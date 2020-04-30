@@ -8,9 +8,9 @@
 ;  $Revision: 1.0 $
 ;
 ;  04-Apr-2019/PABourdin: coded for Zafira
+;  09-Oct-2019/MR: removed premature reforms
 ;
-;
-function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=pos, datadir=datadir, first=first, last=last, skip=skip
+function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=pos, datadir=datadir, first=first, last=last, skip=skip, single=single
 
   if (size (datadir, /type) eq 0) then datadir = pc_get_datadir (datadir)
 
@@ -20,16 +20,21 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
   default, first, 1
   default, last, last_slice
   default, skip, 0
-  num = 1 + (last - first) / (skip + 1)
+  step = skip + 1
+  num = 1 + (last - first) / step
 
-  data = reform (dblarr ([ h5_get_size ('1/data'), num ]))
-  time = reform (dblarr (num))
-  coord = reform (dblarr (num))
-  pos = reform (lonarr (num))
+  if (keyword_set(single)) then $
+    data = fltarr ([h5_get_size ('1/data'), num]) $
+  else $
+    data = dblarr ([h5_get_size ('1/data'), num])
+
+  time = dblarr (num)
+  coord = dblarr (num)
+  pos = lonarr (num)
 
   ; iterate over slices
-  for slice = first, last, skip do begin
-    index = (slice - first) / (skip + 1)
+  for slice = first, last, step do begin
+    index = (slice - first) / step
     group = strtrim (slice, 2)
     data[*,*,index] = pc_read (group+'/data')
     time[index] = pc_read (group+'/time')
@@ -38,6 +43,6 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
   end
   h5_close_file
 
-  return, data
+  return, reform(data)
 end
 

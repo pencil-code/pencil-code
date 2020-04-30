@@ -53,6 +53,11 @@ module Cdata
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
 !
+!  Simultaneous foreign code.
+!
+  integer :: tag_foreign=0
+  logical :: lforeign=.false.
+!
 !  Yin-Yang grid.
 !
   logical :: lyinyang=.false., lyang=.false., lcutoff_corners=.false.
@@ -73,6 +78,10 @@ module Cdata
   real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
+  real, dimension (mx) :: x12    ! for slope-limted-diffusion
+  real, dimension (my) :: y12    ! for slope-limted-diffusion
+  real, dimension (mz) :: z12    ! for slope-limted-diffusion
+
 !
 !  Grid parameters.
 !
@@ -160,6 +169,7 @@ module Cdata
   character (len=fnlen) :: directory='', datadir_snap='', directory_prestart=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
+  character (len=fmtlen) :: fmt_avgs='e14.5e3'
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
   real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
@@ -167,7 +177,8 @@ module Cdata
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lwrite_avg1d_binary = .false.
-  logical :: lread_oldsnap=.false., lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
+  logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
+  logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
   logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.
@@ -188,7 +199,6 @@ module Cdata
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
   integer :: ivar_omit1=0, ivar_omit2=0
-  logical :: luse_alt_io=.false.
 !
 ! Debugging
 !
@@ -224,8 +234,8 @@ module Cdata
 !
 !  Random numbers.
 !
-  integer, dimension(mseed) :: seed=0
-  integer :: nseed=0, seed0=1812
+  integer, dimension(mseed) :: seed=0, seed2=0
+  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
   integer, parameter :: ndustspec0=8
   real, dimension (2) :: fran1,fran2
   logical :: lseed_global=.true.
@@ -285,6 +295,7 @@ module Cdata
   integer :: nvar,naux,naux_com
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
+  integer, dimension(ndustrad) :: iapn=0
   integer :: ipp,irhs=0,iTTold=0
   integer :: ipoly=0
   integer :: ip11=0,ip12=0,ip13=0
@@ -294,11 +305,10 @@ module Cdata
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
-  integer :: igradu=0
   integer :: igradu11=0,igradu12=0,igradu13=0
   integer :: igradu21=0,igradu22=0,igradu23=0
   integer :: igradu31=0,igradu32=0,igradu33=0
-  integer :: ispecialvar=0
+  integer :: ispecialvar=0, ispecialvar2=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
              ijxb=0, ijxbx=0, ijxby=0, ijxbz=0
@@ -313,7 +323,7 @@ module Cdata
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
-  integer :: ntestscalar=0,ntestfield=0,ntestflow=0
+  integer :: ntestscalar=0,ntestfield=0,ntestflow=0,ntestlnrho=0
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
@@ -321,6 +331,7 @@ module Cdata
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0,ialfven=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
              iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
+  integer :: isld_char=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0
   integer :: ishock=0,ishock_perp=0
@@ -338,7 +349,6 @@ module Cdata
   integer :: igu11=0,igu12=0,igu13=0
   integer :: igu21=0,igu22=0,igu23=0
   integer :: igu31=0,igu32=0,igu33=0
-  integer :: iogTTx=0, iogTTy=0, iogTTz=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
@@ -349,7 +359,9 @@ module Cdata
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
   integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
-  integer :: icp=0, igpx=0, igpy=0, iRR=0
+  integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
+  integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
+  integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
 !
 !  Parameters related to message passing.
 !
@@ -369,7 +381,7 @@ module Cdata
 !  updating by the *_after_timestep routines.
 !  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
 !  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
-!  
+!
   integer, parameter :: num_after_timestep=5
   integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
   integer :: ighosts_updated=-1
@@ -517,7 +529,7 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
+  logical :: j_spec=.false., jb_spec=.false., oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
@@ -525,14 +537,15 @@ module Cdata
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
-  logical :: sp_spec=.false.
+  logical :: sp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
+  logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false.
-  logical :: GWd_spec=.false., GWe_spec=.false.
-  logical :: GWf_spec=.false., GWg_spec=.false.
-  logical :: har_spec=.false.,hav_spec=.false.
+  logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.
+  logical :: SCL_spec=.false., VCT_spec=.false., Tpq_spec=.false.
+  logical :: har_spec=.false., hav_spec=.false., bb2_spec=.false., jj2_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
@@ -690,5 +703,10 @@ module Cdata
 !
   logical :: lstratz = .false.
   logical :: lnoghost_strati = .false.
+!
+!  Inverse timescale for running time average
+!
+  real :: tau_aver1 = 1.0
+!
 !***********************************************************************
 endmodule Cdata

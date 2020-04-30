@@ -107,6 +107,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
+  logical :: lrho_flucz_as_aux=.false.
   logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
@@ -128,8 +129,7 @@ module Density
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
   logical :: ldensity_slope_limited=.false.
-  real :: h_slope_limited=0., chi_sld_thresh=0.
-  character (len=labellen) :: islope_limiter=''
+  real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ &
@@ -150,7 +150,7 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
-      lconserve_total_mass, total_mass, ireference_state
+      lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -172,8 +172,8 @@ module Density
       ieos_profile, width_eos_prof, beta_glnrho_global,&
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
-      lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
-      h_slope_limited, chi_sld_thresh, islope_limiter
+      lsubtract_init_stratification, ireference_state, &
+      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -208,10 +208,17 @@ module Density
 !
 ! xy averaged diagnostics given in xyaver.in
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
+  integer :: idiag_rhoupmz=0    ! XYAVG_DOC: $\left<\varrho_\uparrow\right>_{xy}$
+  integer :: idiag_rhodownmz=0  ! XYAVG_DOC: $\left<\varrho_\downarrow\right>_{xy}$
   integer :: idiag_rho2mz=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{xy}$
+  integer :: idiag_rho2upmz=0   ! XYAVG_DOC: $\left<\varrho_\uparrow^2\right>_{xy}$
+  integer :: idiag_rho2downmz=0 ! XYAVG_DOC: $\left<\varrho_\downarrow^2\right>_{xy}$
+  integer :: idiag_rhof2mz=0    ! XYAVG_DOC: $\left<\varrho'^2\right>_{xy}$
+  integer :: idiag_rhof2upmz=0  ! XYAVG_DOC: $\left<\varrho'^2_\uparrow\right>_{xy}$
+  integer :: idiag_rhof2downmz=0 ! XYAVG_DOC: $\left<\varrho'^2_\downarrow\right>_{xy}$
   integer :: idiag_gzlnrhomz=0  ! XYAVG_DOC: $\left<\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uglnrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$
-  integer :: idiag_ugrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
+  integer :: idiag_ugrhomz=0    ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
   integer :: idiag_uygzlnrhomz=0! XYAVG_DOC: $\left<u_y\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uzgylnrhomz=0! XYAVG_DOC: $\left<u_z\nabla_y\ln\varrho\right>_{xy}$
 !
@@ -242,7 +249,8 @@ module Density
 !  module auxiliaries
 !
   logical :: lupdate_mass_source
-!
+  real, dimension(nx) :: diffus_diffrho
+
   contains
 !***********************************************************************
     subroutine register_density
@@ -252,6 +260,7 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !   21-oct-15/MR: changes for slope-limited diffusion
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
@@ -263,16 +272,31 @@ module Density
         call farray_register_pde('lnrho',ilnrho)
       endif
 
-      if (ldensity_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+      if (any(idiff=='density-slope-limited')) then
+        if (dimensionality<3)lisotropic_advection=.true.
+        lslope_limit_diff = .true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
         endif
-        call farray_register_auxiliary('Div_flux_diff_rho',iFF_div_rho)
-        iFF_char_c=iFF_div_rho
-        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
-        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+      endif
+!
+!  Fluctuating density = \rho - \mean_xy(\rho)
+!
+      if (lrho_flucz_as_aux) then
+        if (irho_flucz==0) then
+          call farray_register_auxiliary('rho_flucz',irho_flucz)
+        else
+          if (lroot) print*, 'register_energy: irho_run_aver = ', irho_flucz
+          call farray_index_append('irho_flucz',irho_flucz)
+        endif
+        if (lroot) write(15,*) 'rho_flucz = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',rho_flucz'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -526,6 +550,7 @@ module Density
       ldiff_hyper3_polar=.false.
       ldiff_hyper3_strict=.false.
       ldiff_hyper3_mesh=.false.
+      ldensity_slope_limited=.false.
 !
 !  initialize lnothing. It is needed to prevent multiple output.
 !
@@ -565,6 +590,10 @@ module Density
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
+        case ('density-slope-limited')
+          if (lroot) print*,'mass diffusion: slope limited'
+            ldensity_slope_limited=.true.
+            lmassdiff_fix=.true.
         case ('','none')
           if (lroot .and. (.not. lnothing)) &
               print*,'diffusion: nothing (i.e. no mass diffusion)'
@@ -582,10 +611,10 @@ module Density
       if (lrun) then
         if ((ldiff_normal.or.ldiff_cspeed).and.diffrho==0.0) &
             call warning('initialize_density', &
-            'Diffusion coefficient diffrho is zero!')
+            'Diffusion coefficient diffrho is zero!', 0)
         if (ldiff_cspeed.and..not.(lentropy.or.ltemperature)) &
             call warning('initialize_density', &
-            'Diffusion with cspeed can only be used with lenergy!')
+            'Diffusion with cspeed can only be used with lenergy!', 0)
         if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict) &
             .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
@@ -602,12 +631,12 @@ module Density
         if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
           !lmassdiff_fix=.true.
           call warning('initialize_density', &
-            'For diffusion energy/momentum correction should use lmassdiff_fix!')
+            'For diffusion energy/momentum correction should use lmassdiff_fix!', 0)
         endif
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
           call warning('initialize_density', &
-              'Depricated: lmassdiff_fix now the default!')
+              'Depricated: lmassdiff_fix now the default!', 0)
         endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
@@ -884,8 +913,6 @@ module Density
       endif
 !
       call initialize_density_methods
-
-      lslope_limit_diff=lslope_limit_diff .or. ldensity_slope_limited
 !
 !  Find the total mass for later use if lconserve_total_mass = .true.
 !
@@ -1575,6 +1602,8 @@ module Density
 !   10-feb-15/MR: extended calc of <grad(log(rho))> to linear density;
 !                 mass conservation slightly simplified
 !   21-oct-15/MR: changes for slope-limited diffusion
+!   03-apr-20/joern: restructured and fixed slope-limited diffusion:
+!                    removed from here.
 !
       use Sub, only: grad, finalize_aver, calc_all_diff_fluxes, div
 !
@@ -1608,6 +1637,12 @@ module Density
         lnrhomz=fact*lnrhomz
         call finalize_aver(nprocxy,12,lnrhomz)
 
+        if (lrho_flucz_as_aux) then
+           do n=n1,n2
+              nl = n-n1+1
+              f(l1:l2,m1:m2,n,irho_flucz) = exp(f(l1:l2,m1:m2,n,ilnrho) - lnrhomz(nl))
+           enddo
+        endif
       endif
 !
 !  Calculate mean (= xy-average) gradient of lnrho.
@@ -1669,19 +1704,6 @@ module Density
 
       lupdate_mass_source = lmass_source .and. t>=tstart_mass_source .and. &
                             (tstop_mass_source==-1.0 .or. t<=tstop_mass_source)
-!
-!  Slope limited diffusion following Rempel (2014).
-!  No distinction between log and nolog density at the moment!
-!
-      if (ldensity_slope_limited.and.lfirst) then
-
-        call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
-
-        do n=n1,n2; do m=m1,m2
-          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_rho),.true.)
-        enddo; enddo
-
-      endif
 !
    endsubroutine density_after_boundary
 !***********************************************************************
@@ -2020,6 +2042,10 @@ module Density
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
+           idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
+           idiag_rhof2downmz/=0) &
+           lpenc_diagnos(i_uu)=.true.
       if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
@@ -2336,9 +2362,9 @@ module Density
 !  25-may-18/fred: updated mass diffusion correction and set default
 !                  not default for hyperdiff, but correction applies
 !                  to all fdiff if lmassdiff_fix=T
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Deriv, only: der6
-      use Diagnostics
       use Special, only: special_calc_density
       use Sub
 !
@@ -2349,11 +2375,10 @@ module Density
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
-      real, dimension (nx) :: tmp                                       !GPU := p%aux
+      real, dimension (nx) :: fdiff  !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx), parameter :: unitpencil=1.
-      real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3,advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs,diffus_diffrho3,advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
 !
@@ -2518,14 +2543,18 @@ module Density
         if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
-
-      if (ldensity_slope_limited.and.lfirst) then
-        fdiff=fdiff-f(l1:l2,m,n,iFF_div_rho)
-        if (ldt) then
-          chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
-          !!!diffus_diffrho=diffus_diffrho+chi_sld
+!
+!   Slope limited diffusion for density
+!
+      if (ldensity_slope_limited.and.llast) then
+        if (ldensity_nolog) then
+          call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp)
+          fdiff=fdiff+tmp
+        else
+          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp)
+          fdiff=fdiff+tmp*p%rho1
         endif
-      endif
+     endif
 !
 !  Interface for your personal subroutines calls
 !
@@ -2683,68 +2712,155 @@ module Density
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_density(f,df,p)
+
+      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      call calc_diagnostics_density(f,p)
+      call timing('dlnrho_dt','finished',mnloop=.true.)
+!
+    endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine calc_diagnostics_density(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+!
+      call calc_2d_diagnostics_density(p)
+      call calc_1d_diagnostics_density(f,p)
+      call calc_0d_diagnostics_density(p)
+!
+    endsubroutine calc_diagnostics_density
+!***********************************************************************
+    subroutine calc_2d_diagnostics_density(p)
 !
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
-      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      use Diagnostics
+
+      type(pencil_case) :: p
+
       if (l2davgfirst) then
-        if (idiag_lnrhomphi/=0) call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
-        if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
-        if (idiag_rhomxz/=0)    call ysum_mn_name_xz(p%rho,idiag_rhomxz)
-        if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
-        if (idiag_sigma/=0)     call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
+        call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
+        call phisum_mn_name_rz(p%rho,idiag_rhomphi)
+        call ysum_mn_name_xz(p%rho,idiag_rhomxz)
+        call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
       endif
+
+    endsubroutine calc_2d_diagnostics_density
+!***********************************************************************
+    subroutine calc_1d_diagnostics_density(f,p)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
+      use Diagnostics
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+!
+      real, dimension (nx) :: uzmask
+!
       if (l1davgfirst) then
-        if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
+        if ((idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
+            .and..not. lrho_flucz_as_aux) then
+            call stop_it('denergy_dt: Need to set lrho_flucz_as_aux=T'// &
+                         ' in density_run_pars for density fluctuation diagnostics.')
+        endif
+!
+        call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
-        call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
+        if (idiag_rho2mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
         call xysum_mn_name_z(p%glnrho(:,3),idiag_gzlnrhomz)
         call xysum_mn_name_z(p%uglnrho,idiag_uglnrhomz)
         call xysum_mn_name_z(p%ugrho,idiag_ugrhomz)
-        call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
-        call xysum_mn_name_z(p%uu(:,3)*p%glnrho(:,2),idiag_uzgylnrhomz)
+        if (idiag_uygzlnrhomz/=0) call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
+        if (idiag_uzgylnrhomz/=0) call xysum_mn_name_z(p%uu(:,3)*p%glnrho(:,2),idiag_uzgylnrhomz)
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
-        call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
+        if (idiag_rho2mx/=0) call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
+        if (lrho_flucz_as_aux) then
+          if (idiag_rhof2mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2mz)
+        endif
+        if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
+          where (p%uu(:,3) > 0.)
+            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask=0.
+          endwhere
+          call xysum_mn_name_z(uzmask*p%rho,idiag_rhoupmz)
+          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2upmz)
+          if (lrho_flucz_as_aux) then
+            if (idiag_rhof2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+          endif
+        endif
+        if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+          elsewhere
+            uzmask=0.
+          endwhere
+          call xysum_mn_name_z(uzmask*p%rho,idiag_rhodownmz)
+          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2downmz)
+          if (lrho_flucz_as_aux) then
+            if (idiag_rhof2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+          endif
+        endif
       endif
+
+    endsubroutine calc_1d_diagnostics_density
+!***********************************************************************
+    subroutine calc_0d_diagnostics_density(p)
 !
 !  Calculate density diagnostics
 !
+!  21-dec-18/felipe: added inertiaxx - inertiazz for Applegate mechanism
+!
+      use Diagnostics
+
+      use Sub,only: dot2
+      use General
+
+      type(pencil_case) :: p
+
+      real, dimension(nx), parameter :: unitpencil=1.
+      real, dimension(nx) :: tmp
+!
+!  The inertiaxx - inertiazz terms are needed for computing the star's
+!  quadrupole moment, relevant for the Applegate mechanism; see
+!  Navarrete et al. (MNRAS 2019).
+!
       if (ldiagnos) then
-        if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
+        call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
         if (idiag_rhomzmask/=0)call sum_mn_name(p%rho*zmask_den(n-n1+1),idiag_rhomzmask)
-        if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
-        if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
+        call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
+        call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_inertiaxx/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*cos(z(n))**2,idiag_inertiaxx)
         if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
         if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(z(n))**2,idiag_inertiazz)
-        if (idiag_vol/=0)      call integrate_mn_name(unitpencil,idiag_vol)
+        call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
-        if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
+        call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
-        if (idiag_lnrhomax/=0) call max_mn_name(p%lnrho,idiag_lnrhomax)
+        call max_mn_name(p%lnrho,idiag_lnrhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
-        if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
-        if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (idiag_dtd/=0) &
-            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        call sum_mn_name(p%ugrho,idiag_ugrhom)
+        call sum_mn_name(p%uglnrho,idiag_uglnrhom)
+        if (.not.lgpu) then
+          if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        endif
         if (idiag_grhomax/=0) then
-          call dot2(p%grho,tmp)
-          call max_mn_name(sqrt(tmp),idiag_grhomax)
+          call dot2(p%grho,tmp); tmp=sqrt(tmp)
+          call max_mn_name(tmp,idiag_grhomax)
         endif
       endif
-      call timing('dlnrho_dt','finished',mnloop=.true.)
-!
-    endsubroutine dlnrho_dt
+
+    endsubroutine calc_0d_diagnostics_density
 !***********************************************************************
     subroutine split_update_density(f)
 !
@@ -3269,6 +3385,8 @@ module Density
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
+        idiag_rhoupmz=0; idiag_rhodownmz=0; idiag_rho2upmz=0; idiag_rho2downmz=0
+        idiag_rhof2mz=0; idiag_rhof2upmz=0; idiag_rhof2downmz=0
         idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
@@ -3309,6 +3427,13 @@ module Density
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoupmz',idiag_rhoupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhodownmz',idiag_rhodownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2upmz',idiag_rho2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2downmz',idiag_rho2downmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2mz',idiag_rhof2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2upmz',idiag_rhof2upmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhof2downmz',idiag_rhof2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2mz',idiag_rho2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gzlnrhomz',idiag_gzlnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uglnrhomz',idiag_uglnrhomz)

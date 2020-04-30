@@ -32,14 +32,14 @@ default, id_proc, 0
 objout = not arg_present(array)
 ;
 if (n_elements(ivar) eq 1) then begin
-  default,varfile_,'PVAR'
-  varfile=varfile_+strcompress(string(ivar),/remove_all)
-  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+  default, varfile_, 'PVAR'
+  varfile = varfile_ + strcompress (string (ivar), /remove_all)
+  if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
 endif else begin
   default_varfile = 'pvar.dat'
   if (file_test (datadir+'/allprocs/pvar.h5')) then default_varfile = 'pvar.h5'
   default, varfile_, default_varfile
-  varfile=varfile_
+  varfile = varfile_
 endelse
 ;
 ; Load HDF5 varfile if requested or available.
@@ -176,6 +176,12 @@ varcontent[ivpx].variable = 'Particle velocity (vv)'
 varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
+;
+default, ivpx_cart, 0
+varcontent[ivpx_cart].variable = 'Particle velocity cartesian (vvp_cart)'
+varcontent[ivpx_cart].idlvar   = 'vv_cart'
+varcontent[ivpx_cart].idlinit  = INIT_3VECTOR
+varcontent[ivpx_cart].skip     = 2
 ;
 default, idXp1, 0
 varcontent[idXp1].variable = 'Particle Separation (dXp)'
@@ -812,7 +818,7 @@ else begin
   makeobject="object = create_struct(name=objectname," + $
              "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
              "'varnames', 'varlens']," + $
-             "t,x,y,z,dx,dy,dz,npar_found,iipar" + $
+             "t,x,y,z,dx,dy,dz,npar_found,iipar," + $
              "varcontent.idlvar, varcontent.skip )"
 endelse
 

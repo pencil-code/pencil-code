@@ -28,6 +28,7 @@
 module Testfield
 
   use Cparam
+  use Cdata
   use Messages
 
   implicit none
@@ -50,7 +51,7 @@ module Testfield
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.,ampluutest=0.,amplhhtest=0.
-  integer :: iuxtest=0,iuytest=0,iuztest=0,iuztestpq=0
+  integer :: iuxtest=0,iuytest=0,iuztest=0
   integer :: iu0xtest=0,iu0ztest=0,ihxtest=0,ihhtest=0
   integer :: iE0=0
 
@@ -66,6 +67,7 @@ module Testfield
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false.
   logical :: lignore_ugutestm=.false., lignore_ughtestm=.false.
   logical :: lphase_adjust=.false.
+  logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -79,7 +81,7 @@ module Testfield
        amplaatest,ampluutest,amplhhtest, &
        kx_aatest,ky_aatest,kz_aatest, &
        cs0test,phasex_aatest,phasez_aatest, &
-       luxb_as_aux,ljxb_as_aux,lugu_as_aux,lugh_as_aux
+       luxb_as_aux,ljxb_as_aux,lugu_as_aux,lugh_as_aux,luse_main_run
 
   ! run parameters
   real :: etatest=0.,etatest1=0.,nutest=0.,nutest1=0.
@@ -87,6 +89,7 @@ module Testfield
   real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.,rescale_hhtest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
+  logical :: lupw_uutest=.false., lupw_hhtest=.false.
   real :: rho0test=1., rho0test1
 
   namelist /testfield_run_pars/ &
@@ -103,7 +106,8 @@ module Testfield
        lforcing_cont_aatest,ampl_fcont_aatest, &
        lforcing_cont_uutest,ampl_fcont_uutest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,rescale_uutest, rescale_hhtest, rho0test
+       rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
+       lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -128,6 +132,11 @@ module Testfield
   integer :: idiag_psi21=0      ! DIAG_DOC: $\psi_{21}k$
   integer :: idiag_psi12=0      ! DIAG_DOC: $\psi_{12}k$
   integer :: idiag_psi22=0      ! DIAG_DOC: $\psi_{22}k$
+  integer :: idiag_sig1=0       ! DIAG_DOC: $\sigma_1$
+  integer :: idiag_sig2=0       ! DIAG_DOC: $\sigma_2$
+  integer :: idiag_sig3=0       ! DIAG_DOC: $\sigma_3$
+  integer :: idiag_tau1=0       ! DIAG_DOC: $\tau_1$
+  integer :: idiag_tau2=0       ! DIAG_DOC: $\tau_2$
   integer :: idiag_phiK=0       ! DIAG_DOC: $\phi^K$
   integer :: idiag_phiM=0       ! DIAG_DOC: $\phi^M$
   integer :: idiag_phiMK=0      ! DIAG_DOC: $\phi^{MK}$
@@ -162,6 +171,10 @@ module Testfield
   integer :: idiag_u21rms=0     ! DIAG_DOC: $\left<u_{21}^2\right>^{1/2}$
   integer :: idiag_u12rms=0     ! DIAG_DOC: $\left<u_{12}^2\right>^{1/2}$
   integer :: idiag_u22rms=0     ! DIAG_DOC: $\left<u_{22}^2\right>^{1/2}$
+  integer :: idiag_h11rms=0     ! DIAG_DOC: $\left<h_{11}^2\right>^{1/2}$
+  integer :: idiag_h21rms=0     ! DIAG_DOC: $\left<h_{21}^2\right>^{1/2}$
+  integer :: idiag_h12rms=0     ! DIAG_DOC: $\left<h_{12}^2\right>^{1/2}$
+  integer :: idiag_h22rms=0     ! DIAG_DOC: $\left<h_{22}^2\right>^{1/2}$
   integer :: idiag_j11rms=0     ! DIAG_DOC: $\left<j_{11}^2\right>^{1/2}$
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
@@ -173,6 +186,10 @@ module Testfield
   integer :: idiag_uy11m=0      ! DIAG_DOC: $\left<u_{11_y}\right>$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
+  integer :: idiag_h0rms=0      ! DIAG_DOC: $\left<h_{0}^2\right>^{1/2}$
+  integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
+  integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
+  integer :: idiag_h0max=0      ! DIAG_DOC: $\operatorname{max}h_{0}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
@@ -244,9 +261,10 @@ module Testfield
 !
       ntestfield = 3*njtest
       ntestflow = 3*njtest
-      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      ntestlnrho = njtest
+      call farray_register_pde('aatest',iaatest,vector=3,array=njtest)
       call farray_index_append('ntestfield',ntestfield)
-      call farray_register_pde('uutest',iuutest,array=ntestflow)
+      call farray_register_pde('uutest',iuutest,vector=3,array=njtest)
       call farray_index_append('ntestflow',ntestflow)
       call farray_register_pde('lnrhotest',ihhtest,array=njtest)
       call farray_index_append('ntestlnrho',njtest)
@@ -256,7 +274,7 @@ module Testfield
 !
       iaztestpq=iaatest+ntestfield-1
       iuztestpq=iuutest+ntestflow-1
-      ihhtestpq=ihhtest+njtest-1
+      ihhtestpq=ihhtest+ntestlnrho-1
 !
 !  Identify version number.
 !
@@ -287,17 +305,17 @@ module Testfield
 !
       use Cdata
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield
       real :: ktestfield_effective
       integer :: jtest, nscal
+      real, pointer :: rhoref
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
-      if (etatest1/=0.) then
-        etatest=1./etatest1
-      endif
+      if (etatest1/=0.) etatest=1./etatest1
 !
 !  Precalculate nutest if 1/nutest (==nutest1) is given instead
 !
@@ -309,10 +327,26 @@ module Testfield
 !
 !  inverse of reference density
 !
-      if (rho0test==0.) then
-        rho0test1=1.
-        call warning('initialize_testfield','rho0test=0, set to 1')
+      if (lmagnetic) then
+        call get_shared_variable('rhoref', rhoref, caller='initialize_testfield')
+        if (rhoref==impossible) &
+          call warning('initialize_testfield','rhoref in magnetic = impossible')
       else
+        allocate(rhoref); rhoref=impossible
+      endif
+!
+      if (rho0test==0.) then
+        if (rhoref/=impossible.and.rhoref/=0.) then
+          rho0test1=1./rhoref
+          call warning('initialize_testfield','rho0test=0, set to rhoref from magnetic')
+        else
+          rho0test1=1.
+          call warning('initialize_testfield','rho0test=0, set to 1')
+        endif
+      else
+        if (lmagnetic.and.rho0test/=rhoref) then
+          if (lroot) print*, 'Warning - initialize_testfield: rho0test=', rho0test, 'but rhoref from magnetic =', rhoref
+        endif
         rho0test1=1./rho0test
       endif
 !
@@ -407,8 +441,11 @@ module Testfield
 !
 !  set lrescaling_testfield=T if linit_aatest=T
 !
-      if (linit_aatest) then
-        lrescaling_testfield=.true.
+      if (linit_aatest) lrescaling_testfield=.true.
+      if (luse_main_run .and. .not.(lmagnetic.and.lhydro.and.ldensity)) then
+        luse_main_run=.false.
+        call warning('initialize_testfield',  &
+                     'Main run missing or incomplete -> switched to kinematic mode')
       endif
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
@@ -422,44 +459,44 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3,array=njtest)
         else
-          if (lroot) print*, 'initialize_testfield: iuxb = ', iuxb
-          call farray_index_append('iuxb',iuxb)
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
 !  possibility of using jxb as auxiliary array
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3,array=njtest)
         else
-          if (lroot) print*, 'initialize_testfield: ijxb = ', ijxb
-          call farray_index_append('ijxb',ijxb)
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
 !  possibility of using ugu as auxiliary array
 !
       if (lugu_as_aux) then
-        if (iugu==0) then
-          call farray_register_auxiliary('ugu',iugu,vector=3*njtest)
+        if (iugutest==0) then
+          call farray_register_auxiliary('ugu',iugutest,vector=3,array=njtest)
         else
-          if (lroot) print*, 'initialize_testfield: iugu = ', iugu
-          call farray_index_append('iugu',iugu)
+          if (lroot) print*, 'initialize_testfield: iugutest = ', iugutest
+          call farray_index_append('iugutest',iugutest)
         endif
       endif
 !
 !  possibility of using ugh as auxiliary array
 !
       if (lugh_as_aux) then
-        if (iugh==0) then
-          call farray_register_auxiliary('ugh',iugh,vector=njtest)
+        if (iughtest==0) then
+          call farray_register_auxiliary('ugh',iughtest,array=njtest)
         else
-          if (lroot) print*, 'initialize_testfield: iugh = ', iugh
-          call farray_index_append('iugh',iugh)
+          if (lroot) print*, 'initialize_testfield: iughtest = ', iughtest
+          call farray_index_append('iughtest',iughtest)
         endif
       endif
 !
@@ -595,18 +632,17 @@ module Testfield
 !
       use Cdata
 !
-      lpenc_requested(i_bbb)=.true.
-      lpenc_requested(i_jj)=.true.
-      lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_glnrho)=.true.
+      if (luse_main_run) then
+        lpenc_requested(i_bbb)=.true.
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_glnrho)=.true.
 !
-      lpenc_diagnos(i_bbb)=.true.
-      lpenc_diagnos(i_jj)=.true.
-      lpenc_diagnos(i_uu)=.true.
-      lpenc_diagnos(i_oo)=.true.
-      lpenc_diagnos(i_glnrho)=.true.
-      lpenc_diagnos(i_lnrho)=.true.
+        lpenc_diagnos(i_oo)=.true.
+      endif
 !
+      if (lforcing_cont_uutest.or.lforcing_cont_aatest) lpenc_requested(i_fcont)=.true.
+
     endsubroutine pencil_criteria_testfield
 !***********************************************************************
     subroutine pencil_interdep_testfield(lpencil_in)
@@ -683,7 +719,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Hydro, only: uumz,guumz,lcalc_uumeanz
+      use Hydro, only: uumz,guumz,lcalc_uumeanz,coriolis_cartesian
       use Density, only: lnrhomz,glnrhomz,lcalc_lnrhomean,lcalc_glnrhomean
       use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
@@ -700,20 +736,21 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,uxbtestK,uxbtestM,uxbtestMK
       real, dimension (nx,3) :: jxbtest,jxbtestK,jxbtestM,jxbtestMK
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,upq
-      real, dimension (nx,3,njtest) :: Fipq,bpq,jpq
-      real, dimension (nx) :: alpK,alpM,alpMK
-      real, dimension (nx) :: phiK,phiM,phiMK
+      real, dimension (nx,njtest) :: hpq
+      real, dimension (nx,3,njtest) :: Fipq,Eipq,upq,bpq,jpq
+      real, dimension (nx,njtest) :: Rpq
+      real, dimension (nx) :: alpK,alpM,alpMK,phiK,phiM,phiMK
+      real, dimension (nx) :: advec_uu, advec_va2
       real, dimension (nx,3) :: del2Atest,uufluct,bbfluct,jjfluct
       real, dimension (nx,3) :: graddivAtest,aatest,jjtest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
       real, dimension (nx,3) :: del2Utest,uutest,ugutest
-      real, dimension (nx,3) :: ugum,ghhtest
-      real, dimension (nx,3) :: u0ref,b0ref,j0ref,gh0ref
+      real, dimension (nx,3) :: ugum,ghhtest,graddivutest
+      real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3,3) :: aijtest,bijtest,uijtest,Mijtest,uijm
-      real, dimension (nx) :: jbpq,upq2,jpq2,bpq2,Epq2,s2kzDF1,s2kzDF2,hhfluct
+      real, dimension (nx) :: jbpq,upq2,jpq2,bpq2,Epq2,s2kzDF1,s2kzDF2
       real, dimension (nx), parameter :: unity=1.
-      real, dimension (nx) :: hhtest,h0ref,ughm,ughtest,dughtest,divutest,diffus_eta
+      real, dimension (nx) :: ughm,ughtest,dughtest,divutest,diffus_eta
       real, dimension (nz) :: rhomean1
       integer :: jtest,j,nl
       integer, parameter :: i1=1, i2=2, i3=3, i4=4
@@ -732,12 +769,49 @@ module Testfield
         if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
       endif
 !
+      !rhomean1=exp(-lnrhomz)
+
+      nl=n-n1+1
+!
+!  Calculate uufluct=U-Umean.
+!  Note that uumz has dimensions (mz,3), not (nz,3).
+!
+      if (luse_main_run) then
+        if (lcalc_uumeanz) then
+          do j=1,3
+            uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+          enddo
+
+          uijm=0.
+          do j=1,3
+            uum(:,j)=uumz(n,j)
+            uijm(:,j,3)=guumz(nl,j)
+          enddo
+
+        else
+          uufluct=p%uu
+        endif
+!
+!  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
+!  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
+!
+        if (lcalc_aameanz) then
+          do j=1,3
+            bbfluct(:,j)=p%bbb(:,j)-bbmz(nl,j)
+            jjfluct(:,j)=p%jj(:,j)-jjmz(nl,j)
+          enddo
+        else
+          bbfluct=p%bbb
+          jjfluct=p%jj
+        endif
+      endif
+!
 !  loop over all fields, but do it backwards,
 !  so we compute the zero field first
 !
-      nl=n-n1+1
-      !rhomean1=exp(-lnrhomz)
-
+      advec_uu=0.; advec_va2=0.
+!
+!testfields:
       do jtest=njtest,1,-1
 
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
@@ -748,12 +822,10 @@ module Testfield
 !
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         uutest=f(l1:l2,m,n,iuxtest:iuztest)
-        hhtest=f(l1:l2,m,n,ihxtest)
-        call del2v(f,iaxtest,del2Atest)
-        call del2v(f,iuxtest,del2Utest)
-        call gij(f,iaxtest,aijtest,1)
         call gij(f,iuxtest,uijtest,1)
-        call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest,graddivatest)
+        call gij_etc(f,iuxtest,uutest,uijtest,DEL2=del2Utest,GRADDIV=graddivutest)
+        call gij(f,iaxtest,aijtest,1)
+        call gij_etc(f,iaxtest,aatest,aijtest,bijtest,DEL2=del2Atest)
         call curl_mn(aijtest,bbtest,aatest)
         call curl_mn(bijtest,jjtest,bbtest)
         call div_mn(uijtest,divutest,uutest)
@@ -765,16 +837,36 @@ module Testfield
           u0ref=uutest
           b0ref=bbtest
           j0ref=jjtest
-          h0ref=hhtest
-          gh0ref=ghhtest
+          if (.not.luse_main_run) then
+            uufluct=u0ref
+            bbfluct=b0ref
+            jjfluct=j0ref
+          endif
         endif
 !
-!  diffusion terms
+!  Magnetic diffusion term, valid for eta=const.
 !
-        df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
-                                      +etatest*del2Atest
-        df(l1:l2,m,n,iuxtest:iuztest)= df(l1:l2,m,n,iuxtest:iuztest) &
-                                      +nutest*del2Utest     ! to be improved
+        !df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest)-etatest*jjtest      ! Weyl gauge!!!
+        df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest
+!
+!  Viscous force, valid for nu=const.
+!
+        if (lvisc_simplified_testfield) then
+          df(l1:l2,m,n,iuxtest:iuztest)= df(l1:l2,m,n,iuxtest:iuztest)+nutest*del2Utest
+        else
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+                                       +nutest*(del2Utest+1./3.*graddivutest)
+! MR: S.grad ln rho term missing !!!
+        endif
+!
+!  Centrifugal and Coriolis forces.
+!
+        if (lhydro) then
+          call coriolis_cartesian(df,uutest,iuxtest)
+        elseif (Omega/=0.) then
+          df(l1:l2,m,n,iuxtest  )=df(l1:l2,m,n,iuxtest  )+2*Omega*uutest(:,2)
+          df(l1:l2,m,n,iuxtest+1)=df(l1:l2,m,n,iuxtest+1)-2*Omega*uutest(:,1)
+        endif
 !
 !  With imposed field, calculate uutest x B0 and jjtest x B0 terms.
 !  This applies to all terms, including the reference fields.
@@ -799,101 +891,96 @@ module Testfield
 !  -u^0.gradUbar and -u^T.gradUbar to momentum equation
 !  and -Ubar.gradh^0, -Ubar.gradh^T, -u^0.gradHbar, -u^T.gradHbar to continuity equation
 !
-        if (lcalc_uumeanz) then    ! needs to be enforced
-
-          uijm=0.
-          do j=1,3
-            uum(:,j)=uumz(n,j)
-            uijm(:,j,3)=guumz(nl,j)
-          enddo
+        if (luse_main_run) then
+          if (lcalc_uumeanz) then    ! lcalc_uumeanz should be enforced
 !
 !  terms in induction equation
 !
-          call cross_mn(uum,bbtest,umxbtest)                                  ! Ubar x b^T
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
+            call cross_mn(uum,bbtest,umxbtest)                                         ! Ubar x b^T
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
 !
 !  terms in momentum equation
 !
-          call u_dot_grad(f,iuxtest,uijtest,uum   ,ugum            )          ! Ubar.grad u^T
-          call u_dot_grad(f,iuxtest,uijm   ,uutest,ugum,LADD=.true.)          ! u^T.grad Ubar
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-ugum
+            call u_dot_grad(f,iuxtest,uijtest,uum   ,ugum,UPWIND=lupw_uutest        )  ! Ubar.grad u^T
+            call u_dot_grad(f,iuxtest,uijm   ,uutest,ugum,UPWIND=.false.,LADD=.true.)  ! u^T.grad Ubar
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-ugum
 !
 !  terms in enthalpy equation
 !
-          call dot(uum,ghhtest,ughm)                                          ! Ubar.grad h^T
-        else
-          ughm=0.
-        endif
+            call dot(uum,ghhtest,ughm)                                                 ! Ubar.grad h^T
+          else
+            ughm=0.
+          endif
 !
 !  mean density terms
 !
-        if (lcalc_glnrhomean) ughm = ughm + uutest(:,3)*glnrhomz(nl)          ! u^T.grad Hbar
-        df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-ughm
+          if (lcalc_glnrhomean) then
+            ughm = ughm + uutest(:,3)*glnrhomz(nl)          ! u^T.grad Hbar
+            df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-ughm
+          endif
+        endif
 !
-!  possibility of non-soca terms
+!  possibility of non-soca terms (always used for reference problem)
 !
         if (.not.lsoca .or. jtest==iE0) then
 !
-!  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
+!  subtract average emf, unless we ignore the (uxb)' term (lignore_uxbtestm=T)
 !
-          if (iuxb/=0.and..not.ltest_uxb) then                                ! here uxb is aux!
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if (iuxbtest/=0.and..not.ltest_uxb) then                                ! here uxb is aux!
+            uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
             if (lignore_uxbtestm) then
               duxbtest=uxbtest
             else
               do j=1,3
-                duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(nl,j,jtest)              ! (uxb)'
+                duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(nl,j,jtest)                  ! (utest x btest)'
               enddo
             endif
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) + duxbtest
           endif
 !
-!  subtract average jxb, unless we ignore the <jxb> term (lignore_jxbtestm=T)
+!  subtract average jxb, unless we ignore the (jxb)' term (lignore_jxbtestm=T)
 !
-          if (ijxb/=0.and..not.ltest_jxb) then                                ! here jxb is aux!
-            jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+          if (ijxbtest/=0.and..not.ltest_jxb) then                                ! here jxb is aux!
+            jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
             if (lignore_jxbtestm) then
               djxbtest=jxbtest
             else
               do j=1,3
-                djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(nl,j,jtest)              ! (jxb)'
+                djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(nl,j,jtest)                  ! (jtest x btest)'
               enddo
             endif
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) + djxbtest*rho0test1    ! (jxb)'/rhobar
           endif
 !
-!  subtract average ugu, unless we ignore the <ugu> term (lignore_ugutestm=T)
+!  subtract average ugu, unless we ignore the (ugu)' term (lignore_ugutestm=T)
 !
-          if (iugu/=0.and..not.ltest_ugu) then                                ! here ugu is aux!
-            ugutest=f(l1:l2,m,n,iugu+3*(jtest-1):iugu+3*jtest-1)
+          if (iugutest/=0.and..not.ltest_ugu) then                            ! here ugu is aux!
+            ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
             if (lignore_ugutestm) then
               dugutest=ugutest
             else
               do j=1,3
-                dugutest(:,j)=ugutest(:,j)-ugutestmz(nl,j,jtest)              ! (u.grad u)'
+                dugutest(:,j)=ugutest(:,j)-ugutestmz(nl,j,jtest)              ! (utest.grad utest)'
               enddo
             endif
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) - dugutest
           endif
 !
-!  subtract average ugh, unless we ignore the <ugh> term (lignore_ughtestm=T)
+!  subtract average ugh, unless we ignore the (ugh)' term (lignore_ughtestm=T)
 !
-          if (iugh/=0.and..not.ltest_ugh) then                                ! here ugh is aux!
-            ughtest=f(l1:l2,m,n,iugh+(jtest-1))
+          if (iughtest/=0.and..not.ltest_ugh) then                            ! here ugh is aux!
+            ughtest=f(l1:l2,m,n,iughtest+(jtest-1))
             if (lignore_ughtestm) then
               dughtest=ughtest
             else
-              dughtest=ughtest-ughtestmz(nl,jtest)                            ! (u.grad h)'
+              dughtest=ughtest-ughtestmz(nl,jtest)                            ! (utest.grad htest)'
             endif
             df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-dughtest
           endif
 !
-!  end of .not.lsoca
+!  end of .not.lsoca 
 !
         endif
-!
-!  Do things differently for the reference fields.
-!
         if (jtest==iE0) then
 !
 !  Add possibility of forcing that is not delta-correlated in time.
@@ -907,41 +994,8 @@ module Testfield
                                           +ampl_fcont_aatest*p%fcont(:,:,2)
         else
 !
-!  Calculate uufluct=U-Umean.
-!  Note that uumz has dimensions mz*3, not nz*3.
-!
-          if (lcalc_uumeanz) then
-            do j=1,3
-              uufluct(:,j)=p%uu(:,j)-uumz(n,j)
-            enddo
-          else
-            uufluct=p%uu
-          endif
-!
-!  Calculate hhfluct=H-Hmean.
-!
-          if (lcalc_lnrhomean) then
-            hhfluct=p%lnrho-lnrhomz(nl)
-          else
-            hhfluct=p%lnrho
-          endif
-!
-!  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
-!  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
-!
-          if (lcalc_aameanz) then
-            do j=1,3
-              bbfluct(:,j)=p%bbb(:,j)-bbmz(nl,j)
-              jjfluct(:,j)=p%jj(:,j)-jjmz(nl,j)
-            enddo
-          else
-            bbfluct=p%bbb
-            jjfluct=p%jj
-          endif
-!
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
-!  Note: the same block of lines occurs again further down in the file.
 !
           select case (itestfield)
           case ('B11-B22')
@@ -964,11 +1018,18 @@ module Testfield
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbrtest*rho0test1
 !
-!  advance test field equation
+!  r.h.s. of test problems completed
 !
         endif
 !
-!  calculate alpha, begin by calculating uxbtest (if not already done above)
+!  Restore uxbtest, jxbtest, ugutest and ughtest from f-array (if not already done above).
+!
+        if (lsoca .and. jtest/=iE0) then
+          if (luxb_as_aux) uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
+          if (ljxb_as_aux) jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
+          if (lugu_as_aux) ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
+          if (lugh_as_aux) ughtest=f(l1:l2,m,n,iughtest+jtest-1)
+        endif
 !
         if ((ldiagnos.or.l1davgfirst).and. &
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
@@ -981,15 +1042,6 @@ module Testfield
            idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
 !
-!  uutest and bbtest were only needed for the non-SOCA parts that
-!  are calculated elsewhere. Therefore, for diagnostics, we need
-!  to recalculate them here.
-!
-          uutest=f(l1:l2,m,n,iuxtest:iuztest)
-          aatest=f(l1:l2,m,n,iaxtest:iaztest)
-          call gij(f,iaxtest,aijtest,1)
-          call curl_mn(aijtest,bbtest,aatest)
-!
 !  Settings for quadratic quantities (magnetic stress)
 !
           if (idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
@@ -1001,24 +1053,34 @@ module Testfield
             Mijpq(:,:,:,jtest)=Mijtest*bamp12
           endif
         endif
-        bpq(:,:,jtest)=bbtest
-        upq(:,:,jtest)=uutest
+
+        if (ldiagnos.or.l1davgfirst.or.lvideo) then
+
+          bpq(:,:,jtest)=bbtest
+          upq(:,:,jtest)=uutest
+          if (idiag_jb0m/=0.or.idiag_j11rms/=0) jpq(:,:,jtest)=jjtest
+          hpq(:,jtest)=f(l1:l2,m,n,ihxtest)
 !
-!  Restore uxbtest and jxbtest from f-array, do the same for jxb.
+!  evaluate different contributions to <uxb>, <jxb>/rho0 + u.gradu and u.grad h.
 !
-      if (luxb_as_aux) uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-      if (ljxb_as_aux) jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+          Eipq(:,:,jtest)=uxbtest*bamp1
+          Fipq(:,:,jtest)=(rho0test1*jxbtest-ugutest)*bamp1
+          Rpq(:,jtest)=ughtest*bamp1
+!if (lroot.and. maxval(ughtest)/=0. .and. abs(maxval(ughtest))<1e-10) print*, 'ughtest:', m,n,maxval(ughtest)
+        endif
 !
-!  evaluate different contributions to <uxb> and <jxb>
+        if (lfirst.and.ldt) then
 !
-        Eipq(:,:,jtest)=uxbtest*bamp1
-        Fipq(:,:,jtest)=rho0test1*jxbtest*bamp1
-        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) &
-            jpq(:,:,jtest)=jjtest
+! advective and Alfven timestep
 !
-!  enddo loop for jtest
-!
-      enddo
+          advec_uu=max(advec_uu,abs(uutest(:,1))*dline_1(:,1)+&
+                                abs(uutest(:,1))*dline_1(:,2)+&
+                                abs(uutest(:,2))*dline_1(:,3))
+          advec_va2=max(advec_va2,((bbtest(:,1)*dx_1(l1:l2))**2+ &
+                                   (bbtest(:,2)*dy_1(  m  ))**2+ &
+                                   (bbtest(:,3)*dz_1(  n  ))**2)*mu01*rho0test1)
+        endif
+      enddo !testfields
 !
 !  compute kinetic, magnetic, and magneto-kinetic contributions
 !
@@ -1036,12 +1098,17 @@ module Testfield
         call dot(B_ext_inv,jxbtestM,phiM)
         call dot(B_ext_inv,jxbtestMK,phiMK)
       endif
+
+      if (lfirst.and.ldt) then
+        maxadvec=maxadvec+advec_uu
+        advec2=advec2+advec_va2
+!
+        if (headtt.or.ldebug) print*,'daatest_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
-      if (lfirst.and.ldt) then
-        diffus_eta=etatest*dxyz_2
+        diffus_eta=max(etatest,nutest)*dxyz_2
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
@@ -1049,7 +1116,8 @@ module Testfield
 !  The g95 compiler doesn't like to see an index that is out of bounds,
 !  so prevent this warning by writing i3=3 and i4=4
 !
-      if (ldiagnos) then
+      if (l1davgfirst) then
+!
         call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
         call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
         call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
@@ -1072,7 +1140,11 @@ module Testfield
         call xysum_mn_name_z(Mijpq(:,2,2,i1),idiag_M22z)
         call xysum_mn_name_z(Mijpq(:,3,3,i1),idiag_M33z)
 !
-!  averages for alpha and eta
+      endif
+!
+      if (ldiagnos) then
+!
+!  Volume averages for alpha and eta.
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,i2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,i2),idiag_alp21)
@@ -1157,13 +1229,22 @@ module Testfield
           if (idiag_eta11cc/=0) call sum_mn_name(c2z(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11cc)
           if (idiag_eta21sc/=0) call sum_mn_name(csz(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21sc)
 !
-!  same for jxb
+!  same for jxb/rho0 + u.grad u.
 !
           if (idiag_phi12/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i3)+sz(n)*Fipq(:,1,i4),idiag_phi12)
           if (idiag_phi22/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i3)+sz(n)*Fipq(:,2,i4),idiag_phi22)
           if (idiag_phi32/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i3)+sz(n)*Fipq(:,3,i4),idiag_phi32)
           if (idiag_psi11/=0) call sum_mn_name((-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestfield1,idiag_psi11)
           if (idiag_psi21/=0) call sum_mn_name((-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestfield1,idiag_psi21)
+!
+!  and u.grad h
+!
+
+          if (idiag_sig1/=0) call sum_mn_name(+cz(n)*Rpq(:,i1)+sz(n)*Rpq(:,i2),idiag_sig1)
+          if (idiag_sig2/=0) call sum_mn_name(+cz(n)*Rpq(:,i3)+sz(n)*Rpq(:,i4),idiag_sig2)
+          if (idiag_tau1/=0) call sum_mn_name((-sz(n)*Rpq(:,i1)+cz(n)*Rpq(:,i2))*ktestfield1,idiag_tau1)
+          if (idiag_tau2/=0) call sum_mn_name((-sz(n)*Rpq(:,i3)+cz(n)*Rpq(:,i4))*ktestfield1,idiag_tau2)
+!
         endif
 !
 !  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
@@ -1225,31 +1306,45 @@ module Testfield
           call dot2(upq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_u0rms,lsqrt=.true.)
         endif
+        if (idiag_u0max/=0) then
+          call dot2(upq(:,:,iE0),bpq2)
+          call max_mn_name(bpq2,idiag_u0max,lsqrt=.true.)
+        endif
+        if (idiag_h0rms/=0) call sum_mn_name(hpq(:,iE0)**2,idiag_h0rms,lsqrt=.true.)
+        call max_mn_name(hpq(:,iE0),idiag_h0max)
 !
         if (idiag_b0rms/=0) then
           call dot2(bpq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
+        endif
+        if (idiag_b0max/=0) then
+          call dot2(bpq(:,:,iE0),bpq2)
+          call max_mn_name(bpq2,idiag_b0max,lsqrt=.true.)
         endif
 !
         if (idiag_u11rms/=0) then
           call dot2(upq(:,:,1),upq2)
           call sum_mn_name(upq2,idiag_u11rms,lsqrt=.true.)
         endif
+        if (idiag_h11rms/=0) call sum_mn_name(hpq(:,1)**2,idiag_h11rms,lsqrt=.true.)
 !
         if (idiag_u21rms/=0) then
           call dot2(upq(:,:,i2),upq2)
           call sum_mn_name(upq2,idiag_u21rms,lsqrt=.true.)
         endif
+        if (idiag_h21rms/=0) call sum_mn_name(hpq(:,i2)**2,idiag_h21rms,lsqrt=.true.)
 !
         if (idiag_u12rms/=0) then
           call dot2(upq(:,:,i3),upq2)
           call sum_mn_name(upq2,idiag_u12rms,lsqrt=.true.)
         endif
+        if (idiag_h12rms/=0) call sum_mn_name(hpq(:,i3)**2,idiag_h12rms,lsqrt=.true.)
 !
         if (idiag_u22rms/=0) then
           call dot2(upq(:,:,i4),upq2)
           call sum_mn_name(upq2,idiag_u22rms,lsqrt=.true.)
         endif
+        if (idiag_h22rms/=0) call sum_mn_name(hpq(:,i4)**2,idiag_h22rms,lsqrt=.true.)
 !
         if (idiag_b11rms/=0) then
           call dot2(bpq(:,:,1),bpq2)
@@ -1305,7 +1400,6 @@ module Testfield
       endif
 !
 !  write B-slices for output in wvid in run.f90
-!  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst.and.ivid_bb11/=0) &
         call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
@@ -1345,6 +1439,8 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
+      use General, only: keep_compiler_quiet
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -1377,7 +1473,6 @@ module Testfield
       real, dimension (nx,3) :: uxbtest1,jxbtest1
       real, dimension (nx,3) :: uxbtest2,jxbtest2
       real, dimension (nx,3) :: ghhtest,ugutest
-      real, dimension (nx,3) :: del2Atest2,graddivatest
       real, dimension (nx,3) :: u0ref,b0ref,j0ref,gh0ref
       real, dimension (nx,3) :: uufluct,ghhfluct,bbfluct,jjfluct
       real, dimension (nx) :: ughtest
@@ -1396,9 +1491,8 @@ module Testfield
 !
 !  Stop if iE0 is too small.
 !
-      if (iE0/=5) then
+      if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need ntest=5 for u0ref')
-      endif
 !
 !  initialize buffer for mean fields
 !
@@ -1407,48 +1501,54 @@ module Testfield
       ugutestmz=0.
       ughtestmz=0.
 !
-      lpenc_loc = .false.; lpenc_loc((/i_glnrho,i_bbb,i_jj/))=.true.
+      if (luse_main_run) then
+        lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_bb,i_bij,i_jj,i_lnrho,i_glnrho/))=.true.
+      endif
+!
 !
 !  Start mn loop
 !
-      do n=n1,n2
+mn:   do n=n1,n2
         nl=n-n1+1
         do m=m1,m2
 !
+        if (luse_main_run) then
+
 !  Begin by getting/computing fields from main run.
 !
-        call calc_pencils_density(f,p,lpenc_loc)
-        call calc_pencils_magnetic(f,p,lpenc_loc)
+          call calc_pencils_density(f,p,lpenc_loc)
+          call calc_pencils_magnetic(f,p,lpenc_loc)
 !
 !  Calculate uufluct=U-Umean.
 !  Note that uumz has dimensions mz*3, not nz*3.
 !
-        if (lcalc_uumeanz) then     ! should be enforced
-          do j=1,3
-            uufluct(:,j)=f(l1:l2,m,n,iux+j-1)-uumz(n,j)
-          enddo
-        else
-          uufluct=f(l1:l2,m,n,iux:iuz)
-        endif
+          if (lcalc_uumeanz) then     ! should be enforced
+            do j=1,3
+              uufluct(:,j)=f(l1:l2,m,n,iux+j-1)-uumz(n,j)
+            enddo
+          else
+            uufluct=f(l1:l2,m,n,iux:iuz)
+          endif
 !
 !  Calculate ghhfluct = grad(H) - d_z Hmean.
 !  Note that glnrhomz has dimensions mz*3, not nz*3.
 !
-        ghhfluct=p%glnrho
-        if (lcalc_glnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl)
+          ghhfluct=p%glnrho
+          if (lcalc_glnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl)
 !
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
 !  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
-        if (lcalc_aameanz) then
-          do j=1,3
-            bbfluct(:,j)=p%bbb(:,j)-bbmz(nl,j)
-            jjfluct(:,j)=p%jj(:,j)-jjmz(nl,j)
-          enddo
-        else
-          bbfluct=p%bbb
-          jjfluct=p%jj
+          if (lcalc_aameanz) then
+            do j=1,3
+              bbfluct(:,j)=p%bbb(:,j)-bbmz(nl,j)
+              jjfluct(:,j)=p%jj(:,j)-jjmz(nl,j)
+            enddo
+          else
+            bbfluct=p%bbb
+            jjfluct=p%jj
+          endif
         endif
 !
 !  Count jtest backward, so we have already access to the reference fields.
@@ -1468,17 +1568,17 @@ module Testfield
 !
           call gij(f,iaxtest,aijtest,1)
           call gij(f,iuxtest,uijtest,1)
-          call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+          call gij_etc(f,iaxtest,aatest,aijtest,bijtest)
           call curl_mn(aijtest,bbtest,aatest)
           call curl_mn(bijtest,jjtest,bbtest)
           call grad(f,ihxtest,ghhtest)
 !
+          if (jtest==iE0) then
+
 !  Set u0ref, b0ref, and j0ref (if iE0=5).
 !  Also compute u0 x b0, j0 x b0, u0.grad u0, and u0.grad h0 and put into corresponding arrays.
 !  They continue to exist throughout the jtest loop.
 !
-          if (jtest==iE0) then
-
             u0ref=uutest
             b0ref=bbtest
             j0ref=jjtest
@@ -1486,9 +1586,15 @@ module Testfield
             gh0ref=ghhtest
             call cross_mn(u0ref,b0ref,uxbtest)   ! u0 x b0
             call cross_mn(j0ref,b0ref,jxbtest)   ! j0 x b0
-            call u_dot_grad(f,iuxtest,uijtest,uutest,ugutest,UPWIND=.false.)   !u0.grad u0
-            call u_dot_grad(f,ihxtest,ghhtest,uutest,ughtest,UPWIND=.false.)   !u0.grad h0
+            call u_dot_grad(f,iuxtest,uij0ref,u0ref,ugutest,UPWIND=lupw_uutest)  !u0.grad u0
+            call u_dot_grad(f,ihxtest,gh0ref,u0ref,ughtest,UPWIND=lupw_hhtest)   !u0.grad h0
 
+            if (.not.luse_main_run) then
+              uufluct=u0ref
+              bbfluct=b0ref
+              jjfluct=j0ref
+              ghhfluct=gh0ref
+            endif
           else
 !
 !  Calculate uxb and jxb, depending on whether we use
@@ -1501,51 +1607,54 @@ module Testfield
               call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
               call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
             case ('bb', '(ii)')
-              call cross_mn(j0ref,bbtest,jxbtest1)
-              call cross_mn(jjtest,bbfluct,jxbtest2)
-              call cross_mn(u0ref,bbtest,uxbtest1)
-              call cross_mn(uutest,bbfluct,uxbtest2)
+              call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
+              call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
+              call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
+              call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
             case ('bu', '(iii)')
-              call cross_mn(j0ref,bbtest,jxbtest1)
-              call cross_mn(jjtest,bbfluct,jxbtest2)
-              call cross_mn(uufluct,bbtest,uxbtest1)
-              call cross_mn(uutest,b0ref,uxbtest2)
+              call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
+              call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
+              call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
+              call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
             case ('jb', '(iv)')
-              call cross_mn(jjfluct,bbtest,jxbtest1)
-              call cross_mn(jjtest,b0ref,jxbtest2)
-              call cross_mn(u0ref,bbtest,uxbtest1)
-              call cross_mn(uutest,bbfluct,uxbtest2)
+              call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
+              call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+              call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
+              call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
             case default
               call fatal_error('testfield_after_boundary','unknown itestfield_method '//trim(itestfield_method))
             endselect
+!
             uxbtest=uxbtest1+uxbtest2
             jxbtest=jxbtest1+jxbtest2
 !
 !  Only one of the two possibilities for ugu and ugh, respectively, implemented here.
 !
-            call u_dot_grad(f,iuxtest,uijtest,uufluct,ugutest,UPWIND=.false.)              ! (u.grad)(utest)   tbc
-            call u_dot_grad(f,iuutest,uij0ref,uutest,ugutest,UPWIND=.false.,LADD=.true.)   ! (utest.grad)(u0)  tbc
-            call u_dot_grad(f,ihhtest,ghhtest,uufluct,ughtest,UPWIND=.false.)              ! u.grad(htest)     tbc
-            call u_dot_grad(f,iuutest,gh0ref,uutest,ughtest,UPWIND=.false.,LADD=.true.)    ! utest.grad(h0)    tbc
+            call u_dot_grad(f,iuxtest,uijtest,uufluct,ugutest,UPWIND=lupw_uutest)                         ! (u.grad)(utest)   tbc
+            call u_dot_grad(f,iuutest+3*(njtest-1),uij0ref,uutest,ugutest,UPWIND=lupw_uutest,LADD=.true.) ! (utest.grad)(u0)  tbc
+!
+            call u_dot_grad(f,ihxtest,ghhtest,uufluct,ughtest,UPWIND=lupw_hhtest)                         ! u.grad(htest)     tbc
+            call u_dot_grad(f,ihhtest+3*(njtest-1),gh0ref,uutest,ughtest,UPWIND=lupw_hhtest,LADD=.true.)  ! utest.grad(h0)    tbc
 !
           endif
 !
 !  Put uxb, jxb, ugu and ugh into f-array
 !
-          if (iuxb/=0) then
-            juxb=iuxb+3*(jtest-1)
+          if (iuxbtest/=0) then
+            juxb=iuxbtest+3*(jtest-1)
             f(l1:l2,m,n,juxb:juxb+2)=uxbtest
           endif
-          if (ijxb/=0) then
-            jjxb=ijxb+3*(jtest-1)
+          if (ijxbtest/=0) then
+            jjxb=ijxbtest+3*(jtest-1)
             f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
           endif
-          if (iugu/=0) then 
-            jugu=iugu+3*(jtest-1)
+          if (iugutest/=0) then 
+            jugu=iugutest+3*(jtest-1)
             f(l1:l2,m,n,jugu:jugu+2)=ugutest
           endif
-          if (iugh/=0) then 
-            jugh=iugh+  (jtest-1)
+          if (iughtest/=0) then 
+            jugh=iughtest+  (jtest-1)
+!if (lroot.and. maxval(ughtest)/=0. .and. abs(maxval(ughtest))<1e-20) print*, 'ughtest:', m,n,maxval(ughtest)
             f(l1:l2,m,n,jugh       )=ughtest
           endif
 !
@@ -1563,7 +1672,7 @@ module Testfield
 !
         enddo
         enddo
-      enddo
+      enddo mn
 !
 !  do communication
 !
@@ -1645,9 +1754,11 @@ module Testfield
             iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
             iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
             ihxtest=ihhtest+  (jtest-1)
-            f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)
-            f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)
-            f(l1:l2,m1:m2,n1:n2,ihxtest)=rescale_hhtest(jtest)*f(l1:l2,m1:m2,n1:n2,ihxtest)
+            if (jtest/=iE0) then
+              f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)
+              f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)
+              f(l1:l2,m1:m2,n1:n2,ihxtest)=rescale_hhtest(jtest)*f(l1:l2,m1:m2,n1:n2,ihxtest)
+            endif
           enddo
 !
 !  Reinitialize reference fields with fluctuations of main run.
@@ -1860,6 +1971,8 @@ module Testfield
         idiag_phi12=0; idiag_phi22=0; idiag_phi32=0
         idiag_psi11=0; idiag_psi21=0
         idiag_psi12=0; idiag_psi22=0
+        idiag_sig1=0; idiag_sig2=0; idiag_sig3=0
+        idiag_tau1=0; idiag_tau2=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
         idiag_alpK=0; idiag_alpM=0; idiag_alpMK=0
@@ -1869,10 +1982,12 @@ module Testfield
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0
+        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0
+        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0 
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
+        idiag_h11rms=0; idiag_h21rms=0; idiag_h12rms=0; idiag_h22rms=0
         idiag_j11rms=0; idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
         idiag_bx0pt=0; idiag_bx11pt=0; idiag_bx21pt=0; idiag_bx12pt=0; idiag_bx22pt=0
@@ -1907,6 +2022,11 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'psi21',idiag_psi21)
         call parse_name(iname,cname(iname),cform(iname),'psi12',idiag_psi12)
         call parse_name(iname,cname(iname),cform(iname),'psi22',idiag_psi22)
+        call parse_name(iname,cname(iname),cform(iname),'sig1',idiag_sig1)
+        call parse_name(iname,cname(iname),cform(iname),'sig2',idiag_sig2)
+        call parse_name(iname,cname(iname),cform(iname),'sig3',idiag_sig3)
+        call parse_name(iname,cname(iname),cform(iname),'tau1',idiag_tau1)
+        call parse_name(iname,cname(iname),cform(iname),'tau2',idiag_tau2)
         call parse_name(iname,cname(iname),cform(iname),'phiK',idiag_phiK)
         call parse_name(iname,cname(iname),cform(iname),'phiM',idiag_phiM)
         call parse_name(iname,cname(iname),cform(iname),'phiMK',idiag_phiMK)
@@ -1951,6 +2071,10 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'u21rms',idiag_u21rms)
         call parse_name(iname,cname(iname),cform(iname),'u12rms',idiag_u12rms)
         call parse_name(iname,cname(iname),cform(iname),'u22rms',idiag_u22rms)
+        call parse_name(iname,cname(iname),cform(iname),'h11rms',idiag_h11rms)
+        call parse_name(iname,cname(iname),cform(iname),'h21rms',idiag_h21rms)
+        call parse_name(iname,cname(iname),cform(iname),'h12rms',idiag_h12rms)
+        call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
         call parse_name(iname,cname(iname),cform(iname),'j11rms',idiag_j11rms)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
@@ -1964,6 +2088,10 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'uy11m',idiag_uy11m)
         call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
+        call parse_name(iname,cname(iname),cform(iname),'h0rms',idiag_h0rms)
+        call parse_name(iname,cname(iname),cform(iname),'u0max',idiag_u0max)
+        call parse_name(iname,cname(iname),cform(iname),'b0max',idiag_b0max)
+        call parse_name(iname,cname(iname),cform(iname),'h0max',idiag_h0max)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
         call parse_name(iname,cname(iname),cform(iname),'E12rms',idiag_E12rms)

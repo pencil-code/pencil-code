@@ -143,30 +143,50 @@ module Diagnostics
         dVol_rel1=1./box_volume
       elseif (lspherical_coords) then
 !
-        intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
-        intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
-        intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
-!
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
 !
-        if (nx==1) intdr_rel=1.0
-        if (ny==1) intdtheta_rel=1.0
-        if (nz==1) intdphi_rel=1.0
+        if (nxgrid/=1) then
+          intdr_rel = (xyz1(1)**3-xyz0(1)**3)/(3.*dx)
+        else
+          intdr_rel = 1.
+        endif
+!
+        if (nygrid/=1) then
+          intdtheta_rel = -(cos(xyz1(2))-cos(xyz0(2)))/dy
+        else
+          intdtheta_rel = 1.
+        endif
+!
+        if (nzgrid/=1) then
+          intdphi_rel = (xyz1(3) - xyz0(3))/dz
+        else
+          intdphi_rel = 1.
+        endif
 !
         dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
 !
       elseif (lcylindrical_coords) then
 !
-        intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
-        intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
-        intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!  Prevent zeros from less than 3-dimensional runs
 !
-!  Prevent zeros from less than 3-dimensional runs.
+        if (nxgrid/=1) then
+          intdr_rel = (xyz1(1)**2 - xyz0(1)**2)/(2.*dx)
+        else
+          intdr_rel = 1.
+        endif
 !
-        if (nx==1) intdr_rel=1.0
-        if (ny==1) intdphi_rel=1.0
-        if (nz==1) intdz_rel=1.0
+        if (nygrid/=1) then
+          intdphi_rel = (xyz1(2) - xyz0(2))/dy
+        else
+          intdphi_rel = 1.
+        endif
+!
+        if (nzgrid/=1) then
+          intdz_rel = (xyz1(3) - xyz0(3))/dz
+        else
+          intdz_rel = 1.
+        endif
 !
         dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
 !
@@ -206,12 +226,10 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
+
         call save_name(tdiagnos,idiag_t)
         call save_name(dt,idiag_dt)
         call save_name(one_real*(it-1),idiag_it)
-      endif
-!
-      if (lroot) then
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
 !  time).
@@ -252,7 +270,7 @@ module Diagnostics
 !
 !  Write 'time_series.h5' if output format is HDF5
 !
-      if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
+        if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
 !
 !  Insert imaginary parts behind real ones if quantity is complex.
 !
@@ -1358,14 +1376,14 @@ module Diagnostics
 !
     endsubroutine expand_cname_full
 !***********************************************************************
-    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin)
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf)
 !
 !  Sets the diagnostic type in itype_name.
 !
 !  21-sep-17/MR: coded
 !
       integer :: iname
-      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf
 
       if (iname==0) return
 
@@ -1377,6 +1395,8 @@ module Diagnostics
         itype_name(iname)=ilabel_sum_log10
       elseif (present(lint)) then
         itype_name(iname)=ilabel_integrate
+      elseif (present(lsurf)) then
+        itype_name(iname)=ilabel_surf
       elseif (present(lsum)) then
         itype_name(iname)=ilabel_sum
       elseif (present(lmax)) then
@@ -1445,6 +1465,8 @@ module Diagnostics
       integer :: a, iname
       logical, optional :: lneg
 !
+      if (iname==0) return
+
       if (present(lneg)) then
         if (lneg) then
           if (a<fname(iname)) fname(iname)=a
@@ -1475,6 +1497,8 @@ module Diagnostics
       integer, intent(in) :: iname
       logical, intent(in), optional :: lneg, l_dt
 !
+      if (iname==0) return
+
       if (present(lneg)) then
         if (lneg) then
           if (a<fname(iname)) fname(iname)=a
@@ -1508,6 +1532,8 @@ module Diagnostics
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
+      if (iname==0) return
+
       fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
@@ -1529,6 +1555,8 @@ module Diagnostics
       integer, intent(in) :: a
       integer, intent(in) :: iname
 !
+      if (iname==0) return
+
       fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
@@ -1587,6 +1615,8 @@ module Diagnostics
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
       logical, optional,    intent(IN) :: lsqrt, llog10, lint
+
+      if (iname==0) return
 
       if (size(a,1)==1) then
         call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
@@ -2444,6 +2474,7 @@ module Diagnostics
       real,    dimension(:), optional, intent(in) :: scal
       logical,               optional, intent(in) :: lint
 !
+      if (iname==0) return
       if (loptest(lint)) then
 !
 !  Mulitply with scale factor for integration.
@@ -2614,11 +2645,7 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname,n_nghost,ir
 !
-      if (iname == 0) then
-!
-!  Nothing to be done (this variable was never asked for)
-!
-      else
+      if (iname /= 0) then
 !
 !  Initialize to zero, including other parts of the rz-array
 !  which are later merged with an mpi reduce command.

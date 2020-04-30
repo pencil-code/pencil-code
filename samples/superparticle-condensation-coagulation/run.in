@@ -1,0 +1,70 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters for coagulation run.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2018/06/15 13:24:13 xiangyu Exp $',
+  nt=10000000, it1=200, isave=1000, itorder=3
+  dsnap=1., dvid=500.
+  dspec=1., ou_spec=T
+  lsfu=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lreinitialize_uu=F, inituu='rescale', rescale_uu=0.
+  lupw_uu=T, lremove_mean_momenta=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+  lgravz_gas=F
+/
+&forcing_run_pars
+  iforce='helical', force=2e-2, relhel=0., lscale_kvector_tobox=T
+/
+&viscosity_run_pars
+  nu=1.5e-4
+/
+&ascalar_run_pars
+ lcondensation_rate=T
+ ascalar_diff=2.55e-4, gradacc0=1.e-4, 1.e-4, 1.e-4
+ latent_heat=2.5e6, cp_constant=1005.0
+ const1_qvs=2.53e11, const2_qvs=5420.0, Rv=461.5, rhoa=1.06
+ gravity_acceleration=9.81, Rv_over_Rd_minus_one=0.608
+ thermal_diff=1.5e-4, gradTT0=1.e-0, 1.e-0, 1.e-0
+/
+&particles_run_pars
+  gravz_profile='const'
+  gravz=-9.81
+  cdtp=0.2
+  ldragforce_dust_par=T, ldragforce_gas_par=F
+  ldraglaw_steadystate=T, lnostore_uu=F
+  ldragforce_heat=F, lnu_draglaw=T, nu_draglaw=1e-5
+  lcheck_exact_frontier=T
+  ascalar_ngp=T
+  lcondensation_rate=T
+  G_condensation = 1.17e-10
+/
+&particles_radius_run_pars
+  lcondensation_par=T
+  lcondensation_rate=T
+  ldt_condensation_off=T
+  loutput_psize_dist=T, log_ap_min_dist=-6., log_ap_max_dist=-3., nbin_ap_dist=50
+/
+&particles_number_run_pars
+/
+&particles_coag_run_pars
+  lcoag_simultaneous=T
+  lconstant_kernel_test=F
+  lnoselfcollision=T, cdtpcoag=0.3
+  ldroplet_coagulation=T
+  droplet_coagulation_model='shima'
+  luser_random_number_wrapper=F
+/
+&particles_stalker_run_pars
+  dstalk=1.
+/
+&power_spectrum_run_pars
+/

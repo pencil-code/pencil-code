@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<buildinfo version="0.1" xmlns:media="http://www.nordita.dk/software/pencil-code/buildinfo">
+  <timestamp>Sat Jun 16 18:47:18 CEST 2018</timestamp>
+  <buildhost>
+    <hostname>xyli</hostname>
+    <os>Linux</os>
+    <osrelease>4.13.0-43-generic</osrelease>
+    <user>xyli</user>
+    <uptime> 18:47:18 up 8 days, 10:47,  1 user,  load average: 0.46, 0.47, 0.54</uptime>
+  </buildhost>
+  <buildtime></buildtime>
+  <makeinfo>
+    <var name="FC">mpiifort</var>
+    <var name="F77">mpiifort</var>
+    <var name="F90"></var>
+    <var name="FFLAGS">-implicitnone</var>
+    <var name="F90FLAGS"></var>
+    <var name="F77FLAGS"></var>
+    <var name="FFLAGS_GENERAL">-r8</var>
+    <var name="CFLAGS_GENERAL">-DDOUBLE_PRECISION</var>
+    <var name="LDMPI"></var>
+  </makeinfo>
+  <rundirinfo>
+</rundirinfo>
+  <moduleinfo>
+    <module name="MPICOMM" option="">
+<source></source>'
+</module>'
+    <module name="GLOBAL" option="">
+<source></source>'
+</module>'
+    <module name="GRID" option="">
+<source></source>'
+</module>'
+    <module name="IO" option="">
+<source></source>'
+</module>'
+    <module name="FFT" option="">
+<source></source>'
+</module>'
+    <module name="FFTPACK" option="">
+<source></source>'
+</module>'
+    <module name="POWER" option="power_spectrum">
+<source>power_spectrum.f90</source>'
+</module>'
+    <module name="DEBUG" option="nodebug">
+<source>nodebug.f90</source>'
+</module>'
+    <module name="HYDRO" option="hydro">
+<source>hydro.f90</source>'
+</module>'
+    <module name="VISCOSITY" option="viscosity">
+<source>viscosity.f90</source>'
+</module>'
+    <module name="DENSITY" option="density">
+<source>density.f90</source>'
+</module>'
+    <module name="ENTROPY" option="">
+<source></source>'
+</module>'
+    <module name="MAGNETIC" option="nomagnetic">
+<source>nomagnetic.f90</source>'
+</module>'
+    <module name="RADIATION" option="noradiation">
+<source>noradiation.f90</source>'
+</module>'
+    <module name="PSCALAR" option="nopscalar">
+<source>nopscalar.f90</source>'
+</module>'
+    <module name="CHIRAL" option="nochiral">
+<source>nochiral.f90</source>'
+</module>'
+    <module name="DUSTVELOCITY" option="nodustvelocity">
+<source>nodustvelocity.f90</source>'
+</module>'
+    <module name="DUSTDENSITY" option="nodustdensity">
+<source>nodustdensity.f90</source>'
+</module>'
+    <module name="INTERSTELLAR" option="nointerstellar">
+<source>nointerstellar.f90</source>'
+</module>'
+    <module name="COSMICRAY" option="nocosmicray">
+<source>nocosmicray.f90</source>'
+</module>'
+    <module name="COSMICRAYFLUX" option="nocosmicrayflux">
+<source>nocosmicrayflux.f90</source>'
+</module>'
+    <module name="EOS" option="eos_idealgas">
+<source>eos_idealgas.f90</source>'
+</module>'
+    <module name="STRUCT_FUNC" option="struct_func">
+<source>struct_func.f90</source>'
+</module>'
+    <module name="INITCOND_SPEC" option="">
+<source></source>'
+</module>'
+    <module name="SHOCK" option="noshock">
+<source>noshock.f90</source>'
+</module>'
+    <module name="TESTFIELD" option="notestfield">
+<source>notestfield.f90</source>'
+</module>'
+    <module name="TESTFLOW" option="notestflow">
+<source>notestflow.f90</source>'
+</module>'
+    <module name="TESTPERTURB" option="notestperturb">
+<source>notestperturb.f90</source>'
+</module>'
+    <module name="GRAVITY" option="gravity_simple">
+<source>gravity_simple.f90</source>'
+</module>'
+    <module name="FORCING" option="forcing">
+<source>forcing.f90</source>'
+</module>'
+    <module name="SHEAR" option="noshear">
+<source>noshear.f90</source>'
+</module>'
+    <module name="TIMEAVG" option="notimeavg">
+<source>notimeavg.f90</source>'
+</module>'
+    <module name="SPECIAL" option="nospecial">
+<source>nospecial.f90</source>'
+</module>'
+    <module name="PARTICLES" option="particles_dust">
+<source>particles_dust.f90</source>'
+</module>'
+    <module name="PARTICLES_SUB" option="particles_sub">
+<source>particles_sub.f90</source>'
+</module>'
+    <module name="PARTICLES_MAIN" option="particles_main">
+<source>particles_main.f90</source>'
+</module>'
+    <module name="PARTICLES_RADIUS" option="particles_radius">
+<source>particles_radius.f90</source>'
+</module>'
+    <module name="SHOCK_PROFILE" option="">
+<source></source>'
+</module>'
+    <module name="SHOCK_FINDER" option="">
+<source></source>'
+</module>'
+  </moduleinfo>
+</buildinfo>

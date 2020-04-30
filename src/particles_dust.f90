@@ -26,7 +26,7 @@ module Particles
 !
   use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, indgen
   use Messages
   use Particles_cdata
   use Particles_map
@@ -92,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07, rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
-  real, pointer :: g1, rp1, rp1_pot, t_ramp_mass, t_start_secondary
+  real, pointer :: g1, rp1, rp1_smooth, t_ramp_mass, t_start_secondary
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3, istep_pass=3
@@ -163,7 +163,7 @@ module Particles
 !
   integer :: icondensationRate=0
   integer :: iwaterMixingRatio=0
-  logical :: lcondensation_rate=.false.
+  logical :: lcondensation_rate=.false., lnp_ap_as_aux=.false.
 !
 !  Interactions with special/shell
 !
@@ -234,7 +234,7 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, &
       remove_particle_criteria_size, remove_particle_criteria_edtog, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
-      lnocollapse_zdir_onecell, qgaussz, r0gaussz
+      lnocollapse_zdir_onecell, qgaussz, r0gaussz, lnp_ap_as_aux
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -340,10 +340,15 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_index_append
       use Particles_caustics, only: register_particles_caustics
       use Particles_tetrad, only: register_particles_tetrad
       use Particles_potential, only: register_particles_potential
+      use SharedVariables, only: put_shared_variable
+!
+      use General, only: itoa
+      integer k,ind_tmp
+      character(len=intlen) :: sdust
 !
       if (lroot) call svn_id( &
           "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
@@ -364,12 +369,39 @@ module Particles
 !
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp, &
           communicated = lcommunicate_np)
+      call put_shared_variable('inp', inp, caller='register_particles')
       if (lpeh_radius) then
         lnocalc_rhop = .false.
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
       endif
+!
+!  Store the number of particles per grid cell if requested.
+!
+      if (np_ap_spec) then
+         lnp_ap_as_aux = .true. ! TEMPORARY...TO RUN MODELS THAT DIDN'T HAVE THIS FLAG.
+         if (lnp_ap_as_aux) then
+          !! Loop over grain sizes:
+          !do k=1,ndustrad
+          !  sdust=trim(itoa(k))
+          !  call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
+          !  iapn(k) = ind_tmp
+          !enddo
+          !
+          call farray_register_auxiliary('np_ap',iapn(1),vector=ndustrad,aux=.true.)
+          iapn = iapn(1) + indgen(ndustrad) - 1
+          call farray_index_append('n_np_ap',ndustrad)
+        else
+          call fatal_error('register_particles','Must set lnp_ap_as_aux=T in &part&
+               &icles_init_pars to calculate particle-size-dependent spectra.')
+        endif
+      end if
+      call put_shared_variable('iapn', iapn, caller='register_particles')
+!
+!  Rhop
+!
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated = lparticles_sink .or. lcommunicate_rhop)
+      call put_shared_variable('irhop', irhop, caller='register_particles')
       if (lcalc_uup .or. ldragforce_stiff) then
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx = iuup
@@ -945,9 +977,9 @@ module Particles
         call get_shared_variable('rp1',rp1,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
             'there was a problem when getting rp1')
-        call get_shared_variable('rp1_pot',rp1_pot,ierr)
+        call get_shared_variable('rp1_smooth',rp1_smooth,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting rp1_pot')
+            'there was a problem when getting rp1_smooth')
         call get_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
         if (ierr /= 0) call fatal_error('initialize_particles', &
             'there was a problem when getting t_ramp_mass')
@@ -1324,8 +1356,21 @@ module Particles
               call fatal_error("init_particles", &
                   "The world is flat, and we never got here")
             endif
+!
+            if (lcartesian_coords) then
+              if (nprocx==1) then
+                rpar_int=rp_int
+                rpar_ext=rp_ext
+              else
+                call fatal_error("init_particles",&
+                     "random-cyl not yet ready for nprocx/=1 in Cartesian. Parallelize in y or z")
+              endif
+            else
+              rpar_int = xyz0_loc(1)
+              rpar_ext = xyz1_loc(1)
+            endif
             call random_number_wrapper(rad_scl)
-            rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
+            rad_scl = rpar_int**tmp + rad_scl*(rpar_ext**tmp-rpar_int**tmp)
             rad = rad_scl**(1./tmp)
 !
 ! Random in azimuth
@@ -2096,7 +2141,8 @@ module Particles
 !
       logical, save :: linsertmore=.true.
       real :: xx0, yy0, r2, r, tmp
-      integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
+      integer :: j, k, n_insert, npar_loc_old, iii
+      integer (kind=8) :: particles_insert_rate_tmp
       real, pointer :: gravr
 !
 ! Insertion of particles is stopped when maximum number of particles is reached,
@@ -2108,16 +2154,18 @@ module Particles
 ! npar_loc + n_insert < mpar_loc
 ! so that a processor can not exceed its maximum number of particles.
 !
-      if (t > tstart_insert_particles+particles_insert_ramp_time) then
+      if (t >= tstart_insert_particles+particles_insert_ramp_time) then
         particles_insert_rate_tmp = particles_insert_rate
       else
-        particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
+        particles_insert_rate_tmp = int(real(particles_insert_rate)&
+            *(t-tstart_insert_particles)/particles_insert_ramp_time)
       endif
       call mpireduce_sum_int(npar_loc,npar_total)
 !
       if (lroot) then
         avg_n_insert = particles_insert_rate_tmp*dt
         n_insert = int(avg_n_insert + remaining_particles)
+!        
 ! Remaining particles saved for subsequent timestep:
         remaining_particles = avg_n_insert + remaining_particles - n_insert
 !
@@ -2153,7 +2201,7 @@ module Particles
 ! Not the same as npar_total, which is the number of particles in the system,
 ! without counting removed particles
 !
-          npar_inserted_tot = n_insert + npar_inserted_tot
+          npar_inserted_tot = n_insert + npar_inserted_tot          
 !
 ! Insert particles in chosen position (as in init_particles).
 !
@@ -3755,7 +3803,7 @@ module Particles
         else
           call fatal_error("secondary_body_gravity","not coded for Cartesian")
         endif
-        gp = -g1*(rr2+rp1_pot**2)**(-1.5)
+        gp = -g1*(rr2+rp1_smooth**2)**(-1.5)
 !
         if (lcylindrical_coords) then
           ggp(1) =  gp * (fp(k,ixp)-rp1*cosp)
@@ -4071,6 +4119,9 @@ module Particles
                     call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
                   endif
                 else
+                  ix0 = ineargrid(k,1)
+                  iy0 = ineargrid(k,2)
+                  iz0 = ineargrid(k,3)
                   uup = f(ix0,iy0,iz0,iux:iuz)
                 endif
                 fp(k,ivpx:ivpz) = uup
@@ -6339,6 +6390,10 @@ module Particles
 !
 !  Calculate the Brownian force contribution due to the random thermal motions
 !  of the gas molecules.
+!      
+!  See A. Li and G. Ahmadi. "Dispersion and Deposition of Spherical
+!      Particles from Point Sources in a Turbulent Channel Flow".
+!      Aerosol Science and Technology. 16. 209–226. 1992.
 !
 !  28-jul-08/kapelrud: coded
 !
@@ -6391,14 +6446,15 @@ module Particles
 !
       call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
+!  NILS: The particle material density is given by rhopmat - not rhop_swarm_par
+!      Szero = 216*nu*k_B*TT*pi_1/ &
+!          (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
       Szero = 216*nu*k_B*TT*pi_1/ &
-          (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+          (dia**5*stocunn*rhopmat**2/interp_rho(k))
 !
 !  https://en.wikipedia.org/wiki/Brownian_motion
 !  .3 * urms * lmfp = D=kB*T/(6pi*eta*a)
 !  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
-!
-!print*,'AXEL: nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)=', nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)
 !
 !  du/dt = sqrt(dt)
 !  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
@@ -6427,7 +6483,7 @@ module Particles
       real :: Inf=1e14
 !
       real, dimension(3) :: temp_grad
-      real TT,mu,nu_,Kn,phi_therm,mass_p
+      real TT,dyn_visc,nu_,Kn,phi_therm,mass_p
       real Ktc,Ce,Cm,Cint
       character(len=labellen) :: ivis=''
 !
@@ -6444,17 +6500,17 @@ module Particles
       !Find dynamic viscosity
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis == 'nu-const') then
-        mu = nu_*interp_rho(k)
+        dyn_visc = nu_*interp_rho(k)
       elseif (ivis == 'nu-mixture') then
-        mu = interp_nu(k)*interp_rho(k)
+        dyn_visc = interp_nu(k)*interp_rho(k)
       elseif (ivis == 'rho-nu-const') then
-        mu = nu_
+        dyn_visc = nu_
       elseif (ivis == 'sqrtrho-nu-const') then
-        mu = nu_*sqrt(interp_rho(k))
+        dyn_visc = nu_*sqrt(interp_rho(k))
       elseif (ivis == 'nu-therm') then
-        mu = nu_*interp_rho(k)*sqrt(TT)
+        dyn_visc = nu_*interp_rho(k)*sqrt(TT)
       elseif (ivis == 'mu-therm') then
-        mu = nu_*sqrt(TT)
+        dyn_visc = nu_*sqrt(TT)
       else
         call fatal_error('calc_thermophoretic_force','No such ivis!')
       endif
@@ -6482,13 +6538,13 @@ module Particles
       endif
 !
 !
-      force = (fp(k,iap)*temp_grad*mu**2*phi_therm)/(TT*interp_rho(k)*mass_p)
+      force = (fp(k,iap)*temp_grad*dyn_visc**2*phi_therm)/(TT*interp_rho(k)*mass_p)
       
       
       do i = 1,3
         if (force(i) < -Inf .or. force(i) > Inf) then
           print*, 'Force xyz:', force, 'Temp_grad xyz:',temp_grad
-          print*, 'Thermophoretic term ', phi_therm, 'Mu ',mu, 'TT',TT
+          print*, 'Thermophoretic term ', phi_therm, 'Dyn_Visc ',dyn_visc, 'TT',TT
           print*, 'Rho_gas', interp_rho(k), 'M_p',mass_p
           call fatal_error('calc_pencil_rep','infs in thermophoretic')
         endif
@@ -6903,7 +6959,7 @@ module Particles
 !
 !
       if (lparticles_grad) then
-        if (igradu  /=  0) then
+        if (iguij  /=  0) then
           call set_periodic_boundcond_on_aux(f,igradu11)
           call set_periodic_boundcond_on_aux(f,igradu12)
           call set_periodic_boundcond_on_aux(f,igradu13)
@@ -6914,7 +6970,7 @@ module Particles
           call set_periodic_boundcond_on_aux(f,igradu32)
           call set_periodic_boundcond_on_aux(f,igradu33)
         else
-          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands iguij ne 0')
         endif
       endif
 !

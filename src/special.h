@@ -30,6 +30,7 @@
   public :: special_calc_pscalar
   public :: special_calc_particles
   public :: special_calc_chemistry
+  public :: special_calc_spectra, special_calc_spectra_byte
 
   public :: special_boundconds
   public :: special_before_boundary
@@ -38,5 +39,4 @@
   public :: special_particles_bfre_bdary
   public :: special_particles_after_dtsub
   
-  public :: set_init_parameters   
-
+  public :: set_init_parameters

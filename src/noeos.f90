@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cv1; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; cp; cv; gTT(3); mu1; gmu1(3); glnmu(3)
-! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2TT; del2lnTT
+! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2TT; del2lnTT; del6TT; del6lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
 ! PENCILS PROVIDED rho1gpp(3)
 !
@@ -110,8 +110,6 @@ module EquationOfState
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
-!
-!  Writes iyH and ilnTT to index.pro file
 !
 !  02-apr-03/tony: dummy
 !
@@ -1909,16 +1907,16 @@ module EquationOfState
     integer, parameter :: n_pars=6
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    real, save :: cv, cp, lnT0
+    real, save :: cv, cp, lnTT0
 
-    cv=0.; cp=0.; lnT0=0.
+    cv=0.; cp=0.; lnTT0=0.
 
     call copy_addr_c(cs20,p_par(1))
     call copy_addr_c(cv,p_par(2))
     call copy_addr_c(cp,p_par(3))
     call copy_addr_c(gamma,p_par(4))
     call copy_addr_c(lnrho0,p_par(5))
-    call copy_addr_c(lnT0,p_par(6))
+    call copy_addr_c(lnTT0,p_par(6))
 
     endsubroutine pushpars2c
 !***********************************************************************

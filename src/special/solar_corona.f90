@@ -58,9 +58,9 @@ module Special
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
-  real, dimension (mx) :: x12
-  real, dimension (my) :: y12
-  real, dimension (mz) :: z12
+!  real, dimension (mx) :: x12
+!  real, dimension (my) :: y12
+!  real, dimension (mz) :: z12
 !
   real, dimension(nx,ny,2) :: A_init
 !
@@ -802,8 +802,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      iostat = 0
-      read(parallel_unit, NML=special_init_pars)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -821,8 +820,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      iostat = 0
-      read(parallel_unit, NML=special_run_pars)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
       if (Kgpara /= 0.0) then
         call warning('calc_heatcond_grad', &
@@ -1386,9 +1384,9 @@ module Special
         do m=m1, m2
           do n=n1,n2
             if ((z(n) .lt. z_ff(2)) .and. (z(n) .gt. z_ff(1))) then
-               uu(:,2)=1.11803*uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
-               uu(:,1)=uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
-               uu(:,3)=-uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
+               uu(:,1)=uu_drive(1)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
+               uu(:,2)=uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
+               uu(:,3)=uu_drive(3)*cos(pi*nwave(2)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)
                f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
                f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
@@ -4600,9 +4598,9 @@ module Special
           b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
           b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
           if (ldensity_nolog) then
-          rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
+            rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
           else
-          rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
+            rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
           endif
           cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
           cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)

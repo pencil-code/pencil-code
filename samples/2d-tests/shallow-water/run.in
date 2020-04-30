@@ -1,0 +1,34 @@
+!                               -*-f90-*- (for emacs)
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2016/02/10 09:25:12 wlyra Exp $',
+  ip=14
+  nt=100, it1=10, isave=500, itorder=3
+  cdt=0.4
+  cdtv=0.4
+  cdtv3=0.1
+  dtmin=1e-6
+  lpencil_check=F
+  lpencil_check_small=F
+  lwrite_dvar=T
+  dsnap=0.1
+  tmax=30.
+/
+&density_run_pars
+  idiff='hyper3-mesh'
+  diffrho_hyper3_mesh=5.
+/
+&hydro_run_pars
+  lpressuregradient_gas=F
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh','shock-simple'
+  nu_hyper3_mesh=5.,nu_shock=1  
+/
+&special_run_pars
+   gravity=1.0
+   c0=0.1
+/
+&shock_run_pars
+/

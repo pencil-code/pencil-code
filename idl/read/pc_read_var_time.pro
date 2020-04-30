@@ -59,13 +59,12 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(ivar) eq 1) then begin
     default, varfile_, 'VAR'
     varfile = varfile_ + strcompress (string (ivar), /remove_all)
-    if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+    if (file_test (datadir+'/allprocs/'+varfile[0]+'.h5')) then varfile += '.h5'
   endif else begin
     default_varfile = 'var.dat'
     if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
     default, varfile_, default_varfile
     varfile = varfile_
-    ivar = -1
   endelse
 ;
 ; Load HDF5 varfile if requested or available.

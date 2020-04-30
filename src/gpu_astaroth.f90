@@ -31,12 +31,9 @@ contains
       str=''
       if (lanelastic) str=trim(str)//', '//'anelastic'
       if (lboussinesq) str=trim(str)//', '//'boussinesq'
-      if (lenergy) str=trim(str)//', '//'energy'
-      if (lentropy) str=trim(str)//', '//'entropy'
+      !if (lenergy) str=trim(str)//', '//'energy'
       if (ltemperature) str=trim(str)//', '//'temperature'
       if (lshock) str=trim(str)//', '//'shock'
-      if (lmagnetic) str=trim(str)//', '//'magnetic'
-      !if (lforcing) str=trim(str)//', '//'forcing'
       if (lgrav) str=trim(str)//', '//'gravity'
       if (lheatflux) str=trim(str)//', '//'heatflux'
       if (lhyperresistivity_strict) str=trim(str)//', '//'hyperresi_strict'
@@ -55,7 +52,6 @@ contains
       if (lpscalar) str=trim(str)//', '//'pscalar'
       if (lascalar) str=trim(str)//', '//'ascalar'
       if (lradiation) str=trim(str)//', '//'radiation'
-      if (leos) str=trim(str)//', '//'eos'
       if (lchemistry) str=trim(str)//', '//'chemistry'
       if (lchiral) str=trim(str)//', '//'chiral'
       if (ldetonate) str=trim(str)//', '//'detonate'
@@ -100,6 +96,8 @@ contains
 !**************************************************************************
     subroutine rhs_GPU(f,isubstep,early_finalize)
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
       logical,                            intent(IN)    :: early_finalize
@@ -115,24 +113,30 @@ contains
           do ll=1,mx
             f(ll,mm,nn,iux)=val; val=val+1.
       enddo; enddo; enddo
-      !f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
+
+      print*, 'vor integrate'
+      do nn=1,3
+        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn
+      enddo
+      print*, '---------------'
 
 1     continue
-!if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
-!if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
-!f(:,:,:,iuy)=0.; f(:,:,:,iuz)=0.
-      call rhs_gpu_c(isubstep,lvery_first)
+      call rhs_gpu_c(isubstep,lvery_first,early_finalize)
 !
       lvery_first=.false.
 
       return
 !
       if (.not.lroot) return
-      do nn=1,mz   !  nghost+1,mz-nghost   !1,mz
+      do nn=1,mz   !  nghost+1,mz-nghost
         print*, 'nn=', nn
         do mm=1,my
-          print'(14(1x,f7.0))',f(:,mm,nn,iux)
+          print'(22(1x,f7.0))',f(:,mm,nn,iux)
       enddo; enddo
+
+      do nn=1,3
+        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn                
+      enddo
 
     endsubroutine rhs_GPU
 !**************************************************************************

@@ -1,0 +1,53 @@
+!                -*-f90-*-     (for Emacs)
+!
+! Kappa-mechanism in vertically stratified atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.3 2016/07/01 06:29:30 wlyra Exp $',
+! 
+  ip    = 14,                 ! debugging parameter
+  xyz0  =   0.0,0.0,0.0,    ! first corner of box
+  xyz1  =   4.0,4.0,0.0,   ! second corner of box
+  lperi = F , T , T,          ! periodic direction?
+  lwrite_ic=T,
+  lwrite_aux=T
+  !   ux, uy, uz, h 
+  bcx='a','s','a','s','s'
+  bcy='s','a','a','s','s'
+  ! a  ->0           ; zero
+  ! s  ->der=0       ; zero gradient
+  ! a2 ->der2=const  ; constant gradient
+/
+&initial_condition_pars
+   eta0=0.017
+   k_eta=4.0
+   x0_drop=1.69
+   y0_drop=1.00
+   !alpha=1.0
+   !alpha=0.0
+/
+&hydro_init_pars
+   !inituu='gaussian-noise'
+   !ampluu=1.0
+   !inituu='const_uu','sinwave-x'
+   !uu_const=0.1,0,0
+   !ampluu=0,1e-4
+   !kx_uu = 0.0314159265358979
+   inituu='zero'
+/
+&density_init_pars
+   !rho_const=100.
+   !lnrho_const=4.605170185988092
+   initlnrho='const_rho'
+   !ampllnrho=1.
+   !kx_lnrho=0.0314159265358979
+   !6.2831853071795864
+   !rho_const=0.0
+   ldensity_nolog=T
+/
+&special_init_pars
+  init_shallow='gaussian-blob'
+/
+&shock_init_pars
+/

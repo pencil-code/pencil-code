@@ -6,6 +6,11 @@
 #   Run src/run.x (timestepping for src/run.x).
 #   Run parameters are set in run.in.
 #
+#   The name of an additional executable and possible parameters of that can be put as parameters of run.csh.
+#   This executable will be launched simultaneously with PC and with the same number of processors and share 
+#   MPI_COMM_WORLD with it.
+#   Hence 2*ncpus have to be requested from a batch system. Requires mpirun or mpiexec for launch.
+#
 # Run this script with csh:
 #PBS -S /bin/csh
 #PBS -r n
@@ -41,6 +46,14 @@ newdir:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
+# In case, start.csh has not created these dirs (e.g. because of alternative I/O)
+# do it now.
+#
+foreach sdir ($subdirs $procdirs)
+  if (! -d "$datadir"/"$sdir") then
+    mkdir "$datadir"/"$sdir"
+  endif
+end
 #
 #  If necessary, distribute var.dat from the server to the various nodes
 #
@@ -148,18 +161,34 @@ timestr>> $datadir/runtime.dat
 rm -f ERROR COMPLETED
 ${PENCIL_HOME}/utils/pc_print_revision_file $run_x
 date
-echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 touch pc_commands.log
 echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
-time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
-#gdb $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
+if ( $#argv >= 1 ) then
+  if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' ) then
+# launch a second executable simultaneously with PC
+    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
+    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
+    time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
+  else
+    echo Error: launching an additional executable requires mpirun or mpiexec instead of $mpirun !
+    exit
+  endif
+else
+  echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
+  echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
+  time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time $mpirun -x LD_LIBRARY_PATH -x PATH $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time srun -n 1 $run_x $x_ops
+endif
 set run_status=$status          # save for exit
 date
 
 # Create symlinks for deprecated slices
-pc_deprecated_slice_links
+if (! $HDF5) then
+  pc_deprecated_slice_links
+endif
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
@@ -216,7 +245,7 @@ echo "Done"
 if (-e "NEWDIR") then
   if (-s "NEWDIR") then
     # Remove LOCK files before going to other directory
-    rm -f LOCK data/LOCK
+    rm -f LOCK data/LOCK IO_LOCK
     set olddir=$cwd
     set newdir=`cat NEWDIR`
     touch "$datadir/directory_change.log"

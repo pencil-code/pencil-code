@@ -44,8 +44,10 @@
 #   -p, --previous-flags
 #                   Build with the same flags as the previous time.
 #   -q, --quiet     Be quiet.
+#   -s, --serial    Use make w/o parallelization.
 #   -t, --target=<target>
 #                   Choose a target, default: "default-to-be" (=EXECUTABLES).
+#                   For targets "*.x", extension can be omitted.
 #                   Target "ALL": all executables in subdirectory "src".
 #   -v, --version   Print version number.
 # Examples:
@@ -125,6 +127,7 @@ GetOptions(\%opts,
                     --fast
                -p   --previous-flags
                -q   --quiet
+               -s   --serial
                -t=s --target=s
                -v   --version )
           ) or die "Aborting.\n";
@@ -149,6 +152,7 @@ my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
+my $serial       = ($opts{'s'} || $opts{'serial'}         || '');
 my $target       = ($opts{'t'} || $opts{'target'}         || undef);
 
 if (!defined $target){
@@ -156,6 +160,7 @@ if (!defined $target){
 }
 else{
     $target = (split("=",$target))[-1];
+    $target =~ s/(^.*)\.x *$/$1/;
 }
 
 if ($show_system_host_id) {
@@ -241,7 +246,15 @@ push @make_args, @extra_make_args;
 # NOTE: This should be implemented with -Wm,<options>, akin to
 # pencil-test's -Wa or gcc's -Wl options
 map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
-
+if ($serial) {
+    my $ind;
+    for( $ind = 0; $ind < scalar @make_args; $ind +=1 ) {
+        if ($make_args[$ind] =~ ' *-j *'){
+             splice(@make_args, $ind, 1); last;
+        }
+    }
+    
+}
 print STDERR "Running make '", join("' '", @make_args, $target), "'\n"
   unless ($quiet);
 if ($target eq "ALL"){

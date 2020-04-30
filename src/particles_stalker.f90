@@ -89,7 +89,6 @@ module Particles_stalker
       if (iaa==0)        lstalk_bb=.false.
       if (ipotself==0)   lstalk_potself=.false.
       if (iuu==0 .or. ivpx==0) lstalk_relvel=.false.
-      if (iogTTx==0)     lstalk_gTT=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
@@ -312,17 +311,6 @@ module Particles_stalker
           call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuy,uy)
           call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuz,uz)
         endif
-!
-!  Temperature gradient
-!  Note that when iogTT is already the gradient of the temperature,
-!  calculated and stored for use in another module, so it is stalked
-!  like the local velocity
-!        
-        if (lstalk_gTT) then
-          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTx,gTTx)
-          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTy,gTTy)
-          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTz,gTTz)
-        endif        
 !
 !  Local gradient of gas velocity.
 !

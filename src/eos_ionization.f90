@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 2
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
-! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
+! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3); del2TT; del6TT; del6lnTT
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED rho_anel; rho1gpp(3)
 !
@@ -82,7 +82,7 @@ module EquationOfState
 !  Set indices for auxiliary variables.
 !
       call farray_register_auxiliary('yH',iyH)
-      call farray_register_auxiliary('lnTT',ilnTT)
+      if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT)
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -467,7 +467,19 @@ module EquationOfState
       endif
 ! del2lnTT
       if (lpenc_loc(i_del2lnTT)) then
-          call temperature_laplacian(f,p)
+        call temperature_laplacian(f,p)
+      endif
+! del2TT
+      if (lpenc_loc(i_del2TT)) then
+        call fatal_error('calc_pencils_eos_pencpar','del2TT not implemented')
+      endif
+! del6lnTT
+      if (lpenc_loc(i_del6lnTT)) then
+        call fatal_error('calc_pencils_eos_pencpar','del6lnTT not implemented')
+      endif
+! del6TT
+      if (lpenc_loc(i_del6TT)) then
+        call fatal_error('calc_pencils_eos_pencpar','del6TT not implemented')
       endif
 ! del6ss
       if (lpenc_loc(i_del6ss)) then
@@ -591,7 +603,7 @@ module EquationOfState
      real, dimension (nx), intent(out) :: pp_tmp
      real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
 !
-     call fatal_error('getpressure','Should not be called with noeos.')
+     call fatal_error('getpressure','Should not be called with eos_ionization.')
 !
      call keep_compiler_quiet(pp_tmp)
      call keep_compiler_quiet(TT_tmp)
@@ -1721,7 +1733,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z', &
-          'not implemented in eos_ionization.f90')
+          'not implemented in eos_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)

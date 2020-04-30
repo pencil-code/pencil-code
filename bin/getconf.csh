@@ -87,7 +87,7 @@ endif
 
 if ( $mpi && ($lyinyang == T) ) then
   @ ncpus = 2 * $ncpus
-  echo "Yin-Yang grid run."
+  echo "YIN-YANG GRID RUN"
 endif
 echo "$ncpus CPUs"
 
@@ -199,12 +199,12 @@ else if ($?SLURM_NODELIST) then
   #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
   # using a Perl ``one-liner'':
   if ($SLURM_NNODES != 1) then
-    set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    #set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+    set nodelist = `echo "$SLURM_NODELIST" | scontrol show hostnames`
   else
     set nodelist = $SLURM_NODELIST
   endif
   echo "SLURM_NODELIST = $SLURM_NODELIST"
-  echo "nodelist = $nodelist"
   echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
 else if ($?JOB_ID) then
   if (-e $HOME/.score/ndfile.$JOB_ID) then
@@ -359,7 +359,7 @@ else if (($hn =~ Xcomp*) || ($masterhost =~ andromeda)) then
   echo "..for multiprecossor jobs. "
   echo " ******************************"
   source ${HOME}/.cshrc
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #------------------------------------------
 else if ($hn =~ p*.hpc2n.umu.se ) then
   echo "HPC2N cluster (akka) - Umea"
@@ -377,7 +377,7 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
   #
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #------------------------------------------
 else if ($hn =~ t*.hpc2n.umu.se ) then
   echo "HPC2N cluster (abisko) - Umea"
@@ -419,9 +419,9 @@ echo $nnode
 echo $nprocpernode
 echo $npops
 echo "AXEL2"
-  #set $mpirun=/usr/local/mpich2/bin/mpirun
-  #set $mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
-  #set $mpirun=mpirun
+  #set mpirun=/usr/local/mpich2/bin/mpirun
+  #set mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
+  #set mpirun=mpirun
 
 #------------------------------------------
 else if ($hn =~ scylla* ) then
@@ -464,10 +464,10 @@ else if ($hn =~ compute-*.local ) then
   #
   #setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
  #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
-  set $mpirun=mpirun
+  set mpirun=mpirun
 #  set mpirunops="-hostfile $PBS_NODEFILE"
 #  cp $PBS_NODEFILE machines
-#  set $datadir='data'
+#  set datadir='data'
 #  uniq machines > mpd.hosts
 #  set myprocpernode = 8
 #  echo $ncpus
@@ -478,33 +478,34 @@ else if ($hn =~ compute-*.local ) then
 else if ($hn =~ meera*)  then
   echo "******************************"
   echo "Meera : Dhruba's laptop"
-  echo " ******************************"
+  echo "******************************"
   source ${HOME}/.cshrc
-  set $mpirun=${HOME}/Library/bin/mpirun
+  set mpirun=${HOME}/Library/bin/mpirun
 #------------------------------------------------
 else if ($hn =~ norlx51*) then
   echo "******************************"
   echo "NORDITA cluster"
-  echo " ******************************"
+  echo "******************************"
   if (-r ${HOME}/.cshrc) then
     source ${HOME}/.cshrc
-    set $mpirun=mpirun
+    set mpirun=mpirun
+    set npops = "-n $ncpus"
   endif
 #------------------------------------------------
 else if ($hn =~ norlx5*) then
   echo "******************************"
   echo "NORDITA cluster"
-  echo " ******************************"
+  echo "******************************"
   if (-r ${HOME}/.cshrc) then
     source ${HOME}/.cshrc
-    set $mpirun=${HOME}/Library/bin/mpirun
+    set mpirun=${HOME}/Library/bin/mpirun
   endif
 #------------------------------------------------
 else if ($hn =~ lakshmi) then
   echo "******************************"
   echo "Dhruba's mac (2012)"
-  echo " ******************************"
-  set $mpirun='/opt/local/lib/openmpi/bin/mpirun'
+  echo "******************************"
+  set mpirun='/opt/local/lib/openmpi/bin/mpirun'
 #------------------------------------------------
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
@@ -786,6 +787,28 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
+#--------------------------------------------------
+#else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
+else if (($hn =~ r*c*)) then
+  echo "Puhti - CSC, Kajaani, Finland"
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+#--------------------------------------------------
+else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
+  echo "HLRN-IV - HLRN, Germany"
+  module load intel
+  module load impi
+  module load hdf5-parallel/impi/intel/1.10.5
+  set mpirun = 'mpirun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
 #----------------------------------------------
 else if (($hn =~ s*) && ($USER =~ pr*)) then
   echo "MareNostrum - BSC, Barcelona, Spain"
@@ -936,8 +959,8 @@ else if ($hn =~ eslogin[0-9]*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
-  echo "Hermit - HLRS, Stuttgart, Germany"
+else if (($hn =~ Xnid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
+  echo "Hermit - HLRS, Stuttgart, Germany="
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
     touch $PBS_O_WORKDIR/data/jobid.dat
@@ -966,9 +989,10 @@ else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if ($hn =~ beskow-login*.pdc.kth.se*) then
+#else if ($hn =~ beskow-login*.pdc.kth.se*) then
+else if ($hn =~ nid*) then
   echo "*********************************"
-  echo " PDC machine Beskow, Stockholm "
+  echo " PDC machine Beskow, Stockholm   "
   set start_x=$cwd/src/start.x
   set run_x=$cwd/src/run.x
   echo "*********************************"
@@ -977,7 +1001,7 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
   set mpi = 1
   set mpirunops = ''
-  set mpirun = 'aprun'
+  set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -1564,6 +1588,16 @@ else if ($hn =~ co[0-9]*) then
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
   set mpirun = srun
+#---------------------------------------------------  
+else if ($hn =~ *.sng.lrz.de) then
+  echo "Supermuc-NG at Leibniz-Rechenzentrum"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirun = srun
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
@@ -2027,6 +2061,11 @@ else # no MPI
 
 endif
 
+# Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
+eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+#echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
+
 # Determine data directory (defaults to `data')
 if (-r datadir.in) then
   set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
@@ -2073,14 +2112,15 @@ endif
 
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
-set subdirs = ("allprocs" "reduced" "averages" "idl")
-set HDF5=`grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`
+set HDF5=`grep -Ec '^ *IO *= *io_hdf5' src/Makefile.local`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "slices" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+  set subdirs = ("allprocs" "reduced" "averages" "idl")
 endif
+
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"
@@ -2095,6 +2135,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
+# MR: Where is NODELIST used?
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then

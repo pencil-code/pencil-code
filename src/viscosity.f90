@@ -14,7 +14,6 @@
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
 ! PENCILS PROVIDED visc_heat; nu; gradnu(3), nu_smag, gnu_smag(3)
-! PENCILS PROVIDED char_speed_slope
 !
 !***************************************************************
 module Viscosity
@@ -110,8 +109,7 @@ module Viscosity
   logical :: lno_visc_heat_zbound=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
-  real :: h_slope_limited=0.
-  character (LEN=labellen) :: islope_limiter=''
+  real :: h_sld_visc=2.0, nlf_sld_visc=1.0
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, nu_tdep_toffset, &
@@ -124,7 +122,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
+      h_sld_visc,nlf_sld_visc, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth
 !
@@ -148,8 +146,6 @@ module Viscosity
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
-  integer :: idiag_slope_c_max=0! DIAG_DOC: Max value of characteric speed
-                                ! DIAG_DOC: of slope limited diffusion
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -205,27 +201,27 @@ module Viscosity
 !
 !  19-nov-02/tony: coded
 !  30-sep-15/Joern+MR: changes for slope-limited diffusion
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
+!  Register characteristic speed: sld_char as auxilliary variable
 !  Needed for slope limited diffusion
+!  sld_char is actually a squared velocity
 !
-      if (lvisc_slope_limited) then
-        if (iFF_diff==0) then
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
-          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+      if (any(ivisc=='nu-slope-limited')) then
+        lslope_limit_diff = .true.
+        if (dimensionality<3)lisotropic_advection=.true.
+        if (isld_char == 0) then
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
+          aux_var(aux_count)=',sld_char'
+          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          aux_count=aux_count+1
         endif
-        call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
-!        iFF_char_c=iFF_div_uu+2
-!        if (iFF_div_aa >0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-!        if (iFF_div_ss >0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
-!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
-
-        call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
-        call farray_register_auxiliary('Flux_diff_char_speed',iFF_char_c)
       endif
 !
 !  Register nusmag as auxilliary variable
@@ -305,6 +301,7 @@ module Viscosity
       lvisc_smag_cross_simplified=.false.
       lvisc_snr_damp=.false.
       lvisc_spitzer=.false.
+      lvisc_slope_limited=.false.
 !
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -466,6 +463,9 @@ module Viscosity
           if (lroot) print*,'viscous force: temperature dependent nu'
           lpenc_requested(i_sij)=.true.
           lvisc_spitzer=.true.
+        case ('nu-slope-limited')
+          if (lroot) print*,'viscous force: slope-limited diffusion'
+          lvisc_slope_limited=.true.
         case ('none',' ')
           ! do nothing
         case default
@@ -650,13 +650,6 @@ module Viscosity
 !
       if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
 !
-!  Slope limited diffusion is switch on for characteristic velocity,
-!  which might be need also needed for other quantities
-!
-      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
-      if (lvisc_slope_limited.and.lroot) &
-         print*,'viscous force: slope-limited diffusion'
-!
 !  debug output
 !
       if (lroot.and.ip<14) print*,'xmask_vis=',xmask_vis
@@ -793,7 +786,7 @@ module Viscosity
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
-        idiag_fviscmax=0; idiag_fviscmin=0; idiag_slope_c_max=0
+        idiag_fviscmax=0; idiag_fviscmin=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -817,7 +810,6 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
-        call parse_name(iname,cname(iname),cform(iname),'slope_c_max',idiag_slope_c_max)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
         call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
       enddo
@@ -880,7 +872,10 @@ module Viscosity
           lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_cspeed.or. &
           (lvisc_simplified.and.lboussinesq) ) then
-        if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
+        if ((lenergy.and.lviscosity_heat) .or. & 
+             idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0 .or. &
+             idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) &
+             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
@@ -896,6 +891,7 @@ module Viscosity
       if (lvisc_nu_profr .or. lvisc_nu_profr_twosteps) then
         if (lsphere_in_a_box.or.lspherical_coords) then
           lpenc_requested(i_r_mn)=.true.
+          if (lsphere_in_a_box) lpenc_requested(i_r_mn1)=.true.
         else
           lpenc_requested(i_rcyl_mn)=.true.
           if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
@@ -943,6 +939,10 @@ module Viscosity
           lvisc_spitzer .or. lvisc_hyper3_cmu_const_strt_otf) &
           lpenc_requested(i_rho1)=.true.
       if (lvisc_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
+!
+      if (lvisc_slope_limited) then
+         if (lviscosity_heat) lpenc_requested(i_rho)=.true.
+      endif
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
         lpenc_requested(i_del6u_strict)=.true.
@@ -1012,14 +1012,15 @@ module Viscosity
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_visc_heatm/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
-        lpenc_diagnos(i_sij2)=.true.
+!        lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_sij2)=.true.
+!        lpenc_diagnos(i_sij2)=.true.
+! JW: There are also viscosities, which do not need sij
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
-      if (idiag_epsK/=0.or.idiag_epsKmz/=0) then
+      if (idiag_epsK/=0.or.idiag_epsKmz/=0.or.idiag_epsK_LES/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
@@ -1062,20 +1063,22 @@ module Viscosity
         lpenc_diagnos(i_fvisc)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
-      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
-        lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_sij)=.true.
-      endif
+!      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
+!        lpenc_diagnos(i_rho)=.true.
+!        lpenc_diagnos(i_sij)=.true.
+!      endif
+! JW: There are also viscosities, which do not need sij or rho
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
-      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
-          idiag_fviscsmmxy/=0) then
-        lpenc_diagnos2d(i_nu_smag)=.true.
-        lpenc_diagnos2d(i_uu)=.true.
-        lpenc_diagnos2d(i_rho)=.true.
-        lpenc_diagnos2d(i_sij)=.true.
-      endif
+!      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
+!          idiag_fviscsmmxy/=0) then
+!        lpenc_diagnos2d(i_nu_smag)=.true.
+!        lpenc_diagnos2d(i_uu)=.true.
+!        lpenc_diagnos2d(i_rho)=.true.
+!        lpenc_diagnos2d(i_sij)=.true.
+!      endif
+! JW: There are also viscosities, which do not need sij or rho
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
 !
@@ -1101,6 +1104,7 @@ module Viscosity
 !  20-nov-04/anders: coded
 !  18-may-12/MR: calculation of viscous heat for boussinesq added
 !  14-oct-15/MR: corrected viscous force for slope-limited flux
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
@@ -1901,7 +1905,7 @@ module Viscosity
 !
             call grad(f,inusmag,gradnu)
 
-          else  
+          else
 !
 !  Compute nu_smag and put into a pencil
 !
@@ -1992,22 +1996,31 @@ module Viscosity
 !  Calculate viscouse force for slope limited diffusion
 !  following Rempel (2014). Here the divergence of the flux is used.
 !
-      if (lvisc_slope_limited) then
+      if (lvisc_slope_limited .and. llast) then
 !
+!       tmp3 :  divergence of flux
+!       tmp4 :  heating, switch to turn on heating calc.
 !
-        if (lfirst) then
-           p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)
-!        if (ldiagnos) print*, 'max(char_c)=', maxval(f(l1:l2,m,n,iFF_char_c))
-           p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
-!!print*,'div flux', f(501:506,m,n,iFF_div_uu)
-!!print*, 'velo', f(501:506,m,n,iuu)
-
+!       use sld only in last sub timestep
 !
-!  Heating term
-!
-          if (lpencil(i_visc_heat)) & 
-            p%visc_heat=p%visc_heat-f(l1:l2,m,n,iFF_heat)
-        endif 
+        if (lviscosity_heat) then
+          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
+          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
+          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+        else
+          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3)
+          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
+          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3)
+          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
+          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3)
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+        endif
       endif
 !
 !  Calculate Lambda effect
@@ -2048,6 +2061,8 @@ module Viscosity
 !  16-aug-18/MR: replaced Joerns implementation of linear interpolation from staggered to normal 
 !                grid as it was not bi-/trilinear in 2D/3D;
 !                added 3rd order interpolation (default)
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion, SLD commented out here.
+
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
                      stagger_to_base_interp_1st, stagger_to_base_interp_3rd
@@ -2100,69 +2115,69 @@ module Viscosity
 !  using a slope limiting procedure then storing in the
 !  auxiliary variables in the f array (done above).
 !
-      if (lvisc_slope_limited.and.lfirst) then
+!      if (lvisc_slope_limited.and.lfirst) then
 !
-        if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
+!        if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
 !
-        do j=1,3
+!        do j=1,3
 !
-          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
+!          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
 !
-          do n=n1,n2; do m=m1,m2
+!          do n=n1,n2; do m=m1,m2
 !
 !  Divergence of flux = force/mass = acceleration.
 !
-            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
+!            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
 !
 !  Heating term.
 !
-            if (lviscosity_heat) then
+!            if (lviscosity_heat) then
 !
 ! grad(rho) or grad(lnrho)    (reference state?)
 !
-              call grad(f,ilnrho,gr)
+!              call grad(f,ilnrho,gr)
 !
 ! compactify the non-zero components in the first dimensionality elements of gr
 !
-              call reduce_grad_dim(gr)
-              if (ldensity_nolog) then
-                call getrho(f(:,m,n,irho),rho)
-                do k=1,dimensionality
+!              call reduce_grad_dim(gr)
+!              if (ldensity_nolog) then
+!                call getrho(f(:,m,n,irho),rho)
+!                do k=1,dimensionality
 !
 ! now grad(ln(rho))
 !
-                  gr(:,k)=gr(:,k)/rho
-                enddo
-              endif
+!                  gr(:,k)=gr(:,k)/rho
+!                enddo
+!              endif
 !
 ! grad(u_j)
 !
-              call grad(f,iuu+j-1,guj)
+!              call grad(f,iuu+j-1,guj)
 !
 ! compactify the non-zero components in the first dimensionality elements of guj
 !
-              call reduce_grad_dim(guj)
+!              call reduce_grad_dim(guj)
 !
 !  grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
 !
-              do k=1,dimensionality
-                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)
-              enddo
+!              do k=1,dimensionality
+!                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)
+!              enddo
 !
 ! loop inside has length dimensionality
 ! \partial_k(rho*u_j) f_jk/rho = energy/time/mass (summation over j by loop)
 !
 !
-              do k=1,dimensionality
-                if (dim_mask(k) == 1) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 2) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 3) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
+!              do k=1,dimensionality
+!                if (dim_mask(k) == 1) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
+!                if (dim_mask(k) == 2) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
+!                if (dim_mask(k) == 3) &
+!                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+!                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
 
 !                call stagger_to_base_interp_3rd(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
 !f(:,m  ,n,iFF_diff1-1+k)=n+(/1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12./)
@@ -2170,22 +2185,22 @@ module Viscosity
 
  !               f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)*tmp
 !print*, 'k,tmp=', k, tmp
-              enddo
+!              enddo
 !              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &
 !                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
 !
 ! no cooling admitted (Why?)
 !
-              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
-            endif
+!              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
+!            endif
  
-          enddo; enddo
-        enddo
+!          enddo; enddo
+!        enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
 !f(l1:l2,m1:m2,n1:n2,iFF_heat)=0.   !!!
-      endif
+!      endif
 
     endsubroutine viscosity_after_boundary
 !***********************************************************************
@@ -2241,9 +2256,9 @@ module Viscosity
         gradnu(:,1)=tmp*x(l1:l2)*p%rcyl_mn1
         gradnu(:,2)=tmp*y(  m  )*p%rcyl_mn1
       elseif (ljumpr.and.lsphere_in_a_box) then
-        print*,'get_gradnu: not yet implemented for '
-        print*,'embedded spheres'
-        call fatal_error("","")
+        gradnu(:,1)=tmp*x(l1:l2)*p%r_mn1
+        gradnu(:,2)=tmp*y(  m  )*p%r_mn1
+        gradnu(:,3)=tmp*z(  n  )*p%r_mn1
       endif
 !
     endsubroutine get_gradnu
@@ -2344,18 +2359,6 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
-        !!!if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)   !What is intended here? p%fvisc is a vector!!
-        if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc(:,1),idiag_fviscm)
-        if (idiag_ufviscm/=0)  &
-           call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
-           p%uu(:,2)*p%fvisc(:,2)+ &
-           p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
-        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
-        if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
-        if (idiag_fviscrmsx/=0) then
-           call dot2(p%fvisc,fvisc2)
-           call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
-        endif
 !        if (lvisc_smag_simplified) then
 !          if (ldensity) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !        endif
@@ -2372,13 +2375,7 @@ module Viscosity
           endwhere
           call max_mn_name(Reshock,idiag_Reshock)
         endif
-        if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_Sij2m/=0) call sum_mn_name(p%sij2,idiag_Sij2m)
-        if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
-!
-        if (lslope_limit_diff) then
-          if (idiag_slope_c_max/=0) call max_mn_name(p%char_speed_slope,idiag_slope_c_max)
-        endif
 !
 !  Viscous heating for Smagorinsky viscosity.
 !
@@ -2401,6 +2398,26 @@ module Viscosity
             call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
           endif
         endif
+      endif
+!
+!
+! For slope-limted diffusion viscocity diagnostics need to be written
+! out at the last time step
+!
+
+      if (ldiagnos) then
+        if (idiag_fviscm/=0 .or. idiag_fviscmax/=0 .or. idiag_fviscrmsx/=0) &
+        call dot2(p%fvisc,fvisc2)
+        if (idiag_fviscm/=0) call sum_mn_name(fvisc2,idiag_fviscm,lsqrt=.true.)
+        if (idiag_ufviscm/=0)  &
+           call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
+           p%uu(:,2)*p%fvisc(:,2)+ &
+           p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
+        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
+        if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
+        if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
+        if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
       endif
 !
 !  1D-averages.
@@ -2646,4 +2663,5 @@ module Viscosity
 
     endsubroutine pushpars2c
 !***********************************************************************
+!
 endmodule Viscosity

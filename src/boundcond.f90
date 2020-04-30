@@ -19,6 +19,7 @@ module Boundcond
 !
   public :: update_ghosts, zero_ghosts, finalize_boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
+  public :: boundconds_x_c, boundconds_y_c, boundconds_z_c
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
@@ -189,10 +190,21 @@ module Boundcond
       integer ::  mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
                   nghost_in, nprocx_in, nprocy_in, nprocz_in, nprocz_in_
       logical :: lbcxslc,lbcyslc,lbczslc
-      character(LEN=fnlen) :: dir
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
-
+!
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical
+        !components of vectors
+        bcy='nil'; bcz='nil'
+      endif
+!
+      call check_consistency_of_lperi('initialize_boundcond')
+!
       lbcxslc=any(bcx12=='slc'); lbcyslc=any(bcy12=='slc'); lbczslc=any(bcz12=='slc')
       if (lbcxslc.and..not.lactive_dimension(1)) return
       if (lbcyslc.and..not.lactive_dimension(2)) return
@@ -281,38 +293,129 @@ module Boundcond
 !  Restricted to slice position 'm'!
 !
         if (IO_strategy/='HDF5') then
-        if (lread_slice_xy ) then
-          call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
-        endif
-        if (lread_slice_xy2) then 
-          call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
-        endif
-        if (lread_slice_xz ) then 
-          call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
-        endif
-        if (lread_slice_xz2) then 
-          call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
-        endif
-        if (lread_slice_yz ) then 
-          call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
-        endif
-        if (lread_slice_yz2) then 
-          call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
-          call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
-        endif
+          if (lread_slice_xy ) then
+            call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
+          endif
+          if (lread_slice_xy2) then 
+            call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
+          endif
+          if (lread_slice_xz ) then 
+            call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
+          endif
+          if (lread_slice_xz2) then 
+            call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
+          endif
+          if (lread_slice_yz ) then 
+            call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
+          endif
+          if (lread_slice_yz2) then 
+            call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
+            call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
+          endif
 
-        call mpibarrier
-      else
-        call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
-      endif      
+          call mpibarrier
+        else
+          call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
+        endif      
       endif      
 
     endsubroutine initialize_boundcond
+!***********************************************************************
+    subroutine check_consistency_of_lperi(label)
+!
+!  Check consistency of lperi.
+!
+!  18-jul-03/axel: coded
+!
+      character (len=*) :: label
+      logical :: lwarning=.true.
+      integer :: j
+!
+!  Identifier.
+!
+      if (lroot.and.ip<5) print*,'check_consistency_of_lperi: called from',label
+!
+!  Make the warnings less dramatic looking, if we are only in start
+!  and exit this routine altogether if, in addition, ip > 13.
+!
+      if (label=='check_consistency_of_lperi'.and.ip>13) return
+      if (label=='check_consistency_of_lperi') lwarning=.false.
+!
+      if (nvar > 0) then
+!
+!  Check x direction.
+!
+        j=1
+        if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
+            any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
+            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
+!
+!  Check y direction.
+!
+        j=2
+        if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcy(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
+!
+!  Check z direction.
+!
+        j=3
+        if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcz(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
+      endif
+!
+!  Print final warning.
+!  Make the warnings less dramatic looking, if we are only in start.
+!
+      if (lroot .and. (.not. lwarning)) then
+        if (label=='check_consistency_of_lperi') then
+          print*,'[bad BCs in start.in only affects post-processing' &
+               //' of start data, not the run]'
+        else
+          print*,'check_consistency_of_lperi(run.in): you better stop and check!'
+          print*,'------------------------------------------------------'
+          print*
+        endif
+      endif
+!
+    endsubroutine check_consistency_of_lperi
+!***********************************************************************
+    subroutine warning_lperi(lwarning,bc,lperi,j)
+!
+!  Print consistency warning of lperi.
+!
+!  18-jul-03/axel: coded
+!
+      character (len=*), dimension(:), intent(in) :: bc
+      logical, dimension(3) :: lperi
+      logical :: lwarning
+      integer :: j
+!
+      if (lroot) then
+        if (lwarning) then
+          print*
+          print*,'------------------------------------------------------'
+          print*,'W A R N I N G'
+          lwarning=.false.
+        else
+          print*
+        endif
+!
+        print*,'warning_lperi: inconsistency, j=', j, ', lperi(j)=',lperi(j)
+        print*,'bc=',bc
+        print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
+        print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
+      endif
+!
+    endsubroutine warning_lperi
 !***********************************************************************
     subroutine get_slice_data(pos,iproc_slc,label,slcdat,nt)
 !
@@ -334,6 +437,7 @@ module Boundcond
       if (lhydro) then
         file=trim(slicedir)//'/slice_uu1.'//trim(label)
         call input_slice(file,pos_slc,slcdat,iux,nt)
+!print*, 'pos,pos_slc=', pos,pos_slc
 !print*, 'iproc, ux:', minval(slcdat(:,:,iux)), maxval(slcdat(:,:,iux))
         if (abs(pos-pos_slc)>dz) &
           call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
@@ -530,6 +634,17 @@ module Boundcond
       call boundconds_z(f,ivar1,ivar2)
 !
     endsubroutine boundconds
+!***********************************************************************
+    subroutine boundconds_x_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_x(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_x_c
 !***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
@@ -881,6 +996,17 @@ module Boundcond
 !
     endsubroutine boundconds_x
 !***********************************************************************
+    subroutine boundconds_y_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_y(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_y_c
+!***********************************************************************
     subroutine boundconds_y(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in y, except for periodic part handled by communication.
@@ -940,6 +1066,7 @@ module Boundcond
 !            if ((bcy12(j,k)=='p') .and. lchemistry .and. ldustdensity) bcy12(j,k)=''
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bcy12(j,k)
+
             if (ip_ok) then
            
               is_vec = var_is_vec(j)
@@ -1131,6 +1258,17 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_y
+!***********************************************************************
+    subroutine boundconds_z_c(f,ivar1_opt,ivar2_opt)
+!
+!  Envelope for being called from C code.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+
+      call boundconds_z(f,ivar1_opt,ivar2_opt)
+
+    endsubroutine boundconds_z_c
 !***********************************************************************
     subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
@@ -1508,7 +1646,8 @@ module Boundcond
                 ! BCZ_DOC: do nothing; assume that everything is set
               case ('slc')
                 call set_from_slice_z(f,topbot,j)
-                call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+                !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+                call bc_sym_z(f,-1,topbot,j,rel=.true.)
               case default
                 bc%bcname=bcz12(j,k)
                 bc%ivar=j
@@ -5448,7 +5587,7 @@ module Boundcond
 
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
-       integer :: lend=0,ierr,frame=0,stat,pos,iref,px,py
+       integer :: lend=0,ierr,frame=0,pos,iref,px,py
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
        logical :: quench
@@ -6146,6 +6285,8 @@ module Boundcond
             endif
           else
             if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
+!print*, 'bc_ss_flux_x: iproc, lnrho, ss=', iproc, maxval(f(l1,:,:,ilnrho)), &
+!minval(f(l1,:,:,ilnrho)), maxval(f(l1,:,:,iss)), minval(f(l1,:,:,iss))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then

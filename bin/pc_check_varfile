@@ -9,7 +9,7 @@ else
   file="${1}"
 fi
 
-nlines=`du data/proc*/${file} | awk '{print $1}' | uniq | wc -l`
+nlines=`du -b data/proc*/${file} | awk '{print $1}' | uniq | wc -l`
 
 if [ $nlines -eq 1 ]; then
   echo "Sizes of ${file} are consistent."

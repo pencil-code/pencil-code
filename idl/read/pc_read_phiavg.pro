@@ -59,7 +59,7 @@ end
 ; ---------------------------------------------------------------------- ;
 function pc_read_phiavg, file, datadir=datadir, $
                       VARS=vars, TONLY=t_only, $
-                      DEBUG=debug, HELP=help
+                      DEBUG=debug, HELP=help, old_format=old_format
 
   if (keyword_set(help)) then extract_help, 'pc_read_phiavg'
 
@@ -70,7 +70,7 @@ function pc_read_phiavg, file, datadir=datadir, $
   ; load HDF5 averages, if available
   pos = long (stregex (file, '([0-9]+)$', /extract)) - 1
   h5_file = datadir + '/averages/phi.h5'
-  if ((pos ge 0) and file_test (h5_file)) then begin
+  if (not keyword_set (old_format) and (pos ge 0) and file_test (h5_file)) then begin
     last = pc_read ('last', filename='phi.h5', datadir=datadir+'/averages/')
     if (pos gt last) then message, 'pc_read_phiavg: ERROR: "'+h5_file+'" ends after '+str (last+1)+' snapshots!'
     group = str (pos) + '/'
@@ -99,6 +99,8 @@ function pc_read_phiavg, file, datadir=datadir, $
     message, /INFO, $
         'VARS keyword (for selecting only certain vars) not yet implemented'
   endif
+
+  if (strpos (file, 'averages/') eq -1) then file = datadir + '/averages/' + file
 
   get_lun, lun
   close, lun

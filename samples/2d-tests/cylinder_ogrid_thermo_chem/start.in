@@ -1,0 +1,111 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+
+&init_pars
+  ip = 14
+  xyz0 =-2.5e-2, 0.0  , -0.5e-2
+  xyz1 = 2.5e-2, 10e-2,  0.5e-2
+  fbcy1 = 0.0,3000.0,0.,0.00128313,273.,0.0,0.0,0.76639,0.23281,0.0008
+  lperi=T,F,T
+  bcy = 'set:e2','set:e2','set:e2','set:e2','set:e2','set:a2','set:a2','set:a2','set:a2','set:a2'
+  unit_system='cgs'
+  unit_temperature=1.
+  lwrite_aux=.true.
+/
+&eos_init_pars
+  lpres_grad=T
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_rho'
+  rho_const=0.00128313
+/
+  &entropy_init_pars
+  ltemperature_nolog=T
+  initlnTT='const_TT'
+  TT_const=273.
+/
+&solid_cells_init_pars
+  ncylinders=1
+  cylinder_radius=2.5e-3
+  cylinder_xpos=0.0
+  cylinder_ypos=5e-2
+  cylinder_zpos=0.0
+  cylinder_temp=273.
+  init_rho_cyl=0.00128313
+  skin_depth_solid=2.5e-3 ! In units of length
+  initsolid_cells='cylinderstream_y'
+  init_uu=3000.00
+  af=0.1 ! This is the default value (is it the strength of the pade filter?)
+  grid_func_ogrid = 'sinh', ,
+  xyz_star_ogrid=2.5e-3 ! In units of length (Similar to cylinder radius)
+  coeff_grid_o=400, , ! Seems to be in units inverse length (Similar to one over cyl.rad.)
+  interpolation_method=1
+  lcheck_interpolation=.false.
+  SBP=.true.
+  SBP_optimized=.false.
+  lfilter_solution=.true.
+  lfilter_rhoonly=.false.
+  lfilter_TT=.true.
+  lreac_heter=F
+  lexpl_rho=.true.      ! This is the default value
+  SBP_optimized=.false. ! This is the default value
+  BDRY5=.false.         ! This is the default value
+   particle_interpolate=3    
+  lparticle_uradonly=.false.
+  lspecial_rad_int=.true.
+  /
+&chemistry_init_pars
+  lchemistry_diag=F
+  lew_exist=T
+  Lewis_coef=
+     1.240, !CO2
+     1.000, !CO
+     1.090, !N2 
+     1.000, !O2
+     0.730 !H2O
+  lmech_simple=T
+  p_init=1010000
+  lreac_as_aux=F
+  /  
+&NSCBC_init_pars
+  nscbc_bc = '','part_ref_inlet:part_ref_outlet',''
+  nscbc_sigma_in=4.0
+  nscbc_sigma_out=0.28
+  p_infty=1010000. ! cp*(gamma-1)*rho*T/gamma (here, gamma=5/3)
+/
+&particles_init_pars
+  initxxp='random-box'
+  initvvp='constant'
+  vpx0=0.
+  vpy0=3000.0
+  vpz0=0.
+  bcpx='p'
+  bcpy='rmv'
+  bcpz='p'
+  xp0=-2.5e-3
+  yp0=1e-4
+  zp0=0
+  Lx0=5e-3
+  Ly0=3e-4
+  Lz0=0
+  mean_free_path_gas=67e-19
+  interp_pol_rho='cic'
+  interp_pol_TT='cic'
+  interp_pol_uu='cic'
+  linsert_particles_continuously=T
+  lnostore_uu=.false.
+  lbrownian_forces=T
+  thermophoretic_eq='near_continuum'
+  cond_ratio=10.0
+/
+&particles_radius_init_pars
+  initap='constant'    
+  radii_distribution=1.
+  ap0 = 1.000000000E-05 ! St = 0.1
+  lsweepup_par=F
+  rhopmat=0.676
+/

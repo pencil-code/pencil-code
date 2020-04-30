@@ -1248,7 +1248,7 @@ module Poisson
       integer, intent(in) :: unit
 !
       write(unit, NML=poisson_run_pars)
-v!
+!
     endsubroutine write_poisson_run_pars
 !***********************************************************************
     subroutine get_acceleration(acceleration)

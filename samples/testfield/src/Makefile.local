@@ -5,6 +5,14 @@
 
 MPICOMM   =   mpicomm
 
+#================================
+# Please uncomment one IO option:
+#================================
+IO        =   io_dist
+#--------------------------------
+#IO        =   io_hdf5
+#================================
+
 HYDRO     =   hydro_kinematic
 DENSITY   = nodensity
 ENTROPY   = noentropy

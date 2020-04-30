@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
-! PENCILS PROVIDED der6u(3)
+! PENCILS PROVIDED der6u(3); curlo(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 !***********************************************************************
@@ -26,11 +26,17 @@ module Hydro
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+  use Mpicomm
 !
   implicit none
 !
   include 'record_types.h'
   include 'hydro.h'
+!
+  interface input_persistent_hydro
+     module procedure input_persist_hydro_id
+     module procedure input_persist_hydro
+  endinterface
 !
   real, dimension (mx,3) :: uumx=0.
   real, dimension (mz,3) :: uumz=0.
@@ -71,6 +77,7 @@ module Hydro
   character (len=labellen) :: kinematic_flow='none'
   real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
+  real :: wind_ampz=0., wind_z=0., wind_radius=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
@@ -80,8 +87,9 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp,gamma_dg11=0.4, relhel_uukin=1.
+  real :: rp,gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
+  real :: w_sldchar_hyd=1.0
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -90,8 +98,9 @@ module Hydro
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
+      wind_ampz, wind_z, wind_radius, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow, relhel_uukin, &
+      ampl_kinflow, relhel_uukin, chi_uukin, del_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
@@ -122,6 +131,20 @@ module Hydro
   integer :: idiag_divum=0
 !
   logical :: lupdate_aux=.false.
+!
+  type foreign_setup
+    character(LEN=labellen) :: name
+    integer :: ncpus,peer,tag,irecv
+    real :: dt_out, t_last_out
+    integer, dimension(3) :: procnums
+    integer, dimension(3) :: dims
+    real, dimension(2,3) :: extents
+  endtype foreign_setup
+  
+  type(foreign_setup) :: frgn_setup
+  real, dimension(:), allocatable :: x_foreign
+  real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -161,13 +184,19 @@ module Hydro
       use Sub, only: erfunc, ylm, ylm_other
       use Boundcond, only: update_ghosts
       use General
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: exp_kinflow1, sph, sph_har_der
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (:,:), allocatable :: yz
-      integer :: iyz
+      integer :: iyz, root_foreign
+      logical :: lok
+      character(LEN=128) :: messg
+      integer, dimension(3) :: intbuf
+      real, dimension(6) :: floatbuf
+      integer :: ind,j,ll,name_len,ipx_foreign,nx_foreign
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -240,15 +269,17 @@ module Hydro
             open(1,file='uu.dat',form='unformatted')
             read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
             close(1)
+            if (ampl_kinflow/=1.) f(l1:l2,m1:m2,n1:n2,iux:iuz) &
+                    =ampl_kinflow*f(l1:l2,m1:m2,n1:n2,iux:iuz)
             if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
           endif
         else
 ! set the initial velocity to zero
-          if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
+          if (kinematic_flow/='from-snap'.or.kinematic_flow/='from-foreign-snap') f(:,:,:,iux:iuz) = 0.
           if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
           call farray_index_append('iuu',iuu,3)
         endif
-
+        
         if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
           if (.not.lspherical_coords) call inevitably_fatal_error("init_uu", &
               '"spher-harm-poloidal" only meaningful for spherical coordinates')
@@ -296,6 +327,148 @@ module Hydro
         endif
       endif
 !
+      if (lforeign.and.kinematic_flow=='from-foreign-snap') then
+   
+        root_foreign=ncpus
+        frgn_setup%peer=iproc+ncpus
+        frgn_setup%tag=tag_foreign
+
+if (.false.) then
+!if (iproc_world/=iproc) then
+if (iproc_world==2) then
+  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
+  name_len=5
+  call mpisend_int(name_len,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_char('MagIC',root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nprocx,2,2/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(1),xyz1(1)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(2),xyz1(2)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real((/xyz0(3),xyz1(3)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpisend_real(0.1,root,tag_foreign,MPI_COMM_UNIVERSE)
+  !call mpirecv_logical(lok,root,tag_foreign,MPI_COMM_UNIVERSE)
+  call mpibarrier(MPI_COMM_PENCIL)
+  !stop
+endif
+return
+endif
+        if (lroot) then
+          lok=.true.; messg=''
+!
+!  Receive length of name of foreign code.
+!      
+          call mpirecv_int(name_len,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          if (name_len<=0) then
+            call fatal_error('initialize_hydro','length of foreign name <=0 or >')
+          elseif (name_len>labellen) then
+            call fatal_error('initialize_hydro','length of foreign name > labellen ='// &
+                            trim(itoa(labellen)))
+          endif
+!
+!  Receive name of foreign code.
+!      
+          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          frgn_setup%name=frgn_setup%name(1:name_len)
+          if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
+            call fatal_error('initialize_hydro', &
+             'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
+          !print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
+!
+!  Receive processor numbers of foreign code.
+!      
+          call mpirecv_int(intbuf,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          if ( frgn_setup%name=='MagIC' ) then
+            if (any(intbuf/=(/nprocx,1,1/))) then
+              messg='MagIC processor numbers '//trim(itoa(intbuf(1)))//', '// &
+                    trim(itoa(intbuf(2)))//', '//trim(itoa(intbuf(3)))//' not consistent with (nprocx,1,1)'
+              lok=.false.
+            endif
+          elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
+            messg="foreign proc numbers don't match;"
+            lok=.false.
+          endif
+
+          frgn_setup%ncpus=product(intbuf)
+          if (ncpus+frgn_setup%ncpus/=nprocs) &
+            call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
+                    ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
+
+          frgn_setup%procnums=intbuf
+!
+!  Receive gridpoint numbers of foreign code.
+!      
+          call mpirecv_int(frgn_setup%dims,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+
+          if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))) then
+            messg=trim(messg)//" foreign grid sizes don't match;"
+            lok=.false.   !MR: alleviate to interpolation
+          endif
+!
+!  Receive domain extents of foreign code. j loops over r, theta, phi.
+!      
+          call mpirecv_real(floatbuf,6,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          ind=1
+          do j=1,3
+            frgn_setup%extents(:,j)=floatbuf(ind:ind+1); ind=ind+2
+            if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
+              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
+              lok=.false. !MR: alleviate to selection
+            endif
+          enddo
+!
+!  Receive output timestep of foreign code (code units).
+!      
+          call mpirecv_real(frgn_setup%dt_out,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          if (frgn_setup%dt_out<=0.) then
+            messg=trim(messg)//' foreign output step<=0'
+            lok=.false.
+          endif
+!
+!  Send confirmation flag that setup is acceptable.
+! 
+          call mpisend_logical(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
+          if (.not.lok) call fatal_error('initialize_hydro',messg)
+        endif
+
+        call mpibarrier(MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)
+       
+        frgn_setup%t_last_out=t
+        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+
+        if (iproc<ncpus) then
+
+          if (frgn_setup%name=='MagIC') then
+            nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
+            allocate(frgn_buffer(nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3))
+            allocate(x_foreign(frgn_setup%dims(1)))
+!
+!  Receive vector of global r-grid points.
+!
+            call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,tag_foreign)
+          endif
+
+          do j=1,2
+            if (frgn_setup%name=='MagIC') then
+              !do ipx_foreign=1,frgn_setup%procnums(1)
+              call mpirecv_real(frgn_buffer,(/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/), &
+                               frgn_setup%peer,tag_foreign,MPI_COMM_UNIVERSE)
+              !enddo
+              ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
+            else
+              if (j==1) then
+                call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/), &
+                                           frgn_setup%peer,tag_foreign,frgn_setup%irecv,MPI_COMM_UNIVERSE)
+              else
+                call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer,tag_foreign, &
+                                           frgn_setup%irecv,MPI_COMM_UNIVERSE)
+              endif
+            endif
+          enddo
+        endif
+
+      endif
+
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
@@ -480,6 +653,7 @@ module Hydro
       use Diagnostics
       use General
       use Sub
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
@@ -495,7 +669,7 @@ module Hydro
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
 !      real :: random_r_pt, random_p_pt
-      real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
+      real :: fac, fac2, argy, argz, cxt, cyt, czt, omt, del
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha, ABC_A1, ABC_B1, ABC_C1
@@ -503,7 +677,7 @@ module Hydro
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
-      integer :: modeN, ell, ll, nn, ii, nn_max
+      integer :: modeN, ell, ll, nn, ii, nn_max, kk
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
@@ -692,18 +866,22 @@ module Hydro
 ! divu
         if (lpenc_loc(i_divu)) p%divu= 0.
 !
-!  Roberts I flow with positive helicity
+!  Roberts I flow with positive helicity.
+!  For relhel_uukin=1, we have the normal Roberts flow.
+!  For relhel_uukin=0., the flow is purely in closed circles.
+!  For relhel_uukin=2., the flow is purely along the z direction.
 !
       case ('poshel-roberts')
-        if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
-        fac=ampl_kinflow
-        fac2=ampl_kinflow*relhel_uukin
-        eps1=1.-eps_kinflow
+        if (headtt) print*,'Pos Helicity Roberts flow; chi_uukin=',chi_uukin
+        fac =ampl_kinflow*cos(chi_uukin*dtor)*sqrt(2.)
+        fac2=ampl_kinflow*sin(chi_uukin*dtor)*2.
+        del =                 del_uukin*dtor
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
-          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
-          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
+          p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2)    )*sin(ky_uukin*y(m)    )
+          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)    )*cos(ky_uukin*y(m)    )
+          !p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2)+del)*cos(ky_uukin*y(m)+del)
+          p%uu(:,3)=fac2*sin(kx_uukin*x(l1:l2)+del)*sin(ky_uukin*y(m)+del)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1375,6 +1553,21 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  original Galloway-Proctor flow from Nature paper
+!
+      case ('Galloway-Proctor-92')
+        if (headtt) print*,'Galloway-Proctor-orig flow; kx_uukin=',kx_uukin
+        fac=ampl_kinflow
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*(sin(kz_uukin*z(n)+esint)+cos(ky_uukin*y(m)+ecost))
+          p%uu(:,2)=+fac* cos(kz_uukin*z(n)+esint)
+          p%uu(:,3)=+fac* sin(ky_uukin*y(m)+ecost)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Potential flow, u=gradphi, with phi=coskx*X cosky*Y coskz*Z,
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !  Possibility of gaussian distributed random amplitudes if lrandom_ampl.
@@ -1713,12 +1906,18 @@ module Hydro
             exp_kinflow2=.5*exp_kinflow
             pom2=x(l1:l2)**2+y(m)**2
             profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+            if (wind_radius/=0.) then
+              if (headtt) print*,'also add BDMSST93-wind along r'
+              tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
+            else
+              tmp_mn=0.
+            endif
 ! uu
           if (lpenc_loc(i_uu)) then
             local_Omega=ampl_kinflow*profx_kinflow1
-            p%uu(:,1)=-local_Omega*y(m)
-            p%uu(:,2)=+local_Omega*x(l1:l2)
-            p%uu(:,3)=0.
+            p%uu(:,1)=-local_Omega*y(m)    +tmp_mn*x(l1:l2)
+            p%uu(:,2)=+local_Omega*x(l1:l2)+tmp_mn*y(m)
+            p%uu(:,3)=0.                   +tmp_mn*z(n)
           endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -2002,7 +2201,8 @@ module Hydro
 !
 ! flow from snapshot.
 !
-      case ('from-snap')
+      case ('from-snap','from-foreign-snap')
+
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
@@ -2028,6 +2228,14 @@ module Hydro
         if (lpenc_loc(i_uu)) p%uu=0.
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  for delta-correlated *flows*, use "lhelical_test=T" in forcing
+!  and kinematic_flow='from_aux' in forcing_run_pars and
+!  lkinflow_as_aux=T in run_pars.
+!
+      case('from_aux')
+        if (lpenc_loc(i_uu)) p%uu=ampl_kinflow*f(l1:l2,m,n,iux:iuz)
+        lupdate_aux=.false.
       case('spher-harm-poloidal')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
         lupdate_aux=.false.
@@ -2084,15 +2292,63 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
+    subroutine calc_diagnostics_hydro(f,p)
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_hydro
+!******************************************************************************
+    subroutine df_diagnos_hydro(df,p)
+
+      type(pencil_case), intent(in) :: p
+      real, dimension(:,:,:,:) :: df
+
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+
+    endsubroutine df_diagnos_hydro
+!***********************************************************************
     subroutine hydro_before_boundary(f)
 !
 !  Dummy routine
 !
 !   16-dec-10/bing: coded
 !
+      use Mpicomm, only: mpiwait, mpirecv_nonblock_real
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+      real :: fac
+      integer :: ipx_foreign,nx_foreign
+
+      if (kinematic_flow=='from-foreign-snap') then
+
+
+        if (lfirst) then
+          if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
+            call mpiwait(frgn_setup%irecv)
+            frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
+            if (frgn_setup%name=='MagIC') then
+              nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
+              call mpirecv_nonblock_real(frgn_buffer, &
+                                         (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/),frgn_setup%peer, &
+                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
+                !TODO: interpolate/restrict/scatter into uu_2(ll,:,:,:)
+            else
+              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer, &
+                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
+            endif
+          endif
+        endif
+
+        fac=dt/(frgn_setup%dt_out-t+dt)
+        f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
+
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
@@ -2199,7 +2455,23 @@ module Hydro
 !  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      intent(inout) :: f
+!
+!    Slope limited diffusion: update characteristic speed
+!    Not staggered yet
+!
+      if (lslope_limit_diff .and. llast) then
+        if (lkinflow_as_aux) then
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,isld_char)=w_sldchar_hyd* &
+            sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
+          enddo
+          enddo
+        else
+          f(:,:,:,isld_char)=0.
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -2654,7 +2926,7 @@ module Hydro
 !
     endsubroutine KS_order
 !***********************************************************************
-    subroutine input_persistent_hydro(id,done)
+    subroutine input_persist_hydro_id(id,done)
 !
 !  Read in the stored time of the next random phase calculation.
 !
@@ -2688,9 +2960,42 @@ module Hydro
         done = .true.
       endif
 !
-      if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
+      if (lroot) print*,'input_persist_hydro: ', tphase_kinflow
 !
-    endsubroutine input_persistent_hydro
+    endsubroutine input_persist_hydro_id
+!***********************************************************************
+    subroutine input_persist_hydro()
+!
+!  Read in the stored time of the next random phase calculation.
+!
+!  13-Oct-2019/PABourdin: adapted from input_persist_forcing
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('HYDRO_TPHASE', tphase_kinflow)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tphase_kinflow = ', tphase_kinflow
+!
+      error = read_persist ('HYDRO_PHASE1', phase1)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: phase1 = ', phase1
+!
+      error = read_persist ('HYDRO_PHASE2', phase2)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: phase2 = ', phase2
+!
+      error = read_persist ('HYDRO_LOCATION', location)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: location = ', location
+!
+      error = read_persist ('HYDRO_TSFORCE', tsforce)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce = ', tsforce
+!
+      error = read_persist ('HYDRO_AMPL', tsforce_ampl)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce_ampl = ', tsforce_ampl
+!
+      error = read_persist ('HYDRO_WAVENUMBER', tsforce_wavenumber)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce_wavenumber = ', tsforce_wavenumber
+!
+    endsubroutine input_persist_hydro
 !***********************************************************************
     logical function output_persistent_hydro()
 !
@@ -2967,6 +3272,8 @@ module Hydro
         deallocate(KS_B)
         deallocate(KS_omega)
       endif
+
+      if (allocated(frgn_buffer)) deallocate(frgn_buffer)
 !
       print*, 'Done.'
 !

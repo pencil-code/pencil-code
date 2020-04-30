@@ -201,22 +201,24 @@ module Special
       use Mpicomm
       use Sub
       use Deriv, only: der_pencil
-      use Viscosity, only: getnu
       use Slices_methods, only: store_slices
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: ufluct
       real, dimension (nx) :: ufluct2
+      real, dimension (3) :: meanx_uu
       type (pencil_case) :: p
       integer :: i,j
       real, dimension (my) :: tmp,du_mean_dy
-      real :: tau_tmp,nu
+      real :: tau_tmp
+      real, pointer :: nu
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
-      call getnu(nu_input=nu)
+      call get_shared_variable('nu',nu,caller='dspecial_dt')
 !
 !  identify module and boundary conditions
 !
@@ -227,7 +229,8 @@ module Special
       if (lvideo.and.lfirst) then
         if (ivid_uu_meanx/=0) then
           do j=1,3
-            ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy_meanx-nghost,j)
+            !ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy_meanx-nghost,j)   !!!MR: corrected, please check!
+            ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy-nghost,j)
           enddo
           call store_slices(ufluct,uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx,uu_xy3_meanx, &
                             uu_xy4_meanx,uu_xz2_meanx)
@@ -460,16 +463,17 @@ module Special
       ! 2008.03.22: Nils Erland (Coded)
       !
       use Mpicomm, only: ipy
-      use Viscosity, only: getnu
+      use SharedVariables, only: get_shared_variable
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: central_vel,Re_tau
-      real :: B1,kappa,utau,height, h2, nu
+      real :: B1,kappa,utau,height, h2
+      real, pointer :: nu
       integer :: i,j,k
 !
       real :: y_pluss, defect,def_y,log_y,lw,defect_min,log_max
 !
-      call getnu(nu_input=nu)
+      call get_shared_variable('nu',nu,caller='dspecial_dt')
 !
 if (nu==0) then
   print*,'Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'
@@ -548,16 +552,17 @@ endif
       ! 2008.05.20: Nils Erland (Coded)
       !
       use Mpicomm, only: ipy
-      use Viscosity, only: getnu
+      use SharedVariables, only: get_shared_variable
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: central_vel,Re_tau
-      real :: B1,kappa,utau,height, h2, nu
+      real :: B1,kappa,utau,height, h2
+      real, pointer :: nu
       integer :: i,j,k
 !
       real :: y_pluss, lw, u_log, u_lam
       !
-      call getnu(nu_input=nu)
+      call get_shared_variable('nu',nu,caller='dspecial_dt')
 !
 if (nu==0) then
   print*,'WARNING: Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'

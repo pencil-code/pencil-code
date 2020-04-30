@@ -26,7 +26,7 @@
 /YINYANG/ b end
 /PARTICLES/ b end
 /IMPLICIT_DIFFUSION/ b end
-s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef VISCOSITY/ 
+s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0
 : prin
@@ -34,7 +34,10 @@ p
 t end
 : cont0
 /^ *[A-Z0-9_]* *= *no/ b end
-s/^ *REAL_PRECISION *= *double *$/DOUBLE_PRECISION=DOUBLE_PRECISION/
+s/^ *REAL_PRECISION *= *double *$/PRECISION=DOUBLE/
+s/^ *REAL_PRECISION *= *8 *$/PRECISION=DOUBLE/
+s/^ *REAL_PRECISION *= *single *$/PRECISION=SINGLE/
+s/^ *REAL_PRECISION *= *4 *$/PRECISION=SINGLE/
 t store
 b cont
 : store
@@ -51,7 +54,7 @@ b end
 /IO[_ ]/ b end
 #s/^.*= *\([A-Za-z0-9_][A-Za-z0-9_]*\)/#define \U\1/ 
 #s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define \1 \/\/ ..\/..\/\2.f90/ 
-s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define L\1 \/\/ CUDA_RELPATH\/\2.f90/ 
+s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define L\1 1 \/\/ ..\/\2.f90/ 
 p
 s/.*\/\/ *\(\.\.[\/\.]*\/[a-z0-9_][a-z0-9_]*\.f90\) *$/\1 \\/
 H
@@ -59,12 +62,16 @@ H
 $! d
 ${
 g
-/DOUBLE_PRECISION/ {
-                    s/^\(.*\)DOUBLE_PRECISION=DOUBLE_PRECISION\(.*\)$/DOUBLE_PRECISION=DOUBLE_PRECISION\nMODULESOURCES= \\\1\2\\/
-                    t out
-                   }
+/DOUBLE/ {
+          s/^\(.*\)PRECISION=DOUBLE\(.*\)$/PRECISION=DOUBLE\nMODULESOURCES= \\\1\2\\/
+          t out
+         }
+/SINGLE/ {
+          s/^\(.*\)PRECISION=SINGLE\(.*\)$/PRECISION=SINGLE\nMODULESOURCES= \\\1\2\\/
+          t out
+         }
 s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
-w CUDA_MAKEDIR/PC_modulesources
+w astaroth/PC_modulesources.h
 d
 }

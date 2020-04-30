@@ -6,6 +6,13 @@ if [[ $3 == '' ]]; then
 else
   modname=$3
 fi
+
+if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
+  modname='energy'
+elif [[ $modname =~ eos_.* ]]; then
+  modname='equationofstate'
+fi
+
 modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
   ptype=void

@@ -13,7 +13,6 @@ IO        =   io_collect
 #IO        =   io_dist
 #--------------------------------
 #IO        =   io_hdf5
-#HDF5_IO   =   hdf5_io_parallel
 #================================
 
 FILE_IO   =   file_io_f95

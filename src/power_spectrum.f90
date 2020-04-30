@@ -896,15 +896,16 @@ module power_spectrum
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, cross, grad, curli
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
+  integer :: i, k, ikx, iky, ikz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi,jji
-  real, dimension(nx,3) :: bbEP
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -917,9 +918,7 @@ module power_spectrum
 !
 !  passive scalar contributions (hardwired for now)
 !
-  integer :: itmp1=8,itmp2=9
   real, dimension(nx,3) :: gtmp1,gtmp2
-  real :: BextEP=.1 !(hard-wired for now/Axel)
 !
 !  identify version
 !
@@ -991,6 +990,26 @@ module power_spectrum
             im=m-nghost
             in=n-nghost
             b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          enddo
+        enddo
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
+!
+!  magnetic power spectra (spectra of |J|^2 and J.B)
+!
+    elseif (sp=='j.a') then
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+          call del2vi_etc(f,iaa,ivec,curlcurl=jji)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=jji  !(this corresponds to the current density)
           enddo
         enddo
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
@@ -1080,6 +1099,64 @@ module power_spectrum
         b_im=0.
       endif
 !
+!  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
+!  Do as before, but compute only for ivec=3.
+!  Arrays will still be zero otherwise.
+!
+    elseif (sp=='bb2') then
+      if (ivec==3) then
+        do n=n1,n2
+          do m=m1,m2
+            call curl(f,iaa,bb)
+            call dot2(bb,b2)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=b2
+          enddo
+        enddo
+        if (ilnrho/=0) then
+          a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        else
+          a_re=0.
+        endif
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
+      endif
+!
+!  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
+!  Do as before, but compute only for ivec=3.
+!  Arrays will still be zero otherwise.
+!
+    elseif (sp=='jj2') then
+      if (ivec==3) then
+        do n=n1,n2
+          do m=m1,m2
+            call del2v_etc(f,iaa,curlcurl=jj)
+            call dot2(jj,j2)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=j2
+          enddo
+        enddo
+        if (ilnrho/=0) then
+          a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        else
+          a_re=0.
+        endif
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
+      endif
+!
 !  spectrum of uzs and s^2
 !
     elseif (sp=='uzs') then
@@ -1098,21 +1175,22 @@ module power_spectrum
 !  magnetic energy spectra based on fields with Euler potentials
 !
     elseif (sp=='bEP') then
-      do n=n1,n2
-        do m=m1,m2
-          call grad(f,itmp1,gtmp1)
-          call grad(f,itmp2,gtmp2)
-          gtmp1(:,2)=gtmp1(:,2)+BextEP
-          gtmp2(:,3)=gtmp2(:,3)+1.
-          call cross(gtmp1,gtmp2,bbEP)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+      if (iXX_chiral/=0.and.iYY_chiral/=0) then
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,iXX_chiral,gtmp1)
+            call grad(f,iYY_chiral,gtmp2)
+            call cross(gtmp1,gtmp2,bbEP)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
+                             -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
+          enddo
         enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+        a_im=0.
+        b_im=0.
+      endif
 !
 !  Spectrum of uxj
 !
@@ -1804,7 +1882,7 @@ module power_spectrum
   !
   endsubroutine powerTra
 !***********************************************************************
-  subroutine powerGWs(f,sp)
+  subroutine powerGWs(f,sp,lfirstcall)
 !
 !  Calculate power and helicity spectra (on spherical shells) of the
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
@@ -1819,13 +1897,16 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
-    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, &
-                       specGWm, specGWmhel, specStr, specStrhel
+    use Special, only: special_calc_spectra
 !
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=3) :: sp
+  logical :: lfirstcall
+
   integer, parameter :: nk=nxgrid/2
+
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real :: k2
-  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
@@ -1833,12 +1914,9 @@ module power_spectrum
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-! real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
-! real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=3) :: sp
   logical, save :: lwrite_krms_GWs=.false.
   real :: sign_switch, kk1, kk2, kk3
 !
@@ -1849,30 +1927,7 @@ module power_spectrum
 ! Select cases where spectra are precomputed
 !
   if (iggXim>0.or.iggTim>0) then
-    if (sp=='GWs') then
-!     call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
-!     call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
-      spectrum   =specGWs
-      spectrumhel=specGWshel
-    endif
-    if (sp=='GWh') then
-!     call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
-!     call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
-      spectrum   =specGWh
-      spectrumhel=specGWhhel
-    endif
-    if (sp=='GWm') then
-!     call get_shared_variable('specGWm   ', specGWm   , caller='powerGWs')
-!     call get_shared_variable('specGWmhel', specGWmhel, caller='powerGWs')
-      spectrum   =specGWm
-      spectrumhel=specGWmhel
-    endif
-    if (sp=='Str') then
-!     call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
-!     call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
-      spectrum   =specStr
-      spectrumhel=specStrhel
-    endif
+      call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
 !
 !  Initialize power spectrum to zero. The following lines only apply to
@@ -2052,16 +2107,18 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     endif
     close(1)
     !
-    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+    if ( all(sp.ne.(/'SCL','VCT','Tpq'/)) ) then
+      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') spectrumhel_sum
+      endif
+      close(1)
     endif
-    close(1)
     !
     if (lwrite_krms_GWs) then
       krms=sqrt(k2m_sum/nks_sum)
@@ -2074,7 +2131,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   !
   endsubroutine powerGWs
 !***********************************************************************
-  subroutine powerscl(f,sp)
+  subroutine powerscl(f,sp,iapn_index)
 !
 !  Calculate power spectrum of scalar quantity (on spherical shells) of the
 !  variable specified by `sp', e.g. spectra of cc, rho, etc.
@@ -2082,9 +2139,13 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !  one could in principle reuse the df array for memory purposes.
 !
     use Fourier, only: fft_xyz_parallel
+    use General, only: itoa
     use Mpicomm, only: mpireduce_sum
     use Sub, only: curli, grad
+    use SharedVariables, only: get_shared_variable
 !
+  integer, intent(in), optional :: iapn_index
+  integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
@@ -2131,6 +2192,15 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     else
       a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
     endif
+  elseif (sp=='np') then
+    call get_shared_variable('inp', inp, caller='powerscl')
+    a_re=f(l1:l2,m1:m2,n1:n2,inp)
+  elseif (sp=='na') then
+    call get_shared_variable('iapn', iapn, caller='powerscl')
+    a_re=f(l1:l2,m1:m2,n1:n2,iapn(iapn_index))
+  elseif (sp=='rp') then
+    call get_shared_variable('irhop', irhop, caller='powerscl')
+    a_re=f(l1:l2,m1:m2,n1:n2,irhop)
   elseif (sp=='TT') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
   elseif (sp=='ss') then
@@ -2142,6 +2212,8 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
   elseif (sp=='sp') then
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
+  elseif (sp=='mu') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
   elseif (sp=='hr') then
     a_re=0.
     do m=m1,m2
@@ -2209,7 +2281,12 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !AB: the following line does not make sense for passive scalars
 !-- spectrum_sum=.5*spectrum_sum
-    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (sp=='na') then
+       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
+            trim(itoa(iapn_index))//'.dat',position='append')
+    else
+       open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    endif
     write(1,*) t
     write(1,'(1p,8e10.2)') spectrum_sum
     close(1)

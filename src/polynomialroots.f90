@@ -21,7 +21,7 @@ MODULE PolynomialRoots
 
   IMPLICIT NONE
 
-  INTEGER,PARAMETER,PRIVATE:: SP=KIND(1.0), DP=KIND(1.0D0)
+  INTEGER,PARAMETER,PRIVATE:: SP=selected_real_kind(6), DP=selected_real_kind(12)
   REAL(DP),PARAMETER,PRIVATE:: ZERO=0.0D0, FOURTH=0.25D0, HALF=0.5D0
   REAL(DP),PARAMETER,PRIVATE:: ONE=1.0D0, TWO=2.0D0, THREE=3.0D0, FOUR=4.0D0
   COMPLEX(DP),PARAMETER,PRIVATE:: CZERO=(0.D0,0.D0)
@@ -53,8 +53,7 @@ MODULE PolynomialRoots
 !----------------------------------------------------------------------------
 
   INTERFACE Swap
-    !MODULE PROCEDURE SwapDouble, SwapSingle
-    MODULE PROCEDURE SwapSingle
+    MODULE PROCEDURE SwapDouble, SwapSingle
   END INTERFACE
 
 CONTAINS
@@ -84,11 +83,11 @@ SUBROUTINE LinearRoot(a, z)
 ! PURPOSE - COMPUTES THE ROOTS OF THE REAL POLYNOMIAL
 !              A(1) + A(2)*Z
 !     AND STORES THE RESULTS IN Z. It is assumed that a(2) is non-zero.
-  REAL(DP),INTENT(IN),DIMENSION(:):: a
-  REAL(DP),INTENT(OUT):: z
+  REAL,INTENT(IN),DIMENSION(:):: a
+  REAL,INTENT(OUT):: z
 !----------------------------------------------------------------------------
   IF (a(2)==0.0) THEN
-    z=ZERO
+    z=0.
   ELSE
     z=-a(1)/a(2)
   END IF
@@ -101,9 +100,9 @@ SUBROUTINE OneLargeTwoSmall(a1,a2,a4,w, z)
 ! PURPOSE - Compute the roots of a cubic when one root, w, is known to be
 !   much larger in magnitude than the other two
 
-  REAL(DP),INTENT(IN):: a1,a2,a4
-  REAL(DP),INTENT(IN):: w
-  COMPLEX(DP),INTENT(OUT),DIMENSION(:):: z
+  REAL,INTENT(IN):: a1,a2,a4
+  REAL,INTENT(IN):: w
+  COMPLEX,INTENT(OUT),DIMENSION(:):: z
 
 
   REAL(DP),DIMENSION(3):: aq
@@ -111,13 +110,13 @@ SUBROUTINE OneLargeTwoSmall(a1,a2,a4,w, z)
   aq(1)=a1
   aq(2)=a2+a1/w
   aq(3)=-a4*w
-  CALL QuadraticRoots(aq, z)
-  z(3)=CMPLX(w,ZERO,DP)
+  CALL QuadraticRoots(real(aq), z)
+  z(3)=CMPLX(w,0.)
 
-  IF (AIMAG(z(1)) == ZERO) RETURN
+  IF (AIMAG(z(1)) == 0.) RETURN
   z(3)=z(2)
   z(2)=z(1)
-  z(1)=CMPLX(w,ZERO,DP)
+  z(1)=CMPLX(w,0.)
   RETURN
 END Subroutine OneLargeTwoSmall   ! -----------------------------------------
 
@@ -128,22 +127,22 @@ SUBROUTINE QuadraticRoots(a, z)
 !              A(1) + A(2)*Z + A(3)*Z**2
 !     AND STORES THE RESULTS IN Z.  IT IS ASSUMED THAT A(3) IS NONZERO.
 
-  REAL(DP),INTENT(IN),DIMENSION(:):: a
-  COMPLEX(DP),INTENT(OUT),DIMENSION(:):: z
+  REAL,INTENT(IN),DIMENSION(:):: a
+  COMPLEX,INTENT(OUT),DIMENSION(:):: z
 
 
   REAL(DP):: d, r, w, x, y
 !----------------------------------------------------------------------------
   IF(a(1)==0.0) THEN     ! EPS is a global module constant (private)
     z(1) = CZERO               ! one root is obviously zero
-    z(2) = CMPLX(-a(2)/a(3), ZERO,DP)    ! remainder is a linear eq.
+    z(2) = CMPLX(-a(2)/a(3), 0.)    ! remainder is a linear eq.
     outputCode=21   ! two identical real roots
     RETURN
   END IF
 
   d = a(2)*a(2) - FOUR*a(1)*a(3)             ! the discriminant
   IF (ABS(d) <= TWO*eps*a(2)*a(2)) THEN
-    z(1) = CMPLX(-HALF*a(2)/a(3), ZERO, DP) ! discriminant is tiny
+    z(1) = CMPLX(-0.5*a(2)/a(3), 0.) ! discriminant is tiny
     z(2) = z(1)
     outputCode=22  ! two distinct real roots
     RETURN
@@ -160,7 +159,7 @@ SUBROUTINE QuadraticRoots(a, z)
   END IF
 
   IF (a(2) /= ZERO) THEN              ! see Numerical Recipes, sec. 5.5
-    w = -(a(2) + SIGN(r,a(2)))
+    w = -(a(2) + SIGN(real(r),a(2)))
     z(1) = CMPLX(TWO*a(1)/w,  ZERO, DP)
     z(2) = CMPLX(HALF*w/a(3), ZERO, DP)
     outputCode=22           ! two real roots
@@ -179,11 +178,12 @@ SUBROUTINE CubicRoots(a, z)
 !----------------------------------------------------------------------------
 ! PURPOSE - Compute the roots of the real polynomial
 !              A(1) + A(2)*Z + A(3)*Z**2 + A(4)*Z**3
-  REAL(DP),INTENT(IN),DIMENSION(:):: a
-  COMPLEX(DP),INTENT(OUT),DIMENSION(:):: z
+  REAL,INTENT(IN),DIMENSION(:):: a
+  COMPLEX,INTENT(OUT),DIMENSION(:):: z
 
   REAL(DP),PARAMETER:: RT3=1.7320508075689D0    ! (Sqrt(3)
-  REAL (DP) :: aq(3), arg, c, cf, d, p, p1, q, q1
+  REAL:: aq(3)
+  REAL(DP):: arg, c, cf, d, p, p1, q, q1
   REAL(DP):: r, ra, rb, rq, rt
   REAL(DP):: r1, s, sf, sq, sum, t, tol, t1, w
   REAL(DP):: w1, w2, x, x1, x2, x3, y, y1, y2, y3
@@ -362,8 +362,8 @@ SUBROUTINE QuarticRoots(a,z)
 ! PURPOSE - Compute the roots of the real polynomial
 !               A(1) + A(2)*Z + ... + A(5)*Z**4
 
-  REAL(DP), INTENT(IN)     :: a(:)
-  COMPLEX(DP), INTENT(OUT) :: z(:)
+  REAL, INTENT(IN)     :: a(:)
+  COMPLEX, INTENT(OUT) :: z(:)
 
   COMPLEX(DP) :: w
   REAL(DP):: b,b2, c, d, e, h, p, q, r, t
@@ -403,7 +403,7 @@ SUBROUTINE QuarticRoots(a,z)
   temp(2) = 0.25D0*(p*p - r)
   temp(3) =  p
   temp(4) = ONE
-  CALL CubicRoots(temp,z)
+  CALL CubicRoots(real(temp),z)
   IF (AIMAG(z(2)) /= ZERO) GO TO 60
 
 !         THE RESOLVENT CUBIC HAS ONLY REAL ROOTS
@@ -523,13 +523,13 @@ END Subroutine SelectSort   ! -----------------------------------------------
 SUBROUTINE SolvePolynomial(quarticCoeff, cubicCoeff, quadraticCoeff, &
   linearCoeff, constantCoeff, code, root1,root2,root3,root4)
 ! ---------------------------------------------------------------------------
-  REAL(DP),INTENT(IN):: quarticCoeff
-  REAL(DP),INTENT(IN):: cubicCoeff, quadraticCoeff
-  REAL(DP),INTENT(IN):: linearCoeff, constantCoeff
+  REAL,INTENT(IN):: quarticCoeff
+  REAL,INTENT(IN):: cubicCoeff, quadraticCoeff
+  REAL,INTENT(IN):: linearCoeff, constantCoeff
   INTEGER,INTENT(OUT):: code
-  COMPLEX(DP),INTENT(OUT):: root1,root2,root3,root4
-  REAL(DP),DIMENSION(5):: a
-  COMPLEX(DP),DIMENSION(5):: z
+  COMPLEX,INTENT(OUT):: root1,root2,root3,root4
+  REAL,DIMENSION(5):: a
+  COMPLEX,DIMENSION(5):: z
 !----------------------------------------------------------------------------
   a(1)=constantCoeff
   a(2)=linearCoeff
@@ -537,13 +537,13 @@ SUBROUTINE SolvePolynomial(quarticCoeff, cubicCoeff, quadraticCoeff, &
   a(4)=cubicCoeff
   a(5)=quarticCoeff
 
-  IF (quarticCoeff /= ZERO) THEN
+  IF (quarticCoeff /= 0.) THEN
     CALL QuarticRoots(a,z)
-  ELSE IF (cubicCoeff /= ZERO) THEN
+  ELSE IF (cubicCoeff /= 0.) THEN
     CALL CubicRoots(a,z)
-  ELSE IF (quadraticCoeff /= ZERO) THEN
+  ELSE IF (quadraticCoeff /= 0.) THEN
     CALL QuadraticRoots(a,z)
-  ELSE IF (linearCoeff /= ZERO) THEN
+  ELSE IF (linearCoeff /= 0.) THEN
     z(1)=CMPLX(-constantCoeff/linearCoeff, 0, DP)
     outputCode=1
   ELSE
@@ -558,20 +558,18 @@ SUBROUTINE SolvePolynomial(quarticCoeff, cubicCoeff, quadraticCoeff, &
   RETURN
 END Subroutine SolvePolynomial   ! ------------------------------------------
 
-!+
-!SUBROUTINE SwapDouble(a,b)
+SUBROUTINE SwapDouble(a,b)
 ! ---------------------------------------------------------------------------
 ! PURPOSE - Interchange the contents of a and b
-!  REAL(DP),INTENT(IN OUT):: a,b
-!  REAL(DP):: t
+  REAL(DP),INTENT(IN OUT):: a,b
+  REAL(DP):: t
 !----------------------------------------------------------------------------
-!  t=b
-!  b=a
-!  a=t
-!  RETURN
-!END Subroutine SwapDouble   ! -----------------------------------------------
+  t=b
+  b=a
+  a=t
+  RETURN
+END Subroutine SwapDouble  ! -----------------------------------------------
 
-!+
 SUBROUTINE SwapSingle(a,b)
 ! ---------------------------------------------------------------------------
 ! PURPOSE - Interchange the contents of a and b
@@ -583,6 +581,5 @@ SUBROUTINE SwapSingle(a,b)
   a=t
   RETURN
 END Subroutine SwapSingle   ! -----------------------------------------------
-
 
 END Module PolynomialRoots   ! ==============================================

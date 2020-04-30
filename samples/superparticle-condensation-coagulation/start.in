@@ -1,0 +1,55 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for coagulation run.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2018/06/15 13:24:13 xiangyu Exp $'
+  xyz0=-.0625,-.0625,-.0625
+  xyz1=+.0625,+.0625,+.0625
+  unit_system='SI'
+  unit_length=1.
+  unit_velocity=1.
+  unit_density=1.
+  lwrite_aux=T
+  /
+&eos_init_pars
+  gamma=1.4
+  cs0=5., rho0=1.06
+  mu=30.
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_rho', rho_const=1.
+/
+&grav_init_pars
+  gravz_profile='const', gravz=-9.81
+/
+&ascalar_init_pars
+  initacc='constant', acc_const=1.57e-2
+  lttc=T
+  initttc='constant', ttc_const=292.
+  lbuoyancy=T
+  lttc_mean=F
+  T_env=293.0, qv_env=1.e-2 ! Envimental temperature and mixing ratio
+/
+&particles_init_pars
+  initxxp='random', initvvp='random'
+  delta_vp0=0.0
+  lparticlemesh_cic=F
+  lparticlemesh_tsc=F
+/
+&particles_radius_init_pars
+  initap='constant', ap0=1.e-5
+  rhopmat=1e3, nbin_initdist=100
+  apmin=2.e-6, tau_damp_evap=1.
+/
+&particles_number_init_pars
+  initnpswarm='constant', np_swarm0=2.147e9
+/
+&particles_stalker_init_pars
+  dstalk=1., lstalk_ap=T, lstalk_npswarm=T
+  lstalk_xx=F, lstalk_vv=F
+  lstalk_rho=F, lstalk_uu=F
+  lstalk_rhopswarm=F
+/

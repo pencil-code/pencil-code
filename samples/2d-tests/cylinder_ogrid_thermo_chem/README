@@ -1,0 +1,28 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/cylinder_ogrid_thermo_chem
+SVN Id:
+    $Id: $
+Maintainer:
+    Haugen Nils E <Nils.E.Haugen/gmail[dot]com>
+    Karchniwy Ewa <ewa.karchniwy/ntnu[dot]no>
+Added:
+    23-Dec-2019
+Status:
+    works
+Recommended resolution:
+    nxgrid       x nygrid       = 240 x 480
+    nxgrid_ogrid x nygrid_ogrid =  48 x 240
+Comments:
+ This test case test the following features:
+  -solid cells based on the overset grid method (ogrid)
+  -Chemistry with the simplified modules
+  -lagrangian particle tracking
+    - with Brownian motions
+    - with thermophoretic force
+
+Eventually, the test case should be enhanced by:
+  -setting the cylinder temperature different from the inlet temperature
+  -setting an initial species gradient within the domain
+  -turning on homogeneous chemical reactions of the gas phase
+  -turning on heterogeneous chemical reactions of the solid object
+  -turning on heterogeneous chemical reactions of the particles(?)

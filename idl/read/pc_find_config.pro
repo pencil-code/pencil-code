@@ -90,7 +90,12 @@ COMPILE_OPT IDL2,HIDDEN
 					check_file = 1
 				end else if ((fstat.size eq file_size) or (fstat.size eq file_size+8)) then begin
 					; direct access or data record with F77 markers
-					if (has_tag (start_param, 'lcollective_IO')) then begin
+					if file_test (datadir+'/param2.nml') then begin 
+                                          	pc_read_param, obj=run_param, /run_param, /quiet
+ 					  	if (has_tag (run_param, 'lcollective_IO')) then begin
+ 							if run_param.lcollective_IO then allprocs = 2 else allprocs = 0
+                                                endif
+					endif else if (has_tag (start_param, 'lcollective_IO')) then begin
 						if (start_param.lcollective_IO) then allprocs = 2 else allprocs = 0
 					end else if (file_test (datadir+'/allprocs/grid.dat')) then begin
 						allprocs = 2

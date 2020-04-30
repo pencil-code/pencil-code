@@ -1,0 +1,56 @@
+############### to do list for PC python package #############
+
+1. Store information about array indices in data objects. (SC)
+3. Writing (in IO) routines for custom data: (FG, SC, LFSR)
+4. Implement particles reding modules for different types of particles. (VC, JA)
+5. Rbox_vid for visualization. (VC, SC).
+6. Simulation objects last implementations (see below). (LFSR, VC)
+8. Coordinate transformations, including fields. (JA, SC)
+9. Derivatives on non-equidistant grids. (JA)
+10. Tutorials: wait until pencilnew is set up, then update tutorials and decide who is doing stuff.
+    Have examples that are specific to simulations.
+11. Examples in all doc strings.
+
+
+Implement the following IDL routines:
+* pc_read_var_time: reads out only the time stamp of an VARX or var.dat
+* pc_read_var_raw: reads a varfile efficiently
+  Do we need this if we implement already efficient reading routine?
+* pc_read_subvol_raw: reads out only part of a var.dat or VARX
+* pc_read_slice_raw: reads any 2D-slice from a varfile, wraps around 'pc_read_subvol_raw'
+* pc_read_pstalk: reads in stalk files
+* quick implementation of IDL routines by calling them using pyIDL OR IDL bridge
+
+
+Do better reading routines:
+* read meta data/header of files at init, e.g. time in VAR or ts header before read()
+
+
+Use simulation objects to:
+* mkdatadir via bash command?
+
+
+Make more efficient:
+* vtk exporter with no loops
+* use multi core capabilities to spead up processes, e.g. threads or multicore library
+
+
+Do better visualizations:
+* interactive visualization
+* plot routines via typical style files (paper style, ApJ style, Simon style, ...)
+
+############### DONE #############
+Use simulation objects to:
+* copy simulations (copy-constructor for simulation objects producing new simulations in a new dir)
+* manipulate Simulation files: *.in and *.local from python
+* compile simulations
+* start simulation/submit
+* add "resume simulation as new simulation from a certain VARXYZ or var.dat"
+* allow execution of bash commands (pc_build, submit, llsubmit, ....) in simulation folder
+
+
+Put simulations in dictionary to:
+* sort them
+* group them
+
+

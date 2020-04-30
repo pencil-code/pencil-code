@@ -9,6 +9,7 @@
 # qsub -l nodes=1,walltime=5:00:00 -q giga2 remesh.csh
 # qsub -l nodes=1,walltime=5:00:00 -q giga remesh.csh
 # qsub -l ncpus=1,cput=1:00:00 -q parallel remesh.csh
+# aprun -n 1 remesh/remesh.x
 
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR

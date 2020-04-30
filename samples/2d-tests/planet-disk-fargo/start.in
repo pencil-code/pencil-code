@@ -41,7 +41,7 @@
  ipotential_secondary='plummer'
  g0=0.9999
  g1=0.0001
- rp1_pot=0.03
+ rp1_smooth=0.03
 /
 &special_init_pars
 /

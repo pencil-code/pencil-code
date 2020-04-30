@@ -22,35 +22,15 @@ module Io
   include 'io.h'
   include 'mpif.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
-!
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input = 88
-  integer :: lun_output = 91
-!
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
-  logical :: lcollective_IO = .true.
-  character (len=labellen) :: IO_strategy = "HDF5"
+  logical :: lcollective_IO=.true.
+  character (len=labellen) :: IO_strategy="HDF5"
 !
   character (len=fnlen) :: last_snapshot = ""
-  logical :: persist_initialized = .false.
+  logical :: lread_add
+  character (len=fnlen) :: varfile_name
 !
   contains
 !***********************************************************************
@@ -187,7 +167,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode, ltruncate, label)
+    subroutine output_snap(a, nv1, nv2, file, mode, ltruncate, label)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
@@ -195,16 +175,17 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !  28-Oct-2016/PABourdin: redesigned
 !
+      use General, only: ioptest
       use File_io, only: parallel_file_exists
 !
-      integer, intent(in) :: nv
+      integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      integer :: pos
+      integer :: pos,na,ne
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
 !
@@ -226,25 +207,28 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+!
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
       if ((dataset == 'f') .or. (dataset == 'timeavg')) then
         call create_group_hdf5 ('data')
         ! write components of f-array
-        do pos=1, nv
+        do pos=na,ne
           if (index_get(pos) == '') cycle
           call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
         enddo
       elseif (dataset == 'globals') then
         call create_group_hdf5 ('data')
         ! write components of global array
-        do pos=1, nv
+        do pos=na,ne
           if (index_get(mvar_io + pos) == '') cycle
           call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo
       else
         ! write other type of data array
-        call output_hdf5 (dataset, a, nv)
+        call output_hdf5 (dataset, a(:,:,:,na:ne), ne-na+1)
       endif
       call file_close_hdf5
 !
@@ -350,7 +334,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -359,6 +343,8 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
+      logical, intent(in), optional :: lfinalize
+      integer, intent(in), optional :: nvar
 !
       character (len=fnlen) :: dataset
 !
@@ -413,6 +399,9 @@ module Io
       call output_hdf5 ('grid/Lx', Lx)
       call output_hdf5 ('grid/Ly', Ly)
       call output_hdf5 ('grid/Lz', Lz)
+      call output_hdf5 ('grid/Ox', x0)
+      call output_hdf5 ('grid/Oy', y0)
+      call output_hdf5 ('grid/Oz', z0)
       call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
       call output_hdf5 ('grid/dx_1', gx, mxgrid)
       call output_hdf5 ('grid/dy_1', gy, mygrid)
@@ -523,7 +512,6 @@ module Io
 !  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -531,20 +519,17 @@ module Io
       integer, optional, intent(in) :: mode
       character (len=*), optional :: label
 !
-      real :: time
-      character (len=fnlen) :: filename, dataset
-      real, dimension (:), allocatable :: gx, gy, gz
-      integer :: pos, alloc_err
-      logical :: lread_add
+      character (len=fnlen) :: dataset
+      integer :: pos
 !
-      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+      varfile_name = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
       if (dataset == 'globals') then
         if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
-          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+          varfile_name = trim(datadir)//'/averages/'//trim(file)//'.h5'
         else
-          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+          varfile_name = trim(datadir_snap)//'/'//trim(file)//'.h5'
         endif
       endif
 !
@@ -552,7 +537,7 @@ module Io
       if (present (mode)) lread_add = (mode == 1)
 !
       ! open existing HDF5 file and read data
-      call file_open_hdf5 (filename, read_only=.true.)
+      call file_open_hdf5 (varfile_name, read_only=.true.)
       if (dataset == 'f') then
         ! read components of f-array
         do pos=1, nv
@@ -569,11 +554,27 @@ module Io
         ! read other type of data array
         call input_hdf5 (dataset, a, nv)
       endif
+!
+    endsubroutine input_snap
+!***********************************************************************
+    subroutine input_snap_finalize
+!
+!  Close snapshot file.
+!
+!  12-Oct-2019/PABourdin: moved code from 'input_snap'
+!
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+!
+      real :: time
+      real, dimension (:), allocatable :: gx, gy, gz
+      integer :: alloc_err
+!
       call file_close_hdf5
+      persist_initialized = .false.
 !
       ! read additional data
       if (lread_add .and. lomit_add_data) then
-        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
         call input_hdf5 ('time', time)
         call file_close_hdf5
 !
@@ -587,7 +588,7 @@ module Io
         endif
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
         call input_hdf5 ('time', time)
         call input_hdf5 ('grid/x', gx, mxgrid)
         call input_hdf5 ('grid/y', gy, mygrid)
@@ -618,19 +619,6 @@ module Io
         call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
         call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
         call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
-      endif
-!
-    endsubroutine input_snap
-!***********************************************************************
-    subroutine input_snap_finalize
-!
-!  Close snapshot file.
-!
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      if (persist_initialized) then
-        call file_close_hdf5
-        persist_initialized = .false.
       endif
 !
     endsubroutine input_snap_finalize
@@ -898,6 +886,7 @@ module Io
       init_read_persist = .true.
 !
       if (present (file)) then
+        call file_close_hdf5
         filename = trim (directory_snap)//'/'//trim (file)//'.h5'
         init_read_persist = .not. parallel_file_exists (filename)
         if (init_read_persist) return
@@ -908,6 +897,21 @@ module Io
       persist_initialized = .true.
 !
     endfunction init_read_persist
+!***********************************************************************
+    logical function persist_exists(label)
+!
+!  Check if a persistent variable exists.
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      use General, only: lower_case
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = exists_in_hdf5('persist')
+      if (persist_exists) persist_exists = exists_in_hdf5('persist/'//lower_case(label))
+!
+    endfunction persist_exists
 !***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
@@ -926,8 +930,10 @@ module Io
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
+      id = -1
       lexists = exists_in_hdf5('persist')
       if (lexists) lexists = exists_in_hdf5('persist/'//lower_case (label))
+      if (lexists) id = 0
       if (lcatch_error .and. .not. lexists) id = -max_int
 !
       read_persist_id = .false.
@@ -964,6 +970,9 @@ module Io
 !
       integer, dimension(size (value)) :: value_int
 !
+      read_persist_logical_1D = .true.
+      if (.not. persist_exists (label)) return
+!
       call input_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
       value = .false.
       where (value_int > 0) value = .true.
@@ -999,6 +1008,9 @@ module Io
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
+      read_persist_int_1D = .true.
+      if (.not. persist_exists (label)) return
+!
       call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       read_persist_int_1D = .false.
@@ -1031,6 +1043,9 @@ module Io
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
+!
+      read_persist_real_1D = .true.
+      if (.not. persist_exists (label)) return
 !
       call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
@@ -1095,7 +1110,7 @@ module Io
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
-        write (lun_output, '(A)') trim (fpart)
+        write (lun_output, '(A,1x,e16.8)') trim (fpart), t
         close (lun_output)
       endif
 !
@@ -1110,27 +1125,31 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write grid coordinates.
 !
 !  27-Oct-2018/PABourdin: coded
 !
       use File_io, only: file_exists
+      use General, only: loptest
 !
       character (len=*), intent(in) :: file
       integer, intent(in), optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       character (len=fnlen) :: filename
       logical :: lexists
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 !
-      filename = trim (datadir)//'/grid.h5'
-      lexists = file_exists (filename)
-      call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
-      call output_settings
-      call file_close_hdf5
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        filename = trim (datadir)//'/grid.h5'
+        lexists = file_exists (filename)
+        call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+        call output_settings
+        call file_close_hdf5
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************

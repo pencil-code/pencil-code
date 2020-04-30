@@ -108,7 +108,7 @@ use Getopt::Long;
 my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
-my $ndustrad = 5;
+my $ndustrad = 1;
 my $npartdisp = 20;
 my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux, $mqvar, $mqaux) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem, $mogaux) = (0) x 20;

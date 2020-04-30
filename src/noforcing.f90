@@ -24,7 +24,7 @@ module Forcing
 !
   implicit none
 !
-  logical :: lhydro_forcing=.false.,ltestflow_forcing=.false.
+  logical :: lhydro_forcing=.false., ltestflow_forcing=.false.
 
   include 'forcing.h'
 !
@@ -73,15 +73,6 @@ module Forcing
       call keep_compiler_quiet(f)
 !
     endsubroutine forcing_cont_after_boundary
-!***********************************************************************
-    subroutine forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
-
-      real, dimension(:) :: coef1,coef2,coef3,fx,fy,fz,fda
-
-      call keep_compiler_quiet(coef1,coef2,coef3,fda)
-      call keep_compiler_quiet(fx,fy,fz)
-     
-    endsubroutine forcing_coefs_hel
 !***********************************************************************
     subroutine pencil_criteria_forcing
 !
@@ -152,11 +143,11 @@ module Forcing
 !
 !  Read in the stored time of the next SNI
 !
-      integer :: id
-      logical :: done
+      integer, optional :: id
+      logical, optional :: done
 !
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(done)
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
@@ -182,6 +173,23 @@ module Forcing
       call keep_compiler_quiet(lreset,lwrite)
 
     endsubroutine rprint_forcing
+!***********************************************************************
+    subroutine forcing_pars_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+!
+      use General, only: keep_compiler_quiet
+!
+      real,                   intent(in ) :: force_fact,kav
+      integer,                intent(in ) :: nk
+      real,    dimension (nk),intent(in ) :: kkx,kky,kkz
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3,kk,fda
+      real,                   intent(out) :: phase,fact
+
+      call keep_compiler_quiet(force_fact,kav,phase,fact)
+      call keep_compiler_quiet(kkx,kky,kkz,fda)
+      call keep_compiler_quiet(coef1,coef2,coef3,kk)
+      call keep_compiler_quiet(nk)
+
+    endsubroutine forcing_pars_hel
 !***********************************************************************
     subroutine forcing_clean_up
 !

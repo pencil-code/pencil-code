@@ -26,24 +26,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface write_persist
-    module procedure write_persist_logical_0D
-    module procedure write_persist_logical_1D
-    module procedure write_persist_int_0D
-    module procedure write_persist_int_1D
-    module procedure write_persist_real_0D
-    module procedure write_persist_real_1D
-  endinterface
-!
-  interface read_persist
-    module procedure read_persist_logical_0D
-    module procedure read_persist_logical_1D
-    module procedure read_persist_int_0D
-    module procedure read_persist_int_1D
-    module procedure read_persist_real_0D
-    module procedure read_persist_real_1D
-  endinterface
-!
   interface read_snap
     module procedure read_snap_double
     module procedure read_snap_single
@@ -64,18 +46,16 @@ module Io
     module procedure input_proc_bounds_single
   endinterface
 !
-  ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
   ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
   integer, parameter :: MINT=1, MAXT=2
+  logical :: snap_is_link=.false.
 !
-  ! Indicates if IO is done distributed (each proc writes into a procdir)
-  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+! Indicates if IO is done distributed (each proc writes into a procdir)
+! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+!
   logical :: lcollective_IO=.false.
   character (len=labellen) :: IO_strategy="dist"
 !
-  logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
   contains
@@ -93,7 +73,6 @@ module Io
 !  identify version number
 !
       if (lroot) call svn_id("$Id$")
-      ldistribute_persist = .true.
 !
     endsubroutine register_io
 !***********************************************************************
@@ -124,7 +103,7 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine output_snap(a,nv,file)
+    subroutine output_snap(a,nv1,nv2,file)
 !
 !  Write snapshot file, always write time and mesh, could add other things.
 !
@@ -137,32 +116,36 @@ module Io
       use General, only: get_range_no, ioptest
 !
       real, dimension (:,:,:,:),  intent(IN) :: a
-      integer,                    intent(IN) :: nv
+      integer,           optional,intent(IN) :: nv1,nv2
       character (len=*), optional,intent(IN) :: file
 !
       real :: t_sp   ! t in single precision for backwards compatibility
+      integer :: na, ne
 !
       t_sp = real (t)
-      if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize
       if (present(file)) then
         call delete_file(trim(directory_snap)//'/'//file)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='new')
       endif
+
+      na=ioptest(nv1,1)
+      ne=ioptest(nv2,mvar_io)
+      if (lroot .and. (ip <= 8)) print *, 'output_snap: nv1,nv2 =', na,ne
 !
       if (lwrite_2d) then
         if (nx == 1) then
-          write (lun_output) a(l1,:,:,:)
+          write (lun_output) a(l1,:,:,na:ne)
         elseif (ny == 1) then
-          write (lun_output) a(:,m1,:,:)
+          write (lun_output) a(:,m1,:,na:ne)
         elseif (nz == 1) then
-          write (lun_output) a(:,:,n1,:)
+          write (lun_output) a(:,:,n1,na:ne)
         else
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
-        write (lun_output) a
+        write (lun_output) a(:,:,:,na:ne)
       endif
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
@@ -541,9 +524,12 @@ module Io
 !                                = MAXT, tstart unspecified: use maximum time of all var.dat 
 !                                                        for start
 !                                > 0, tstart specified: use this value
+!  13-feb-20/MR: added possibility to omit a range of variables when reading the snapshot,
+!                range is defined as [ivar_omi1,ivar_omi2]
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use Syscalls, only: islink
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -557,51 +543,126 @@ module Io
       real(KIND=rkind4), dimension (mz), intent(out) :: z
 
       real :: t_test   ! t in single precision for backwards compatibility
-
       logical :: ltest
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp
+      integer :: len1d
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
 !      if (ip<=8) print *, 'read_snap_single: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
+!
         if (nx == 1) then
-          read (lun_input) a(4,:,:,:)
+          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(nghost+1,:,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
+          else
+            read (lun_input) a(nghost+1,:,:,:)
+          endif
         elseif (ny == 1) then
-          read (lun_input) a(:,4,:,:)
+          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,nghost+1,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
+          else
+            read (lun_input) a(:,nghost+1,:,:)
+          endif
         elseif (nz == 1) then
-          read (lun_input) a(:,:,4,:)
+          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,:,nghost+1,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
+          else
+            read (lun_input) a(:,:,nghost+1,:)
+          endif
         else
           call fatal_error ('read_snap_single', 'lwrite_2d used for 3-D simulation!')
         endif
       else
 !
+        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
+!
 !  Possibility of reading data with different numbers of ghost zones.
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
         if (nghost_read_fewer==0) then
-          read (lun_input) a
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
+          else
+            read (lun_input) a
+          endif
         elseif (nghost_read_fewer>0) then
-          read (lun_input) &
-              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                1+nghost_read_fewer:my-nghost_read_fewer, &
-                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          if (ivar_omit1==1) then
+            read (lun_input) tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
+          elseif (ivar_omit1>1) then
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
+          else
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          endif
 !
 !  The following 3 possibilities allow us to replicate 1-D data input
 !  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
 !
-        elseif (nghost_read_fewer==-1) then
-          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
-          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-        elseif (nghost_read_fewer==-2) then
-          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
-          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-        elseif (nghost_read_fewer==-3) then
-          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
-          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
         else
-          call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
+          len1d=2*nghost+1
+          if (nghost_read_fewer==-1) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(:,1:len1d,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
+                               a(:,1:len1d,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(:,1:len1d,1:len1d,:)
+            endif
+            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+          elseif (nghost_read_fewer==-2) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,:,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
+                               a(1:len1d,:,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,:,1:len1d,:)
+            endif
+            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+          elseif (nghost_read_fewer==-3) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,1:len1d,:,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
+                               a(1:len1d,1:len1d,:, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,1:len1d,:,:)
+            endif
+            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+          else
+            call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
+          endif
         endif
       endif
+      if (ivar_omit1>0) deallocate(tmp)
 
       if (ip <= 8) print *, 'read_snap_single: read ', file
       if (mode == 1) then
@@ -695,6 +756,7 @@ module Io
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use Syscalls, only: islink
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -709,47 +771,122 @@ module Io
 
       real :: t_test   ! t in single precision for backwards compatibility
       logical :: ltest
+      integer :: len1d
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp
 !
       if (lserial_io) call start_serialize
+
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
 !      if (ip<=8) print *, 'read_snap_double: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
-          read (lun_input) a(4,:,:,:)
+          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(nghost+1,:,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
+          else
+            read (lun_input) a(nghost+1,:,:,:)
+          endif
         elseif (ny == 1) then
-          read (lun_input) a(:,4,:,:)
+          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,nghost+1,:,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
+          else
+            read (lun_input) a(:,nghost+1,:,:)
+          endif
         elseif (nz == 1) then
-          read (lun_input) a(:,:,4,:)
+          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a(:,:,nghost+1,:)
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
+          else
+            read (lun_input) a(:,:,nghost+1,:)
+          endif
         else
           call fatal_error ('read_snap_double', 'lwrite_2d used for 3-D simulation!')
         endif
       else
 !
+        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
+!
 !  Possibility of reading data with different numbers of ghost zones.
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
         if (nghost_read_fewer==0) then
-          read (lun_input) a
+          if (ivar_omit1==1) then
+            read (lun_input) tmp,a
+          elseif (ivar_omit1>1) then
+            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
+          else
+            read (lun_input) a
+          endif
         elseif (nghost_read_fewer>0) then
-          read (lun_input) &
-              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                1+nghost_read_fewer:my-nghost_read_fewer, &
-                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          if (ivar_omit1==1) then
+            read (lun_input) tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
+          elseif (ivar_omit1>1) then
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
+          else
+            read (lun_input) &
+                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                   1+nghost_read_fewer:my-nghost_read_fewer, &
+                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
+          endif
 !
 !  The following 3 possibilities allow us to replicate 1-D data input
 !  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
 !
-        elseif (nghost_read_fewer==-1) then
-          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
-          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-        elseif (nghost_read_fewer==-2) then
-          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
-          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-        elseif (nghost_read_fewer==-3) then
-          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
-          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
         else
-          call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
+          len1d=2*nghost+1
+          if (nghost_read_fewer==-1) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(:,1:len1d,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
+                               a(:,1:len1d,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(:,1:len1d,1:len1d,:)
+            endif
+            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+          elseif (nghost_read_fewer==-2) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,:,1:len1d,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
+                               a(1:len1d,:,1:len1d, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,:,1:len1d,:)
+            endif
+            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+          elseif (nghost_read_fewer==-3) then
+            if (ivar_omit1==1) then
+              read (lun_input) tmp, &
+                               a(1:len1d,1:len1d,:,:)
+            elseif (ivar_omit1>1) then
+              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
+                               a(1:len1d,1:len1d,:, ivar_omit1:)
+            else
+              read (lun_input) a(1:len1d,1:len1d,:,:)
+            endif
+            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+          else
+            call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
+          endif
         endif
       endif
 
@@ -839,7 +976,12 @@ module Io
 !
       use Mpicomm, only: end_serialize
 !
-      close (lun_input)
+      if (snap_is_link) then
+        close (lun_input, status='DELETE')
+      else
+        close (lun_input)
+      endif
+
       if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
@@ -933,9 +1075,23 @@ module Io
 !
     endfunction init_read_persist
 !***********************************************************************
+    logical function persist_exists(label)
+!
+!  Dummy routine
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+!
+      persist_exists = .false.
+!
+    endfunction persist_exists
+!***********************************************************************
     logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
+!  Each persist data block starts with a unique ID followed by the data.
+!  Both are Fortran records. Returns a positive ID number on success.
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
@@ -1233,7 +1389,7 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file,mxout,myout,mzout)
+    subroutine wgrid(file,mxout,myout,mzout,lwrite)
 !
 !  Write processor-local part of grid coordinates.
 !
@@ -1246,62 +1402,65 @@ module Io
 !   5-oct-2016/MR: modifications for output of downsampled grid
 !
       use Mpicomm, only: collect_grid
-      use General, only: ioptest
+      use General, only: ioptest, loptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lwrite
 !
       integer :: mxout1,myout1,mzout1
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      mxout1=ioptest(mxout,mx)
-      myout1=ioptest(myout,my)
-      mzout1=ioptest(mzout,mz)
+      if (loptest(lwrite,.not.luse_oldgrid)) then
+        mxout1=ioptest(mxout,mx)
+        myout1=ioptest(myout,my)
+        mzout1=ioptest(mzout,mz)
 !
-      t_sp = real (t)
-
-      open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
-      write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
-      write(lun_output) dx,dy,dz
-      write(lun_output) Lx,Ly,Lz
-      write(lun_output) dx_1(:mxout1),dy_1(:myout1),dz_1(:mzout1)
-      write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
-      close(lun_output)
-!
-      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
-
-      ! write also a global "data/allprocs/grid.dat"
-      if (lroot) then
-        if (ldownsampling) then
-          allocate (gx(ceiling(real(nxgrid)/downsampl(1))+2*nghost), &
-                    gy(ceiling(real(nygrid)/downsampl(2))+2*nghost), &
-                    gz(ceiling(real(nzgrid)/downsampl(3))+2*nghost), stat=alloc_err)
-        else
-          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        endif
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = real (t)
-      endif
 
-      call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
-      
-      call collect_grid(dx_1(:mxout1), dy_1(:myout1), dz_1(:mzout1), gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
-      
-      call collect_grid(dx_tilde(:mxout1), dy_tilde(:myout1), dz_tilde(:mzout1), gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
-        deallocate(gx,gy,gz) 
+        open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
+        write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
+        write(lun_output) dx,dy,dz
+        write(lun_output) Lx,Ly,Lz
+        write(lun_output) dx_1(:mxout1),dy_1(:myout1),dz_1(:mzout1)
+        write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
+        close(lun_output)
+!
+        if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
+
+        ! write also a global "data/allprocs/grid.dat"
+        if (lroot) then
+          if (ldownsampling) then
+            allocate (gx(ceiling(real(nxgrid)/downsampl(1))+2*nghost), &
+                      gy(ceiling(real(nygrid)/downsampl(2))+2*nghost), &
+                      gz(ceiling(real(nzgrid)/downsampl(3))+2*nghost), stat=alloc_err)
+          else
+            allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+          endif
+          if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+          open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
+          t_sp = real (t)
+        endif
+
+        call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
+        if (lroot) then
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) dx, dy, dz
+          write (lun_output) Lx, Ly, Lz
+        endif
+        
+        call collect_grid(dx_1(:mxout1), dy_1(:myout1), dz_1(:mzout1), gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
+        
+        call collect_grid(dx_tilde(:mxout1), dy_tilde(:myout1), dz_tilde(:mzout1), gx, gy, gz)
+        if (lroot) then
+          write (lun_output) gx, gy, gz
+          close (lun_output)
+          deallocate(gx,gy,gz) 
+       endif
      endif
 !
     endsubroutine wgrid
@@ -1427,7 +1586,7 @@ module Io
       
       close(lun_input)
 !
-      if (lotherprec) call wgrid(file)         ! perhaps not necessary
+      if (lotherprec) call wgrid(file,lwrite=.true.)         ! perhaps not necessary
 !
 !  debug output
 !

@@ -1,0 +1,17 @@
+../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local ../scripts/cparam2c ../scripts/cparam.sed
+	@cd ..; scripts/cparam2c
+../cdata_c.h: ../defines_cdata.h ../cdata.f90 ../scripts/cdata2c ../scripts/cdata.sed
+	@cd ..; scripts/cdata2c
+../defines_cdata.h: ../cdata.f90 ../scripts/cdata2c ../scripts/cdata.sed
+	@cd ..; scripts/cdata2c
+../diagnostics_c.h: ../diagnostics.f90 ../scripts/diagnostics2c
+	@cd ..; scripts/diagnostics2c
+../forcing_c.h: ../forcing.f90 ../scripts/forcing2c
+	@cd ..; scripts/forcing2c
+../sub_c.h: ../sub.f90 ../scripts/sub2c
+	@cd ..; scripts/sub2c
+../boundcond_c.h: ../boundcond.f90 ../scripts/boundcond2c
+	@cd ..; scripts/boundcond2c
+../mpicomm_c.h: ../mpicomm.f90 ../scripts/mpicomm2c
+	@cd ..; scripts/mpicomm2c
+

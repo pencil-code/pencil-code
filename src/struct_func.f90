@@ -34,6 +34,7 @@ module struct_func
       use Cdata
       use Sub
       use General
+      use Messages, only: fatal_error
       use Mpicomm
       !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -42,6 +43,7 @@ module struct_func
       character (len=*) :: varlabel
       !
       integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
+      !integer, parameter :: lb_nxgrid=floor(alog(nxgrid+1.e-6)/lntwo)
       integer, parameter :: imax=lb_nxgrid*2-2
       integer, parameter :: n_pdf=101
       real, dimension (:,:,:,:), allocatable :: flux_vec
@@ -58,6 +60,15 @@ module struct_func
       real :: pdf_max,pdf_min,normalization,dx_du
       character (len=fnlen):: prefix
       logical :: llsf=.false., llpdf=.false.
+      logical, save :: l0=.true.
+
+      if (l0) then
+        l0=.false.
+        if (2**lb_nxgrid/=nxgrid) then
+          print*, 'lb_nxgrid, nxgrid=', lb_nxgrid, nxgrid
+          call fatal_error('structure','nxgrid is not a power of 2')
+        endif
+      endif
       !
       !  Do structure functions
       !
@@ -169,9 +180,12 @@ module struct_func
         do l=1,nx
           if (lroot .and. lpostproc) print*,'l=',l
           do lb_ll=1,lb_nxgrid*2-2
-            exp2=mod((lb_ll),2)
-            if (lb_ll == 1) exp2=0
-            exp1=int((lb_ll)/2)-exp2
+            if (lb_ll == 1) then
+              exp2=0
+            else
+              exp2=mod(lb_ll,2)
+            endif
+            exp1=int(lb_ll/2)-exp2
             separation=(2**exp1)*(3**exp2)
             ll1=mod(l+separation-1,nx)+1
             ll2=mod(l-separation+nx-1,nx)+1

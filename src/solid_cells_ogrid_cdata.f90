@@ -264,7 +264,7 @@ module solid_cells_ogrid_cdata
   integer :: n_procs_recv_part_data 
   integer :: n_procs_send_part_data 
   integer :: ivar1_part=1
-  integer :: ivar2_part=4
+  integer :: ivar2_part=mvar
   !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
   !public :: f_ogrid_procs
   !public :: r_ogrid, xorigo_ogrid
@@ -315,7 +315,7 @@ module solid_cells_ogrid_cdata
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
   save p_ogrid
-  integer, parameter :: mfarray_ogrid=mvar+mogaux
+  integer, parameter :: mfarray_ogrid=mvar+maux
   real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), save ::  f_ogrid=0.
   real, dimension(:,:,:,:), allocatable ::  f_tmp ! Array allocated if lrk_tvd=.true.
 
@@ -343,8 +343,11 @@ module solid_cells_ogrid_cdata
   real, dimension(:), pointer :: Lewis_coef1
   real :: solid_reactions_intro_time=0.0
   real, pointer :: p_init
-  logical :: ldist_CO2, ldist_CO
-  integer, pointer :: ireac
+  logical :: ldist_CO2=.false., ldist_CO=.false.
+  integer, pointer :: ireac, ireac_CO2, ireac_CO, ireac_O2
+  integer :: ichem_O2=0, ichem_CO2=0, ichem_CO=0
+  logical :: lwrite_mdotc=.false., lnonegative_Yk=.false.
+  logical :: llin_BC=.false., lsinus_spec_distr=.false.
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
@@ -355,7 +358,6 @@ module solid_cells_ogrid_cdata
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases
   real :: init_rho_cyl = 1.0
-  logical :: lstore_ogTT = .false.
   logical, pointer :: lthermophoretic_forces
   real, dimension(:,:), allocatable ::  curv_cart_transform
   

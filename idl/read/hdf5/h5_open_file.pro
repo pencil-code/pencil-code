@@ -1,6 +1,6 @@
 pro h5_open_file, filename, write=write, truncate=truncate
 
-	common h5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name, group_name, group_content
 	common pc_read_common, file
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
@@ -8,6 +8,8 @@ pro h5_open_file, filename, write=write, truncate=truncate
 	if (not finite (file_id, /NaN)) then begin
 		H5F_CLOSE, file_id
 		file_id = !Values.D_NaN
+		group_name = ''
+		group_content = [ '' ]
 	end
 
 	if (file_test (filename, /regular) and keyword_set (truncate)) then begin
@@ -28,9 +30,9 @@ pro h5_open_file, filename, write=write, truncate=truncate
 			stop
 			return
 		end
-
-		file_name = filename
 		file_id = H5F_OPEN (filename, write=write)
-		file = filename
 	end
+
+	file_name = filename
+	file = filename
 end

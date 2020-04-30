@@ -14,6 +14,7 @@ integer, parameter :: id_block_PERSISTENT        = 2000
 
 ! Random Seeds
 integer, parameter :: id_record_RANDOM_SEEDS     = 1
+integer, parameter :: id_record_RANDOM_SEEDS2    = 2
 
 ! Interstellar
 ! deprecated:
@@ -53,7 +54,4 @@ integer, parameter :: id_record_MAGNETIC_AMPL    = 312
 
 ! Shear
 integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
-
-! Special
-integer, parameter :: id_record_SPECIAL_ILOAD    = 330
 

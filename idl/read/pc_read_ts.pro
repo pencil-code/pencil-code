@@ -69,7 +69,7 @@ end
 pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
-    num=num, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
+    num=num, it=it, time=time, dt=dt, cdt=cdt, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
     movingaverage=movingaverage, monotone=monotone, njump=njump, sepminus=sepminus
 COMPILE_OPT IDL2,HIDDEN
@@ -79,7 +79,7 @@ COMPILE_OPT IDL2,HIDDEN
   if ( keyword_set(help) ) then begin
     print, "Usage: "
     print, ""
-    print, "pc_read_ts,  t=t,"
+    print, "pc_read_ts,  time=time,"
     print, "             object=object," 
     print, "             filename=filename," 
     print, "             movingaverage=maverage," 
@@ -101,9 +101,9 @@ COMPILE_OPT IDL2,HIDDEN
     print, "                                                                  "
     print, "      num: number of entries (valid - not commented out)    [long]"
     print, "       it: array of time step numbers                    [long(n)]"
-    print, "        t: array containing time in code units          [float(n)]"
+    print, "     time: array containing time in code units          [float(n)]"
     print, "       dt: array of time step sizes                     [float(n)]"
-    print, "      dtc: time step limit by CFL condition             [float(n)]"
+    print, "      cdt: time step limit by CFL condition             [float(n)]"
     print, "     urms: RMS velocity                                 [float(n)]"
     print, "     ekin: total kinetic energy                         [float(n)]"
     print, "      eth: total thermal energy                         [float(n)]"
@@ -132,35 +132,39 @@ COMPILE_OPT IDL2,HIDDEN
   default, movingaverage,0
   default, sepminus, 1
 ;
-; Load HDF5 varfile if requested or available.
+; Load HDF5 timeseries if requested or available.
 ;
   if (strmid (filename, strlen(filename)-3) eq '.h5') then begin
-    if (file_test ('print.in')) then begin
-      lines = read_binary ('print.in')
-      quantities = strtrim (strsplit (string (lines), '[ '+string([10B,13B])+']+', /regex, /extract), 2)
-      quantities = stregex (quantities, '^([^()]+)', /extract)
-    end else begin
-      quantities = h5_content ('/')
-    end
     last = pc_read ('last', file=filename, datadir=datadir)
     step = pc_read ('step')
+    labels = [ 'it' ]
+    quantities = h5_content ('/')
     object = { it:lindgen(last/step+1)*step }
     num_quantities = n_elements (quantities)
     for pos = 0L, num_quantities-1 do begin
       label = quantities[pos]
-      if (label eq 'it') then continue
-      if (label eq 'last') then continue
-      if (label eq 'step') then continue
-      data = pc_read (label+'/0')
-      if (last ge step) then begin
-        for it = step, last, step do begin
-          data = [ data, pc_read (label+'/'+strtrim (it, 2)) ]
-        end
+      if (any (label eq [ '', 'it', 'last', 'step' ])) then continue
+      labels = [ labels, label ]
+      elements = h5_content (label)
+      idl_type = h5_get_type (label+'/'+elements[0], /exists)
+      empty = round (!Values.F_NaN)
+      if (idl_type eq 4) then empty = !Values.F_NaN
+      if (idl_type eq 5) then empty = !Values.D_NaN
+      maximum = last / step
+      data = replicate (empty, maximum+1)
+      for num = 0L, maximum do begin
+        element = strtrim (num * step, 2)
+        dataset = label + '/' + element
+        if (any (element eq elements)) then data[num] = h5_read (dataset)
       end
       object = create_struct (object, label, data)
     end
     h5_close_file
     object = create_struct (object, { last:last, step:step })
+    num = n_elements (labels)
+    it = object.it
+    if (tag_exists (object, 't')) then time = object.t
+    if (tag_exists (object, 'dt')) then dt = object.dt
     return
   end
 ;
@@ -170,7 +174,7 @@ COMPILE_OPT IDL2,HIDDEN
   it=0L
   t=0.
   dt=0.
-  dtc=0.
+  cdt=0.
   urms=0.
   ekin=0.
   eth=0.
@@ -378,9 +382,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Unwrap and quantities that may have been separately requested from object.
 ;
   num = (size(data))[1]
-  if (in_list('t',full_labels))    then t = object.t
+  if (in_list('it',full_labels))   then it = object.it
+  if (in_list('t',full_labels))    then time = object.t
   if (in_list('dt',full_labels))   then dt = object.dt
-  if (in_list('dtc',full_labels))  then dtc = object.dtc
+  if (in_list('dtc',full_labels))  then cdt = object.dtc
   if (in_list('urms',full_labels)) then urms = object.urms
   if (in_list('ekin',full_labels)) then ekin = object.ekin
   if (in_list('eth',full_labels))  then eth = object.eth

@@ -15,6 +15,8 @@ if is_defined(field) then begin
   if field ne '' then begin
 
     pos=stregex(field,'[1-9][0-9]*')
+    if pos lt 0 then pos=stregex(field,'[xyz]')
+
     field_base = pos ge 0 ? strtrim(strmid(field,0,pos)) : field
     if strlen(field_base) lt 2 then field_base=field
 

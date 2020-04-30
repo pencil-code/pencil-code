@@ -44,9 +44,9 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real, target :: g1=0.,rp1=1.0,rp1_pot=impossible
+  real, target :: g1=0.,rp1=1.0,rp1_smooth=impossible
   real, target :: gsum=0.
-  real :: rp1_smooth,rp1_smooth1,frac_smooth=1.0
+  real :: rp1_smooth1,frac_smooth=1.0
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
@@ -77,16 +77,18 @@ module Gravity
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
+      lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass,&
       ipotential_secondary,lsecondary_wait,t_start_secondary, &
       lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
+      lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass, &
       ipotential_secondary,lsecondary_wait,t_start_secondary, &
       lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
+!
+  integer :: idiag_torque=0
 !
   contains
 !***********************************************************************
@@ -141,15 +143,14 @@ module Gravity
              "companion gravity coded only for corotational frame")
       endif
 !
-!  Smoothing radius
+!  Smoothing radius: default to Hill radius
 !
-      if (rp1_pot == impossible) then
-         rp1_smooth   = frac_smooth * rp1 * (g1/3.)**(1./3)
-         if (rp1_smooth /= 0) then
-           rp1_smooth1  = 1./rp1_smooth
-         else
-           rp1_smooth1 = 0.
-         endif
+      if (rp1_smooth == impossible) &
+           rp1_smooth   = frac_smooth * rp1 * (g1/3.)**(1./3)
+      if (rp1_smooth /= 0) then
+        rp1_smooth1  = 1./rp1_smooth
+      else
+        rp1_smooth1 = 0.
       endif
 !
 !  Share variables related to corotational frame to modules that may need it
@@ -170,9 +171,9 @@ module Gravity
       if (ierr/=0) call fatal_error('initialize_gravity', &
           'there was a problem when putting rp1')
 !
-      call put_shared_variable('rp1_pot',rp1_pot,ierr)
+      call put_shared_variable('rp1_smooth',rp1_smooth,ierr)
       if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting rp1_pot')
+          'there was a problem when putting rp1_smooth')
 !
       call put_shared_variable('lramp_mass',lramp_mass,ierr)
       if (ierr/=0) call fatal_error('initialize_gravity', &
@@ -461,6 +462,7 @@ module Gravity
 !  20-11-04/anders: coded
 !
       if (lcorotational_frame) lpenc_requested(i_uu)=.true.
+      if (idiag_torque/=0)     lpenc_diagnos(i_rho) =.true.
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -544,6 +546,8 @@ module Gravity
 !  Indirect term for binary systems with origin at the primary.
 !
       if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
+!
+      if (idiag_torque/=0) call calc_torque(p)
 !
       call keep_compiler_quiet(f)
 !
@@ -1059,7 +1063,7 @@ module Gravity
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rhill,rhill1,rp1_pot1
+      real :: rhill,rhill1
       integer :: i
 !
       if (lcylindrical_coords) then
@@ -1079,7 +1083,7 @@ module Gravity
       select case (ipotential_secondary)
 !
       case ('plummer')
-        gp = -g1*(rr2_pm+rp1_pot**2)**(-1.5)
+        gp = -g1*(rr2_pm+rp1_smooth**2)**(-1.5)
 !           
      case ('boley')
 !
@@ -1121,6 +1125,39 @@ module Gravity
 !
     endsubroutine secondary_body_gravity
 !***********************************************************************
+    subroutine calc_torque(p)
+!
+!  Output torque diagnostic for nbody particle ks
+!
+!  24-jan-20/wlad : coded
+!
+      use Diagnostics
+!
+      type (pencil_case) :: p
+      real, dimension(nx) :: torque
+      real, dimension(nx) :: rr2,rpre
+!
+      if (lcartesian_coords) then
+        call fatal_error("calc_torque","not coded for Cartesian")
+      elseif (lcylindrical_coords) then
+        rpre = x(l1:l2)*rp1*sin(y(m))
+        rr2  = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2
+      elseif (lspherical_coords) then
+        rpre = x(l1:l2)*rp1*sinth(m)*sinph(n)
+        rr2  = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n)
+      else
+        call fatal_error("calc_torque",&
+             "the world is flat and we should never gotten here")
+      endif
+!
+!  Define separate torques for gas and dust/particles
+!
+      torque = g1*p%rho*rpre*(rr2 + rp1_smooth**2)**(-1.5)
+!
+      call integrate_mn_name(torque,idiag_torque)
+!
+    endsubroutine calc_torque
+!***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for gravity advance
@@ -1129,12 +1166,22 @@ module Gravity
 !  26-apr-03/axel: coded
 !
       use FArrayManager, only: farray_index_append
+      use Diagnostics
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
+      integer :: iname
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+!
+      if (lreset) then
+        idiag_torque=0
+      endif
+
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'torque',idiag_torque)
+      enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero

@@ -24,7 +24,8 @@ module Initcond
   public :: sph_constb,tanh_hyperbola
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
+  public :: gaussian, gaussian3d, gaussianpos
+  public :: ABC_field, beltrami, bessel_x, bessel_az_x
   public :: beltrami_general, beltrami_complex, beltrami_old, bhyperz, bihelical
   public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
@@ -1473,6 +1474,10 @@ module Initcond
       real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
 !
+!  This routine should be removed by 2020
+!
+      call fatal_error('beltrami_old','email Axel if you need this routine')
+!
 !  possibility of shifting the Beltrami wave by phase ph
 !
       if (present(phase)) then
@@ -1549,19 +1554,95 @@ module Initcond
 !
     endsubroutine beltrami_old
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma)
+    subroutine ABC_field(f,i,kx,ky,kz,ABC,x0,y0,z0,width)
+!
+!  ABC field (as initial condition)
+!
+!  24-aug-19/axel: coded
+!
+      use Sub, only: cubic_step
+!
+      integer :: i,j,l,m,n
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: sfuncx,cfuncx,xprof
+      real, dimension (my) :: sfuncy,cfuncy,yprof
+      real, dimension (mz) :: sfuncz,cfuncz,zprof
+      real, dimension (3) :: ABC, width
+      real :: kx,ky,kz, x0,y0,z0, prof
+!
+!  Envelope profile (can turn it off by setting x0=0.).
+!
+      if (lroot) print*,'ABC_field: x0,width=',x0,width(1)
+      if (x0>0.) then
+        xprof=cubic_step(x,-x0,width(1))-cubic_step(x,x0,width(1))
+        if (lroot) print*,'xprof=',xprof
+      else
+        xprof=1.
+      endif
+!
+!  Envelope profile (can turn it off by setting y0=0.).
+!
+      if (lroot) print*,'ABC_field: y0,width=',y0,width(2)
+      if (y0>0.) then
+        yprof=cubic_step(y,-y0,width(2))-cubic_step(y,y0,width(2))
+        if (lroot) print*,'yprof=',yprof
+      else
+        yprof=1.
+      endif
+!
+!  Envelope profile (can turn it off by setting z0=0.).
+!
+      if (lroot) print*,'ABC_field: z0,width=',z0,width(3)
+      if (z0>0.) then
+        zprof=cubic_step(z,-z0,width(3))-cubic_step(z,z0,width(3))
+        if (lroot) print*,'zprof=',zprof
+      else
+        zprof=1.
+      endif
+!
+!  Set x-dependent part of ABC field.
+!
+      sfuncx=ABC(2)*sin(kx*x)*xprof
+      cfuncx=ABC(2)*cos(kx*x)*xprof
+!
+!  Set y-dependent part of ABC field.
+!
+      sfuncy=ABC(3)*sin(ky*y)*yprof
+      cfuncy=ABC(3)*cos(ky*y)*yprof
+!
+!  Set z-dependent part of ABC field.
+!
+      sfuncz=ABC(1)*sin(kz*z)*zprof
+      cfuncz=ABC(1)*cos(kz*z)*zprof
+!
+      do n=n1,n2
+      do m=m1,m2
+      do l=l1,l2
+        prof=xprof(l)*yprof(m)*zprof(n)
+        j=i  ; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncz(n)+cfuncy(m))
+        j=i+1; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncx(l)+cfuncz(n))
+        j=i+2; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncy(m)+cfuncx(l))
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine ABC_field
+!***********************************************************************
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width)
 !
 !  Beltrami field (as initial condition)
 !
 !  19-jun-02/axel: coded
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
 !
+      use Sub, only: cubic_step
+!
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
-      real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma
+      real, dimension (mz) :: sfuncz,cfuncz,zprof
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
       real :: ampl,k=1.,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
@@ -1580,6 +1661,20 @@ module Initcond
         sig=sigma
       else
         sig=1.
+      endif
+!
+!  possibility of envelope profile
+!
+      if (present(z0)) then
+        if (.not.present(width)) call fatal_error('beltrami','width?')
+        if (lroot) print*,'Beltrami: z0,width=',z0,width
+        if (z0>0.) then
+          zprof=cubic_step(z,-z0,width)-cubic_step(z,z0,width)
+        else
+          zprof=1.
+        endif
+      else
+        zprof=1.
       endif
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
@@ -1631,8 +1726,8 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncz=ampl*cos(k*z+ph)
-        sfuncz=ampl*sin(k*z+ph)
+        cfuncz=ampl*cos(k*z+ph)*zprof
+        sfuncz=ampl*sin(k*z+ph)*zprof
         if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
@@ -4284,17 +4379,17 @@ module Initcond
       intent(inout) :: f
 !
       if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_VECT: i1,i2=',i1,i2
-      do n=1,mz; do m=1,my
+      do n=n1,n2; do m=1,my
         do i=i1,i2
-          if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+          if (lroot.and.m==1.and.n==n1) print*,'gaunoise_vect: variable i=',i
           if (modulo(i-i1,2)==0) then
             call random_number_wrapper(r)
             call random_number_wrapper(p)
-            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            tmp=sqrt(-2.*log(r))*sin(2.*pi*p)
           else
-            tmp=sqrt(-2*log(r))*cos(2*pi*p)
+            tmp=sqrt(-2.*log(r))*cos(2.*pi*p)
           endif
-          f(:,m,n,i)=f(:,m,n,i)+ampl(n)*tmp
+          f(:,m,n,i)=f(:,m,n,i)+ampl(n-nghost)*tmp
         enddo
       enddo; enddo
 !
@@ -4909,7 +5004,8 @@ module Initcond
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
-        f(:,:,:,i1:i2)=0
+        !(should not be overwritten, I'd say/AB)
+        !f(:,:,:,i1:i2)=0
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
       else
 !
@@ -5167,7 +5263,7 @@ module Initcond
             call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
           endif
         enddo !i
-        f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
+        f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
 !
 !  notification
 !
@@ -5896,11 +5992,23 @@ module Initcond
         ! read A components for each ipz layer
         do comp = 1, 3
           do pz = 0, nprocz-1
-            read (unit, rec=pz+nprocz*(comp-1)) A_global
+            read (unit, rec=1+pz+nprocz*(comp-1)) A_global
             ! distribute A component
             if (pz == ipz) then
               call distribute_xy(A_local, A_global)
-              f(l1:l2,m1:m2,:,comp) = A_local
+              f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
+              if (iglobal_ax_ext/=0 .and. comp == 1) then
+                f(:,:,:, iglobal_ax_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+              endif
+              if (iglobal_ay_ext/=0 .and. comp == 2) then
+                f(:,:,:, iglobal_ay_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+              endif
+              if (iglobal_az_ext/=0 .and. comp == 3) then
+                f(:,:,:, iglobal_az_ext)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+              endif
             else
               partner = ipx + ipy*nprocx + pz*nprocxy
               call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
@@ -5914,11 +6022,23 @@ module Initcond
           if (lfirst_proc_xy) then
             partner = ipx + ipy*nprocx
             call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
-            call distribute_xy(A_global, A_local)
+            call distribute_xy(A_local, A_global)
           else
             call distribute_xy(A_local)
           endif
-          f(l1:l2,m1:m2,:,comp) = A_local
+          f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
+          if (iglobal_ax_ext/=0 .and. comp == 1) then
+            f(:,:,:, iglobal_ax_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+          endif
+          if (iglobal_ay_ext/=0 .and. comp == 2) then
+            f(:,:,:, iglobal_ay_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+          endif
+          if (iglobal_az_ext/=0 .and. comp == 3) then
+            f(:,:,:, iglobal_az_ext)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+          endif
         enddo
       endif
 !
@@ -6288,44 +6408,81 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ix
-      real :: amp, rpart
+      real :: amp, rpart, rr2, pom2
 
-      integer :: m,l
-
-      if (lspherical_coords) then
-        do m = m1,m2
-          do l = l1,l2
+      integer :: l,m,n
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Dipole in spherical coordinantes
+!
+      elseif (lspherical_coords) then
+        !do m = m1,m2
+        !  do l = l1,l2
+        do m = 1,my
+          do l = 1,mx
             rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix:ix+1) = 0.
-            f(l,m,:,ix+2)    = rpart*sin(y(m))
+            !if (y(m1)==0.and.y(m2)==pi) then
+              f(l,m,:,ix+2) = rpart*sin(y(m))
+            !else
+            !  f(l,m,:,ix+2) = rpart*sin(pi*(y(m)-xyz0(2))/Lxyz(2))
+            !endif
           enddo
         enddo
       endif
 !
     endsubroutine dipole
 !***********************************************************************
-    subroutine dipole_tor(f,ix,amp)
+    subroutine dipole_tor(f,ix,amp,ladd)
 !
 !  initial vector potential for a
-!  purely toroidal axisymmetric field B_\phi \sim \sin\theta
+!  purely toroidal axisymmetric field B_\phi \sim \sin\theta.
+!  Radial dependence parabolic and vanishing at boundaries.
 !
 !  18-jun-13/MR: coded
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ix
       real :: amp, rpart
+      logical, optional :: ladd
 
       integer :: m,l
 
       if (lspherical_coords) then
-        do m = m1,m2
-          do l = l1,l2
+        do m = 1,my
+          do l = 1,mx
             rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
-            f(l,m,:,ix)   = 2.*rpart*cos(y(m))
-            f(l,m,:,ix+1) = rpart*sin(y(m))
-            f(l,m,:,ix+2) = 0.
+            if (loptest(ladd)) then
+              f(l,m,:,ix)   = f(l,m,:,ix)  + 2.*rpart*cos(y(m))
+              f(l,m,:,ix+1) = f(l,m,:,ix+1)+    rpart*sin(y(m))
+            else
+              f(l,m,:,ix)   = 2.*rpart*cos(y(m))
+              f(l,m,:,ix+1) =    rpart*sin(y(m))
+              f(l,m,:,ix+2) = 0.
+            endif
           enddo
         enddo
+      else
+        call fatal_error('dipole_tor', &
+        'dipolar toroidal field not implemented for non-spherical coordinates')
       endif
 !
     endsubroutine dipole_tor

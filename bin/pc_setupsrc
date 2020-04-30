@@ -12,7 +12,7 @@
 #   pc_setupsrc [options] [src-dir]
 # Options:
 #   --pencil-home <dir>   Specify the root path of the Pencil Code directory
-#
+#   --min                 Link only a minimum of files
 IAM=$0
 #
 link_scripts()
@@ -52,7 +52,7 @@ make_src_dir()
 link_src_files()
 {
 #
-#  LINK all *.f90, *.f, and the Makefile to local src directory
+#  LINK all *.f90, *.f, *.h, *.c, and the Makefile to local src directory
 #
   echo "Linking files in '$src'."
   old_dir="`pwd`"
@@ -420,24 +420,27 @@ make_cuda_dir()
 #
 make_astaroth_dir()
 {
-## cuda subdirectory
+## astaroth subdirectory
   [ -h $src/astaroth ] && rm $src/astaroth
   adddir $src/astaroth
-## cuda/src_new subdirectory
+## submodule subdirectory
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
-  adddir $src/astaroth/submodule/src/standalone
-  adddir $src/astaroth/submodule/src/standalone/model
   adddir $src/astaroth/submodule/src/core
   adddir $src/astaroth/submodule/src/core/kernels
+  adddir $src/astaroth/submodule/src/standalone
+  adddir $src/astaroth/submodule/src/standalone/model
+  adddir $src/astaroth/submodule/src/utils
   adddir $src/astaroth/submodule/scripts
   adddir $src/astaroth/submodule/acc
   adddir $src/astaroth/submodule/acc/src
-  adddir $src/astaroth/submodule/acc/mhd_solver
+  adddir $src/astaroth/submodule/acc/pc_mhd_solver
+  adddir $src/astaroth/submodule/acc/pencil
+  adddir $src/astaroth/submodule/acc/stdlib
 }
 #
 adddir()
@@ -460,13 +463,16 @@ link_astaroth_files()
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
 $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
+$srcdir/astaroth/submodule/acc/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu \
+$srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
 $srcdir/astaroth/submodule/3rdparty/*.sh $srcdir/astaroth/submodule/scripts/*.sh \
-$srcdir/astaroth/submodule/acc/* $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/mhd_solver/*
+$srcdir/astaroth/submodule/acc/*.sh $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/pc_mhd_solver/* \
+$srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h
   do
     file_for_link $file
   done
@@ -622,6 +628,7 @@ prepare_for_compile()
 scripts="start.csh start_run.csh run.csh getconf.csh"
 pencil_home_path=$PENCIL_HOME
 src="`pwd`/src"
+link_all=1
 #
 while [ $# -gt 0 ]
 do
@@ -644,6 +651,10 @@ do
   --pencil-home)
     pencil_home_path=$2
     shift
+  ;;
+  --min)
+    link_all=0
+    break
   ;;
   --)
     shift
@@ -675,34 +686,49 @@ srcdir=$pencil_home_path/src
 #
 echo "Files will be linked to the root code directory '$pencil_home_path'."
 #
+n=0
 remove_broken_links
 link_scripts
 link_root_makefile
+#
 make_src_dir
-link_src_files
-make_special_dir
-link_special_files
+if [ "$link_all" -eq 1 ]; then link_src_files; fi
+#
 make_pre_and_post_processing_dir
-link_pre_and_post_processing_files
+if [ "$link_all" -eq 1 ]; then link_pre_and_post_processing_files; fi
+#
 make_magnetic_dir
-link_magnetic_files
-make_test_methods_dir
-link_test_methods_files
-make_inactive_dir
-link_inactive_files
-make_experimental_dir
-link_experimental_files
-make_initial_condition_dir
-link_initial_condition_files
+if [ "$link_all" -eq 1 ]; then link_magnetic_files; fi
+
 if [ -f "$src/Makefile.local" ]; then
+  if [ "`grep '^[^#]*= *special' $src/Makefile.local`" != "" ]; then
+    make_special_dir
+    if [ "$link_all" -eq 1 ]; then link_special_files; fi
+  fi
+  if [ "`grep '^[^#]*= *test_methods' $src/Makefile.local`" != "" ] || [ "`grep '^[^#]*=.*testfield' $src/Makefile.local`" != "" ]; then
+    make_test_methods_dir
+    if [ "$link_all" -eq 1 ]; then link_test_methods_files; fi
+  fi
+  if [ "`grep '^[^#]*= *inactive' $src/Makefile.local`" != "" ]; then 
+    make_inactive_dir
+    if [ "$link_all" -eq 1 ]; then link_inactive_files; fi
+  fi
+  if [ "`grep '^[^#]*= *experimental' $src/Makefile.local`" != "" ]; then 
+    make_experimental_dir
+    if [ "$link_all" -eq 1 ]; then link_experimental_files; fi
+  fi
+  if [ "`grep '^[^#]*= *initial_condition' $src/Makefile.local`" != "" ]; then 
+    make_initial_condition_dir
+    if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
+  fi
   if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
     make_cuda_dir
     make_astaroth_dir
-    link_cuda_files
-    link_astaroth_files
+    if [ "$link_all" -eq 1]; then link_cuda_files; fi
+    if [ "$link_all" -eq 1]; then link_astaroth_files; fi
   fi
 fi
-create_Makefile_inc
+if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
 #copy_local_files
 print_status
-prepare_for_compile
+if [ "$link_all" -eq 1 ]; then prepare_for_compile; fi

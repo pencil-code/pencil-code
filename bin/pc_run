@@ -59,6 +59,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -v, --version   Print version number.
 #       --last      Return the dates+paths of the last runs by 'tailing'
 #                   the $PENCIL_HOME/.run_directories.log file.
+#   -l, --log       Writes stdout and stderr to start.log and run.log, respectively.
+#
 # Examples:
 #   pc_run start              # just start
 #   pc_run run                # just run
@@ -123,7 +125,8 @@ GetOptions(\%opts,
                     --notify
                -q   --quiet
                -v   --version
-                    --last)
+                    --last
+               -l   --log            )
           ) or die "Aborting.\n";
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
@@ -143,6 +146,7 @@ my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
 my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
 my $notify         = (              $opts{'notify'}          || '');
 my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
+my $log            = ($opts{'l'} || $opts{'log'}             || '');
 
 my @config_files;
 if (defined $config_files) {
@@ -187,6 +191,7 @@ my $run_x   = './src/run.x';
 my $locked = 0;
 my $booted_lam = 0;
 my $booted_mpd = 0;
+my $multiple_calls = 0;
 
 ## Variables
 # ..extracted from config:
@@ -326,7 +331,14 @@ sub mpi_run_cmd {
 # Run the given command through mpiexec (if this is an MPI run).
 # This method is only called for start.x and run.x
     my @cmd_line = @_;
-
+    my $logfile = $_[0];
+    if ($log){
+      $logfile =~ s/\.x/.log/; $logfile =~ s/^.*\///;
+      if ($multiple_calls) { 
+        system('rm -f ' . $logfile); 
+        $logfile = '--append ' . $logfile
+      } 
+    }
     my $extra_opts   = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
 
@@ -364,6 +376,8 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
+        if ($log)
+        { push @mpiexec_cmd_line, '2>&1 |tee ' . $logfile; }
         dump_parameters(
             $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
             $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
@@ -372,6 +386,8 @@ sub mpi_run_cmd {
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
+        if ($log)
+        { push @cmd_line, '2>&1 |tee ' . $logfile; }
         dump_parameters(undef, undef, 1, '') if $debug;
         time_system_cmd(@cmd_line, @extra_opts);
     }
@@ -614,7 +630,7 @@ sub time_system_cmd {
 
     if (-X '/usr/bin/time') {
         run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
-    } elsif (`time echo 1 2>/dev/null`) {
+    } elsif (`which time`) {
         run_system_cmd('time', @cmd_line);
     } else {
         run_system_cmd(@cmd_line);
@@ -629,7 +645,7 @@ sub run_system_cmd {
     clear_error();
 
     if (@environment_args) {
-        @cmd_line = ('env', @environment_args, @cmd_line);
+        @cmd_line = ('env', @environment_args,  @cmd_line);
     }
 
     if ($debug) {
@@ -805,6 +821,7 @@ sub expand_cmd_sequence {
             if ($command =~ /^ \s* (.*) \^ ([0-9]+) \s* $/x) {
                 my ($cmd, $multiplier) = ($1, $2);
                 push @sequence, ($cmd) x $multiplier;
+                if ($multiplier > 1) {$multiple_calls = 1};
             } else {
                 push @sequence, $command;
             }
@@ -904,7 +921,7 @@ sub setup_datadir {
 sub subdir_list {
 # Return list of directories below data/ that must exist
     my @subdirs = qw/ allprocs averages idl /;
-    my $HDF5 = `grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`;
+    my $HDF5 = `grep -Eci '^ *io *= *io_hdf5' src/Makefile.local`;
     if ($HDF5 > 0) {
         push @subdirs, 'slices';
     } else {
@@ -1553,7 +1570,7 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
-    exec 'rm -rf "'.$runtime_dir.'"';
+    system('rm -rf "'.$runtime_dir.'"');
 
     system('env | sort') if ($debug);
 

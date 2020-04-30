@@ -13,15 +13,16 @@ Name,                 email,                         svn-name,             offic
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & Illinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
+Iouri Belokopytov,    iourib@kth.se,                 ,                     +46 8 553 784 29   ,                         ,            Nordita
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
 Philippe Bourdin,     bourdin/mps.mpg.de,            PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, Austrian Academy of Sciences
-Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      +1 303 735-7738,   +1 720 401 7355,	        axelbrandenburg, University of Colorado Boulder
-Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 746 003 7611,  ,                         iomsn1,      University of Dundee
+Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        axelbrandenburg, Nordita
+Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,                            iomsn1,      University of Glasgow
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529,     +47 9845 2367,            mppiyali,    University of Oslo
 Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, NORDITA
-Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   ,                         bdintrans,   CNRS/IRAP
+Boris Dintrans,       dintrans/cines.fr,    	     boris.dintrans,       +33 4 67141400,                 , bdintrans,   CNRS/CINES
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
 Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
@@ -40,11 +41,11 @@ Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,    
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            NORDITA
 Wladimir Lyra,        wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  Cal State University Northridge
 Tony Mee,             eemynotna/gmail.com,           ,                     +44 207 7739436,   +44 782 540 3751,         ,            
-Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494,          dhrubaditya, NORDITA
+Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
 Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            NORDITA
 Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         ,            Farmingdale State College
 Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         ,            Harvard University
-Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,                         ,            Aalto University
+Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         ,            Aalto University
 Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         ,            Penn State University
 Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375,  ,                         ,            Newcastle University
 Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        ,            University of Cambridge

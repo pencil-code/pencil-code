@@ -19,7 +19,7 @@
 pro pc_read_video, field=field, object=object, nt=nt, njump=njump, $
     dim=dim, datadir=datadir, proc=proc, swap_endian=swap_endian, $
     xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, $
-    xz2read=xz2read, print=print, mask=mask, fail=fail
+    xz2read=xz2read, print=print, mask=mask, fail=fail, old_format=old_form, single=single
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -39,17 +39,23 @@ default, xzread, 1
 default, xz2read, 1
 default, yzread, 1
 default, print, 1
+default, single, 0
+;
+; Read dimensions and set precision.
+;
+pc_read_dim, obj=dim, datadir=readdir, /quiet
+if strupcase(precision) eq 'S' then single=1
 ;
 ; Load HDF5 data, if available
 ;
-  if (file_test (datadir+'/slices', /directory)) then begin
+  if (not keyword_set (old_format) and file_test (datadir+'/slices', /directory)) then begin
     num_planes = n_elements (planes)
     default, mask, replicate (1B, num_planes)
     mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read ]
     mask = mask and file_test (datadir+'/slices/'+field+'_'+planes+'.h5')
     object = { field:field }
     for i = 0, num_planes-1 do begin
-      if (mask[i]) then object = create_struct (object, planes[i], pc_read_slice (field, planes[i], datadir=datadir, time=t, coord=coord, pos=pos))
+      if (mask[i]) then object = create_struct (object, planes[i], pc_read_slice (field, planes[i], datadir=datadir, time=t, coord=coord, pos=pos, single=single))
     endfor
     default, t, 0.0
     default, coord, !Values.D_NaN
@@ -104,10 +110,6 @@ if arg_present(mask) then begin
   s.xz2read = s.xz2read and mask[6]
 endif
 
-;
-; Read dimensions and set precision.
-;
-pc_read_dim, obj=dim, datadir=readdir, /quiet
 ;
 ; Define filenames of slices, declare arrays for reading and storing, open slice files.
 ;
@@ -333,7 +335,7 @@ if keyword_set(fail) then fail=1
 return
 ;
 data_file_missing:
-print, 'No data file slice_"'+field+'.'+tag+'" found in "'+readdir+'"!!!'
+print, 'No data file "slice_'+field+'.'+tag+'" found in "'+readdir+'"!!!'
 if keyword_set(fail) then fail=1
 ;
 end

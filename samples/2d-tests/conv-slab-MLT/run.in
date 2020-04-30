@@ -19,7 +19,7 @@
 /
 &entropy_run_pars
   cooling_profile='cubic_step', cool=10., wcool=0.1,
-  iheatcond='K-profile', lhcond_global=T,
+  iheatcond='K-profile'
   lupw_ss=T
 /
 &viscosity_run_pars

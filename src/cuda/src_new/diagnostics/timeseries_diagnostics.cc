@@ -35,6 +35,7 @@ void timeseries_diagnostics(const Grid & h_grid)
     diag=reduce_cuda_PC(ldensity_nolog ? SUM_SCAL : SUM_EXP, h_grid.LNRHO)*box_volume/nw;
     save_name(diag,idiag_mass);
   }
+/* not yet automatically generated density diagnostics calls */
                 if (idiag_rhomax>0) {
                         diag=reduce_cuda_PC(MAX_SCAL, h_grid.LNRHO);
                         if (!ldensity_nolog) diag = exp(diag);       //Change away from the logarithmic form
@@ -50,26 +51,8 @@ void timeseries_diagnostics(const Grid & h_grid)
                         diag=reduce_cuda_PC(ldensity_nolog ? SUM_SCAL : SUM_EXP, h_grid.LNRHO);
                         save_name(diag,idiag_rhom);
                 }
-}
-/* not yet automatically generated density diagostics calls
- 
-	        if (idiag_rhomax>0) {
-                        diag=reduce_cuda_PC(MAX_SCAL, h_grid.LNRHO);
-			if (!ldensity_nolog) diag = exp(diag);       //Change away from the logarithmic form
-			save_name(diag,idiag_rhomax);
-        	}
-	        if (idiag_rhomin>0) {
-                        diag=reduce_cuda_PC(MIN_SCAL, h_grid.LNRHO);
-			if (!ldensity_nolog) diag = exp(diag);       //Change away from the logarithmic form
-	                diag=-diag;
-			save_name(diag,idiag_rhomin);
-       		}
- 		if (idiag_rhom){
-                        diag=reduce_cuda_PC(ldensity_nolog ? SUM_SCAL : SUM_EXP, h_grid.LNRHO);
-        	        save_name(diag,idiag_rhom);
-		}
  		if (idiag_rhorms){
                         diag=reduce_cuda_PC(ldensity_nolog ? RMS_SCAL : RMS_EXP, h_grid.LNRHO);
     	        	save_name(diag,idiag_rhorms);
 		}
-*/
+}

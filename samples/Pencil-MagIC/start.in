@@ -1,0 +1,14 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for a kinematic dynamo run
+!
+&init_pars
+  coord_system='spherical'
+  lperi=F, F, T
+  xyz0=0.7,0.261799,0.
+  xyz1=1.0,2.87979 ,6.2831853
+  bcx='s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr','s:a','a:nfr','a:nfr'
+  bcy='a','s','a',' a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a'
+/
+&testfield_init_pars
+/

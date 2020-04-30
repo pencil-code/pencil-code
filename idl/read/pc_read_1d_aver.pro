@@ -4,13 +4,14 @@
 ;  Read 1d-averages from file.
 ;
 pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
-    monotone=monotone, quiet=quiet, njump=njump, tmin=tmin
+    monotone=monotone, quiet=quiet, njump=njump, tmin=tmin, dim=dim, grid=grid
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Get necessary dimensions.
 ;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+if (size (dim, /type) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+if (size (grid, /type) eq 0) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet
 ;
 ;  Default data directory.
 ;
@@ -38,7 +39,6 @@ default, tmin, 0.0
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+avdirs+'.h5')) then begin
     message, "pc_read_1d_aver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
     last = pc_read ('last', filename=avdirs+'.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
     times = pc_read (groups+'/time')
@@ -161,15 +161,17 @@ if (monotone) then $
 else $
   ii=lindgen(n_elements(times))
 ;
-;  Read grid.
+;  Prepare grid.
 ;
-pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+trimmed_x = grid.x[dim.l1:dim.l2]
+trimmed_y = grid.y[dim.m1:dim.m2]
+trimmed_z = grid.z[dim.n1:dim.n2]
 ;
 ;  Put data in structure.
 ;
 makeobject="object = create_struct(name=objectname,['t','"+dir+"'," + $
     arraytostring(varnames,quote="'",/noleader) + "]," + $
-    "times[ii],grid."+dir+","+arraytostring(varnames+'[*,ii]',/noleader) + ")"
+    "times[ii],trimmed_"+dir+","+arraytostring(varnames+'[*,ii]',/noleader) + ")"
 ;
 if (execute(makeobject) ne 1) then begin
   message, 'Error evaluating variables: ' + makeobject, /info

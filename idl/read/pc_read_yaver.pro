@@ -10,7 +10,7 @@
 ;  We start with a script for plotting data plane - the main program follows
 ;  below.
 ;
-pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
+pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, dim=dim, grid=grid, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
     ipxread=ipxread, ipzread=ipzread, $
     xtitle=xtitle, ztitle=ztitle, title=title, subbox=subbox, subcen=subcen, $
@@ -27,7 +27,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
-  pc_read_2d_aver, 'y', object=object, varfile=varfile, datadir=datadir, $
+  pc_read_2d_aver, 'y', object=object, varfile=varfile, datadir=datadir, dim=dim, grid=grid, $
       nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=zax, $
       ipxread=ipxread, ipyread=ipzread, $
       xtitle=xtitle, ytitle=ztitle, title=title, subbox=subbox, subcen=subcen, $

@@ -218,7 +218,7 @@ contains
 !
 !  xy2 is top layer as default.
 !  Please set iz2 in run.in to select a different layer
-!  where nghost <= iz2 <= mzgrid-nghost
+!  where nghost+1 <= iz2 <= mzgrid-nghost
 !
         lwrite_slice_yz=(ipx==nprocx/2)
         if (lwrite_slice_yz) then
@@ -245,15 +245,16 @@ contains
             'slice_position=w may be wrong for nprocx>1')
         !midplane slices
         !ix_loc=nxgrid/2+nghost
-        iy = nygrid/2+nghost
+        iy = nygrid/2+nghost           !MR: nghost not tb added!
         !meridional wedges, at 4 different
         !equally spaced azimuthal locations
-        iz =  0*nzgrid/4+1+nghost           !MR: nghost not tb added!
+        iz =  0*nzgrid/4+1+nghost
         iz2=  1*nzgrid/4+1+nghost
         iz3=  2*nzgrid/4+1+nghost
         iz4=  3*nzgrid/4+1+nghost
+        ix_loc=0; iy_loc=0
 !
-!  Another slice positions for spherical coordinates
+!  Another slice position for spherical coordinates
 !  s is for "surface" meaning theta-phi sections
 !  keep iz_loc=n1, corresponding to a meridional slice on n=n1.
 !
@@ -265,7 +266,7 @@ contains
         call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
         lwrite_slice_xy2=(ipz==nprocz/4); if (lwrite_slice_xy2) iz2_loc=n2
         lwrite_slice_xy=lfirst_proc_z; if (lwrite_slice_xy) iz_loc=n1
-        lwrite_slice_xz=.true.
+        lwrite_slice_xz=.false.; iy_loc=0
 !
 ! Another slice position for spherical coordinates, for global disks with
 ! buffer zones. It will read the midplane (xz2), and three other surfaces:

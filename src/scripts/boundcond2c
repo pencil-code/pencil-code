@@ -1,11 +1,9 @@
 rm -f boundcond_c.h
 echo '# pragma once' > boundcond_c.h
 echo '# include "headers_c.h"' >> boundcond_c.h
-echo '# define boundconds_x '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_x'$MODULE_SUFFIX >> boundcond_c.h
-echo 'extern "C" void *boundconds_x(REAL *f );' >> boundcond_c.h
-echo '# define boundconds_y '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_y'$MODULE_SUFFIX >> boundcond_c.h
-echo 'extern "C" void *boundconds_y(REAL *f );' >> boundcond_c.h
-echo '# define boundconds_z '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_z'$MODULE_SUFFIX >> boundcond_c.h
-echo 'extern "C" void *boundconds_z(REAL *f );' >> boundcond_c.h
-echo '# define finalize_isendrcv_bdry '$MODULE_PREFIX'boundcond'$MODULE_INFIX'finalize_isendrcv_bdry'$MODULE_SUFFIX >> boundcond_c.h
-echo 'extern "C" void *finalize_isendrcv_bdry(REAL *f );' >> boundcond_c.h
+echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_x_c'$MODULE_SUFFIX >> boundcond_c.h
+echo 'extern "C" void *boundconds_x_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h
+echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_y_c'$MODULE_SUFFIX >> boundcond_c.h
+echo 'extern "C" void *boundconds_y_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h
+echo '# define boundconds_z_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_z_c'$MODULE_SUFFIX >> boundcond_c.h
+echo 'extern "C" void *boundconds_z_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h

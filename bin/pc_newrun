@@ -113,7 +113,11 @@ $PENCIL_HOME/bin/pc_mkdatadir
 #
 #  continue with the usual setup procedure
 #
-  $PENCIL_HOME/bin/pc_setupsrc
+  if [ $same_source ]; then
+    $PENCIL_HOME/bin/pc_setupsrc --min
+  else
+    $PENCIL_HOME/bin/pc_setupsrc
+  fi
 #
 #  go back into source directory and write the name
 #  of the new target directory into file new_to.dir
@@ -144,9 +148,10 @@ cp *.in $targetdir
 [ -f nnu2.dat ] && cp nnu2.dat $targetdir
 [ -f air.dat ] && cp air.dat $targetdir
 [ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
-[ -f *.py ] && cp *.py $targetdir
-[ -f FAKE_PARALLEL_IO ] && touch  $targetdir/FAKE_PARALLEL_IO
+if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
+[ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
+[ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 #
 
 #
@@ -167,8 +172,11 @@ if [ $same_source ]; then
     ln -s `readlink $olddir/src/read_all_videofiles.x` .
     ln -s `readlink $olddir/src/start.x` .
     ln -s `readlink $olddir/src/run.x` .
+    ln -s `readlink $olddir/src/special.so` .
   else
-    ln -s $olddir/src/*.x .
+    if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
+    if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi
   fi
   cp $olddir/src/*.inc .
+  [ -f $olddir/src/revision.txt ] && cp $olddir/src/revision.txt .
 fi

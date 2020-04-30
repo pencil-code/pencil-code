@@ -158,7 +158,7 @@ module HDF5_IO
     subroutine check_error(code, message, dataset, caller)
 !
 !   7-May-2019/MR: made caller optional, added module variable scaller,
-!                  so caller needs to be set only once in a asubroutine
+!                  so caller needs to be set only once in a subroutine
 !
       integer, intent(in) :: code
       character (len=*), intent(in) :: message
@@ -195,15 +195,15 @@ module HDF5_IO
 !
       if (lcollective .or. lwrite) call file_close_hdf5
 !
-      lread_only = loptest(read_only)
+      lread_only = loptest (read_only)
       h5_read_mode = H5F_ACC_RDWR_F
       if (lread_only) h5_read_mode = H5F_ACC_RDONLY_F
 !
-      ltrunc = loptest(truncate,.true.)
+      ltrunc = loptest (truncate, .true.)
       if (lread_only) ltrunc = .false.
 !
-      lcollective = loptest(global,.true.)
-      lwrite = loptest(write,lroot)
+      lcollective = loptest (global, .true.)
+      lwrite = loptest (write, lroot)
 !
       pos = index (file, '.dat.h5')
       if (pos > 1) file = file(1:pos-1)//'.h5'

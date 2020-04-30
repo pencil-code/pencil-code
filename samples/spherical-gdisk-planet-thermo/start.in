@@ -58,7 +58,7 @@ cvsid='$Id: start.in,v 1.1 2015/05/11 19:37:40 wlyra Exp $',
   ipotential='no-smooth','zero','zero','zero','zero'
   g0=0.995
   g1=0.005
-  rp1_pot=0.12
+  rp1_smooth=0.12
   lramp_mass=T
   t_ramp_mass=62.831853
 /

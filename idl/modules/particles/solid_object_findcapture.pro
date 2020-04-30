@@ -216,6 +216,7 @@ endif else begin
 endelse
 print,'Total number of inserted particles:',npar_inserted
 lambda=67e-9
+fluid_density=startparam.rho_const
 ;                                ;
 ; Loop over all particle diameters
 ;
@@ -223,7 +224,7 @@ for i=0,npart_radii-1 do begin
     diameter=2*startparam.ap0[i]
     Stokes_Cunningham=1+2*lambda/diameter*$
       (1.257+0.4*exp(-1.1*diameter/(2*lambda)))
-    tau_p=material_density*diameter^2/(18.0*runparam.nu)
+    tau_p=material_density*diameter^2/(18.0*runparam.nu*fluid_density)
     ;
     ; Assume that the radii of all cylinders are the same
     ;

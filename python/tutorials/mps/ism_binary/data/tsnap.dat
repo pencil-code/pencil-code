@@ -1,0 +1,6 @@
+  0.1100000              11
+ This file is written automatically (routine
+ update_snaptime in sub.f90). The values above give
+ time and number of the *next* snapshot. These values
+ are only read once in the beginning. You may adapt
+ them by hand (eg after a crash).

@@ -34,12 +34,14 @@ module InitialCondition
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
+  logical :: lwrite_hcond_profile=.true.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile
+      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, &
+      lwrite_hcond_profile
 !
   contains
 !***********************************************************************
@@ -78,7 +80,7 @@ module InitialCondition
 !                Profiles hcond and glhcond not written then!
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: gamma, gamma_m1, rho0, cs20
+      use EquationOfState, only: gamma, rho0, cs20
       use General, only: safe_character_assign
       use Mpicomm, only: stop_it, mpiallreduce_sum
       use FArrayManager
@@ -86,7 +88,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
-      real, dimension (mx) :: TT, TTc, rho_prof, dTdr_cor, dlnTdr 
+      real, dimension (mx) :: TT, TTc, rho_prof
       real, dimension (mx) :: lnrho, ss_prof, cs2_prof
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
@@ -99,9 +101,9 @@ module InitialCondition
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
-      real :: meanrho, volume, total_mass, tmp
+      real :: volume, total_mass, tmp
       real, pointer :: gravx, cp, cv
-      integer :: i, j, n, m, q, ix, ierr, nsurf, nsurf_global
+      integer :: i, j, n, m, ix, ierr, nsurf, nsurf_global
       integer, parameter :: unit=1
 
       character (len=120) :: wfile
@@ -306,13 +308,15 @@ module InitialCondition
 !
 !  Write kappa and gkappa to file to be read by run.in
 !
-      if (lroot) then 
-        call safe_character_assign(wfile,'hcond_glhc.dat')
-        open(unit,file=wfile,status='unknown')
-        do ix=1,nxgrid
-          write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
-        enddo
-        close(unit)
+      if (lwrite_hcond_profile) then
+        if (lroot) then 
+          call safe_character_assign(wfile,'hcond_glhc.dat')
+          open(unit,file=wfile,status='unknown')
+          do ix=1,nxgrid
+            write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
+          enddo
+          close(unit)
+        endif
       endif
 !
 !  Write cs2 to a file to be used in cooling
@@ -386,6 +390,7 @@ module InitialCondition
          print*,'initial_condition: rratio     =',rratio
          print*,'initial_condition: volume     =',volume
          print*,'initial_condition: total_mass =',total_mass
+         print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
@@ -451,8 +456,6 @@ module InitialCondition
 !  Initialize entropy.
 !
 !  07-may-09/wlad: coded
-!
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

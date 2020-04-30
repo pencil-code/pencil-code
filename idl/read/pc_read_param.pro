@@ -89,6 +89,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Parse content of namelist file, if necessary.
 ;
   spawn, '"$PENCIL_HOME/bin/nl2idl" '+nl2idl_d_opt+' "'+filename+'" -o "'+outfile+'"', result
+  ;spawn, [strtrim(getenv('PENCIL_HOME'))+'/bin/nl2idl',nl2idl_d_opt,'"'+filename+'"'], result, /noshell
+
   result[0] = ''
   result = result[sort (result)]
   num_lines = (size (result, /dimensions))[0]
@@ -141,7 +143,6 @@ COMPILE_OPT IDL2,HIDDEN
         endif
       endif 
       if not ok then code = 'struct = {'+strmid (line, 0, EOL)+'}'
-
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
       object = create_struct (object, struct)
     end
