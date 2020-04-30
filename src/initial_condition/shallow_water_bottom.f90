@@ -63,10 +63,11 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: eta,r2
+      integer :: j
 !
       do j=1,ninit
 !
-        select case (init_shallow_density)
+        select case (init_shallow_density(j))
 !
         case('solid-body')   
 !
@@ -74,11 +75,9 @@ module InitialCondition
 !
           do n=n1,n2
             do m=m1,m2
-              r2 = x(l1:l2)**2 + y(m)**2
-              f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) + &
-                   Omega_SB**2 * (                    &
-                   1.5*r2 - 0.25*gamma_parameter * r2**2         &
-                   )
+               r2 = x(l1:l2)**2 + y(m)**2
+               eta = Omega_SB**2 * (1.5*r2 - 0.25*gamma_parameter * r2**2)
+               f(l1:l2,m,n,ilnrho) = log(eta)
             enddo
           enddo
 !
@@ -91,14 +90,9 @@ module InitialCondition
               eta = eta0 * exp(-k_eta * ( &  
                    (x(l1:l2)-x0_drop)**2 + (y(m)-y0_drop)**2 & 
                    ))
-              f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) + log(eta)
+              f(l1:l2,m,n,ilnrho) = log(eta)
             enddo
           enddo
-!
-        case default
-           call fatal_error("init_condition_lnrho",&
-                "No such value for init_condition_lnrho")
-   
         endselect
 !
       enddo
@@ -110,23 +104,19 @@ module InitialCondition
 !  Initial condition given by 
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: j
 !
       do j=1,ninit
 
-        select case (init_shallow_hydro)
+        select case (init_shallow_hydro(j))
 !
         case('solid-body')
           do n=n1,n2
             do m=m1,m2
-              f(l1:l2,m,n,iux) = -Omega_SB * y(m)
+              f(l1:l2,m,n,iux) = -Omega_SB * y(  m  )
               f(l1:l2,m,n,iuy) =  Omega_SB * x(l1:l2)
             enddo
           enddo
-!
-        case default
-           call fatal_error("init_condition_uu",&
-                "No such value for init_condition_uu")
-!
         endselect
       enddo
 !
