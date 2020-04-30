@@ -234,7 +234,7 @@ if ($clean) {
 my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
-unless (-d './src/scripts') {
+unless (-e './src/cparam.f90') {
     print STDERR "Running pc_setupsrc\n";
     system('pc_setupsrc');
 }
