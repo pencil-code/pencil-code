@@ -371,8 +371,8 @@ module Snapshot
 !
         ipscalar=ilncc
         if (ilncc.eq.0) ipscalar = icc
-        if (ipscalar<mvar) then
-          do ivar=ipscalar+1,mvar
+        if (ipscalar<msnap) then
+          do ivar=ipscalar+1,msnap
             f(:,:,:,ivar)=f(:,:,:,ivar-1)
           enddo
         endif
