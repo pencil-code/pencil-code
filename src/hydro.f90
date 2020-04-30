@@ -220,6 +220,7 @@ module Hydro
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
   real :: Shearx=0., rescale_uu=0.
   real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
+  real :: Om_inner=0.
 !
 !  Option to constrain time for large df.
 !
@@ -253,6 +254,7 @@ module Hydro
       lcdt_tauf, cdt_tauf, ulev, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
+      limpose_only_horizontal_uumz, Om_inner
       limpose_only_horizontal_uumz, luu_fluc_as_aux
 !
 !  Diagnostic variables (need to be consistent with reset list below).
@@ -834,6 +836,7 @@ module Hydro
           case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
+          case ('Om_inner'); f(:,:,:,iuz)=Om_inner*spread(spread(xyz0(1)**2/x,2,my)*spread(sin(y),1,mx),3,mz)
           endselect
         enddo
       endif
