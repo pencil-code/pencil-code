@@ -1815,7 +1815,7 @@ module Particles_map
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
       real, dimension(nx) :: rhop_swarm_mn
-      real :: weight, weight_x, weight_y, weight_z
+      real :: weight, weight0, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
 !
@@ -1850,8 +1850,9 @@ module Particles_map
                 if (nxgrid/=1) ixx1=ixx0+1
                 if (nygrid/=1) iyy1=iyy0+1
                 if (nzgrid/=1) izz1=izz0+1
+                call get_rhopswarm(mp_swarm, fp, k, ix0, iy0, iz0, weight0)
                 do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                  weight=1.0
+                  weight = weight0
                   if (nxgrid/=1) &
                        weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
                   if (nygrid/=1) &
@@ -1888,6 +1889,8 @@ module Particles_map
                   izz0=iz0  ; izz1=iz0
                 endif
 !
+                call get_rhopswarm(mp_swarm, fp, k, ix0, iy0, iz0, weight0)
+!
 !  The nearest grid point is influenced differently than the left and right
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
@@ -1915,8 +1918,7 @@ module Particles_map
                          weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
                   endif
 !
-                  weight=1.0
-!
+                  weight = weight0
                   if (nxgrid/=1) weight=weight*weight_x
                   if (nygrid/=1) weight=weight*weight_y
                   if (nzgrid/=1) weight=weight*weight_z
@@ -1930,7 +1932,8 @@ module Particles_map
 !
             do k=1,npar_loc
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
+              call get_rhopswarm(mp_swarm, fp, k, ix0, iy0, iz0, weight)
+              f(ix0,iy0,iz0,iupx+ivp) = f(ix0,iy0,iz0,iupx+ivp) + weight * fp(k,ivpx+ivp)
             enddo
           endif
 !
@@ -1942,10 +1945,8 @@ module Particles_map
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
           do m=m1,m2 ; do n=n1,n2
-            call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
             where (f(l1:l2,m,n,irhop)/=0.0)
-              f(l1:l2,m,n,iupx+ivp)=rhop_swarm_mn*&
-              f(l1:l2,m,n,iupx+ivp)/f(l1:l2,m,n,irhop)
+              f(l1:l2,m,n,iupx+ivp) = f(l1:l2,m,n,iupx+ivp) / f(l1:l2,m,n,irhop)
             endwhere
           enddo;enddo
         enddo
