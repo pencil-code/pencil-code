@@ -59,7 +59,7 @@ module InitialCondition
 !  Initial condition given by 
 !
 !     h = eta + Lb
-!     rho is eta       
+!     rho is g*eta
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: eta,r2
