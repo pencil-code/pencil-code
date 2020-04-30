@@ -30,6 +30,7 @@ module Pscalar
   logical :: nopscalar=.false.
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min, delta_lncc=0
+  real :: widthlncc1=1.0,widthlncc2=1.5
   real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0
   real :: amplcc=0.1, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
@@ -40,14 +41,14 @@ module Pscalar
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, &
-      ldustdrift, delta_lncc, amplcc
+      ldustdrift, delta_lncc, amplcc,widthlncc1,widthlncc2
 !
-  real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
+  real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0,pscalar_diff_shock=0.0
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
 !
   namelist /pscalar_run_pars/ &
       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc, &
-      reinitialize_lncc
+      reinitialize_lncc,pscalar_diff_shock
 !
   integer :: idiag_rhoccm=0     ! DIAG_DOC: $\left<\varrho c\right>$
   integer :: idiag_ccmax=0      ! DIAG_DOC: $\max(c)$
@@ -191,6 +192,21 @@ module Pscalar
               f(l1:l2,m,n,ilncc)=log(1.-prof+amplcc*1e-20)
             enddo
           enddo
+        case ('double_shear_xzlayer')
+!
+!  Double shear layer xz
+!
+          if (lroot) print*,'init_lncc: Double shear layer'
+          do n=n1,n2
+            der=2./delta_lncc
+            prof=amplcc*(&
+                tanh(der*(z(n)-widthlncc1))-&
+                tanh(der*(z(n)-widthlncc2)))/2.
+            prof=prof
+            do m=m1,m2
+              f(l1:l2,m,n,ilncc)=log(prof+amplcc*1e-15)
+            enddo
+          enddo
         case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
       endselect
 !
@@ -223,9 +239,16 @@ module Pscalar
       integer :: i
 !
       if (lhydro) lpenc_requested(i_uglncc)=.true.
+      if (lhydro) lpenc_requested(i_divu)=.true.
       if (pscalar_diff/=0.) then
         lpenc_requested(i_glncc)=.true.
         lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_del2lncc)=.true.
+      endif
+      if (pscalar_diff_shock/=0.) then
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_glncc)=.true.
         lpenc_requested(i_del2lncc)=.true.
       endif
       do i=1,3
@@ -320,6 +343,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      real, dimension (nx) :: tmp                        
       real, dimension (nx) :: diff_op
       integer :: j
 !
@@ -343,15 +367,19 @@ module Pscalar
 !
 !  Passive scalar equation.
 !
-        if (lhydro) df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - p%uglncc
+        if (lhydro) df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - p%uglncc - p%divu
 !
 !  Diffusion operator.
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          call dot_mn(p%glncc+p%glnrho,p%glncc,diff_op)
+          call dot_mn(p%glncc,p%glncc,diff_op)
           diff_op=diff_op+p%del2lncc
           df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff*diff_op
+        endif
+        if (pscalar_diff_shock/=0.) then
+          call dot_mn(p%gshock,p%glncc,tmp)
+          df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff_shock * (p%shock *  diff_op + tmp)
         endif
 !
 !  Add advection of imposed constant gradient of lncc (called gradC0).
