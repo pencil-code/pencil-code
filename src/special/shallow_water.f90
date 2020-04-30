@@ -55,7 +55,6 @@ module Special
 !
 ! Global arrays
 !
-  real :: gravity=1.0
   real :: fcoriolis
   real :: Omega_SB=1.0
   real :: gamma_parameter=0.001
@@ -91,7 +90,7 @@ module Special
   logical :: lcalc_storm=.true.
   logical :: lupdate_storm=.true.
 !
-  namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
+  namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
        lmass_relaxation,eta0,tduration,rsize_storm,lupdate_storm,Omega_SB
@@ -293,9 +292,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!  irho is eta, the deviation. The continuity equation is 
+!  irho is g*eta, the deviation. The continuity equation is 
 !
-!    dh/dt = -(u.del)h - h*divu 
+!    d(gh)/dt = -(u.del)gh - gh*divu 
 !
 !   where h = eta + Lb, with Lb the function of the botton; either add the bottom function to an eta initial condition 
 !
@@ -350,11 +349,11 @@ module Special
     integer :: i,ju,j
     type (pencil_case), intent(in) :: p
 !
-!  Momentum equation; rho = h.  
+!  Momentum equation; rho = g*h.  
 !
     do i=1,3
       ju = i+iuu-1
-      df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - gravity * p%grho(:,i) 
+      df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - p%grho(:,i) 
     enddo
 !
 !  Add the Coriolis parameter (fcoriolis=2*Omega)
@@ -370,7 +369,7 @@ module Special
     endif
     
     if (lfirst.and.ldt) then 
-      advec_cg2 = (gravity*(p%rho+bottom_function(l1:l2,m)))**2 * dxyz_2
+      advec_cg2 = (p%rho+bottom_function(l1:l2,m))**2 * dxyz_2
       if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
       advec2    = advec2 + advec_cg2
     endif
