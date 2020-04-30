@@ -31,6 +31,7 @@ module power_spectrum
 !
   include 'power_spectrum.h'
 !
+  real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false.
   integer :: firstout = 0
@@ -43,7 +44,8 @@ module power_spectrum
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz, n_segment_x, lhalf_factor_in_GW
+      inz, n_segment_x, lhalf_factor_in_GW, &
+      pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale
 !
   contains
 !***********************************************************************
@@ -2571,6 +2573,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !    2-dec-03/axel: coded
 !
       use Sub, only: grad, dot2_mn
+      use SharedVariables, only: get_shared_variable
 !
   integer :: l,i_pdf
   integer, parameter :: n_pdf=3001
@@ -2582,6 +2585,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
   character (len=120) :: pdf_file=''
   character (len=*) :: variabl
   logical :: logscale=.false.
+  integer, pointer :: ispecial
 !
 !  initialize counter and set scaling factor
 !
@@ -2614,23 +2618,23 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
        call dot2_mn(gcc,gcc2)
        pdf_var=sqrt(gcc2)
        logscale=.true.
+     elseif (variabl=='lnspecial') then
+       call get_shared_variable('ispecial', ispecial, caller='pdf')
+       pdf_var=alog(f(l1:l2,m,n,ispecial))
+       logscale=.false.
      endif
 !
 !  put in the right pdf slot
 !
      if (logscale) then
-       !pdf_max=1.5  !(fixed choice, for time being)
-       pdf_max=3.0  !(fixed choice, for time being)
-       pdf_min=-pdf_max
-       pdf_dx=(pdf_max-pdf_min)/n_pdf
+       pdf_dx=(pdf_max_logscale-pdf_min_logscale)/n_pdf
        pdf_dx1=1./pdf_dx
        do l=l1,l2
-         i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min)
+         i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min_logscale)
          i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
          pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
        enddo
      else
-       pdf_max=30.  !(fixed choice, for time being)
        pdf_min=-pdf_max
        pdf_dx=(pdf_max-pdf_min)/n_pdf
        pdf_dx1=1./pdf_dx
@@ -2647,7 +2651,11 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !
    pdf_file=trim(directory)//'/pdf_'//trim(variabl)//'.dat'
    open(1,file=trim(pdf_file),position='append')
-   write(1,10) t,n_pdf,pdf_dx,pdf_min,pdf_mean,pdf_rms
+   if (logscale) then
+     write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
+   else
+     write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
+   endif
    write(1,11) pdf_yy
    close(1)
 !

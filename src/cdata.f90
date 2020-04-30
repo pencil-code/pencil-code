@@ -549,7 +549,7 @@ module Cdata
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
-  logical :: gcc_pdf=.false.,lngcc_pdf=.false.
+  logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false.
   logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
