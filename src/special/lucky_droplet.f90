@@ -34,7 +34,7 @@ module Special
 !
 ! Declare index of variables
 !
-   integer :: ispecial=0
+   integer, target :: ispecial=0
 !
   ! input parameters
   real :: gam_lucky=fourthird
@@ -66,6 +66,7 @@ module Special
 !  19-feb-2019/axel: coded
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
 !  Identify CVS/SVN version information.
 !
@@ -75,6 +76,7 @@ module Special
 !  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.
 !
       call farray_register_pde('special',ispecial)
+      call put_shared_variable('ispecial', ispecial, caller='register_special')
 !
     endsubroutine register_special
 !***********************************************************************
@@ -218,7 +220,7 @@ module Special
 !  but can also do mean-field theory as a test.
 !
       if (lMFT) then
-        tauk=lamk
+        tauk=1./lamk
       else
         call random_number_wrapper(rrr)
         tauk=-alog(rrr)/lamk
