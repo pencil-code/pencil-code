@@ -2066,10 +2066,8 @@ module power_spectrum
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-if (ip<7) print*,'AXEL6: iproc,spec=',iproc,sp,spectrum
   call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !
 !  compute krms only once
 !
@@ -2639,7 +2637,6 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
          pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
        enddo
      else
-       pdf_min=-pdf_max
        pdf_dx=(pdf_max-pdf_min)/n_pdf
        pdf_dx1=1./pdf_dx
        do l=l1,l2
@@ -2663,7 +2660,7 @@ if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
    write(1,11) pdf_yy
    close(1)
 !
-10 format(1p,e12.5,0p,i6,1p,4e12.4)
+10 format(1p,e12.5,0p,i6,1p,5e12.4)
 11 format(8i10)
 endsubroutine pdf
 !***********************************************************************
