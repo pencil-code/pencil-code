@@ -87,7 +87,7 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp,gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
+  real :: rp=0, gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
