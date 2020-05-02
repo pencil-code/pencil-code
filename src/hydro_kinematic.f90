@@ -1922,6 +1922,21 @@ endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Angular velocity
+!
+      case ('Omega-step')
+        if (lcylindrical_coords) then
+          if (headtt) print*,'Omega-step (cylindrical coords)',ampl_kinflow
+! uu
+          if (lpenc_loc(i_uu)) then
+            local_Omega=ampl_kinflow*(1.-step(x(l1:l2),wind_rmin,wind_step_width))
+            p%uu(:,1)=0.
+            p%uu(:,2)=local_Omega*x(l1:l2)
+            p%uu(:,3)=0.
+          endif
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Spoke-like differential rotation profile
 !
       case ('spoke-like')
