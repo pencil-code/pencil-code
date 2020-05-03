@@ -3895,7 +3895,7 @@ module Magnetic
             fres = fres + eta * p%del2a
           endif
 !
-! whatever the gauge is add an external space-varying electric field
+! whatever the gauge is, add an external space-varying electric field
 !
           if (ladd_efield) then
              tanhx2 = tanh( x(l1:l2) )*tanh( x(l1:l2) )
@@ -3960,6 +3960,7 @@ module Magnetic
         sinalp=sin(alp_aniso*dtor)
         fres(:,1)=fres(:,1)-eta1_aniso*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-eta1_aniso*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta1_aniso
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
