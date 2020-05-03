@@ -7226,7 +7226,7 @@ nameloop: do
 !
         endif
         do ix=1,nx
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
                      fim1(ix))+tini)
           else
@@ -7237,7 +7237,7 @@ nameloop: do
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
         do ix=1,nx
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      exp(f(ix+nghost,m,n,j)))+tini)
           else
@@ -7417,7 +7417,7 @@ nameloop: do
 !
       select case (k)
         case(1)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1-1,l2+1
               ix=i-nghost
               tmp1=exp(f(i,m,n,j)) -exp(f(i-1,m,n,j))
@@ -7454,7 +7454,7 @@ nameloop: do
 ! y-component
 !
         case(2)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
               ix=i-nghost
               tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
@@ -7499,7 +7499,7 @@ nameloop: do
 ! z-component
 !
         case(3)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
               ix=i-nghost
               tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))

@@ -1346,7 +1346,7 @@ module Energy
           thdiff=thdiff+tmp
         else
           call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,nlf_sld_ene,tmp)
-          thdiff=thdiff+tmp
+          thdiff=thdiff+tmp*p%TT1
        endif
      endif
 !
