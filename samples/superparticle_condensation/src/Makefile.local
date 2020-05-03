@@ -1,0 +1,28 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+#DIAGNOSTICS  =   diagnostics_f90
+MPICOMM      = mpicomm
+
+HYDRO        =   hydro
+DENSITY      =   density
+ASCALAR      =   ascalar
+
+GRAVITY      =   gravity_simple
+FORCING      =   forcing
+VISCOSITY    =   viscosity
+
+PARTICLES             =   particles_dust
+PARTICLES_NUMBER      =   particles_number
+PARTICLES_RADIUS      =   particles_radius
+PARTICLES_STALKER     =   particles_stalker
+
+FOURIER = fourier_fftpack
+POWER   = power_spectrum
+STRUCT_FUNC = struct_func
+
+REAL_PRECISION = double
+
+DERIV_3SEC_INSTEADOF_14MIN_COMPILETIME = deriv_3sec_insteadof_14min_compiletime

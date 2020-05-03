@@ -1,0 +1,8 @@
+-rw-rw-r-- 1 y_xiali pg_bolinc 2411 Jun  8 09:14 k.dat
+-rw-rw-r-- 1 y_xiali pg_bolinc   28 Jun  8 09:14 parameters.pro
+-rw-rw-r-- 1 y_xiali pg_bolinc  393 Jun  8 09:14 print.in
+-rw-rw-r-- 1 y_xiali pg_bolinc 1391 Jun  8 09:14 run.in
+-rw-rw-r-- 1 y_xiali pg_bolinc  702 Jun  8 09:14 src/Makefile.local
+-rw-rw-r-- 1 y_xiali pg_bolinc  641 Jun  8 09:14 src/cparam.local
+-rw-rw-r-- 1 y_xiali pg_bolinc 1208 Jun  8 09:14 start.in
+-rw-rw-r-- 1 y_xiali pg_bolinc   21 Jun  8 09:14 video.in
