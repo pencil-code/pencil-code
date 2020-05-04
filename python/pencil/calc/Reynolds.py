@@ -49,7 +49,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3):
     #molecular viscosity contribution
     ldel2, lshock, lhyper3 = False, False, False
     for ivisc in param.ivisc:
-        if not 'shock' in ivisc and not 'hyper' not in ivisc\
+        if not 'shock' in ivisc and not 'hyper' in ivisc\
                                 and not '\n' in ivisc:
             ldel2 = True
         if 'shock' in ivisc:
@@ -138,10 +138,14 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3):
     advec2 = np.sqrt(dot2(advec))
     del(advec)
     #avoid division by zero
-    fvisc2[np.where(fvisc2==0)] = fvisc2[np.where(fvisc2>0)].min()
-    Re = advec2/fvisc2
-    #set minimum floor to exclude zero-valued Re 
-    Re[np.where(Re==0)] = Re[np.where(Re>0)].min()
+    if fvisc2.max() > 0:
+        fvisc2[np.where(fvisc2==0)] = fvisc2[np.where(fvisc2>0)].min()
+        Re = advec2/fvisc2
+        #set minimum floor to exclude zero-valued Re 
+        Re[np.where(Re==0)] = Re[np.where(Re>0)].min()
+    else:
+        Re = advec2
+        print('Re undefined')
     return Re
 
 def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(), nghost=3):
@@ -235,9 +239,15 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(), nghost=3
     advec2 = np.sqrt(dot2(advec))
     del(advec)
     #avoid division by zero
-    fresi2[np.where(fresi2==0)] = fresi2[np.where(fresi2>0)].min()
-    Rm = advec2/fresi2
-    #set minimum floor to exclude zero-valued Rm 
-    Rm[np.where(Rm==0)] = Rm[np.where(Rm>0)].min()
+    if fresi2.max() > 0:
+        fresi2[np.where(fresi2==0)] = fresi2[np.where(fresi2>0)].min()
+        Rm = advec2/fresi2
+        #set minimum floor to exclude zero-valued Rm 
+        if Rm.max() > 0:
+            Rm[np.where(Rm==0)] = Rm[np.where(Rm>0)].min()
+        else:
+            print('Rm undefined')
+    else:
+        Rm = advec2
+        print('Rm undefined')
     return Rm
-    
