@@ -153,6 +153,7 @@ my %tests = (
                          testfield_nonlin_z
                          spherical-convection
                          spherical-convection-corona
+                         cartesian-convection-kramers
                      )],
              # Level 4 for now contains overlong tests (e.g. test that
              # compile, start and then run for more than 5 minutes on
