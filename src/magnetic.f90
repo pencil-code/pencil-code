@@ -123,7 +123,9 @@ module Magnetic
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
-  real :: eta_shock=0.0, eta_shock2=0.0, eta1_aniso=0.0, alp_aniso=0.0
+  real :: eta1_aniso_ratio=impossible, eta1_aniso=impossible
+  real :: eta1_aniso_r=0.0, eta1_aniso_d=0.0
+  real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., &
           etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
@@ -348,7 +350,8 @@ module Magnetic
       eta_xwidth, eta_ywidth, eta_zwidth, eta_rwidth, &
       eta_zwidth2, eta_xwidth0, eta_xwidth1, eta_rwidth0, eta_rwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_r0, eta_r1, &
-      eta1_aniso, alp_aniso, eta_spitzer, borderaa, &
+      eta1_aniso_ratio, eta1_aniso, eta1_aniso_r, eta1_aniso_d, alp_aniso, &
+      eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
@@ -1256,6 +1259,11 @@ module Magnetic
         case ('eta-aniso')
           if (lroot) print*, 'resistivity: eta-aniso'
           lresi_eta_aniso=.true.
+          if (eta1_aniso==impossible.and.eta1_aniso_ratio==impossible) then
+            call fatal_error('initialize_magnetic','eta1_aniso and eta1_aniso_ratio undefined')
+          elseif (eta1_aniso==impossible.and.eta1_aniso_ratio/=impossible) then
+            eta1_aniso=eta1_aniso_ratio*eta
+          endif
         case ('etaSS')
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
@@ -3790,9 +3798,9 @@ module Magnetic
       real, dimension (nx) :: eta_mn,etaSS
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
-      real, dimension(nx) :: eta_BB
+      real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
-      real :: tmp,eta_out1,maxetaBB=0., cosalp, sinalp
+      real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer, parameter :: nxy=nxgrid*nygrid
@@ -3953,13 +3961,19 @@ module Magnetic
         etatotal=etatotal+eta*sqrt(p%rho1)
       endif
 !
-!  Plunian tensor, eta_ij = eta*delta_ij + eta1*qi*qj
+!  Anisotropic tensor, eta_ij = eta*delta_ij + eta1*qi*qj; see
+!  Ruderman & Ruzmaikin (1984) and Plunian & Alboussiere (2020).
 !
       if (lresi_eta_aniso) then
         cosalp=cos(alp_aniso*dtor)
         sinalp=sin(alp_aniso*dtor)
-        fres(:,1)=fres(:,1)-eta1_aniso*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        fres(:,2)=fres(:,2)-eta1_aniso*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
+        if (eta1_aniso_r==0.) then
+          prof=eta1_aniso
+        else
+          prof=eta1_aniso*(1.-step(x(l1:l2),eta1_aniso_r,eta1_aniso_d))
+        endif
+        fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
+        fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta1_aniso
       endif
 !
