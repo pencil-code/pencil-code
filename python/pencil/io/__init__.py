@@ -13,6 +13,7 @@ from .snapshot import write_h5_snapshot
 from .snapshot import write_h5_grid
 from .snapshot import write_h5_averages
 from .snapshot import write_h5_slices
+from .write_h5 import *
 from .fort2h5 import sim2h5
 from .fort2h5 import var2h5
 from .fort2h5 import slices2h5
