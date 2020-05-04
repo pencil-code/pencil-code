@@ -143,7 +143,8 @@ def helmholtz_fft(field, grid, params, nghost=3, nonperi_bc=None, field_scalar=[
         rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
         pot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
         field2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
-    print('normalized mean total field energy {} mean summed component energy {
-          }'.format(np.mean(field2), np.mean(rot2+pot2)))
+    print('normalized mean total field energy '+
+          '{} mean summed component energy {}'.format(
+          np.mean(field2), np.mean(rot2+pot2)))
     return rot_field, pot_field
 
