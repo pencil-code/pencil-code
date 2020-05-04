@@ -1,0 +1,32 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+
+#================================
+# Please uncomment one IO option:
+#================================
+#IO        =   io_collect
+#--------------------------------
+IO        =   io_dist
+#--------------------------------
+#IO        =   io_hdf5
+#================================
+
+FILE_IO   =   file_io_f95
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   entropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+EOS       = eos_idealgas
+GRAVITY   =   gravity_simple
+FORCING   = noforcing
+SHEAR     = noshear
+
+REAL_PRECISION = double

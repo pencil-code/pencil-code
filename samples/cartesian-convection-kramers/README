@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/cartesian-convection-kramers/
+SVN Id:
+    $Id$
+Maintainer:
+    Petri Käpylä <pkaepyl/uni-goettingen[dot]de>
+Added:
+    04-May-2020
+Status:
+    introduced in May 2020
+Recommended resolution:
+    288x288x288 (nu=chi_t1=1e-4)
+Comments:
+    Cartesian overshooting convection with Kramers heat conductivity,
+    with cooling applied at the top.
+References:
+    Käpylä, P. J.: 2019, ``Overshooting in simulations of compressible
+    convection,'' Astron. Astrophys., 631, 122
