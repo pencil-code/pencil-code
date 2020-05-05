@@ -111,20 +111,21 @@ class Param(object):
         *append_units*
           Derives dimensional units from standard code units.
         """
-
         import os
+        from os.path import join, exists
 
         datadir = os.path.expanduser(datadir)
 
         #Collect files to be read into a list
         files = []
         if param1:
-            files.append(os.path.join(datadir, 'param.nml'))
+            files.append(join(datadir, 'param.nml'))
         elif param2:
-            files.append(os.path.join(datadir, 'param2.nml'))
+            files.append(join(datadir, 'param2.nml'))
         else:
-            files.append(os.path.join(datadir, 'param.nml'))
-            files.append(os.path.join(datadir, 'param2.nml'))
+            files.append(join(datadir, 'param.nml'))
+            if exists(join(datadir, 'param2.nml')):
+                files.append(join(datadir, 'param2.nml'))
 
         # Verify path of files in list.
         for filen in files:
