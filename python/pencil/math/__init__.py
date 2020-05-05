@@ -9,5 +9,6 @@ from .transform import pospolar2cart, velpolar2cart
 from .integration import integrate
 from .Helmholtz import *
 from .primes import *
+from .interpolation import vec_int
 
 from . import derivatives
