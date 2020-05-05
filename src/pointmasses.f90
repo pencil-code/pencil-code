@@ -36,7 +36,7 @@ module PointMasses
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
   real :: GNewton1, GNewton=impossible, density_scale=0.001
-  real :: cdtq=0.1,dt_pointmasses_frac=1e-3
+  real :: cdtq=0.1
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5
@@ -85,7 +85,7 @@ module PointMasses
       ldt_pointmasses, cdtq, lretrograde, &
       eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,dt_pointmasses_frac,&
+      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,&
       frac_smooth
 !
   namelist /pointmasses_run_pars/ &
@@ -98,7 +98,7 @@ module PointMasses
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
-      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,dt_pointmasses_frac,&
+      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,&
       frac_smooth
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
@@ -1182,17 +1182,14 @@ module PointMasses
 !  one time-step and additionally we use the free-fall time-scale.
 !
           if (lfirst.and.ldt.and.ldt_pointmasses) then
-            !if (.not.lcallpointmass) then     
-            !  v_ij=sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
-            !  dt1_max(l1-nghost)= &
-            !       max(dt1_max(l1-nghost),v_ij/sqrt(r2_ij)/cdtq)
-            !endif
-            !dt1_max(l1-nghost)= &
-            !     max(dt1_max(l1-nghost), &
-            !     sqrt(Omega2_pm)/cdtq,dt_pointmasses_frac*sqrt(Omega2_pm)/(2*pi)/cdtq)
+            if (.not.lcallpointmass) then     
+              v_ij=sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
+              dt1_max(l1-nghost)= &
+                   max(dt1_max(l1-nghost),v_ij/sqrt(r2_ij)/cdtq)
+            endif
             dt1_max(l1-nghost)= &
                  max(dt1_max(l1-nghost), &
-                 sqrt(Omega2_pm)/(2*pi*dt_pointmasses_frac))
+                 sqrt(Omega2_pm)/cdtq)
           endif
 !
         endif !if (ipar(k)/=ks)
