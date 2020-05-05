@@ -125,7 +125,7 @@ module Magnetic
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta1_aniso_ratio=impossible, eta1_aniso=impossible
   real :: eta1_aniso_r=0.0, eta1_aniso_d=0.0
-  real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0
+  real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., &
           etaj20=0., va_min=0., vArms=1.
@@ -232,6 +232,7 @@ module Magnetic
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, &
       mu_r, mu_ext_pot, lB_ext_pot, &
+      alp_aniso, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
@@ -352,6 +353,7 @@ module Magnetic
       eta_zwidth2, eta_xwidth0, eta_xwidth1, eta_rwidth0, eta_rwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_r0, eta_r1, &
       eta1_aniso_ratio, eta1_aniso, eta1_aniso_r, eta1_aniso_d, alp_aniso, quench_aniso, &
+      eta_aniso_BB, &
       eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
@@ -1831,6 +1833,7 @@ module Magnetic
 
       real :: beq2,RFPradB12,RFPradJ12
       real :: s,c,sph_har_der
+      real :: cosalp, sinalp
       integer :: j,iyz,llp1
       logical :: lvectorpotential=.true.
 !
@@ -2069,6 +2072,17 @@ module Magnetic
         case ('Bz=const(cyl)')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=.5*x(l1:l2)*amplaaB(j)
+          enddo; enddo
+!
+!  Archimedian B-spiral in cylindrical coordinates
+!
+        case ('Bspiral(cyl)')
+          cosalp=cos(alp_aniso*dtor)
+          sinalp=sin(alp_aniso*dtor)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iax)=+amplaa(j)*sinalp*x(l1:l2)*cos(kz_aa(j)*z(n))
+            f(l1:l2,m,n,iay)=-amplaa(j)*cosalp*x(l1:l2)*cos(kz_aa(j)*z(n))
+            f(l1:l2,m,n,iaz)=0.
           enddo; enddo
 !
 !  generalized
@@ -2353,6 +2367,14 @@ module Magnetic
       if (tauAD/=0.0) then
         lpenc_requested(i_jxb)=.true.
         lpenc_requested(i_jxbxb)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
+!
+!  anisotropic B-dependent diffusivity
+!
+      if (eta_aniso_BB/=0.0) then
+        lpenc_requested(i_jb)=.true.
+        lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
       endif
 !
@@ -4446,6 +4468,20 @@ module Magnetic
           call max_mn(eta_BB,maxetaBB)
           diffus_eta=diffus_eta+maxetaBB
         endif
+      endif
+!
+!  anisotropic B-dependent diffusivity
+!
+      if (eta_aniso_BB/=0.0) then
+        where (p%b2==0.)
+          tmp1=0.
+        elsewhere
+          tmp1=eta_aniso_BB/p%b2
+        endwhere
+        do j=1,3
+          ju=j-1+iaa
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
+        enddo
       endif
 !
 !  Ambipolar diffusion in the strong coupling approximation.
