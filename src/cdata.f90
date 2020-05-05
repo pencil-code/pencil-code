@@ -361,6 +361,7 @@ module Cdata
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
+  integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
 !
 !  Parameters related to message passing.
 !
@@ -380,7 +381,7 @@ module Cdata
 !  updating by the *_after_timestep routines.
 !  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
 !  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
-!  
+!
   integer, parameter :: num_after_timestep=5
   integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
   integer :: ighosts_updated=-1
@@ -548,7 +549,7 @@ module Cdata
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
-  logical :: gcc_pdf=.false.,lngcc_pdf=.false.
+  logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false., special_pdf=.false.
   logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.

@@ -4431,7 +4431,10 @@ Examples of good mesh layouts are listed in Table~\ref{GoodMeshes}.
 Examples of mesh layouts for which Fourier transforms with
 $x$ parallelization is possible.
 }\vspace{12pt}\centerline{\begin{tabular}{r|rrr|rrrrrrrr}
-ny & nprocyx & nprocy & nprocz & ncpus \\
+%JS: 'nprocyx' -> 'nprocx' 
+%ny & nprocyx & nprocy & nprocz & ncpus \\
+ny & nprocx & nprocy & nprocz & ncpus \\
+%JS.
 \hline
  256 & 1 & 16 & 16 &  256 \\
  256 & 2 & 16 & 16 &  512 \\
@@ -5550,7 +5553,6 @@ where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
 of \Eq{Difftensor}, if the time derivative were negligible.
 Further details are described in Snodin et al.\ (2006).
 
-%JS added (Is this too long?):
 \subsection{Chiral MHD}
 \index{Chiral MHD}
 
@@ -5629,7 +5631,6 @@ inversely with the saturation magnetic helicity produced by a chiral dynamo.
 Hence, for a very small $\lambda$ parameter, the Alfv\'en time step becomes extremely small in the non-linear stage which can lead to a code crash.    
 More details on the numerical modeling of chiral MHD can be found in
 Schober et al.\ (2018).
-%JS.
 
 
 \subsection{Particles}
@@ -9098,8 +9099,13 @@ $\uv$ ($\Av$) increases then quadratically with wavenumber $k$ (without cutoff)
 and the power spectrum of $\omv$ (or $\Bv$) increases like $k^4$.
 
 Note that a random initial condition contains significant power at the
-Nyquist frequency ($k_{\rm Ny}=\pi/N$, where $N$ is the number of mesh
-points). In a decay calculation, because of the discretization error,
+%JS: The Nyquist wavenumber is defined wrongly in this place, I think. 
+%JS: I've made the definition consistent with the one in Section E.2.3.
+%Nyquist frequency ($k_{\rm Ny}=\pi/N$, where $N$ is the number of mesh
+%points). In a decay calculation, because of the discretization error,
+Nyquist wavenumber $k_{\rm Ny}=\pi/\delta x$, where $\delta x$ is the mesh 
+spacing. In a decay calculation, because of the discretization error,
+%JS.
 such power decays slower than it ought to; see Fig.~\ref{ppowercomp2},
 where we show the evolution for a random initial velocity field for $64^3$
 meshpoints, $\nu=5\times10^{-2}$ (fairly large!), and \code{nfilter=30}.

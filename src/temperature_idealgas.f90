@@ -53,7 +53,7 @@ module Energy
   real :: mu=1.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
-  real :: beta_bouss=-1.0, h_sld_ene=2.0
+  real :: beta_bouss=-1.0, h_sld_ene=2.0, nlf_sld_ene=1.0
   integer :: temp_zmask_count=1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
@@ -110,7 +110,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      temp_zaver_range, h_sld_ene, &
+      temp_zaver_range, h_sld_ene, nlf_sld_ene, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
       hcond0_kramers, nkramers
 !
@@ -1342,11 +1342,11 @@ module Energy
 !
       if (lenergy_slope_limited.and.llast) then
         if (ltemperature_nolog) then
-          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,tmp)
+          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,nlf_sld_ene,tmp)
           thdiff=thdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,tmp)
-          thdiff=thdiff+tmp
+          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,nlf_sld_ene,tmp)
+          thdiff=thdiff+tmp*p%TT1
        endif
      endif
 !

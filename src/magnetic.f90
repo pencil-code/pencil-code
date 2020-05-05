@@ -123,7 +123,10 @@ module Magnetic
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
-  real :: eta_shock=0.0, eta_shock2=0.0
+  real :: eta1_aniso_ratio=impossible, eta1_aniso=impossible
+  real :: eta1_aniso_r=0.0, eta1_aniso_d=0.0
+  real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0
+  real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., &
           etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
@@ -168,6 +171,7 @@ module Magnetic
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
+  logical :: lresi_eta_aniso=.false., lquench_eta_aniso=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
@@ -312,7 +316,7 @@ module Magnetic
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
-  real :: h_sld_magn=2.0
+  real :: h_sld_magn=2.0,nlf_sld_magn=1.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1.
   real :: rhoref=impossible, rhoref1
@@ -347,6 +351,7 @@ module Magnetic
       eta_xwidth, eta_ywidth, eta_zwidth, eta_rwidth, &
       eta_zwidth2, eta_xwidth0, eta_xwidth1, eta_rwidth0, eta_rwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_r0, eta_r1, &
+      eta1_aniso_ratio, eta1_aniso, eta1_aniso_r, eta1_aniso_d, alp_aniso, quench_aniso, &
       eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
@@ -368,7 +373,7 @@ module Magnetic
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
-      lnoinduction, lA_relprof_global
+      lnoinduction, lA_relprof_global, nlf_sld_magn
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -681,6 +686,7 @@ module Magnetic
                                 ! DIAG_DOC: $\eta\sim J^2 / \rho$
   integer :: idiag_etajrhomax=0 ! DIAG_DOC: Max of artificial resistivity
                                 ! DIAG_DOC: $\eta\sim J / \rho$
+  integer :: idiag_etaaniso=0   ! DIAG_DOC: $\eta_1$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
   integer :: idiag_coshjbm=0    ! DIAG_DOC:
   integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component
@@ -913,7 +919,7 @@ module Magnetic
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
   real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid = 0.0
-  real :: eta_shock_jump1,eta_tdep
+  real :: eta_shock_jump1,eta_tdep,Arms
 !
   contains
 !***********************************************************************
@@ -1214,6 +1220,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_eta_tdep=.false.
       lresi_sqrtrhoeta_const=.false.
+      lresi_eta_aniso=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
       lresi_hyper3_polar=.false.
@@ -1251,6 +1258,14 @@ module Magnetic
         case ('sqrtrhoeta-const')
           if (lroot) print*, 'resistivity: constant sqrt(rho)*eta'
           lresi_sqrtrhoeta_const=.true.
+        case ('eta-aniso')
+          if (lroot) print*, 'resistivity: eta-aniso'
+          lresi_eta_aniso=.true.
+          if (eta1_aniso==impossible.and.eta1_aniso_ratio==impossible) then
+            call fatal_error('initialize_magnetic','eta1_aniso and eta1_aniso_ratio undefined')
+          elseif (eta1_aniso==impossible.and.eta1_aniso_ratio/=impossible) then
+            eta1_aniso=eta1_aniso_ratio*eta
+          endif
         case ('etaSS')
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
@@ -1488,6 +1503,11 @@ module Magnetic
         if (lmagn_mf .or. lspecial) call put_shared_variable('eta',eta)
 
       endif
+!
+!  Quenching of \eta by rms of magnetic vector potential?
+!
+      lquench_eta_aniso=(quench_aniso/=impossible)
+      if (.not.lquench_eta_aniso) idiag_etaaniso=0
 !
 !  precalculating fixed (on timescales larger than tau) vectorpotential
 !
@@ -2373,7 +2393,8 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
-          lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux) &
+          lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux.or. &
+          lresi_eta_aniso) &
           lpenc_requested(i_jj)=.true.
       if (battery_term/=0.0) then
         lpenc_requested(i_fpres)=.true.
@@ -3784,9 +3805,9 @@ module Magnetic
       real, dimension (nx) :: eta_mn,etaSS
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
-      real, dimension(nx) :: eta_BB
+      real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
-      real :: tmp,eta_out1,maxetaBB=0.
+      real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer, parameter :: nxy=nxgrid*nygrid
@@ -3889,7 +3910,7 @@ module Magnetic
             fres = fres + eta * p%del2a
           endif
 !
-! whatever the gauge is add an external space-varying electric field
+! whatever the gauge is, add an external space-varying electric field
 !
           if (ladd_efield) then
              tanhx2 = tanh( x(l1:l2) )*tanh( x(l1:l2) )
@@ -3945,6 +3966,23 @@ module Magnetic
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
         etatotal=etatotal+eta*sqrt(p%rho1)
+      endif
+!
+!  Anisotropic tensor, eta_ij = eta*delta_ij + eta1*qi*qj; see
+!  Ruderman & Ruzmaikin (1984) and Plunian & Alboussiere (2020).
+!
+      if (lresi_eta_aniso) then
+        cosalp=cos(alp_aniso*dtor)
+        sinalp=sin(alp_aniso*dtor)
+        if (eta1_aniso_r==0.) then
+          prof=eta1_aniso
+        else
+          prof=eta1_aniso*(1.-step(x(l1:l2),eta1_aniso_r,eta1_aniso_d))
+        endif
+        if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
+        fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
+        fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta1_aniso
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
@@ -4451,7 +4489,7 @@ module Magnetic
         if (lmagnetic_slope_limited.and.llast) then
 !        if (lmagnetic_slope_limited) then
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,tmp1)
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1)
             tmp2(:,j)=tmp1
           enddo
           fres=fres+tmp2
@@ -5344,6 +5382,7 @@ module Magnetic
         call sum_mn_name(eta_smag,idiag_etasmagm)
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         call max_mn_name(eta_smag,idiag_etasmagmax)
+        call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
       endif
       call max_mn_name(p%etava,idiag_etavamax)
       call max_mn_name(p%etaj,idiag_etajmax)
@@ -6023,6 +6062,7 @@ module Magnetic
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
       use Density, only: calc_pencils_density
+      use Mpicomm, only: mpiallreduce_sum
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
@@ -6093,6 +6133,14 @@ module Magnetic
           jjmz(:,2)=-d2aamz(:,2)
           jjmz(:,3)=0.
         endif
+      endif
+!
+!  Calculate Arms for quenching.
+!
+      if (lquench_eta_aniso) then
+        Arms=sum(f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)**2)  ! requires equidistant grid
+        call mpiallreduce_sum(Arms,fact)
+        Arms=sqrt(fact/nwgrid)
       endif
 !
 !  Remove mean field (y average).
@@ -8873,6 +8921,7 @@ module Magnetic
         idiag_brmsx=0; idiag_brmsz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
+        idiag_etasmagm=0; idiag_etaaniso=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
         idiag_hjparallelm=0;idiag_hjperpm=0
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
@@ -9127,6 +9176,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'etajmax',idiag_etajmax)
         call parse_name(iname,cname(iname),cform(iname),'etaj2max',idiag_etaj2max)
         call parse_name(iname,cname(iname),cform(iname),'etajrhomax',idiag_etajrhomax)
+        call parse_name(iname,cname(iname),cform(iname),'etaaniso',idiag_etaaniso)
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
         call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
         call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)

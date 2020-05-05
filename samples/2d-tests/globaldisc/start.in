@@ -54,5 +54,6 @@
   lcylindrical_gravity_nbody=T,T
   iprimary=2
   ipotential_pointmass='boley','newton'
+  frac_smooth=0.3
 /
 

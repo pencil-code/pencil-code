@@ -55,9 +55,9 @@ module Special
 !
 ! Global arrays
 !
-  real :: gravity=1.0
-  real :: fcoriolis=2.0       ! Omega=1
-  real :: gamma_parameter=1.0
+  real :: fcoriolis
+  real :: Omega_SB=1.0
+  real :: gamma_parameter=0.001
 !
 ! Different pre-defined forms of the bottom function
 !
@@ -70,9 +70,10 @@ module Special
 !
   real :: tmass_relaxation=1.0,tmass_relaxation1
   real :: tduration=3.0,rsize_storm=0.03
-  real :: tau_int=6.0 
+  real :: tau_int=3.0 
   integer, parameter :: nstorm=50
   real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
+
 !
 ! Mass relaxation
 !
@@ -87,22 +88,18 @@ module Special
   logical :: lmass_relaxation=.true.
   logical :: lgamma_plane=.true.
   logical :: lcalc_storm=.true.
+  logical :: lupdate_storm=.true.
 !
-  namelist /special_run_pars/ gravity,ladvection_bottom,lcompression_bottom,&
-       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,fcoriolis,lcoriolis_force,&
-       gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,eta0,tduration,rsize_storm
+  namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
+       c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
+       gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
+       lmass_relaxation,eta0,tduration,rsize_storm,lupdate_storm,Omega_SB
 !
   type InternalPencils
      real, dimension(nx) :: gr2
   endtype InternalPencils
-  type (InternalPencils) :: q
 !
-  !type StormVariables
-  !   real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
-  !endtype StormVariables
-  !type (StormVariables) :: storm
-  
+  type (InternalPencils) :: q
 !
 ! Diagnostics
 !
@@ -133,10 +130,13 @@ module Special
 !
       use Cdata
       use Mpicomm
+      use General, only: random_number_wrapper
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: istorm
+      real :: r,p,srand,trand
+      integer :: istorm,ismax
+      real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
 !
       do m=1,my
         bottom_function(:,m) = c0 &
@@ -159,6 +159,10 @@ module Special
              + 2*cx2y2*x(l1:l2)**2*y(m)
       enddo
 !
+! Define the Coriolis parameters
+!
+      fcoriolis = 2*Omega_SB
+!
       do m=m1,m2
         gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
       enddo
@@ -166,50 +170,42 @@ module Special
 !  Initialize storms
 !
       do istorm=1,nstorm
-         call update_storm(istorm)
-      enddo
-      tstorm1 = 1./tstorm
-      tmass_relaxation1 = 1./tmass_relaxation      
-!      
-    endsubroutine initialize_special
-!***********************************************************************      
-    subroutine get_storm(istorm)
-!
-      use General, only: random_number_wrapper
-!
-      real :: r,p,srand,trand
-      integer :: istorm,ismax
-      real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)      
 !         
 !  All storms have the same duration and size
 !
-      tstorm(istorm) = tduration 
-      rstorm(istorm) = rsize_storm
+         tstorm(istorm) = tduration 
+         rstorm(istorm) = rsize_storm
 !         
 !  Randomize their location in radius and azimuth
 !
-      call random_number_wrapper(r)
-      call random_number_wrapper(p)
-      r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
-      p=2*pi*p
-      xc(istorm)     = r*cos(p)
-      yc(istorm)     = r*sin(p)
+         call random_number_wrapper(r)
+         call random_number_wrapper(p)
+         r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
+         p=2*pi*p
+         xc(istorm)     = r*cos(p)
+         yc(istorm)     = r*sin(p)
 !
 ! Randomize the initial time from 0 to 3. 
 !
-      call random_number_wrapper(trand)
-      trand = trand*tduration        
-      tstorm_start(istorm) = trand
-      tpeak(istorm)  = tstorm_start(istorm) + .5*tstorm(istorm)
+         call random_number_wrapper(trand)
+         trand = trand*tduration        
+         tstorm_start(istorm) = trand
+         tpeak(istorm)  = tstorm_start(istorm) + .5*tstorm(istorm)
 !         
 ! Maximum strength of the storm - pick randomly between the values
 ! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
 !
-      call random_number_wrapper(srand)
-      ismax = nint(srand*5 + 1)
-      smax(istorm)   = smax_values(ismax)
+         call random_number_wrapper(srand)
+         ismax = nint(srand*5 + 1)
+         smax(istorm)   = smax_values(ismax)
+      enddo
 !
-    endsubroutine get_storm
+      tstorm1 = 1./tstorm
+      tmass_relaxation1 = 1./tmass_relaxation
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initialize_special
 !***********************************************************************
     subroutine pencil_criteria_special()
 !
@@ -296,9 +292,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!  irho is eta, the deviation. The continuity equation is 
+!  irho is g*eta, the deviation. The continuity equation is 
 !
-!    dh/dt = -(u.del)h - h*divu 
+!    d(gh)/dt = -(u.del)gh - gh*divu 
 !
 !   where h = eta + Lb, with Lb the function of the botton; either add the bottom function to an eta initial condition 
 !
@@ -310,8 +306,6 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: ugLb
-      real, dimension (nx) :: storm_function
-      integer :: istorm
 !     
       if (.not.ldensity_nolog) call fatal_error("","")
 !
@@ -326,22 +320,10 @@ module Special
 !
 !  Storm function as defined in Brueshaber        
 !
-      if (lcalc_storm) then
-         do istorm=1,nstorm
-!            
-! check if any storm needs to be updated
-!            
-            call update_storm(istorm)
+      if (lcalc_storm) call calc_storm(f,df,p)
 !
-! add the storm contribution to storm_function           
-!
-            call calc_storm(istorm,storm_function)
-            df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
-!
-         enddo
-!         
-      endif
-!
+      if (lupdate_storm) call update_storm(f,df,p)
+!      
       if (lmass_relaxation) then
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-eta0)*tmass_relaxation1
       endif
@@ -367,11 +349,11 @@ module Special
     integer :: i,ju,j
     type (pencil_case), intent(in) :: p
 !
-!  Momentum equation; rho = h.  
+!  Momentum equation; rho = g*h.  
 !
     do i=1,3
       ju = i+iuu-1
-      df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - gravity * p%grho(:,i) 
+      df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - p%grho(:,i) 
     enddo
 !
 !  Add the Coriolis parameter (fcoriolis=2*Omega)
@@ -382,12 +364,12 @@ module Special
     endif
 !
     if (lgamma_plane) then
-      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) + q%gr2*p%uu(:,2)
-      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - q%gr2*p%uu(:,1)
+      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) - q%gr2*p%uu(:,2)
+      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) + q%gr2*p%uu(:,1)
     endif
     
     if (lfirst.and.ldt) then 
-      advec_cg2 = (gravity*(p%rho+bottom_function(l1:l2,m)))**2 * dxyz_2
+      advec_cg2 = (p%rho+bottom_function(l1:l2,m))**2 * dxyz_2
       if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
       advec2    = advec2 + advec_cg2
     endif
@@ -397,35 +379,39 @@ module Special
 !
   endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine calc_storm(istorm,storm_function)
+  subroutine calc_storm(f,df,p)
 !
 !  Called inside a loop
 !    
 !  28-feb-20/wlad+ali: coded
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(nx) :: rr,storm_function 
       integer :: i,istorm 
-!
-      intent(inout) :: storm_function
+      type (pencil_case), intent(in) :: p
 !     
-      rr = sqrt((x(l1:l2)-xc(istorm))**2 + (y(m)-yc(istorm))**2)
+      do istorm=1,nstorm 
+        rr = sqrt((x(l1:l2)-xc(istorm))**2 + (y(m)-yc(istorm))**2)
 !
-      do i=1,nx
-         if (&
-              (rr(i) < 2.2*rstorm(istorm)).or.&
-              (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
-              ) then
+        do i=1,nx
+          if (&
+               (rr(i) < 2.2*rstorm(istorm)).or.&
+               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+               ) then
             storm_function(i) = smax(istorm) * &
                  exp(- ( rr(i)           /rstorm(istorm))**2 &
-                 - ((t-tpeak(istorm))/tstorm(istorm))**2)  
-         else
+                     - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+          else
             storm_function(i) = 0.
-         endif
+          endif
+        enddo
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
       enddo
 !    
   endsubroutine calc_storm
 !***********************************************************************
-  subroutine update_storm(istorm)
+  subroutine update_storm(f,df,p)
 !
 !  This subroutine... solves all the problems in atmospheric physics
 !    
@@ -433,48 +419,53 @@ module Special
 !
       use General, only: random_number_wrapper
 !
-    !real, dimension (mx,my,mz,mfarray), intent(in) :: f
-    !real, dimension (mx,my,mz,mvar), intent(inout) :: df
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, dimension (mx,my,mz,mvar), intent(inout) :: df
     real, dimension(nx) :: rr_updated,storm_function_updated
     real :: r_updated,p_updated,srand_updated,trand_updated 
     real, dimension(6) :: smax_values_2=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
     integer :: i,istorm,ismax_updated
-    !type (pencil_case), intent(in) :: p
+    type (pencil_case), intent(in) :: p
 !
-    if (lstart .or. t==0) then
+    do istorm=1,nstorm
 !
-!  If at start time, initialize all storms...
+      if (t > (tpeak(istorm) + 1.1*tstorm(istorm) + tau_int)) then
 !
-       call get_storm(istorm)
-    else
+        call random_number_wrapper(trand_updated)
+        call random_number_wrapper(r_updated)
+        call random_number_wrapper(p_updated)
+        call random_number_wrapper(srand_updated)
 !
-!  ... else check if the storms need to be updated
+        ismax_updated = nint(srand_updated*5 + 1)
+        smax(istorm)   = smax_values_2(ismax_updated)
 !
-       if (t > (tpeak(istorm) + 1.1*tstorm(istorm) + tau_int)) then
-          call get_storm(istorm)
-       endif
-    endif
-
-      !call random_number_wrapper(trand_updated)
-      !call random_number_wrapper(r_updated)
-      !call random_number_wrapper(p_updated)
-      !call random_number_wrapper(srand_updated)
+        r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
+        p_updated=2*pi*p_updated
 !
-      !ismax_updated = nint(srand_updated*5 + 1)
-      !smax(istorm)   = smax_values_2(ismax_updated)
+        xc(istorm)     = r_updated*cos(p_updated)
+        yc(istorm)     = r_updated*sin(p_updated)
+        rr_updated = sqrt((x(l1:l2)-xc(istorm))**2 &
+             + (y(m)-yc(istorm))**2)
 !
-      !r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
-      !p_updated=2*pi*p_updated
+        tpeak(istorm) = trand_updated*tstorm(istorm) &
+                            + t + 1.1*tstorm(istorm)
 !
-      !xc(istorm)     = r_updated*cos(p_updated)
-      !yc(istorm)     = r_updated*sin(p_updated)
-!        
-      !tpeak(istorm) = trand_updated*tstorm(istorm) &
-      !     + t + 1.1*tstorm(istorm)
-!
-      !call calc_storm(istorm)
-!      
-   !endif
+        do i=1,nx
+          if (&
+               (rr_updated(i) < 2.2*rstorm(istorm)).or.&
+               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+               ) then
+            storm_function_updated(i) = smax(istorm) * &
+                 exp(- ( rr_updated(i)  /rstorm(istorm))**2 &
+                 - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+          else
+            storm_function_updated(i) = 0.
+          endif
+        enddo
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) &
+            + storm_function_updated
+      endif
+    enddo
 !
   endsubroutine update_storm
 !***********************************************************************

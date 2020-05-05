@@ -129,7 +129,7 @@ module Density
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
   logical :: ldensity_slope_limited=.false.
-  real :: h_sld_dens=2.0
+  real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ &
@@ -173,7 +173,7 @@ module Density
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
       lsubtract_init_stratification, ireference_state, &
-      h_sld_dens, lrho_flucz_as_aux
+      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2548,10 +2548,10 @@ module Density
 !
       if (ldensity_slope_limited.and.llast) then
         if (ldensity_nolog) then
-          call calc_slope_diff_flux(f,irho,p,h_sld_dens,tmp)
+          call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp)
           fdiff=fdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,tmp)
+          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp)
           fdiff=fdiff+tmp*p%rho1
         endif
      endif

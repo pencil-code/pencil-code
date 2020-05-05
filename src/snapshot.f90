@@ -384,8 +384,8 @@ module Snapshot
 !
         ipscalar=ilncc
         if (ilncc.eq.0) ipscalar = icc
-        if (ipscalar<mvar) then
-          do ivar=ipscalar+1,mvar
+        if (ipscalar<msnap) then
+          do ivar=ipscalar+1,msnap
             f(:,:,:,ivar)=f(:,:,:,ivar-1)
           enddo
         endif
@@ -686,6 +686,8 @@ module Snapshot
         if (lncc_pdf)  call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
         if (gcc_pdf)   call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
         if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
+        if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
+        if (special_pdf) call pdf(f,'special',0.,1.)
 !
         lspec=.false.
       endif

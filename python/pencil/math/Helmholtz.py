@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #coding: utf-8
-# helmholz.py
+# Helmholtz.py
 # Written by Fred Gent (fred.gent.ncl@gmail.com)
 """
-Perform a Helmholz decomposition on a vector field returning a pair of 
+Perform a Helmholtz decomposition on a vector field returning a pair of 
 orthogonal vectors with zero divergence and zero curl respectively.
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, grad
 
-def helmholz_fft(field, grid, params, nghost=3, nonperi_bc=None):
+def helmholtz_fft(field, grid, params, nghost=3, nonperi_bc=None, field_scalar=[]):
     """
     Creates the decomposition vector pair for the supplied vector field.
 
@@ -29,6 +29,9 @@ def helmholz_fft(field, grid, params, nghost=3, nonperi_bc=None):
 
      *params*:
        Simulation Params object with domain dimensions Lx, Ly and Lz.
+
+     *field_scalar
+       Scalar field (density) as debug tool for energy comparison
 
     """
     nz,ny,nx = field[:,nghost:-nghost,nghost:-nghost,nghost:-nghost].shape[-3],\
@@ -118,5 +121,30 @@ def helmholz_fft(field, grid, params, nghost=3, nonperi_bc=None):
              )[nghost:-nghost,nghost:-nghost,nghost:-nghost].max(), np.abs(
           div(rot_field, grid.dx, grid.dy, grid.dz)
              )[nghost:-nghost,nghost:-nghost,nghost:-nghost].mean()))
+    #compare internal energy of original and sum of decomposed vectors
+    rot2 = dot2(rot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    pot2 = dot2(pot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    field2 = dot2(field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    if len(field_scalar) > 0:
+        #compare kinetic energy of original and sum of decomposed vectors
+        rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+        pot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+        field2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    print('mean total field energy {} mean summed component energy {}'.format(
+          np.mean(field2), np.mean(rot2+pot2)))
+    #rescale rot and pot to normalize energy sum of decomposed vectors
+    eratio = np.sqrt(np.mean(field2)/np.mean(rot2+pot2))
+    rot_field *= eratio
+    pot_field *= eratio
+    rot2 = dot2(rot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    pot2 = dot2(pot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    field2 = dot2(field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    if len(field_scalar) > 0:
+        rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+        pot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+        field2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    print('normalized mean total field energy '+
+          '{} mean summed component energy {}'.format(
+          np.mean(field2), np.mean(rot2+pot2)))
     return rot_field, pot_field
 

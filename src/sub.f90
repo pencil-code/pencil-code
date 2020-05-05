@@ -7167,7 +7167,7 @@ nameloop: do
         endselect
     endsubroutine characteristic_speed
 !***********************************************************************
-    subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,div_flux, &
+    subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,nlf,div_flux, &
                                     heat_sl,heat_sl_type)
 !                                    heat_sl,heat_sl_type,flux_mag)
 !
@@ -7177,7 +7177,7 @@ nameloop: do
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
 
-      intent(in) :: f,j,h_slope_limited
+      intent(in) :: f,j,h_slope_limited,nlf
       intent(out) :: div_flux
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7192,7 +7192,7 @@ nameloop: do
 !
 !      real, dimension (nx,3), optional, intent(out) :: flux_mag
 !
-      real :: nlf=2., h_slope_limited
+      real :: nlf, h_slope_limited
       type (pencil_case), intent(in) :: p
       integer :: j,k
 
@@ -7226,7 +7226,7 @@ nameloop: do
 !
         endif
         do ix=1,nx
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
                      fim1(ix))+tini)
           else
@@ -7237,7 +7237,7 @@ nameloop: do
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
         do ix=1,nx
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      exp(f(ix+nghost,m,n,j)))+tini)
           else
@@ -7417,7 +7417,7 @@ nameloop: do
 !
       select case (k)
         case(1)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1-1,l2+1
               ix=i-nghost
               tmp1=exp(f(i,m,n,j)) -exp(f(i-1,m,n,j))
@@ -7454,7 +7454,7 @@ nameloop: do
 ! y-component
 !
         case(2)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
               ix=i-nghost
               tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
@@ -7499,7 +7499,7 @@ nameloop: do
 ! z-component
 !
         case(3)
-          if (j==ilnrho) then
+          if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
               ix=i-nghost
               tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))

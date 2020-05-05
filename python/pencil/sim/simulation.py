@@ -28,8 +28,10 @@ def simulation(*args, **kwargs):
         self.datadir:      path to simulation data-dir (./data/)
         self.pc_dir:        path to simulation pc-dir (./pc/)
         self.pc_datadir:   path to simulation pendir in datadir (data/pc/)
-        self.components:    list of files which are nessecarry components of the simulation
-        self.optionals:     list of files which are optional components of the simulation
+        self.components:    list of files which are necessary components of the simulation
+        self.optionals:   list of files which are optional components of the simulation
+        self.start_components: list of files provided at the simulation start
+        self.start_optionals:  list of optional files after the simulation start
         self.hidden:        Default is False, if True this simulation will be ignored by pencil
         self.param:         list of param file
         self.grid:          grid object
@@ -62,11 +64,18 @@ class __Simulation__(object):
 
         self.components = ['src/cparam.local',      # core files of a simulation run
                            'src/Makefile.local',
+                           'src/.moduleinfo',
                            'start.in',
                            'run.in',
                            'print.in']
         self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
         self.optionals = ['*.in', '*.py', 'submit*']    # optional files that should stick with the simulation when copied
+        self.start_components = ['index.pro',      #  files required from a simulation start
+                                 'param.nml',
+                                 'time_series.dat',
+                                 'jobid.dat',
+                                 'pencils.list']
+        self.start_optionals = [ '*.pro']    # optional files that should stick with the simulation when copied
 
         self.hidden = hidden                # hidden is default False
         self.param = False
@@ -77,7 +86,8 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False,
+    def copy(self, path_root='.', name=False, start_optionals = False,
+             compile_copy = False,
              optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
@@ -89,8 +99,10 @@ class __Simulation__(object):
             path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing! Relative paths are thought to be relative to the python current workdir
             name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
+            start optionals:         Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
+            compile_copy:            Set True to compile the copy simulation.
             quiet:                   Set True to suppress output.
-            rename_submit_script:    Set False if no renames shall be performed in subnmit* files
+            rename_submit_script:    Set False if no renames shall be performed in submit* files
             OVERWRITE:               Set True to overwrite no matter what happens!
         """
         from os import listdir
@@ -120,6 +132,7 @@ class __Simulation__(object):
             print('? Warning: No name specified and simulation with that name already found! New simulation name now '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
+        path_newsim_data = join(path_newsim, 'data')
 
         path_initial_condition = join(self.path, 'initial_condition')
         if exists(path_initial_condition):
@@ -140,6 +153,17 @@ class __Simulation__(object):
                 tmp.append(basename(f))
         optionals = tmp
 
+        if type(start_optionals) == type(['list']): start_optionals = self.start_optionals + start_optionals          # optional files to be copied
+        if start_optionals == True: start_optionals = self.start_optionals
+        if type(start_optionals) == type('string'): start_optionals = [start_optionals]
+        if type(start_optionals) != type(['list']): print('! ERROR: start_optionals must be of type list!')
+
+        tmp = []
+        for opt in start_optionals:
+            files = glob(join(self.datadir, opt))
+            for f in files:
+                tmp.append(basename(f))
+        start_optionals = tmp
         ## check if the copy was already created
         if is_sim_dir(path_newsim) and OVERWRITE == False:
             if not quiet: print('? WARNING: Simulation already exists. Returning with existing simulation.')
@@ -161,7 +185,19 @@ class __Simulation__(object):
         # check existance of optionals
         for opt in optionals:
             if not exists(join(self.path, opt)):
-                print('! ERROR: Couldnt find optinal component '+opt+' from simulation '+self.name+' at location '+join(self.path, opt))
+                print('! ERROR: Couldnt find optional component '+opt+' from simulation '+self.name+' at location '+join(self.path, opt))
+                return False
+
+        # check existance of self.start_components
+        for comp in self.start_components:
+            if not exists(join(self.datadir, comp)):
+                print('! ERROR: Couldnt find component '+comp+' from simulation '+self.name+' at location '+join(self.path, comp))
+                return False
+
+        # check existance of start_optionals
+        for opt in start_optionals:
+            if not exists(join(self.datadir, opt)):
+                print('! ERROR: Couldnt find optional component '+opt+' from simulation '+self.name+' at location '+join(self.datadir, opt))
                 return False
 
         # create folders
@@ -173,11 +209,24 @@ class __Simulation__(object):
             print('! ERROR: Couldnt create new simulation src directory '+path_newsim_src+' !!')
             return False
 
+        if mkdir(path_newsim_data) == False and OVERWRITE==False:
+            print('! ERROR: Couldnt create new simulation data directory '+path_newsim_data+' !!')
+            return False
+
         # copy files
         files_to_be_copied = []
         for f in self.components+optionals:
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
+            if f_path == copy_to:
+                print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                debug_breakpoint()
+            copyfile(f_path, copy_to)
+
+        files_to_be_copied = []
+        for f in self.start_components+start_optionals:
+            f_path = abspath(join(self.datadir, f))
+            copy_to = abspath(join(path_newsim_data, f))
             if f_path == copy_to:
                 print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
                 debug_breakpoint()
