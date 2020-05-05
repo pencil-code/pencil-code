@@ -85,7 +85,8 @@ module PointMasses
       ldt_pointmasses, cdtq, lretrograde, &
       eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,dt_pointmasses_frac
+      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,dt_pointmasses_frac,&
+      frac_smooth
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
@@ -97,7 +98,8 @@ module PointMasses
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
-      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,dt_pointmasses_frac
+      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,dt_pointmasses_frac,&
+      frac_smooth
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -1593,13 +1595,30 @@ module PointMasses
 !
       real, dimension (mx,nqpar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3)     :: ggp,ggt
-      real, dimension (mx)       :: grav_particle,rrp
-      integer                    :: ks
+!
+      real, dimension (mx)       :: Omega2_pm,rrp
+      real                       :: rr,rp1,rhill,rhill1
+      integer                    :: ks,i
+      !real, dimension (mx)       :: grav_particle,rrp
+      !integer                    :: ks
 !
       intent(out) :: ggt
 !
       ggt=0.
       do ks=1,nqpar
+!
+!  Hill radius
+!
+        if (lcartesian_coords) then 
+          rp1 = sqrt(fq(ks,ixq)**2+fq(ks,iyq)**2+fq(ks,izq)**2)
+        elseif (lcylindrical_coords) then
+          rp1 = sqrt(fq(ks,ixq)**2+              fq(ks,izq)**2)
+        elseif (lspherical_coords) then
+          rp1 =      fq(ks,ixq)
+        endif
+!
+        rhill  = rp1*(GNewton*pmass(ks)/3.)**(1./3)
+        rhill1 = 1./rhill
 !
 !  Spherical and cylindrical distances
 !
@@ -1614,8 +1633,58 @@ module PointMasses
           rrp = rp_mn(:,ks)
         endif
 !
-        grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
-        call get_gravity_field_pointmasses(grav_particle,ggp,ks)
+!  Gravity field from the particle ks
+!
+        select case (ipotential_pointmass(ks))
+!
+        case ('plummer')
+!
+!  Potential of a Plummer sphere
+!
+          if (ks==iprimary) call fatal_error("get_total_gravity",&
+               "The primary can only be newtonian, please switch ipotential_pointmass")
+          Omega2_pm =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
+!
+        case ('boley')
+!
+!  Correct potential outside Hill sphere
+!
+          if (ks==iprimary) call fatal_error("get_total_gravity",&
+               "The primary can only be newtonian, please switch ipotential_pointmass")
+          do i=1,mx
+            if (rrp(i) .gt. rhill) then
+              Omega2_pm(i) = -GNewton*pmass(ks)*rrp(i)**(-3)
+            else
+              Omega2_pm(i) =  GNewton*pmass(ks)*(3*rrp(i)*rhill1 - 4)*rhill1**3
+            endif
+          enddo
+!
+        case ('newton-hill','newton','newtonian')
+!
+!  Newtonian potential; same as boley but constant inside rsmooth
+!
+          if (ks==iprimary.and.r_smooth(ks)/=0) call fatal_error("get_total_gravity",&
+               "Use r_smooth=0 for the primary's potential")
+!
+          do i=1,mx
+            rr=max(rrp(i),r_smooth(ks))
+            if (rr > 0) then
+              Omega2_pm(i) = -GNewton*pmass(ks)*rr**(-3)
+            else                ! can happen during pencil_check
+              Omega2_pm(i) = 0.
+            endif
+          enddo
+!                                                                                                                                     
+        case default
+!                                                                                                                                     
+!  Catch unknown values                                                                                                               
+!                                                                                                                                     
+          if (lroot) print*, 'get_total_gravity: '//&
+               'No such value for ipotential_pointmass: ', trim(ipotential_pointmass(ks))
+          call fatal_error("","")
+        endselect
+!
+        call get_gravity_field_pointmasses(Omega2_pm,ggp,ks)
 !
         if ((ks==iprimary).and.lnogravz_star) &
             ggp(:,3) = 0.
