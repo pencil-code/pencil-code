@@ -8,8 +8,8 @@ Contains the routines for converting PencilCode data data into vtk format.
 """
 
 def var2vtk(var_file='var.dat', datadir='data', proc=-1,
-           variables=None, b_ext=False, magic=[],
-           destination='work', quiet=True, trimall=True, ti=-1, tf=-1):
+            variables=None, b_ext=False, magic=[],
+            destination='work', quiet=True, trimall=True, ti=-1, tf=-1):
     """
     Convert data from PencilCode format to vtk.
 
