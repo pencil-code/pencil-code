@@ -59,7 +59,7 @@ def local_remesh(var,
 
     return tmp
 
-def get_dstgrid(srch5, srcpar, dsth5,
+def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                 multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
                 dstprecision=[b'D'], lsymmetric=True
                ):
@@ -122,6 +122,10 @@ def get_dstgrid(srch5, srcpar, dsth5,
     sets['m2'][()] = sets['my'][()] - 1-dstghost
     sets['n1'][()] = dstghost
     sets['n2'][()] = sets['mz'][()] - 1-dstghost
+    if not ncpus == [1,1,1]:
+        sets['nprocx'][()] = ncpus[0]
+        sets['nprocy'][()] = ncpus[1]
+        sets['nprocz'][()] = ncpus[2]
     #calculate the new grid arrays
     srcgrid=srch5['grid']
     if not dsth5.__contains__('grid'):
@@ -173,7 +177,10 @@ def src2dst_remesh(src, dst,
                    h5in='var.h5', h5out='var.h5',
                    multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
-                   dstprecision=[b'D'], lsymmetric=True, quiet=True
+                   dstprecision=[b'D'], lsymmetric=True, quiet=True,
+                   check_grid=True, OVERWRITE=False, optionals=True,
+                   rename_submit_script=False, nmin=8, ncpus=[1,1,1],
+                   start_optionals=False
                   ):
     import h5py
     from .. import read
@@ -181,6 +188,7 @@ def src2dst_remesh(src, dst,
     import os
     from ..io import mkdir	
     from . import is_sim_dir, simulation
+    from ..math import common_factors
 
     if dstprecision[0] == b'D':
         dtype = np.float64
@@ -204,13 +212,26 @@ def src2dst_remesh(src, dst,
         dstpath = str.strip(dst,dstname)
         if len(dstpath) == 0:
             dstpath = str.strip(srcsim.path,srcsim.name)
-        dstsim = srcsim.copy(path_root=dstpath, name=dstname)
+        dstsim = srcsim.copy(path_root=dstpath, name=dstname, quiet=quiet,
+                             OVERWRITE=OVERWRITE, optionals=optionals,
+                             start_optionals=start_optionals,
+                             rename_submit_script=rename_submit_script)
     with open_h5(join(srcsim.path,srcdatadir,h5in),mode='r') as srch5:
         with open_h5(join(dstsim.path,dstdatadir,h5out), mode='w') as dsth5:
             get_dstgrid(srch5, srcsim.param, dsth5,
                         multxyz=multxyz, fracxyz=fracxyz, srcghost=srcghost,
-                        dstghost=dstghost,
-                        dstprecision=dstprecision, lsymmetric=lsymmetric )
+                        dstghost=dstghost, ncpus=ncpus,
+                        dstprecision=dstprecision, lsymmetric=lsymmetric)
+            if check_grid:
+                factors = common_factors(dsth5['settings/nx'][0],
+                                         dsth5['settings/nx'][0],
+                                         dsth5['settings/nz'][0])
+                print('remesh check grid: optional cpus upto min grid of'+
+                      ' {}\n'.format(nmin)+'cpu options {}\n'.format(factors)+
+                      'new mesh: {}, {}, {}\n'.format(dsth5['settings/nx'][0],
+                      dsth5['settings/ny'][0], dsth5['settings/nz'][0])+
+                     'To execute remesh set "check_grid=False".')
+                return 1
             group = group_h5(dsth5, 'unit', mode='w')
             for key in srch5['unit'].keys():
                 if type(srch5['unit'][key][()]) == np.float64 or\
@@ -224,27 +245,29 @@ def src2dst_remesh(src, dst,
                                       overwrite=True)
             if 'persist' in srch5.keys():
                 group = group_h5(dsth5, 'persist', mode='w')
+                nprocs = ncpus[0]*ncpus[1]*ncpus[2]
                 for key in srch5['persist'].keys():
+                    tmp = np.zeros(nprocs)
+                    tmp[:] = srch5['persist'][key][0]
                     if type(srch5['persist'][key][()]) == np.float64 or\
-                        type(srch5['persist'][key][()]) == np.float32:
+                                 type(srch5['persist'][key][()]) == np.float32:
                         dset = dataset_h5(group, key, mode='w',
-                                          data=srch5['persist'][key][()],
-                                          overwrite=True, dtype=dtype)
+                                          data=tmp, overwrite=True, dtype=dtype)
                     else:
                         dset = dataset_h5(group, key, mode='w',
-                                          data=srch5['persist'][key][()],
-                                          overwrite=True)
+                                          data=tmp, overwrite=True)
             dst = dataset_h5(dsth5, 'time', mode='w',
                              data=srch5['time'][()], dtype=dtype)
             srcgrid = srch5['grid']
             dstgrid = dsth5['grid']
             group = group_h5(dsth5, 'data', mode='w')
             for key in srch5['data'].keys():
+                print('remeshing '+key)     
                 var = local_remesh(srch5['data'][key][()], 
                                    srcgrid['x'], srcgrid['y'], srcgrid['z'],
                                    dstgrid['x'], dstgrid['y'], dstgrid['z'],
                                    quiet=quiet )
-                dst = dataset_h5(dsth5['data'], key, mode='w', data=var,
+                print('writing '+key+' shape {}'.format(var.shape))
+                dst = dataset_h5(group, key, mode='w', data=var,
                                  overwrite=True, dtype=dtype)
 # remains to copy other files and edit param files
-
