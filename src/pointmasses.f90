@@ -62,7 +62,7 @@ module PointMasses
   logical :: lcorrect_gravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
-  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='plummer'
+  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
 !
   logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
