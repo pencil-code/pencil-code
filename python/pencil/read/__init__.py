@@ -15,6 +15,7 @@ from .power import power
 from .ogdim import ogdim
 from .ogvar import ogvar
 from .pencil_record_types import record_types
+from .phiaverages import phiaver
 
 # idl workarounds
 from .pstalk import pstalk
