@@ -200,11 +200,14 @@ class Tracers(object):
         from ..calc.streamlines import Stream
         from ..math.interpolation import vec_int
 
-        xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)/n_proc,
+        xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)//n_proc,
                        self.x0.shape[1], 3])
         xx[:, :, 0] = self.x0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
         xx[:, :, 1] = self.y0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
         xx[:, :, 2] = self.z1[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
+
+        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+
         # Initialize the local arrays for this core.
         sub_x1 = np.zeros(xx[:, :, 0].shape)
         sub_y1 = np.zeros(xx[:, :, 0].shape)
@@ -215,13 +218,13 @@ class Tracers(object):
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
         for ix in range(i_proc, self.x0.shape[0], n_proc):
             for iy in range(self.x0.shape[1]):
-                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :])
-                sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 0]
-                sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 1]
-                sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 2]
-                sub_l[int(ix/n_proc), iy] = stream.len
+                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :], time=time)
+                sub_x1[int(ix/n_proc), iy] = stream.tracers[-1, 0]
+                sub_y1[int(ix/n_proc), iy] = stream.tracers[-1, 1]
+                sub_z1[int(ix/n_proc), iy] = stream.tracers[-1, 2]
+                sub_l[int(ix/n_proc), iy] = stream.total_l
                 if any(np.array(self.params.int_q) == 'curly_A'):
-                    for l in range(stream.stream_len):
+                    for l in range(stream.total_l):
                         aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2, self.aa,
                                         [self.params.dx, self.params.dy, self.params.dz],
                                         [self.params.Ox, self.params.Oy, self.params.Oz],
@@ -230,7 +233,7 @@ class Tracers(object):
                         sub_curly_A[int(ix/n_proc), iy] += \
                             np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                 if any(np.array(self.params.int_q) == 'ee'):
-                    for l in range(stream.stream_len):
+                    for l in range(stream.total_l):
                         eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2, self.ee,
                                         [self.params.dx, self.params.dy, self.params.dz],
                                         [self.params.Ox, self.params.Oy, self.params.Oz],
