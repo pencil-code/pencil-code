@@ -9,6 +9,18 @@
 #          Simo Tuomisto (simo.tuomisto@aalto.fi)
 #
 #--------------------------------------------------------------------------
+#pc.calc.zav2h5(folder='data', filename='emftensors.h5', timereducer='mean', hdf5dir='.', rmfzeros=15, rmbzeros=5, t_correction=0, l_correction=False)
+#
+#where:
+#
+#
+#  zav2h5:   function included in aver2h5.py
+#  folder:   location of the data you want to store
+#  filename= 'location_of_the_new_file/filename.h5'
+#  timereducer is the kind of set you want to calculate: it can be ?mean?, ?mean_last?, or ?none? (takes the full time-series)
+#  rmfzeros and rmbzeros remove the chosen number of time points from the surrounding of the coefficients resetting.
+#  l_correction is a correction for Fred's Millennium run.
+#
 
 def zav2h5(
            folder='.',
@@ -33,7 +45,9 @@ def zav2h5(
     import numpy as np
     from .. import read
     from ..read import aver
-    from ..export import fvars, create_aver_sph
+    from ..export import create_h5, fvars, create_aver_sph
+#    from ..export import create_h5.fvars as fvars
+#    from ..export import create_aver_sph
     from ..calc import tensors_sph
     import h5py
     import copy
@@ -109,7 +123,7 @@ def zav2h5(
                        proc=proc[0],
                        rank=0,
                        lskip_zeros=lskip_zeros,
-                       iy=[ny/2/dim.nprocy,],
+                       iy=[int(ny/2/dim.nprocy),],
                        timereducer=timereducers[timereducer],
                        #trargs=trargs,
                        rmfzeros=rmfzeros,
@@ -144,7 +158,7 @@ def zav2h5(
         for ipx in range(dim.nprocx):        # over all x processors of the PC run
 
             iproc=dim.nprocx*ipy+ipx         # proc rank of the PC run (0 ... nprocx*nprocy-1)
-            yndx=yndx_tmp[ipy]-ipy*(dim.nygrid/dim.nprocy)
+            yndx=yndx_tmp[ipy]-ipy*int(dim.nygrid/dim.nprocy)
 
             zav=aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
 

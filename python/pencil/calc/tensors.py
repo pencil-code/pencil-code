@@ -119,8 +119,8 @@ class Tensors(object):
             if lskip_zeros:
                 index = alpformat.format(1,1)
                 izero=np.array(np.where(aver.z.__getattribute__(index)[:,
-                               aver.z.__getattribute__(index).shape[-2]/2,
-                               aver.z.__getattribute__(index).shape[-1]/2]==0))[0]
+                               int(aver.z.__getattribute__(index).shape[-2]/2),
+                                   int(aver.z.__getattribute__(index).shape[-1]/2)]==0))[0]
                 rmfrange = np.arange(0,rmfzeros-1)
                 rmbrange = np.arange(0,rmbzeros-1)
                 rmpoints = np.array([],dtype=int)
