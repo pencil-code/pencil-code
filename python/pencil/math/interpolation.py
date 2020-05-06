@@ -61,9 +61,8 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear'):
     kk = np.array([int(np.floor(k)), int(np.ceil(k))])
 
     # Interpolate the field.
-    field = np.swapaxes(field, 1, 3)
     if interpolation == 'mean':
-        return np.mean(field[:, ii[0]:ii[1]+1, jj[0]:jj[1]+1, kk[0]:kk[1]+1],
+        return np.mean(field[:, kk[0]:kk[1]+1, jj[0]:jj[1]+1, ii[0]:ii[1]+1],
                        axis=(1, 2, 3))
     elif interpolation == 'trilinear':
         if ii[0] == ii[1]:
@@ -80,8 +79,8 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear'):
             w3 = k - kk[::-1]
         weight = abs(w1.reshape((2, 1, 1))*w2.reshape((1, 2, 1))*\
                  w3.reshape((1, 1, 2)))
-        return np.sum(field[:, ii[0]:ii[1]+1, jj[0]:jj[1]+1,
-                            kk[0]:kk[1]+1]*weight, axis=(1, 2, 3)) \
+        return np.sum(field[:, kk[0]:kk[1]+1, jj[0]:jj[1]+1,
+                            ii[0]:ii[1]+1]*weight, axis=(1, 2, 3)) \
                             /np.sum(weight)
     else:
         print('Error: cannot find interpolation method {0}.'.format(interpolation))
