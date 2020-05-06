@@ -393,18 +393,19 @@ class TracersParameterClass(object):
         self.ny = 0
         self.nz = 0
         self.trace_field = ''
-        self.h_min = 2e-3
-        self.h_max = 2e1
-        self.len_max = 500
-        self.tol = 1e-2
-        self.iter_max = 1e3
+        self.rtol = 1e-8
+        self.atol = 1e-8
+        self.periodic_x = False
+        self.periodic_y = False
+        self.periodic_z = False
         self.interpolation = 'trilinear'
+        self.method = 'RK45'
         self.trace_sub = 1
         self.int_q = ''
         self.varfile = 'VAR0'
         self.ti = -1
         self.tf = -1
-        self.integration = 'simple'
         self.datadir = 'data'
         self.destination = 'tracers.hdf5'
         self.n_proc = 1
+
