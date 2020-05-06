@@ -83,17 +83,18 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-!!  integer :: dummy
+  integer :: iglobal_d2rho0
 !
   real :: fring=1e-3,r0=0.2,Iring=0.0,rho0,tilt=0.0,width=0.02, &
-          posx=0.98,dIring=0.0,bmax=impossible,posz=0.0
+          posx=0.98,dIring=0.0,bmax=impossible,posz=0.0, &
+          thn,ths,wid
   real :: scale_aa=1.0
-  character (len=8) :: extfieldfile
-  logical :: luse_only_botbdry=.false.,ld2rho0_global=.false.
+  logical :: luse_only_botbdry=.false.,ld2rho0_global=.false.,&
+             luse_extfield_file=.false.
 !
   namelist /initial_condition_pars/ fring, r0, Iring, posx,posz,&
-  tilt,extfieldfile,rho0,width,luse_only_botbdry,scale_aa, &
-  dIring,bmax,ld2rho0_global
+  tilt,rho0,width,luse_only_botbdry,scale_aa, &
+  dIring,bmax,ld2rho0_global,thn,ths,wid,luse_extfield_file
 !
   contains
 !***********************************************************************
@@ -212,6 +213,7 @@ module InitialCondition
 !  Then set up the helical field
 !
           if (lspherical_coords) then 
+            if (.not.luse_extfield_file) then
               xx0=x(l1:l2)*sinth(m)*cos(z(n))
               yy0=x(l1:l2)*sinth(m)*sin(z(n))
               zz0=x(l1:l2)*costh(m)
@@ -219,6 +221,8 @@ module InitialCondition
               xx1=xx0-posx
               yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*(zz0-posz)
               zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*(zz0-posz)
+              f(l1,m,n,iaz)= scale_aa*(0.5*(tanh(-(y(m)-thn)/wid)+ &
+              tanh((y(m)-ths)/wid)))**4/sin(y(m))
               call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,posx,tmpv,PROFILE='gaussian')
             ! calculate D*tmpv
               tmpx=tmpv(:,1)
@@ -226,12 +230,13 @@ module InitialCondition
               tmpz=sin(tilt*pi/180.0)*tmpv(:,2)+cos(tilt*pi/180.0)*tmpv(:,3)
               dist=sqrt(xx0**2+yy0**2+zz0**2)
               distxy=sqrt(xx0**2+yy0**2)
-              f(l1:l2,m,n,iax) =  scale_aa*f(l1:l2,m,n,iax)+& 
+              f(l1:l2,m,n,iax) =  f(l1:l2,m,n,iax)+& 
                      xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist
-              f(l1:l2,m,n,iay) = scale_aa*f(l1:l2,m,n,iay)+ &
+              f(l1:l2,m,n,iay) = f(l1:l2,m,n,iay)+ &
                      xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                       -distxy*tmpz/dist
-              f(l1:l2,m,n,iaz) = scale_aa*f(l1:l2,m,n,iaz)-yy0*tmpx/distxy+xx0*tmpy/distxy               
+              f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz)-yy0*tmpx/distxy+xx0*tmpy/distxy        
+            endif
           endif
         enddo
       enddo
@@ -240,7 +245,7 @@ module InitialCondition
 ! magnetic field, theta-comp of vel and phi-comp of velocity at the surface
 ! respectively if required by the problem
 !
-        if (dIring.ne.0) then
+        if (dIring.ne.0 .and. .not.luse_extfield_file) then
         call update_ghosts(f)
         call find_max(f,amax,iax) 
         ymid=0.5*(xyz0(2)+xyz1(2))
