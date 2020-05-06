@@ -215,7 +215,7 @@ class Tracers(object):
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
         for ix in range(i_proc, self.x0.shape[0], n_proc):
             for iy in range(self.x0.shape[1]):
-                stream = Stream(xx[int(ix/n_proc), iy, :], field, self.params)
+                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :])
                 sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 0]
                 sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 1]
                 sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 2]
@@ -258,13 +258,13 @@ class Tracers(object):
                    sub_curly_A, sub_ee))
 
 
-    def write(self, datadir='./data', destination='tracers.hdf5'):
+    def write(self, datadir='data', destination='tracers.hdf5'):
         """
         Write the tracers into a file.
 
         call signature::
 
-        write(self, datadir='./data', destination='tracers.hdf5')
+        write(self, datadir='data', destination='tracers.hdf5')
 
         Keyword arguments:
 
@@ -321,13 +321,13 @@ class Tracers(object):
             print("error: empty destination file")
 
 
-    def read(self, datadir='./data', file_name='tracers.hdf5'):
+    def read(self, datadir='data', file_name='tracers.hdf5'):
         """
         Read the tracers from a file.
 
         call signature::
 
-        read(self, datadir='./data', file_name='tracers.hdf5')
+        read(self, datadir='data', file_name='tracers.hdf5')
 
         Keyword arguments:
 
