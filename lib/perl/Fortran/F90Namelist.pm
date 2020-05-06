@@ -516,7 +516,7 @@ $regexp[INTEGER]   = qr/[+-]?[0-9]+/;
 $regexp[DOUBLE]    = qr/$numeric_d/;
 $regexp[SINGLE]    = qr/$numeric_e/;
 $regexp[FLOAT]     = qr/$float/;
-$regexp[ID]        = qr/[a-zA-Z](?:[a-zA-Z0-9_])*/; # allowed namelist/var. names
+$regexp[ID]        = qr/[a-zA-Z](?:[a-zA-Z0-9_%])*/; # allowed namelist/var. names
 
 ## Corresponding regexp for compatible type class (numeric, complex, ...)
 my @regexp2 = @regexp;          # same regexp by default
@@ -1163,6 +1163,7 @@ sub extract_nl_name {
 
     print STDERR "extract_nl_name 2: \$text=<",
                  printable_substring($text,50), ">\n" if ($debug);
+
     if ($text =~ s/^(?:&|\$)($id)//) {
         $name = lc($1);
     } else {                    # empty (comment/whitespace) or erroneous
@@ -1186,7 +1187,6 @@ sub extract_nl_name {
     $$textref = $text; # propagate remainder of $text back
 
     return $name;
-
 }
 
 # ---------------------------------------------------------------------- #
