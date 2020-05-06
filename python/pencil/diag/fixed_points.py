@@ -211,11 +211,12 @@ class FixedPoint(object):
                 for fixed in self.fixed_points[t_idx]:
                     # Trace the stream line.
                     xx = np.array([fixed[0], fixed[1], self.params.Oz])
-                    stream = Stream(xx, field, self.params)
+                    time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                    stream = Stream(field, self.params, xx=xx, time=time)
                     # Do the field line integration.
                     if any(np.array(self.params.int_q) == 'curly_A'):
                         curly_A = 0
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.iterations-1):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                             var.aa, [var.dx, var.dy, var.dz],
                                             [var.x[0], var.y[0], var.z[0]],
@@ -225,7 +226,7 @@ class FixedPoint(object):
                         self.curly_A[-1].append(curly_A)
                     if any(np.array(self.params.int_q) == 'ee'):
                         ee_p = 0
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.iterations-1):
                             eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                             ee, [var.dx, var.dy, var.dz],
                                             [var.x[0], var.y[0], var.z[0]],
@@ -238,6 +239,7 @@ class FixedPoint(object):
                 if any(np.array(self.params.int_q) == 'ee'):
                     self.ee[-1] = np.array(self.ee[-1])
 
+        return 0
 
     # Return the fixed points for a subset of the domain.
     def __sub_fixed(self, queue, ix0, iy0, field, tracers, tidx, var, i_proc):
@@ -264,8 +266,8 @@ class FixedPoint(object):
                                        tracers.y1[ix, iy+1, tidx] - tracers.y0[ix, iy+1, tidx]])
                 if sum(np.sum(diff**2, axis=1) != 0):
                     diff = np.swapaxes(np.swapaxes(diff, 0, 1)/np.sqrt(np.sum(diff**2, axis=1)), 0, 1)
-                poincare =self. __poincare_index(field, tracers.x0[ix:ix+2, iy, tidx],
-                                                 tracers.y0[ix, iy:iy+2, tidx], diff)
+                poincare = self. __poincare_index(field, tracers.x0[ix:ix+2, iy, tidx],
+                                                  tracers.y0[ix, iy:iy+2, tidx], diff)
                 poincare_array[ix/self.params.n_proc, iy] = poincare
 
                 if abs(poincare) > 5: # Use 5 instead of 2*pi to account for rounding errors.
@@ -285,9 +287,10 @@ class FixedPoint(object):
                             xx[i1, 2] = self.params.Oz
                             i1 += 1
                     for it1 in range(nt**2):
-                        stream = Stream(xx[it1, :], field, self.params)
+                        time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                        stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                         tracers_part[it1, 0:2] = xx[it1, 0:2]
-                        tracers_part[it1, 2:] = stream.tracers[stream.stream_len-1, :]
+                        tracers_part[it1, 2:] = stream.tracers[stream.iterations-1, :]
                     min2 = 1e6
                     minx = xmin
                     miny = ymin
@@ -302,7 +305,6 @@ class FixedPoint(object):
                                 min2 = diff2
                                 minx = xmin + j1/(nt-1.)*(xmax - xmin)
                                 miny = ymin + k1/(nt-1.)*(ymax - ymin)
-                            it1 += 1
 
                     # Get fixed point from this starting position using Newton's method.
                     point = np.array([minx, miny])
@@ -310,9 +312,9 @@ class FixedPoint(object):
 
                     # Check if fixed point lies inside the cell.
                     if ((fixed_point[0] < tracers.x0[ix, iy, tidx]) or
-                        (fixed_point[0] > tracers.x0[ix+1, iy, tidx]) or
-                        (fixed_point[1] < tracers.y0[ix, iy, tidx]) or
-                        (fixed_point[1] > tracers.y0[ix, iy+1, tidx])):
+                            (fixed_point[0] > tracers.x0[ix+1, iy, tidx]) or
+                            (fixed_point[1] < tracers.y0[ix, iy, tidx]) or
+                            (fixed_point[1] > tracers.y0[ix, iy+1, tidx])):
                         pass
                     else:
                         fixed.append(fixed_point)
@@ -353,21 +355,19 @@ class FixedPoint(object):
             stream = Stream(np.array([xm, ym, self.params.Oz]), field, self.params)
             stream_x0 = stream.tracers[0, 0]
             stream_y0 = stream.tracers[0, 1]
-            stream_x1 = stream.tracers[stream.stream_len-1, 0]
-            stream_y1 = stream.tracers[stream.stream_len-1, 1]
+            stream_x1 = stream.tracers[stream.iterations-1, 0]
+            stream_y1 = stream.tracers[stream.iterations-1, 1]
 
             # Discard any streamline which does not converge or hits the boundary.
-#                if ((stream.len >= len_max) or
+#            if ((stream.len >= len_max) or
 #                (stream_z1 < self.params.Oz+self.params.Lz-10*self.params.dz)):
 #                    dtot = 0.
-            if False:
-                pass
-            else:
-                diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
-                if sum(diffm**2) != 0:
-                    diffm = diffm/np.sqrt(sum(diffm**2))
-                dtot = self.__edge(field, [sx[0], xm], [sy[0], ym], diff1, diffm, rec+1) + \
-                       self.__edge(field, [xm, sx[1]], [ym, sy[1]], diffm, diff2, rec+1)
+#            else:
+            diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
+            if sum(diffm**2) != 0:
+                diffm = diffm/np.sqrt(sum(diffm**2))
+            dtot = self.__edge(field, [sx[0], xm], [sy[0], ym], diff1, diffm, rec+1) + \
+                   self.__edge(field, [xm, sx[1]], [ym, sy[1]], diffm, diff2, rec+1)
         return dtot
 
 
@@ -390,9 +390,10 @@ class FixedPoint(object):
             xx[3, :] = np.array([point[0], point[1]-dl, self.params.Oz])
             xx[4, :] = np.array([point[0], point[1]+dl, self.params.Oz])
             for it1 in range(5):
-                stream = Stream(xx[it1, :], field, self.params)
+                time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                 tracers_null[it1, :2] = xx[it1, :2]
-                tracers_null[it1, 2:] = stream.tracers[stream.stream_len-1, 0:2]
+                tracers_null[it1, 2:] = stream.tracers[stream.iterations-1, 0:2]
 
             # Check function convergence.
             ff = np.zeros(2)
@@ -531,15 +532,22 @@ class FixedPoint(object):
             fixed_groups = []
             for t_idx in range(len(self.t)):
                 fixed_groups.append(f.create_group('{0}'.format(t_idx)))
-                set_fixed_points = fixed_groups[-1].create_dataset("fixed_points", self.fixed_points[t_idx].shape, dtype=self.fixed_points[t_idx].dtype)
+                set_fixed_points = fixed_groups[-1].create_dataset("fixed_points",
+                                                                  self.fixed_points[t_idx].shape,
+                                                                  dtype=self.fixed_points[t_idx].dtype)
                 set_fixed_points[...] = self.fixed_points[t_idx]
-                set_fixed_sign = fixed_groups[-1].create_dataset("fixed_sign", self.fixed_sign[t_idx].shape, dtype=self.fixed_sign[t_idx].dtype)
+                set_fixed_sign = fixed_groups[-1].create_dataset("fixed_sign",
+                                                                 self.fixed_sign[t_idx].shape,
+                                                                 dtype=self.fixed_sign[t_idx].dtype)
                 set_fixed_sign[...] = self.fixed_sign[t_idx]
                 if any(np.array(self.params.int_q) == 'curly_A'):
-                    set_curly_A = fixed_groups[-1].create_dataset("curly_A", self.curly_A[t_idx].shape, dtype=self.curly_A[t_idx].dtype)
+                    set_curly_A = fixed_groups[-1].create_dataset("curly_A",
+                                                                  self.curly_A[t_idx].shape,
+                                                                  dtype=self.curly_A[t_idx].dtype)
                     set_curly_A[...] = self.curly_A[t_idx]
                 if any(np.array(self.params.int_q) == 'ee'):
-                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)
+                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape,
+                                                             dtype=self.ee[t_idx].dtype)
                     set_ee[...] = self.ee[t_idx]
             f.close()
 
