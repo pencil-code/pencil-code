@@ -121,7 +121,7 @@ class FixedPoint(object):
         self.t = np.zeros(n_times)
 
         # Read the initial field.
-        var = read.var(var_file=varfile, datadir=datadir, magic=magic,
+        var = read.var(var_file=var_file, datadir=datadir, magic=magic,
                        quiet=True, trimall=True)
         self.t[0] = var.t
         grid = read.grid(datadir=datadir, quiet=True, trim=True)
@@ -268,7 +268,7 @@ class FixedPoint(object):
                     diff = np.swapaxes(np.swapaxes(diff, 0, 1)/np.sqrt(np.sum(diff**2, axis=1)), 0, 1)
                 poincare = self. __poincare_index(field, tracers.x0[ix:ix+2, iy, tidx],
                                                   tracers.y0[ix, iy:iy+2, tidx], diff)
-                poincare_array[ix/self.params.n_proc, iy] = poincare
+                poincare_array[ix//self.params.n_proc, iy] = poincare
 
                 if abs(poincare) > 5: # Use 5 instead of 2*pi to account for rounding errors.
                     # Subsample to get starting point for iteration.
@@ -290,7 +290,7 @@ class FixedPoint(object):
                         time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
                         stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                         tracers_part[it1, 0:2] = xx[it1, 0:2]
-                        tracers_part[it1, 2:] = stream.tracers[stream.iterations-1, :]
+                        tracers_part[it1, 2:] = stream.tracers[-1, :]
                     min2 = 1e6
                     minx = xmin
                     miny = ymin
@@ -352,11 +352,12 @@ class FixedPoint(object):
             ym = 0.5*(sy[0]+sy[1])
 
             # Trace the intermediate field line.
-            stream = Stream(np.array([xm, ym, self.params.Oz]), field, self.params)
+            time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+            stream = Stream(field, self.params, xx=np.array([xm, ym, self.params.Oz]), time=time)
             stream_x0 = stream.tracers[0, 0]
             stream_y0 = stream.tracers[0, 1]
-            stream_x1 = stream.tracers[stream.iterations-1, 0]
-            stream_y1 = stream.tracers[stream.iterations-1, 1]
+            stream_x1 = stream.tracers[-1, 0]
+            stream_y1 = stream.tracers[-1, 1]
 
             # Discard any streamline which does not converge or hits the boundary.
 #            if ((stream.len >= len_max) or
@@ -376,7 +377,7 @@ class FixedPoint(object):
         import numpy as np
         from ..calc.streamlines import Stream
 
-        dl = np.min(var.dx, var.dy)/100.
+        dl = np.min([var.dx, var.dy])/100.
         it = 0
         # Tracers used to find the fixed point.
         tracers_null = np.zeros((5, 4))
@@ -393,13 +394,13 @@ class FixedPoint(object):
                 time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
                 stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                 tracers_null[it1, :2] = xx[it1, :2]
-                tracers_null[it1, 2:] = stream.tracers[stream.iterations-1, 0:2]
+                tracers_null[it1, 2:] = stream.tracers[-1, 0:2]
 
             # Check function convergence.
             ff = np.zeros(2)
             ff[0] = tracers_null[0, 2] - tracers_null[0, 0]
             ff[1] = tracers_null[0, 3] - tracers_null[0, 1]
-            if sum(abs(ff)) <= 1e-3*np.min(self.params.dx, self.params.dy):
+            if sum(abs(ff)) <= 1e-3*np.min([self.params.dx, self.params.dy]):
                 fixed_point = np.array([point[0], point[1]])
                 break
 
@@ -431,7 +432,7 @@ class FixedPoint(object):
             point += dpoint
 
             # Check root convergence.
-            if sum(abs(dpoint)) < 1e-3*np.min(self.params.dx, self.params.dy):
+            if sum(abs(dpoint)) < 1e-3*np.min([self.params.dx, self.params.dy]):
                 fixed_point = point
                 break
 
