@@ -356,11 +356,11 @@ module Sub
 
     type(torus_rect) :: torus
 
-    torus%center0  =torus%center
-    torus%th0      =torus%th
-    torus%ph0      =torus%ph
-    torus%r_in0    =torus%r_in
-    torus%r_height0=torus%r_height
+    torus%center0=torus%center
+    torus%th0    =torus%th
+    torus%ph0    =torus%ph
+    torus%r_in0  =torus%r_in
+    torus%height0=torus%r_height
 
     endsubroutine torus_constr
 !***********************************************************************
@@ -390,7 +390,7 @@ module Sub
     type(torus_rect) :: torus
     double precision :: t
 
-    if (all(torus%extr_rate.eq.0.)) return
+    if (torus%extr_rate.eq.0.) return
 
     torus%r_in=maxval(torus%r_in0*(1.+torus%extr_rate*t),0.)
 
@@ -401,7 +401,7 @@ module Sub
     type(torus_rect) :: torus
     double precision :: t
 
-    if (all(torus%extz_rate.eq.0.)) return
+    if (torus%extz_rate.eq.0.) return
 
     torus%height=maxval(torus%height0*(1.+torus%extz_rate*t),0.)
 
