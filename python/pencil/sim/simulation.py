@@ -64,7 +64,6 @@ class __Simulation__(object):
 
         self.components = ['src/cparam.local',      # core files of a simulation run
                            'src/Makefile.local',
-                           'src/.moduleinfo',
                            'start.in',
                            'run.in',
                            'print.in']
@@ -75,7 +74,7 @@ class __Simulation__(object):
                                  'time_series.dat',
                                  'jobid.dat',
                                  'pencils.list']
-        self.start_optionals = [ '*.pro']    # optional files that should stick with the simulation when copied
+        self.start_optionals = [ '*.pro', '*.h5']    # optional files that should stick with the simulation when copied
 
         self.hidden = hidden                # hidden is default False
         self.param = False
@@ -87,7 +86,6 @@ class __Simulation__(object):
         # Done
 
     def copy(self, path_root='.', name=False, start_optionals = False,
-             compile_copy = False,
              optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
@@ -100,7 +98,6 @@ class __Simulation__(object):
             name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
             start optionals:         Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
-            compile_copy:            Set True to compile the copy simulation.
             quiet:                   Set True to suppress output.
             rename_submit_script:    Set False if no renames shall be performed in submit* files
             OVERWRITE:               Set True to overwrite no matter what happens!
@@ -425,7 +422,7 @@ class __Simulation__(object):
         return exists(join(self.path, 'data', 'time_series.dat'))
 
 
-    def compile(self, cleanall=True, fast=False, verbose=False):
+    def compile(self, cleanall=True, fast=False, verbose=False, hostfile=None):
         """Compiles the simulation. Per default the linking is done before the
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
@@ -445,6 +442,7 @@ class __Simulation__(object):
 
         if cleanall: command.append(' --cleanall')
         if fast == True: command.append(' --fast')
+        if hostfile: command.append(' -f '+hostfile)
         if verbose != False: print('! Compiling '+self.path)
 
         return self.bash(command=' '.join(command),
