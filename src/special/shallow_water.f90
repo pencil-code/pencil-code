@@ -70,7 +70,7 @@ module Special
 !
   real :: tmass_relaxation=1.0,tmass_relaxation1
   real :: tduration=3.0,rsize_storm=0.03
-  real :: tau_int=3.0 
+  real :: interval_between_storms=3.0 
   integer, parameter :: nstorm=50
   real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
 
@@ -88,12 +88,12 @@ module Special
   logical :: lmass_relaxation=.true.
   logical :: lgamma_plane=.true.
   logical :: lcalc_storm=.true.
-  logical :: lupdate_storm=.true.
 !
   namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,eta0,tduration,rsize_storm,lupdate_storm,Omega_SB
+       lmass_relaxation,eta0,tduration,rsize_storm,Omega_SB,&
+       interval_between_storms
 !
   type InternalPencils
      real, dimension(nx) :: gr2
@@ -134,9 +134,6 @@ module Special
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: r,p,srand,trand
-      integer :: istorm,ismax
-      real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
 !
       do m=1,my
         bottom_function(:,m) = c0 &
@@ -169,36 +166,7 @@ module Special
 !
 !  Initialize storms
 !
-      do istorm=1,nstorm
-!         
-!  All storms have the same duration and size
-!
-         tstorm(istorm) = tduration 
-         rstorm(istorm) = rsize_storm
-!         
-!  Randomize their location in radius and azimuth
-!
-         call random_number_wrapper(r)
-         call random_number_wrapper(p)
-         r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
-         p=2*pi*p
-         xc(istorm)     = r*cos(p)
-         yc(istorm)     = r*sin(p)
-!
-! Randomize the initial time from 0 to 3. 
-!
-         call random_number_wrapper(trand)
-         trand = trand*tduration        
-         tstorm_start(istorm) = trand
-         tpeak(istorm)  = tstorm_start(istorm) + .5*tstorm(istorm)
-!         
-! Maximum strength of the storm - pick randomly between the values
-! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
-!
-         call random_number_wrapper(srand)
-         ismax = nint(srand*5 + 1)
-         smax(istorm)   = smax_values(ismax)
-      enddo
+      call update_storms()
 !
       tstorm1 = 1./tstorm
       tmass_relaxation1 = 1./tmass_relaxation
@@ -318,11 +286,11 @@ module Special
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - bottom_function(l1:l2,m)*p%divu
       endif
 !
-!  Storm function as defined in Brueshaber        
+!  Storm function as defined in Showman (2007) and Brueshaber et al. (2019)       
 !
-      if (lcalc_storm) call calc_storm(f,df,p)
+      if (lcalc_storm) call calc_storm_function(f,df,p)
 !
-      if (lupdate_storm) call update_storm(f,df,p)
+!  Mass relaxation term to compensate for mass gained or loss in the simulation. 
 !      
       if (lmass_relaxation) then
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-eta0)*tmass_relaxation1
@@ -379,95 +347,152 @@ module Special
 !
   endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine calc_storm(f,df,p)
+  subroutine calc_storm_function(f,df,p)
 !
-!  Called inside a loop
+!  Storm function as defined in Showman (2007) and Brueshaber et al. (2019).
+!  This function simply takes the parameters from update_storms and constructs
+!  from it the storm function. The function is
+!
+!    StormFunction = Sum_i  s_i
+!
+!  with the individual storms are given by 
 !    
+!    s_i = smax * exp(-r^2/rstorm^2 - (t-t0)^2/tau_storm^2)
+!
+!    rstorm    : storm radius
+!    t0        : time storm peaks     
+!    tau_storm : storm lifetime
+!    smax      : storm intensity
+!     
 !  28-feb-20/wlad+ali: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(nx) :: rr,storm_function 
+      real, dimension(nx) :: rr,storm_function
+      real :: rboundary_storm,t_age_storm,t_duration_storm
       integer :: i,istorm 
       type (pencil_case), intent(in) :: p
 !     
-      do istorm=1,nstorm 
+!  Generate or update the storms. If a storm is updated,
+!  xc, yc, rstorm, tpeak, and tstorm will be re-written.          
+!
+      call update_storms()
+      !do istorm=1,nstorm
+      !   print*,xc(istorm),yc(istorm),rstorm(istorm),tpeak(istorm),tstorm(istorm),smax(istorm)
+      !enddo
+      !stop
+
+
+!         
+!  Now that we have the parameters of the storms, construct the
+!  function and add to the equation of motion. 
+!
+      do istorm=1,nstorm
+!
+!  Distance from a grid cell to the center of the storm         
+!
         rr = sqrt((x(l1:l2)-xc(istorm))**2 + (y(m)-yc(istorm))**2)
 !
+!  A storm is truncated at 2.2*rstorm, taken as the "boundary" of the storm.
+!  A storm is also truncated at 2.2 times its lifetime
+!
+        rboundary_storm  = 2.2*rstorm(istorm)
+        t_age_storm      = abs(t-tpeak(istorm))
+        t_duration_storm = 2.2*tstorm(istorm)
+!        
         do i=1,nx
           if (&
-               (rr(i) < 2.2*rstorm(istorm)).or.&
-               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
+               (rr(i)       < rboundary_storm  ).or.&
+               (t_age_storm < t_duration_storm ) &
                ) then
             storm_function(i) = smax(istorm) * &
                  exp(- ( rr(i)           /rstorm(istorm))**2 &
-                     - ((t-tpeak(istorm))/tstorm(istorm))**2)  
+                 - ((t-tpeak(istorm))/tstorm(istorm))**2)
           else
             storm_function(i) = 0.
           endif
-        enddo
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
-      enddo
-!    
-  endsubroutine calc_storm
-!***********************************************************************
-  subroutine update_storm(f,df,p)
+       enddo
 !
-!  This subroutine... solves all the problems in atmospheric physics
+!  Add storm function to equation of motion       
+!
+       df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
+!       
+    enddo
+!    
+  endsubroutine calc_storm_function
+!***********************************************************************
+  subroutine update_storms()
+!
+!  This subroutine checks if a storm is over, and if so, adds a new one. 
 !    
 !  06-apr-20/ali: coded
 !
-      use General, only: random_number_wrapper
+    real :: storm_end
+    integer :: istorm 
+!         
+! If you are starting a simulation, set the storms
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    real, dimension(nx) :: rr_updated,storm_function_updated
-    real :: r_updated,p_updated,srand_updated,trand_updated 
-    real, dimension(6) :: smax_values_2=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
-    integer :: i,istorm,ismax_updated
-    type (pencil_case), intent(in) :: p
+    if (lstart .or. (it==1.and.itsub==1)) then
+!       
+      do istorm=1,nstorm
+        tstorm(istorm) = tduration 
+        rstorm(istorm) = rsize_storm
+        call get_storm(istorm)
+      enddo
+!     
+      !call output_storms('storms.dat')
+!     
+    else
+!      
+!  Not start time. The storms are already set. Test if they need updating.
+!  A storm needs updating if it has reached its end, which is the peak time
+!  plus half its duration. 
 !
-    do istorm=1,nstorm
+       do istorm=1,nstorm
+!          
+        storm_end = tpeak(istorm) + 1.1*tstorm(istorm)
+        if (t > (storm_end + interval_between_storms)) then
+           call get_storm(istorm)
+        endif
+!       
+      enddo
 !
-      if (t > (tpeak(istorm) + 1.1*tstorm(istorm) + tau_int)) then
+    endif
 !
-        call random_number_wrapper(trand_updated)
-        call random_number_wrapper(r_updated)
-        call random_number_wrapper(p_updated)
-        call random_number_wrapper(srand_updated)
+  endsubroutine update_storms
+!***********************************************************************
+  subroutine get_storm(istorm)
 !
-        ismax_updated = nint(srand_updated*5 + 1)
-        smax(istorm)   = smax_values_2(ismax_updated)
+    use General, only: random_number_wrapper
 !
-        r_updated=r_int + sqrt(r_updated) *((r_ext-0.2)-r_int)
-        p_updated=2*pi*p_updated
+    real :: r,p,srand,trand,storms_end 
+    real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
+    integer :: i,ismax
+!    
+    integer, intent(in) :: istorm
 !
-        xc(istorm)     = r_updated*cos(p_updated)
-        yc(istorm)     = r_updated*sin(p_updated)
-        rr_updated = sqrt((x(l1:l2)-xc(istorm))**2 &
-             + (y(m)-yc(istorm))**2)
+    call random_number_wrapper(r)
+    call random_number_wrapper(p)
+    r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
+    p=2*pi*p
+    xc(istorm)     = r*cos(p)
+    yc(istorm)     = r*sin(p)
+!      
+!  The storm's peak time is given by the initial time, added half of the 
+!  storm duration (1.1*tstorm). trand_updated is a random number from 0 to 1, to
+!  randomize so that the storms do not all peak at the same time.
+!      
+    call random_number_wrapper(trand)      
+    tpeak(istorm)  = t + (1.1+trand)*tstorm(istorm)
+!         
+! Maximum strength of the storm - pick randomly between the values
+! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
 !
-        tpeak(istorm) = trand_updated*tstorm(istorm) &
-                            + t + 1.1*tstorm(istorm)
+    call random_number_wrapper(srand)
+    ismax = nint(srand*5 + 1)
+    smax(istorm)   = smax_values(ismax)
 !
-        do i=1,nx
-          if (&
-               (rr_updated(i) < 2.2*rstorm(istorm)).or.&
-               (abs(t-tpeak(istorm)) < 2.2*tstorm(istorm))&
-               ) then
-            storm_function_updated(i) = smax(istorm) * &
-                 exp(- ( rr_updated(i)  /rstorm(istorm))**2 &
-                 - ((t-tpeak(istorm))/tstorm(istorm))**2)  
-          else
-            storm_function_updated(i) = 0.
-          endif
-        enddo
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) &
-            + storm_function_updated
-      endif
-    enddo
-!
-  endsubroutine update_storm
+  endsubroutine get_storm
 !***********************************************************************
   subroutine rprint_special(lreset,lwrite)
 !
