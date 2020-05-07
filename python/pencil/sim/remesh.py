@@ -229,13 +229,25 @@ def src2dst_remesh(src, dst,
                   'new mesh: {}, {}, {}\n'.format(dsth5['settings/nx'][0],
                   dsth5['settings/ny'][0], dsth5['settings/nz'][0])+
                  'To execute remesh set "check_grid=False".')
-            if check_grid:
-                return 1
             if ncpus == [1,1,1]:
                 ncpus = [factors[1][0],factors[1][1],factors[1][2]]
                 dsth5['settings/nprocx'][0] = ncpus[0]
                 dsth5['settings/nprocy'][0] = ncpus[1]
                 dsth5['settings/nprocz'][0] = ncpus[2]
+            nprocs = ncpus[0]*ncpus[1]*ncpus[2]
+            srcprocs = srch5['settings/nprocx'][0]*\
+                       srch5['settings/nprocy'][0]*\
+                       srch5['settings/nprocz'][0]
+            if srcprocs > nprocs:
+                print('\n**********************************************************\n'+
+                      'remesh WARNING: {} procs reduced from {}.\n'.format(
+                      nprocs, srcprocs)+
+                      'Review multxyz {} and fracxyz {} for more\n'.format(
+                      multxyz,fracxyz)+
+                      'efficient parallel processing options.'+
+                      '\n**********************************************************\n')
+            if check_grid:
+                return 1
             group = group_h5(dsth5, 'unit', mode='w')
             for key in srch5['unit'].keys():
                 if type(srch5['unit'][key][()]) == np.float64 or\
@@ -252,7 +264,6 @@ def src2dst_remesh(src, dst,
             dsth5.copy('grid', gridh5)
             dsth5.copy('unit', gridh5)
             gridh5.close()
-            nprocs = ncpus[0]*ncpus[1]*ncpus[2]
             if 'persist' in srch5.keys():
                 group = group_h5(dsth5, 'persist', mode='w')
                 for key in srch5['persist'].keys():
@@ -300,5 +311,11 @@ def src2dst_remesh(src, dst,
     #process = sub.Popen(cmd.split(),stdout=sub.PIPE)
     #output, error = process.communicate()
     #print(cmd,output,error)
- 
+    if srcprocs > nprocs:
+        print('\n**********************************************************\n'+              'remesh WARNING: {} procs reduced from {}.\n'.format(
+              nprocs, srcprocs)+
+              'Review multxyz {} and fracxyz {} for more\n'.format(
+              multxyz,fracxyz)+
+              'efficient parallel processing options.'+
+              '\n**********************************************************\n')
 # remains to copy other files and edit param files
