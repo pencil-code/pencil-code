@@ -360,7 +360,7 @@ module Sub
     torus%th0    =torus%th
     torus%ph0    =torus%ph
     torus%r_in0  =torus%r_in
-    torus%height0=torus%r_height
+    torus%height0=torus%height
 
     endsubroutine torus_constr
 !***********************************************************************
@@ -392,7 +392,7 @@ module Sub
 
     if (torus%extr_rate.eq.0.) return
 
-    torus%r_in=maxval(torus%r_in0*(1.+torus%extr_rate*t),0.)
+    torus%r_in=max(torus%r_in0*(1.+torus%extr_rate*t),0.)
 
     endsubroutine torus_extend_r
 !***********************************************************************
@@ -403,7 +403,7 @@ module Sub
 
     if (torus%extz_rate.eq.0.) return
 
-    torus%height=maxval(torus%height0*(1.+torus%extz_rate*t),0.)
+    torus%height=max(torus%height0*(1.+torus%extz_rate*t),0.)
 
     endsubroutine torus_extend_z
 !***********************************************************************
