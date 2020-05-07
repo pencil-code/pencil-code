@@ -1089,6 +1089,7 @@ sub parse_namelist {
         if ($text =~ s/^($id)(\([0-9, \t]+\))?\s*=\s*//s) {
             # string starts with <var=...> or <var(idx,idy,...)=...>
             $var = lc($1);
+            $var =~ s/%/_/;
             # any array indices following the variable name?
             if (defined($2)) {
                 my $indices = $2;
