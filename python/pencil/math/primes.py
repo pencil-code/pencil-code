@@ -23,6 +23,7 @@ def prime_factors(n):
 
 def divisors(factors, nmax, nmin=8):
     divisors = list()
+    divisors.append(1)
     nn = len(factors)
     n = factors[0]
     divisors.append(n)
@@ -40,7 +41,7 @@ def divisors(factors, nmax, nmin=8):
                     divisors.append(p)
     return natural_sort(divisors)
 
-def common_factors(nx,ny,nz,nmin=8):
+def common_factors(nx, ny, nz, nmin=8):
     factors = list()
     xfactors = prime_factors(nx)
     yfactors = prime_factors(ny)
@@ -49,7 +50,47 @@ def common_factors(nx,ny,nz,nmin=8):
     ydivisors = divisors(yfactors,ny,nmin=nmin)
     zdivisors = divisors(zfactors,nz,nmin=nmin)
     print('divisors x:',xdivisors,'y:',ydivisors,'z:',zdivisors)
+    return xdivisors, ydivisors, zdivisors
 
-    return [xdivisors, ydivisors, zdivisors]
-           #[natural_sort(xyproc), natural_sort(yzproc)],\
-           
+def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=8,MBmin=5.0,minghosts=7):
+    xdiv, ydiv, zdiv = common_factors(nx,ny,nz,nmin=nmin)
+    
+    nvar=mvar+maux
+    #size of farray in MB
+    nsize=8*nvar*nx*ny*nz/1024**2
+    ncpu_max = int(nsize/MBmin)+1
+    print('ncpu_max',ncpu_max)
+    cpu_list=list()
+    for div in (xdiv,ydiv,zdiv):
+        tmp = list()
+        for nt in div:
+            if nt < ncpu_max:
+                tmp.append(nt)
+        cpu_list.append(tmp)
+    ncpu_max = 1
+    for div in cpu_list:
+        ncpu_max = max(ncpu_max,max(div))
+    xdiv, ydiv, zdiv = cpu_list
+    lpower = False
+    if len(par) > 0:
+        if par['lpower_spectrum']:
+            lpower = True
+    if lpower:
+        xdiv = [1]
+    nprocx = 1
+    nprocy = 1
+    nprocz = 1
+    print('ncpu_max',ncpu_max)
+    for iprocx in xdiv:
+        for iprocy in ydiv:
+            for iprocz in zdiv:
+                if np.mod(ncpu_max,iprocz*nprocy*nprocx) == 0:
+                    nprocz = min(nz/iprocz,ncpu_max/nprocy/nprocx)
+                print('nprocz {}, iprocz {}'.format(nprocz,iprocz))
+            if np.mod(ncpu_max,nprocz*iprocy*nprocx) == 0:
+                nprocy = min(ny/iprocy,ncpu_max/nprocz/nprocx)
+            print('nprocz,nprocy {} {}, iprocy {}'.format(nprocz,nprocy,iprocy))
+        if np.mod(ncpu_max,nprocz*nprocy*iprocx) == 0:
+            nprocx = min(nx/iprocx,ncpu_max/nprocz/nprocy/iprocx)
+        print('nprocy,nprocx {} {}, iprocx {}'.format(nprocy,nprocx,iprocx))
+    return [xdiv, ydiv, zdiv], [int(nprocx), int(nprocy), int(nprocz)]
