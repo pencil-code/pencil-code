@@ -24,6 +24,10 @@ def local_remesh(var,
            xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True
           ):
     """
+    Call signature:
+ 
+    local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True)
+ 
     Keyword arguments:
 
     *var*:
@@ -35,7 +39,7 @@ def local_remesh(var,
     *xdst, ydst, zdst*:
       grid x,y,z arrays for destination simulation.
 
-    *quiet*
+    *quiet*:
       Flag for switching of output.
 
     """
@@ -57,6 +61,11 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                 dtype=np.float64, lsymmetric=True, quiet=True
                ):
     """
+    Call signature:
+ 
+    get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
+               fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,                      lsymmetric=True, quiet=True
+
     Keyword arguments:
 
     *srch5*:
@@ -74,23 +83,23 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
     *multxyz*:
       factors by which to multiply old sim dimensions yxz order.
 
-    *fracxyz*
+    *fracxyz*:
       factors by which to divide old sim dimensions yxz order.
 
-    *srcghost*
+    *srcghost*:
       Number of ghost zones from the source order of accuracy (mx-nx)/2
 
-    *dstghost*
+    *dstghost*:
       Number of ghost zones for the destination order of accuracy (mx-nx)/2
 
-    *dtype*
+    *dtype*:
       Precision used in destination simulation. Default double.
 
-    *lsymmetric*
+    *lsymmetric*:
       Option to make non-periodic grid symmetric about old sim centre. 
       Otherwise the lower boundary is retained from old sim grid.
 
-    *quiet*
+    *quiet*:
       Flag for switching of output.
 
     """
@@ -173,6 +182,95 @@ def src2dst_remesh(src, dst,
                    rename_submit_script=False, nmin=8, MBmin=5.0, ncpus=[1,1,1],
                    start_optionals=False, hostfile=None, submit_new=False
                   ):
+    """
+    Call signature:
+ 
+    src2dst_remesh(src, dst, h5in='var.h5', h5out='var.h5', multxyz=[2,2,2],
+                   fracxyz=[1,1,1], srcghost=3, dstghost=3, 
+                   srcdatadir='data/allprocs', dstdatadir='data/allprocs',
+                   dstprecision=[b'D'], lsymmetric=True, quiet=True,
+                   check_grid=True, OVERWRITE=False, optionals=True,
+                   rename_submit_script=False, nmin=8, MBmin=5.0, ncpus=[1,1,1],
+                   start_optionals=False, hostfile=None, submit_new=False)
+
+    Keyword arguments:
+
+    *src*:
+      string relative or absolute path to source simulation.
+
+    *dst*:
+      string relative or absolute path to destination simulation.
+
+    *h5in*:
+      source simulation data file to be copied and remeshed.
+
+    *h5out*:
+      destination simulation file to be written.
+
+    *multxyz*:
+      factors by which to multiply old sim dimensions yxz order.
+
+    *fracxyz*:
+      factors by which to divide old sim dimensions yxz order.
+
+    *srcghost*:
+      Number of ghost zones from the source order of accuracy (mx-nx)/2
+
+    *dstghost*:
+      Number of ghost zones for the destination order of accuracy (mx-nx)/2
+
+    *srcdatadir*:
+      path from source simulation directory to data.
+
+    *dstdatadir*:
+      path from destination simulation directory to data.
+
+    *dstprecision*:
+      floating point precision settings [b'S'] or [b'D'].
+
+    *lsymmetric*:
+      Option to make non-periodic grid symmetric about old sim centre. 
+      Otherwise the lower boundary is retained from old sim grid.
+
+    *quiet*:
+      Flag for switching of output.
+
+    *check_grid*:
+      Flag to run check on grid and cpu layout before executing remesh.
+
+    *OVERWRITE*:
+      Flag to overwrite existing simulation directory and filesin dst.
+
+    *optionals*:
+      Copy simulation files with True or specify list of names (string) for 
+      additional files from src sim directory.
+
+    *rename_submit_script:
+      Edit lines in submission files vcopied from src to dst.
+      Not yet operational.
+ 
+    *nmin*:
+      Minimum length along coordinate after splitting by proc.
+
+    *MBmin*:
+      Minimum size in MB of data on a sinlge proc pf ncpus total processes.
+
+    *ncpus*:
+      array of nprocx, nprocy, and nprocz to apply for new simulation.
+
+    *start_optionals*
+      Copy simulation files output by start.x with True or specify list of
+      names (string) for additional files from src sim data directory.
+
+    *hostfile:
+      Specify name of host config file argument in pc_build.
+      Not yet operational.
+
+    *submit_new*:
+      Execute changes to submission files, compile and run simulation.
+      Not yet operational.
+
+    """
     import h5py
     from .. import read
     from os.path import join
