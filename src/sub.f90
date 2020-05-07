@@ -113,6 +113,20 @@ module Sub
 !
   public :: remove_mean_value
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
+  public :: torus_rect, torus_constr, vortex
+!
+  type torus_rect
+    real, dimension(3) :: center
+    real :: th,ph
+    real :: r_in, thick, height
+    real :: Omega_prec, extr_rate, extz_rate
+    real, dimension(3) :: wob_amp, wob_om, wob_phase
+
+    real, dimension(3) :: center0
+    real :: th0,ph0,r_in0,height0
+    !contains
+    !  procedure, pass :: precess => my_precess
+  endtype torus_rect
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -337,6 +351,61 @@ module Sub
 !
   contains
 !
+!***********************************************************************
+    subroutine torus_constr(torus)
+
+    type(torus_rect) :: torus
+
+    torus%center0  =torus%center
+    torus%th0      =torus%th
+    torus%ph0      =torus%ph
+    torus%r_in0    =torus%r_in
+    torus%r_height0=torus%r_height
+
+    endsubroutine torus_constr
+!***********************************************************************
+    subroutine torus_precess(torus,t)
+
+    type(torus_rect) :: torus
+    double precision :: t
+
+    if (torus%Omega_prec==0.) return
+    torus%ph=torus%ph0+torus%Omega_prec*t
+
+    endsubroutine torus_precess
+!***********************************************************************
+    subroutine torus_wobble(torus,t)
+
+    type(torus_rect) :: torus
+    double precision :: t
+     
+    if (all(torus%wob_om.eq.0.)) return
+
+    torus%center=torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase)
+
+    endsubroutine torus_wobble
+!***********************************************************************
+    subroutine torus_extend_r(torus,t)
+
+    type(torus_rect) :: torus
+    double precision :: t
+
+    if (all(torus%extr_rate.eq.0.)) return
+
+    torus%r_in=maxval(torus%r_in0*(1.+torus%extr_rate*t),0.)
+
+    endsubroutine torus_extend_r
+!***********************************************************************
+    subroutine torus_extend_z(torus,t)
+
+    type(torus_rect) :: torus
+    double precision :: t
+
+    if (all(torus%extz_rate.eq.0.)) return
+
+    torus%height=maxval(torus%height0*(1.+torus%extz_rate*t),0.)
+
+    endsubroutine torus_extend_z
 !***********************************************************************
     subroutine max_mn(a,res)
 !
@@ -8082,5 +8151,50 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 
     endsubroutine stagger_to_base_interp_3rd
+!***********************************************************************
+    subroutine vortex(torus,Omega,vel)
+!
+!   Creates a velocity vortex vel as a circular torus with rectangular cross-section from the
+!   geometry provided in torus and with the angular velocity Omega.
+!   The torus axis may precess and the torus position wobble.
+!
+!   6-May-20/MR: coded
+!
+      use General, only: transform_cart_spher,transform_spher_cart
+
+      type(torus_rect) :: torus
+      real :: Omega
+      real, dimension(nx,3) :: vel
+
+      integer :: j
+      real :: theta, phi
+      real, dimension(nx,3) :: points
+      real, dimension(nx) :: pom, arg
+
+      call torus_wobble(torus,t)
+      call torus_precess(torus,t)
+
+      theta=torus%th*dtor; phi=torus%ph*dtor
+      points(:,1)=x(l1:l2)-torus%center(1)
+      points(:,2)=y(m)-torus%center(2)
+      points(:,3)=z(n)-torus%center(3)
+
+      call transform_cart_spher(points,theta,phi)
+      arg=points(:,3); points(:,3)=points(:,1); points(:,1)=points(:,2); points(:,2)=arg
+
+      pom=sqrt(points(:,1)**2+points(:,2)**2)
+      arg=atan2(points(:,2),points(:,1))
+
+      vel=0.
+      where (pom>=torus%r_in .and. pom<=torus%r_in+torus%thick .and. &
+             points(:,3)>=-torus%height/2. .and. points(:,3)<=torus%height/2. )
+        vel(:,1)=-(pom*Omega)*sin(arg); vel(:,2)=pom*Omega*cos(arg)
+      endwhere
+      
+      vel(:,3)=vel(:,2); vel(:,2)=vel(:,1); vel(:,1)=0.
+      !call transform_cart_spher(vel,-theta,-phi)
+      call transform_spher_cart(vel,theta,phi)
+    
+    endsubroutine vortex
 !***********************************************************************
 endmodule Sub

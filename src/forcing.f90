@@ -21,6 +21,7 @@ module Forcing
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+  use Sub, only: torus_rect
 !
   implicit none
 !
@@ -91,7 +92,7 @@ module Forcing
   integer :: random2d_nmodes
   integer :: random2d_kmin=0, random2d_kmax=0
   integer :: channel_force=1
-! continious 2d forcing
+! continuous 2d forcing
   integer :: k2d
   logical :: l2dxz,l2dyz
 ! Persistent stuff
@@ -111,8 +112,9 @@ module Forcing
   real, dimension(n_forcing_cont_max) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot=1.0,omega_exponent=1.0
-  real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0
+  real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0, Omega_vortex=0.
   real :: cs0eff=impossible
+  type(torus_rect) :: torus
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -154,9 +156,9 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, ldiscrete_phases, &
-       omega_tidal, R0_tidal, phi_tidal, &
+       omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
-       n_hel_sin_pow, kzlarge, cs0eff, channel_force
+       n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -213,7 +215,7 @@ module Forcing
       use General, only: bessj
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: step,erfunc,stepdown,register_report_aux
+      use Sub, only: step,erfunc,stepdown,register_report_aux,torus_constr
       use EquationOfState, only: cs0
 !
       real :: zstar
@@ -899,6 +901,8 @@ module Forcing
           profz_ampl=exp(-.5*z**2/radius_ff**2)
         elseif (iforcing_cont(i)=='fluxring_cylindrical') then
           if (lroot) print*,'forcing_cont: fluxring cylindrical'
+        elseif (iforcing_cont(i)=='vortex') then
+          call torus_constr(torus)
         endif
       enddo
       if (lroot .and. n_forcing_cont==0) &
@@ -5183,7 +5187,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
-      use Sub, only: quintic_step, quintic_der_step, step
+      use Sub, only: quintic_step, quintic_der_step, step, vortex
       use Viscosity, only: getnu
 !
       integer,                intent(in) :: i
@@ -5478,6 +5482,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
           call calc_fluxring_cylindrical(force,i)
         case('counter_centrifugal')
           call calc_counter_centrifugal(force,i)
+        case('vortex')
+          call vortex(torus,Omega_vortex,force)
 !
 !  blob-like disturbance (gradient of gaussian)
 !

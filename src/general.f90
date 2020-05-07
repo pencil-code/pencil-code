@@ -48,7 +48,7 @@ module General
   public :: directory_names_std, numeric_precision
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher, transform_cart_spher_other, transform_spher_cart_yy
+  public :: transform_cart_spher, transform_spher_cart, transform_spher_cart_yy
   public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
   public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
   public :: copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
@@ -155,6 +155,15 @@ module General
   interface compress
     module procedure compress_vec
     module procedure compress_arr
+  endinterface
+!
+  interface transform_cart_spher
+    module procedure transform_cart_spher_penc
+    module procedure transform_cart_spher_other
+  endinterface
+!
+  interface transform_spher_cart
+    module procedure transform_spher_cart_other
   endinterface
 !
 !  State and default generator of random numbers.
@@ -4499,7 +4508,7 @@ module General
 
     endfunction var_is_vec
 !***********************************************************************
-    subroutine transform_cart_spher(f,ith1,ith2,iph1,iph2,j)
+    subroutine transform_cart_spher_penc(f,ith1,ith2,iph1,iph2,j)
 !
 !  Transforms a vector given in f array in slots j to j+2 on the rectangle
 !  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
@@ -4527,12 +4536,12 @@ module General
 
       enddo; enddo
 
-    endsubroutine transform_cart_spher
+    endsubroutine transform_cart_spher_penc
 !***********************************************************************
     subroutine transform_cart_spher_other(arr,th,ph)
 !
-!  Transforms a vector given in f array in slots j to j+2 on the rectangle
-!  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
+!  Transforms a vector given in array arr on the rectangle defined by
+!  th and ph from Cartesian to spherical basis. Works in-place.
 !
 ! 4-dec-2015/MR: coded
 !
@@ -4548,6 +4557,26 @@ module General
         arr(:,2) =  cos(th)*tmp12   - sin(th)*tmp3
 
     endsubroutine transform_cart_spher_other
+!***********************************************************************
+    subroutine transform_spher_cart_other(arr,th,ph)
+!
+!  Transforms a vector given in array arr on the rectangle defined by
+!  th and ph from spherical to Cartesian basis. Works in-place.
+!
+! 4-dec-2015/MR: coded
+!
+      real, dimension(nx,3), intent(INOUT) :: arr
+      real,                  intent(IN)    :: th,ph
+
+      real, dimension(nx) :: tmp12, tmp3
+
+        tmp12=sin(th)*arr(:,1)+cos(th)*arr(:,2)
+        tmp3 =arr(:,3)
+        arr(:,3) =  cos(th)*arr(:,1)- sin(th)*arr(:,2)
+        arr(:,1) =  cos(ph)*tmp12   - sin(ph)*tmp3
+        arr(:,2) =  sin(ph)*tmp12   + cos(ph)*tmp3
+
+    endsubroutine transform_spher_cart_other
 !***********************************************************************
     subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,lyy)
 !
