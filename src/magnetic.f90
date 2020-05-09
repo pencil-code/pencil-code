@@ -4004,7 +4004,7 @@ module Magnetic
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta1_aniso
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+abs(eta1_aniso)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
