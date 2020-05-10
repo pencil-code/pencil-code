@@ -24,7 +24,7 @@
 !                                                  |
 !  Special term in the mass (density) equation     | special_calc_density
 !  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the entropy equation            | special_calc_entropy
+!  Special term in the entropy equation            | special_calc_energy
 !  Special term in the induction (magnetic)        | special_calc_magnetic
 !     equation                                     |
 !                                                  |
@@ -87,11 +87,14 @@ module Special
   real :: posy=0.0,alpha=1.25
   real, save :: posx,posz,Iring
   integer :: nwid=1,nwid2=1,nlf=4
-  logical :: lset_boundary_emf=.false.,lupin=.false.
+  logical :: lset_boundary_emf=.false.,lupin=.false.,&
+             lslope_limited_special=.false.
   real, dimension (mx) :: x12,dx12
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
-           lset_boundary_emf,lupin,nlf
+           lset_boundary_emf,lupin,nlf,lslope_limited_special, &
+           lnrho_min,lnrho_min_tau
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -136,25 +139,26 @@ module Special
 !!
 !! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
 !!
-!      dx12=0.0
-!      if (lrun) then
-!        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-!!
-!        x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
-!        dx12(l1-2:l2+2) =x12(l1-1:l2+3)-x12(l1-2:l2+2)   
+      if (lrun) then
 !        f(:,:,:,ispecaux)=0.0d0
-!        do n=n1,n2
-!          do m=m1,m2
-!            call gij(f,iaa,aij,1)
+        if (lslope_limited_special) then
+          if (ibb==0)  &
+            call fatal_error ('initialize_special', "set lbb_as_aux=T in start.in")
+          if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+          call generate_halfgrid(x12,y12,z12)
+          do n=n1,n2
+            do m=m1,m2
+              call gij(f,iaa,aij,1)
 !! bb
-!            call curl_mn(aij,pbb,aa)
-!            f(l1:l2,m,n,ibx  :ibz  )=pbb
-!          enddo
-!        enddo
-!      else
+              call curl_mn(aij,pbb,aa)
+              f(l1:l2,m,n,ibx  :ibz  )=pbb
+            enddo
+          enddo
+        endif
+      else
       call keep_compiler_quiet(f)
-!!
-!      endif
+!
+      endif
 !!
     endsubroutine initialize_special
 !***********************************************************************
@@ -387,31 +391,39 @@ module Special
       real, dimension (nx) :: fdiff
       type (pencil_case), intent(in) :: p
 !
-      if (ispecaux/=0) then
-      if (headtt) print*,'special_calc_density: call div_diff_flux'
-      if (ldensity_nolog) then
-        call div_diff_flux(f,irho,p,fdiff)
-        if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+      if (lnrho_min > -max_real) then
+        if (dt * lnrho_min_tau > 1.0) then
+          if (lroot) print *, "ERROR: dt=", dt, " lnrho_min_tau=", lnrho_min_tau
+          call fatal_error ('special_calc_density', "dt too large: dt * lnrho_min_tau > 1")
+        endif
+        fdiff = lnrho_min - p%lnrho
+        where (fdiff < 0.0) fdiff = 0.0
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
+      endif
+      if (lslope_limited_special) then
+        if (headtt) print*,'special_calc_density: call div_diff_flux'
+        if (ldensity_nolog) then
+          call div_diff_flux(f,irho,p,fdiff,ldensity_nolog)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
 !
 !  Density is frozen at boundary
 !
-          df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
+            df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
+          else
+            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+          endif
         else
-          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
-        endif
-      else
 !
 ! Store the diffusive flux in a special aux array to be added later to
 ! log-density in special_after_timestep
 !
-        call div_diff_flux(f,ilnrho,p,fdiff)
-        if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
-          f(l1,m,n,ispecaux) = 0.0
-          f(l1+1:l2,m,n,ispecaux) = fdiff(2:nx)
-        else
-          f(l1:l2,m,n,ispecaux) = fdiff
+          call div_diff_flux(f,ilnrho,p,fdiff,ldensity_nolog)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
+          else
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
+          endif
         endif
-      endif
       endif
     
 !
@@ -440,7 +452,7 @@ module Special
 !
     endsubroutine special_calc_dustdensity
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  entropy equation.
@@ -452,16 +464,37 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx) :: fdiff
       type (pencil_case), intent(in) :: p
 !!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      if (lslope_limited_special .and. lentropy) then
+        if (headtt) print*,'special_calc_energy: call div_diff_flux'
+        if (ltemperature_nolog) then
+          call div_diff_flux(f,iTT,p,fdiff,ltemperature_nolog)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(iTT)) then
 !
-    endsubroutine special_calc_entropy
+!  Density is frozen at boundary
+!
+            df(l1+1:l2,m,n,iTT) = df(l1+1:l2,m,n,iTT) + fdiff(2:nx)
+          else
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + fdiff
+          endif
+        else
+!
+! Store the diffusive flux in a special aux array to be added later to
+! log-density in special_after_timestep
+!
+          call div_diff_flux(f,ilnTT,p,fdiff,ltemperature_nolog)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnTT)) then
+            df(l1+1:l2,m,n,ilnTT) = df(l1+1:l2,m,n,ilnTT) + fdiff(2:nx)*p%TT1(2:nx)
+          else
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + fdiff*p%TT1
+          endif
+        endif
+      endif
+    
+!
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
@@ -1270,9 +1303,38 @@ module Special
       endselect
 !
     endsubroutine bc_go_x
+!***********************************************************************
+
+    subroutine generate_halfgrid(x12,y12,z12)
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      real, dimension (mx), intent(out) :: x12
+      real, dimension (my), intent(out) :: y12
+      real, dimension (mz), intent(out) :: z12
+!
+      if (nxgrid == 1) then
+        x12 = x
+      else
+        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+      endif
+!
+      if (nygrid == 1) then
+        y12 = y
+      else
+        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+      endif
+!
+      if (nzgrid == 1) then
+        z12 = z
+      else
+        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+      endif
+!
+    endsubroutine generate_halfgrid
 !*******************************************************************************
-    subroutine div_diff_flux(f,j,p,div_flux)
-      intent(in) :: f,j
+    subroutine div_diff_flux(f,j,p,div_flux,lvar_nolog)
+      intent(in) :: f,j, lvar_nolog
 !      intent(out) :: flux_im12,flux_ip12,div_flux
       intent(out) :: div_flux
 !
@@ -1284,6 +1346,7 @@ module Special
       real, dimension (nx) :: fim1,fip1,rfac,q1
       type (pencil_case), intent(in) :: p
       integer :: i,j,k
+      logical :: lvar_nolog
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
@@ -1299,10 +1362,10 @@ module Special
 !
 !
         call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
-                                   fim1,fip1,k)      
+                                   fim1,fip1,k,lvar_nolog)      
         call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
         do ix=1,nx
-          if (ldensity_nolog) then
+          if (lvar_nolog) then
             rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
              fim1(ix))+tini)
           else
@@ -1313,7 +1376,7 @@ module Special
         enddo
         flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
         do ix=1,nx
-          if (ldensity_nolog) then
+          if (lvar_nolog) then
             rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
             f(ix+nghost,m,n,j))+tini)
           else
@@ -1357,12 +1420,12 @@ module Special
     endsubroutine div_diff_flux
 !*******************************************************************************
     subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
-                                     fip1,k)
+                                     fip1,k,lvar_nolog)
 !
 ! Reconstruction of a scalar by slope limited linear interpolation
 ! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
 !
-      intent(in) :: f,k,j
+      intent(in) :: f,k,j,lvar_nolog
       intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1371,12 +1434,13 @@ module Special
       real, dimension (0:nx+1) :: delfx
       integer :: j,k
       integer :: i,ix
+      logical :: lvar_nolog
       real :: tmp0,tmp1,tmp2,tmp3
 ! x-component
       select case (k)
         case(1)
 ! Special case of non uniform grid only in the radial direction
-        if (ldensity_nolog) then
+        if (lvar_nolog) then
           do i=l1-1,l2+1
             ix=i-nghost
             tmp1=(f(i,m,n,j)-f(i-1,m,n,j))/(x(i)-x(i-1))
@@ -1411,7 +1475,7 @@ module Special
         endif
 ! y-component
         case(2)
-        if (ldensity_nolog) then
+        if (lvar_nolog) then
           do i=l1,l2
             ix=i-nghost
             tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
@@ -1454,7 +1518,7 @@ module Special
         endif
 ! z-component
         case(3)
-        if (ldensity_nolog) then
+        if (lvar_nolog) then
           do i=l1,l2
             ix=i-nghost
             tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
@@ -1524,8 +1588,8 @@ module Special
           else
           rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
           endif
-          cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
-          cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
+          cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(mu0*rho_xtmp(0:nx-1))+sqrt(p%cs2)
+          cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(mu0*rho_xtmp(1:nx))+sqrt(p%cs2)
 ! y-component
         case(2)
           b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
@@ -1536,7 +1600,7 @@ module Special
           else
             rho_tmp=0.5*(exp(f(l1:l2,m-1,n,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
           endif
-          cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
           b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m+1,n,ibx))
           b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m+1,n,iby))
           b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m+1,n,ibz))
@@ -1545,7 +1609,7 @@ module Special
           else
             rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m+1,n,ilnrho)))
           endif
-          cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
 ! z-component
         case(3)
           b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
@@ -1556,7 +1620,7 @@ module Special
           else
             rho_tmp=0.5*(exp(f(l1:l2,m,n-1,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
           endif
-          cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
           b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m,n+1,ibx))
           b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m,n+1,iby))
           b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m,n+1,ibz))
@@ -1565,7 +1629,7 @@ module Special
           else
             rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m,n+1,ilnrho)))
           endif
-          cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
         endselect
     endsubroutine characteristic_speed
 !***********************************************************************

@@ -173,6 +173,28 @@ module InitialCondition
     endsubroutine initial_condition_lnrho  
 !
 !***********************************************************************
+    subroutine initial_condition_ss(f)
+!
+!  Initialize entropy.
+!
+      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,get_cp1
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: lnTT0,cp1
+!
+      call get_cp1(cp1)
+      lnTT0=log(cs20*cp1/gamma_m1)  !(general case)
+      do m=m1,m2;do n=n1,n2
+!
+        f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT) + &
+             lnTT0
+!
+      enddo;enddo
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_ss
+!***********************************************************************
     subroutine initial_condition_aa(f)
 !
 !  Initialize the magnetic vector potential.
