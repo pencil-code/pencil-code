@@ -584,6 +584,11 @@ module EquationOfState
         else
           if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
         endif
+        if (lpencil_in(i_rho1gpp)) then
+          lpencil_in(i_cs2)=.true.
+          lpencil_in(i_glnrho)=.true.
+          lpencil_in(i_glnTT)=.true.
+        endif
         if (lpencil_in(i_ss)) then
           lpencil_in(i_lnTT)=.true.
           lpencil_in(i_lnrho)=.true.
@@ -875,6 +880,14 @@ module EquationOfState
           if (lpenc_loc(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
           if (lpenc_loc(i_del6lnTT)) call del6(f,ieosvar2,p%del6lnTT)
           if (lpenc_loc(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma_m1
+!
+!  Logarithmic pressure gradient
+!
+          if (lpenc_loc(i_rho1gpp)) then
+            do i=1,3
+              p%rho1gpp(:,i) = gamma1*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i))
+            enddo
+          endif
         endif
         if (lpenc_loc(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
         if (lpenc_loc(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
