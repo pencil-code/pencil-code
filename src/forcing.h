@@ -6,7 +6,7 @@
   public :: output_persistent_forcing, input_persistent_forcing
   public :: rprint_forcing
   public :: addforce
-  public :: forcing_continuous, forcing_cont_after_boundary
+  public :: forcing_continuous, forcing_after_boundary
   public :: lhydro_forcing, ltestflow_forcing
   
   public :: pencil_criteria_forcing, pencil_interdep_forcing

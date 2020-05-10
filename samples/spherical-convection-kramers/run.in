@@ -1,0 +1,45 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge with Kramers heat conductivity
+!
+&run_pars
+  nt=10, it1=1, isave=1000, itorder=3
+  dsnap=100., ialive=0,
+  cdtv=0.30, cdt=0.4
+/
+&eos_run_pars
+  sigmaSBt=0.026670465
+/
+&hydro_run_pars
+  lupw_uu=T
+  Omega=0.20764397
+  lremove_mean_angmom=T
+/
+&density_run_pars
+  lupw_lnrho=T
+  lconserve_total_mass=T
+  total_mass=0.205556035
+  cs2top=4.999999329E-2
+/
+&grav_run_pars
+  gravx_profile='kepler',gravx=3.,
+/
+&entropy_run_pars
+  Fbot=8.4387005e-07
+  lupw_ss=T
+  iheatcond='kramers','chit','K-profile'
+  lread_hcond=T
+  hcond0_kramers=3.16464e-08, nkramers=1.
+  lchit_fluct=T
+  chi_t1=2e-4
+  lcalc_ssmeanxy=T
+  xbot_chit1=0.5, xtop_chit1=2., widthss=0.02
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=2e-4
+/
+&magnetic_run_pars
+  lupw_aa=T
+  eta=2e-4
+/

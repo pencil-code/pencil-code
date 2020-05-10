@@ -1,0 +1,25 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-convection-kramers/
+SVN Id:
+    $Id$
+Maintainer:
+    Petri Käpylä <pkaepyl/uni-goettingen[dot]de>
+Added:
+    08-May-2020
+Status:
+    Introduced in May 2020
+Recommended resolution:
+    144x432x216 (nu = eta = chi_t1 = 2.5e-5)
+Comments:
+    Spherical convection with Kramers heat conductivity with enhanced 
+    fixed-in-space K-profile near the surface to carry the flux through
+    the surface.
+References:
+    Käpylä, P. J., Gent, F. A., Olspert, N., Käpylä M. J. & Brandenburg A.: 
+    2020, ``Sensitivity to luminosity, centrifugal force, and boundary 
+    conditions in spherical shell convection,'' Geophys. Astrophys. Fluid. 
+    Dyn, 114, 8
+
+    Käpylä P. J., Viviani, M., Käpylä M. J., Brandenburg A. & Spada, F.:
+    2019, ``Effects of a subadiabatic layer on convection and dynamos in 
+    spherical wedge simulations,'' Geophys. Astrophys. Fluid. Dyn, 113, 149

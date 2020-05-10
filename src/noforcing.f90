@@ -62,7 +62,7 @@ module Forcing
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine forcing_cont_after_boundary(f)
+    subroutine forcing_after_boundary(f)
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
@@ -72,7 +72,7 @@ module Forcing
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine forcing_cont_after_boundary
+    endsubroutine forcing_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_forcing
 !

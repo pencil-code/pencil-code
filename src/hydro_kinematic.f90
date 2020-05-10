@@ -1893,25 +1893,36 @@ endif
       case ('Brandt')
         if (lcylindrical_coords) then
           if (headtt) print*,'Brandt (cylindrical coords)',ampl_kinflow
+          exp_kinflow1=1./exp_kinflow
+          exp_kinflow2=.5*exp_kinflow
+          local_Omega=ampl_kinflow*profx_kinflow1
+          pom2=x(l1:l2)**2
+          profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+          if (wind_radius/=0.) then
+            if (headtt) print*,'also add BDMSST93-wind along r'
+            tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
+          else
+            tmp_mn=0.
+          endif
 ! uu
           if (lpenc_loc(i_uu)) then
             local_Omega=ampl_kinflow*profx_kinflow1
-            p%uu(:,1)=0.
+            p%uu(:,1)=tmp_mn*x(l1:l2)
             p%uu(:,2)=local_Omega*x(l1:l2)
-            p%uu(:,3)=0.
+            p%uu(:,3)=tmp_mn*z(n)
           endif
         else
           if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
-            exp_kinflow1=1./exp_kinflow
-            exp_kinflow2=.5*exp_kinflow
-            pom2=x(l1:l2)**2+y(m)**2
-            profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
-            if (wind_radius/=0.) then
-              if (headtt) print*,'also add BDMSST93-wind along r'
-              tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
-            else
-              tmp_mn=0.
-            endif
+          exp_kinflow1=1./exp_kinflow
+          exp_kinflow2=.5*exp_kinflow
+          pom2=x(l1:l2)**2+y(m)**2
+          profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+          if (wind_radius/=0.) then
+            if (headtt) print*,'also add BDMSST93-wind along r'
+            tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
+          else
+            tmp_mn=0.
+          endif
 ! uu
           if (lpenc_loc(i_uu)) then
             local_Omega=ampl_kinflow*profx_kinflow1

@@ -978,15 +978,34 @@ module Magnetic_meanfield
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x(l1:l2)-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
+!
+!  Galactic alpha effect profile
+!
         case ('z/H*exp(-z2/2h2)')
-          if (alpha_rmax/=0.) then
-            rr=sqrt(x(l1:l2)**2+y(m)**2)
-            pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
-            alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
-            if (alpha_pom0/=0.) alpha_tmp=alpha_tmp/(1.+(rr/alpha_pom0)**4)**.25
+          if (lcylindrical_coords) then
+            if (headtt) print*,'z/H*exp(-z2/2h2) profile (cylindrical coords)',alpha_rmax
+            if (alpha_rmax/=0.) then
+              rr=x(l1:l2)
+              pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
+              alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
+              if (alpha_pom0/=0.) alpha_tmp=alpha_tmp/(1.+(rr/alpha_pom0)**4)**.25
+            else
+              alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+            endif
           else
-            alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+            if (headtt) print*,'z/H*exp(-z2/2h2) profile (Cartesian)',alpha_rmax
+            if (alpha_rmax/=0.) then
+              rr=sqrt(x(l1:l2)**2+y(m)**2)
+              pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
+              alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
+              if (alpha_pom0/=0.) alpha_tmp=alpha_tmp/(1.+(rr/alpha_pom0)**4)**.25
+            else
+              alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+            endif
           endif
+!
+!  Galactic alpha effect profile with spiral
+!
         case ('z/H*exp(-z2/2h2)*spiral')
           rr=sqrt(x(l1:l2)**2+y(m)**2)
           pp=atan2(y(m),x(l1:l2))
