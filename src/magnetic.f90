@@ -3703,8 +3703,12 @@ module Magnetic
        if (va2max_boris > 0) then
          p%clight2=spread(va2max_boris,1,nx)
        else
-         clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
-         p%clight2=clight2_zdep(n-n1+1)
+         if (lcartesian_coords) then
+           clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
+           p%clight2=clight2_zdep(n-n1+1)
+         else if (lspherical_coords) then
+           p%clight2=spread(max(cmin**2,25*maxval(p%u2),maxval(p%cs2)),1,nx)
+         endif
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
