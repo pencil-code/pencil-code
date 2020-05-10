@@ -1865,7 +1865,7 @@ module Forcing
 !
 ! put force into auxiliary variable, if requested
 !
-                if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = forcing_rhs(:,j)
+                if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = f(l1:l2,m,n,iff+j-1)+forcing_rhs(:,j)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alternatively, one has to set crosshel=1.
@@ -5069,16 +5069,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_counter_centrifugal
 !***********************************************************************
-    subroutine forcing_cont_after_boundary(f)
+    subroutine forcing_after_boundary(f)
+!
+      real, dimension (mx,my,mz,mfarray),intent(OUT) :: f
+!
+      if (lforcing_cont) call forcing_cont_after_boundary
+!
+      if (lff_as_aux) f(l1:l2,m1:m2,n1:n2,ifx:ifz)=0.
+
+    endsubroutine forcing_after_boundary
+!***********************************************************************
+    subroutine forcing_cont_after_boundary
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real :: ecost,esint,ecoxt,ecoyt,ecozt
-      intent(in) :: f
-!
       integer :: i
+      real :: ecost,esint,ecoxt,ecoyt,ecozt
 !
 !  for the AKA effect, calculate auxiliary functions phi1_ff and phi2_ff
 !
@@ -5102,8 +5109,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
           sinzt(:,i)=sin(kf_fcont(i)*z+ecozt); coszt(:,i)=cos(kf_fcont(i)*z+ecozt)
         endif
       enddo
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine forcing_cont_after_boundary
 !***********************************************************************
