@@ -38,7 +38,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 
 	common pc_read_common, file
 
-	vectors = [ '^aa$', '^uu$', '^bb$', '^jj$']   ;, '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
+	vectors = [ '^aa$', '^uu$', '^bb$', '^jj$','^ff$']   ;, '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
 	vector = [] & quantity=strtrim(quantity,2)
 	for i=0,n_elements(vectors)-1 do $
                 if stregex(quantity,vectors[i],/bool) then vector=[vector,i]
