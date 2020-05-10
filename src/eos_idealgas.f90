@@ -531,6 +531,10 @@ module EquationOfState
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
           if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
           if (lpencil_in(i_del6ss)) lpencil_in(i_del6lnrho)=.true.
+          if (lpencil_in(i_rho1gpp)) then
+            lpencil_in(i_cs2)=.true.
+            lpencil_in(i_glnrho)=.true.
+          endif
         elseif (leos_localisothermal) then
         else
           if (lpencil_in(i_cs2)) then
@@ -634,6 +638,10 @@ module EquationOfState
           if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
           if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
+          if (lpencil_in(i_rho1gpp)) then
+            lpencil_in(i_cs2)=.true.
+            lpencil_in(i_glnrho)=.true.
+          endif
         endif
 !
 !  Pencils for thermodynamic quantities for given pp and ss (anelastic case only).
@@ -794,6 +802,11 @@ module EquationOfState
           if (lpenc_loc(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
           if (lpenc_loc(i_del6ss)) p%del6ss=-(cp-cv)*p%del6lnrho
           if (lpenc_loc(i_cs2)) p%cs2=cs20
+          if (lpenc_loc(i_rho1gpp)) then
+            do i=1,3
+              p%rho1gpp(:,i) = p%cs2*p%glnrho(:,i)
+            enddo
+          endif
         elseif (leos_localisothermal) then
           call fatal_error('calc_pencils_eos','leos_localisothermal '// &
               'not implemented for ilnrho_ss, try ilnrho_cs2')
@@ -927,6 +940,11 @@ module EquationOfState
           if (lpenc_loc(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpenc_loc(i_hss)) p%hss=-(cp-cv)*p%hlnrho
           if (lpenc_loc(i_pp)) p%pp=gamma1*p%rho*cs20
+          if (lpenc_loc(i_rho1gpp)) then
+            do i=1,3
+              p%rho1gpp(:,i) = p%cs2*p%glnrho(:,i)
+            enddo
+          endif
         elseif (leos_localisothermal) then
           if (lpenc_loc(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpenc_loc(i_lnTT)) call fatal_error('calc_pencils_eos', &
