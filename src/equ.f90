@@ -42,7 +42,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: forcing_cont_after_boundary
+      use Forcing, only: forcing_after_boundary
 !                         
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
@@ -312,7 +312,7 @@ module Equ
       if (lmagnetic)              call magnetic_after_boundary(f)
       if (lenergy)                call energy_after_boundary(f)
       if (lgrav)                  call gravity_after_boundary(f)
-      if (lforcing_cont)          call forcing_cont_after_boundary(f)
+      if (lforcing)               call forcing_after_boundary(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
       if (ltestfield)             call testfield_after_boundary(f)
