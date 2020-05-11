@@ -125,6 +125,7 @@ module Density
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='nothing'
   character (len=intlen) :: iinit_str
+  character (len=labellen) :: div_sld_dens='2nd'
   character (len=labellen) :: ffree_profile='none'
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
@@ -173,7 +174,7 @@ module Density
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
       lsubtract_init_stratification, ireference_state, &
-      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens
+      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -591,7 +592,8 @@ module Density
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
         case ('density-slope-limited')
-          if (lroot) print*,'mass diffusion: slope limited'
+          if (lroot) print*,'mass diffusion: slope limited diffusion'
+          if (lroot) print*,'mass diffusion: using ',trim(div_sld_dens),' order'
             ldensity_slope_limited=.true.
             lmassdiff_fix=.true.
         case ('','none')
@@ -2548,10 +2550,10 @@ module Density
 !
       if (ldensity_slope_limited.and.llast) then
         if (ldensity_nolog) then
-          call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp)
+          call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
           fdiff=fdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp)
+          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
           fdiff=fdiff+tmp*p%rho1
         endif
      endif
