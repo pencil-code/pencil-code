@@ -137,57 +137,69 @@ class Param(object):
         param_list = dict()
         # Construct object from dictionary with Python
         if asdict:
+            super_name_list = list()
+            name_list = list()
+            param_conflicts = dict()
             # Nesting parameters with same name under module attributes
             if nest_dict:
                 for filen in files:
-                    param_list, param_conflicts, pars_list = \
-                                     self.__read_nml(param_list, filen, nest=True)
+                    param_list, param_conflicts, name_list, super_name_list = \
+                                self.__read_nml(param_list, filen,
+                         param_conflicts, name_list, super_name_list, nest=True)
             # Parameters with same name will be written by last value
             else:
                 for filen in files:
-                    param_list, param_conflicts, pars_list = \
-                                     self.__read_nml(param_list, filen)
+                    param_list, param_conflicts, name_list, super_name_list = \
+                                self.__read_nml(param_list, filen,
+                                    param_conflicts, name_list, super_name_list)
+            if len(param_conflicts) > 0:
+                subkey_list = list()
+                for super_name in super_name_list:
+                    if super_name in param_conflicts.keys():
+                        for subkey in param_conflicts[super_name].keys():
+                            subkey_list.append(subkey)
+                for super_name in super_name_list:
+                    if not super_name in param_conflicts.keys():
+                        if param_list.__contains__(super_name): 
+                            param_list.__delitem__(super_name)
+                        super_name_list.remove(super_name)
+                for super_name in super_name_list:
+                    for key in name_list:
+                        if not key in subkey_list:
+                            if key in param_list[super_name].keys():
+                                param_list[super_name].__delitem__(key)
+                for key in name_list:
+                    if key in param_list.keys() and key in subkey_list:
+                        param_list.__delitem__(key)
+            print(param_conflicts, super_name_list)
+            
             # If nesting occurs report conflicts and record nests to retain
             if len(param_conflicts) > 0:
-                keep_list = []
                 for key in param_conflicts.keys():
-                    if not conflicts_quiet:
-                        print(key,'as',param_conflicts[key][0],'in',
-                              param_conflicts[key][1],'conflicts with',
-                              param_conflicts[key][2],'in',
-                              param_conflicts[key][3])
-                    keep_list.append(param_conflicts[key][1])
-                    keep_list.append(param_conflicts[key][3])
-                # Create object container for nested contents
-                class Foo(object):
-                    pass
-            for par in pars_list:
-                keep_list = []
-                if par in keep_list:
-                    key_list = []
-                    # Strip out nested objects that will not be required
-                    for key in param_list[par].keys():
-                        if not key in param_conflicts.keys():
-                            key_list.append(key)
-                    for key in key_list: 
-                        param_list[par].__delitem__(key)
-            if not quiet:
-                print(param_list)
+                    for subkey in param_conflicts[key].keys():
+                        if not conflicts_quiet:
+                            print(subkey, 'as',param_conflicts[key][subkey][0],
+                                  'in', key,'conflicts with',
+                                  param_conflicts[key][subkey][2], 'in',
+                                  param_conflicts[key][subkey][1])
+            # Create object container for nested contents
+            class Foo(object):
+                pass
             # Construct class Params object attributes
-            key_list = param_list.keys()
-            for key in key_list:
-                if key in pars_list:
-                    # Nest only parameters with name conflicts
-                    if key in keep_list:
-                        ext_object = Foo()
-                        for subkey in param_list[key].keys():
-                            if not quiet:
-                                print(subkey, 'is nested under', key)
-                            setattr(ext_object, subkey, param_list[key][subkey])
-                        setattr(self, key, ext_object)
+            for key in param_list.keys():
+                # Nest only parameters with name conflicts
+                if key in super_name_list:
+                    ext_object = Foo()
+                    setattr(self, key, ext_object)
+                    for subkey in param_list[key].keys():
+                        if not quiet:
+                            print(subkey, 'is nested under', key)
+                        setattr(ext_object, subkey, param_list[key][subkey])
                 else:
                     # Unique parameters saved unnested
                     setattr(self, key, param_list[key])
+            if not quiet:
+                print(param_list)
         # Construct object by calling external perl script
         else:
             # Execute output of nl2python script.
@@ -274,7 +286,8 @@ class Param(object):
         return self.__param_formatter(string)
 
 
-    def __read_nml(self, params, file_name, nest=False):
+    def __read_nml(self, params, file_name, param_conflicts, name_list,
+                                                  super_name_list, nest=False):
         """
         Reads in F90 namelist as dictionary object
 
@@ -296,9 +309,7 @@ class Param(object):
         r = re.compile(r'(?:[^,(]|\([^)]*\))+')
 
         # Contain the nested parameters to be retained
-        param_conflicts = dict()
         # Contain the nest names for each parameter set
-        super_name_list = []
         for rawline in open(file_name):
             if ' ' in rawline[1]:
                 rawline = lastrawline+rawline
@@ -309,8 +320,9 @@ class Param(object):
                                             )[0].rsplit('_init'
                                             )[0].rsplit('_run')[0]
                 if nest:
-                    params[super_name] = dict()
-                    super_name_list.append(super_name)
+                    if not params.__contains__(super_name):
+                        params[super_name] = dict()
+                        super_name_list.append(super_name)
             else:
                 line = re.sub("^ ", "", line)
                 if line != "/":
@@ -328,39 +340,34 @@ class Param(object):
                             value += [self.__tuple_catch(parts[i])]
                     if len(value) == 1:
                         value = value[0]
+                    params[name] = value
+                    name_list.append(name)
                     if nest:
                         # Save all parameters nested and unnested
-                        if name not in params.keys():
-                            params[name] = value
+                        if not super_name in ('run','init'):
                             params[super_name][name] = value
-                        # If name conflict exists remove unnested copies
-                        else:
-                            if params[name] == value:
-                                if not super_name in ('run','init'):
-                                    params[super_name][name] = value
-                            else:
-                                if super_name in ('run','init'):
-                                    params[name] = value
-                                else:
-                                    if not name in params[super_name].keys():
-                                        # Record name conflict details 
-                                        for alt_name in super_name_list:
-                                            if name in params[alt_name].keys():
-                                                param_conflicts[name] = (
-                                                        value, super_name,
-                                                        params[alt_name][name],
-                                                        alt_name        )
-                                                params.__delitem__(name)
-                                            else:
-                                                params[name] = value
-                                        params[super_name][name] = value
-                                    else:
-                                        params[super_name][name] = value
-                                        params[name] = value
-                    else:
-                        params[name] = value
+        # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
             if 'run' in super_name_list: super_name_list.remove('run')
             if 'init' in super_name_list: super_name_list.remove('init')
-        return params, param_conflicts, super_name_list
+            for super_name in super_name_list:
+                for alt_name in super_name_list:
+                    for name in params[super_name].keys():
+                        if name in params[alt_name].keys():
+                            if not params[alt_name][name] ==\
+                                   params[super_name][name]:
+                                if not super_name in param_conflicts.keys():
+                                    param_conflicts[super_name] = dict()
+                                param_conflicts[super_name][name] = (
+                                                      params[super_name][name],
+                                                      alt_name,
+                                                      params[alt_name][name])
+                                print('super_name',super_name,
+                                      'alt_name',alt_name,
+                                      'name',name,
+                                      'params[super_name][name]',
+                                       params[super_name][name],
+                                      'params[alt_name][name]',
+                                       params[alt_name][name])
+        return params, param_conflicts, name_list, super_name_list
 
