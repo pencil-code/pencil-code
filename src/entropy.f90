@@ -223,7 +223,7 @@ module Energy
       center1_x, center1_y, center1_z, &
       lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene &
+      cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
