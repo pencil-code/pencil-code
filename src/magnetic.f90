@@ -921,7 +921,7 @@ module Magnetic
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
   real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid = 0.0
-  real :: eta_shock_jump1,eta_tdep,Arms
+  real :: eta_shock_jump1=1.0,eta_tdep=0.0,Arms=0.0
 !
   contains
 !***********************************************************************
