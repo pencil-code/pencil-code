@@ -44,13 +44,22 @@ def local_remesh(var,
 
     """
     tmp = var.copy()
-    if not xsrc == xdst:
+    if not quiet:
+        print('x',tmp.shape, xsrc.min(), xsrc.max(), xdst.min(), xdst.max())
+        print('x',tmp.shape, xsrc.shape, xdst.shape)
+    if not xsrc.size == xdst.size:
         interpx = interp1d(xsrc,tmp,axis=-1)
         tmp = interpx(xdst)
-    if not ysrc == ydst:
+    if not quiet:
+        print('y',tmp.shape, ysrc.min(), ysrc.max(), ydst.min(), ydst.max())
+        print('y',tmp.shape, ysrc.shape, ydst.shape)
+    if not ysrc.size == ydst.size:
         interpy = interp1d(ysrc,tmp,axis=-2)
         tmp=interpy(ydst)
-    if not zsrc == zdst:
+    if not quiet:
+        print('z',tmp.shape, zsrc.min(), zsrc.max(), zdst.min(), zdst.max())
+        print('z',tmp.shape, zsrc.shape, zdst.shape)
+    if not zsrc.size == zdst.size:
         interpz = interp1d(zsrc,tmp,axis=-3)
         tmp = interpz(zdst)
 
@@ -180,7 +189,8 @@ def src2dst_remesh(src, dst,
                    dstprecision=[b'D'], lsymmetric=True, quiet=True,
                    check_grid=True, OVERWRITE=False, optionals=True,
                    rename_submit_script=False, nmin=8, MBmin=5.0, ncpus=[1,1,1],
-                   start_optionals=False, hostfile=None, submit_new=False
+                   start_optionals=False, hostfile=None, submit_new=False,
+                   chunksize = 1000.0
                   ):
     """
     Call signature:
@@ -269,6 +279,9 @@ def src2dst_remesh(src, dst,
     *submit_new*:
       Execute changes to submission files, compile and run simulation.
       Not yet operational.
+
+    *chunksize*:
+      Size in megabytes of snapshot variable before chunked remesh is used.
 
     """
     import h5py
@@ -376,19 +389,126 @@ def src2dst_remesh(src, dst,
                                           data=tmp, overwrite=True)
             dset = dataset_h5(dsth5, 'time', mode='w',
                              data=srch5['time'][()], dtype=dtype)
-            srcgrid = srch5['grid']
-            dstgrid = dsth5['grid']
+            nx, ny, nz = dsth5['settings']['nx'][0],\
+                         dsth5['settings']['ny'][0],\
+                         dsth5['settings']['nz'][0]
+            dstchunksize = 8*nx*ny*nz/1024*1024
+            lchunks = False
+            if dstchunksize > chunksize:
+                lchunks = True
+                nchunks = cpu_optimal(nz,ny,nx,mvar=1,maux=0,MBmin=chunksize)[1]
+                print('nchunks {}'.format(nchunks)) 
+                indx = np.array_split(np.arange(nx)+dstghost,nchunks[2]) 
+                indy = np.array_split(np.arange(ny)+dstghost,nchunks[1]) 
+                indz = np.array_split(np.arange(nz)+dstghost,nchunks[0]) 
+                mx, my, mz = dsth5['settings']['mx'][0],\
+                             dsth5['settings']['my'][0],\
+                             dsth5['settings']['mz'][0]
+                if not quiet:
+                    print('nx {}, ny {}, nz {}'.format(nx, ny, nz)) 
+                    print('mx {}, my {}, mz {}'.format(mx, my, mz)) 
             group = group_h5(dsth5, 'data', mode='w')
             for key in srch5['data'].keys():
                 print('remeshing '+key)     
-                var = local_remesh(
-                    srch5['data'][key][()], 
-                    srch5['grid']['x'], srch5['grid']['y'], srch5['grid']['z'],
-                    dsth5['grid']['x'], dsth5['grid']['y'], dsth5['grid']['z'],
-                    quiet=quiet )
-                print('writing '+key+' shape {}'.format(var.shape))
-                dset = dataset_h5(group, key, mode='w', data=var,
-                                 overwrite=True, dtype=dtype)
+                if not lchunks:
+                    var = local_remesh(
+                        srch5['data'][key][()], 
+                        srch5['grid']['x'], srch5['grid']['y'], srch5['grid']['z'],
+                        dsth5['grid']['x'], dsth5['grid']['y'], dsth5['grid']['z'],
+                        quiet=quiet )
+                    print('writing '+key+' shape {}'.format(var.shape))
+                    dset = dataset_h5(group, key, mode='w', data=var,
+                                     overwrite=True, dtype=dtype)
+                else:
+                    dset = dataset_h5(group, key, mode='w', shape=[mz,my,mx],
+                                     overwrite=True, dtype=dtype)
+                    print('writing '+key+' shape {}'.format([mz,my,mx]))
+                    for iz in range(nchunks[0]):
+                        n1, n2 = indz[iz][ 0]-dstghost,\
+                                 indz[iz][-1]+dstghost
+                        srcn1 = np.max(np.where(srch5['grid/z'][()]<
+                                           dsth5['grid/z'][n1]))     
+                        srcn2 = np.min(np.where(srch5['grid/z'][()]>
+                                           dsth5['grid/z'][n2]))
+                        n1out = n1+dstghost
+                        n2out = n2-dstghost+1
+                        varn1 =  dstghost
+                        varn2 = -dstghost
+                        if iz == 0:
+                            n1out = 0
+                            varn1 = 0
+                        if iz == nchunks[0]-1:
+                            n2out = n2+1
+                            varn2 = n2+1
+                        if not quiet:
+                            print('n1 {}, n2 {}, srcn1 {}, srcn2 {}'.format(
+                                   n1,    n2,    srcn1,    srcn2))
+                        for iy in range(nchunks[1]):
+                            m1, m2 = indy[iy][ 0]-dstghost,\
+                                     indy[iy][-1]+dstghost
+                            srcm1 = np.max(np.where(srch5['grid/y'][()]<
+                                               dsth5['grid/y'][m1]))     
+                            srcm2 = np.min(np.where(srch5['grid/y'][()]>
+                                               dsth5['grid/y'][m2]))
+                            m1out = m1+dstghost
+                            m2out = m2-dstghost+1
+                            varm1 =  dstghost
+                            varm2 = -dstghost
+                            if iy == 0:
+                                m1out = 0
+                                varm1 = 0
+                            if iy == nchunks[1]-1:
+                                m2out = m2+1
+                                varm2 = m2+1
+                            if not quiet:
+                                print('m1 {}, m2 {}, srcm1 {}, srcm2 {}'.format(
+                                       m1,    m2,    srcm1,    srcm2))
+                            for ix in range(nchunks[2]):
+                                l1, l2 = indx[ix][ 0]-dstghost,\
+                                         indx[ix][-1]+dstghost
+                                srcl1 = np.max(np.where(srch5['grid/x'][()]<
+                                                   dsth5['grid/x'][l1]))     
+                                srcl2 = np.min(np.where(srch5['grid/x'][()]>
+                                                   dsth5['grid/x'][l2]))
+                                l1out = l1+dstghost
+                                l2out = l2-dstghost+1
+                                varl1 =  dstghost
+                                varl2 = -dstghost
+                                if ix == 0:
+                                    l1out = 0
+                                    varl1 = 0
+                                if ix == nchunks[2]-1:
+                                    l2out = l2+1
+                                    varl2 = l2+1
+                                if not quiet:
+                                    print(
+                                      'l1 {}, l2 {}, srcl1 {}, srcl2 {}'.format(
+                                       l1,    l2,    srcl1,    srcl2))
+                                if not quiet:
+                                    print('remeshing '+key+' chunk {}'.format(
+                                           [iz,iy,ix]))
+                                
+                                var = local_remesh(
+                                             srch5['data'][key][srcn1:srcn2+1,
+                                                                srcm1:srcm2+1,
+                                                                srcl1:srcl2+1], 
+                                             srch5['grid']['x'][srcl1:srcl2+1],
+                                             srch5['grid']['y'][srcm1:srcm2+1],
+                                             srch5['grid']['z'][srcn1:srcn2+1],
+                                                dsth5['grid']['x'][l1:l2+1],
+                                                dsth5['grid']['y'][m1:m2+1],
+                                                dsth5['grid']['z'][n1:n2+1],
+                                                quiet=quiet )
+                                if not quiet:
+                                    print('writing '+key+
+                                                   ' shape {} chunk {}'.format(
+                                                         var.shape, [iz,iy,ix]))
+                                dset[n1out:n2out,
+                                     m1out:m2out,
+                                     l1out:l2out] = dtype(var[
+                                                            varn1:varn2,
+                                                            varm1:varm2,
+                                                            varl1:varl2])
     dstsim.update()
     dstsim.change_value_in_file('src/cparam.local','ncpus', str(nprocs))
     dstsim.change_value_in_file('src/cparam.local','nprocx',str(ncpus[0]))
