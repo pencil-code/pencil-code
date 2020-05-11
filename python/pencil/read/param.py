@@ -171,7 +171,6 @@ class Param(object):
                 for key in name_list:
                     if key in param_list.keys() and key in subkey_list:
                         param_list.__delitem__(key)
-            print(param_conflicts, super_name_list)
             
             # If nesting occurs report conflicts and record nests to retain
             if len(param_conflicts) > 0:
@@ -362,12 +361,6 @@ class Param(object):
                                                       params[super_name][name],
                                                       alt_name,
                                                       params[alt_name][name])
-                                print('super_name',super_name,
-                                      'alt_name',alt_name,
-                                      'name',name,
-                                      'params[super_name][name]',
-                                       params[super_name][name],
-                                      'params[alt_name][name]',
-                                       params[alt_name][name])
+
         return params, param_conflicts, name_list, super_name_list
 
