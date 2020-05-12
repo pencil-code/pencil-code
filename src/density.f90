@@ -177,6 +177,7 @@ module Density
       h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens
 !
 !  Diagnostic variables (need to be consistent with reset list below).
+!  Note: drho2m is based on rho0, while rhof2m is based on <rho>(z).
 !
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
@@ -184,7 +185,8 @@ module Density
                                 ! DIAG_DOC: the density_xaver_range
   integer :: idiag_rhomzmask=0  ! DIAG_DOC: $\left<\varrho\right>$ for
                                 ! DIAG_DOC: the density_zaver_range
-  integer :: idiag_rho2m=0      ! DIAG_DOC:
+  integer :: idiag_rho2m=0      ! DIAG_DOC: $\left<\varrho^2\right>$
+  integer :: idiag_rhof2m=0     ! DIAG_DOC: $\left<\varrho'^2\right>$
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
   integer :: idiag_drho2m=0     ! DIAG_DOC: $<(\varrho-\varrho_0)^2>$
   integer :: idiag_drhom=0      ! DIAG_DOC: $<\varrho-\varrho_0>$
@@ -1642,7 +1644,9 @@ module Density
         if (lrho_flucz_as_aux) then
            do n=n1,n2
               nl = n-n1+1
-              f(l1:l2,m1:m2,n,irho_flucz) = exp(f(l1:l2,m1:m2,n,ilnrho) - lnrhomz(nl))
+              !f(l1:l2,m1:m2,n,irho_flucz) = exp(f(l1:l2,m1:m2,n,ilnrho) - lnrhomz(nl))
+!AB: shouldn't this be the fluctuation, like so?
+              f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(nl))
            enddo
         endif
       endif
@@ -2037,13 +2041,14 @@ module Density
 !
 !  Diagnostic pencils.
 !
-      if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhomy/=0 .or. &
+      if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or.&
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
+!AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
       if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0) &
@@ -2728,7 +2733,7 @@ module Density
 !
       call calc_2d_diagnostics_density(p)
       call calc_1d_diagnostics_density(f,p)
-      call calc_0d_diagnostics_density(p)
+      call calc_0d_diagnostics_density(f,p)
 !
     endsubroutine calc_diagnostics_density
 !***********************************************************************
@@ -2812,7 +2817,7 @@ module Density
 
     endsubroutine calc_1d_diagnostics_density
 !***********************************************************************
-    subroutine calc_0d_diagnostics_density(p)
+    subroutine calc_0d_diagnostics_density(f,p)
 !
 !  Calculate density diagnostics
 !
@@ -2822,9 +2827,10 @@ module Density
 
       use Sub,only: dot2
       use General
-
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-
+!
       real, dimension(nx), parameter :: unitpencil=1.
       real, dimension(nx) :: tmp
 !
@@ -2847,6 +2853,7 @@ module Density
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
         call max_mn_name(p%lnrho,idiag_lnrhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
+        if (idiag_rhof2m/=0.and.lrho_flucz_as_aux) call sum_mn_name(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2m)
         if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
@@ -3380,7 +3387,7 @@ module Density
 !  (This needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
+        idiag_rhom=0; idiag_rho2m=0; idiag_rhof2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
@@ -3404,6 +3411,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomxmask',idiag_rhomxmask)
         call parse_name(iname,cname(iname),cform(iname),'rhomzmask',idiag_rhomzmask)
         call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
+        call parse_name(iname,cname(iname),cform(iname),'rhof2m',idiag_rhof2m)
         call parse_name(iname,cname(iname),cform(iname),'rhorms',idiag_rhorms)
         call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
         call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
