@@ -10,5 +10,6 @@ from .integration import integrate
 from .Helmholtz import *
 from .primes import *
 from .interpolation import vec_int
+from .structure_function import *
 
 from . import derivatives
