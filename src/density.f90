@@ -1644,8 +1644,6 @@ module Density
         if (lrho_flucz_as_aux) then
            do n=n1,n2
               nl = n-n1+1
-              !f(l1:l2,m1:m2,n,irho_flucz) = exp(f(l1:l2,m1:m2,n,ilnrho) - lnrhomz(nl))
-!AB: shouldn't this be the fluctuation, like so?
               f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(nl))
            enddo
         endif
@@ -2044,14 +2042,18 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
-           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or.&
+           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
-           idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
-           lpenc_diagnos(i_rho)=.true.
-!AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
-      if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
+           idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0 .or. &
+           idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0) &
+           lpenc_diagnos(i_rho)=.true.
+!AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
+!PJK: The up/down averages should actually appear above as well and they
+!PJK: need the velocity too. idiag_rhof2mz does not, however.
+      if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
+           idiag_rho2downmz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
            lpenc_diagnos(i_uu)=.true.
       if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
@@ -2771,7 +2773,7 @@ module Density
       if (l1davgfirst) then
         if ((idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
             .and..not. lrho_flucz_as_aux) then
-            call stop_it('denergy_dt: Need to set lrho_flucz_as_aux=T'// &
+            call stop_it('calc_1d_diagnostics_density: Need to set lrho_flucz_as_aux=T'// &
                          ' in density_run_pars for density fluctuation diagnostics.')
         endif
 !
