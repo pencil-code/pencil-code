@@ -378,7 +378,7 @@ contains
          call inverse_laplacian_logradial_fft(phi)
       else if (lspherical_coords) then
          if (lroot) then
-          print*,'There is no poisson solver for spherical '
+          print*,'There is no logspiral poisson solver for spherical '
           print*,'coordinates yet. Please feel free to implement it. '
           print*,'Many people will thank you for that.'
           call fatal_error("inverse_laplacian","")
