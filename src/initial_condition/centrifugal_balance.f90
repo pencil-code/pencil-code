@@ -612,11 +612,11 @@ module InitialCondition
 !  Correct the velocities for self-gravity
 !
       if (lcorrect_selfgravity) then
-        if (lselfgravity_logspirals) then
-          call correct_selfgravity_logspirals(f)
-        else
+        !if (lselfgravity_logspirals) then
+        !  call correct_selfgravity_logspirals(f)
+        !else
           call correct_selfgravity(f)
-        endif
+        !endif
       endif
 !
 !  Set noise in low wavelengths only
@@ -1420,15 +1420,22 @@ module InitialCondition
 !***********************************************************************
     subroutine correct_selfgravity(f)
 !
-!  Correct for the fluid's self-gravity in the centrifugal force
+!  Correct for the fluid's self-gravity in the centrifugal force.
+!  This routine incorporates selfgravity via the logspirals method
+!  which is slightly different in that it uses the accelerations
+!  directly instead of taking the gradient of the potential.
 !
 !  03-dec-07/wlad: coded
+!  ??-???-??/vince: included logspirals
 !
       use Sub,         only:get_radial_distance,grad
-      use Poisson,     only:inverse_laplacian
+      use Poisson,     only:inverse_laplacian,get_acceleration
       use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      !real, dimension (nx,ny,nz) :: rho
+      real, dimension (nx,ny,nz,3) :: acceleration
 !
       real, dimension (mx,my,mz) :: selfpotential
       real, dimension (nx,3) :: gpotself
@@ -1447,7 +1454,11 @@ module InitialCondition
 !  Poisson constant is 4piG, this has to be consistent with the 
 !  constant in poisson_init_pars
 !
-      rhs_poisson_const=4*pi*gravitational_const
+      if (lselfgravity_logspirals) then
+        rhs_poisson_const=1.0
+      else
+        rhs_poisson_const=4*pi*gravitational_const
+      endif
 !
 !  feed linear density into the poisson solver
 !
@@ -1456,26 +1467,39 @@ module InitialCondition
 !
       call inverse_laplacian(selfpotential(l1:l2,m1:m2,n1:n2))
 !
-      f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
-      call update_ghosts(f)
+      if (lselfgravity_logspirals) then
 !
-!  update the boundaries for the self-potential
+!  Get gravity directly
+!
+        call get_acceleration(acceleration)
+      else
+!
+!  Define the selfpotential and update the boundaries to take the gradient
+!
+        f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
+        call update_ghosts(f)
+      endif
 !
       do n=n1,n2 ; do m=m1,m2
 !
+        if (lselfgravity_logspirals) then
+          gspotself = -acceleration(:,m-m1+1,n-n1+1,1)
+        else
+!
 !  Get the potential gradient
 !
-        call get_radial_distance(rr_sph,rr_cyl)
-        call grad(f,ipotself,gpotself)
+          call get_radial_distance(rr_sph,rr_cyl)
+          call grad(f,ipotself,gpotself)
 !
 !  correct the angular frequency phidot^2
 !
-        if (lcartesian_coords) then
-          gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-        elseif (lcylindrical_coords) then
-          gspotself=gpotself(:,1)
-        elseif (lspherical_coords) then
-          gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+          if (lcartesian_coords) then
+            gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
+          elseif (lcylindrical_coords) then
+            gspotself=gpotself(:,1)
+          elseif (lspherical_coords) then
+            gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+          endif
         endif
 !
         call correct_azimuthal_velocity(f,gspotself,'self gravity')
@@ -1483,60 +1507,6 @@ module InitialCondition
       enddo;enddo
 !
     endsubroutine correct_selfgravity
-!***********************************************************************
-    subroutine correct_selfgravity_logspirals(f)
-!
-!  Correct for the fluid's self-gravity in the centrifugal force
-!
-!  ??-???-15/wlad: adapted from correct_selfgravity
-!
-      use Sub,         only:get_radial_distance
-      use Poisson,     only:inverse_laplacian,get_acceleration
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      real, dimension (nx,ny,nz) :: rho
-      real, dimension (nx,ny,nz,3) :: acceleration
-      real, dimension (nx) :: gspotself
-!
-      if (lroot) print*,'Correcting for self-gravity on the '//&
-           'centrifugal force'
-      if (.not.lpoisson) then
-        print*,"You want to correct for selfgravity but you "
-        print*,"are using POISSON=nopoisson in src/Makefile.local. "
-        print*,"Please use a poisson solver."
-        call fatal_error("correct_selfgravity_logspirals","")
-      endif
-      if (.not.lcylindrical_coords) then
-        if (lroot) then
-          print*,'You are calling correct_selfgravity_logspirals'
-          print*,'from the centrifugal_balance module with non-'
-          print*,'cylindrical coordinates.'
-          print*,'If you are using the other _logspirals modules,'
-          print*,'they currently require cylindrical coordinates.'
-          print*,"If you aren't using the other _logspirals modules,"
-          print*,'please call correct_selfgravity instead.'
-        endif
-        call fatal_error("correct_selfgravity_logspirals","")
-      endif
-!
-      rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-!     
-      call inverse_laplacian(rho)
-      call get_acceleration(acceleration)
-!
-!  The acceleration is the negative of the potential gradient
-!
-      do n=n1,n2 ; do m=m1,m2
-!
-!  correct the angular frequency phidot^2
-!
-        gspotself = -acceleration(:,m-m1+1,n-n1+1,1)
-        call correct_azimuthal_velocity(f,gspotself,'self gravity')
-!
-      enddo;enddo
-!
-    endsubroutine correct_selfgravity_logspirals
 !***********************************************************************
     subroutine correct_lorentz_numerical(f)
 !
