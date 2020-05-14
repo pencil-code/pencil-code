@@ -30,7 +30,7 @@ module General
   public :: besselj_nu_int, calc_complete_ellints
   public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
-  public :: itoa, count_bits, parser, write_full_columns
+  public :: itoa, log2str, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -203,7 +203,7 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip, &
+      use Cdata, only: mm,nn,imn_array,necessary,necessary_imn,lroot,ip, &
                        lyinyang,lcutoff_corners,nycut,nzcut, &
                        lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z, iproc
 !
@@ -216,6 +216,7 @@ module General
       if (ncpus==1) then
         imn=1
         necessary(1)=.true.
+        necessary_imn=ny*nz+1
         do n=n1,n2
           do m=m1,m2
             mm(imn)=m
@@ -241,6 +242,7 @@ module General
           enddo
         enddo
         necessary(imn)=.true.
+        necessary_imn=imn
 !
 !  Do the upper stripe in the n-direction.
 !
@@ -1108,6 +1110,22 @@ module General
 !
   endfunction intochar
 !***********************************************************************
+  character function log2str(lvar)
+!
+!  Convert logical to string 'T'|'F'.
+!
+!  23-apr-20/MR: coded
+!
+    logical, intent(IN) :: lvar
+
+    if (lvar) then
+      log2str='T'
+    else
+      log2str='F'
+    endif
+
+  endfunction log2str
+!***********************************************************************
     subroutine chk_time(label,time1,time2)
 !
       integer :: time1,time2,count_rate
@@ -1303,19 +1321,26 @@ module General
 !
     endfunction find_index_range_hill
 !***********************************************************************
-    pure integer function find_index(xa, x)
+    pure integer function find_index(xa, x, dx)
 !
 !  Returns the index of the element in array xa that is closest to x.
+!  with dx present: if distance is bigger than dx/2: return value negative.
 !
 !  24-feb-13/ccyang: coded
-!
+!  14-may-20/MR: new optional argument dx
+!               
       real, dimension(:), intent(in) :: xa
       real, intent(in) :: x
+      real, intent(in), optional :: dx
 !
       integer, dimension(1) :: closest
 !
       closest = minloc(abs(x - xa))
       find_index = closest(1)
+
+      if (present(dx)) then
+        if (abs(x-xa(find_index))>.5*dx) find_index=-find_index
+      endif
 !
     endfunction find_index
 !***********************************************************************
