@@ -43,10 +43,11 @@ module Poisson
 !
   real, pointer :: Gnewton_ptr
   real :: Gnewton
+  real :: Bsmooth=0.01
 !
-  namelist /poisson_init_pars/ Gnewton
+  namelist /poisson_init_pars/ Gnewton,Bsmooth
 !
-  namelist /poisson_run_pars/ Gnewton
+  namelist /poisson_run_pars/ Gnewton,Bsmooth
 !
   logical :: luse_fourier_transform = .false.
 !
@@ -344,7 +345,7 @@ contains
       du                  = u1d_global(2)-u1d_global(1)
       dphi = dy
 !
-      B  = .01*du
+      B  = Bsmooth*du
       B2 = B**2
 !
 !  For the definition of the kernal given by Baruteau, the u coordinate must be defined one cell beyond the boundary
