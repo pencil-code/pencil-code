@@ -399,6 +399,7 @@ module Cdata
   integer, target :: lglob=1,m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
+  integer :: necessary_imn=0
   integer, dimension (my,mz) :: imn_array
 !
 !  Parameters related to the pencil check.
