@@ -1490,16 +1490,14 @@ module InitialCondition
 !
 !  ??-???-15/wlad: adapted from correct_selfgravity
 !
-      use Sub,         only:get_radial_distance,grad
+      use Sub,         only:get_radial_distance
       use Poisson,     only:inverse_laplacian,get_acceleration
-      use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx,ny,nz) :: rho
       real, dimension (nx,ny,nz,3) :: acceleration
       real, dimension (nx) :: gspotself
-      real :: rhs_poisson_const
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
            'centrifugal force'
