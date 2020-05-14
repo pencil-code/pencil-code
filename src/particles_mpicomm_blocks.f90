@@ -2351,44 +2351,6 @@ module Particles_mpicomm
 !
     endsubroutine report_missing_particles
 !***********************************************************************
-    subroutine find_index_by_bisection(qpar,q,iq0)
-!
-!  Given a particle location (qpar), find the index of
-!  the nearest grid cell by bisecting the interval. Its main
-!  use is for non-equidistant grids. Adapted from existing code.
-!
-!  TODO: No good that it uses xgrid,ygrid,zgrid, i.e., global arrays.
-!        The best thing would be to find what is the processor has the
-!        needed grid points, and communicate just that local array.
-!
-!  27-mar-11/wlad: coded
-!
-      real, dimension (:) :: q
-      real :: qpar
-      integer :: iq0,jl,ju,jm
-!
-      intent (in) :: qpar,q
-      intent (out) :: iq0
-!
-      jl=1
-      ju=size(q)
-!
-      do while((ju-jl)>1)
-        jm=(ju+jl)/2
-        if (qpar > q(jm)) then
-          jl=jm
-        else
-          ju=jm
-        endif
-      enddo
-      if (qpar-q(jl) <= q(ju)-qpar) then
-        iq0=jl
-      else
-        iq0=ju
-      endif
-!
-    endsubroutine find_index_by_bisection
-!***********************************************************************
     subroutine get_brick_index(xxp, iproc_rec, ibrick_rec, ineargrid, status)
 !
 !  Find the parent processor and brick of a given position.
@@ -2396,6 +2358,8 @@ module Particles_mpicomm
 !  09-jan-12/ccyang: adapted from the original version in various
 !                    routines migrate_particles_*_to_*
 !
+      use Sub, only: find_index_by_bisection 
+!      
       real, dimension(3), intent(in) :: xxp
       integer, intent(out) :: iproc_rec, ibrick_rec
       integer, dimension(3), intent(out), optional :: ineargrid

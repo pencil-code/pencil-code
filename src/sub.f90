@@ -114,6 +114,7 @@ module Sub
   public :: remove_mean_value
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
   public :: torus_rect, torus_constr, vortex
+  public :: find_index_by_bisection
 !
   type torus_rect
     real, dimension(3) :: center
@@ -8376,4 +8377,42 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     
     endsubroutine vortex
 !***********************************************************************
+    subroutine find_index_by_bisection(qpar,q,iq0)
+!
+!  Given a particle location (qpar), find the index of
+!  the nearest grid cell by bisecting the interval. Its main
+!  use is for non-equidistant grids. Adapted from existing code.
+!
+!  TODO: No good that it uses xgrid,ygrid,zgrid, i.e., global arrays.
+!        The best thing would be to find what is the processor has the
+!        needed grid points, and communicate just that local array.
+!
+!  27-mar-11/wlad: coded
+!
+      real, dimension (:) :: q
+      real :: qpar
+      integer :: iq0,jl,ju,jm
+!
+      intent (in) :: qpar,q
+      intent (out) :: iq0
+!
+      jl=1
+      ju=size(q)
+!
+      do while((ju-jl)>1)
+        jm=(ju+jl)/2
+        if (qpar > q(jm)) then
+          jl=jm
+        else
+          ju=jm
+        endif
+      enddo
+      if (qpar-q(jl) <= q(ju)-qpar) then
+        iq0=jl
+      else
+        iq0=ju
+      endif
+!
+    endsubroutine find_index_by_bisection
+!***********************************************************************    
 endmodule Sub

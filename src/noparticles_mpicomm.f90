@@ -178,39 +178,6 @@ module Particles_mpicomm
 !
     endsubroutine sort_blocks
 !***********************************************************************
-    subroutine find_index_by_bisection(qpar,q,iq0)
-!
-!  Given a particle location (qpar), find the index of
-!  the nearest grid cell by bisecting the interval.
-!
-!  28-mar-11/anders: dummy
-!
-      real, dimension (:) :: q
-      real :: qpar
-      integer :: iq0,jl,ju,jm
-!
-      intent (in) :: qpar,q
-      intent (out) :: iq0
-!
-      jl=1+nghost
-      ju=size(q)-nghost
-!
-      do while((ju-jl)>1)
-        jm=(ju+jl)/2
-        if (qpar > q(jm)) then
-          jl=jm
-        else
-          ju=jm
-        endif
-      enddo
-      if (qpar-q(jl) <= q(ju)-qpar) then
-        iq0=jl
-      else
-        iq0=ju
-      endif
-!
-    endsubroutine find_index_by_bisection
-!***********************************************************************
     subroutine get_brick_index(xxp, iproc, ibrick)
 !
 !  10-jan-12/ccyang: dummy
