@@ -416,15 +416,21 @@ class __Simulation__(object):
                     # read params into Simulation object
                     for key in dir(param):
                         if key.startswith('_') or key == 'read': continue
-                        try:
-                            # allow for nested param objects
-                            self.param[key] = {} 
-                            for subkey in dir(getattr(param, key)):
-                                if subkey.startswith('_') or subkey == 'read': continue
-                                self.param[key][subkey] = getattr(getattr(param,key), subkey)
-                        except:
-                            # not nested param objects
+                        if type(getattr(param,key)) in [bool,list,float,
+                                                                       int,str]:
                             self.param[key] = getattr(param, key)
+                        else:
+                            try:
+                                # allow for nested param objects
+                                self.param[key] = {} 
+                                for subkey in dir(getattr(param, key)):
+                                    if subkey.startswith('_') or subkey == 'read': continue
+                                    if type(getattr(getattr(param,key), subkey)) in [bool,list,float,
+                                                                       int,str]:
+                                        self.param[key][subkey] = getattr(getattr(param,key), subkey)
+                            except:
+                                    # not nested param objects
+                                    continue
                     REEXPORT = True
                 else:
                     if not quiet:
