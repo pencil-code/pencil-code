@@ -132,7 +132,6 @@ end
 function pc_d2_dimension_mpfit_f, x, p
   compile_opt hidden, IDL2
 
-  ;return, exp(- p[0L] * x ^ p[1L])
   return, p[0L] * p[1L] * x ^ (p[1L] - 1d0) * exp(- p[0L] * x ^ p[1L])
 end
 
@@ -252,13 +251,15 @@ pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
 end ;;; pc_d2_dimension_plot
 
 
-pro pc_d2_dimension, pvars, allpython=allpython, $
-                     psxsize=psxsize, psysize=psysize, $
+pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
+                     fixed_bins=fixed_bins, psxsize=psxsize, psysize=psysize, $
                      xsize=xsize, ysize=ysize, noshow=noshow, $
                      log=log, recalculate=recalculate
   compile_opt IDL2
 
   python_all = keyword_set(allpython)
+  cumulative = keyword_set(cumulative)
+  if ~n_elements(fixed_bins) then fixed_bins = 1L
 
   ;; Determine if the input file is regular binary or HDF5:
 
@@ -295,7 +296,8 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
   ;; Loop over the parameter files:
 
-  for i = 0UL, n_elements(pvars) - 1UL do begin
+  npvars = n_elements(pvars)
+  for i = 0UL, npvars - 1UL do begin
 
     print, "PVAR = ", pvars[i]
 
@@ -420,35 +422,49 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
 
           ;;========================================
-          ;; Calculate the histogram: round 1:
 
-          obs = histogram(xmil, nbins=nbins, locations=locations)
+          if fixed_bins then begin
 
-          norm = dblarr(n_elements(obs))
-          for iii = 0L, n_elements(obs) - 2L do $
-             norm[iii] = (locations[iii + 1L] - locations[iii]) * obs[iii]
-          obs /= total(norm) ;; Normalize data
+            binsize = 3.3333d-3
+            min = 0d0
+            nbins = 1100L & nbins_fit = nbins
+            obs = histogram(xmil, binsize=binsize, $
+                            min=min, nbins=nbins, locations=locations)
 
-          for jj = 0UL, nbins - 2UL do locations[jj] += locations[jj + 1UL]
-          locations /= 2d0
+          endif else begin
 
-          ;; Locate maximum, and step back to a third:
-          obs_max = max(obs[1L : *], obs_max_idx)
-          obs_max_idx_13 = long(mean(obs_max_idx) / 3d0)
+            ;;========================================
+            ;; Calculate the histogram: round 1:
 
-          ;;filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-          ;;           strtrim(j, 2L) + '_h1.png'
-          ;;pc_d2_dimension_plot, locations, obs, filename=filename
+            obs = histogram(xmil, nbins=nbins, locations=locations)
+
+            norm = dblarr(n_elements(obs))
+            for iii = 0L, n_elements(obs) - 2L do $
+               norm[iii] = (locations[iii + 1L] - locations[iii]) * obs[iii]
+            obs /= total(norm) ;; Normalize data
+
+            for jj = 0UL, nbins - 2UL do locations[jj] += locations[jj + 1UL]
+            locations /= 2d0
+
+            ;; Locate maximum, and step back to a third:
+            obs_max = max(obs[1L : *], obs_max_idx)
+            obs_max_idx_13 = long(mean(obs_max_idx) / 3d0)
+
+            ;;filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
+            ;;           strtrim(j, 2L) + '_h1.png'
+            ;;pc_d2_dimension_plot, locations, obs, filename=filename
 
 
-          ;; Calculate new number of bins:
-          nbins_fit = long(1d2 / (obs_max_idx_13 + 1L) * nbins)
+            ;; Calculate new number of bins:
+            nbins_fit = long(1d2 / (obs_max_idx_13 + 1L) * nbins)
 
 
-          ;;========================================
-          ;; Histogram: round 2:
+            ;;========================================
+            ;; Histogram: round 2:
 
-          obs = histogram(xmil, nbins=nbins_fit, locations=locations)
+            obs = histogram(xmil, nbins=nbins_fit, locations=locations)
+
+          endelse
 
           norm = dblarr(n_elements(obs))
           for iii = 0L, n_elements(obs) - 2L do $
@@ -472,6 +488,34 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
           readcol, filenames[j], /compress, format='(f,f)', locations, obs
           nbins_fit = n_elements(obs)
+
+          cumul_str = ''
+          if keyword_set(cumulative) then begin
+
+            if ~n_elements(obs_sum) then begin
+              obs_sum = temporary(obs)
+            endif else begin
+              obs_sum += obs
+            endelse
+
+            ;; Normalize the total sum once all data were loaded:
+            if i eq npvars - 1UL then begin
+
+              norm = dblarr(n_elements(obs_sum))
+              for iii = 0L, n_elements(obs_sum) - 2L do $
+                 norm[iii] = (locations[iii + 1L] - locations[iii]) * obs_sum[iii]
+              obs = temporary(obs_sum) / total(norm)
+
+              cumul_str = '_cumul'
+
+            endif else begin
+
+              ;; Skip to the next file:
+              continue
+
+            endelse
+
+          endif ;; cumulative
 
         endelse
 
@@ -504,7 +548,8 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
         yfit = pc_d2_dimension_mpfit_f(x, p)
 
         yfit_3 = pc_d2_dimension_mpfit_f(x, [p[0L], 3d0])
-        ;; Another way to do it using the IDL-to-Python bridge:
+
+        ;; Another way to do it using the IDL-to-Python bridge (*very* slow):
         ;;
         ;;Python.xp_fit  = Python.Wrap(x)
         ;;Python.obs_fit = Python.Wrap(y)
@@ -518,9 +563,9 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
         ;;D2 = popt[1L]
 
         filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-                   strtrim(j, 2L) + '_hist.png'
+                   strtrim(j, 2L) + cumul_str + '_hist.png'
         psfilename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-                   strtrim(j, 2L) + '_hist.eps'
+                   strtrim(j, 2L) + cumul_str + '_hist.eps'
         pc_d2_dimension_plot, locations, obs, fitx=x, fity=yfit, log=log, $
                               filename=filename, psfilename=psfilename, $
                               psxsize=psxsize, psysize=psysize, $
