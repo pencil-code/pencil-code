@@ -1700,6 +1700,11 @@ module PointMasses
 !***********************************************************************
     subroutine initcond_correct_selfgravity(f,velocity,k)
 !
+!  Calculates acceleration on the point (x,y,z)=xxpar
+!  due to the gravity of gas. 
+!
+!  14-may-20/wlad : coded
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nqpar,3), intent(inout) :: velocity
       real, dimension(3) :: accg
@@ -1748,9 +1753,10 @@ module PointMasses
     subroutine correct_selfgravity_poisson(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
-!  due to the gravity of the gas+dust.
+!  due to the gravity of gas, by interpolating from the
+!  gravitational acceleration from the selfgravity module. 
 !
-!  29-aug-18/wlad : coded
+!  14-may-20/wlad : coded
 !
       use Mpicomm
       use Sub, only: get_radial_distance
@@ -1769,14 +1775,14 @@ module PointMasses
       endif
       call inverse_laplacian(rho)
       call get_acceleration(acceleration)
-      call trilinear_interpolate(acceleration,fq(k,ixq:izq),accg)
+      call bilinear_interpolate(acceleration,fq(k,ixq:izq),accg)
 !
     endsubroutine correct_selfgravity_poisson
 !***********************************************************************
     subroutine correct_selfgravity_integrate(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
-!  due to the gravity of the gas+dust.
+!  due to the gravity of gas, by integrating the whole grid. 
 !
 !  29-aug-18/wlad : coded
 !
@@ -1901,72 +1907,148 @@ module PointMasses
 !
     endsubroutine correct_selfgravity_integrate
 !***********************************************************************
-    subroutine trilinear_interpolate(v,q,vp)
+    subroutine bilinear_interpolate(v,q,vp)
+!
+!  Interpolate the gravity vector with bilinear interpolation to the position
+!  of the pointmass(es). 
 !
       use Sub, only: find_index_by_bisection
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
 !      
-      !real, dimension (nx,ny,3) :: v
-      real, dimension (nx,ny,3) :: v
+      real, dimension (nx,ny,nz,3) :: v
       real, dimension (3) :: q
       real, dimension (3) :: vp
-      integer :: j,ix,iy,iz,ixx,iyy,izz
-      real :: idx,idy,idz,rx,ry,rz
-      real :: ddx1,ddy1,ddz1,idx1,idy1,idz1,idx2,idy2,idz2
+      integer :: j
+
+      real :: rdx1,rdy1,rdz1
+      real :: rdx2,rdy2,rdz2
+      real :: ddx1,ddy1,ddz1
+      integer :: ix0_global,iy0_global,iz0_global
+      integer :: ix1_global,iy1_global,iz1_global
+
+      integer :: ipx0,ipy0,ipz0
+      integer :: ipx1,ipy1,ipz1
+      integer :: ix0,iy0,iz0
+      integer :: ix1,iy1,iz1
+!
+      integer :: iproc_q11,iproc_q21,iproc_q12,iproc_q22
+      real, dimension(3) :: Q11,Q21,Q12,Q22
 !
       intent(in) :: v,q
       intent(out) :: vp
 !     
-      call find_index_by_bisection(q(1),x,ix) ; if (x(ix)>q(1)) ix = ix-1
-      call find_index_by_bisection(q(2),y,iy) ; if (y(iy)>q(2)) iy = iy-1
-      call find_index_by_bisection(q(3),z,iz) ; if (z(iz)>q(3)) iz = iz-1
-!
-      ddx1=1./(x(ix+1)-x(ix))
-      ddy1=1./(y(iy+1)-y(iy))
-      ddz1=1./(z(iz+1)-z(iz))
+      call find_index_by_bisection(q(1),xgrid,ix0_global)
+      if (xgrid(ix0_global)>q(1)) ix0_global = ix0_global-1
+      ix1_global=ix0_global+1
+      ddx1=1./(xgrid(ix1_global)-xgrid(ix0_global))
+      rdx1 = (q(1)-xgrid(ix0_global))*ddx1
+      rdx2 = (xgrid(ix1_global)-q(1))*ddx1
 
-      idx1 = (q(1)-x(ix))*ddx1
-      idy1 = (q(2)-y(iy))*ddy1
-      idz1 = (q(3)-z(iz))*ddz1
+      if (nprocx/=1) then 
+         ipx0=(ix0_global-1)/nx
+         ix0=ix0_global-ipx0*nx
+         ipx1=(ix1_global-1)/nx
+         ix1=ix1_global-ipx1*nx
+      else
+         ipx0=0
+         ix0=ix0_global
+         ipx1=0
+         ix1=ix1_global
+      endif
+!
+      call find_index_by_bisection(q(2),ygrid,iy0_global)
+      if (ygrid(iy0_global)>q(2)) iy0_global = iy0_global-1
+      iy1_global=iy0_global+1
+      ddy1=1./(ygrid(iy1_global)-ygrid(iy0_global))
+      rdy1 = (q(2)-ygrid(iy0_global))*ddy1
+      rdy2 = (ygrid(iy1_global)-q(2))*ddy1
 
-      idx2 = (x(ix+1)-q(1))*ddx1
-      idy2 = (y(iy+1)-q(2))*ddy1
-      idz2 = (z(iz+1)-q(3))*ddz1
-!      
-      !rx = idx - ix
-      !ry = idy - iy
-      !rz = idz - iz
-!     
-      ixx=ix-l1+1
-      iyy=iy-m1+1
-      izz=iz-n1+1
+      if (nprocy/=1) then 
+         ipy0=(iy0_global-1)/ny
+         iy0=iy0_global-ipy0*ny
+         ipy1=(iy1_global-1)/ny
+         iy1=iy1_global-ipy1*ny
+      else
+         ipy0=0
+         iy0=iy0_global
+         ipy1=0
+         iy1=iy1_global
+      endif
+!         
+      if (nz==1) then
+         !ipz=0
+         iz0=1
+      else
+         call fatal_error("trilinear_interpolate","logpsirals works only for 2D")
+         !call find_index_by_bisection(q(3),zgrid,iz0_global)
+         !if (zgrid(iz0_global)>q(3)) iz0_global = iz0_global-1
+         !iz1_global=iz0_global+1
+         !ddz1=1./(zgrid(iz1_global)-zgrid(iz0_global))
+         !rdz1 = (q(3)-zgrid(iz0_global))*ddz1
+         !rdz2 = (zgrid(iz1_global)-q(3))*ddz1
+
+         !if (nprocz/=1) then 
+         !   ipz0=(iz0_global-1)/nz
+         !   iz0=iz0_global-ipz0*nz
+         !   ipz1=(iz1_global-1)/nz
+         !   iz1=iz1_global-ipz1*nz
+         !else
+         !   ipz0=0
+         !   iz0=iz0_global
+         !   ipz1=0
+         !   iz1=iz1_global
+         !endif
+      endif
 !
-      do j=1,3         
+      iproc_q11 = ipx0 + nprocx*ipy0 + nprocx*nprocy*ipz
+      iproc_q21 = ipx1 + nprocx*ipy0 + nprocx*nprocy*ipz
+      iproc_q12 = ipx0 + nprocx*ipy1 + nprocx*nprocy*ipz
+      iproc_q22 = ipx1 + nprocx*ipy1 + nprocx*nprocy*ipz
 !
+      if (iproc_q11 /= root) then
+         if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
+         if (lroot)            call mpirecv_real(Q11             ,3,iproc_q11,111)
+      else
+         Q11 = v(ix0,iy0,1,:)
+      endif
+!
+      if (iproc_q21 /= root) then
+         if (iproc==iproc_q21) call mpisend_real(v(ix1,iy0,iz0,:),3,root     ,121)
+         if (lroot)            call mpirecv_real(Q21             ,3,iproc_q21,121)
+      else
+         Q21 = v(ix1,iy0,1,:)
+      endif
+!
+      if (iproc_q12 /= root) then
+         if (iproc==iproc_q12) call mpisend_real(v(ix0,iy1,iz0,:),3,root     ,112)
+         if (lroot)            call mpirecv_real(Q12             ,3,iproc_q12,112)
+      else
+         Q12 = v(ix0,iy1,1,:)
+      endif
+!
+      if (iproc_q22 /= root) then
+         if (iproc==iproc_q22) call mpisend_real(v(ix1,iy1,iz0,:),3,root     ,122)
+         if (lroot)            call mpirecv_real(Q22             ,3,iproc_q22,122)
+      else
+         Q22 = v(ix1,iy1,1,:)
+      endif
+!
+      if (lroot) then 
+        do j=1,3         
 !
 ! Interpolation formula
 !
+          vp(j) &
+               =   Q11(j) * rdx2* rdy2 &   ! Q11
+                 + Q21(j) * rdx1* rdy2 &   ! Q21
+                 + Q12(j) * rdx2* rdy1 &   ! Q12
+                 + Q22(j) * rdx1* rdy1     ! Q22
+        enddo
+      endif
 !
-         !vp(j) &
-         !       =   v(ixx  , iyy  , izz  ,j) * (1-rx) * (1-ry) * (1-rz) &
-         !       !
-         !         + v(ixx+1, iyy  , izz  ,j) * rx     * (1-ry) * (1-rz) &
-         !         + v(ixx  , iyy+1, izz  ,j) * (1-rx) * ry     * (1-rz) &
-         !         + v(ixx  , iyy  , izz+1,j) * (1-rx) * (1-ry) * rz     &
-         !       !
-         !         + v(ixx+1, iyy+1, izz  ,j) * rx     * ry     * (1-rz) &
-         !         + v(ixx  , iyy+1, izz+1,j) * (1-rx) * ry     * rz     &
-         !         + v(ixx+1, iyy  , izz+1,j) * rx     * (1-ry) * rz     &
-         !       !
-         !         + v(ixx+1, iyy+1, izz+1,j) * rx     * ry     * rz
-
-         vp(j) &
-              =   v(ixx  , iyy  ,j) * idx2* idy2 &   ! Q11
-              + v(ixx+1, iyy  ,j) * idx1* idy2 &   ! Q21
-              + v(ixx  , iyy+1,j) * idx2* idy1 &   ! Q12
-              + v(ixx+1, iyy+1,j) * idx1* idy1     ! Q22
-      enddo
+      call mpibcast_real(vp,3)
 !
-    endsubroutine trilinear_interpolate
+    endsubroutine bilinear_interpolate
 !***********************************************************************
     subroutine integrate_selfgravity(p,rrp,xxpar,accg,rp0)
 !
