@@ -259,6 +259,7 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
 
   python_all = keyword_set(allpython)
   cumulative = keyword_set(cumulative)
+  cumul_str = ''
   if ~n_elements(fixed_bins) then fixed_bins = 1L
 
   ;; Determine if the input file is regular binary or HDF5:
@@ -288,6 +289,9 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
     cd, pwd
   endif
 
+
+  ;; Cumulative sum, create a pointer array:
+  if cumulative then obs_sum = ptrarr(nap0)
 
   ;; Open the output file:
   file = 'nnd_d2.dat'
@@ -489,22 +493,23 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
           readcol, filenames[j], /compress, format='(f,f)', locations, obs
           nbins_fit = n_elements(obs)
 
-          cumul_str = ''
           if keyword_set(cumulative) then begin
 
-            if ~n_elements(obs_sum) then begin
-              obs_sum = temporary(obs)
+            if ~ptr_valid(obs_sum[j]) then begin
+              obs_sum[j] = ptr_new(temporary(obs))
             endif else begin
-              obs_sum += obs
+              *obs_sum[j] += obs
             endelse
 
             ;; Normalize the total sum once all data were loaded:
             if i eq npvars - 1UL then begin
 
-              norm = dblarr(n_elements(obs_sum))
-              for iii = 0L, n_elements(obs_sum) - 2L do $
-                 norm[iii] = (locations[iii + 1L] - locations[iii]) * obs_sum[iii]
-              obs = temporary(obs_sum) / total(norm)
+              norm = dblarr(n_elements(*obs_sum[j]))
+              for iii = 0L, n_elements(*obs_sum[j]) - 2L do $
+                 norm[iii] = (locations[iii + 1L] - locations[iii]) * (*obs_sum[j])[iii]
+              obs = *obs_sum[j] / total(norm)
+
+              ptr_free, obs_sum[j]
 
               cumul_str = '_cumul'
 
@@ -596,7 +601,4 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
 
 
   return
-
-  return
-
-end
+end ;;; procedure: pc_d2_dimension
