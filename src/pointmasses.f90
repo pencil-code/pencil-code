@@ -1907,7 +1907,6 @@ module PointMasses
 !  Interpolate the gravity vector with bilinear interpolation to the position
 !  of the pointmass(es). 
 !
-      use Sub, only: find_index_by_bisection
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
 !      
       real, dimension (nx,ny,nz,3) :: v
@@ -1917,9 +1916,8 @@ module PointMasses
 
       real :: rdx1,rdy1,rdz1
       real :: rdx2,rdy2,rdz2
-      real :: ddx1,ddy1,ddz1
-      integer :: ix0_global,iy0_global,iz0_global,iy0_global_ng
-      integer :: ix1_global,iy1_global,iz1_global,iy1_global_ng
+      integer :: ix0_global,iy0_global,iz0_global
+      integer :: ix1_global,iy1_global,iz1_global
 
       integer :: ipx0,ipy0,ipz0
       integer :: ipx1,ipy1,ipz1
@@ -1931,83 +1929,18 @@ module PointMasses
 !
       intent(in) :: v,q
       intent(out) :: vp
-!     
-      call find_index_by_bisection(q(1),xgrid,ix0_global)
-      if (xgrid(ix0_global)>q(1)) ix0_global = ix0_global-1
-      ix1_global=ix0_global+1
-      ddx1=1./(xgrid(ix1_global)-xgrid(ix0_global))
-      rdx1 = (q(1)-xgrid(ix0_global))*ddx1
-      rdx2 = (xgrid(ix1_global)-q(1))*ddx1
-
-      if (nprocx/=1) then 
-         ipx0=(ix0_global-1)/nx
-         ix0=ix0_global-ipx0*nx
-         ipx1=(ix1_global-1)/nx
-         ix1=ix1_global-ipx1*nx
-      else
-         ipx0=0
-         ix0=ix0_global
-         ipx1=0
-         ix1=ix1_global
-      endif
 !
-!  Y direction is periodic 
-!
-      call find_index_by_bisection(q(2),ygrid,iy0_global)
-      ddy1=dy1grid(iy0_global)
-      if (ygrid(iy0_global)>q(2)) iy0_global = iy0_global-1
-      iy1_global=iy0_global+1
-!      
-      if (iy0_global < 1) then
-         iy0_global = iy0_global + nygrid
-         rdy1 = (q(2)-(ygrid(1)-dy))*ddy1
-      else
-         rdy1 = (q(2)-ygrid(iy0_global))*ddy1
-      endif
-      
-      if (iy1_global > nygrid) then
-         iy1_global = iy1_global - nygrid
-         rdy2 = (ygrid(nygrid)+dy-q(2))*ddy1
-      else
-         rdy2 = (ygrid(iy1_global)-q(2))*ddy1
-      endif
-!
-      if (nprocy/=1) then 
-         ipy0=(iy0_global-1)/ny
-         iy0=iy0_global-ipy0*ny
-         ipy1=(iy1_global-1)/ny
-         iy1=iy1_global-ipy1*ny
-      else
-         ipy0=0
-         iy0=iy0_global
-         ipy1=0
-         iy1=iy1_global
-      endif
-      !print*,iy0_global_ng,iy1_global_ng,yglobal(iy0_global),q(2),yglobal(iy1_global)
+      call calc_indices_and_processors(q(1),xgrid,dx1grid,nprocx,nx,&
+           lperi(1),ix0,ix1,ipx0,ipx1,rdx1,rdx2)
+      call calc_indices_and_processors(q(2),ygrid,dy1grid,nprocy,ny,&
+           lperi(2),iy0,iy1,ipy0,ipy1,rdy1,rdy2)
 !         
       if (nz==1) then
-         !ipz=0
-         iz0=1
+        iz0=1
       else
-         call fatal_error("trilinear_interpolate","logpsirals works only for 2D")
-         !call find_index_by_bisection(q(3),zgrid,iz0_global)
-         !if (zgrid(iz0_global)>q(3)) iz0_global = iz0_global-1
-         !iz1_global=iz0_global+1
-         !ddz1=1./(zgrid(iz1_global)-zgrid(iz0_global))
-         !rdz1 = (q(3)-zgrid(iz0_global))*ddz1
-         !rdz2 = (zgrid(iz1_global)-q(3))*ddz1
-
-         !if (nprocz/=1) then 
-         !   ipz0=(iz0_global-1)/nz
-         !   iz0=iz0_global-ipz0*nz
-         !   ipz1=(iz1_global-1)/nz
-         !   iz1=iz1_global-ipz1*nz
-         !else
-         !   ipz0=0
-         !   iz0=iz0_global
-         !   ipz1=0
-         !   iz1=iz1_global
-         !endif
+        call fatal_error("trilinear_interpolate","logpsirals works only for 2D")
+        !call calc_indices_and_processors(q(3),zgrid,dz1grid,nprocz,nz,&
+        !lperi(3),iz0,iz1,ipz0,ipz1,rdz1,rdz2)
       endif
 !
       iproc_q11 = ipx0 + nprocx*ipy0 + nprocx*nprocy*ipz
@@ -2016,31 +1949,31 @@ module PointMasses
       iproc_q22 = ipx1 + nprocx*ipy1 + nprocx*nprocy*ipz
 !
       if (iproc_q11 /= root) then
-         if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
-         if (lroot)            call mpirecv_real(Q11             ,3,iproc_q11,111)
+        if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
+        if (lroot)            call mpirecv_real(Q11             ,3,iproc_q11,111)
       else
-         Q11 = v(ix0,iy0,iz0,:)
+        Q11 = v(ix0,iy0,iz0,:)
       endif
 !
       if (iproc_q21 /= root) then
-         if (iproc==iproc_q21) call mpisend_real(v(ix1,iy0,iz0,:),3,root     ,121)
-         if (lroot)            call mpirecv_real(Q21             ,3,iproc_q21,121)
+        if (iproc==iproc_q21) call mpisend_real(v(ix1,iy0,iz0,:),3,root     ,121)
+        if (lroot)            call mpirecv_real(Q21             ,3,iproc_q21,121)
       else
-         Q21 = v(ix1,iy0,iz0,:)
+        Q21 = v(ix1,iy0,iz0,:)
       endif
 !
       if (iproc_q12 /= root) then
-         if (iproc==iproc_q12) call mpisend_real(v(ix0,iy1,iz0,:),3,root     ,112)
-         if (lroot)            call mpirecv_real(Q12             ,3,iproc_q12,112)
+        if (iproc==iproc_q12) call mpisend_real(v(ix0,iy1,iz0,:),3,root     ,112)
+        if (lroot)            call mpirecv_real(Q12             ,3,iproc_q12,112)
       else
-         Q12 = v(ix0,iy1,iz0,:)
+        Q12 = v(ix0,iy1,iz0,:)
       endif
 !
       if (iproc_q22 /= root) then
-         if (iproc==iproc_q22) call mpisend_real(v(ix1,iy1,iz0,:),3,root     ,122)
-         if (lroot)            call mpirecv_real(Q22             ,3,iproc_q22,122)
+        if (iproc==iproc_q22) call mpisend_real(v(ix1,iy1,iz0,:),3,root     ,122)
+        if (lroot)            call mpirecv_real(Q22             ,3,iproc_q22,122)
       else
-         Q22 = v(ix1,iy1,1,:)
+        Q22 = v(ix1,iy1,iz0,:)
       endif
 !
       if (lroot) then 
@@ -2060,6 +1993,90 @@ module PointMasses
 !
     endsubroutine bilinear_interpolate
 !***********************************************************************
+    subroutine calc_indices_and_processors(q,qgrid,dq1grid,nprocq,nq,lperiodic_direction,&
+         iq0,iq1,ipq0,ipq1,rdq1,rdq2)
+!
+      use Sub, only: find_index_by_bisection
+!
+      real, dimension(:) :: qgrid
+      real, dimension(:) :: dq1grid
+      real :: q,rdq1,rdq2,dq1,dq
+      integer :: iq0_global,iq1_global,ipq0,ipq1,iq0,iq1,nprocq,nq
+      logical :: lperiodic_direction
+      integer :: nqgrid
+!
+      intent(in) :: q,qgrid,lperiodic_direction,nprocq,nq
+      intent(out) :: iq0,iq1,ipq0,ipq1,rdq1,rdq2
+
+      lperiodic: if (.not.lperiodic_direction) then
+!
+!  Non-periodic grid          
+!
+        call find_index_by_bisection(q,qgrid,iq0_global)      
+        if (qgrid(iq0_global)>q) iq0_global = iq0_global-1
+        iq1_global=iq0_global+1
+!      
+        dq1=1./(qgrid(iq1_global)-qgrid(iq0_global))
+        rdq1 = (q-qgrid(iq0_global))*dq1
+        rdq2 = (qgrid(iq1_global)-q)*dq1
+!
+        if (nprocq/=1) then 
+          ipq0 = (iq0_global-1)/nq
+          ipq1 = (iq1_global-1)/nq
+!
+          iq0  = iq0_global-ipq0*nq
+          iq1  = iq1_global-ipq1*nq
+        else
+          ipq0=0
+          ipq1=0
+!
+          iq0=iq0_global
+          iq1=iq1_global
+        endif
+!
+      else
+!
+!  Periodic grid
+!
+        call find_index_by_bisection(q,qgrid,iq0_global)
+        dq1=dq1grid(iq0_global)
+        dq=1./dq1
+        if (qgrid(iq0_global)>q) iq0_global = iq0_global-1
+        iq1_global=iq0_global+1
+!
+        nqgrid=size(qgrid)
+        if (iq0_global < 1) then
+          iq0_global = iq0_global + nqgrid
+          rdq1 = (q-(qgrid(1)-dq))*dq1
+        else
+          rdq1 = (q-qgrid(iq0_global))*dq1
+        endif
+!
+        if (iq1_global > nqgrid) then
+          iq1_global = iq1_global - nqgrid
+          rdq2 = (qgrid(nqgrid)+dq-q)*dq1
+        else
+          rdq2 = (qgrid(iq1_global)-q)*dq1
+        endif
+!
+        if (nprocq/=1) then 
+          ipq0=(iq0_global-1)/nq
+          ipq1=(iq1_global-1)/nq
+!
+          iq0=iq0_global-ipq0*nq
+          iq1=iq1_global-ipq1*nq
+        else
+          ipq0=0
+          ipq1=0
+!
+          iq0=iq0_global
+          iq1=iq1_global
+        endif
+!
+      endif lperiodic
+!
+    endsubroutine calc_indices_and_processors
+!***********************************************************************    
     subroutine integrate_gasgravity(p,rrp,xxpar,accg,rp0)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
