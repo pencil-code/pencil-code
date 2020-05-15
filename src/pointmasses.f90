@@ -1707,9 +1707,9 @@ module PointMasses
       integer, intent(in) :: k
 !
       if (lselfgravity) then
-        call initcond_correct_selfgravity_poisson(f,k,accg)
+        call correct_selfgravity_poisson(f,k,accg)
       else
-        call initcond_correct_selfgravity_integrate(f,k,accg)
+        call correct_selfgravity_integrate(f,k,accg)
       endif
 !
 !  Correct original velocity by this acceleration
@@ -1745,7 +1745,7 @@ module PointMasses
 !
     endsubroutine initcond_correct_selfgravity
 !***********************************************************************
-    subroutine initcond_correct_selfgravity_poisson(f,k,accg)
+    subroutine correct_selfgravity_poisson(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of the gas+dust.
@@ -1771,9 +1771,9 @@ module PointMasses
       call get_acceleration(acceleration)
       call trilinear_interpolate(acceleration,fq(k,ixq:izq),accg)
 !
-    endsubroutine initcond_correct_selfgravity_poisson
+    endsubroutine correct_selfgravity_poisson
 !***********************************************************************
-    subroutine initcond_correct_selfgravity_integrate(f,k,accg)
+    subroutine correct_selfgravity_integrate(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of the gas+dust.
@@ -1868,38 +1868,38 @@ module PointMasses
 !
 !  Exclude the frozen zones
 !
-      if (lcartesian_coords) call fatal_error("","")
+        if (lcartesian_coords) call fatal_error("","")
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
+        do j=1,3
+          tmp=selfgrav*dist(:,j)
+          !take proper care of the trapezoidal rule
+          !in the case of non-periodic boundaries
+          fac = 1.
+          if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
+            if (.not.lperi(2)) fac = .5*fac
+          endif
+!
+          if (lperi(1)) then
+            sum_loc(j) = sum_loc(j)+fac*sum(tmp)
+          else
+            sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+          endif
+        enddo
+      enddo nloop
+      enddo mloop
+!
       do j=1,3
-        tmp=selfgrav*dist(:,j)
-        !take proper care of the trapezoidal rule
-        !in the case of non-periodic boundaries
-        fac = 1.
-        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-          if (.not.lperi(2)) fac = .5*fac
-        endif
-!
-        if (lperi(1)) then
-          sum_loc(j) = sum_loc(j)+fac*sum(tmp)
-        else
-          sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
-        endif        
-     enddo
-    enddo nloop
-    enddo mloop
-!
-    do j=1,3
-      call mpireduce_sum(sum_loc(j),accg(j))
-    enddo
+        call mpireduce_sum(sum_loc(j),accg(j))
+      enddo
 !
 !  Broadcast particle acceleration
 !
-    call mpibcast_real(accg,3)
+      call mpibcast_real(accg,3)
 !
-    endsubroutine initcond_correct_selfgravity_integrate
+    endsubroutine correct_selfgravity_integrate
 !***********************************************************************
     subroutine trilinear_interpolate(v,q,vp)
 !
@@ -1960,10 +1960,10 @@ module PointMasses
          !         + v(ixx+1, iyy+1, izz+1,j) * rx     * ry     * rz
 
          vp(j) &
-                =   v(ixx  , iyy  ,j) * idx2* idy2 &   ! Q11
-                  + v(ixx+1, iyy  ,j) * idx1* idy2 &   ! Q21
-                  + v(ixx  , iyy+1,j) * idx2* idy1 &   ! Q12
-                  + v(ixx+1, iyy+1,j) * idx1* idy1     ! Q22
+              =   v(ixx  , iyy  ,j) * idx2* idy2 &   ! Q11
+              + v(ixx+1, iyy  ,j) * idx1* idy2 &   ! Q21
+              + v(ixx  , iyy+1,j) * idx2* idy1 &   ! Q12
+              + v(ixx+1, iyy+1,j) * idx1* idy1     ! Q22
       enddo
 !
     endsubroutine trilinear_interpolate
