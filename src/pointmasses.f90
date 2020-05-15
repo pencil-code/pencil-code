@@ -1918,8 +1918,8 @@ module PointMasses
       real :: rdx1,rdy1,rdz1
       real :: rdx2,rdy2,rdz2
       real :: ddx1,ddy1,ddz1
-      integer :: ix0_global,iy0_global,iz0_global
-      integer :: ix1_global,iy1_global,iz1_global
+      integer :: ix0_global,iy0_global,iz0_global,iy0_global_ng
+      integer :: ix1_global,iy1_global,iz1_global,iy1_global_ng
 
       integer :: ipx0,ipy0,ipz0
       integer :: ipx1,ipy1,ipz1
@@ -1951,13 +1951,27 @@ module PointMasses
          ix1=ix1_global
       endif
 !
+!  Y direction is periodic 
+!
       call find_index_by_bisection(q(2),ygrid,iy0_global)
+      ddy1=dy1grid(iy0_global)
       if (ygrid(iy0_global)>q(2)) iy0_global = iy0_global-1
       iy1_global=iy0_global+1
-      ddy1=1./(ygrid(iy1_global)-ygrid(iy0_global))
-      rdy1 = (q(2)-ygrid(iy0_global))*ddy1
-      rdy2 = (ygrid(iy1_global)-q(2))*ddy1
-
+!      
+      if (iy0_global < 1) then
+         iy0_global = iy0_global + nygrid
+         rdy1 = (q(2)-(ygrid(1)-dy))*ddy1
+      else
+         rdy1 = (q(2)-ygrid(iy0_global))*ddy1
+      endif
+      
+      if (iy1_global > nygrid) then
+         iy1_global = iy1_global - nygrid
+         rdy2 = (ygrid(nygrid)+dy-q(2))*ddy1
+      else
+         rdy2 = (ygrid(iy1_global)-q(2))*ddy1
+      endif
+!
       if (nprocy/=1) then 
          ipy0=(iy0_global-1)/ny
          iy0=iy0_global-ipy0*ny
@@ -1969,6 +1983,7 @@ module PointMasses
          ipy1=0
          iy1=iy1_global
       endif
+      !print*,iy0_global_ng,iy1_global_ng,yglobal(iy0_global),q(2),yglobal(iy1_global)
 !         
       if (nz==1) then
          !ipz=0
@@ -2004,21 +2019,21 @@ module PointMasses
          if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
          if (lroot)            call mpirecv_real(Q11             ,3,iproc_q11,111)
       else
-         Q11 = v(ix0,iy0,1,:)
+         Q11 = v(ix0,iy0,iz0,:)
       endif
 !
       if (iproc_q21 /= root) then
          if (iproc==iproc_q21) call mpisend_real(v(ix1,iy0,iz0,:),3,root     ,121)
          if (lroot)            call mpirecv_real(Q21             ,3,iproc_q21,121)
       else
-         Q21 = v(ix1,iy0,1,:)
+         Q21 = v(ix1,iy0,iz0,:)
       endif
 !
       if (iproc_q12 /= root) then
          if (iproc==iproc_q12) call mpisend_real(v(ix0,iy1,iz0,:),3,root     ,112)
          if (lroot)            call mpirecv_real(Q12             ,3,iproc_q12,112)
       else
-         Q12 = v(ix0,iy1,1,:)
+         Q12 = v(ix0,iy1,iz0,:)
       endif
 !
       if (iproc_q22 /= root) then
