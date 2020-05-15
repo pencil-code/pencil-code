@@ -184,7 +184,7 @@ class __Simulation__(object):
         # optional files to be copied
         if type(start_optionals) == type(['list']):
             start_optionals = self.start_optionals + start_optionals
-        if start_optionals == True: start_optionals = self.start_optionals
+        if start_optionals == False: start_optionals = self.start_optionals
         if type(start_optionals) == type('string'):
             start_optionals = [start_optionals]
         if type(start_optionals) != type(['list']):
