@@ -924,6 +924,12 @@ module PointMasses
 !
       endif
 !
+!  Add gas selfgravity if present
+!
+      if (lselfgravity) then
+        call selfgravity_gas_on_pointmass
+      endif
+!
       if (lparticles) then
         call mpibcast_real(hill_radius_square,nqpar)
         call dvvp_dt_dustparticles(hill_radius_square)
@@ -1221,6 +1227,35 @@ module PointMasses
       endif
 !
     endsubroutine dragforce_pointmasses
+!**********************************************************
+    subroutine selfgravity_gas_on_pointmass()
+!
+!  Adds selfgravity on massive particles. This subroutine
+!  fetchs the (global) acceleration array calculated by the
+!  logspirals method and interpolates the acceleration to
+!  the position of the pointmass. TODO: other poisson methods
+!  should get the potential, take the gradient and interpolate.
+!
+!  14-mat-20/wlad: coded
+!
+      use Mpicomm
+      use Sub, only: get_radial_distance
+      use Poisson,     only:inverse_laplacian,get_acceleration
+!
+      integer :: ks
+      real, dimension (nx,ny,nz,3) :: acceleration
+      real, dimension (3) :: accg
+!
+      call get_acceleration(acceleration)
+!
+      do ks=1,nqpar
+        if (ks/=iprimary) then
+          call bilinear_interpolate(acceleration,fq(ks,ixq:izq),accg)
+          if (lroot) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+        endif
+      enddo
+!
+    endsubroutine selfgravity_gas_on_pointmass
 !**********************************************************
     subroutine get_evr(xxp,xxq,evr_output)
 !
