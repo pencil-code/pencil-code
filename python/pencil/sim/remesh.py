@@ -73,7 +73,8 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
     Call signature:
  
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
-               fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,                      lsymmetric=True, quiet=True
+               fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
+               lsymmetric=True, quiet=True)
 
     Keyword arguments:
 
@@ -187,8 +188,8 @@ def src2dst_remesh(src, dst,
                    multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
                    dstprecision=[b'D'], lsymmetric=True, quiet=True,
-                   check_grid=True, OVERWRITE=False, optionals=True,
-                   rename_submit_script=False, nmin=8, MBmin=5.0, ncpus=[1,1,1],
+                   check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
+                   rename_submit_script=False, MBmin=5.0, ncpus=[1,1,1],
                    start_optionals=False, hostfile=None, submit_new=False,
                    chunksize = 1000.0
                   ):
@@ -199,8 +200,8 @@ def src2dst_remesh(src, dst,
                    fracxyz=[1,1,1], srcghost=3, dstghost=3, 
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
                    dstprecision=[b'D'], lsymmetric=True, quiet=True,
-                   check_grid=True, OVERWRITE=False, optionals=True,
-                   rename_submit_script=False, nmin=8, MBmin=5.0, ncpus=[1,1,1],
+                   check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
+                   rename_submit_script=False, MBmin=5.0, ncpus=[1,1,1],
                    start_optionals=False, hostfile=None, submit_new=False)
 
     Keyword arguments:
@@ -254,13 +255,13 @@ def src2dst_remesh(src, dst,
     *optionals*:
       Copy simulation files with True or specify list of names (string) for 
       additional files from src sim directory.
+ 
+    *nmin*:
+      Minimum length along coordinate after splitting by proc.
 
     *rename_submit_script:
       Edit lines in submission files vcopied from src to dst.
       Not yet operational.
- 
-    *nmin*:
-      Minimum length along coordinate after splitting by proc.
 
     *MBmin*:
       Minimum size in MB of data on a sinlge proc pf ncpus total processes.
@@ -286,12 +287,15 @@ def src2dst_remesh(src, dst,
     """
     import h5py
     from .. import read
-    from os.path import join
+    from os.path import join, abspath
     import os
     from ..io import mkdir
     from . import is_sim_dir, simulation
     from ..math import cpu_optimal
-
+    import time
+ 
+    start_time = time.time()
+    print('started at {}'.format(time.ctime(start_time)))
     # set dtype from precision
     if dstprecision[0] == b'D':
         dtype = np.float64
@@ -350,13 +354,14 @@ def src2dst_remesh(src, dst,
                        srch5['settings/nprocy'][0]*\
                        srch5['settings/nprocz'][0]
             if srcprocs > nprocs:
-                print('\n**********************************************************\n'+
-                      'remesh WARNING: {} procs reduced from {}.\n'.format(
-                      nprocs, srcprocs)+
-                      'Review multxyz {} and fracxyz {} for more\n'.format(
-                      multxyz,fracxyz)+
-                      'efficient parallel processing options.'+
-                      '\n**********************************************************\n')
+                print(
+               '\n**********************************************************\n'+
+               'remesh WARNING: {} procs reduced from {}.\n'.format(
+               nprocs, srcprocs)+
+               'Review multxyz {} and fracxyz {} for more\n'.format(
+               multxyz,fracxyz)+
+               'efficient parallel processing options.'+
+               '\n**********************************************************\n')
             if check_grid:
                 return 1
             group = group_h5(dsth5, 'unit', mode='w')
@@ -396,11 +401,11 @@ def src2dst_remesh(src, dst,
             lchunks = False
             if dstchunksize > chunksize:
                 lchunks = True
-                nchunks = cpu_optimal(nz,ny,nx,mvar=1,maux=0,MBmin=chunksize)[1]
+                nchunks = cpu_optimal(nx,ny,nz,mvar=1,maux=0,MBmin=chunksize)[1]
                 print('nchunks {}'.format(nchunks)) 
-                indx = np.array_split(np.arange(nx)+dstghost,nchunks[2]) 
+                indx = np.array_split(np.arange(nx)+dstghost,nchunks[0]) 
                 indy = np.array_split(np.arange(ny)+dstghost,nchunks[1]) 
-                indz = np.array_split(np.arange(nz)+dstghost,nchunks[0]) 
+                indz = np.array_split(np.arange(nz)+dstghost,nchunks[2]) 
                 mx, my, mz = dsth5['settings']['mx'][0],\
                              dsth5['settings']['my'][0],\
                              dsth5['settings']['mz'][0]
@@ -411,25 +416,25 @@ def src2dst_remesh(src, dst,
             for key in srch5['data'].keys():
                 print('remeshing '+key)     
                 if not lchunks:
-                    var = local_remesh(
-                        srch5['data'][key][()], 
-                        srch5['grid']['x'], srch5['grid']['y'], srch5['grid']['z'],
-                        dsth5['grid']['x'], dsth5['grid']['y'], dsth5['grid']['z'],
-                        quiet=quiet )
+                    var = local_remesh(srch5['data'][key][()],
+                                       srch5['grid']['x'],srch5['grid']['y'],
+                                       srch5['grid']['z'],dsth5['grid']['x'],
+                                       dsth5['grid']['y'], dsth5['grid']['z'],
+                                       quiet=quiet)
                     print('writing '+key+' shape {}'.format(var.shape))
                     dset = dataset_h5(group, key, mode='w', data=var,
-                                     overwrite=True, dtype=dtype)
+                                      overwrite=True, dtype=dtype)
                 else:
                     dset = dataset_h5(group, key, mode='w', shape=[mz,my,mx],
-                                     overwrite=True, dtype=dtype)
+                                      overwrite=True, dtype=dtype)
                     print('writing '+key+' shape {}'.format([mz,my,mx]))
-                    for iz in range(nchunks[0]):
+                    for iz in range(nchunks[2]):
                         n1, n2 = indz[iz][ 0]-dstghost,\
                                  indz[iz][-1]+dstghost
                         srcn1 = np.max(np.where(srch5['grid/z'][()]<
-                                           dsth5['grid/z'][n1]))     
+                                                dsth5['grid/z'][n1]))     
                         srcn2 = np.min(np.where(srch5['grid/z'][()]>
-                                           dsth5['grid/z'][n2]))
+                                                dsth5['grid/z'][n2]))
                         n1out = n1+dstghost
                         n2out = n2-dstghost+1
                         varn1 =  dstghost
@@ -437,7 +442,7 @@ def src2dst_remesh(src, dst,
                         if iz == 0:
                             n1out = 0
                             varn1 = 0
-                        if iz == nchunks[0]-1:
+                        if iz == nchunks[2]-1:
                             n2out = n2+1
                             varn2 = n2+1
                         if not quiet:
@@ -447,9 +452,9 @@ def src2dst_remesh(src, dst,
                             m1, m2 = indy[iy][ 0]-dstghost,\
                                      indy[iy][-1]+dstghost
                             srcm1 = np.max(np.where(srch5['grid/y'][()]<
-                                               dsth5['grid/y'][m1]))     
+                                                    dsth5['grid/y'][m1]))     
                             srcm2 = np.min(np.where(srch5['grid/y'][()]>
-                                               dsth5['grid/y'][m2]))
+                                                    dsth5['grid/y'][m2]))
                             m1out = m1+dstghost
                             m2out = m2-dstghost+1
                             varm1 =  dstghost
@@ -463,13 +468,13 @@ def src2dst_remesh(src, dst,
                             if not quiet:
                                 print('m1 {}, m2 {}, srcm1 {}, srcm2 {}'.format(
                                        m1,    m2,    srcm1,    srcm2))
-                            for ix in range(nchunks[2]):
+                            for ix in range(nchunks[0]):
                                 l1, l2 = indx[ix][ 0]-dstghost,\
                                          indx[ix][-1]+dstghost
                                 srcl1 = np.max(np.where(srch5['grid/x'][()]<
-                                                   dsth5['grid/x'][l1]))     
+                                                        dsth5['grid/x'][l1]))     
                                 srcl2 = np.min(np.where(srch5['grid/x'][()]>
-                                                   dsth5['grid/x'][l2]))
+                                                        dsth5['grid/x'][l2]))
                                 l1out = l1+dstghost
                                 l2out = l2-dstghost+1
                                 varl1 =  dstghost
@@ -477,7 +482,7 @@ def src2dst_remesh(src, dst,
                                 if ix == 0:
                                     l1out = 0
                                     varl1 = 0
-                                if ix == nchunks[2]-1:
+                                if ix == nchunks[0]-1:
                                     l2out = l2+1
                                     varl2 = l2+1
                                 if not quiet:
@@ -495,10 +500,10 @@ def src2dst_remesh(src, dst,
                                              srch5['grid']['x'][srcl1:srcl2+1],
                                              srch5['grid']['y'][srcm1:srcm2+1],
                                              srch5['grid']['z'][srcn1:srcn2+1],
-                                                dsth5['grid']['x'][l1:l2+1],
-                                                dsth5['grid']['y'][m1:m2+1],
-                                                dsth5['grid']['z'][n1:n2+1],
-                                                quiet=quiet )
+                                             dsth5['grid']['x'][l1:l2+1],
+                                             dsth5['grid']['y'][m1:m2+1],
+                                             dsth5['grid']['z'][n1:n2+1],
+                                             quiet=quiet )
                                 if not quiet:
                                     print('writing '+key+
                                                    ' shape {} chunk {}'.format(
@@ -514,9 +519,12 @@ def src2dst_remesh(src, dst,
     dstsim.change_value_in_file('src/cparam.local','nprocx',str(ncpus[0]))
     dstsim.change_value_in_file('src/cparam.local','nprocy',str(ncpus[1]))
     dstsim.change_value_in_file('src/cparam.local','nprocz',str(ncpus[2]))
-    dstsim.change_value_in_file('src/cparam.local','nxgrid',str(dstsim.dim.nxgrid))
-    #dstsim.change_value_in_file('src/cparam.local','nygrid',str(dstsim.dim.nygrid))
-    dstsim.change_value_in_file('src/cparam.local','nzgrid',str(dstsim.dim.nzgrid))
+    dstsim.change_value_in_file('src/cparam.local','nxgrid',
+                                                         str(dstsim.dim.nxgrid))
+    #dstsim.change_value_in_file('src/cparam.local','nygrid',
+    #                                                    str(dstsim.dim.nygrid))
+    dstsim.change_value_in_file('src/cparam.local','nzgrid',
+                                                         str(dstsim.dim.nzgrid))
 
     #cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
     #os.system(cmd)
@@ -530,10 +538,14 @@ def src2dst_remesh(src, dst,
     #output, error = process.communicate()
     #print(cmd,output,error)
     if srcprocs > nprocs:
-        print('\n**********************************************************\n'+              'remesh WARNING: {} procs reduced from {}.\n'.format(
+        print('\n**********************************************************\n'+
+              'remesh WARNING: {} procs reduced from {}.\n'.format(
               nprocs, srcprocs)+
               'Review multxyz {} and fracxyz {} for more\n'.format(
               multxyz,fracxyz)+
               'efficient parallel processing options.'+
               '\n**********************************************************\n')
+    end_time = time.time()
+    print('end at {} after {} seconds'.format(
+                                     time.ctime(end_time),end_time-start_time))
 # remains to copy other files and edit param files
