@@ -693,7 +693,9 @@ module PointMasses
               velocity(ks,3) = kep_vel(ks) - velocity_baricenter_secondaries
             endif
           endif
-        enddo
+       enddo
+!       
+        if (lcorrect_gravity_lstart) call initcond_correct_selfgravity(f,velocity,isecondary)
 !
 !  The last one (star) fixes the CM also with velocity zero
 !
@@ -1696,6 +1698,62 @@ module PointMasses
 !
     endsubroutine get_total_gravity
 !***********************************************************************
+    subroutine correct_selfgravity_logspirals(f)
+!
+!  Correct for the fluid's self-gravity in the centrifugal force
+!
+!  ??-???-15/wlad: adapted from correct_selfgravity
+!
+      use Sub,         only:get_radial_distance,grad
+      use Poisson,     only:inverse_laplacian,get_acceleration
+      use Boundcond,   only:update_ghosts
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx,ny,nz) :: rho
+      real, dimension (nx,ny,nz,3) :: acceleration
+      real, dimension (nx) :: gspotself
+      real :: rhs_poisson_const
+!
+      if (lroot) print*,'Correcting for self-gravity on the '//&
+           'centrifugal force'
+      if (.not.lpoisson) then
+        print*,"You want to correct for selfgravity but you "
+        print*,"are using POISSON=nopoisson in src/Makefile.local. "
+        print*,"Please use a poisson solver."
+        call fatal_error("correct_selfgravity_logspirals","")
+      endif
+      if (.not.lcylindrical_coords) then
+        if (lroot) then
+          print*,'You are calling correct_selfgravity_logspirals'
+          print*,'from the centrifugal_balance module with non-'
+          print*,'cylindrical coordinates.'
+          print*,'If you are using the other _logspirals modules,'
+          print*,'they currently require cylindrical coordinates.'
+          print*,"If you aren't using the other _logspirals modules,"
+          print*,'please call correct_selfgravity instead.'
+        endif
+        call fatal_error("correct_selfgravity_logspirals","")
+      endif
+!
+      rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!     
+      call inverse_laplacian(rho)
+      call get_acceleration(acceleration)
+!
+!  The acceleration is the negative of the potential gradient
+!
+      do n=n1,n2 ; do m=m1,m2
+!
+!  correct the angular frequency phidot^2
+!
+        gspotself = -acceleration(:,m-m1+1,n-n1+1,1)
+        call correct_azimuthal_velocity(f,gspotself,'self gravity')
+!
+      enddo;enddo
+!
+    endsubroutine correct_selfgravity_logspirals
+!***********************************************************************    
     subroutine initcond_correct_selfgravity(f,velocity,k)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
@@ -1705,6 +1763,7 @@ module PointMasses
 !
       use Mpicomm
       use Sub, only: get_radial_distance
+      use Poisson,     only:inverse_laplacian,get_acceleration
 !
       implicit none
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1717,6 +1776,9 @@ module PointMasses
       real :: dqx,dqz,rp0,fac
       integer :: j,k
 !
+      real, dimension (nx,ny,nz) :: rho
+      real, dimension (nx,ny,nz,3) :: acceleration
+!
 !  Sanity check
 !
       !if (.not.(lgas_gravity.or.ldust_gravity)) &
@@ -1727,137 +1789,148 @@ module PointMasses
       xxpar = fq(k,ixq:izq)
       rp0=r_smooth(k)
 !      
-      sum_loc=0.
-!      
-      mloop: do m=m1,m2
-      nloop: do n=n1,n2
-
-        if (coord_system=='cartesian') then
-          jac=1.;dqx=dx;dqy=dy;dqz=dz
-          dist(:,1)=x(l1:l2)-xxpar(1)
-          dist(:,2)=y(  m  )-xxpar(2)
-          dist(:,3)=z(  n  )-xxpar(3)
-        elseif (coord_system=='cylindric') then
-          jac=x(l1:l2);dqx=dx;dqy=x(l1:l2)*dy;dqz=dz
-          dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
-          dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
-          dist(:,3)=z(  n  )-xxpar(3)
-        elseif (coord_system=='spherical') then
-          call fatal_error('integrate_selfgravity', &
-               ' not yet implemented for spherical polars')
-           dqx=0.;dqy=0.;dqz=0.
-        else
-          call fatal_error('integrate_selfgravity','wrong coord_system')
-          dqx=0.;dqy=0.;dqz=0.
-        endif
-!
-        if (nzgrid==1) then
-          dv=dqx*dqy
-        else
-          dv=dqx*dqy*dqz
-        endif
-!
-!  The gravity of every single cell - should exclude inner and outer radii...
-!
-!  selfgrav = - G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
-!  gx = selfgrav * r\hat dot x\hat
-!  -> gx = selfgrav * (x-x0)/r = - G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
-!
-        density=0.
-        if (ldensity_nolog) then
-           density=f(l1:l2,m,n,irho)
-        else
-           density=exp(f(l1:l2,m,n,ilnrho))
-        endif
-!
-!  Add the particle gravity if npar>mspar (which means dust is being used)
-!
-        !if (ldust.and.ldust_gravity) density=density+f(l1:l2,m,n,irhop)
-!
-        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(1),E3_=xxpar(1))
-        if (lcylindrical_gravity_nbody(k)) then
-           rrp=rpcyl_mn
-        else
-           rrp=rp_mn
-        endif
-!
-        selfgrav = -GNewton*density_scale*&
-             density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
-!
-!  Everything inside the accretion radius of the particle should
-!  not exert gravity (numerical problems otherwise)
-!
-        where (rrp<=rp0)
-          selfgrav = 0
-        endwhere
-!
-!  Exclude the frozen zones
-!
-      if (lcartesian_coords) call fatal_error("","")
-!
-!  Integrate the accelerations on this processor
-!  And sum over processors with mpireduce
-!
-      do j=1,3
-        tmp=selfgrav*dist(:,j)
-        !take proper care of the trapezoidal rule
-        !in the case of non-periodic boundaries
-        fac = 1.
-        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-          if (.not.lperi(2)) fac = .5*fac
-        endif
-!
-        if (lperi(1)) then
-          sum_loc(j) = sum_loc(j)+fac*sum(tmp)
-        else
-          sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
-        endif        
-     enddo
-    enddo nloop
-    enddo mloop
-!
-    do j=1,3
-      call mpireduce_sum(sum_loc(j),accg(j))
-    enddo
+      !if (.true.) then
+         if (ldensity_nolog) then
+            rho=f(l1:l2,m1:m2,n1:n2,irho)
+          else
+            rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          endif
+         call inverse_laplacian(rho)
+         call get_acceleration(acceleration)
+         call trilinear_interpolate(acceleration(:,:,1,:),xxpar,accg)
+      !endif
+      
+!      sum_loc=0.
+!!      
+!      do m=m1,m2
+!        do n=n1,n2
+!!
+!          call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(1),E3_=xxpar(1))
+!          if (lcylindrical_gravity_nbody(k)) then
+!            rrp=rpcyl_mn
+!          else
+!            rrp=rp_mn
+!          endif
+!          density=0.
+!          if (ldensity_nolog) then
+!            density=f(l1:l2,m,n,irho)
+!          else
+!            density=exp(f(l1:l2,m,n,ilnrho))
+!          endif
+!          if (ldust.and.ldust_gravity) density=density+f(l1:l2,m,n,irhop)        
+!!         
+!          call integrate_selfgravity(density,rrp)
+!!
+!        enddo
+!      enddo
+!!
+!      do j=1,3
+!        call mpireduce_sum(sum_loc(j),accg(j))
+!      enddo
 !
 !  Broadcast particle acceleration
 !
-    call mpibcast_real(accg,3)
+      call mpibcast_real(accg,3)
 !
 !  Correct original velocity by this acceleration
-!      phidot2 = Omegak2 + accg/r
+!      
+!  phidot**2 = OmegaK**2 + 1/r (d/dr PHI_sg)
+!  phidot**2 = OmegaK**2 - 1/r gr
 !
 !  Current azimuthal velocity and azimuthal frequency
 !
-    if (lcylindrical_coords) then
-       vphi = velocity(k,2)
-       rr = fq(k,ixq)
-    elseif (lspherical_coords) then
-       vphi = velocity(k,3)
-       rr = fq(k,ixq)*sin(fq(k,iyq))
-    endif
-!
-    OO = vphi/rr
+      if (lcylindrical_coords) then
+        vphi = velocity(k,2)
+        rr = fq(k,ixq)
+      elseif (lspherical_coords) then
+        vphi = velocity(k,3)
+        rr = fq(k,ixq)*sin(fq(k,iyq))
+      endif
+      OO = vphi/rr
 !
 !  Update angular velocity by selfgravitational acceleration
-!   
-!  phidot**2 = OmegaK**2 + 1/r (d/dr PHI_sg)
-!
 !  This line assumes axisymmetry
 !
-    phidot2 = OO**2 + accg(1)/rr
+      phidot2 = OO**2 - accg(1)/rr
 !
 !  Corrected velocity
 !
-    vphi = sqrt(phidot2) * rr
+      vphi = sqrt(phidot2) * rr
 !
-    if (lcylindrical_coords) then
-       velocity(k,2) = vphi
-    elseif (lspherical_coords) then
-       velocity(k,3) = vphi
-    endif
+      if (lcylindrical_coords) then
+        velocity(k,2) = vphi
+      elseif (lspherical_coords) then
+        velocity(k,3) = vphi
+      endif
 !
     endsubroutine initcond_correct_selfgravity
+!***********************************************************************
+    subroutine trilinear_interpolate(v,q,vp)
+!
+      use Sub, only: find_index_by_bisection
+!      
+      !real, dimension (nx,ny,3) :: v
+      real, dimension (nx,ny,3) :: v
+      real, dimension (3) :: q
+      real, dimension (3) :: vp
+      integer :: j,ix,iy,iz,ixx,iyy,izz
+      real :: idx,idy,idz,rx,ry,rz
+      real :: ddx1,ddy1,ddz1,idx1,idy1,idz1,idx2,idy2,idz2
+!
+      intent(in) :: v,q
+      intent(out) :: vp
+!     
+      call find_index_by_bisection(q(1),x,ix) ; if (x(ix)>q(1)) ix = ix-1
+      call find_index_by_bisection(q(2),y,iy) ; if (y(iy)>q(2)) iy = iy-1
+      call find_index_by_bisection(q(3),z,iz) ; if (z(iz)>q(3)) iz = iz-1
+!
+      ddx1=1./(x(ix+1)-x(ix))
+      ddy1=1./(y(iy+1)-y(iy))
+      ddz1=1./(z(iz+1)-z(iz))
+
+      idx1 = (q(1)-x(ix))*ddx1
+      idy1 = (q(2)-y(iy))*ddy1
+      idz1 = (q(3)-z(iz))*ddz1
+
+      idx2 = (x(ix+1)-q(1))*ddx1
+      idy2 = (y(iy+1)-q(2))*ddy1
+      idz2 = (z(iz+1)-q(3))*ddz1
+!      
+      !rx = idx - ix
+      !ry = idy - iy
+      !rz = idz - iz
+!     
+      ixx=ix-l1+1
+      iyy=iy-m1+1
+      izz=iz-n1+1
+!
+      do j=1,3         
+!
+!
+! Interpolation formula
+!
+!
+         !vp(j) &
+         !       =   v(ixx  , iyy  , izz  ,j) * (1-rx) * (1-ry) * (1-rz) &
+         !       !
+         !         + v(ixx+1, iyy  , izz  ,j) * rx     * (1-ry) * (1-rz) &
+         !         + v(ixx  , iyy+1, izz  ,j) * (1-rx) * ry     * (1-rz) &
+         !         + v(ixx  , iyy  , izz+1,j) * (1-rx) * (1-ry) * rz     &
+         !       !
+         !         + v(ixx+1, iyy+1, izz  ,j) * rx     * ry     * (1-rz) &
+         !         + v(ixx  , iyy+1, izz+1,j) * (1-rx) * ry     * rz     &
+         !         + v(ixx+1, iyy  , izz+1,j) * rx     * (1-ry) * rz     &
+         !       !
+         !         + v(ixx+1, iyy+1, izz+1,j) * rx     * ry     * rz
+
+         vp(j) &
+                =   v(ixx  , iyy  ,j) * idx2* idy2 &   ! Q11
+                  + v(ixx+1, iyy  ,j) * idx1* idy2 &   ! Q21
+                  + v(ixx  , iyy+1,j) * idx2* idy1 &   ! Q12
+                  + v(ixx+1, iyy+1,j) * idx1* idy1     ! Q22
+      enddo
+!
+    endsubroutine trilinear_interpolate
 !***********************************************************************
     subroutine integrate_selfgravity(p,rrp,xxpar,accg,rp0)
 !
