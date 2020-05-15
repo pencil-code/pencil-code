@@ -59,7 +59,7 @@ module PointMasses
   logical :: lretrograde=.false.
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
-  logical :: lcorrect_gravity_lstart=.false.
+  logical :: lcorrect_gasgravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
@@ -85,7 +85,7 @@ module PointMasses
       ldt_pointmasses, cdtq, lretrograde, &
       eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,&
+      lgas_gravity,ldust_gravity,lcorrect_gasgravity_lstart,&
       frac_smooth
 !
   namelist /pointmasses_run_pars/ &
@@ -695,7 +695,7 @@ module PointMasses
           endif
        enddo
 !       
-        if (lcorrect_gravity_lstart) call initcond_correct_selfgravity(f,velocity,isecondary)
+        if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
 !
 !  The last one (star) fixes the CM also with velocity zero
 !
@@ -733,7 +733,7 @@ module PointMasses
 !
 !  Correct secondary by gas gravity 
 !
-        if (lcorrect_gravity_lstart) call initcond_correct_selfgravity(f,velocity,isecondary)
+        if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
 !
         velocity(  iprimary,2) = velocity(isecondary,2) * pmass(isecondary)/pmass(iprimary)
 !
@@ -1698,7 +1698,7 @@ module PointMasses
 !
     endsubroutine get_total_gravity
 !***********************************************************************
-    subroutine initcond_correct_selfgravity(f,velocity,k)
+    subroutine initcond_correct_gasgravity(f,velocity,k)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of gas. 
@@ -1712,9 +1712,9 @@ module PointMasses
       integer, intent(in) :: k
 !
       if (lselfgravity) then
-        call correct_selfgravity_poisson(f,k,accg)
+        call correct_gasgravity_selfgravity(f,k,accg)
       else
-        call correct_selfgravity_integrate(f,k,accg)
+        call correct_gasgravity_integrate(f,k,accg)
       endif
 !
 !  Correct original velocity by this acceleration
@@ -1748,9 +1748,9 @@ module PointMasses
         velocity(k,3) = vphi
       endif      
 !
-    endsubroutine initcond_correct_selfgravity
+    endsubroutine initcond_correct_gasgravity
 !***********************************************************************
-    subroutine correct_selfgravity_poisson(f,k,accg)
+    subroutine correct_gasgravity_selfgravity(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of gas, by interpolating from the
@@ -1777,9 +1777,9 @@ module PointMasses
       call get_acceleration(acceleration)
       call bilinear_interpolate(acceleration,fq(k,ixq:izq),accg)
 !
-    endsubroutine correct_selfgravity_poisson
+    endsubroutine correct_gasgravity_selfgravity
 !***********************************************************************
-    subroutine correct_selfgravity_integrate(f,k,accg)
+    subroutine correct_gasgravity_integrate(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of gas, by integrating the whole grid. 
@@ -1905,7 +1905,7 @@ module PointMasses
 !
       call mpibcast_real(accg,3)
 !
-    endsubroutine correct_selfgravity_integrate
+    endsubroutine correct_gasgravity_integrate
 !***********************************************************************
     subroutine bilinear_interpolate(v,q,vp)
 !
