@@ -1850,7 +1850,7 @@ module PointMasses
 !
         !if (ldust.and.ldust_gravity) density=density+f(l1:l2,m,n,irhop)
 !
-        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(1),E3_=xxpar(1))
+        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(2),E3_=xxpar(3))
         if (lcylindrical_gravity_nbody(k)) then
            rrp=rpcyl_mn
         else
@@ -1859,13 +1859,6 @@ module PointMasses
 !
         selfgrav = -GNewton*density_scale*&
              density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
-!
-!  Everything inside the accretion radius of the particle should
-!  not exert gravity (numerical problems otherwise)
-!
-        where (rrp<=rp0)
-          selfgrav = 0
-        endwhere
 !
 !  Exclude the frozen zones
 !
@@ -2143,30 +2136,21 @@ module PointMasses
 !
 !  Add the particle gravity if npar>mspar (which means dust is being used)
 !
-      if (ldust.and.ldust_gravity) density=density+p%rhop
+      !if (ldust.and.ldust_gravity) density=density+p%rhop
 !
       gasgravity = -GNewton*density_scale*&
            density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
-!  Everything inside the accretion radius of the particle should
-!  not exert gravity (numerical problems otherwise)
-!
-      where (rrp<=rp0)
-        gasgravity = 0
-      endwhere
-!
 !  Exclude the frozen zones
 !
-      if (lexclude_frozen) then
-        if (lcylinder_in_a_box) then
-          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
-            gasgravity = 0
-          endwhere
-        else
-          where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
-            gasgravity = 0
-          endwhere
-        endif
+      if (lexclude_frozen.and.lcylinder_in_a_box) then
+        where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
+          gasgravity = 0
+        endwhere
+      else
+        where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
+          gasgravity = 0
+        endwhere
       endif
 !
 !  Integrate the accelerations on this processor
