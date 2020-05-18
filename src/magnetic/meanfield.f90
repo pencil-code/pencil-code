@@ -923,6 +923,15 @@ module Magnetic_meanfield
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
         case ('cos(z/2)_with_halo'); alpha_tmp=max(cos(.5*z(n)),0.)
+        case ('sphere')
+          if (lspherical_coords) then
+            rr=x(l1:l2)
+          elseif (lcylindrical_coords) then
+            rr=sqrt(x(l1:l2)**2+z(n)**2)
+          else
+            rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          endif
+          alpha_tmp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width))
         case ('z')
           if (alpha_rmax/=0.) then
             rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -988,6 +997,7 @@ module Magnetic_meanfield
               rr=x(l1:l2)
               pp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width2))
               alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*pp
+              !alpha_tmp=exp(-.5*(z(n)/alpha_width)**2)*pp
               if (alpha_pom0/=0.) alpha_tmp=alpha_tmp/(1.+(rr/alpha_pom0)**4)**.25
             else
               alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
