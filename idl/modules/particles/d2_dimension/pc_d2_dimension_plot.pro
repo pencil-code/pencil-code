@@ -73,7 +73,7 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
     ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
     ytitle = keyword_set(yright) ? '' : ytitle_pre
     ytickformat = keyword_set(yright) ? '(a1)' : ''
-print,ystyle,yrange
+
     plot, [0], background=255, charsize=charsize, color=0, /nodata, $
           charthick=thick, /xlog, /xstyle, ystyle=ystyle, $
           xmargin=xmargin, xrange=xrange, xthick=thick, xtitle=xtitle, $
