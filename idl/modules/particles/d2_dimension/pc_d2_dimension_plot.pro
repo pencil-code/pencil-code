@@ -1,8 +1,11 @@
 ;; This piece of code uses the IDL astro-lib routine READCOL,
 ;; which must be available in the IDL !PATH.
 ;;
-pro pc_d2_dimension_plot, file, psxsize=psxsize, psysize=psysize, $
-                          psfilename=psfilename
+pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
+                          psxsize=psxsize, psysize=psysize, $
+                          font_size=font_size, psfilename=psfilename, $
+                          yrange=yrange, legendtext=legendtext, $
+                          yright=yright
   compile_opt idl2
 
   if ~n_elements(file) then begin
@@ -14,28 +17,32 @@ pro pc_d2_dimension_plot, file, psxsize=psxsize, psysize=psysize, $
     message, 'Cannot read the file "' + file + '".'
   endif
   if ~n_elements(psfilename) then psfilename = 'd2.eps'
-  
+
+  if ~n_elements(font_size) then font_size = 10.0
+  if ~n_elements(charsize) then charsize = 1.0
+  if ~n_elements(psxsize) then psxsize = 6.50
+  if ~n_elements(psysize) then psysize = 4.00
+  if ~n_elements(thick) then thick = 1.0
+
   format = '(l, f, d, d, d)'
   readcol, file, model, ap0, d2, xmin_mean, xmin_var, format=format
 
   midx = model[uniq(model)]
   n_model = n_elements(midx)
 
-  L = 6.28d0 * 2
-  rho_gr = 1d3
-  rho_mean = 1d0
+  ;; Retrieve model-specific values (instead of hard-coding them):
+  pc_read_param, object=ps
+  pc_read_param, object=ps2, /param2
 
   device, decomposed=0
   loadct, 0
 
-  alpha = rho_gr / rho_mean * ap0[midx] / L
-  alpha = ap0[midx]
-  xrange = [0.9 * min(ap0), 1.1 * max(ap0)]
-  yrange = [2.1d0, 3.19d0]
+  alpha = ps.rhopmat / ps.rho0 * ap0[midx] / ps.Lx0
+  xrange = [0.9 * min(alpha), 1.1 * max(alpha)]
+  if ~n_elements(yrange) then yrange = [2.1d0, 3.09d0]
   if max(d2) gt yrange[1L] then yrange[1L] = max(d2)
   linestyle = [0, 1, 2, 3, 5]
-  thick = 2.0
-  
+
   entrydevice = !d.name & entryfont = !p.font
   entrymulti = !p.multi & entryx = !x & entryy = !y
   !p.multi = [0L, 1L, 1L, 0, 0]
@@ -45,31 +52,37 @@ pro pc_d2_dimension_plot, file, psxsize=psxsize, psysize=psysize, $
     if jj then begin
       set_plot, 'ps'
       device, filename=psfilename, /isolatin, /color, bits_per_pixel=8, $
-              /portrait, xsize=psxsize, ysize=psysize, /encapsulated
+              /portrait, xsize=psxsize, ysize=psysize, /encapsulated, $
+              font_size=font_size, inches=0
       !p.font = 0L
-      xtitle = '!9a!x = !9r!x!dgr!na / (!9' + string(225b) + $
-               'r' + string(241b) + '!xL)'
-      ytitle = 'd!d2!n'
-      thick = 2.0
+      xtitle = '!9a!x = !9r!x!dgr!na ' + string(215b) + $
+               ' (!9' + string(225b) + 'r' + string(241b) + '!xL)!u-1!n'
+      ytitle_pre = 'd!d2!n'
     endif else begin
       window, 0
-      xtitle = '!4a!x = !4q!x!dgr!na / (!13' + string(60b) + $
-               '!x!4q!x!13' + string(62b) + '!xL)'
-      ytitle = 'd!d2!n'
-      thick = 1.0
+      xtitle = '!4a!x = !4q!x!dgr!na ' + string(215b) + $
+               ' (!13' + string(60b) + '!x!4q!x!13' + $
+               string(62b) + '!xL)!u-1!n'
+      ytitle_pre = 'd!d2!n'
     endelse
 
-    ;;!x.omargin = [0.0, 0.0]
-    ;;!y.omargin = [1.0, 4.0]
-    charsize = 2.0
-    xmargin = [7.0, 0.5]
-    ymargin = [3.5, 0.2]
+    xmargin = keyword_set(yright) ? [0.3, 6.5] : [6.5, 0.3]
+    ymargin = [3.2, 0.3]
     symsize = 1.0
 
+    ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
+    ytitle = keyword_set(yright) ? '' : ytitle_pre
+    ytickformat = keyword_set(yright) ? '(a1)' : ''
+print,ystyle,yrange
     plot, [0], background=255, charsize=charsize, color=0, /nodata, $
-          charthick=thick, /xlog, /xstyle, /ystyle, $
+          charthick=thick, /xlog, /xstyle, ystyle=ystyle, $
           xmargin=xmargin, xrange=xrange, xthick=thick, xtitle=xtitle, $
-          ymargin=ymargin, yrange=yrange, ythick=thick, ytitle=ytitle
+          ymargin=ymargin, yrange=yrange, ythick=thick, ytitle=ytitle, $
+          ytickformat=ytickformat
+
+    if keyword_set(yright) then $
+       axis, color=0, /yaxis, yrange=yrange, $
+             /ystyle, ythick=thick, ytitle=ytitle_pre
 
     oplot, 1d1 ^!x.crange, [3d0, 3d0], $
            linestyle=1, color=150, thick=thick
@@ -77,13 +90,16 @@ pro pc_d2_dimension_plot, file, psxsize=psxsize, psysize=psysize, $
     for i = 0L, n_model - 1L do begin
       idx = where(model eq midx[i], count)
 
-      alpha = rho_gr / rho_mean * ap0[idx] / L
-      alpha = ap0[idx]
+      alpha = ps.rhopmat / ps.rho0 * ap0[idx] / ps.Lx0
 
       linestyle_ = linestyle[i mod n_elements(linestyle)]
       oplot, alpha, d2[idx], linestyle=linestyle_, psym=-4, $
              thick=thick, color=0
     endfor
+
+    if n_elements(legendtext) eq 1L then begin
+      al_legend, legendtext, /bottom, /left, charsize=charsize, box=0
+    endif
 
     if jj then begin
       device, /close_file
