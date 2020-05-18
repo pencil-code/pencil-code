@@ -2112,7 +2112,7 @@ endif
 
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
-set HDF5=`grep -Ec '^ *IO *= *io_hdf5' src/Makefile.local`
+set HDF5=`tac src/Makefile.local | grep -m1 '^ *IO *=' | grep -Ec '^ *IO *= *io_hdf5'`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "slices" "averages" "idl")

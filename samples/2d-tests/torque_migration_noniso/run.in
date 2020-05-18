@@ -45,7 +45,8 @@
   lfollow_particle=T,T
   laccretion=F,F
   lreset_cm=T
-  lbackreaction=F
+  !lbackreaction=F
+  llive_secondary=F
   lgas_gravity=F
 /
 &shock_run_pars

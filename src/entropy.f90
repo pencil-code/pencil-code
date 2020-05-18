@@ -152,7 +152,7 @@ module Energy
   logical :: lchi_t1_noprof=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0
   character (len=labellen), dimension(ninit) :: initss='nothing'
-  character (len=labellen) :: borderss='nothing'
+  character (len=labellen) :: borderss='nothing', div_sld_ene
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -223,7 +223,7 @@ module Energy
       center1_x, center1_y, center1_z, &
       lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, &
+      cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
@@ -1017,6 +1017,7 @@ module Energy
         case ('entropy-slope-limited')
           lenergy_slope_limited=.true.
           if (lroot) print*, 'heat conduction: slope limited diffusion'
+          if (lroot) print*, 'heat conduction: using ',trim(div_sld_ene),' order'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -3310,7 +3311,7 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp1)
+        call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp1,div_sld_ene)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp1
      endif
 !

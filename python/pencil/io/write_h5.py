@@ -67,7 +67,7 @@ def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
                 elif not dtype:
                     print('dataset_h5: data not present, provide dtype')
                 else:
-                    h5obj.create_dataset(dataname, (shape,), dtype=dtype)
+                    h5obj.create_dataset(dataname, shape, dtype=dtype)
             else:
                 if not dtype:
                     h5obj.create_dataset(dataname, data=data)
@@ -87,7 +87,7 @@ def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
                     elif not dtype:
                         print('dataset_h5: data not present, provide dtype')
                     else:
-                        h5obj.create_dataset(dataname, (shape,), dtype=dtype)
+                        h5obj.create_dataset(dataname, shape, dtype=dtype)
                 else:
                     if not dtype:
                         h5obj.create_dataset(dataname, data=data)

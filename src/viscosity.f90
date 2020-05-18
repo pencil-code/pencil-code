@@ -48,6 +48,7 @@ module Viscosity
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   real :: nu_smag_Ma2_power=0.0
   character (len=labellen) :: nnewton_type='none'
+  character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
   real, dimension(nx) :: xmask_vis=0
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
@@ -124,7 +125,7 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth
+      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -465,6 +466,7 @@ module Viscosity
           lvisc_spitzer=.true.
         case ('nu-slope-limited')
           if (lroot) print*,'viscous force: slope-limited diffusion'
+          if (lroot) print*,'viscous force: using ',trim(div_sld_visc),' order'
           lvisc_slope_limited=.true.
         case ('none',' ')
           ! do nothing
@@ -1115,7 +1117,7 @@ module Viscosity
       intent(inout) :: f,p
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,tmp5,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
@@ -2004,22 +2006,16 @@ module Viscosity
 !       use sld only in last sub timestep
 !
         if (lviscosity_heat) then
-          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
-          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
-          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3,tmp4,'viscose')
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp3,div_sld_visc,tmp4,tmp5,'viscose')
+            p%fvisc(:,i)=p%fvisc(:,i) + tmp3
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
+          enddo
         else
-          call calc_slope_diff_flux(f,iux,p,h_sld_visc,nlf_sld_visc,tmp3)
-          p%fvisc(:,iux)=p%fvisc(:,iux) + tmp3
-          call calc_slope_diff_flux(f,iuy,p,h_sld_visc,nlf_sld_visc,tmp3)
-          p%fvisc(:,iuy)=p%fvisc(:,iuy) + tmp3
-          call calc_slope_diff_flux(f,iuz,p,h_sld_visc,nlf_sld_visc,tmp3)
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + tmp3
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp3,div_sld_visc)
+            p%fvisc(:,i)=p%fvisc(:,i) + tmp3
+          enddo
         endif
       endif
 !

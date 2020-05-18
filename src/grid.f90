@@ -1319,9 +1319,23 @@ module Grid
 !
 !  Inverse volume elements
 !
-      dVol1_x = 1./dVol_x
-      dVol1_y = 1./dVol_y
-      dVol1_z = 1./dVol_z
+      dVol1_x = dVol_x
+      dVol1_y = dVol_y
+      dVol1_z = dVol_z
+!
+!  Avoid 1/0 at axis or in origin.
+!
+      if (lspherical_coords) then
+        if (dVol1_x(l1) == 0.) dVol1_x(l1)=.5*x(l1+1)**2*xprim(l1+1)
+        if (dVol1_y(m1) == 0.) dVol1_y(m1)=.5*sinth(m1+1)*yprim(m1+1)
+        if (dVol1_y(m2) == 0.) dVol1_y(m2)=.5*sinth(m2-1)*yprim(m2-1)
+      elseif (lcylindrical_coords) then
+        if (dVol1_x(l1) == 0.) dVol1_x(l1)=.5*x(l1+1)*xprim(l1+1)
+      endif
+
+      dVol1_x = 1./dVol1_x
+      dVol1_y = 1./dVol1_y
+      dVol1_z = 1./dVol1_z
 !
       if (lspherical_coords.or.lcylindrical_coords) then
 !

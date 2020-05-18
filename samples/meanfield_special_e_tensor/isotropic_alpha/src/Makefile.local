@@ -3,15 +3,16 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = mpicomm_double
+MPICOMM   = mpicomm
 FILE_IO   = file_io_f2003
 IO        = io_dist
+#IO        = io_hdf5
 
 GLOBAL    = noglobal
 HYDRO     = nohydro
 DENSITY   = nodensity
 ENTROPY   = noentropy
-MAGNETIC  = magnetic
+MAGNETIC  =   magnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 

@@ -111,6 +111,7 @@ if (iglobal_bz_ext gt 0) then begin
   varcontent[iglobal_bz_ext].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, iglobal_ax_ext, 0
 if (iglobal_ax_ext gt 0) then begin
   iglobal_ax_ext=iglobal_ax_ext-dim.mvar-dim.maux
   varcontent[iglobal_ax_ext].variable   = 'Magnetic vector potential (ax_ext)'
@@ -120,6 +121,7 @@ if (iglobal_ax_ext gt 0) then begin
   varcontent[iglobal_ax_ext].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, iglobal_ay_ext, 0
 if (iglobal_ay_ext gt 0) then begin
   iglobal_ay_ext=iglobal_ay_ext-dim.mvar-dim.maux
   varcontent[iglobal_ay_ext].variable   = 'Magnetic vector potential (ay_ext)'
@@ -129,6 +131,7 @@ if (iglobal_ay_ext gt 0) then begin
   varcontent[iglobal_ay_ext].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, iglobal_az_ext, 0
 if (iglobal_az_ext gt 0) then begin
   iglobal_az_ext=iglobal_az_ext-dim.mvar-dim.maux
   varcontent[iglobal_az_ext].variable   = 'Magnetic vector potential (az_ext)'
@@ -223,11 +226,11 @@ if ((iglnTT gt 0) or ((iglnTx gt 0) and (iglnTy gt 0) and (iglnTz gt 0))) then b
 endif
 ;
 default, igg, 0
-default, iglobal_gx, 0
-default, iglobal_gy, 0
-default, iglobal_gz, 0
-if ((igg gt 0) or ((iglobal_gx gt 0) and (iglobal_gy gt 0) and (iglobal_gz gt 0))) then begin
-  igg=max ([igg,iglobal_gx])-dim.mvar-dim.maux
+default, iglobal_ggx, 0
+default, iglobal_ggy, 0
+default, iglobal_ggz, 0
+if ((igg gt 0) or ((iglobal_ggx gt 0) and (iglobal_ggy gt 0) and (iglobal_ggz gt 0))) then begin
+  igg=max ([igg,iglobal_ggx])-dim.mvar-dim.maux
   varcontent[igg].variable   = 'Gravitational acceleration'
   varcontent[igg].idlvar     = 'gg'
   varcontent[igg].idlinit    = INIT_3VECTOR

@@ -149,5 +149,3 @@ module Timeavg
 !***********************************************************************
 
 endmodule Timeavg
-
-!!! End of file timeavg.f90

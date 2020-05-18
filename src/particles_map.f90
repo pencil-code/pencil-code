@@ -900,6 +900,8 @@ module Particles_map
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidistant grids
 !
+      use Sub, only: find_index_by_bisection
+!
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, optional :: k1_opt, k2_opt

@@ -39,13 +39,16 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 	common pc_read_common, file
 
 	vectors = [ '^aa$', '^uu$', '^bb$', '^jj$','^ff$']   ;, '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
-	vector = [] & quantity=strtrim(quantity,2)
-	for i=0,n_elements(vectors)-1 do $
+	quantity=strtrim(quantity,2)
+        if n_elements(quantity) eq 1 then begin
+          vector = []
+	  for i=0,n_elements(vectors)-1 do $
                 if stregex(quantity,vectors[i],/bool) then vector=[vector,i]
-	if is_defined(vector) then begin
+	  if is_defined(vector) then begin
                 numpos = stregex(quantity,'[1-9]')
                 if numpos ge 0 then quantity = strmid(quantity,0,numpos)+strtrim(string((fix(strmid(quantity,numpos))-1)/3+1),2)
 		quantity = strmid(quantity,1,1) + [ 'x', 'y', 'z' ]
+	  endif
 	endif
 
 	num_quantities = n_elements (quantity)

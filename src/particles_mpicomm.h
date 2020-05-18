@@ -3,7 +3,7 @@
 
   public :: initialize_particles_mpicomm, migrate_particles
   public :: output_blocks, input_blocks, load_balance_particles
-  public :: sort_blocks, find_index_by_bisection
+  public :: sort_blocks
   public :: get_brick_index
 
   public :: nxb, nyb, nzb, nbx, nby, nbz, nbricks, nghostb, mxb, myb, mzb

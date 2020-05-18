@@ -220,9 +220,11 @@ module Io
           call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
         enddo
       elseif (dataset == 'globals') then
+        if (.not. present (nv1)) &
+          call fatal_error ('output_snap', "for dataset == 'globals' nv1 needs to be set")
         call create_group_hdf5 ('data')
         ! write components of global array
-        do pos=na,ne
+        do pos=1,nv1
           if (index_get(mvar_io + pos) == '') cycle
           call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo

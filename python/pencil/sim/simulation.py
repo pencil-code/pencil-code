@@ -18,25 +18,29 @@ def simulation(*args, **kwargs):
     several of them at once if stored in a simulations object.
 
     Args for Constructor:
-        path:		path to simulation, default = '.'
-        hidden:     set True to set hidden flag, default is False
-        quiet:      suppress irrelevant output, default False
+        path:   path to simulation, default = '.'
+        hidden: set True to set hidden flag, default is False
+        quiet:  suppress irrelevant output, default is False
+        hard:   force update, default is False
 
     Properties:
-        self.name:          name of
-        self.path:          path to simulation
-        self.datadir:      path to simulation data-dir (./data/)
-        self.pc_dir:        path to simulation pc-dir (./pc/)
-        self.pc_datadir:   path to simulation pendir in datadir (data/pc/)
-        self.components:    list of files which are necessary components of the simulation
-        self.optionals:   list of files which are optional components of the simulation
+        self.name:             name of
+        self.path:             path to simulation
+        self.datadir:          path to simulation data-dir (./data/)
+        self.pc_dir:           path to simulation pc-dir (./pc/)
+        self.pc_datadir:       path to simulation pendir in datadir (data/pc/)
+        self.components:       list of files which are necessary components of
+                               the simulation
+        self.optionals:        list of files which are optional components of
+                               the simulation
         self.start_components: list of files provided at the simulation start
         self.start_optionals:  list of optional files after the simulation start
-        self.hidden:        Default is False, if True this simulation will be ignored by pencil
-        self.param:         list of param file
-        self.grid:          grid object
-        self.dim:           dim object
-        self.tmp_dict:      temporal dictionary of stuff, will not be saved
+        self.hidden:           Default is False, if True this simulation will
+                               be ignored by pencil
+        self.param:            list of param file
+        self.grid:             grid object
+        self.dim:              dim object
+        self.tmp_dict:         temporal dictionary of stuff, will not be saved
     """
 
     return __Simulation__(*args, **kwargs)
@@ -46,7 +50,7 @@ class __Simulation__(object):
     Simulation object.
     """
 
-    def __init__(self, path='.', hidden=False, quiet=False):
+    def __init__(self, path='.', hidden=False, hard=False, quiet=False):
         import os
         from os.path import join, exists,split
         #from pen.intern.hash_sim import hash_sim
@@ -54,7 +58,8 @@ class __Simulation__(object):
         path = path.strip()
         if path.endswith('/'): path = path[:-1]
         self.name = split(path)[-1]     # find out name and store it
-        if self.name == '.' or self.name == '': self.name = split(os.getcwd())[-1]
+        if self.name == '.' or self.name == '':
+            self.name = split(os.getcwd())[-1]
 
         self.path = os.path.abspath(path)   # store paths
         if (not quiet): print('# Creating Simulation object for '+self.path)
@@ -62,45 +67,67 @@ class __Simulation__(object):
         self.pc_dir = join(self.path,'pc')
         self.pc_datadir = join(self.path,'data','pc')
 
-        self.components = ['src/cparam.local',      # core files of a simulation run
+        # core files of a simulation run
+        self.components = ['src/cparam.local',
                            'src/Makefile.local',
                            'start.in',
                            'run.in',
                            'print.in']
-        self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
-        self.optionals = ['*.in', '*.py', 'submit*']    # optional files that should stick with the simulation when copied
-        self.start_components = ['index.pro',      #  files required from a simulation start
+        # files in which quanitities can be searched
+        self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']
+        # optional files that should stick with the simulation when copied
+        self.optionals = ['*.in', '*.py', 'submit*']
+        # files required from a simulation start
+        self.start_components = ['index.pro',
                                  'param.nml',
                                  'time_series.dat',
                                  'jobid.dat',
                                  'pencils.list']
-        self.start_optionals = [ '*.pro', '*.h5']    # optional files that should stick with the simulation when copied
+        # optional files that should stick with the simulation when copied
+        self.start_optionals = [ '*.pro', '*.h5']
 
-        self.hidden = hidden                # hidden is default False
+        self.hidden = hidden                      # hidden is default False
         self.param = False
         self.grid = False
         self.dim = False
         self.ghost_grid = False
         self.tmp_dict = {}
-        self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
+        self = self.update(hard=hard,quiet=quiet) # auto-update (read param.nml)
         # Done
 
     def copy(self, path_root='.', name=False, start_optionals = False,
-             optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
-        """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
-        This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
+             optionals=True, quiet=True, rename_submit_script=False,
+             OVERWRITE=False):
+        """
+        This method does a copy of the simulation object by creating a new
+        directory 'name' in 'path_root' and copy all simulation components and
+        optionals to its directory.
+        This method neither links/compiles the simulation.
+        If start_optionals it creates data dir.
+        It does not overwrite anything, unless OVERWRITE is True.
 
         Submit Script Rename:
-            Name in submit scripts will be renamed if possible! Submit scripts will be identified by submit* plus appearenace of old simulation name inside, latter will be renamed!
+            Name in submit scripts will be renamed if possible!
+            Submit scripts will be identified by submit* plus appearenace of old
+            simulation name inside, latter will be renamed!
 
         Args:
-            path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing! Relative paths are thought to be relative to the python current workdir
-            name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
-            optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
-            start optionals:         Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
-            quiet:                   Set True to suppress output.
-            rename_submit_script:    Set False if no renames shall be performed in submit* files
-            OVERWRITE:               Set True to overwrite no matter what happens!
+            path_root:      Path to new sim.-folder(sim.-name). This folder will
+                            be created if not existing! Relative paths are
+                            thought to be relative to the python current workdir
+            name:     Name of new simulation, will be used as folder name.
+                      Rename will also happen in submit script if found.
+                      Simulation folders is not allowed to preexist!!
+            optionals:      Add list of further files to be copied. Wildcasts
+                            allowed according to glob module!
+                            Set True to use self.optionals.
+            start optionals:    Add list of further files to be copied.
+                                Wildcasts allowed according to glob module!
+                                Set True to use self.optionals.
+            quiet:              Set True to suppress output.
+            rename_submit_script:    Set False if no renames shall be performed
+                                     in submit* files
+            OVERWRITE:          Set True to overwrite no matter what happens!
         """
         from os import listdir
         from os.path import exists, join, abspath, basename
@@ -116,17 +143,19 @@ class __Simulation__(object):
         if path_root == False or type(path_root) != type('string'):
             print('! ERROR: No path_root specified to copy the simulation to.');
             return False
-        path_root = abspath(path_root)          # simulation root dir
+        path_root = abspath(path_root)   # simulation root dir
 
-        # name and folder of new simulation
-        # but keep name of old if sim with old name is NOT existing in NEW directory
+        # name and folder of new simulation but keep name of old if sim with old
+        # name is NOT existing in NEW directory
         if name == False:
             name = self.name
         if exists(join(path_root, name)) and OVERWRITE == False:
             name = name+'_copy'
             if exists(join(path_root, name)):
-                name = name + str(size([f for f in listdir(path_root) if f.startswith(name)]))
-            print('? Warning: No name specified and simulation with that name already found! New simulation name now '+name)
+                name = name + str(size([f for f in listdir(path_root)
+                                                        if f.startswith(name)]))
+            print('? Warning: No name specified and simulation with that name '+
+                  'already found! New simulation name now '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
         path_newsim_data = join(path_newsim, 'data')
@@ -138,10 +167,12 @@ class __Simulation__(object):
         else:
             has_initial_condition_dir = False
 
-        if type(optionals) == type(['list']): optionals = self.optionals + optionals          # optional files to be copied
+        if type(optionals) == type(['list']):
+            optionals = self.optionals + optionals # optional files to be copied
         if optionals == True: optionals = self.optionals
         if type(optionals) == type('string'): optionals = [optionals]
-        if type(optionals) != type(['list']): print('! ERROR: optionals must be of type list!')
+        if type(optionals) != type(['list']):
+            print('! ERROR: optionals must be of type list!')
 
         tmp = []
         for opt in optionals:
@@ -150,10 +181,14 @@ class __Simulation__(object):
                 tmp.append(basename(f))
         optionals = tmp
 
-        if type(start_optionals) == type(['list']): start_optionals = self.start_optionals + start_optionals          # optional files to be copied
-        if start_optionals == True: start_optionals = self.start_optionals
-        if type(start_optionals) == type('string'): start_optionals = [start_optionals]
-        if type(start_optionals) != type(['list']): print('! ERROR: start_optionals must be of type list!')
+        # optional files to be copied
+        if type(start_optionals) == type(['list']):
+            start_optionals = self.start_optionals + start_optionals
+        if start_optionals == False: start_optionals = self.start_optionals
+        if type(start_optionals) == type('string'):
+            start_optionals = [start_optionals]
+        if type(start_optionals) != type(['list']):
+            print('! ERROR: start_optionals must be of type list!')
 
         tmp = []
         for opt in start_optionals:
@@ -163,51 +198,65 @@ class __Simulation__(object):
         start_optionals = tmp
         ## check if the copy was already created
         if is_sim_dir(path_newsim) and OVERWRITE == False:
-            if not quiet: print('? WARNING: Simulation already exists. Returning with existing simulation.')
+            if not quiet:
+                print('? WARNING: Simulation already exists.'+
+                                         ' Returning with existing simulation.')
             return get_sim(path_newsim, quiet=quiet)
 
         ## expand list of optionals wildcasts
 
-        # check existance of path_root+name, a reason to stop to not overwrite anything
+        # check existence of path_root+name, a reason to stop and not overwrite
         if OVERWRITE==False and exists(path_newsim):
-            print('! ERROR: Folder to copy simulation to already exists!\n! -> '+path_newsim)
+            print('! ERROR: Folder to copy simulation to already exists!\n! -> '
+                  +path_newsim)
             return False
 
         # check existance of self.components
         for comp in self.components:
             if not exists(join(self.path, comp)):
-                print('! ERROR: Couldnt find component '+comp+' from simulation '+self.name+' at location '+join(self.path, comp))
+                print('! ERROR: Couldnt find component '+comp+
+                      ' from simulation '+self.name+' at location '
+                      +join(self.path, comp))
                 return False
 
         # check existance of optionals
         for opt in optionals:
             if not exists(join(self.path, opt)):
-                print('! ERROR: Couldnt find optional component '+opt+' from simulation '+self.name+' at location '+join(self.path, opt))
+                print('! ERROR: Couldnt find optional component '+opt+
+                      ' from simulation '+self.name+' at location '
+                      +join(self.path, opt))
                 return False
 
         # check existance of self.start_components
         for comp in self.start_components:
             if not exists(join(self.datadir, comp)):
-                print('! ERROR: Couldnt find component '+comp+' from simulation '+self.name+' at location '+join(self.path, comp))
+                print('! ERROR: Couldnt find component '+comp+
+                      ' from simulation '+self.name+' at location '
+                      +join(self.path, comp))
                 return False
 
         # check existance of start_optionals
         for opt in start_optionals:
             if not exists(join(self.datadir, opt)):
-                print('! ERROR: Couldnt find optional component '+opt+' from simulation '+self.name+' at location '+join(self.datadir, opt))
+                print('! ERROR: Couldnt find optional component '+opt+
+                      ' from simulation '+self.name+' at location '
+                      +join(self.datadir, opt))
                 return False
 
         # create folders
         if mkdir(path_newsim) == False and OVERWRITE==False:
-            print('! ERROR: Couldnt create new simulation directory '+path_newsim+' !!')
+            print('! ERROR: Couldnt create new simulation directory '
+                  +path_newsim+' !!')
             return False
 
         if mkdir(path_newsim_src) == False and OVERWRITE==False:
-            print('! ERROR: Couldnt create new simulation src directory '+path_newsim_src+' !!')
+            print('! ERROR: Couldnt create new simulation src directory '
+                  +path_newsim_src+' !!')
             return False
 
         if mkdir(path_newsim_data) == False and OVERWRITE==False:
-            print('! ERROR: Couldnt create new simulation data directory '+path_newsim_data+' !!')
+            print('! ERROR: Couldnt create new simulation data directory '
+                  +path_newsim_data+' !!')
             return False
 
         # copy files
@@ -216,7 +265,8 @@ class __Simulation__(object):
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
             if f_path == copy_to:
-                print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                print('!! ERROR: file path f_path equal to destination '+
+                      'copy_to. Debug this line manually!')
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
@@ -225,14 +275,16 @@ class __Simulation__(object):
             f_path = abspath(join(self.datadir, f))
             copy_to = abspath(join(path_newsim_data, f))
             if f_path == copy_to:
-                print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                print('!! ERROR: file path f_path equal to destination '+
+                      'copy_to. Debug this line manually!')
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
         # Organizes any personalized initial conditions
         if has_initial_condition_dir:
             if mkdir(path_newsim_initcond) == False and OVERWRITE==False:
-                print('! ERROR: Couldnt create new simulation initial_condition directory '+path_newsim_initcond+' !!')
+                print('! ERROR: Couldnt create new simulation initial_condition'
+                      +' directory '+path_newsim_initcond+' !!')
                 return False
 
             for f in listdir(path_initial_condition):
@@ -240,7 +292,8 @@ class __Simulation__(object):
                 copy_to = abspath(join(path_newsim_initcond, f))
 
                 if f_path == copy_to:
-                    print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                    print('!! ERROR: file path f_path equal to destination '+
+                          'copy_to. Debug this line manually!')
                     debug_breakpoint()
                 copyfile(f_path, copy_to)
 
@@ -248,9 +301,11 @@ class __Simulation__(object):
         # modify name in submit script files
         if rename_submit_script != False:
             if type(rename_submit_script) == type('STRING'):
-                rename_in_submit_script(new_name = rename_submit_script, sim=get_sim(path_newsim))
+                rename_in_submit_script(new_name = rename_submit_script,
+                                                       sim=get_sim(path_newsim))
             else:
-                print('!! ERROR: Could not understand rename_submit_script='+str(rename_submit_script))
+                print('!! ERROR: Could not understand rename_submit_script='+
+                      str(rename_submit_script))
 
         # done
         return get_sim(path_newsim)
@@ -263,8 +318,8 @@ class __Simulation__(object):
         Does copy PVAR as well if available.
 
         Args:
-            sim_source:        simulation from where to copy all the files
-            varno:             provide number # of which var-file VAR# should be copied from
+            sim_source:  simulation from where to copy all the files
+            varno:       var-file number # from which to copy (VAR#)
         """
 
         from os import listdir
@@ -285,22 +340,31 @@ class __Simulation__(object):
         src = sim_source.datadir; dst = self.datadir
         if is_int(varno): varno ='VAR'+str(int(varno))
 
-        if not exists(src): print('! ERROR: Source data directory does not exits: '+str(src)); return False
-        if not exists(dst): print('! ERROR: Destination data directory does not exits: '+str(dst)); return False
-        if not varno in sim_source.get_varlist(): print('! ERROR: Could not find '+varno+' in procX folder of sim_source: '+sim_source.name); return False
+        if not exists(src):
+            print('! ERROR: Source data directory does not exits: '
+                  +str(src)); return False
+        if not exists(dst):
+            print('! ERROR: Destination data directory does not exits: '
+                  +str(dst)); return False
+        if not varno in sim_source.get_varlist():
+            print('! ERROR: Could not find '+varno+
+               ' in procX folder of sim_source: '+sim_source.name); return False
 
         data_folders = [p for p in listdir(src) if isdir(join(src, p))]
         procX_folder = [p for p in data_folders if p.startswith('proc')]
         for p in data_folders: mkdir(join(dst,p))
 
         # data/
-        files = ['def_var.pro', 'dim.dat', 'index.pro', 'move-me.list', 'particles_stalker_header.dat',
-                                       'params.log', 'pc_constants.pro', 'pdim.dat', 'pencils.list', 'pvarname.dat', 'svnid.dat', 'var.general', 'variables.pro', 'varname.dat']
+        files = ['def_var.pro', 'dim.dat', 'index.pro', 'move-me.list',
+                 'particles_stalker_header.dat', 'params.log',
+                 'pc_constants.pro', 'pdim.dat', 'pencils.list', 'pvarname.dat',
+                 'svnid.dat', 'var.general', 'variables.pro', 'varname.dat']
         for f in files: copyfile(join(src, f), dst, DEBUG=DEBUG)
 
         # data/allprocs/
         files = ['grid.dat']
-        for f in files: copyfile(join(src, 'allprocs', f), join(dst, 'allprocs/'), DEBUG=DEBUG)
+        for f in files: copyfile(join(src, 'allprocs', f),
+                                 join(dst, 'allprocs/'), DEBUG=DEBUG)
 
         # data/procX
         files = ['dim.dat', 'grid.dat', 'proc_bounds.dat']
@@ -313,8 +377,10 @@ class __Simulation__(object):
             copyfile(join(src, X, 'P'+varno), join(dst, X, 'pvar.dat'), DEBUG=DEBUG)
 
         print('? WARNING: KNOWN ERRORS:')
-        print('? RUN MIGHT NOT START BECAUSE data/param.nml can get damaged in a run that crashes. This is not fixed by this routine.')
-        print('? TRY AND START A SINGLE CORE RUN WITH THIS SETUP AND USE THE CREATED param.nml FOR YOUR PURPOSE INSTEAD.')
+        print('? RUN MIGHT NOT START BECAUSE data/param.nml can get damaged in'+
+              ' a run that crashes. This is not fixed by this routine.')
+        print('? TRY AND START A SINGLE CORE RUN WITH THIS SETUP AND USE THE'+
+              ' CREATED param.nml FOR YOUR PURPOSE INSTEAD.')
         print('? SAME FOR: - tstalk.dat')
 
         return True
@@ -346,42 +412,68 @@ class __Simulation__(object):
                 if exists(join(self.datadir,'param.nml')):
                     print('~ Reading param.nml.. ')
                     param = param(quiet=quiet, datadir=self.datadir)
-                    self.param = {}                     # read params into Simulation object
+                    self.param = {}
+                    # read params into Simulation object
                     for key in dir(param):
                         if key.startswith('_') or key == 'read': continue
-                        self.param[key] = getattr(param, key)
+                        if type(getattr(param,key)) in [bool,list,float,
+                                                                       int,str]:
+                            self.param[key] = getattr(param, key)
+                        else:
+                            try:
+                                # allow for nested param objects
+                                self.param[key] = {} 
+                                for subkey in dir(getattr(param, key)):
+                                    if subkey.startswith('_') or subkey == 'read': continue
+                                    if type(getattr(getattr(param,key), subkey)) in [bool,list,float,
+                                                                       int,str]:
+                                        self.param[key][subkey] = getattr(getattr(param,key), subkey)
+                            except:
+                                    # not nested param objects
+                                    continue
                     REEXPORT = True
                 else:
-                    if not quiet: print('? WARNING: for '+self.path+'\n? Simulation has not run yet! Meaning: No param.nml found!')
+                    if not quiet:
+                        print('? WARNING: for '+self.path+'\n? Simulation has '+
+                              'not run yet! Meaning: No param.nml found!')
                     REEXPORT = True
             except:
                 print('! ERROR: while reading param.nml for '+self.path)
                 self.param = False
                 REEXPORT = True
 
-        if self.param != False and (self.grid == False or self.ghost_grid == False):
-            try:                                # read grid only if param is not False
+        if self.param != False and (self.grid == False
+                                                   or self.ghost_grid == False):
+            # read grid only if param is not False
+            try:
                 print('~ Reading grid.. ')
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
                 print('~ Reading ghost_grid.. ')
-                self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
+                self.ghost_grid = grid(datadir=self.datadir, trim=False,
+                                                                     quiet=True)
                 print('~ Reading dim.. ')
                 self.dim = dim(datadir=self.datadir)
                 if not quiet: print('# Updating grid and ghost_grid succesfull')
                 REEXPORT = True
                 # adding lx, dx etc to params
-                self.param['Lx'] = self.grid.Lx; self.param['Ly'] = self.grid.Ly; self.param['Lz'] = self.grid.Lz
-                self.param['lx'] = self.grid.Lx; self.param['ly'] = self.grid.Ly; self.param['lz'] = self.grid.Lz
-                self.param['dx'] = self.grid.dx; self.param['dy'] = self.grid.dy; self.param['dz'] = self.grid.dz
+                self.param['Lx'] = self.grid.Lx; self.param['Ly'] = self.grid.Ly
+                self.param['Lz'] = self.grid.Lz
+                self.param['lx'] = self.grid.Lx; self.param['ly'] = self.grid.Ly
+                self.param['lz'] = self.grid.Lz
+                self.param['dx'] = self.grid.dx; self.param['dy'] = self.grid.dy
+                self.param['dz'] = self.grid.dz
             except:
-                if not quiet: print('? WARNING: Updating grid and ghost_grid was not succesfull, since reading grid had an error')
-                if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
+                if not quiet: print('? WARNING: Updating grid and ghost_grid '+
+                  'was not successfull, since run has not yet started.')
+                if self.started() or (not quiet):
+                    print('? WARNING: Couldnt load grid for '+self.path)
                 self.grid = False
                 self.ghost_grid = False
                 self.dim = False
                 REEXPORT = True
         elif self.param == False:
-            if not quiet: print('? WARNING: Updating grid and ghost_grid was not succesfull, since run did is not started yet.')
+            if not quiet: print('? WARNING: Updating grid and ghost_grid '+
+              'was not successfull, since run has not yet started.')
             self.grid = False
             self.ghost_grid = False
             self.dim = False
@@ -404,7 +496,8 @@ class __Simulation__(object):
     def export(self):
         """Export simulation object to its root/.pc-dir"""
         from ..io import save
-        if self == False: print('! ERROR: Simulation object is bool object and False!')
+        if self == False:
+            print('! ERROR: Simulation object is bool object and False!')
 
         # clean self.tmp_dict
         tmp_dict = self.tmp_dict; self.tmp_dict = {}
@@ -483,7 +576,8 @@ class __Simulation__(object):
         elif type(command) == type('string'):
             commands.append(command)
         else:
-            print('! ERROR: Couldnt understand the command parameter: '+str(command))
+            print('! ERROR: Couldnt understand the command parameter: '
+                  +str(command))
 
         with open(logfile, 'w') as f:
             rc = subprocess.call(['/bin/bash', '-i', '-c', ';'.join(commands)],
@@ -502,7 +596,8 @@ class __Simulation__(object):
         if rc == 0:
             return True
         else:
-            print('! ERROR: Execution ended with error code '+str(rc)+'!\n! Please check log file in')
+            print('! ERROR: Execution ended with error code '
+                  +str(rc)+'!\n! Please check log file in')
             print('! '+logfile)
             return rc
 
@@ -522,7 +617,8 @@ class __Simulation__(object):
         folder = join(self.path,'src')
         keeps = [f.split('/')[-1] for f in self.components+self.optionals]
 
-        if not exists(folder): print('? Warning: No src directory found!'); return True
+        if not exists(folder):
+            print('? Warning: No src directory found!'); return True
 
         filelist = listdir(folder)          # remove everything INSIDE
         for f in filelist:
@@ -545,7 +641,8 @@ class __Simulation__(object):
         folder = join(self.path,'data')
         keeps = []
 
-        if not exists(folder): print('? Warning: No data directory found!'); return True
+        if not exists(folder):
+            print('? Warning: No data directory found!'); return True
 
         filelist = listdir(folder)          # remove everything INSIDE
         for f in filelist:
@@ -588,7 +685,8 @@ class __Simulation__(object):
             fh.seek(-1024, 2)
             last = fh.readlines()[-1].decode()
 
-        header = [i for i in first.split('-') if not i=='' and not i=='#' and not i=='\n']
+        header = [i for i in first.split('-') if not i=='' and
+                                                     not i=='#' and not i=='\n']
         values = [i for i in last.split(' ') if not i=='']
 
         if len(header) != len(values):
@@ -629,7 +727,8 @@ class __Simulation__(object):
         key = 'VAR'
         if particle == True: key = 'PVAR'
 
-        varlist = natural_sort([basename(i) for i in glob.glob(join(self.datadir, 'proc0')+'/'+key+'*')])
+        varlist = natural_sort([basename(i) for i in glob.glob(
+                                      join(self.datadir, 'proc0')+'/'+key+'*')])
         #if particle: varlist = ['P'+i for i in varlist]
 
         if pos == False: return varlist
@@ -652,35 +751,47 @@ class __Simulation__(object):
     def get_lastvarfilename(self, particle=False, id=False):
         """Returns las varfile name as string."""
         if id == False: return self.get_varlist(pos='last', particle=particle)
-        return int(self.get_varlist(pos='last', particle=particle)[0].split('VAR')[-1])
+        return int(self.get_varlist(pos='last',
+                                         particle=particle)[0].split('VAR')[-1])
 
 
     def get_value(self, quantity, DEBUG=False):
-        """Optimized version of get_value_from_file. Just state quantity for simulation and param-list together with searchable components will be searched."""
+        """
+        Optimized version of get_value_from_file. Just state quantity for
+        simulation and param-list together with searchable components will be
+        searched."""
 
         if DEBUG: print('~ DEBUG: Updating simulation.')
         self.update()
 
-        if DEBUG: print('~ DEBUG: Searching through simulation.params and dim ...')
+        if DEBUG:
+            print('~ DEBUG: Searching through simulation.params and dim ...')
         if type(self.param) == type({'dictionary': 'with_values'}):
             if quantity in self.param.keys():
-                if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
+                if DEBUG:
+                    print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = self.param[quantity]
                 return q
-            elif quantity in [d for d in dir(self.dim) if not d.startswith('__')]:
-                if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
+            elif quantity in [d for d in dir(self.dim) if
+                                                        not d.startswith('__')]:
+                if DEBUG:
+                    print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = getattr(self.dim, quantity)
                 return q
 
-        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        if DEBUG:
+            print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from ..io import get_value_from_file
         for filename in self.quantity_searchables:
-            q = get_value_from_file(filename, quantity, sim=self, DEBUG=DEBUG, silent=True)
+            q = get_value_from_file(filename, quantity, sim=self,
+                                                       DEBUG=DEBUG, silent=True)
             if q is not None:
-                if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
+                if DEBUG:
+                    print('~ DEBUG: '+quantity+' found in '+filename+' ...')
                 return q
             else:
-                if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')
+                if DEBUG:
+                    print('~ DEBUG: Couldnt find quantity here.. continue searching')
 
         print('! ERROR: Couldnt find '+quantity+'!')
         return None
@@ -688,22 +799,27 @@ class __Simulation__(object):
     def get_ts(self, unique_clean=True):
         """Returns time series object.
         Args:
-            unique_clean:       set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs"""
+            unique_clean:  set True, np.unique is used to clean up the ts,
+                           e.g. remove errors at the end of crashed runs"""
         from ..read import ts
 
         # check if already loaded
-        if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] == self.get_T_last(): return self.tmp_dict['ts']
+        if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] ==\
+                                   self.get_T_last(): return self.tmp_dict['ts']
 
         if self.started():
             ts = ts(sim=self, quiet=True, unique_clean=unique_clean)
             self.tmp_dict['ts'] = ts
             return ts
         else:
-            print('? WARNING: Simulation '+self.name+' has not yet been started. No timeseries available!')
+            print('? WARNING: Simulation '+self.name+
+                  ' has not yet been started. No timeseries available!')
             return False
 
-    def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
+    def change_value_in_file(self, filename, quantity, newValue, filepath=False,
+                             DEBUG=False):
         """Same as pencil.io.change_value_in_file."""
         from ..io import change_value_in_file
 
-        return change_value_in_file(filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG)
+        return change_value_in_file(filename, quantity, newValue, sim=self,
+                                    filepath=filepath, DEBUG=DEBUG)

@@ -48,9 +48,20 @@
 ;;   the keyword LOG is set, and in this case they are LOG-LOG plots.
 ;;
 ;;
-;; Requirements: IDL version 8.5 (for the Python bridge). Also, IDL
-;;   needs to be launched from an environment where "python" invokes
-;;   a version of Python that is supported by the used version of IDL.
+;; Requirements:
+;;   IDL version 8.5 (for the Python bridge), or higher; especially
+;;   if you want to use Python version >= 3.5, then you need IDL version
+;;   8.6 or newer. Also, IDL needs to be launched from an environment
+;;   where "python" invokes a version of Python that is supported by the
+;;   used version of IDL.
+;;
+;;   In addition to IDL, it is necessary to dowmload mpfit.pro and
+;;   mpfitfun.pro from the Markwardt library (and put them in the IDL
+;;   path):
+;;     http://cow.physics.wisc.edu/~craigm/idl/fitting.html
+;;
+;;   Also, the IDL astronomy library is required:
+;;     https://idlastro.gsfc.nasa.gov/
 ;;
 ;;   It is perhaps the easiest to install a recent version of
 ;;   Anaconda and then inside of Anaconda install a recent version
@@ -62,7 +73,12 @@
 ;;                      # Python version that is incompatible with
 ;;                      # IDL.
 ;;   > conda activate py36 # Activate Python version 3.6, which would
-;;                      # work with, e.g., IDL 8.7.3.
+;;                      # work with, e.g., IDL 8.7.3. Before trying
+;;                      # this, it is necessary to install Python 3.6
+;;                      # inside of Anaconda (see the documentation;
+;;                      # this is easy and straightforward). Also,
+;;                      # install the two packages "scipy" and "numpy"
+;;                      # inside of this package.
 ;;   > idl
 ;;   IDL> pvars = 'allprocs/' + ['PVAR' + ['20', '24', '28'], 'pvar'] + '.h5'
 ;;   IDL> pc_d2_dimension, pvars
@@ -116,52 +132,135 @@ end
 function pc_d2_dimension_mpfit_f, x, p
   compile_opt hidden, IDL2
 
-  ;return, exp(- p[0L] * x ^ p[1L])
   return, p[0L] * p[1L] * x ^ (p[1L] - 1d0) * exp(- p[0L] * x ^ p[1L])
 end
 
 
-pro pc_d2_dimension_plot, locations, obs, $
-                          fitx=fitx, fity=fity, filename=filename, log=log
+pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
+        filename=filename, log=log, psfilename=psfilename, noshow=noshow, $
+        psxsize=psxsize, psysize=psysize, xsize=xsize, ysize=ysize, $
+        comparison_fit=comparison_fit
   compile_opt hidden, IDL2
 
-  device, decomposed=0L
-  bottom = 2L & ncolors = !d.table_size - bottom
-  loadct, 74, bottom=bottom, ncolors=ncolors
-  tvlct,   0b,   0b ,  0b, 0L         ;; Black
-  tvlct, 255b, 255b, 255b, 1L         ;; White
-  background = 1L
-  color = 0L
-  charsize = 2L
+  device, get_decomposed=decomposed
 
-  offset = 0.1d0 * (max(locations) - min(locations))
-  xmargin = [10.0, 10.0]
-  xrange = keyword_set(log) ? [min(locations) > 1d-3, max(locations)] : $
-                              [min(locations) - offset, max(locations) + offset]
-  yrange = keyword_set(log) ? [min(obs) > 1d-3, max(obs)] : [min(obs), max(obs)]
-  plot, locations, obs, background=background, charsize=charsize, color=color, $
-        xmargin=xmargin, xlog=log, xrange=xrange, /xstyle, $
-                         ylog=log, yrange=yrange, /ystyle
+  if ~n_elements(log) then log = 1L
+  if ~n_elements(noshow) then noshow = 1L
 
-  if n_elements(fitx) gt 0L then $
-     oplot, fitx, fity, linestyle=4, color=50, thick=3
+  for jj = 0L, 1L do begin
 
-  ;; Read image buffer and save to PNG file:
-  device, decomposed=1L
-  grab = tvrd(true=1)
-  tvlct, red, green, blue, /get
-  write_png, filename, grab, red, green, blue 
-  device, decomposed=0L
+    if jj then begin
+
+      device_name = !d.name
+      set_plot, 'ps'
+      device, xsize=psxsize, ysize=psysize
+      device, filename=psfilename, /isolatin, /color, bits_per_pixel=8, $
+              /encapsulated
+      pf = !p.font
+      !p.font = 0L
+
+      charsize = 1.0
+      charthick = 1.5
+      thick = 2.0
+    endif else begin
+
+      if noshow then begin
+        window, /free, xsize=xsize, ysize=ysize, /pixmap
+      endif else begin
+        window, 0L, xsize=xsize, ysize=ysize
+      endelse
+
+      thick = 2.0
+      charsize = 2.0
+      charthick = 2.0
+    endelse
+
+    xo = !x.omargin
+    yo = !y.omargin
+    !x.omargin = 0
+    !y.omargin = 0
+    charthick = 1.5
+    xmargin = [8.0, 0.5]
+    ymargin = [3.5, 0.2]
+    xtitle = 'Minimum distance bins'
+    ytitle = ' Normalized counts'
+    if keyword_set(log) then xtitle = 'log ' + xtitle
+    if keyword_set(log) then ytitle = 'log ' + ytitle
+
+    device, decomposed=0L
+    bottom = 7L & ncolors = !d.table_size - bottom
+    loadct, 74, bottom=bottom, ncolors=ncolors
+    tvlct,   0b,   0b ,  0b, 0L         ;; Black
+    tvlct, 255b, 255b, 255b, 1L         ;; White
+    tvlct, 213b,  94b,   0b, 2L         ;; Vermillion
+    tvlct,   0b, 158b, 115b, 3L         ;; Bluish green
+    tvlct,   0b, 114b, 178b, 4L         ;; Blue
+    tvlct, 230b, 159b,   0b, 5L         ;; Orange
+    tvlct, 204b, 121b, 167b, 6L         ;; Purple (Mulberry)
+    background = 1L
+    color = 0L
+
+    yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : $
+             [min(obs), max(obs)]
+    locations_ = keyword_set(log) ? alog10(locations) : locations
+    obs_ = keyword_set(log) ? alog10(obs) : obs
+    plot, locations_, obs_, charthick=charthick, $
+          background=background, charsize=charsize, color=color, $
+          xmargin=xmargin, xrange=xrange, /xstyle, xthick=thick, $
+          ymargin=ymargin, yrange=yrange, /ystyle, ythick=thick, $
+          xtitle=xtitle, ytitle=ytitle
+
+    if n_elements(fitx) gt 0L then begin
+      fitx_ = keyword_set(log) ? alog10(fitx) : fitx
+      fity_ = keyword_set(log) ? alog10(fity) : fity
+      oplot, fitx_, fity_, linestyle=3, color=2, thick=thick * 1.5
+
+      fity_ = keyword_set(log) ? alog10(comparison_fit) : comparison_fit
+      oplot, fitx_, fity_, linestyle=1, color=6, thick=thick * 1.5
+
+      items = ['d!d2!n fit', 'd!d2!n = 3.0']
+      al_legend, items, charsize=charsize, charthick=charthick, box=0, $
+                 linestyle=[3, 1], color=[2, 6], thick=thick*1.5
+
+    endif
+
+    if jj then begin
+
+      device, /close_file
+      set_plot, device_name
+      !p.font = pf
+
+    endif else begin
+
+      ;; Read image buffer and save to PNG file:
+      device, decomposed=1L
+      grab = tvrd(true=1)
+      tvlct, red, green, blue, /get
+      write_png, filename, grab, red, green, blue
+      device, decomposed=0L
+
+      if noshow then wdelete, !d.window
+
+    endelse
+
+  endfor
+
+  device, decomposed=decomposed
 
   return
 end ;;; pc_d2_dimension_plot
 
 
-pro pc_d2_dimension, pvars, allpython=allpython, $
+pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
+                     fixed_bins=fixed_bins, psxsize=psxsize, psysize=psysize, $
+                     xsize=xsize, ysize=ysize, noshow=noshow, $
                      log=log, recalculate=recalculate
   compile_opt IDL2
 
   python_all = keyword_set(allpython)
+  cumulative = keyword_set(cumulative)
+  cumul_str = ''
+  if ~n_elements(fixed_bins) then fixed_bins = 1L
 
   ;; Determine if the input file is regular binary or HDF5:
 
@@ -191,6 +290,9 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
   endif
 
 
+  ;; Cumulative sum, create a pointer array:
+  if cumulative then obs_sum = ptrarr(nap0)
+
   ;; Open the output file:
   file = 'nnd_d2.dat'
   append = 0L
@@ -198,7 +300,8 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
   ;; Loop over the parameter files:
 
-  for i = 0UL, n_elements(pvars) - 1UL do begin
+  npvars = n_elements(pvars)
+  for i = 0UL, npvars - 1UL do begin
 
     print, "PVAR = ", pvars[i]
 
@@ -323,35 +426,49 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
 
           ;;========================================
-          ;; Calculate the histogram: round 1:
 
-          obs = histogram(xmil, nbins=nbins, locations=locations)
+          if fixed_bins then begin
 
-          norm = dblarr(n_elements(obs))
-          for iii = 0L, n_elements(obs) - 2L do $
-             norm[iii] = (locations[iii + 1L] - locations[iii]) * obs[iii]
-          obs /= total(norm) ;; Normalize data
+            binsize = 3.3333d-3
+            min = 0d0
+            nbins = 1100L & nbins_fit = nbins
+            obs = histogram(xmil, binsize=binsize, $
+                            min=min, nbins=nbins, locations=locations)
 
-          for jj = 0UL, nbins - 2UL do locations[jj] += locations[jj + 1UL]
-          locations /= 2d0
+          endif else begin
 
-          ;; Locate maximum, and step back to a third:
-          obs_max = max(obs[1L : *], obs_max_idx)
-          obs_max_idx_13 = long(mean(obs_max_idx) / 3d0)
+            ;;========================================
+            ;; Calculate the histogram: round 1:
 
-          ;;filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-          ;;           strtrim(j, 2L) + '_h1.png'
-          ;;pc_d2_dimension_plot, locations, obs, filename=filename
+            obs = histogram(xmil, nbins=nbins, locations=locations)
+
+            norm = dblarr(n_elements(obs))
+            for iii = 0L, n_elements(obs) - 2L do $
+               norm[iii] = (locations[iii + 1L] - locations[iii]) * obs[iii]
+            obs /= total(norm) ;; Normalize data
+
+            for jj = 0UL, nbins - 2UL do locations[jj] += locations[jj + 1UL]
+            locations /= 2d0
+
+            ;; Locate maximum, and step back to a third:
+            obs_max = max(obs[1L : *], obs_max_idx)
+            obs_max_idx_13 = long(mean(obs_max_idx) / 3d0)
+
+            ;;filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
+            ;;           strtrim(j, 2L) + '_h1.png'
+            ;;pc_d2_dimension_plot, locations, obs, filename=filename
 
 
-          ;; Calculate new number of bins:
-          nbins_fit = long(1d2 / (obs_max_idx_13 + 1L) * nbins)
+            ;; Calculate new number of bins:
+            nbins_fit = long(1d2 / (obs_max_idx_13 + 1L) * nbins)
 
 
-          ;;========================================
-          ;; Histogram: round 2:
+            ;;========================================
+            ;; Histogram: round 2:
 
-          obs = histogram(xmil, nbins=nbins_fit, locations=locations)
+            obs = histogram(xmil, nbins=nbins_fit, locations=locations)
+
+          endelse
 
           norm = dblarr(n_elements(obs))
           for iii = 0L, n_elements(obs) - 2L do $
@@ -375,6 +492,35 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
           readcol, filenames[j], /compress, format='(f,f)', locations, obs
           nbins_fit = n_elements(obs)
+
+          if keyword_set(cumulative) then begin
+
+            if ~ptr_valid(obs_sum[j]) then begin
+              obs_sum[j] = ptr_new(temporary(obs))
+            endif else begin
+              *obs_sum[j] += obs
+            endelse
+
+            ;; Normalize the total sum once all data were loaded:
+            if i eq npvars - 1UL then begin
+
+              norm = dblarr(n_elements(*obs_sum[j]))
+              for iii = 0L, n_elements(*obs_sum[j]) - 2L do $
+                 norm[iii] = (locations[iii + 1L] - locations[iii]) * (*obs_sum[j])[iii]
+              obs = *obs_sum[j] / total(norm)
+
+              ptr_free, obs_sum[j]
+
+              cumul_str = '_cumul'
+
+            endif else begin
+
+              ;; Skip to the next file:
+              continue
+
+            endelse
+
+          endif ;; cumulative
 
         endelse
 
@@ -406,7 +552,9 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
         d2 = p[1L]
         yfit = pc_d2_dimension_mpfit_f(x, p)
 
-        ;; Another way to do it using the IDL-to-Python bridge:
+        yfit_3 = pc_d2_dimension_mpfit_f(x, [p[0L], 3d0])
+
+        ;; Another way to do it using the IDL-to-Python bridge (*very* slow):
         ;;
         ;;Python.xp_fit  = Python.Wrap(x)
         ;;Python.obs_fit = Python.Wrap(y)
@@ -420,8 +568,14 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
         ;;D2 = popt[1L]
 
         filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-                   strtrim(j, 2L) + '_hist.png'
-        pc_d2_dimension_plot, locations, obs, fitx=x, fity=yfit, log=log, filename=filename
+                   strtrim(j, 2L) + cumul_str + '_hist.png'
+        psfilename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
+                   strtrim(j, 2L) + cumul_str + '_hist.eps'
+        pc_d2_dimension_plot, locations, obs, fitx=x, fity=yfit, log=log, $
+                              filename=filename, psfilename=psfilename, $
+                              psxsize=psxsize, psysize=psysize, $
+                              xsize=xsize, ysize=ysize, noshow=noshow, $
+                              comparison_fit=yfit_3
 
 
         eformat = '(e10.3)'
@@ -447,7 +601,4 @@ pro pc_d2_dimension, pvars, allpython=allpython, $
 
 
   return
-
-  return
-
-end
+end ;;; procedure: pc_d2_dimension

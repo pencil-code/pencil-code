@@ -40,7 +40,7 @@ module PointMasses
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5
-  integer :: iglobal_ggp=0, iprimary=1, isecondary=2
+  integer :: iprimary=1, isecondary=2
   integer :: ivpx_cart=0,ivpy_cart=0,ivpz_cart=0
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
@@ -48,18 +48,16 @@ module PointMasses
 !
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nqpar) :: lfollow_particle=.false., laccretion=.false.
-  logical :: lbackreaction=.false., lnorm=.true.
+  logical :: llive_secondary=.false., lnorm=.true.
   logical :: lreset_cm=.true., lnogravz_star=.false., lexclude_frozen=.false.
   logical :: lramp=.false.
   logical :: ldt_pointmasses=.true.
-  logical :: linterpolate_gravity=.false., linterpolate_linear=.true.
-  logical :: linterpolate_quadratic_spline=.false.
   logical :: ldust=.false.
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
-  logical :: lcorrect_gravity_lstart=.false.
+  logical :: lcorrect_gasgravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
@@ -80,19 +78,19 @@ module PointMasses
       initxxq, initvvq, xq0, yq0, zq0, vxq0, vyq0, vzq0,  &
       pmass, r_smooth, lcylindrical_gravity_nbody, lexclude_frozen, GNewton, &
       bcqx, bcqy, bcqz, ramp_orbits, lramp, final_ramped_mass, &
-      linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
+      laccretion, &
       accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, lretrograde, &
       eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart,&
+      lgas_gravity,ldust_gravity,lcorrect_gasgravity_lstart,&
       frac_smooth
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
-      lnogravz_star, lfollow_particle, lbackreaction, lexclude_frozen, &
+      lnogravz_star, lfollow_particle, llive_secondary, lexclude_frozen, &
       GNewton, bcqx, bcqy, bcqz, &
-      linterpolate_quadratic_spline, laccretion, accrete_hills_frac, iprimary, &
+      laccretion, accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
       ltempering, & 
       ipotential_pointmass, density_scale,&
@@ -295,46 +293,9 @@ module PointMasses
             'one from point mass')
       endif
 !
-!  Check for consistency between the poisson and integral
-!  calculations of selfgravity.
-!
-      if (lbackreaction.and.lselfgravity) then
-        print*,'self-gravity is already taken into '//&
-            'account. lbackreaction is a way of '//&
-            'integrating the self-gravity only in few '//&
-            'specific points of the grid'
-        call fatal_error('initialize_pointmasses','')
-      endif
-!
 !  The presence of dust particles needs to be known.
 !
       if (npar > nqpar) ldust=.true.
-      if (linterpolate_gravity.and.(.not.ldust)) then
-        if (lroot) print*,'interpolate gravity is just'//&
-            ' for the dust component. No need for it if'//&
-            ' you are not using dust particles'
-        call fatal_error('initialize_pointmasses','')
-      endif
-      if (any(laccretion).and.linterpolate_gravity) then
-        if (lroot) print*,'interpolate gravity  not yet '//&
-            'implemented in connection with accretion'
-        call fatal_error('initialize_pointmasses','')
-      endif
-!
-      if (linterpolate_gravity) then
-         if (lroot) print*,'initializing global array for point mass gravity'
-         call farray_register_global('ggp',iglobal_ggp,vector=3)
-      endif
-!
-      if (linterpolate_quadratic_spline) &
-           linterpolate_linear=.false.
-!
-      if ((.not.linterpolate_gravity).and.&
-           linterpolate_quadratic_spline) then
-        if (lroot) print*,'no need for linterpolate_quadratic_spline'//&
-            'if linterpolate_gravity is false'
-        call fatal_error('initialize_pointmasses','')
-      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -347,7 +308,7 @@ module PointMasses
 !  22-sep-06/wlad: adapted
 !
       if (ldensity) lpenc_requested(i_rho)=.true.
-      if (ldust.and.lbackreaction) &
+      if (ldust.and.llive_secondary) &
           lpenc_requested(i_rhop)=.true.
 !
       if (lexclude_frozen) then
@@ -693,7 +654,9 @@ module PointMasses
               velocity(ks,3) = kep_vel(ks) - velocity_baricenter_secondaries
             endif
           endif
-        enddo
+       enddo
+!       
+        if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
 !
 !  The last one (star) fixes the CM also with velocity zero
 !
@@ -731,7 +694,7 @@ module PointMasses
 !
 !  Correct secondary by gas gravity 
 !
-        if (lcorrect_gravity_lstart) call initcond_correct_selfgravity(f,velocity,isecondary)
+        if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
 !
         velocity(  iprimary,2) = velocity(isecondary,2) * pmass(isecondary)/pmass(iprimary)
 !
@@ -808,62 +771,61 @@ module PointMasses
       intent (in) :: f, p
       intent (inout) :: df
 !
-!  Get the total gravity field. In the case of dust, it is already
-!  pre-calculated
+!  Get the pre-calculated gravity field.
 !
       lhydroif: if (lhydro) then
         call get_total_gravity(ggt)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)
 !
-!  Integrate the disk gravity to the particle
+!  Add the gas gravity to the pointmasses by integration if llive_secondary
+!  is true.   
 !
-!  Backreaction of the gas+dust gravity onto the massive particles
 !  The integration is needed for these two cases:
 !
-!   1. We are not solving the Poisson equation (lbackreaction)
+!   1. We are not solving the Poisson equation
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
 !
-        pointmasses1: do ks=1,nqpar
-          lparticle_out=.false.
-          if (lselfgravity) then
+        livesecondary: if (llive_secondary) then 
+          pointmasses1: do ks=1,nqpar
+            lparticle_out=.false.
             if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
-                (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
-                (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))) then
-              !particle out of box
-              lparticle_out=.true.
-            endif
-          endif
-          lintegrate=lbackreaction.or.lparticle_out
+                 (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
+                 (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))) then
+               !particle out of box
+               lparticle_out=.true.
+             endif
+             lintegrate=(.not.lselfgravity).or.lparticle_out
 !
 !  Sometimes making the star feel the selfgravity of the disk leads to
 !  numerical troubles as the star is too close to the origin (in cylindrical
 !  coordinates).
 !
-          if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
+             if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
 !
-          diskgravity: if (lintegrate) then
+             gasgravity: if (lintegrate) then
 !
 !  Get the acceleration particle ks suffers due to self-gravity.
 !
-            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
-            xxq = fq(ks,ixq:izq)
+               call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                    E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
+               xxq = fq(ks,ixq:izq)
 !
-            if (lcylindrical_gravity_nbody(ks)) then
-              call integrate_selfgravity(p,rpcyl_mn(:,ks),&
-                  xxq,accg,r_smooth(ks))
-            else
-              call integrate_selfgravity(p,rp_mn(:,ks),&
-                  xxq,accg,r_smooth(ks))
-            endif
+               if (lcylindrical_gravity_nbody(ks)) then
+                 call integrate_gasgravity(p,rpcyl_mn(:,ks),&
+                      xxq,accg,r_smooth(ks))
+               else
+                 call integrate_gasgravity(p,rp_mn(:,ks),&
+                      xxq,accg,r_smooth(ks))
+               endif
 !
 !  Add it to its dfp
 !
-            dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
+               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
 !
-          endif diskgravity
-        enddo pointmasses1
+             endif gasgravity
+           enddo pointmasses1
+        endif livesecondary
 !
 !  Diagnostic
 !
@@ -920,6 +882,12 @@ module PointMasses
         call dxxq_dt_pointmasses
         call dvvq_dt_pointmasses(hill_radius_square)
 !
+      endif
+!
+!  Add gas selfgravity if present
+!
+      if (lselfgravity.and.llive_secondary) then
+        call selfgravity_gas_on_pointmass
       endif
 !
       if (lparticles) then
@@ -1219,6 +1187,35 @@ module PointMasses
       endif
 !
     endsubroutine dragforce_pointmasses
+!**********************************************************
+    subroutine selfgravity_gas_on_pointmass()
+!
+!  Adds selfgravity on massive particles. This subroutine
+!  fetchs the (global) acceleration array calculated by the
+!  logspirals method and interpolates the acceleration to
+!  the position of the pointmass. TODO: other poisson methods
+!  should get the potential, take the gradient and interpolate.
+!
+!  14-mat-20/wlad: coded
+!
+      use Mpicomm
+      use Sub, only: get_radial_distance
+      use Poisson,     only:inverse_laplacian,get_acceleration
+!
+      integer :: ks
+      real, dimension (nx,ny,nz,3) :: acceleration
+      real, dimension (3) :: accg
+!
+      call get_acceleration(acceleration)
+!
+      do ks=1,nqpar
+        if (ks/=iprimary) then
+          call bilinear_interpolate(acceleration,fq(ks,ixq:izq),accg)
+          if (lroot) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+        endif
+      enddo
+!
+    endsubroutine selfgravity_gas_on_pointmass
 !**********************************************************
     subroutine get_evr(xxp,xxq,evr_output)
 !
@@ -1696,10 +1693,91 @@ module PointMasses
 !
     endsubroutine get_total_gravity
 !***********************************************************************
-    subroutine initcond_correct_selfgravity(f,velocity,k)
+    subroutine initcond_correct_gasgravity(f,velocity,k)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
-!  due to the gravity of the gas+dust.
+!  due to the gravity of gas. 
+!
+!  14-may-20/wlad : coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nqpar,3), intent(inout) :: velocity
+      real, dimension(3) :: accg
+      real :: vphi,phidot2,OO,rr
+      integer, intent(in) :: k
+!
+      if (lselfgravity) then
+        call correct_gasgravity_selfgravity(f,k,accg)
+      else
+        call correct_gasgravity_integrate(f,k,accg)
+      endif
+!
+!  Correct original velocity by this acceleration
+!
+!  phidot**2 = OmegaK**2 + 1/r (d/dr PHI_sg)
+!  phidot**2 = OmegaK**2 - 1/r gr
+!
+!  Current azimuthal velocity and azimuthal frequency
+!
+      if (lcylindrical_coords) then
+        vphi = velocity(k,2)
+        rr = fq(k,ixq)
+      elseif (lspherical_coords) then
+        vphi = velocity(k,3)
+        rr = fq(k,ixq)*sin(fq(k,iyq))
+      endif
+      OO = vphi/rr
+!
+!  Update angular velocity by selfgravitational acceleration
+!  This line assumes axisymmetry
+!
+      phidot2 = OO**2 - accg(1)/rr
+!
+!  Corrected velocity
+!
+      vphi = sqrt(phidot2) * rr
+!
+      if (lcylindrical_coords) then
+        velocity(k,2) = vphi
+      elseif (lspherical_coords) then
+        velocity(k,3) = vphi
+      endif      
+!
+    endsubroutine initcond_correct_gasgravity
+!***********************************************************************
+    subroutine correct_gasgravity_selfgravity(f,k,accg)
+!
+!  Calculates acceleration on the point (x,y,z)=xxpar
+!  due to the gravity of gas, by interpolating from the
+!  gravitational acceleration from the selfgravity module. 
+!
+!  14-may-20/wlad : coded
+!
+      use Mpicomm
+      use Sub, only: get_radial_distance
+      use Poisson,     only:inverse_laplacian,get_acceleration
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz,3) :: acceleration
+      real, dimension (nx,ny,nz) :: rho
+      real, dimension (3) :: accg
+      integer, intent (in) :: k
+!
+      if (ldensity_nolog) then
+         rho=f(l1:l2,m1:m2,n1:n2,irho)
+      else
+         rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      endif
+      call inverse_laplacian(rho)
+      call get_acceleration(acceleration)
+      call bilinear_interpolate(acceleration,fq(k,ixq:izq),accg)
+!
+    endsubroutine correct_gasgravity_selfgravity
+!***********************************************************************
+    subroutine correct_gasgravity_integrate(f,k,accg)
+!
+!  Calculates acceleration on the point (x,y,z)=xxpar
+!  due to the gravity of gas, by integrating the whole grid. 
 !
 !  29-aug-18/wlad : coded
 !
@@ -1708,7 +1786,6 @@ module PointMasses
 !
       implicit none
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nqpar,3), intent(inout) :: velocity
       real, dimension(3) :: xxpar,sum_loc,accg
       real, dimension(nx,3) :: dist
       real, dimension(nx) :: rrp,rp_mn,rpcyl_mn,selfgrav,density
@@ -1731,7 +1808,6 @@ module PointMasses
 !      
       mloop: do m=m1,m2
       nloop: do n=n1,n2
-
         if (coord_system=='cartesian') then
           jac=1.;dqx=dx;dqy=dy;dqz=dz
           dist(:,1)=x(l1:l2)-xxpar(1)
@@ -1743,11 +1819,11 @@ module PointMasses
           dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
           dist(:,3)=z(  n  )-xxpar(3)
         elseif (coord_system=='spherical') then
-          call fatal_error('integrate_selfgravity', &
+          call fatal_error('correct_gasgravity_integrate', &
                ' not yet implemented for spherical polars')
            dqx=0.;dqy=0.;dqz=0.
         else
-          call fatal_error('integrate_selfgravity','wrong coord_system')
+          call fatal_error('correct_gasgravity_integrate','wrong coord_system')
           dqx=0.;dqy=0.;dqz=0.
         endif
 !
@@ -1774,7 +1850,7 @@ module PointMasses
 !
         !if (ldust.and.ldust_gravity) density=density+f(l1:l2,m,n,irhop)
 !
-        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(1),E3_=xxpar(1))
+        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(2),E3_=xxpar(3))
         if (lcylindrical_gravity_nbody(k)) then
            rrp=rpcyl_mn
         else
@@ -1784,82 +1860,217 @@ module PointMasses
         selfgrav = -GNewton*density_scale*&
              density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
-!  Everything inside the accretion radius of the particle should
-!  not exert gravity (numerical problems otherwise)
-!
-        where (rrp<=rp0)
-          selfgrav = 0
-        endwhere
-!
 !  Exclude the frozen zones
 !
-      if (lcartesian_coords) call fatal_error("","")
+        if (lcartesian_coords) call fatal_error("","")
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
+        do j=1,3
+          tmp=selfgrav*dist(:,j)
+          !take proper care of the trapezoidal rule
+          !in the case of non-periodic boundaries
+          fac = 1.
+          if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
+            if (.not.lperi(2)) fac = .5*fac
+          endif
+!
+          if (lperi(1)) then
+            sum_loc(j) = sum_loc(j)+fac*sum(tmp)
+          else
+            sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+          endif
+        enddo
+      enddo nloop
+      enddo mloop
+!
       do j=1,3
-        tmp=selfgrav*dist(:,j)
-        !take proper care of the trapezoidal rule
-        !in the case of non-periodic boundaries
-        fac = 1.
-        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-          if (.not.lperi(2)) fac = .5*fac
-        endif
-!
-        if (lperi(1)) then
-          sum_loc(j) = sum_loc(j)+fac*sum(tmp)
-        else
-          sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
-        endif        
-     enddo
-    enddo nloop
-    enddo mloop
-!
-    do j=1,3
-      call mpireduce_sum(sum_loc(j),accg(j))
-    enddo
+        call mpireduce_sum(sum_loc(j),accg(j))
+      enddo
 !
 !  Broadcast particle acceleration
 !
-    call mpibcast_real(accg,3)
+      call mpibcast_real(accg,3)
 !
-!  Correct original velocity by this acceleration
-!      phidot2 = Omegak2 + accg/r
-!
-!  Current azimuthal velocity and azimuthal frequency
-!
-    if (lcylindrical_coords) then
-       vphi = velocity(k,2)
-       rr = fq(k,ixq)
-    elseif (lspherical_coords) then
-       vphi = velocity(k,3)
-       rr = fq(k,ixq)*sin(fq(k,iyq))
-    endif
-!
-    OO = vphi/rr
-!
-!  Update angular velocity by selfgravitational acceleration
-!   
-!  phidot**2 = OmegaK**2 + 1/r (d/dr PHI_sg)
-!
-!  This line assumes axisymmetry
-!
-    phidot2 = OO**2 + accg(1)/rr
-!
-!  Corrected velocity
-!
-    vphi = sqrt(phidot2) * rr
-!
-    if (lcylindrical_coords) then
-       velocity(k,2) = vphi
-    elseif (lspherical_coords) then
-       velocity(k,3) = vphi
-    endif
-!
-    endsubroutine initcond_correct_selfgravity
+    endsubroutine correct_gasgravity_integrate
 !***********************************************************************
-    subroutine integrate_selfgravity(p,rrp,xxpar,accg,rp0)
+    subroutine bilinear_interpolate(v,q,vp)
+!
+!  Interpolate the gravity vector with bilinear interpolation to the position
+!  of the pointmass(es). 
+!
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
+!      
+      real, dimension (nx,ny,nz,3) :: v
+      real, dimension (3) :: q
+      real, dimension (3) :: vp
+      integer :: j
+
+      real :: rdx1,rdy1,rdz1
+      real :: rdx2,rdy2,rdz2
+      integer :: ix0_global,iy0_global,iz0_global
+      integer :: ix1_global,iy1_global,iz1_global
+
+      integer :: ipx0,ipy0,ipz0
+      integer :: ipx1,ipy1,ipz1
+      integer :: ix0,iy0,iz0
+      integer :: ix1,iy1,iz1
+!
+      integer :: iproc_q11,iproc_q21,iproc_q12,iproc_q22
+      real, dimension(3) :: Q11,Q21,Q12,Q22
+!
+      intent(in) :: v,q
+      intent(out) :: vp
+!
+      call calc_indices_and_processors(q(1),xgrid,dx1grid,nprocx,nx,&
+           lperi(1),ix0,ix1,ipx0,ipx1,rdx1,rdx2)
+      call calc_indices_and_processors(q(2),ygrid,dy1grid,nprocy,ny,&
+           lperi(2),iy0,iy1,ipy0,ipy1,rdy1,rdy2)
+!         
+      if (nz==1) then
+        iz0=1
+      else
+        call fatal_error("trilinear_interpolate","logpsirals works only for 2D")
+        !call calc_indices_and_processors(q(3),zgrid,dz1grid,nprocz,nz,&
+        !lperi(3),iz0,iz1,ipz0,ipz1,rdz1,rdz2)
+      endif
+!
+      iproc_q11 = ipx0 + nprocx*ipy0 + nprocx*nprocy*ipz
+      iproc_q21 = ipx1 + nprocx*ipy0 + nprocx*nprocy*ipz
+      iproc_q12 = ipx0 + nprocx*ipy1 + nprocx*nprocy*ipz
+      iproc_q22 = ipx1 + nprocx*ipy1 + nprocx*nprocy*ipz
+!
+      if (iproc_q11 /= root) then
+        if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
+        if (lroot)            call mpirecv_real(Q11             ,3,iproc_q11,111)
+      else
+        Q11 = v(ix0,iy0,iz0,:)
+      endif
+!
+      if (iproc_q21 /= root) then
+        if (iproc==iproc_q21) call mpisend_real(v(ix1,iy0,iz0,:),3,root     ,121)
+        if (lroot)            call mpirecv_real(Q21             ,3,iproc_q21,121)
+      else
+        Q21 = v(ix1,iy0,iz0,:)
+      endif
+!
+      if (iproc_q12 /= root) then
+        if (iproc==iproc_q12) call mpisend_real(v(ix0,iy1,iz0,:),3,root     ,112)
+        if (lroot)            call mpirecv_real(Q12             ,3,iproc_q12,112)
+      else
+        Q12 = v(ix0,iy1,iz0,:)
+      endif
+!
+      if (iproc_q22 /= root) then
+        if (iproc==iproc_q22) call mpisend_real(v(ix1,iy1,iz0,:),3,root     ,122)
+        if (lroot)            call mpirecv_real(Q22             ,3,iproc_q22,122)
+      else
+        Q22 = v(ix1,iy1,iz0,:)
+      endif
+!
+      if (lroot) then 
+        do j=1,3         
+!
+! Interpolation formula
+!
+          vp(j) &
+               =   Q11(j) * rdx2* rdy2 &   ! Q11
+                 + Q21(j) * rdx1* rdy2 &   ! Q21
+                 + Q12(j) * rdx2* rdy1 &   ! Q12
+                 + Q22(j) * rdx1* rdy1     ! Q22
+        enddo
+      endif
+!
+      call mpibcast_real(vp,3)
+!
+    endsubroutine bilinear_interpolate
+!***********************************************************************
+    subroutine calc_indices_and_processors(q,qgrid,dq1grid,nprocq,nq,lperiodic_direction,&
+         iq0,iq1,ipq0,ipq1,rdq1,rdq2)
+!
+      use Sub, only: find_index_by_bisection
+!
+      real, dimension(:) :: qgrid
+      real, dimension(:) :: dq1grid
+      real :: q,rdq1,rdq2,dq1,dq
+      integer :: iq0_global,iq1_global,ipq0,ipq1,iq0,iq1,nprocq,nq
+      logical :: lperiodic_direction
+      integer :: nqgrid
+!
+      intent(in) :: q,qgrid,lperiodic_direction,nprocq,nq
+      intent(out) :: iq0,iq1,ipq0,ipq1,rdq1,rdq2
+
+      lperiodic: if (.not.lperiodic_direction) then
+!
+!  Non-periodic grid          
+!
+        call find_index_by_bisection(q,qgrid,iq0_global)      
+        if (qgrid(iq0_global)>q) iq0_global = iq0_global-1
+        iq1_global=iq0_global+1
+!      
+        dq1=1./(qgrid(iq1_global)-qgrid(iq0_global))
+        rdq1 = (q-qgrid(iq0_global))*dq1
+        rdq2 = (qgrid(iq1_global)-q)*dq1
+!
+        if (nprocq/=1) then 
+          ipq0 = (iq0_global-1)/nq
+          ipq1 = (iq1_global-1)/nq
+!
+          iq0  = iq0_global-ipq0*nq
+          iq1  = iq1_global-ipq1*nq
+        else
+          ipq0=0
+          ipq1=0
+!
+          iq0=iq0_global
+          iq1=iq1_global
+        endif
+!
+      else
+!
+!  Periodic grid
+!
+        call find_index_by_bisection(q,qgrid,iq0_global)
+        dq1=dq1grid(iq0_global)
+        dq=1./dq1
+        if (qgrid(iq0_global)>q) iq0_global = iq0_global-1
+        iq1_global=iq0_global+1
+!
+        nqgrid=size(qgrid)
+        if (iq0_global < 1) then
+          iq0_global = iq0_global + nqgrid
+          rdq1 = (q-(qgrid(1)-dq))*dq1
+        else
+          rdq1 = (q-qgrid(iq0_global))*dq1
+        endif
+!
+        if (iq1_global > nqgrid) then
+          iq1_global = iq1_global - nqgrid
+          rdq2 = (qgrid(nqgrid)+dq-q)*dq1
+        else
+          rdq2 = (qgrid(iq1_global)-q)*dq1
+        endif
+!
+        if (nprocq/=1) then 
+          ipq0=(iq0_global-1)/nq
+          ipq1=(iq1_global-1)/nq
+!
+          iq0=iq0_global-ipq0*nq
+          iq1=iq1_global-ipq1*nq
+        else
+          ipq0=0
+          ipq1=0
+!
+          iq0=iq0_global
+          iq1=iq1_global
+        endif
+!
+      endif lperiodic
+!
+    endsubroutine calc_indices_and_processors
+!***********************************************************************    
+    subroutine integrate_gasgravity(p,rrp,xxpar,accg,rp0)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of the gas+dust.
@@ -1869,7 +2080,7 @@ module PointMasses
       use Mpicomm
 !
       real, dimension(nx,3) :: dist
-      real, dimension(nx) :: rrp,selfgrav,density
+      real, dimension(nx) :: rrp,gasgravity,density
       real, dimension(nx) :: dv,jac,dqy,tmp
       real :: dqx,dqz,rp0,fac
       real, dimension(3) :: xxpar,accg,sum_loc
@@ -1885,7 +2096,7 @@ module PointMasses
 !  Sanity check
 !
       if (.not.(lgas_gravity.or.ldust_gravity)) &
-           call fatal_error("lintegrate_selfgravity",&
+           call fatal_error("lintegrate_gasgravity",&
            "No gas gravity or dust gravity to add. "//&
            "Switch on lgas_gravity or ldust_gravity in n-body parameters")
 !
@@ -1900,11 +2111,11 @@ module PointMasses
         dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
         dist(:,3)=z(  n  )-xxpar(3)
       elseif (coord_system=='spherical') then
-        call fatal_error('integrate_selfgravity', &
+        call fatal_error('integrate_gasgravity', &
             ' not yet implemented for spherical polars')
         dqx=0.;dqy=0.;dqz=0.
       else
-        call fatal_error('integrate_selfgravity','wrong coord_system')
+        call fatal_error('integrate_gasgravity','wrong coord_system')
         dqx=0.;dqy=0.;dqz=0.
       endif
 !
@@ -1925,37 +2136,28 @@ module PointMasses
 !
 !  Add the particle gravity if npar>mspar (which means dust is being used)
 !
-      if (ldust.and.ldust_gravity) density=density+p%rhop
+      !if (ldust.and.ldust_gravity) density=density+p%rhop
 !
-      selfgrav = -GNewton*density_scale*&
+      gasgravity = -GNewton*density_scale*&
            density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
-!
-!  Everything inside the accretion radius of the particle should
-!  not exert gravity (numerical problems otherwise)
-!
-      where (rrp<=rp0)
-        selfgrav = 0
-      endwhere
 !
 !  Exclude the frozen zones
 !
-      if (lexclude_frozen) then
-        if (lcylinder_in_a_box) then
-          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
-            selfgrav = 0
-          endwhere
-        else
-          where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
-            selfgrav = 0
-          endwhere
-        endif
+      if (lexclude_frozen.and.lcylinder_in_a_box) then
+        where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
+          gasgravity = 0
+        endwhere
+      else
+        where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
+          gasgravity = 0
+        endwhere
       endif
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
       do j=1,3
-        tmp=selfgrav*dist(:,j)
+        tmp=gasgravity*dist(:,j)
         !take proper care of the trapezoidal rule
         !in the case of non-periodic boundaries
         fac = 1.
@@ -1977,7 +2179,7 @@ module PointMasses
 !
       if (lfirstcall) lfirstcall=.false.
 !
-    endsubroutine integrate_selfgravity
+    endsubroutine integrate_gasgravity
 !***********************************************************************
     subroutine pointmasses_read_snapshot(filename)
 !

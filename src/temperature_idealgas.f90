@@ -78,6 +78,7 @@ module Energy
 !  logical, pointer :: lscale_to_cs2top
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
+  character (len=labellen) :: div_sld_ene='2nd'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   complex :: coef_lnTT=0.
   character (len=intlen) :: iinit_str
@@ -110,7 +111,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      temp_zaver_range, h_sld_ene, nlf_sld_ene, &
+      temp_zaver_range, h_sld_ene, nlf_sld_ene, div_sld_ene, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
       hcond0_kramers, nkramers
 !
@@ -445,6 +446,7 @@ module Energy
         case ('temperature-slope-limited')
           lenergy_slope_limited=.true.
           if (lroot) print*, 'heat conduction: slope limited diffusion'
+          if (lroot) print*, 'heat conduction: using ',trim(div_sld_ene),' order'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -1342,10 +1344,10 @@ module Energy
 !
       if (lenergy_slope_limited.and.llast) then
         if (ltemperature_nolog) then
-          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,nlf_sld_ene,tmp)
+          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
           thdiff=thdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,nlf_sld_ene,tmp)
+          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
           thdiff=thdiff+tmp*p%TT1
        endif
      endif
@@ -1804,7 +1806,8 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
+!     if (lslope_limit_diff .and. llast) then
+     if (lslope_limit_diff) then
        call get_cp1(cp1)
        cs2=0.
        do m=1,my
