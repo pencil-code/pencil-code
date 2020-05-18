@@ -843,20 +843,26 @@ contains
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
     tau1_spitzer_penc=cdtv**2/(1.0d-6*max(dz_1(n),dx_1(l1:l2)))**2/ &
                       chi_spitzer
-!
-    call get_shared_variable('z_cutoff',&
-             z_cutoff,ierr)
-    if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+    if (lradiation) then
+      call get_shared_variable('z_cutoff',&
+               z_cutoff,ierr)
+      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
              'failed to get z_cutoff from radiation_ray')
-    call get_shared_variable('cool_wid',&
+      call get_shared_variable('cool_wid',&
              cool_wid,ierr)
-    if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-             'failed to get cool_wid from radiation_ray')
-    do i=1,3
-      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))* &
-          step(z(n),z_cutoff,cool_wid)
-    enddo
+      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+               'failed to get cool_wid from radiation_ray')
+      do i=1,3
+        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+            tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))* &
+            step(z(n),z_cutoff,cool_wid)
+      enddo
+    else
+      do i=1,3
+        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+            tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i)) 
+      enddo
+    endif
 !
 ! Add to energy equation
 !
