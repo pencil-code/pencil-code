@@ -58,6 +58,7 @@ module PointMasses
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
   logical :: lcorrect_gasgravity_lstart=.false.
+  logical :: lexclude_hills=.true.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
@@ -97,7 +98,7 @@ module PointMasses
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
       lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,&
-      frac_smooth
+      frac_smooth,lexclude_hills
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -1503,12 +1504,14 @@ module PointMasses
         torque_gas = torque_gas * tempering
         torque_par = torque_par * tempering
       else
-        do i=1,nx
-          if (dist(i)<hills) then
-            torque_gas(i)=0.
-            torque_par(i)=0.
-          endif
-        enddo
+        if (lexclude_hills) then 
+          do i=1,nx
+            if (dist(i)<hills) then
+              torque_gas(i)=0.
+              torque_par(i)=0.
+            endif
+          enddo
+        endif
       endif
 !
 !  Separate internal and external torques
