@@ -2100,7 +2100,7 @@ module PointMasses
       use Mpicomm
 !
       real, dimension(nx,3) :: dist
-      real, dimension(nx) :: rrp,gasgravity,density
+      real, dimension(nx) :: rrp,rr,gasgravity,density
       real, dimension(nx) :: dv,jac,dqy,tmp
       real :: dqx,dqz,rp0,fac
       real, dimension(3) :: xxpar,accg,sum_loc
@@ -2168,7 +2168,12 @@ module PointMasses
           gasgravity = 0
         endwhere
       else
-        where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
+        if (l2D.or.(l3D.and.lcylindrical_gravity)) then
+          rr=p%rcyl_mn
+        else
+          rr=p%r_mn
+        endif
+        where ((rr<=r_int).or.(rr>=r_ext))
           gasgravity = 0
         endwhere
       endif
