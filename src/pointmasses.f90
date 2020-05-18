@@ -66,6 +66,7 @@ module PointMasses
 !
   logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
   logical :: lcoriolis_force=.false.
+  logical :: l2D,l3D
   real :: ugas=0.0,Omega_coriolis=0.0
   real, dimension(nqpar) :: StokesNumber=1.
 !
@@ -191,6 +192,7 @@ module PointMasses
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lxpresent,lypresent,lzpresent,l2Dcyl,l2Dsph
 !
       integer :: ks
 !
@@ -269,7 +271,7 @@ module PointMasses
         (.not.lcylindrical_gravity_nbody(iprimary))).or.&
              (.not.lcylindrical_gravity).and.&
              (lcylindrical_gravity_nbody(iprimary))) then
-        call fatal_error('initialize_pointmasses','inconsitency '//&
+        call fatal_error('initialize_pointmasses','inconsistency '//&
             'between lcylindrical_gravity from cdata and the '//&
             'one from point mass')
       endif
@@ -298,6 +300,17 @@ module PointMasses
 !
       if (npar > nqpar) ldust=.true.
 !
+!  Check if the run is 2D or 3D to use cylindrical gravity or not
+!
+      lxpresent=(nxgrid/=1)
+      lypresent=(nygrid/=1)
+      lzpresent=(nzgrid/=1)
+!
+      l3D  =                              lxpresent.and.      lypresent .and.      lzpresent
+      l2Dcyl=    lcylindrical_coords.and.(lxpresent.and.      lypresent .and.(.not.lzpresent))
+      l2Dsph=    lspherical_coords  .and.(lxpresent.and.(.not.lypresent).and.      lzpresent )
+      l2D=l2Dcyl.or.l2Dsph
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_pointmasses
@@ -312,8 +325,8 @@ module PointMasses
       if (ldust.and.llive_secondary) &
           lpenc_requested(i_rhop)=.true.
 !
-      if (lexclude_frozen) then
-        if (lcylinder_in_a_box) then
+      if (llive_secondary.and.(.not.lselfgravity)) then
+        if (l2D.or.(l3D.and.lcylindrical_gravity)) then
           lpenc_requested(i_rcyl_mn)=.true.
         else
           lpenc_requested(i_r_mn)=.true.
@@ -325,8 +338,12 @@ module PointMasses
         lpenc_diagnos(i_rho)=.true.
       endif
 !
-      lpenc_diagnos(i_rcyl_mn)=.true.
-      lpenc_diagnos(i_rhop)=.true.
+      if (l2D.or.(l3D.and.lcylindrical_gravity)) then
+        lpenc_diagnos(i_rcyl_mn)=.true.
+      else
+        lpenc_diagnos(i_r_mn)=.true.
+      endif
+      if (ldust) lpenc_diagnos(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_pointmasses
 !***********************************************************************
