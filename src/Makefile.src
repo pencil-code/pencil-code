@@ -455,7 +455,7 @@ HDF5_MODULES = io_hdf5 special/meanfield_e_tensor
 #
 ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
   ifneq ($(MODULE_CMD),)
-    HDF5_LOADED := $(shell (module list |& grep hdf5) || (module list |& grep hf5) )
+    HDF5_LOADED := $(shell (module list |& grep -i hdf5) || (module list |& grep -i hf5) )
     ifeq ($(HDF5_LOADED),)
 no_hdf5_message:
 	@echo ";;;"
@@ -2102,12 +2102,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
-#FC=mpif90 #(login*|manterm1|kapylap1)
-#F90=$(FC) #(login*|manterm1|kapylap1)
-#CC=mpicc #(login*|manterm1|kapylap1)
-#FFLAGS_DOUBLE=-r8 #(login*|manterm1|kapylap1)
-#CFLAGS=-DFUNDERSC=1 -O3 #(login*|manterm1|kapylap1)
-#LD_MPI= #(login*|manterm1|kapylap1)
+#FC=mpifort #(login*|manterm1|kapylap1|rheinhm1)
+#F90=$(FC) #(login*|manterm1|kapylap1|rheinhm1)
+#CC=mpicc #(login*|manterm1|kapylap1|rheinhm1)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(login*|manterm1|kapylap1|rheinhm1)
+#CFLAGS=-DFUNDERSC=1 -O3 #(login*|manterm1|kapylap1|rheinhm1)
+#LD_MPI= #(login*|manterm1|kapylap1|rheinhm1)
 ##
 ## Steve's test cluster
 ##
