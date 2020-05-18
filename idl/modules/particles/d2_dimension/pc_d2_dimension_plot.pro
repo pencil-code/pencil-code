@@ -37,8 +37,9 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
   device, decomposed=0
   loadct, 0
 
-  alpha = ps.rhopmat / ps.rho0 * ap0[midx] / ps.Lx0
+  alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
   xrange = [0.9 * min(alpha), 1.1 * max(alpha)]
+
   if ~n_elements(yrange) then yrange = [2.1d0, 3.09d0]
   if max(d2) gt yrange[1L] then yrange[1L] = max(d2)
   linestyle = [0, 1, 2, 3, 5]
@@ -90,7 +91,7 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
     for i = 0L, n_model - 1L do begin
       idx = where(model eq midx[i], count)
 
-      alpha = ps.rhopmat / ps.rho0 * ap0[idx] / ps.Lx0
+      alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
 
       linestyle_ = linestyle[i mod n_elements(linestyle)]
       oplot, alpha, d2[idx], linestyle=linestyle_, psym=-4, $
