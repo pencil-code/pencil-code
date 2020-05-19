@@ -225,6 +225,19 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_string
 !***********************************************************************
+    subroutine output_hdf5_torus_rect(name, data)
+!
+      use Geometrical_types, only: torus_rect
+
+      character (len=*), intent(in) :: name
+      type(torus_rect), intent(in) :: data
+
+      call fatal_error ('output_hdf5_torus_rect', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data%height)
+!
+    endsubroutine output_hdf5_torus_rect
+!***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
       character (len=*), intent(in) :: name
