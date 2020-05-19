@@ -81,9 +81,9 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
           ymargin=ymargin, yrange=yrange, ythick=thick, ytitle=ytitle, $
           ytickformat=ytickformat
 
-    if keyword_set(yright) then $
-       axis, color=0, /yaxis, yrange=yrange, $
-             /ystyle, ythick=thick, ytitle=ytitle_pre
+    if keyword_set(yright) then axis, color=0, /yaxis, yrange=yrange, $
+         charsize=charsize, charthick=charthick, $
+         /ystyle, ythick=thick, ytitle=ytitle_pre
 
     oplot, 1d1 ^!x.crange, [3d0, 3d0], $
            linestyle=1, color=150, thick=thick
