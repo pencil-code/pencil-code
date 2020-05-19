@@ -136,11 +136,12 @@ function pc_d2_dimension_mpfit_f, x, p
 end
 
 
-pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
+pro pc_d2_dimension_hplot, locations, obs, fitx=fitx, fity=fity, $
         filename=filename, log=log, charsize=charsize, font_size=font_size, $
         noshow=noshow, psfilename=psfilename, psxsize=psxsize, $
         psysize=psysize, xsize=xsize, ysize=ysize, legendtext=legendtext, $
-        comparison_fit=comparison_fit, thick=thick, yright=yright
+        comparison_fit=comparison_fit, thick=thick, $
+        yright=yright, xrange=xrange
   compile_opt hidden, IDL2
 
   device, get_decomposed=decomposed
@@ -182,8 +183,8 @@ pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
     !x.omargin = 0
     !y.omargin = 0
     charthick = 1.5
-    xmargin = [8.0, 0.5]
-    ymargin = [3.5, 0.2]
+    xmargin = keyword_set(yright) ? [0.5, 8.0] : [8.0, 0.5]
+    ymargin = [3.5, 0.5]
     xtitle = 'Minimum distance bins'
     ytitle_pre = ' Normalized counts'
     if keyword_set(log) then xtitle = 'log ' + xtitle
@@ -202,10 +203,12 @@ pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
     background = 1L
     color = 0L
 
+    locations_ = keyword_set(log) ? alog10(locations) : locations
+
     yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : $
              [min(obs), max(obs)]
-    locations_ = keyword_set(log) ? alog10(locations) : locations
     obs_ = keyword_set(log) ? alog10(obs) : obs
+    obs_[0L] = - 10
 
     ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
     ytitle = keyword_set(yright) ? '' : ytitle_pre
@@ -218,8 +221,8 @@ pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
           xtitle=xtitle, ytitle=ytitle, ytickformat=ytickformat
 
     if keyword_set(yright) then $
-       axis, color=0, /yaxis, yrange=yrange, $
-             /ystyle, ythick=thick, ytitle=ytitle_pre
+       axis, color=0, /yaxis, yrange=yrange, charsize=charsize, $
+             charthick=charthick, /ystyle, ythick=thick, ytitle=ytitle_pre
 
     if n_elements(fitx) gt 0L then begin
       fitx_ = keyword_set(log) ? alog10(fitx) : fitx
@@ -263,14 +266,15 @@ pro pc_d2_dimension_plot, locations, obs, fitx=fitx, fity=fity, $
   device, decomposed=decomposed
 
   return
-end ;;; pc_d2_dimension_plot
+end ;;; pc_d2_dimension_hplot
 
 
 pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
                      fixed_bins=fixed_bins, charsize=charsize, thick=thick, $
                      font_size=font_size, psxsize=psxsize, psysize=psysize, $
                      xsize=xsize, ysize=ysize, noshow=noshow, yright=yright, $
-                     log=log, recalculate=recalculate, legendtext=legendtext
+                     log=log, recalculate=recalculate, legendtext=legendtext, $
+                     xrange=xrange
   compile_opt IDL2
 
   python_all = keyword_set(allpython)
@@ -587,11 +591,11 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
                    strtrim(j, 2L) + cumul_str + '_hist.png'
         psfilename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
                    strtrim(j, 2L) + cumul_str + '_hist.eps'
-        pc_d2_dimension_plot, locations, obs, fitx=x, fity=yfit, log=log, $
+        pc_d2_dimension_hplot, locations, obs, fitx=x, fity=yfit, log=log, $
             filename=filename, psfilename=psfilename, psxsize=psxsize, $
             psysize=psysize, xsize=xsize, ysize=ysize, noshow=noshow, $
             charsize=charsize, comparison_fit=yfit_3, legendtext=legendtext, $
-            thick=thick, font_size=font_size, yright=yright
+            thick=thick, font_size=font_size, yright=yright, xrange=xrange
 
 
         eformat = '(e10.3)'
