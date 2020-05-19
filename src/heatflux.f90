@@ -669,7 +669,7 @@ contains
 !       to add the "full" value of c_spitzer to maxadvec.
 !       For incomperating all we use:
 !
-        maxadvec = maxadvec + 0.36*c_spitzer/dxmin_pencil + 0.64*c_spitzer0/dxmin_pencil
+        maxadvec = maxadvec + (0.36*c_spitzer + 0.64*c_spitzer0)/dxmin_pencil
 !
 !       In case tau_inv_va > tau_inv_spitzer is c_spitzer > c_spitzer0 and we get:
 !       maxadvec = maxadvec + 0.36*c_spitzer/dxmin_pencil
