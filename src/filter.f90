@@ -111,7 +111,6 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
-      lfirstpoint=.true.        ! true for very first m-n loop
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
@@ -202,7 +201,6 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
-      lfirstpoint=.true.        ! true for very first m-n loop
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
