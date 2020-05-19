@@ -105,7 +105,7 @@ module PointMasses
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
   integer, dimension(nqpar)   :: idiag_torqext_gas=0,idiag_torqext_par=0
   integer, dimension(nqpar)   :: idiag_torqint_gas=0,idiag_torqint_par=0
-  integer, dimension(nqpar)   :: idiag_period=0
+  integer, dimension(nqpar)   :: idiag_period=0,idiag_torque=0
   integer                     :: idiag_totenergy=0
 !
   contains
@@ -893,6 +893,7 @@ module PointMasses
       real, dimension (mx,my,mz,mvar) :: df
 !
       real, dimension(nqpar) :: hill_radius_square
+      logical :: ldiagnostic_only
 !
       if (lroot) then
         call calc_hill_radius(hill_radius_square)
@@ -904,8 +905,10 @@ module PointMasses
 !
 !  Add gas selfgravity if present
 !
-      if (lselfgravity.and.llive_secondary) then
-        call selfgravity_gas_on_pointmass
+      if (lselfgravity) then
+        ldiagnostic_only=ldiagnos.and.idiag_torque(isecondary)/=0
+        if (llive_secondary.or.ldiagnostic_only) &
+             call selfgravity_gas_on_pointmass
       endif
 !
       if (lparticles) then
@@ -1217,19 +1220,27 @@ module PointMasses
 !  14-mat-20/wlad: coded
 !
       use Mpicomm
-      use Sub, only: get_radial_distance
+      use Sub, only: get_radial_distance,cross
       use Poisson,     only:inverse_laplacian,get_acceleration
 !
       integer :: ks
       real, dimension (nx,ny,nz,3) :: acceleration
-      real, dimension (3) :: accg
+      real, dimension (3) :: accg,torque
 !
       call get_acceleration(acceleration)
 !
       do ks=1,nqpar
         if (ks/=iprimary) then
           call bilinear_interpolate(acceleration,fq(ks,ixq:izq),accg)
-          if (lroot) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+          if (lroot.and.llive_secondary) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+!
+          if (lroot.and.ldiagnos) then
+            if (idiag_torque(ks)/=0) then
+              call cross((/fq(ks,ixq),0.,0./),accg,torque)
+              call point_par_name(pmass(ks)*torque(3),idiag_torque(ks))
+            endif
+          endif
+!
         endif
       enddo
 !
@@ -2322,6 +2333,7 @@ module PointMasses
         idiag_torqext_gas=0;idiag_torqext_par=0
         idiag_torqint_gas=0;idiag_torqint_par=0
         idiag_period=0
+        idiag_torque=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2365,6 +2377,8 @@ module PointMasses
                'torqint_par_'//trim(sks),idiag_torqint_par(ks))
           call parse_name(iname,cname(iname),cform(iname),&
                'period'//trim(sks),idiag_period(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torque_'//trim(sks),idiag_torque(ks))
         enddo
 !
         if (lwr) then
@@ -2375,6 +2389,7 @@ module PointMasses
           call pointmass_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
           call pointmass_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
           call pointmass_index_append('i_period'//trim(sks),idiag_period(ks))
+          call pointmass_index_append('i_torque_'//trim(sks),idiag_torque(ks))
         endif
       enddo
 !
