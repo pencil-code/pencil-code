@@ -8,20 +8,6 @@ Find the fixed points of a given field.
 """
 
 
-##import numpy as np
-#import math as m
-#import multiprocessing as mp
-#import os
-#try:
-#    import h5py
-#except:
-#    print('!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.')
-#from ..diag.tracers import TracersParameterClass
-#from ..diag.tracers import Tracers
-#from ..calc.streamlines import Stream
-#from ..math.interpolation import vec_int
-
-
 class FixedPoint(object):
     """
     FixedPoint -- Holds the fixed points and additional integrated quantities.
@@ -35,12 +21,12 @@ class FixedPoint(object):
         from ..diag.tracers import TracersParameterClass
 
         self.params = TracersParameterClass()
-        self.t = []
-        self.fidx = []
-        self.fixed_points = []
-        self.fixed_sign = []
-        self.poincare = []
-        self.tracers = []
+        self.t = None
+        self.fixed_index = None
+        self.fixed_points = None
+        self.fixed_sign = None
+        self.poincare = None
+        self.tracers = None
 
 
     def find_fixed(self, datadir='data', var_file='VAR0', trace_field='bb',
@@ -83,12 +69,9 @@ class FixedPoint(object):
         from ..calc.streamlines import Stream
         from ..math.interpolation import vec_int
 
-        # Convert int_q string into list.
-        if not isinstance(self.params.int_q, list):
-            self.params.int_q = [self.params.int_q]
-        if any(np.array(self.params.int_q) == 'curly_A'):
+        if (self.params.int_q == 'curly_A'):
             self.curly_A = []
-        if any(np.array(self.params.int_q) == 'ee'):
+        if (self.params.int_q == 'ee'):
             self.ee = []
 
         # Multi core setup.
@@ -105,7 +88,7 @@ class FixedPoint(object):
             magic.append('jj')
         if trace_field == 'vort':
             magic.append('vort')
-        if any(np.array(self.params.int_q) == 'ee'):
+        if (self.params.int_q == 'ee'):
             magic.append('bb')
             magic.append('jj')
         dim = read.dim(datadir=datadir)
@@ -113,8 +96,8 @@ class FixedPoint(object):
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
             series = True
-            varfile = 'VAR' + str(ti)
-            n_times = tf-ti+1
+            var_file = 'VAR{0}'.format(ti)
+            n_times = tf - ti + 1
         else:
             series = False
             n_times = 1
@@ -127,8 +110,11 @@ class FixedPoint(object):
         grid = read.grid(datadir=datadir, quiet=True, trim=True)
         field = getattr(var, trace_field)
         param2 = read.param(datadir=datadir, quiet=True)
-        if any(np.array(self.params.int_q) == 'ee'):
+        if (self.params.int_q == 'ee'):
             ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
+        self.params.datadir = datadir
+        self.params.var_file = var_file
+        self.params.trace_field = trace_field
 
         # Get the simulation parameters.
         self.params.dx = var.dx
@@ -148,14 +134,15 @@ class FixedPoint(object):
         tracers.params = self.params
         # Create the mapping for all times.
         if not tracer_file_name:
-            tracers.find_tracers(var_file=var_file, datadir=datadir, trace_field=trace_field)
+            tracers.find_tracers(var_file=var_file, datadir=datadir,
+                                 trace_field=trace_field, ti=ti, tf=tf)
         else:
             tracers.read(datadir=datadir, file_name=tracer_file_name)
         self.tracers = tracers
 
         # Set some default values.
         self.t = np.zeros((tf-ti+1)*series + (1-series))
-        self.fidx = np.zeros((tf-ti+1)*series + (1-series))
+        self.fixed_index = np.zeros((tf-ti+1)*series + (1-series))
         self.poincare = np.zeros([int(self.params.trace_sub*dim.nx),
                                   int(self.params.trace_sub*dim.ny), n_times])
         ix0 = range(0, int(self.params.nx*self.params.trace_sub)-1)
@@ -164,7 +151,7 @@ class FixedPoint(object):
         # Start the parallelized fixed point finding.
         for tidx in range(n_times):
             if tidx > 0:
-                var = read.var(var_file='VAR'+str(tidx+ti), datadir=datadir,
+                var = read.var(var_file='VAR{0}'.format(tidx+ti), datadir=datadir,
                                magic=magic, quiet=True, trimall=True)
                 field = getattr(var, trace_field)
                 self.t[tidx] = var.t
@@ -188,7 +175,7 @@ class FixedPoint(object):
                 sub_proc = sub_data[i_proc][0]
                 fixed.extend(sub_data[i_proc][1])
                 fixed_sign.extend(sub_data[i_proc][2])
-                self.fidx[tidx] += sub_data[i_proc][3]
+                self.fixed_index[tidx] += sub_data[i_proc][3]
                 self.poincare[sub_proc::self.params.n_proc, :, tidx] = sub_data[i_proc][4]
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
@@ -197,24 +184,26 @@ class FixedPoint(object):
             fixed, fixed_sign = self.__discard_close_fixed_points(np.array(fixed),
                                                                   np.array(fixed_sign),
                                                                   var)
+            if self.fixed_points is None:
+                self.fixed_points = []
+                self.fixed_sign = []
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
 
         # Compute the traced quantities along the fixed point streamlines.
-        if any(np.array(self.params.int_q) == 'curly_A') or \
-        any(np.array(self.params.int_q) == 'ee'):
+        if (self.params.int_q == 'curly_A') or (self.params.int_q == 'ee'):
             for t_idx in range(0, n_times):
-                if any(np.array(self.params.int_q) == 'curly_A'):
+                if (self.params.int_q == 'curly_A'):
                     self.curly_A.append([])
-                if any(np.array(self.params.int_q) == 'ee'):
+                if (self.params.int_q == 'ee'):
                     self.ee.append([])
                 for fixed in self.fixed_points[t_idx]:
                     # Trace the stream line.
                     xx = np.array([fixed[0], fixed[1], self.params.Oz])
-                    time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                    time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
                     stream = Stream(field, self.params, xx=xx, time=time)
                     # Do the field line integration.
-                    if any(np.array(self.params.int_q) == 'curly_A'):
+                    if (self.params.int_q == 'curly_A'):
                         curly_A = 0
                         for l in range(stream.iterations-1):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
@@ -224,7 +213,7 @@ class FixedPoint(object):
                                             interpolation=self.params.interpolation)
                             curly_A += np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                         self.curly_A[-1].append(curly_A)
-                    if any(np.array(self.params.int_q) == 'ee'):
+                    if (self.params.int_q == 'ee'):
                         ee_p = 0
                         for l in range(stream.iterations-1):
                             eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
@@ -234,12 +223,13 @@ class FixedPoint(object):
                                             interpolation=self.params.interpolation)
                             ee_p += np.dot(eeInt, (stream.tracers[l+1] - stream.tracers[l]))
                         self.ee[-1].append(ee_p)
-                if any(np.array(self.params.int_q) == 'curly_A'):
+                if (self.params.int_q == 'curly_A'):
                     self.curly_A[-1] = np.array(self.curly_A[-1])
-                if any(np.array(self.params.int_q) == 'ee'):
+                if (self.params.int_q == 'ee'):
                     self.ee[-1] = np.array(self.ee[-1])
 
         return 0
+
 
     # Return the fixed points for a subset of the domain.
     def __sub_fixed(self, queue, ix0, iy0, field, tracers, tidx, var, i_proc):
@@ -249,7 +239,7 @@ class FixedPoint(object):
         diff = np.zeros((4, 2))
         fixed = []
         fixed_sign = []
-        fidx = 0
+        fixed_index = 0
         poincare_array = np.zeros((tracers.x0[i_proc::self.params.n_proc].shape[0],
                                    tracers.x0.shape[1]))
 
@@ -272,7 +262,7 @@ class FixedPoint(object):
 
                 if abs(poincare) > 5: # Use 5 instead of 2*pi to account for rounding errors.
                     # Subsample to get starting point for iteration.
-                    nt = 4
+                    nt = 2
                     xmin = tracers.x0[ix, iy, tidx]
                     ymin = tracers.y0[ix, iy, tidx]
                     xmax = tracers.x0[ix+1, iy, tidx]
@@ -287,7 +277,7 @@ class FixedPoint(object):
                             xx[i1, 2] = self.params.Oz
                             i1 += 1
                     for it1 in range(nt**2):
-                        time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
                         stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                         tracers_part[it1, 0:2] = xx[it1, 0:2]
                         tracers_part[it1, 2:] = stream.tracers[-1, :]
@@ -308,20 +298,24 @@ class FixedPoint(object):
 
                     # Get fixed point from this starting position using Newton's method.
                     point = np.array([minx, miny])
+                    print('proc = {0}, ix = {1}, iy = {2}: Start null point.'.format(i_proc, ix, iy))                
                     fixed_point = self.__null_point(point, var, field)
+                    print('proc = {0}, ix = {1}, iy = {2}: Finish null point.'.format(i_proc, ix, iy))                
 
-                    # Check if fixed point lies inside the cell.
+                    # Check if fixed point lies outside the cell.
                     if ((fixed_point[0] < tracers.x0[ix, iy, tidx]) or
                             (fixed_point[0] > tracers.x0[ix+1, iy, tidx]) or
                             (fixed_point[1] < tracers.y0[ix, iy, tidx]) or
                             (fixed_point[1] > tracers.y0[ix, iy+1, tidx])):
-                        pass
-                    else:
-                        fixed.append(fixed_point)
-                        fixed_sign.append(np.sign(poincare))
-                        fidx += np.sign(poincare)
+                        print('proc = {0}, ix = {1}, iy = {2}: Fixed point lies outside the cell.'.format(i_proc, ix, iy))
+                        fixed_point[0] = minx
+                        fixed_point[1] = miny
+#                    else:
+                    fixed.append(fixed_point)
+                    fixed_sign.append(np.sign(poincare))
+                    fixed_index += np.sign(poincare)
 
-        queue.put((i_proc, fixed, fixed_sign, fidx, poincare_array))
+        queue.put((i_proc, fixed, fixed_sign, fixed_index, poincare_array))
 
 
     # Find the Poincare index of this grid cell.
@@ -341,15 +335,14 @@ class FixedPoint(object):
     # Compute rotation along one edge.
     def __edge(self, field, sx, sy, diff1, diff2, rec):
         import numpy as np
-        import math as m
         from ..calc.streamlines import Stream
 
-        phiMin = np.pi/8.
-        dtot = m.atan2(diff1[0]*diff2[1] - diff2[0]*diff1[1],
-                       diff1[0]*diff2[0] + diff1[1]*diff2[1])
-        if (abs(dtot) > phiMin) and (rec < 4):
-            xm = 0.5*(sx[0]+sx[1])
-            ym = 0.5*(sy[0]+sy[1])
+        phi_min = np.pi/8.
+        dtot = np.arctan2(diff1[0]*diff2[1] - diff2[0]*diff1[1],
+                          diff1[0]*diff2[0] + diff1[1]*diff2[1])
+        if (abs(dtot) > phi_min) and (rec < 4):
+            xm = 0.5*(sx[0] + sx[1])
+            ym = 0.5*(sy[0] + sy[1])
 
             # Trace the intermediate field line.
             time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
@@ -359,11 +352,6 @@ class FixedPoint(object):
             stream_x1 = stream.tracers[-1, 0]
             stream_y1 = stream.tracers[-1, 1]
 
-            # Discard any streamline which does not converge or hits the boundary.
-#            if ((stream.len >= len_max) or
-#                (stream_z1 < self.params.Oz+self.params.Lz-10*self.params.dz)):
-#                    dtot = 0.
-#            else:
             diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
             if sum(diffm**2) != 0:
                 diffm = diffm/np.sqrt(sum(diffm**2))
@@ -377,7 +365,7 @@ class FixedPoint(object):
         import numpy as np
         from ..calc.streamlines import Stream
 
-        dl = np.min([var.dx, var.dy])/100.
+        dl = np.min([var.dx, var.dy])/30.
         it = 0
         # Tracers used to find the fixed point.
         tracers_null = np.zeros((5, 4))
@@ -391,7 +379,7 @@ class FixedPoint(object):
             xx[3, :] = np.array([point[0], point[1]-dl, self.params.Oz])
             xx[4, :] = np.array([point[0], point[1]+dl, self.params.Oz])
             for it1 in range(5):
-                time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
                 stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                 tracers_null[it1, :2] = xx[it1, :2]
                 tracers_null[it1, 2:] = stream.tracers[-1, 0:2]
@@ -434,10 +422,12 @@ class FixedPoint(object):
             # Check root convergence.
             if sum(abs(dpoint)) < 1e-3*np.min([self.params.dx, self.params.dy]):
                 fixed_point = point
+                print('Root finding converged.')
                 break
 
             if it > 20:
                 fixed_point = point
+                print('Root finding did not converge.')
                 break
 
             it += 1
@@ -483,13 +473,13 @@ class FixedPoint(object):
         return np.array(fixed_new), np.array(fixed_sign_new)
 
 
-    def write(self, datadir='./data', destination='fixed_points.hdf5'):
+    def write(self, datadir='data', destination='fixed_points.hdf5'):
         """
         Write the fixed points into a file.
 
         call signature::
 
-        write(self, datadir='./data', destination='fixed_points.hdf5')
+        write(self, datadir='data', destination='fixed_points.hdf5')
 
         Keyword arguments:
 
@@ -500,7 +490,6 @@ class FixedPoint(object):
           Destination file.
         """
 
-        import numpy as np
         import os
         try:
             import h5py
@@ -515,9 +504,9 @@ class FixedPoint(object):
             # Write main data arrays.
             set_t = f.create_dataset("t", self.t.shape, dtype=self.t.dtype)
             set_t[...] = self.t[...]
-            set_fidx = f.create_dataset("fidx", self.fidx.shape,
-                                        dtype=self.fidx.dtype)
-            set_fidx[...] = self.fidx[...]
+            set_fixed_index = f.create_dataset("fixed_index", self.fixed_index.shape,
+                                        dtype=self.fixed_index.dtype)
+            set_fixed_index[...] = self.fixed_index[...]
             set_poincare = f.create_dataset("poincare", self.poincare.shape,
                                             dtype=self.poincare.dtype)
             set_poincare[...] = self.poincare[...]
@@ -527,6 +516,7 @@ class FixedPoint(object):
             for key in dir(self.params):
                 if not key.startswith('_'):
                     value = getattr(self.params, key)
+                    print('value = {0}, key = {1}'.format(value, key))
                     group_params.attrs[key] = value
 
             # Create a new group for each time step.
@@ -541,12 +531,12 @@ class FixedPoint(object):
                                                                  self.fixed_sign[t_idx].shape,
                                                                  dtype=self.fixed_sign[t_idx].dtype)
                 set_fixed_sign[...] = self.fixed_sign[t_idx]
-                if any(np.array(self.params.int_q) == 'curly_A'):
+                if (self.params.int_q == 'curly_A'):
                     set_curly_A = fixed_groups[-1].create_dataset("curly_A",
                                                                   self.curly_A[t_idx].shape,
                                                                   dtype=self.curly_A[t_idx].dtype)
                     set_curly_A[...] = self.curly_A[t_idx]
-                if any(np.array(self.params.int_q) == 'ee'):
+                if (self.params.int_q == 'ee'):
                     set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape,
                                                              dtype=self.ee[t_idx].dtype)
                     set_ee[...] = self.ee[t_idx]
@@ -561,13 +551,13 @@ class FixedPoint(object):
             print("error: empty destination file")
 
 
-    def read(self, datadir='./data', file_name='fixed_points.hdf5'):
+    def read(self, datadir='data', file_name='fixed_points.hdf5'):
         """
         Read the fixed points from a file.
 
         call signature::
 
-        read(self, datadir='./data', file_name='fixed_points.hdf5')
+        read(self, datadir='data', file_name='fixed_points.hdf5')
 
         Keyword arguments:
 
@@ -578,7 +568,6 @@ class FixedPoint(object):
           File with the tracer data.
         """
 
-        import numpy as np
         import os
         try:
             import h5py
@@ -592,7 +581,7 @@ class FixedPoint(object):
 
         # Extract arrays.
         self.t = f['t'].value
-        self.fidx = f['fidx'].value
+        self.fixed_index = f['fixed_index'].value
         self.poincare = f['poincare'].value
 
         # Extract parameters.
@@ -604,17 +593,17 @@ class FixedPoint(object):
         # Read the time series.
         self.fixed_points = []
         self.fixed_sign = []
-        if any(np.array(self.params.int_q) == 'curly_A'):
+        if (self.params.int_q == 'curly_A'):
             self.curly_A = []
-        if any(np.array(self.params.int_q) == 'ee'):
+        if (self.params.int_q == 'ee'):
             self.ee = []
         for t_idx in range(len(self.t)):
             group = f['{0}'.format(t_idx)]
             self.fixed_points.append(group['fixed_points'].value)
             self.fixed_sign.append(group['fixed_sign'].value)
-            if any(np.array(self.params.int_q) == 'curly_A'):
+            if (self.params.int_q == 'curly_A'):
                 self.curly_A.append(group['curly_A'].value)
-            if any(np.array(self.params.int_q) == 'ee'):
+            if (self.params.int_q == 'ee'):
                 self.ee.append(group['ee'].value)
         f.close()
 
@@ -622,4 +611,7 @@ class FixedPoint(object):
         tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                            self.params.destination[-5:]
         self.tracers = Tracers()
-        self.tracers.read(datadir=datadir, file_name=tracer_file_name)
+        try:
+            self.tracers.read(datadir=datadir, file_name=tracer_file_name)
+        except:
+            print('Warning: no tracer file found.')
