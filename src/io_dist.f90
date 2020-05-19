@@ -491,7 +491,7 @@ module Io
       write_persist_torus_rect = .true.
       if (write_persist_id (label, id)) return
 !
-      write (lun_output) value
+      !write (lun_output) value
       write_persist_torus_rect = .false.
 !
     endfunction write_persist_torus_rect
@@ -1269,7 +1269,7 @@ module Io
       character (len=*), intent(in) :: label
       type(torus_rect), intent(out) :: value
 !
-      read (lun_input) value
+      !read (lun_input) value
       read_persist_torus_rect = .false.
 !
     endfunction read_persist_torus_rect

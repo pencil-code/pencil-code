@@ -27,10 +27,10 @@
     real :: th0,ph0,r_in0,height0
     contains
     !  procedure, pass :: precess => my_precess
-    procedure :: torus_rect_unfmt_write
-    procedure :: torus_rect_unfmt_read
-    generic :: write (unformatted) => torus_rect_unfmt_write
-    generic :: read (unformatted) => torus_rect_unfmt_read
+    !procedure :: torus_rect_unfmt_write
+    !procedure :: torus_rect_unfmt_read
+    !generic :: write (unformatted) => torus_rect_unfmt_write
+    !generic :: read (unformatted) => torus_rect_unfmt_read
 
   endtype torus_rect
 
@@ -94,7 +94,7 @@
 !***********************************************************************
     subroutine torus_rect_unfmt_write(torus,unit,iostat,iomsg)
 
-    class(torus_rect),intent(IN)   :: torus
+    type(torus_rect), intent(IN)   :: torus
     integer,          intent(IN)   :: unit
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
@@ -107,7 +107,7 @@
 !***********************************************************************
     subroutine torus_rect_unfmt_read(torus,unit,iostat,iomsg)
 
-    class(torus_rect),intent(INOUT):: torus
+    type(torus_rect), intent(INOUT):: torus
     integer,          intent(IN)   :: unit
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
