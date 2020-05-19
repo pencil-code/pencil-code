@@ -17,7 +17,7 @@ gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
 #
 nogsl.o: nogsl.c Makefile.src Makefile.local
 #
-$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o Makefile.src Makefile.local
+$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o Makefile.src
 #
 syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
