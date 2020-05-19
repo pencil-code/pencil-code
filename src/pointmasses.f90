@@ -785,6 +785,7 @@ module PointMasses
       real, dimension (nx) :: pot_energy
       integer :: ks
       logical :: lintegrate, lparticle_out
+      logical :: ldiagnostic_only
 !
       intent (in) :: f, p
       intent (inout) :: df
@@ -804,7 +805,9 @@ module PointMasses
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
 !
-        livesecondary: if (llive_secondary) then 
+        ldiagnostic_only=ldiagnos.and.idiag_torque(isecondary)/=0
+!
+        if (llive_secondary.or.ldiagnostic_only) then
           pointmasses1: do ks=1,nqpar
             lparticle_out=.false.
             if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
@@ -813,7 +816,7 @@ module PointMasses
                !particle out of box
                lparticle_out=.true.
              endif
-             lintegrate=(.not.lselfgravity).or.lparticle_out
+             lintegrate=(.not.lselfgravity).or.lparticle_out.or.ldiagnostic_only
 !
 !  Sometimes making the star feel the selfgravity of the disk leads to
 !  numerical troubles as the star is too close to the origin (in cylindrical
@@ -821,7 +824,7 @@ module PointMasses
 !
              if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
 !
-             gasgravity: if (lintegrate) then
+             integrategas: if (lintegrate) then
 !
 !  Get the acceleration particle ks suffers due to self-gravity.
 !
@@ -839,11 +842,16 @@ module PointMasses
 !
 !  Add it to its dfp
 !
-               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
+               if (llive_secondary) &
+                    dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
 !
-             endif gasgravity
+!  Calculate torques for output, if needed
+!
+               if (ldiagnos) call calc_torque(ks,accg)
+!
+             endif integrategas
            enddo pointmasses1
-        endif livesecondary
+         endif
 !
 !  Diagnostic
 !
@@ -872,12 +880,12 @@ module PointMasses
               endif
             endif
 !
-!  Calculate torques for output, if needed
+!  Calculate torques splitting inner and outer, for backward compatibility
 !
             if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
-                 call calc_torque(p,rpcyl_mn(:,ks),ks)
+                 call calc_torque_split_int_ext(p,rpcyl_mn(:,ks),ks)
 !
-          enddo pointmasses2
+         enddo pointmasses2
         endif diagnos
       endif lhydroif
 !
@@ -1232,15 +1240,10 @@ module PointMasses
       do ks=1,nqpar
         if (ks/=iprimary) then
           call bilinear_interpolate(acceleration,fq(ks,ixq:izq),accg)
-          if (lroot.and.llive_secondary) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+          if (lroot.and.llive_secondary) &
+               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
 !
-          if (lroot.and.ldiagnos) then
-            if (idiag_torque(ks)/=0) then
-              call cross((/fq(ks,ixq),0.,0./),accg,torque)
-              call point_par_name(pmass(ks)*torque(3),idiag_torque(ks))
-            endif
-          endif
-!
+          if (ldiagnos) call calc_torque(ks,accg)
         endif
       enddo
 !
@@ -1460,9 +1463,30 @@ module PointMasses
 !
     endsubroutine get_gravity_field_pointmasses
 !***********************************************************************
-    subroutine calc_torque(p,dist,ks)
+    subroutine calc_torque(ks,accg)
+!
+      use Sub, only: cross
+!
+      integer, intent(in) :: ks
+      real, dimension(3), intent(in) :: accg
+      real, dimension(3) :: torque
+!
+      if (lroot) then
+        if (idiag_torque(ks)/=0) then 
+          call cross((/fq(ks,ixq),0.,0./),accg,torque)
+          call point_par_name(pmass(ks)*torque(3),idiag_torque(ks))
+        endif
+      endif
+!
+    endsubroutine calc_torque
+!***********************************************************************             
+    subroutine calc_torque_split_int_ext(p,dist,ks)
 !
 !  Output torque diagnostic for nbody particle ks
+!  (maintained for backward compatibility). As of May 2020
+!  the torque diagnostic should be computed after integrate_gasgravity,
+!  from the same acceleration used on the planet, instead of integrating
+!  separately.
 !
 !  05-nov-05/wlad : coded
 !
@@ -1584,7 +1608,7 @@ module PointMasses
         call integrate_mn_name(torqint_gas+torqint_par,idiag_torqint(ks))
       endif
 !
-    endsubroutine calc_torque
+    endsubroutine calc_torque_split_int_ext
 !***********************************************************************
     subroutine get_ramped_mass
 !
