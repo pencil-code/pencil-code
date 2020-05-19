@@ -43,7 +43,7 @@ class Tracers(object):
         call signature:
 
         find_tracers(var_file='VAR0', datadir='data', trace_field='bb',
-                     params=None, ti=-1, tf=-1)
+                     ti=-1, tf=-1)
 
         Keyword arguments:
 
@@ -94,6 +94,7 @@ class Tracers(object):
             magic.append('bb')
             magic.append('jj')
         dim = read.dim(datadir=datadir)
+        self.params.var_file = var_file
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -405,7 +406,7 @@ class TracersParameterClass(object):
         self.method = 'RK45'
         self.trace_sub = 1
         self.int_q = ''
-        self.varfile = 'VAR0'
+        self.var_file = 'VAR0'
         self.ti = -1
         self.tf = -1
         self.datadir = 'data'
