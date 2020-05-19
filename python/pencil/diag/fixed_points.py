@@ -76,7 +76,7 @@ class FixedPoint(object):
 
         # Multi core setup.
         if not(np.isscalar(self.params.n_proc)) or (self.params.n_proc%1 != 0):
-            print("error: invalid processor number")
+            print("Error: invalid processor number")
             return -1
         queue = mp.Queue()
 
@@ -298,16 +298,13 @@ class FixedPoint(object):
 
                     # Get fixed point from this starting position using Newton's method.
                     point = np.array([minx, miny])
-                    print('proc = {0}, ix = {1}, iy = {2}: Start null point.'.format(i_proc, ix, iy))                
                     fixed_point = self.__null_point(point, var, field)
-                    print('proc = {0}, ix = {1}, iy = {2}: Finish null point.'.format(i_proc, ix, iy))                
 
                     # Check if fixed point lies outside the cell.
                     if ((fixed_point[0] < tracers.x0[ix, iy, tidx]) or
                             (fixed_point[0] > tracers.x0[ix+1, iy, tidx]) or
                             (fixed_point[1] < tracers.y0[ix, iy, tidx]) or
                             (fixed_point[1] > tracers.y0[ix, iy+1, tidx])):
-                        print('proc = {0}, ix = {1}, iy = {2}: Fixed point lies outside the cell.'.format(i_proc, ix, iy))
                         fixed_point[0] = minx
                         fixed_point[1] = miny
 #                    else:
@@ -516,7 +513,6 @@ class FixedPoint(object):
             for key in dir(self.params):
                 if not key.startswith('_'):
                     value = getattr(self.params, key)
-                    print('value = {0}, key = {1}'.format(value, key))
                     group_params.attrs[key] = value
 
             # Create a new group for each time step.
