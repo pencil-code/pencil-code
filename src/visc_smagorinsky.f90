@@ -73,6 +73,9 @@ module Viscosity
         if (headtt.and.lroot) print*,'viscosity: c_smag=',c_smag
 !
         lneed_sij=.true.
+       
+        if (.not.ldensity) &
+          call warning('initialize_viscosity',"ldensity better be .true. for ivisc='smagorinsky*'")
 !
     endsubroutine initialize_viscosity
 !*******************************************************************
@@ -350,9 +353,6 @@ module Viscosity
              call multmv_mn(sij,gradnu_smag,sgradnu_smag)
              fvisc=2*nusglnrho+tmp2+2*sgradnu_smag
              diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
-          else
-             if (lfirstpoint) &
-                  print*,"ldensity better be .true. for ivisc='smagorinsky'"
           endif
        case ('smagorinsky_simplified')
           if (headtt) print*, 'for ivisc=smagorinsky_simplified use visc_const'
@@ -371,10 +371,7 @@ module Viscosity
             call multmv_mn(2*sij,gradnu_smag,sgradnu_smag)
             fvisc=2*nusglnrho+tmp2+sgradnu_smag
             diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
-         else
-            if (lfirstpoint) print*,&
-                 "ldensity better be true for ivisc='smagorinsky_simplified'"
-         endif
+          endif
       case default
          !
          !  Catch unknown values
