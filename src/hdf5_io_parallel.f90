@@ -864,7 +864,7 @@ module HDF5_IO
       use Iso_c_binding
 
       character (len=*), intent(in) :: name
-      type(torus_rect), intent(in) :: data
+      type(torus_rect), intent(in), target :: data
       type(C_PTR) :: ptr
 
 !
