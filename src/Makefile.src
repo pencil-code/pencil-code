@@ -2696,6 +2696,9 @@ nompicomm.o: nompicomm.f90
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c hdf5_io$*.f90 -o hdf5_io$*.o
 #
+geometrical_types.o: geometrical_types.f90
+	$(FC)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c geometrical_types.f90 -o geometrical_types.o
+#
 special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90 
 ifneq ($(SPECIAL_MULT),1)
 	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
