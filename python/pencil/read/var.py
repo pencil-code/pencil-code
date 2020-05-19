@@ -286,19 +286,20 @@ class DataCube(object):
             z = np.zeros(dim.mz, dtype=precision)
 
             for directory in proc_dirs:
-                proc = int(directory[4:])
-                if var_file[0:2].lower() == 'og':
-                    procdim = read.ogdim(datadir, proc)
-                else:
-                    if var_file[0:4] == 'VARd':
-                        procdim = read.dim(datadir, proc, down=True)
+                if not param.lcollective_io:
+                    proc = int(directory[4:])
+                    if var_file[0:2].lower() == 'og':
+                        procdim = read.ogdim(datadir, proc)
                     else:
-                        procdim = read.dim(datadir, proc)
-                if not quiet:
-                    print("Reading data from processor"+
-                          " {0} of {1} ...".format(proc, len(proc_dirs)))
+                        if var_file[0:4] == 'VARd':
+                            procdim = read.dim(datadir, proc, down=True)
+                        else:
+                            procdim = read.dim(datadir, proc)
+                    if not quiet:
+                        print("Reading data from processor"+
+                              " {0} of {1} ...".format(proc, len(proc_dirs)))
 
-                if param.lcollective_io:
+                else:
                     # A collective IO strategy is being used
                     procdim = dim
 #                else:

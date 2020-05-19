@@ -120,6 +120,8 @@ class Grid(object):
         else:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
+            param = read.param(datadir=datadir, quiet=quiet,
+                               conflicts_quiet=True)
             if dim.precision == 'D':
                 precision = 'd'
             else:
@@ -128,6 +130,9 @@ class Grid(object):
             if proc < 0:
                 proc_dirs = list(filter(lambda string: string.startswith(
                     'proc'), os.listdir(datadir)))
+                if param.lcollective_io:
+                    # A collective IO strategy is being used
+                    proc_dirs = ['allprocs']
             else:
                 proc_dirs = ['proc' + str(proc)]
 
@@ -143,12 +148,14 @@ class Grid(object):
             dz_tilde = np.zeros(dim.mz, dtype=precision)
 
             for directory in proc_dirs:
-                proc = int(directory[4:])
-                procdim = read.dim(datadir, proc)
-                if not quiet:
-                    print("reading grid data from processor"+
-                          " {0} of {1} ...".format(proc, len(proc_dirs)))
-
+                if not param.lcollective_io:
+                    proc = int(directory[4:])
+                    procdim = read.dim(datadir, proc)
+                    if not quiet:
+                        print("reading grid data from processor"+
+                              " {0} of {1} ...".format(proc, len(proc_dirs)))
+                else:
+                    procdim = dim
                 mxloc = procdim.mx
                 myloc = procdim.my
                 mzloc = procdim.mz
