@@ -404,12 +404,13 @@ program run
 !  Read data.
 !  Snapshot data are saved in the data subdirectory.
 !  This directory must exist, but may be linked to another disk.
-!  If we decided to use a new grid, we need to overwrite the data
-!  that we just read in from var.dat. (Note that grid information
-!  was also used above, so we really need to do it twice then.)
 !
   f=0.
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
+!
+!  If we decided to use a new grid, we need to overwrite the data
+!  that we just read in from var.dat. (Note that grid information
+!  was also used above, so we really need to do it twice then.)
 !
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz) !MR: already called
 !
@@ -639,7 +640,7 @@ program run
         if (lsolid_cells)        call solid_cells_clean_up
 
         call rprint_list(LRESET=.true.) !(Re-read output list)
-        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?                                    
+        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
         call report_undefined_diagnostics
 
         call initialize_timestep
