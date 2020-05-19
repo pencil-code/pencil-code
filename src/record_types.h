@@ -38,6 +38,7 @@ integer, parameter :: id_record_ISM_SNRS_OLD     = 1002
 ! Forcing
 integer, parameter :: id_record_FORCING_LOCATION = 270
 integer, parameter :: id_record_FORCING_TSFORCE  = 271
+integer, parameter :: id_record_FORCING_TORUS    = 272
 
 ! Hydro
 integer, parameter :: id_record_HYDRO_TPHASE     = 280

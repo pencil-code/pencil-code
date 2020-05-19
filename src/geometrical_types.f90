@@ -1,5 +1,16 @@
   module Geometrical_types
-
+!
+! $Id$
+!
+! MODULE_DOC: Collection of geometrical object types.
+! MODULE_DOC: (Presently only rectangular toroid)
+!
+! 16-May-20/MR: coded
+!
+  implicit none
+!
+  private
+!
   public :: torus_rect, torus_init
   public :: torus_precess, torus_wobble
   public :: torus_extend_r, torus_extend_z
@@ -7,8 +18,8 @@
 !
   type torus_rect
     real, dimension(3) :: center
-    real :: th,ph
-    real :: r_in, thick, height
+    real :: th=0.,ph=0.
+    real :: r_in=0., thick=0., height=0.
     real :: Omega_prec, extr_rate, extz_rate
     real, dimension(3) :: wob_amp, wob_om, wob_phase
 
@@ -87,7 +98,7 @@
     integer,          intent(IN)   :: unit
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
-print*, 'in torus_rect_unfmt_write'
+
     write(unit=unit,iostat=iostat,iomsg=iomsg) torus%center, &
                                                torus%th,torus%ph, &
                                                torus%r_in, torus%thick, &
@@ -100,7 +111,7 @@ print*, 'in torus_rect_unfmt_write'
     integer,          intent(IN)   :: unit
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
-print*, 'in torus_rect_unfmt_read'
+
     read(unit=unit,iostat=iostat,iomsg=iomsg) torus%center, &
                                               torus%th,torus%ph, &
                                               torus%r_in, torus%thick, &

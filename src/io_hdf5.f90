@@ -20,7 +20,6 @@ module Io
   implicit none
 !
   include 'io.h'
-  include 'mpif.h'
 !
 ! Indicates if IO is done distributed (each proc writes into a procdir)
 ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
@@ -372,7 +371,8 @@ module Io
 !  13-Nov-2018/PABourdin: moved from other functions
 !
       use General, only: loptest
-      use Mpicomm, only: collect_grid, mpi_precision
+      use Mpicomm, only: collect_grid
+      use Syscalls, only: sizeof_real
 !
       real, optional, intent(in) :: time
       logical, optional, intent(in) :: time_only
@@ -443,7 +443,7 @@ module Io
       call output_hdf5 ('settings/nprocx', nprocx)
       call output_hdf5 ('settings/nprocy', nprocy)
       call output_hdf5 ('settings/nprocz', nprocz)
-      if (mpi_precision == MPI_REAL) then
+      if (sizeof_real() < 8) then
         call output_hdf5 ('settings/precision', 'S')
       else
         call output_hdf5 ('settings/precision', 'D')
@@ -873,6 +873,27 @@ module Io
 !
     endfunction write_persist_real_1D
 !***********************************************************************
+    logical function write_persist_torus_rect(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-May-2020/MR: coded
+!
+      use Geometrical_types
+      use General, only: lower_case
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      type(torus_rect), intent(in) :: value
+!
+      write_persist_torus_rect = .true.
+      if (write_persist_id (label, id)) return
+!
+      call output_hdf5 ('persist/'//lower_case (label), value)
+      write_persist_torus_rect = .false.
+!
+    endfunction write_persist_torus_rect
+!***********************************************************************
     logical function init_read_persist(file)
 !
 !  Initialize reading of persistent data from persistent file.
@@ -1054,6 +1075,21 @@ module Io
       read_persist_real_1D = .false.
 !
     endfunction read_persist_real_1D
+!***********************************************************************
+    logical function read_persist_torus_rect(label,value)
+!
+!  Read persistent data from snapshot file.
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+
+      character (len=*), intent(in) :: label
+      type(torus_rect) :: value    !, intent(out) :: value
+!
+      read_persist_torus_rect = .false.
+!
+    endfunction read_persist_torus_rect
 !***********************************************************************
     subroutine output_globals(file, a, nv, label)
 !

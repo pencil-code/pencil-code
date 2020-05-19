@@ -476,6 +476,26 @@ module Io
 !
     endfunction write_persist_real_1D
 !***********************************************************************
+    logical function write_persist_torus_rect(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      type(torus_rect), intent(in) :: value
+!
+      write_persist_torus_rect = .true.
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output) value
+      write_persist_torus_rect = .false.
+!
+    endfunction write_persist_torus_rect
+!***********************************************************************
     subroutine input_snap(file,a,nv,mode)
 !
 !  manages reading of snapshot from different precision
@@ -1237,6 +1257,22 @@ module Io
       read_persist_real_1D = .false.
 !
     endfunction read_persist_real_1D
+!***********************************************************************
+    logical function read_persist_torus_rect(label,value)
+!
+!  Read persistent data from snapshot file.
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+
+      character (len=*), intent(in) :: label
+      type(torus_rect), intent(out) :: value
+!
+      read (lun_input) value
+      read_persist_torus_rect = .false.
+!
+    endfunction read_persist_torus_rect
 !***********************************************************************
     subroutine output_globals(file, a, nv, label)
 !

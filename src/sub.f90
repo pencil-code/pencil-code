@@ -113,21 +113,8 @@ module Sub
 !
   public :: remove_mean_value
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
-  public :: torus_rect, torus_constr, vortex
+  public :: vortex
   public :: find_index_by_bisection
-!
-  type torus_rect
-    real, dimension(3) :: center
-    real :: th,ph
-    real :: r_in, thick, height
-    real :: Omega_prec, extr_rate, extz_rate
-    real, dimension(3) :: wob_amp, wob_om, wob_phase
-
-    real, dimension(3) :: center0
-    real :: th0,ph0,r_in0,height0
-    !contains
-    !  procedure, pass :: precess => my_precess
-  endtype torus_rect
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -352,61 +339,6 @@ module Sub
 !
   contains
 !
-!***********************************************************************
-    subroutine torus_constr(torus)
-
-    type(torus_rect) :: torus
-
-    torus%center0=torus%center
-    torus%th0    =torus%th
-    torus%ph0    =torus%ph
-    torus%r_in0  =torus%r_in
-    torus%height0=torus%height
-
-    endsubroutine torus_constr
-!***********************************************************************
-    subroutine torus_precess(torus,t)
-
-    type(torus_rect) :: torus
-    double precision :: t
-
-    if (torus%Omega_prec==0.) return
-    torus%ph=torus%ph0+torus%Omega_prec*t
-
-    endsubroutine torus_precess
-!***********************************************************************
-    subroutine torus_wobble(torus,t)
-
-    type(torus_rect) :: torus
-    double precision :: t
-     
-    if (all(torus%wob_om.eq.0.)) return
-
-    torus%center=torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase)
-
-    endsubroutine torus_wobble
-!***********************************************************************
-    subroutine torus_extend_r(torus,t)
-
-    type(torus_rect) :: torus
-    double precision :: t
-
-    if (torus%extr_rate.eq.0.) return
-
-    torus%r_in=max(torus%r_in0*(1.+torus%extr_rate*t),0.d0)
-
-    endsubroutine torus_extend_r
-!***********************************************************************
-    subroutine torus_extend_z(torus,t)
-
-    type(torus_rect) :: torus
-    double precision :: t
-
-    if (torus%extz_rate.eq.0.) return
-
-    torus%height=max(torus%height0*(1.+torus%extz_rate*t),0.d0)
-
-    endsubroutine torus_extend_z
 !***********************************************************************
     subroutine max_mn(a,res)
 !
@@ -8340,6 +8272,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
 !   6-May-20/MR: coded
 !
+      use Geometrical_types
       use General, only: transform_cart_spher,transform_spher_cart
 
       type(torus_rect) :: torus

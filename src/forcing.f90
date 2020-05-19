@@ -21,7 +21,7 @@ module Forcing
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: torus_rect
+  use Geometrical_types
 !
   implicit none
 !
@@ -114,7 +114,7 @@ module Forcing
   real :: ampl_diffrot=1.0,omega_exponent=1.0
   real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0, Omega_vortex=0.
   real :: cs0eff=impossible
-  type(torus_rect) :: torus
+  type(torus_rect), save :: torus
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -186,7 +186,7 @@ module Forcing
 !***********************************************************************
     subroutine register_forcing
 !
-!  add forcing in timestep()
+!  add forcing in timestep
 !  11-may-2002/wolf: coded
 !
 !  identify version number
@@ -215,7 +215,7 @@ module Forcing
       use General, only: bessj
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: step,erfunc,stepdown,register_report_aux,torus_constr
+      use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs0
 !
       real :: zstar
@@ -902,7 +902,7 @@ module Forcing
         elseif (iforcing_cont(i)=='fluxring_cylindrical') then
           if (lroot) print*,'forcing_cont: fluxring cylindrical'
         elseif (iforcing_cont(i)=='vortex') then
-          call torus_constr(torus)
+          call torus_init(torus)
         endif
       enddo
       if (lroot .and. n_forcing_cont==0) &
@@ -5626,13 +5626,16 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case (id_record_FORCING_TSFORCE)
           if (read_persist ('FORCING_TSFORCE', tsforce)) return
           done = .true.
+        !case (id_record_FORCING_TORUS)
+        !  if (read_persist ('FORCING_TORUS', torus)) return
+        !  done = .true.
       endselect
 !
       if (lroot) print *, 'input_persist_forcing: ', location, tsforce
 !
     endsubroutine input_persist_forcing_id
 !***********************************************************************
-    subroutine input_persist_forcing()
+    subroutine input_persist_forcing
 !
 !  Read in the persistent forcing variables.
 !
@@ -5647,6 +5650,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       error = read_persist ('FORCING_TSFORCE', tsforce)
       if (lroot .and. .not. error) print *, 'input_persist_forcing: tsforce: ', tsforce
+!
+      !error = read_persist ('FORCING_TORUS', torus)
+      !if (lroot .and. .not. error) print *, 'input_persist_forcing: torus: ', torus
 !
     endsubroutine input_persist_forcing
 !***********************************************************************
@@ -5669,6 +5675,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (write_persist ('FORCING_LOCATION', id_record_FORCING_LOCATION, location)) return
       if (write_persist ('FORCING_TSFORCE', id_record_FORCING_TSFORCE, tsforce)) return
+      if (torus%thick>0.) then
+        if (write_persist ('FORCING_TORUS', id_record_FORCING_TORUS, torus)) return
+      endif
 !
       output_persistent_forcing = .false.
 !

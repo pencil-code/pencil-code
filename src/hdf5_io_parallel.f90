@@ -41,6 +41,7 @@ module HDF5_IO
     module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
+    module procedure output_hdf5_torus_rect
   endinterface
 !
   interface input_slice
@@ -54,7 +55,6 @@ module HDF5_IO
   endinterface
 !
   include 'hdf5_io.h'
-  include 'mpif.h'
 !
   private
 !
@@ -85,6 +85,8 @@ module HDF5_IO
 !
 !  28-Oct-2016/PABoudin: coded
 !
+      use Syscalls, only: sizeof_real
+
       ! dimensions for local data portion with ghost layers
       local_size(1) = mx
       local_size(2) = my
@@ -139,7 +141,7 @@ module HDF5_IO
       call h5open_f (h5_err)
       call check_error (h5_err, 'initialize parallel HDF5 library', caller='initialize_hdf5')
       h5_dptype = H5T_NATIVE_DOUBLE
-      if (mpi_precision == MPI_REAL) then
+      if (sizeof_real() < 8) then
         h5_ntype = H5T_NATIVE_REAL
       else
         h5_ntype = h5_dptype
@@ -182,6 +184,7 @@ module HDF5_IO
 !   7-May-2019/MR: added optional par comm for use in h5pset_fapl_mpio_f (default: MPI_COMM_WORLD)
 !
       use General, only: loptest, ioptest
+      use Mpicomm, only: MPI_COMM_WORLD, MPI_INFO_NULL
 !
       character (len=*), intent(inout) :: file
       logical, optional, intent(in) :: truncate
@@ -850,6 +853,65 @@ module HDF5_IO
       call check_error (h5_err, 'close string data space', name)
 !
     endsubroutine output_hdf5_string
+!***********************************************************************
+    subroutine output_hdf5_torus_rect(name, data)
+!
+!  Outputs (potentially) varying parameters of rectangular toroid (persistent data).
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+      use Iso_c_binding
+
+      character (len=*), intent(in) :: name
+      type(torus_rect), intent(in) :: data
+      type(C_PTR) :: ptr
+
+!
+      integer(HID_T) :: h5_torustype, h5_vec3type
+      integer(HSIZE_T), dimension(1) :: dims
+      real :: dummy
+
+      ! create data type
+      call h5tcreate_f(H5T_COMPOUND_F, 8*sizeof(dummy), h5_torustype, h5_err)
+      call check_error (h5_err, 'create torus data type', name)
+
+      dims=(/3/)
+      call h5tarray_create_f(h5_ntype, 1, dims, h5_vec3type, h5_err)
+      call h5tinsert_f(h5_torustype,"center",H5OFFSETOF(C_LOC(data),C_LOC(data%center)),h5_vec3type,h5_err)
+      call h5tinsert_f(h5_torustype,"th",H5OFFSETOF(C_LOC(data),C_LOC(data%th)),h5_ntype,h5_err)
+      call h5tinsert_f(h5_torustype,"ph",H5OFFSETOF(C_LOC(data),C_LOC(data%ph)),h5_ntype,h5_err)
+      call h5tinsert_f(h5_torustype,"r_in",H5OFFSETOF(C_LOC(data),C_LOC(data%r_in)),h5_ntype,h5_err)
+      call h5tinsert_f(h5_torustype,"thick",H5OFFSETOF(C_LOC(data),C_LOC(data%thick)),h5_ntype,h5_err)
+      call h5tinsert_f(h5_torustype,"height",H5OFFSETOF(C_LOC(data),C_LOC(data%height)),h5_ntype,h5_err)
+      call check_error (h5_err, 'populate torus data type', name)
+
+      ! create data space
+      dims=(/1/)
+      call h5screate_simple_f (1, dims, h5_dspace, h5_err)
+      call check_error (h5_err, 'create torus data space', name)
+
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open torus dataset', name)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_torustype, h5_dspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create torus dataset', name)
+      endif
+
+      ptr = C_LOC(data)
+      call h5dwrite_f(h5_dset, h5_torustype, ptr, h5_err)
+      call check_error (h5_err, 'write torus dataset', name)
+
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close torus dataset', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close torus data space', name)
+
+    endsubroutine output_hdf5_torus_rect
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
