@@ -181,7 +181,8 @@ class DataCube(object):
         if isinstance(sim, __Simulation__):
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
-            param = read.param(datadir=sim.datadir, quiet=True)
+            param = read.param(datadir=sim.datadir, quiet=True,
+                               conflicts_quiet=True)
             index = read.index(datadir=sim.datadir)
         else:
             datadir = os.path.expanduser(datadir)
@@ -194,7 +195,8 @@ class DataCube(object):
                     else:
                         dim = read.dim(datadir, proc)
             if param is None:
-                param = read.param(datadir=datadir, quiet=quiet)
+                param = read.param(datadir=datadir, quiet=quiet,
+                                   conflicts_quiet=True)
             if index is None:
                 index = read.index(datadir=datadir)
 
