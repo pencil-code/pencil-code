@@ -511,6 +511,27 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
+    logical function read_persist_torus_rect(label,value)
+!
+!  Read persistent data from snapshot file.
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+      use Io_in, only: read_persist_torus_rect_in => read_persist_torus_rect
+      use Io_out, only: read_persist_torus_rect_out => read_persist_torus_rect
+
+      character (len=*), intent(in) :: label
+      type(torus_rect), intent(out) :: value
+!
+      if (lswitched_to_out) then
+        read_persist_torus_rect = read_persist_torus_rect_out(label, value)
+      else
+        read_persist_torus_rect = read_persist_torus_rect_in(label, value)
+      endif
+!
+    endfunction read_persist_torus_rect
+!***********************************************************************
     logical function write_persist_logical_0D(label, id, value)
 
       use Io_out, only: write_persist_logical_0D_ => write_persist_logical_0D
@@ -588,6 +609,24 @@ module Io
       write_persist_real_1D = write_persist_real_1D_(label, id, value)
 !
     endfunction write_persist_real_1D
+!***********************************************************************
+    logical function write_persist_torus_rect(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  16-May-2020/MR: coded
+!
+      use Geometrical_types
+      use Io_out, only: write_persist_torus_rect_ => write_persist_torus_rect
+
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      type(torus_rect), intent(in) :: value
+!
+      call switch_io
+      write_persist_torus_rect = write_persist_torus_rect_(label, id, value)
+!
+    endfunction write_persist_torus_rect
 !***********************************************************************
     subroutine write_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
