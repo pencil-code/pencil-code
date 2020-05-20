@@ -781,8 +781,8 @@ module PointMasses
 !
       real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
-      real, dimension (3) :: xxq
-      real, dimension (nx) :: pot_energy
+      real, dimension (3) :: xxq,rpsecondary
+      real, dimension (nx) :: pot_energy,torque
       real, dimension (nx,3) :: accg
       integer :: ks,j,ju
       logical :: lintegrate, lparticle_out
@@ -846,14 +846,21 @@ module PointMasses
                if (llive_secondary) then
                  do j=1,3
                    ju=j-1+ivxq
-                   dfq(ks,ju) = dfq(ks,ju) + sum(accg(:,j)*dVol_x(l1:l2)*dVol_y(m)*dVol_z(n))
+                   dfq(ks,ju) = dfq(ks,ju) + sum(accg(:,j))
                  enddo
                endif
 !
 !  Calculate torques for output, if needed
 !
                if (ldiagnos.and.idiag_torque(ks)/=0) then
-                 call integrate_mn_name(pmass(ks)*fq(ks,ixq)*accg(:,2),idiag_torque(ks))
+                  rpsecondary=(/fq(ks,ixq)*cos(fq(ks,iyq)-y(m)),&
+                       fq(ks,ixq)*sin(fq(ks,iyq)-y(m)),&
+                       fq(ks,izq)                      &
+                       /)
+                  torque=(rpsecondary(1)*accg(:,2)-rpsecondary(2)*accg(:,1))*&
+                       dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
+                  !call cross(rpsecondary,accg,torque)
+                  call integrate_mn_name(pmass(ks)*torque,idiag_torque(ks))
                endif
 !
              endif integrategas
@@ -1479,7 +1486,7 @@ module PointMasses
       real, dimension(3) :: torque
 !
       if (lroot) then
-        if (idiag_torque(ks)/=0) then 
+        if (idiag_torque(ks)/=0) then
           call cross((/fq(ks,ixq),0.,0./),accg,torque)
           call point_par_name(pmass(ks)*torque(3),idiag_torque(ks))
         endif
@@ -2142,7 +2149,7 @@ module PointMasses
       use Mpicomm
 !
       real, dimension(nx,3) :: dist,accg
-      real, dimension(nx) :: rrp,rr,gasgravity,density
+      real, dimension(nx) :: rrp,rr,gasgravity,density,cellmass
       real :: rp0
       real, dimension(3) :: xxpar
       integer :: j
@@ -2166,8 +2173,10 @@ module PointMasses
         dist(:,2)=y(  m  )-xxpar(2)
         dist(:,3)=z(  n  )-xxpar(3)
       elseif (coord_system=='cylindric') then
+        !re = r-rp
+        !rp = rp*cos(phip-phi) \hat{r} + rp*sin(phi-phi) \hat{phi}
         dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
-        dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
+        dist(:,2)=         xxpar(1)*sin(y(m)-xxpar(2))
         dist(:,3)=z(  n  )-xxpar(3)
       elseif (coord_system=='spherical') then
         call fatal_error('integrate_gasgravity', &
@@ -2182,55 +2191,39 @@ module PointMasses
 !  gx = selfgrav * r\hat dot x\hat
 !  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
-      !density=0.
-      !if (lgas_gravity) density=p%rho
+      density=0.
+      if (lgas_gravity) density=p%rho
 !
 !  Add the particle gravity if npar>mspar (which means dust is being used)
 !
-      !if (ldust.and.ldust_gravity) density=density+p%rhop
+      if (ldust.and.ldust_gravity) density=density+p%rhop
 !
-      gasgravity = GNewton*density_scale*p%rho*(rrp**2 + rp0**2)**(-1.5)
+      cellmass=density*dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
+      gasgravity = GNewton*density_scale*cellmass*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Exclude the frozen zones
 !
-      !if (lexclude_frozen.and.lcylinder_in_a_box) then
-      !  where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
-      !    gasgravity = 0
-      !  endwhere
-      !else
-      !  if (l2D.or.(l3D.and.lcylindrical_gravity)) then
-      !    rr=p%rcyl_mn
-      !  else
-      !    rr=p%r_mn
-      !  endif
-      !  where ((rr<=r_int).or.(rr>=r_ext))
-      !    gasgravity = 0
-      !  endwhere
-      !endif
+      if (lexclude_frozen.and.lcylinder_in_a_box) then
+       where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
+          gasgravity = 0
+        endwhere
+      else
+        if (l2D.or.(l3D.and.lcylindrical_gravity)) then
+          rr=p%rcyl_mn
+        else
+          rr=p%r_mn
+        endif
+        where ((rr<=r_int).or.(rr>=r_ext))
+          gasgravity = 0
+        endwhere
+      endif
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
       do j=1,3
         accg(:,j)=gasgravity*dist(:,j)
-      !  !take proper care of the trapezoidal rule
-      !  !in the case of non-periodic boundaries
-      !  fac = 1.
-      !  if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-      !    if (.not.lperi(2)) fac = .5*fac
-      !  endif
-!!
-      !if (lperi(1)) then
-      !    sum_loc(j) = fac*sum(tmp)
-      !  else
-      !    sum_loc(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
-      !  endif
-      !  call mpireduce_sum(sum_loc(j),accg(j))
       enddo
-!
-!  Broadcast particle acceleration
-!
-      !call mpibcast_real(accg,3)
 !
       if (lfirstcall) lfirstcall=.false.
 !
