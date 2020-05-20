@@ -82,7 +82,7 @@ module Special
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: bottom_function
   real, dimension (nx,ny,2) :: gradlb
-  real, dimension (nx,ny) :: gamma_rr2
+  real, dimension (nx,ny) :: gamma_rr2,eta_relaxation
   logical :: ladvection_bottom=.true.,lcompression_bottom=.true.
   logical :: lcoriolis_force=.true.
   logical :: lmass_relaxation=.true.
@@ -96,7 +96,7 @@ module Special
        interval_between_storms
 !
   type InternalPencils
-     real, dimension(nx) :: gr2
+     real, dimension(nx) :: gr2,eta_init
   endtype InternalPencils
 !
   type (InternalPencils) :: q
@@ -134,6 +134,7 @@ module Special
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: r2
 !
       do m=1,my
         bottom_function(:,m) = c0 &
@@ -160,9 +161,11 @@ module Special
 !
       fcoriolis = 2*Omega_SB
 !
-      do m=m1,m2
-        gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
-      enddo
+      if (lgamma_plane) then
+        do m=m1,m2
+          gamma_rr2(:,m-m1+1)=gamma_parameter * (x(l1:l2)**2 + y(m)**2)
+        enddo
+      endif
 !
 !  Initialize storms
 !
@@ -170,6 +173,13 @@ module Special
 !
       tstorm1 = 1./tstorm
       tmass_relaxation1 = 1./tmass_relaxation
+!
+      if (lmass_relaxation) then
+        do m=m1,m2
+          r2 = x(l1:l2)**2 + y(m)**2
+          eta_relaxation(:,m-m1+1) = Omega_SB**2 * (1.5*r2 - 0.25*gamma_parameter * r2**2)
+        enddo
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -201,7 +211,8 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-    if (lgamma_plane) q%gr2 = gamma_rr2(:,m-m1+1)
+      if (lgamma_plane) q%gr2 = gamma_rr2(:,m-m1+1)
+      if (lmass_relaxation) q%eta_init = eta_relaxation(:,m-m1+1)
 !
     call keep_compiler_quiet(f)
     call keep_compiler_quiet(p)
@@ -210,6 +221,8 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
+!  TODO: dtgh is giving a diagnostic timestep not bound between 0 and 1. Check. 
+!      
       use Diagnostics
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -293,7 +306,7 @@ module Special
 !  Mass relaxation term to compensate for mass gained or loss in the simulation. 
 !      
       if (lmass_relaxation) then
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-eta0)*tmass_relaxation1
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-q%eta_init)*tmass_relaxation1
       endif
 !
     endsubroutine special_calc_density
