@@ -492,8 +492,8 @@ module Hydro
                                 ! XYAVG_DOC:   velocity)
   integer :: idiag_uymz=0       ! XYAVG_DOC: $\left< u_y \right>_{xy}$
   integer :: idiag_uzmz=0       ! XYAVG_DOC: $\left< u_z \right>_{xy}$
-  integer :: idiag_uzupmz=0     ! XYAVG_DOC: $\left< u_{z\uparrow} \right>_{xy}$
   integer :: idiag_ffdownmz=0   ! XYAVG_DOC: Filling factor of downflows
+  integer :: idiag_uzupmz=0     ! XYAVG_DOC: $\left< u_{z\uparrow} \right>_{xy}$
   integer :: idiag_uzdownmz=0   ! XYAVG_DOC: $\left< u_{z\downarrow} \right>_{xy}$
   integer :: idiag_ruzupmz=0    ! XYAVG_DOC: $\left< \varrho u_{z\uparrow} \right>_{xy}$
   integer :: idiag_ruzdownmz=0  ! XYAVG_DOC: $\left< \varrho u_{z\downarrow} \right>_{xy}$
@@ -647,9 +647,25 @@ module Hydro
   integer :: idiag_uxmxy=0      ! ZAVG_DOC: $\left< u_x \right>_{z}$
   integer :: idiag_uymxy=0      ! ZAVG_DOC: $\left< u_y \right>_{z}$
   integer :: idiag_uzmxy=0      ! ZAVG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_uxupmxy=0    ! ZAVG_DOC: $\left< u_{x\uparrow} \right>_{z}$
+  integer :: idiag_uxdownmxy=0  ! ZAVG_DOC: $\left< u_{x\downarrow} \right>_{z}$
+  integer :: idiag_ruxupmxy=0   ! ZAVG_DOC: $\left<\rho u_{x\uparrow} \right>_{z}$
+  integer :: idiag_ruxdownmxy=0 ! ZAVG_DOC: $\left<\rho u_{x\downarrow} \right>_{z}$
+  integer :: idiag_ux2upmxy=0   ! ZAVG_DOC: $\left< u^2_{x\uparrow} \right>_{z}$
+  integer :: idiag_ux2downmxy=0 ! ZAVG_DOC: $\left< u^2_{x\downarrow} \right>_{z}$
+  integer :: idiag_ffdownmxy=0  ! ZAVG_DOC: Filling factor of downflows
   integer :: idiag_uxuymxy=0    ! ZAVG_DOC: $\left< u_x u_y \right>_{z}$
   integer :: idiag_uxuzmxy=0    ! ZAVG_DOC: $\left< u_x u_z \right>_{z}$
   integer :: idiag_uyuzmxy=0    ! ZAVG_DOC: $\left< u_y u_z \right>_{z}$
+  integer :: idiag_Rxymxy=0     ! ZAVG_DOC: $\left<u_x' u_y'\right>_{z}$
+  integer :: idiag_Rxyupmxy=0   ! ZAVG_DOC: $\left<(u_x' u_y')_\uparrow\right>_{z}$
+  integer :: idiag_Rxydownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_y')_\downarray\right>_{z}$
+  integer :: idiag_Rxzmxy=0     ! ZAVG_DOC: $\left<u_x' u_z'\right>_{z}$
+  integer :: idiag_Rxzupmxy=0   ! ZAVG_DOC: $\left<(u_x' u_z')_\uparrow\right>_{z}$
+  integer :: idiag_Rxzdownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_z')_\downarray\right>_{z}$
+  integer :: idiag_Ryzmxy=0     ! ZAVG_DOC: $\left<u_y' u_z'\right>_{z}$
+  integer :: idiag_Ryzupmxy=0   ! ZAVG_DOC: $\left<(u_y' u_z')_\uparrow\right>_{z}$
+  integer :: idiag_Ryzdownmxy=0 ! ZAVG_DOC: $\left<(u_y' u_z')_\downarray\right>_{z}$
   integer :: idiag_oxmxy=0      ! ZAVG_DOC: $\left< \omega_x \right>_{z}$
   integer :: idiag_oymxy=0      ! ZAVG_DOC: $\left< \omega_y \right>_{z}$
   integer :: idiag_ozmxy=0      ! ZAVG_DOC: $\left< \omega_z \right>_{z}$
@@ -677,6 +693,10 @@ module Hydro
                                 ! ZAVG_DOC: u_x\right>_{z}$
   integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_y\right>_{z}$
+  integer :: idiag_fkinxupmxy=0 ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
+                                ! ZAVG_DOC: u_{x\uparrow}\right>_{z}$
+  integer :: idiag_fkinxdownmxy=0 ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
+                                ! ZAVG_DOC: u_{x\downarrow}\right>_{z}$
   integer :: idiag_nshift=0
 !
 !  Video data.
@@ -2266,6 +2286,8 @@ module Hydro
           idiag_divum/=0 .or. idiag_rdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_rdivum/=0 .or. idiag_fkinzm/=0 .or. idiag_ruzupmz/=0 .or. idiag_ruzdownmz/=0) &
           lpenc_diagnos(i_rho)=.true.
+      if (idiag_ruxupmxy/=0 .or. idiag_ruxdownmxy/=0) &
+          lpenc_diagnos2d(i_rho)=.true.
       if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
@@ -2326,7 +2348,8 @@ module Hydro
            idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
-      if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0) then
+      if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
+          idiag_fkinxupmxy/=0 .or. idiag_fkinxdownmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_ekin)=.true.
       endif
@@ -2335,7 +2358,10 @@ module Hydro
           idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or.  &
           idiag_uxuymxy/=0 .or. idiag_uxuzmxy/=0 .or. idiag_uyuzmxy/=0 .or. &
           idiag_ruxuymxy/=0 .or. idiag_ruxuzmxy/=0 .or. &
-          idiag_ruyuzmxy/=0) then
+          idiag_uxupmxy/=0 .or. idiag_uxdownmxy/=0 .or. &
+          idiag_ux2upmxy/=0 .or. idiag_ux2downmxy/=0 .or. &
+          idiag_ruxupmxy/=0 .or. idiag_ruxdownmxy/=0 .or. &
+          idiag_ruyuzmxy/=0 .or. idiag_ffdownmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
       endif
       if (idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or. &
@@ -3645,7 +3671,8 @@ module Hydro
         if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
         if (idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. idiag_uz2upmz/=0 .or. &
-          idiag_fkinzupmz/=0) then
+            idiag_fkinzupmz/=0 .or. idiag_Rxyupmz/=0 .or. idiag_Rxzupmz/=0 .or. &
+            idiag_Ryzupmz/=0) then
           where (p%uu(:,3) > 0.)
             uus = p%uu(:,3)
             uzmask = p%uu(:,3)/abs(p%uu(:,3))
@@ -3665,7 +3692,8 @@ module Hydro
               xysum_mn_name_z(uzmask*f(l1:l2,m,n,iuu_flucy)*f(l1:l2,m,n,iuu_flucz),idiag_Ryzupmz)
         endif
         if (idiag_ffdownmz/=0 .or. idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. &
-          idiag_uz2upmz/=0 .or. idiag_fkinzupmz/=0) then
+            idiag_uz2upmz/=0 .or. idiag_fkinzupmz/=0 .or. idiag_Rxydownmz/=0 .or. &
+            idiag_Rxzdownmz/=0 .or. idiag_Ryzdownmz/=0) then
           where (p%uu(:,3) < 0.)
             uus = p%uu(:,3)
             uzmask = -p%uu(:,3)/abs(p%uu(:,3))
@@ -3838,6 +3866,7 @@ module Hydro
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 !
+      real, dimension (nx) :: uus, uxmask
 !
 !  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -3886,6 +3915,9 @@ module Hydro
         call zsum_mn_name_xy(p%uu,idiag_uxuymxy,(/1,1,0/))
         call zsum_mn_name_xy(p%uu,idiag_uxuzmxy,(/1,0,1/))
         call zsum_mn_name_xy(p%uu,idiag_uyuzmxy,(/0,1,1/))
+        call zsum_mn_name_xy(f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucy),idiag_Rxymxy)
+        call zsum_mn_name_xy(f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucz),idiag_Rxzmxy)
+        call zsum_mn_name_xy(f(l1:l2,m,n,iuu_flucy)*f(l1:l2,m,n,iuu_flucz),idiag_Ryzmxy)
         call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
         call zsum_mn_name_xy(p%oo,idiag_oymxy,(/0,1,0/))
         call zsum_mn_name_xy(p%oo,idiag_ozmxy,(/0,0,1/))
@@ -3912,6 +3944,49 @@ module Hydro
         call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
         call zsum_mn_name_xy(p%ugu,idiag_uguymxy,(/0,1,0/))
         call zsum_mn_name_xy(p%ugu,idiag_uguzmxy,(/0,0,1/))
+        if (idiag_uxupmxy/=0 .or. idiag_ruxupmxy/=0 .or. idiag_ux2upmxy/=0 .or. &
+            idiag_fkinxupmxy/=0 .or. idiag_Rxyupmxy/=0 .or. idiag_Rxzupmxy/=0 .or. &
+            idiag_Ryzupmxy/=0) then
+          where (p%uu(:,1) > 0.)
+            uus = p%uu(:,1)
+            uxmask = p%uu(:,1)/abs(p%uu(:,1))
+          elsewhere
+            uus=0.
+            uxmask = 0.
+          endwhere
+          call zsum_mn_name_xy(uus,idiag_uxupmxy)
+          if (idiag_ruxupmxy/=0) call zsum_mn_name_xy(p%rho*uus,idiag_ruxupmxy)
+          if (idiag_ux2upmxy/=0) call zsum_mn_name_xy(uus**2,idiag_ux2upmxy)
+          if (idiag_fkinxupmxy/=0) call zsum_mn_name_xy(p%ekin*uus,idiag_fkinxupmxy)
+          if (idiag_Rxyupmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucy),idiag_Rxyupmxy)
+          if (idiag_Rxzupmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucz),idiag_Rxzupmxy)
+          if (idiag_Ryzupmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucy)*f(l1:l2,m,n,iuu_flucz),idiag_Ryzupmxy)
+        endif
+        if (idiag_ffdownmxy/=0  .or. idiag_uxdownmxy/=0 .or. idiag_ruxdownmxy/=0 .or. &
+            idiag_ux2downmxy/=0 .or. idiag_fkinxdownmxy/=0 .or. idiag_Rxydownmxy/=0 .or. &
+            idiag_Rxzdownmxy/=0 .or. idiag_Ryzdownmxy/=0) then
+          where (p%uu(:,1) < 0.)
+            uus = p%uu(:,1)
+            uxmask = -p%uu(:,1)/abs(p%uu(:,1))
+          elsewhere
+            uus = 0.
+            uxmask = 0.
+          endwhere
+          if (idiag_ffdownmxy/=0) call zsum_mn_name_xy(-uus/abs(p%uu(:,1)),idiag_ffdownmxy)
+          Call zsum_mn_name_xy(uus,idiag_uxdownmxy)
+          if (idiag_ruxdownmxy/=0) call zsum_mn_name_xy(p%rho*uus,idiag_ruxdownmxy)
+          if (idiag_ux2downmxy/=0) call zsum_mn_name_xy(uus**2,idiag_ux2downmxy)
+          if (idiag_fkinxdownmxy/=0) call zsum_mn_name_xy(p%ekin*uus,idiag_fkinxdownmxy)
+          if (idiag_Rxydownmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucy),idiag_Rxydownmxy)
+          if (idiag_Rxzdownmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucx)*f(l1:l2,m,n,iuu_flucz),idiag_Rxzdownmxy)
+          if (idiag_Ryzdownmxy/=0) call &
+              zsum_mn_name_xy(uxmask*f(l1:l2,m,n,iuu_flucy)*f(l1:l2,m,n,iuu_flucz),idiag_Ryzdownmxy)
+        endif
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -5049,9 +5124,25 @@ module Hydro
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
+        idiag_uxupmxy=0
+        idiag_uxdownmxy=0
+        idiag_ruxupmxy=0
+        idiag_ruxdownmxy=0
+        idiag_ux2upmxy=0
+        idiag_ux2downmxy=0
+        idiag_ffdownmxy=0
         idiag_uxuymxy=0
         idiag_uxuzmxy=0
         idiag_uyuzmxy=0
+        idiag_Rxymxy=0
+        idiag_Rxyupmxy=0
+        idiag_Rxydownmxy=0
+        idiag_Rxzmxy=0
+        idiag_Rxzupmxy=0
+        idiag_Rxzdownmxy=0
+        idiag_Ryzmxy=0
+        idiag_Ryzupmxy=0
+        idiag_Ryzdownmxy=0
         idiag_oxmxy=0
         idiag_oymxy=0
         idiag_ozmxy=0
@@ -5141,6 +5232,8 @@ module Hydro
         idiag_fkinxmx=0
         idiag_fkinxmxy=0
         idiag_fkinymxy=0
+        idiag_fkinxupmxy=0
+        idiag_fkinxdownmxy=0
         idiag_uguxmxy=0
         idiag_uguymxy=0
         idiag_uguzmxy=0
@@ -5613,9 +5706,25 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ffdownmxy',idiag_ffdownmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxupmxy',idiag_uxupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxdownmxy',idiag_uxdownmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxupmxy',idiag_ruxupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxdownmxy',idiag_ruxdownmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ux2upmxy',idiag_uxupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ux2downmxy',idiag_uxdownmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxuymxy',idiag_uxuymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxuzmxy',idiag_uxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uyuzmxy',idiag_uyuzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxymxy',idiag_Rxymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxyupmxy',idiag_Rxyupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxydownmxy',idiag_Rxydownmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxzmxy',idiag_Rxzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxzupmxy',idiag_Rxzupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Rxzdownmxy',idiag_Rxzdownmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ryzmxy',idiag_Ryzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ryzupmxy',idiag_Ryzupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ryzdownmxy',idiag_Ryzdownmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oxmxy',idiag_oxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oymxy',idiag_oymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ozmxy',idiag_ozmxy)
@@ -5634,6 +5743,8 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxmxy',idiag_fkinxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxupmxy',idiag_fkinxupmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxdownmxy',idiag_fkinxdownmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinymxy',idiag_fkinymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguxmxy',idiag_uguxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguymxy',idiag_uguymxy)
