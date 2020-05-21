@@ -774,6 +774,7 @@ module PointMasses
 !
       use Diagnostics
       use Sub
+      use Mpicomm, only: mpireduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -783,7 +784,8 @@ module PointMasses
       real, dimension (mx,3) :: ggt
       real, dimension (3) :: xxq,rpsecondary
       real, dimension (nx) :: pot_energy,torque
-      real, dimension (nx,3) :: accg
+      real, dimension (nx,3) :: accg_mn
+      real :: accg_local,accg
       integer :: ks,j,ju
       logical :: lintegrate, lparticle_out
       logical :: ldiagnostic_only
@@ -835,18 +837,22 @@ module PointMasses
 !
                if (lcylindrical_gravity_nbody(ks)) then
                  call integrate_gasgravity(p,rpcyl_mn(:,ks),&
-                      xxq,accg,r_smooth(ks))
+                      xxq,accg_mn,r_smooth(ks))
                else
                  call integrate_gasgravity(p,rp_mn(:,ks),&
-                      xxq,accg,r_smooth(ks))
+                      xxq,accg_mn,r_smooth(ks))
                endif
 !
 !  Add it to its dfp
 !
                if (llive_secondary) then
                  do j=1,3
-                   ju=j-1+ivxq
-                   dfq(ks,ju) = dfq(ks,ju) + sum(accg(:,j))
+                   accg_local =   sum(accg_mn(:,j))
+                   call mpireduce_sum(accg_local,accg,1)
+                   if (lroot) then
+                     ju=j-1+ivxq
+                     dfq(ks,ju) = dfq(ks,ju) + accg
+                   endif
                  enddo
                endif
 !
@@ -857,7 +863,11 @@ module PointMasses
                        fq(ks,ixq)*sin(fq(ks,iyq)-y(m)),&
                        fq(ks,izq)                      &
                        /)
-                  torque=(rpsecondary(1)*accg(:,2)-rpsecondary(2)*accg(:,1))*&
+!
+!  Integrate will add the cell volume, so we first remove it from the
+!  calculation.
+!
+                  torque=(rpsecondary(1)*accg_mn(:,2)-rpsecondary(2)*accg_mn(:,1))*&
                        dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
                   !call cross(rpsecondary,accg,torque)
                   call integrate_mn_name(pmass(ks)*torque,idiag_torque(ks))
