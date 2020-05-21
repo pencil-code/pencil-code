@@ -72,12 +72,10 @@ module Special
   real :: tduration=3.0,rsize_storm=0.03
   real :: interval_between_storms=3.0 
   integer, parameter :: nstorm=50
-  real, dimension(nstorm) :: tstorm_start,tstorm,tstorm1,rstorm,tpeak,xc,yc,smax
+  real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
 
 !
 ! Mass relaxation
-!
-  real :: eta0=0.0
 !
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: bottom_function
@@ -88,11 +86,12 @@ module Special
   logical :: lmass_relaxation=.true.
   logical :: lgamma_plane=.true.
   logical :: lcalc_storm=.true.
+  logical :: lupdate_as_var=.true.
 !
   namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,eta0,tduration,rsize_storm,Omega_SB,&
+       lmass_relaxation,tduration,rsize_storm,Omega_SB,&
        interval_between_storms
 !
   type InternalPencils
@@ -169,9 +168,8 @@ module Special
 !
 !  Initialize storms
 !
-      call update_storms()
+      if (lcalc_storm) call update_storms()
 !
-      tstorm1 = 1./tstorm
       tmass_relaxation1 = 1./tmass_relaxation
 !
       if (lmass_relaxation) then
@@ -281,8 +279,6 @@ module Special
 !
 !  04-dec-19/wlad+ali: coded
 !
-      use EquationOfState, only: rho0
-!      
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -301,7 +297,7 @@ module Special
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019)       
 !
-      if (lcalc_storm) call calc_storm_function(f,df,p)
+      if (lcalc_storm) call calc_storm_function(df)
 !
 !  Mass relaxation term to compensate for mass gained or loss in the simulation. 
 !      
@@ -326,8 +322,7 @@ module Special
 !
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    real, dimension (3) :: gradLb
-    integer :: i,ju,j
+    integer :: i,ju
     type (pencil_case), intent(in) :: p
 !
 !  Momentum equation; rho = g*h.  
@@ -357,10 +352,10 @@ module Special
 !
     call keep_compiler_quiet(f,df)
     call keep_compiler_quiet(p)
-!
+!q
   endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine calc_storm_function(f,df,p)
+  subroutine calc_storm_function(df)
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019).
 !  This function simply takes the parameters from update_storms and constructs
@@ -379,23 +374,16 @@ module Special
 !     
 !  28-feb-20/wlad+ali: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(nx) :: rr,storm_function
       real :: rboundary_storm,t_age_storm,t_duration_storm
       integer :: i,istorm 
-      type (pencil_case), intent(in) :: p
 !     
 !  Generate or update the storms. If a storm is updated,
-!  xc, yc, rstorm, tpeak, and tstorm will be re-written.          
+!  xc, yc, rstorm, tpeak, and tstorm will be re-written.
+!  Call it only on the first stage, and the first imn point.
 !
-      call update_storms()
-      !do istorm=1,nstorm
-      !   print*,xc(istorm),yc(istorm),rstorm(istorm),tpeak(istorm),tstorm(istorm),smax(istorm)
-      !enddo
-      !stop
-
-
+      if (lfirst.and.lfirstpoint.and.it/=1) call update_storms()
 !         
 !  Now that we have the parameters of the storms, construct the
 !  function and add to the equation of motion. 
@@ -440,37 +428,125 @@ module Special
 !    
 !  06-apr-20/ali: coded
 !
-    real :: storm_end
-    integer :: istorm 
-!         
-! If you are starting a simulation, set the storms
+    use Mpicomm, only: mpibcast_real, mpibcast_logical
 !
-    if (lstart .or. (it==1.and.itsub==1)) then
+    real :: storm_end
+    integer :: istorm,stat
+    logical :: exist,flag
+    real, dimension(6) :: g
+!         
+! If you are starting a simulation, set the storms.
+!
+!  Create and update the list only on one processor. In the
+!  first timestep it generates the whole mode list, but
+!  afterwards, modes are updated only sporadically. Therefore,
+!  the idle time is minimal, as the list does not need to be
+!  updated too often. Were that not the case, the mode list
+!  would need to be calculated in a load-balanced way.
+!
+    starting: if (lstart) then
 !       
-      do istorm=1,nstorm
-        tstorm(istorm) = tduration 
-        rstorm(istorm) = rsize_storm
-        call get_storm(istorm)
-      enddo
+      if (lroot) then
+        print*,'Start of the simulation. Setting the storms.'
+!
+!  Setting the storms is done only once for the whole mesh.
+!  Thus, only the root needs to write the output.
+!
+        do istorm=1,nstorm
+          tstorm(istorm) = tduration
+          rstorm(istorm) = rsize_storm
+          call get_storm(istorm)
+        enddo
 !     
-      !call output_storms('storms.dat')
+        call output_storms(trim(datadir)//'/storms.dat')
+        if (lwrite_ic.and.lupdate_as_var) &
+             call output_storms(trim(datadir)//'/STORMS0')
+      endif
 !     
     else
+!
+!  Restarting a simulation. Read the list of storms. All procs
+!  read the file and set their modes.
+!
+      restarting_first_timestep: if (it==1) then
 !      
 !  Not start time. The storms are already set. Test if they need updating.
 !  A storm needs updating if it has reached its end, which is the peak time
 !  plus half its duration. 
 !
-       do istorm=1,nstorm
-!          
-        storm_end = tpeak(istorm) + 1.1*tstorm(istorm)
-        if (t > (storm_end + interval_between_storms)) then
-           call get_storm(istorm)
-        endif
-!       
-      enddo
+       if (lroot) then
+         print*,''
+         print*,'it=',it,' t=',t
+         print*,'This is a simulation that is '
+         print*,'restarting from a snapshot. The'
+         print*,'list of storms will be read from file, '
+         print*,'to regenerate the storm structure.'
+         print*,''
+         print*,'m,n=',m,n
+       endif
+!      
+!  Reading storm data stored in storms.dat. Every processors reads it.
+!  It would be faster to have only the root read, and then broadcast it
+!  to all the other processors, but this is also functional, and the 
+!  reading is only done one per re-initialization, so speed is not a 
+!  problem. 
 !
-    endif
+       inquire(file=trim(datadir)//'/storms.dat',exist=exist)
+       if (exist) then
+         open(19,file=trim(datadir)//'/storms.dat')
+       else
+         call fatal_error(trim(datadir)//'/storms.dat','no input file')
+       endif
+!
+       do istorm=1,nstorm
+         read(19,*,iostat=stat) tstorm(istorm),      &
+                                rstorm(istorm),      &
+                                tpeak(istorm),       &
+                                xc(istorm),          &
+                                yc(istorm),          &
+                                smax(istorm)    
+       enddo
+       close(19)
+!
+    else
+!       
+!  Test if the storm has exceeded its lifetime.
+!  If so, replace it by a new random storm.
+!       
+      do istorm=1,nstorm
+        root: if (lroot) then
+           flag=.false.    
+           storm_end = tpeak(istorm) + 1.1*tstorm(istorm)
+           storm_update: if (t > (storm_end + interval_between_storms)) then
+              ! A storm needs update
+              call get_storm(istorm)
+              g(1) = tstorm(istorm)
+              g(2) = rstorm(istorm)
+              g(3) = tpeak(istorm)
+              g(4) = xc(istorm)
+              g(5) = yc(istorm)
+              g(6) = smax(istorm)
+              ! Flag the storm at the root
+              flag=.true.
+           endif storm_update
+        endif root
+!        
+        call mpibcast_logical(flag)
+!
+        if (flag) then
+           call mpibcast_real(g,6)
+           tstorm(istorm) = g(1)
+           rstorm(istorm) = g(2)
+           tpeak(istorm)  = g(3)
+           xc(istorm)     = g(4)
+           yc(istorm)     = g(5)
+           smax(istorm)   = g(6)
+        endif
+     enddo
+!
+     endif restarting_first_timestep
+!
+   endif starting
 !
   endsubroutine update_storms
 !***********************************************************************
@@ -478,9 +554,9 @@ module Special
 !
     use General, only: random_number_wrapper
 !
-    real :: r,p,srand,trand,storms_end 
+    real :: r,p,srand,trand
     real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
-    integer :: i,ismax
+    integer :: ismax
 !    
     integer, intent(in) :: istorm
 !
@@ -507,6 +583,75 @@ module Special
 !
   endsubroutine get_storm
 !***********************************************************************
+    subroutine wsnap_storms
+!
+!  Write storms snapshot
+!
+!  20-may-20/wlad+ali: coded (adapted from snap_mode)
+!
+      use General, only: itoa
+      use Sub, only: read_snaptime
+!                    
+      real, save :: tsnap
+      integer, save :: nsnap
+      logical, save :: lfirstcall=.true.
+      character (len=intlen) :: insnap
+!                    
+!  The usual var.dat 
+!
+      if (mod(it,isave)==0) &
+           call output_storms(trim(datadir)//'/storms.dat')
+!                    
+!  The enumerated VARN
+!
+      if (lfirstcall) then
+        nsnap=floor(t/dsnap)
+        tsnap=dsnap*(nsnap+1)
+        lfirstcall=.false.
+      endif
+      if (t >= tsnap) then
+	tsnap = tsnap + dsnap
+        nsnap = nsnap + 1
+        insnap=itoa(nsnap)
+        call output_storms(trim(datadir)//'/STORMS'//trim(insnap))
+      endif
+!
+    endsubroutine wsnap_storms
+!***********************************************************************
+    subroutine output_storms(file)
+!
+      character (len=*) :: file
+      integer :: k
+!
+      open(18,file=file)
+      do k=1,nstorm
+         write(18,*) tstorm(k),      &
+                     rstorm(k),      &
+                     tpeak(k),       &
+                     xc(k),          &
+                     yc(k),          &
+                     smax(k)
+      enddo
+      close(18)
+!                     
+    endsubroutine output_storms
+!***********************************************************************         
+    subroutine special_after_timestep(f,df,dt_,llast)
+!
+      logical, intent(in) :: llast
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
+!
+      if (lupdate_as_var.and.lroot) call wsnap_storms
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
+!
+    endsubroutine special_after_timestep
+!***********************************************************************                         
   subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
