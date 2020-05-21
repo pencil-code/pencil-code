@@ -808,8 +808,7 @@ module Boundcond
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$)
                   call bc_ss_temp_x(f,topbot)
                 case ('c1')
-                  ! BCX_DOC: constant temperature (or maybe rather constant
-                  ! BCX_DOC: conductive flux??)
+                  ! BCX_DOC: constant conductive flux
                   if (j==iss)   call bc_ss_flux_x(f,topbot)
                   if (j==ilnTT) call bc_lnTT_flux_x(f,topbot)
                 case ('Fgs')

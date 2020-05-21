@@ -34,9 +34,10 @@ module Energy
   real :: entropy_floor = impossible, TT_floor = impossible
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
   real :: widthss=2*epsi, epsilon_ss=0.0
-  real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
-  real :: rcool=0.0, wcool=0.1, ppcool=1., zcool2=0.0
-  real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
+  real :: luminosity=0.0, wheat=0.1, cool=0.0, cool1=0.0, cool2=0.0
+  real :: zcool=0.0, zcool1=0.0, zcool2=0.0
+  real :: rcool=0.0, rcool1=0.0, rcool2=0.0, ppcool=1.
+  real :: wcool=0.1, wcool1=0.1, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
@@ -151,6 +152,7 @@ module Energy
   logical :: lTT_flucz_as_aux=.false.
   logical :: lchi_t1_noprof=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0
+  logical :: lheat_cool_gravz=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing', div_sld_ene
   character (len=labellen) :: pertss='zero'
@@ -197,10 +199,10 @@ module Energy
 !
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
-      luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, gradS0_imposed, &
-      ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
+      luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
+      rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
+      wcool2, Fbot, lcooling_general, gradS0_imposed, &
+      ss_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -229,7 +231,7 @@ module Energy
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
-      lcalc_cs2mz_mean_diag, lchi_t1_noprof
+      lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3322,7 +3324,7 @@ module Energy
           heat_uniform/=0.0 .or. heat_gaussianz/=0.0 .or. tau_cool/=0.0 .or. &
           tau_cool_ss/=0.0 .or. cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
-          (tau_cool2 /=0)) &
+          (tau_cool2 /=0) .or. lheat_cool_gravz) &
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
@@ -3791,6 +3793,7 @@ module Energy
            f(l1:l2,m1:m2,n,iss_flucz) = f(l1:l2,m1:m2,n,iss) - ssmz(n)
         enddo
        endif
+!
 !  Compute first and second derivatives.
 !
         gssmz(:,1:2)=0.
@@ -5663,7 +5666,7 @@ module Energy
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
       if (lgravz .and. (.not.lcooling_general) .and. &
-          ( (luminosity/=0.) .or. (cool/=0.) ) ) &
+          ( (luminosity/=0.) .or. (cool/=0.) .or. (lheat_cool_gravz) ) ) &
           call get_heat_cool_gravz(heat,p)
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
@@ -6028,6 +6031,14 @@ module Energy
         prof = spread(step(z(n),zcool,wcool),1,nx)
       case ('cubic_step')
         prof = spread(cubic_step(z(n),z2,wcool),1,nx)
+      case ('surfcool')
+        prof = spread(1+tanh((z(n)-zcool)/(wcool)),1,l2-l1+1)
+        heat = heat - cool*prof
+      case ('volheat_surfcool')
+        prof = spread(1+tanh((z(n)-zcool)/(wcool)),1,l2-l1+1)
+        heat = heat + cool*prof
+        prof = spread((1-(tanh((z(n)-zcool1)/(wcool1)))**2),1,l2-l1+1)
+        heat = heat + cool1*prof
 !
 !  Cooling with a profile linear in z (unstable).
 !
@@ -6037,7 +6048,7 @@ module Energy
         call fatal_error('get_heat_cool_gravz','please select a cooltype')
       endselect
 !
-      if (lcalc_cs2mz_mean) then
+      if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
         heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
       else 
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
