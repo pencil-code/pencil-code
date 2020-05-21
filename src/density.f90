@@ -203,9 +203,12 @@ module Density
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
-  integer :: idiag_inertiaxx=0  !
-  integer :: idiag_inertiayy=0  !
-  integer :: idiag_inertiazz=0  !
+  integer :: idiag_inertiaxx=0  ! DIAG_DOC: $xx$ component of the inertia tensor (spherical coordinates)
+  integer :: idiag_inertiayy=0  ! DIAG_DOC: $yy$ component of the inertia tensor (spherical coordinates)
+  integer :: idiag_inertiazz=0  ! DIAG_DOC: $zz$ component of the inertia tensor (spherical coordinates)
+  integer :: idiag_inertiaxx_car=0  ! DIAG_DOC: $xx$ component of the inertia tensor (Cartesian coordinates)
+  integer :: idiag_inertiayy_car=0  ! DIAG_DOC: $xx$ component of the inertia tensor (Cartesian coordinates)
+  integer :: idiag_inertiazz_car=0  ! DIAG_DOC: $xx$ component of the inertia tensor (Cartesian coordinates)
   integer :: idiag_vol=0        ! DIAG_DOC: $\int\,dV$ (volume)
   integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
 !
@@ -2044,6 +2047,7 @@ module Density
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
+           idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. idiag_inertiazz_car/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0 .or. &
            idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
@@ -2062,6 +2066,8 @@ module Density
       if (idiag_ugrhomz/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uygzlnrhomz/=0 .or. idiag_uzgylnrhomz/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_grhomax/=0) lpenc_diagnos(i_grho)=.true.
+      if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
+          idiag_inertiazz_car/=0) lpenc_diagnos(i_r_mn)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -2834,7 +2840,7 @@ module Density
       type(pencil_case) :: p
 !
       real, dimension(nx), parameter :: unitpencil=1.
-      real, dimension(nx) :: tmp
+      real, dimension(nx) :: tmp, rmask
 !
 !  The inertiaxx - inertiazz terms are needed for computing the star's
 !  quadrupole moment, relevant for the Applegate mechanism; see
@@ -2849,6 +2855,17 @@ module Density
         if (idiag_inertiaxx/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*cos(z(n))**2,idiag_inertiaxx)
         if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
         if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(z(n))**2,idiag_inertiazz)
+        if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
+            idiag_inertiazz_car/=0) then
+          where (p%r_mn <= 1.)
+            rmask = 1.
+          elsewhere
+            rmask = 0.
+          endwhere
+          if (idiag_inertiaxx_car/=0) call integrate_mn_name(rmask*p%rho*x(l1:l2)**2,idiag_inertiaxx_car)
+          if (idiag_inertiayy_car/=0) call integrate_mn_name(rmask*p%rho*y(m)**2,idiag_inertiayy_car)
+          if (idiag_inertiazz_car/=0) call integrate_mn_name(rmask*p%rho*z(n)**2,idiag_inertiazz_car)
+        endif
         call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         call max_mn_name(p%rho,idiag_rhomax)
@@ -3401,7 +3418,8 @@ module Density
         idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
-        idiag_inertiazz=0; idiag_rhomxmask=0; idiag_rhomzmask=0
+        idiag_inertiazz=0; idiag_inertiaxx_car=0; idiag_inertiayy_car=0
+        idiag_inertiazz_car=0; idiag_rhomxmask=0; idiag_rhomzmask=0
         idiag_sigma=0
       endif
 !
@@ -3431,6 +3449,9 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'inertiaxx',idiag_inertiaxx)
         call parse_name(iname,cname(iname),cform(iname),'inertiayy',idiag_inertiayy)
         call parse_name(iname,cname(iname),cform(iname),'inertiazz',idiag_inertiazz)
+        call parse_name(iname,cname(iname),cform(iname),'inertiaxx_car',idiag_inertiaxx_car)
+        call parse_name(iname,cname(iname),cform(iname),'inertiayy_car',idiag_inertiayy_car)
+        call parse_name(iname,cname(iname),cform(iname),'inertiazz_car',idiag_inertiazz_car)
         call parse_name(iname,cname(iname),cform(iname),'vol',idiag_vol)
         call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
       enddo
