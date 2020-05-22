@@ -866,6 +866,7 @@ module HDF5_IO
       character (len=*), intent(in) :: name
       type(torus_rect), intent(in), target :: data
       type(C_PTR) :: ptr
+      integer(HSIZE_T) :: offset
 
 !
       integer(HID_T) :: h5_torustype, h5_vec3type
@@ -878,12 +879,18 @@ module HDF5_IO
 
       dims=(/3/)
       call h5tarray_create_f(h5_ntype, 1, dims, h5_vec3type, h5_err)
-      call h5tinsert_f(h5_torustype,"center",H5OFFSETOF(C_LOC(data),C_LOC(data%center)),h5_vec3type,h5_err)
-      call h5tinsert_f(h5_torustype,"th",H5OFFSETOF(C_LOC(data),C_LOC(data%th)),h5_ntype,h5_err)
-      call h5tinsert_f(h5_torustype,"ph",H5OFFSETOF(C_LOC(data),C_LOC(data%ph)),h5_ntype,h5_err)
-      call h5tinsert_f(h5_torustype,"r_in",H5OFFSETOF(C_LOC(data),C_LOC(data%r_in)),h5_ntype,h5_err)
-      call h5tinsert_f(h5_torustype,"thick",H5OFFSETOF(C_LOC(data),C_LOC(data%thick)),h5_ntype,h5_err)
-      call h5tinsert_f(h5_torustype,"height",H5OFFSETOF(C_LOC(data),C_LOC(data%height)),h5_ntype,h5_err)
+      offset=OFFSETOF(data,data%center(1))
+      call h5tinsert_f(h5_torustype,"center",offset,h5_vec3type,h5_err)
+      offset=OFFSETOF(data,data%th)
+      call h5tinsert_f(h5_torustype,"th",offset,h5_ntype,h5_err)
+      offset=OFFSETOF(data,data%ph)
+      call h5tinsert_f(h5_torustype,"ph",offset,h5_ntype,h5_err)
+      offset=OFFSETOF(data,data%r_in)
+      call h5tinsert_f(h5_torustype,"r_in",offset,h5_ntype,h5_err)
+      offset=OFFSETOF(data,data%thick)
+      call h5tinsert_f(h5_torustype,"thick",offset,h5_ntype,h5_err)
+      offset=OFFSETOF(data,data%height)
+      call h5tinsert_f(h5_torustype,"height",offset,h5_ntype,h5_err)
       call check_error (h5_err, 'populate torus data type', name)
 
       ! create data space
@@ -910,6 +917,20 @@ module HDF5_IO
       call check_error (h5_err, 'close torus dataset', name)
       call h5sclose_f (h5_dspace, h5_err)
       call check_error (h5_err, 'close torus data space', name)
+
+      contains
+!----------------------------------------------------------------------
+    function offsetof(base,comp) result(offset)
+
+    use Geometrical_types, only: torus_rect
+
+    integer(HSIZE_T) :: offset
+    type(torus_rect) :: base
+    real :: comp
+
+    offset = loc(comp)-loc(base)
+
+    endfunction offsetof
 
     endsubroutine output_hdf5_torus_rect
 !***********************************************************************
