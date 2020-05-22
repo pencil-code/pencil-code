@@ -23,11 +23,6 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-! Module Variables
-!
-  real, dimension(npar_species) :: taus = 0.0, eps0 = 0.0, vpx0 = 0.0, vpy0 = 0.0
-  real :: eta_vK = 0.0, ux0 = 0.0, uy0 = 0.0
-!
 ! Input Parameters
 !
   complex, dimension(4*(npar_species+1)) :: si_ev = (0.0, 0.0)
@@ -40,13 +35,19 @@ module InitialCondition
   namelist /initial_condition_pars/ &
     ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
 !
+! Module Variables
+!
+  real, dimension(npar_species) :: taus = 0.0, eps0 = 0.0, vpx0 = 0.0, vpy0 = 0.0
+  real :: eta_vK = 0.0, ux0 = 0.0, uy0 = 0.0
+  real :: amp_scale = 0.0
+!
   contains
 !***********************************************************************
     subroutine initialize_initial_condition(f)
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 10-mar-20/ccyang: coded
+! 20-may-20/ccyang: coded
 !
       use EquationOfState, only: cs0
 !
@@ -79,6 +80,11 @@ module InitialCondition
 !
       eps0 = taus**(4.0 + dlnndlntaus)
       eps0 = eps_dtog / sum(eps0) * eps0
+!
+! Determine the scale factor for the amplitude of the perturbations.
+!
+      amp_scale = si_amp * eps_dtog / sum(abs(si_ev(8::4)))
+      if (lroot) print *, "initialize_initial_condition: amp_scale = ", amp_scale
 !
 ! Find the equilibrium velocities.
 !
@@ -119,7 +125,7 @@ module InitialCondition
       sinkx = sin(argx)
       coskx = cos(argx)
 !
-      duz = si_amp * eta_vK
+      duz = amp_scale * eta_vK
       dux = duz * (real(si_ev(1)) * coskx - aimag(si_ev(1)) * sinkx)
       duy = duz * (real(si_ev(2)) * coskx - aimag(si_ev(2)) * sinkx)
       duz = duz * (real(si_ev(3)) * sinkx + aimag(si_ev(3)) * coskx)
@@ -154,7 +160,7 @@ module InitialCondition
 ! Perturb the gas density.
 !
       argx = si_kx * x(l1:l2)
-      drho = si_amp * rho0 * (real(si_ev(4)) * cos(argx) - aimag(si_ev(4)) * sin(argx))
+      drho = amp_scale * rho0 * (real(si_ev(4)) * cos(argx) - aimag(si_ev(4)) * sin(argx))
 !
       nloop: do n = n1, n2
         coskz = cos(si_kz * z(n))
@@ -241,8 +247,8 @@ module InitialCondition
       c1x = c1x * si_kx
       c2x = c2x * si_kx**3
 !
-      ar = si_amp * real(si_ev(8::4)) / eps0
-      ai = si_amp * aimag(si_ev(8::4)) / eps0
+      ar = amp_scale * real(si_ev(8::4)) / eps0
+      ai = amp_scale * aimag(si_ev(8::4)) / eps0
       a1 = 0.25 * (ar**2 - ai**2)
       a2 = 0.5 * ar * ai
       a3 = 0.25 * (ar**2 + ai**2)
@@ -323,7 +329,7 @@ module InitialCondition
 !
 ! Assign the mass and velocity of each particle.
 !
-      dv = si_amp * eta_vK
+      dv = amp_scale * eta_vK
       ploop: do k = 1, npar_loc
         argx = si_kx * fp(k,ixp)
         argz = si_kz * fp(k,izp)
