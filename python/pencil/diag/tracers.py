@@ -78,10 +78,6 @@ class Tracers(object):
             return -1
         queue = mp.Queue()
 
-        # Convert int_q string into list.
-        if not isinstance(self.params.int_q, list):
-            self.params.int_q = [self.params.int_q]
-
         # Read the data.
         magic = []
         if trace_field == 'bb':
@@ -90,7 +86,7 @@ class Tracers(object):
             magic.append('jj')
         if trace_field == 'vort':
             magic.append('vort')
-        if any(np.array(self.params.int_q) == 'ee'):
+        if self.params.int_q == 'ee':
             magic.append('bb')
             magic.append('jj')
         dim = read.dim(datadir=datadir)
@@ -117,10 +113,10 @@ class Tracers(object):
                             int(self.params.trace_sub*dim.ny), nTimes])
         self.l = np.zeros([int(self.params.trace_sub*dim.nx),
                            int(self.params.trace_sub*dim.ny), nTimes])
-        if any(np.array(self.params.int_q) == 'curly_A'):
+        if self.params.int_q == 'curly_A':
             self.curly_A = np.zeros([int(self.params.trace_sub*dim.nx),
                                      int(self.params.trace_sub*dim.ny), nTimes])
-        if any(np.array(self.params.int_q) == 'ee'):
+        if self.params.int_q == 'ee':
             self.ee = np.zeros([int(self.params.trace_sub*dim.nx),
                                 int(self.params.trace_sub*dim.ny), nTimes])
         self.mapping = np.zeros([int(self.params.trace_sub*dim.nx), int(self.params.trace_sub*dim.ny),
@@ -140,9 +136,9 @@ class Tracers(object):
 
             # Extract the requested vector trace_field.
             field = getattr(var, trace_field)
-            if any(np.array(self.params.int_q) == 'curly_A'):
+            if self.params.int_q == 'curly_A':
                 self.aa = var.aa
-            if any(np.array(self.params.int_q) == 'ee'):
+            if self.params.int_q == 'ee':
                 self.ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
 
             # Get the simulation parameters.
@@ -187,9 +183,9 @@ class Tracers(object):
                 self.z1[sub_proc::self.params.n_proc, :, t_idx] = sub_data[i_proc][3]
                 self.l[sub_proc::self.params.n_proc, :, t_idx] = sub_data[i_proc][4]
                 self.mapping[sub_proc::self.params.n_proc, :, t_idx, :] = sub_data[i_proc][5]
-                if any(np.array(self.params.int_q) == 'curly_A'):
+                if self.params.int_q == 'curly_A':
                     self.curly_A[sub_proc::self.params.n_proc, :, t_idx] = sub_data[i_proc][6]
-                if any(np.array(self.params.int_q) == 'ee'):
+                if self.params.int_q == 'ee':
                     self.ee[sub_proc::self.params.n_proc, :, t_idx] = sub_data[i_proc][7]
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
@@ -200,6 +196,22 @@ class Tracers(object):
         import numpy as np
         from ..calc.streamlines import Stream
         from ..math.interpolation import vec_int
+
+        # Prepare the splines for the tricubis interpolation.
+        if self.params.interpolation == 'tricubic':
+            try:
+                from eqtools.trispline import Spline
+                x = np.linspace(self.params.Ox, self.params.Ox+self.params.Lx, self.params.nx)
+                y = np.linspace(self.params.Oy, self.params.Oy+self.params.Ly, self.params.ny)
+                z = np.linspace(self.params.Oz, self.params.Oz+self.params.Lz, self.params.nz)
+                field_x = Spline(z, y, x, field[0, ...])
+                field_y = Spline(z, y, x, field[1, ...])
+                field_z = Spline(z, y, x, field[2, ...])
+                splines = np.array([field_x, field_y, field_z])
+            except:
+                splines = None
+        else:
+            splines = None
 
         xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)//n_proc,
                        self.x0.shape[1], 3])
@@ -219,12 +231,12 @@ class Tracers(object):
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
         for ix in range(i_proc, self.x0.shape[0], n_proc):
             for iy in range(self.x0.shape[1]):
-                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :], time=time)
+                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :], time=time, splines=splines)
                 sub_x1[int(ix/n_proc), iy] = stream.tracers[-1, 0]
                 sub_y1[int(ix/n_proc), iy] = stream.tracers[-1, 1]
                 sub_z1[int(ix/n_proc), iy] = stream.tracers[-1, 2]
                 sub_l[int(ix/n_proc), iy] = stream.total_l
-                if any(np.array(self.params.int_q) == 'curly_A'):
+                if self.params.int_q == 'curly_A':
                     for l in range(stream.total_l):
                         aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2, self.aa,
                                         [self.params.dx, self.params.dy, self.params.dz],
@@ -233,7 +245,7 @@ class Tracers(object):
                                         interpolation=self.params.interpolation)
                         sub_curly_A[int(ix/n_proc), iy] += \
                             np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
-                if any(np.array(self.params.int_q) == 'ee'):
+                if self.params.int_q == 'ee':
                     for l in range(stream.total_l):
                         eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2, self.ee,
                                         [self.params.dx, self.params.dy, self.params.dz],
@@ -304,11 +316,10 @@ class Tracers(object):
             set_z1[...] = self.z1[...]
             set_l[...] = self.l[...]
             set_q = []
-            for q in self.params.int_q:
-                if not q == '':
-                    set_q.append(f.create_dataset(q, getattr(self, q).shape,
-                                                  dtype=getattr(self, q).dtype))
-                    set_q[-1][...] = getattr(self, q)[...]
+            if not self.params.int_q == '':
+                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
+                                              dtype=getattr(self, self.params.int_q).dtype))
+                set_q[-1][...] = getattr(self, self.params.int_q)[...]
             set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset("mapping", self.mapping.shape,
                                      dtype=self.mapping.dtype)
@@ -329,7 +340,7 @@ class Tracers(object):
         """
         Read the tracers from a file.
 
-        call signature::
+        call signature:
 
         read(self, datadir='data', file_name='tracers.hdf5')
 
@@ -342,7 +353,6 @@ class Tracers(object):
           File with the tracer data.
         """
 
-        import numpy as np
         import os
         try:
             import h5py
@@ -361,9 +371,10 @@ class Tracers(object):
         self.z1 = f['z1'].value
         self.l = f['l'].value
         self.mapping = f['mapping'].value
-        if any(np.array(f.keys()) == 'curly_A'):
+        print(f.keys())
+        if 'curly_A' in list(f.keys()):
             self.curly_A = f['curly_A'].value
-        if any(np.array(f.keys()) == 'ee'):
+        if 'ee' in list(f.keys()):
             self.ee = f['ee'].value
 
         # Extract parameters.
