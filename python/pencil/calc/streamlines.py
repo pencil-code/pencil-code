@@ -123,7 +123,7 @@ class Stream(object):
         # Set up the ode solver.
         self.tracers = solve_ivp(odeint_func, (time[0], time[-1]), xx,
                                  t_eval=time, rtol=params.rtol, atol=params.atol,
-                                 jac=metric, method=params.method).y.T
+                                 method=params.method).y.T
 
         # Remove points that lie outside the domain and interpolation on the boundary.
         cut_mask = ((self.tracers[:, 0] > params.Ox+params.Lx) + \
