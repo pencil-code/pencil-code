@@ -199,13 +199,13 @@ module InitialCondition
 ! Sanity checks
 !
       proc: if (mod(npar, ncpus) /= 0 .or. npar_loc /= npar / ncpus) then
-        if (lroot) print *, "initialize_initial_condition: npar, ncpus, npar_loc = ", npar, ncpus, npar_loc
-        call fatal_error("initialize_initial_condition", "particles are not evenly distributed among processors")
+        if (lroot) print *, "initial_condition_xxp: npar, ncpus, npar_loc = ", npar, ncpus, npar_loc
+        call fatal_error("initial_condition_xxp", "particles are not evenly distributed among processors")
       endif proc
 !
       species: if (mod(npar_loc, npar_species) /= 0) then
-        if (lroot) print *, "initialize_initial_condition: npar_loc, npar_species = ", npar_loc, npar_species
-        call fatal_error("initialize_initial_condition", "particle species are not evenly divided")
+        if (lroot) print *, "initial_condition_xxp: npar_loc, npar_species = ", npar_loc, npar_species
+        call fatal_error("initial_condition_xxp", "particle species are not evenly divided")
       endif species
 !
 ! Find the initial ID for each species.
@@ -224,15 +224,15 @@ module InitialCondition
       endif getnp
 !
       grid: if (npx * npz /= npps) then
-        if (lroot) print *, "initialize_initial_condition: Lx_loc, Lz_loc = ", Lxyz_loc(1), Lxyz_loc(3)
-        if (lroot) print *, "initialize_initial_condition: npps, npx, npz = ", npps, npx, npz
-        call fatal_error("initialize_initial_condition", "cannot find equal spacing between particles")
+        if (lroot) print *, "initial_condition_xxp: Lx_loc, Lz_loc = ", Lxyz_loc(1), Lxyz_loc(3)
+        if (lroot) print *, "initial_condition_xxp: npps, npx, npz = ", npps, npx, npz
+        call fatal_error("initial_condition_xxp", "cannot find equal spacing between particles")
       endif grid
 !
       dxp = Lxyz_loc(1) / real(npx)
       dzp = Lxyz_loc(3) / real(npz)
-      if (lroot) print *, "initialize_initial_condition: npx, npz = ", npx, npz
-      if (lroot) print *, "initialize_initial_condition: dxp, dzp = ", dxp, dzp
+      if (lroot) print *, "initial_condition_xxp: npx, npz = ", npx, npz
+      if (lroot) print *, "initial_condition_xxp: dxp, dzp = ", dxp, dzp
 !
 ! Compute repeated constants.
 !
