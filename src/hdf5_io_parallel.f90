@@ -866,7 +866,7 @@ module HDF5_IO
       character (len=*), intent(in) :: name
       type(torus_rect), intent(in), target :: data
       type(C_PTR) :: ptr
-      integer(HSIZE_T) :: offset
+      integer(SIZE_T) :: offset
 
 !
       integer(HID_T) :: h5_torustype, h5_vec3type
