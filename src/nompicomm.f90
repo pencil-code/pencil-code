@@ -325,6 +325,7 @@ module Mpicomm
   integer :: mpi_precision
   integer :: MPI_COMM_PENCIL=0, MPI_COMM_GRID=0, &
              MPI_COMM_XYPLANE=0, MPI_COMM_XZPLANE=0,  MPI_COMM_YZPLANE=0, &
+             MPI_COMM_XBEAM=0,MPI_COMM_YBEAM=0,MPI_COMM_ZBEAM=0, &
              MPI_INFO_NULL=0
 !
   contains
