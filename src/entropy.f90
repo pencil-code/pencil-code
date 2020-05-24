@@ -147,6 +147,8 @@ module Energy
   logical :: lthdiff_Hmax=.false.
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
+  logical :: lss_running_aver_as_var=.false.
+  logical :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
   logical :: lss_flucz_as_aux=.false.
   logical :: lTT_flucz_as_aux=.false.
@@ -193,7 +195,7 @@ module Energy
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
-      lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
+      lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
 !
 !  Run parameters.
 !
@@ -230,7 +232,8 @@ module Energy
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
-      lss_running_aver_as_aux, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
+      lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
+      lss_flucz_as_aux, lTT_flucz_as_aux, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz
 !
 !  Diagnostic variables for print.in
@@ -280,7 +283,15 @@ module Energy
                                 ! DIAG_DOC:   step based on heat sources;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
+  integer :: idiag_ss2mphi=0    ! PHIAVG_DOC: $\left<s^2\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
+  integer :: idiag_TTmphi=0     ! PHIAVG_DOC: $\left<T\right>_\varphi$
+  integer :: idiag_dcoolmphi=0  ! PHIAVG_DOC: surface cooling flux
+  integer :: idiag_fradrsphmphi_kramers=0 ! PHIAVG_DOC: $F_{\rm rad}$ ($\varphi$-averaged,
+                                          ! PHIAVG_DOC: from Kramers' opacity)
+  integer :: idiag_fconvrsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_r T \right>_\varphi$
+  integer :: idiag_fconvthsphmphi=0 ! PHIAVG_DOC: $\left<c_p \varrho u_\theta T \right>_\varphi$
+  integer :: idiag_fconvpsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_\phi T \right>_\varphi$
   integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
   integer :: idiag_yHmax=0      ! DIAG_DOC: max of hydrogen ionization
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
@@ -449,6 +460,13 @@ module Energy
 !
       call farray_register_pde('ss',iss)
 !
+!  Register slot for running average of entropy is required
+!
+      if (lss_running_aver_as_var) then
+          call farray_register_pde('ss_run_aver',iss_run_aver)
+          lss_running_aver=.true.
+      endif
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -499,6 +517,7 @@ module Energy
         aux_var(aux_count)=',ss_run_aver'
         if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+1
+        lss_running_aver=.true.
       endif
 !
 !  Enthalpy flux
@@ -1724,6 +1743,15 @@ module Energy
         enddo; enddo
       endif
 !
+!  Set the initial condition for running average of entropy equal to
+!  initial entropy
+!
+      if (lss_running_aver_as_aux .or. lss_running_aver_as_var) then
+        do n=n1,n2; do m=m1,m2
+          f(:,m,n,iss_run_aver) = f(:,m,n,iss)
+        enddo; enddo
+      endif
+!
     endsubroutine init_energy
 !***********************************************************************
     subroutine blob_radeq(ampl,f,i,radius,xblob,yblob,zblob)
@@ -2919,13 +2947,16 @@ module Energy
       if (idiag_ssuzm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
           idiag_Fenthz/=0 .or. idiag_Fenthupz/=0 .or. idiag_Fenthdownz/=0 .or. &
-          idiag_fconvxmx/=0) then
+          idiag_fconvxmx/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_fconvthsphmphi/=0 .or. &
+          idiag_fconvpsphmphi/=0) then
         lpenc_diagnos(i_cp)=.true.
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fradz/=0) lpenc_diagnos(i_gTT)=.true.
+      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0) lpenc_diagnos(i_gTT)=.true.
+      if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0) lpenc_diagnos(i_evr)=.true.
+      if (idiag_fconvthsphmphi/=0) lpenc_diagnos(i_evth)=.true.
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
         lpenc_diagnos2d(i_cp)=.true.
         lpenc_diagnos2d(i_uu)=.true.
@@ -2960,7 +2991,8 @@ module Energy
           idiag_uzTTmz/=0 .or. idiag_TT2mx/=0 .or. idiag_TT2mz/=0 .or. &
           idiag_uzTTupmz/=0 .or. idiag_uzTTdownmz/=0 .or. &
           idiag_TT2downmz/=0 .or. idiag_TT2upmz/=0 .or. &
-          idiag_uxTTmx/=0 .or. idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0) &
+          idiag_uxTTmx/=0 .or. idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0 .or. &
+          idiag_TTmphi/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_TTupmz/=0 .or. idiag_TTdownmz/=0 .or. &
           idiag_TT2upmz/=0 .or. idiag_TT2downmz/=0 .or. &
@@ -3630,7 +3662,17 @@ module Energy
 !  Phi-averages
 !
         call phisum_mn_name_rz(p%ss,idiag_ssmphi)
+        call phisum_mn_name_rz(p%ss**2,idiag_ss2mphi)
         call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
+        call phisum_mn_name_rz(p%TT,idiag_TTmphi)
+        if (idiag_fconvrsphmphi/=0) &
+            call phisum_mn_name_rz(p%cp*p%rho*p%TT*(p%uu(:,1)*p%evr(:,1)+ &
+              p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_fconvrsphmphi)
+        if (idiag_fconvthsphmphi/=0) &
+            call phisum_mn_name_rz(p%cp*p%rho*p%TT*(p%uu(:,1)*p%evth(:,1)+ &
+              p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)),idiag_fconvthsphmphi)
+        if (idiag_fconvpsphmphi/=0) &
+            call phisum_mn_name_rz(p%cp*p%rho*p%TT*p%uu(:,3),idiag_fconvpsphmphi)
 
         call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         call ysum_mn_name_xz(p%TT,idiag_TTmxz)
@@ -3953,7 +3995,7 @@ module Energy
 !
 !  Compute running average of entropy
 !
-      if (lss_running_aver_as_aux) then
+      if (lss_running_aver) then
         if (t.lt.dt) f(:,:,:,iss_run_aver)=f(:,:,:,iss)
         f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
       endif
@@ -5002,6 +5044,9 @@ module Energy
 !
       if (l2davgfirst) then
         if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
+        if (idiag_fradrsphmphi_kramers/=0) &
+            call phisum_mn_name_rz(-Krho1*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
+              p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_kramers)
       endif
 !
 !  Check for NaNs initially.
@@ -5549,7 +5594,7 @@ module Energy
 !  lcalc_ssmean=T or lcalc_ssmeanxy=T
 !
       if (lchit_fluct.and.chi_t1/=0.) then
-        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver_as_aux) then
+        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
           if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
             call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
                                  stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
@@ -5586,7 +5631,7 @@ module Energy
 !
 ! chi_t1 acting on deviations from a running 3D mean of entropy   
 !
-        if (lss_running_aver_as_aux) then
+        if (lss_running_aver) then
           call grad(f(:,:,:,iss_run_aver),gss1)
           do j=1,3
             gss0(:,j)=p%gss(:,j)-gss1(:,j)
@@ -5617,7 +5662,7 @@ module Energy
       if (lfirst.and.ldt) then
         if (chi_t0/=0..and.(lchit_total .or. lchit_mean)) &
           diffus_chi=diffus_chi+chi_t0*chit_prof*dxyz_2
-        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver_as_aux) then
+        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
           if (chi_t1/=0..and.lchit_fluct) &
             diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
         endif
@@ -6081,6 +6126,7 @@ module Energy
 !
       use Debug_IO, only: output_pencil
       use Sub, only: step
+      use Diagnostics, only: phisum_mn_name_rz
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof,theta_profile
@@ -6145,6 +6191,8 @@ module Energy
              'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
         call fatal_error('calc_heat_cool',errormsg)
       endselect
+!
+      if (l2davgfirst) call phisum_mn_name_rz(heat,idiag_dcoolmphi)
 !
     endsubroutine get_heat_cool_gravr
 !***********************************************************************
@@ -6603,7 +6651,7 @@ module Energy
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
-        idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
+        idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0; idiag_csmax=0
@@ -6615,7 +6663,7 @@ module Energy
         idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
         idiag_ssupmz=0; idiag_ssdownmz=0; idiag_ss2upmz=0; idiag_ss2downmz=0
         idiag_ssf2mz=0; idiag_ssf2upmz=0; idiag_ssf2downmz=0
-        idiag_ssmr=0; idiag_TTmr=0
+        idiag_ssmr=0; idiag_TTmr=0; idiag_TTmphi=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_TTupmz=0; idiag_TTdownmz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
@@ -6629,6 +6677,8 @@ module Energy
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
+        idiag_dcoolmphi=0; idiag_fradrsphmphi_kramers=0
+        idiag_fconvrsphmphi=0; idiag_fconvthsphmphi=0; idiag_fconvpsphmphi=0
         idiag_ufpresm=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
@@ -6812,7 +6862,14 @@ module Energy
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ss2mphi',idiag_ss2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'TTmphi',idiag_TTmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'dcoolmphi',idiag_dcoolmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fradrsphmphi_kramers',idiag_fradrsphmphi_kramers)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvrsphmphi',idiag_fconvrsphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvthsphmphi',idiag_fconvthsphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvpsphmphi',idiag_fconvpsphmphi)
       enddo
 !
 !  check for those quantities for which we want video slices
