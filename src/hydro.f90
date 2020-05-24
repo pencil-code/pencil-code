@@ -675,13 +675,13 @@ module Hydro
   integer :: idiag_uyuzmxy=0    ! ZAVG_DOC: $\left< u_y u_z \right>_{z}$
   integer :: idiag_Rxymxy=0     ! ZAVG_DOC: $\left<u_x' u_y'\right>_{z}$
   integer :: idiag_Rxyupmxy=0   ! ZAVG_DOC: $\left<(u_x' u_y')_\uparrow\right>_{z}$
-  integer :: idiag_Rxydownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_y')_\downarray\right>_{z}$
+  integer :: idiag_Rxydownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_y')_\downarrow\right>_{z}$
   integer :: idiag_Rxzmxy=0     ! ZAVG_DOC: $\left<u_x' u_z'\right>_{z}$
   integer :: idiag_Rxzupmxy=0   ! ZAVG_DOC: $\left<(u_x' u_z')_\uparrow\right>_{z}$
-  integer :: idiag_Rxzdownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_z')_\downarray\right>_{z}$
+  integer :: idiag_Rxzdownmxy=0 ! ZAVG_DOC: $\left<(u_x' u_z')_\downarrow\right>_{z}$
   integer :: idiag_Ryzmxy=0     ! ZAVG_DOC: $\left<u_y' u_z'\right>_{z}$
   integer :: idiag_Ryzupmxy=0   ! ZAVG_DOC: $\left<(u_y' u_z')_\uparrow\right>_{z}$
-  integer :: idiag_Ryzdownmxy=0 ! ZAVG_DOC: $\left<(u_y' u_z')_\downarray\right>_{z}$
+  integer :: idiag_Ryzdownmxy=0 ! ZAVG_DOC: $\left<(u_y' u_z')_\downarrow\right>_{z}$
   integer :: idiag_oxmxy=0      ! ZAVG_DOC: $\left< \omega_x \right>_{z}$
   integer :: idiag_oymxy=0      ! ZAVG_DOC: $\left< \omega_y \right>_{z}$
   integer :: idiag_ozmxy=0      ! ZAVG_DOC: $\left< \omega_z \right>_{z}$
