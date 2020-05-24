@@ -40,8 +40,22 @@
                     $(\varpi,\varphi,z)$] \\
   \var{upmphi}    & $\left<u_\varphi\right>_\varphi$ \\
   \var{uzmphi}    & $\left<u_z\right>_\varphi$ \\
+  \var{rurmphi}   & $\left<\rho u_\varpi\right>_\varphi$ \\
+  \var{rupmphi}   & $\left<\rho u_\varphi\right>_\varphi$ \\
+  \var{ruzmphi}   & $\left<\rho u_z\right>_\varphi$ \\
+  \var{ur2mphi}   & $\left<u_\varpi^2\right>_\varphi$ \\
+  \var{up2mphi}   & $\left<u_\varphi^2\right>_\varphi$ \\
+  \var{uz2mphi}   & $\left<u_z^2\right>_\varphi$ \\
+  \var{urupmphi}  & $\left<u_\varpi u_\varphi\right>_\varphi$ \\
+  \var{uruzmphi}  & $\left<u_\varpi u_z \right>_\varphi$ \\
+  \var{upuzmphi}  & $\left<u_\varphi u_z \right>_\varphi$ \\
+  \var{rurupmphi} & $\left<\rho u_\varpi u_\varphi\right>_\varphi$ \\
+  \var{ruruzmphi} & $\left<\rho u_\varpi u_z \right>_\varphi$ \\
+  \var{rupuzmphi} & $\left<\rho u_\varphi u_z \right>_\varphi$ \\
   \var{ursphmphi} & $\left<u_r\right>_\varphi$ \\
   \var{uthmphi}   & $\left<u_\vartheta\right>_\varphi$ \\
+  \var{rursphmphi} & $\left<\rho u_r\right>_\varphi$ \\
+  \var{ruthmphi}  & $\left<\rho u_\vartheta\right>_\varphi$ \\
   \var{uumphi}    & shorthand for \var{urmphi},
                     \var{upmphi} and \var{uzmphi}
                     together \\
@@ -49,6 +63,8 @@
                     \var{uthmphi} and \var{upmphi}
                     together \\
   \var{u2mphi}    & $\left<\uv^2\right>_\varphi$ \\
+  \var{fkinrsphmphi} & $\left<{1\over2}\varrho\uv^2
+                    u_r\right>_{\varphi}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -58,7 +74,15 @@
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
   \var{ssmphi}    & $\left<s\right>_\varphi$ \\
+  \var{ss2mphi}   & $\left<s^2\right>_\varphi$ \\
   \var{cs2mphi}   & $\left<c^2_s\right>_\varphi$ \\
+  \var{TTmphi}    & $\left<T\right>_\varphi$ \\
+  \var{dcoolmphi} & surface cooling flux \\
+  \var{fradrsphmphi_kramers} & $F_{\rm rad}$ ($\varphi$-averaged,
+                    from Kramers' opacity) \\
+  \var{fconvrsphmphi} & $\left<c_p \varrho u_r T \right>_\varphi$ \\
+  \var{fconvthsphmphi} & $\left<c_p \varrho u_\theta T \right>_\varphi$ \\
+  \var{fconvpsphmphi} & $\left<c_p \varrho u_\phi T \right>_\varphi$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule

@@ -27,7 +27,9 @@
 %%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
+%%   hydro_potential.f90
 %%   lorenz_gauge.f90
+%%   lucky_droplet.f90
 %%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
@@ -42,8 +44,6 @@
 %%   particles_surfspec.f90
 %%   particles_tetrad.f90
 %%   polymer.f90
-%%   r75612.f90
-%%   r75759.f90
 %%   reaction_0D.f90
 %%   shear.f90
 %%   shock.f90
@@ -126,9 +126,16 @@
   \var{uxm}       & $\left<u_x\right>$ \\
   \var{uym}       & $\left<u_y\right>$ \\
   \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
   \var{ux2m}      & $\left<u_x^2\right>$ \\
   \var{uy2m}      & $\left<u_y^2\right>$ \\
   \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux4m}      & $\left<u_x^4\right>$ \\
+  \var{uy4m}      & $\left<u_y^4\right>$ \\
+  \var{uz4m}      & $\left<u_z^4\right>$ \\
+  \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
+  \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
+  \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
   \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
   \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
   \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
@@ -231,6 +238,7 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
@@ -260,6 +268,8 @@
                     the density_xaver_range \\
   \var{rhomzmask} & $\left<\varrho\right>$ for
                     the density_zaver_range \\
+  \var{rho2m}     & $\left<\varrho^2\right>$ \\
+  \var{rhof2m}    & $\left<\varrho'^2\right>$ \\
   \var{drho2m}    & $<(\varrho-\varrho_0)^2>$ \\
   \var{drhom}     & $<\varrho-\varrho_0>$ \\
   \var{rhomin}    & $\min(\rho)$ \\
@@ -270,6 +280,12 @@
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
+  \var{inertiaxx} & $xx$ component of the inertia tensor (spherical coordinates) \\
+  \var{inertiayy} & $yy$ component of the inertia tensor (spherical coordinates) \\
+  \var{inertiazz} & $zz$ component of the inertia tensor (spherical coordinates) \\
+  \var{inertiaxx_car} & $xx$ component of the inertia tensor (Cartesian coordinates) \\
+  \var{inertiayy_car} & $xx$ component of the inertia tensor (Cartesian coordinates) \\
+  \var{inertiazz_car} & $xx$ component of the inertia tensor (Cartesian coordinates) \\
   \var{vol}       & $\int\,dV$ (volume) \\
   \var{grhomax}   & $\max (|\nabla \varrho|)$ \\
 \midrule
@@ -329,6 +345,8 @@
   \var{fconvm}    & $\left< c_p \varrho u_z T \right>$ \\
   \var{ufpresm}   & $\left< -u/\rho\nabla p \right>$ \\
   \var{Kkramersm} & $\left< K_{\rm kramers} \right>$ \\
+  \var{chikrammin} & $\min (\chi_{\rm kramers})$ \\
+  \var{chikrammax} & $\max (\chi_{\rm kramers})$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -378,6 +396,15 @@
   \var{uxbzm}     & $\left<u_xB_z\right>$ \\
   \var{uybzm}     & $\left<u_yB_z\right>$ \\
   \var{uzbzm}     & $\left<u_zB_z\right>$ \\
+  \var{uxjxm}     & $\left<u_xJ_x\right>$ \\
+  \var{uxjym}     & $\left<u_xJ_y\right>$ \\
+  \var{uxjzm}     & $\left<u_xJ_z\right>$ \\
+  \var{uyjxm}     & $\left<u_yJ_x\right>$ \\
+  \var{uyjym}     & $\left<u_yJ_y\right>$ \\
+  \var{uyjzm}     & $\left<u_yJ_z\right>$ \\
+  \var{uzjxm}     & $\left<u_zJ_x\right>$ \\
+  \var{uzjym}     & $\left<u_zJ_y\right>$ \\
+  \var{uzjzm}     & $\left<u_zJ_z\right>$ \\
   \var{cosubm}    & $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
                     \right>$ \\
   \var{jxbxm}     & $\left<j_xB_x\right>$ \\
@@ -456,6 +483,11 @@
                     \quad(time step relative to
                     resistive time step;
                     see \S~\ref{time-step}) \\
+  \var{dteta3}    & $\delta t/[c_{\delta t,{\rm v3}}\,
+                    \delta x^6/\eta^{\rm hyper}_{\rm max}]$
+                    \quad(time step relative to
+                    hyper resistive time step;
+                    see \S~\ref{time-step}) \\
   \var{a2m}       & $\left<\Av^2\right>$ \\
   \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
   \var{amax}      & $\max(|\Av|)$ \\
@@ -529,6 +561,12 @@
   \var{bx4m}      & $\left< B_x^4 \right>$ \\
   \var{by4m}      & $\left< B_y^4 \right>$ \\
   \var{bz4m}      & $\left< B_z^4 \right>$ \\
+  \var{jx2m}      & $\left< J_x^2 \right>$ \\
+  \var{jy2m}      & $\left< J_y^2 \right>$ \\
+  \var{jz2m}      & $\left< J_z^2 \right>$ \\
+  \var{jx4m}      & $\left< J_x^4 \right>$ \\
+  \var{jy4m}      & $\left< J_y^4 \right>$ \\
+  \var{jz4m}      & $\left< J_z^4 \right>$ \\
   \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{vmagfricmax} & $\max(1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|)$ \\
@@ -576,6 +614,7 @@
                     $\eta\sim J^2 / \rho$ \\
   \var{etajrhomax} & Max of artificial resistivity
                     $\eta\sim J / \rho$ \\
+  \var{etaaniso}  & $\eta_1$ \\
   \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
   \var{jparallelm} & Mean value of the component
                     of J parallel to B \\
@@ -703,6 +742,7 @@
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{gmuSrms}   & $\left<(\nabla\mu_S)^2\right>^{1/2}$ \\
   \var{gmu5mx}    & $\left<\nabla\mu_5\right>_x$ \\
   \var{gmu5my}    & $\left<\nabla\mu_5\right>_y$ \\
   \var{gmu5mz}    & $\left<\nabla\mu_5\right>_z$ \\
@@ -886,6 +926,154 @@
   \var{qsatmin}   & minimum of qsat/qabs \\
   \var{qsatrms}   & rms of qsat/abs \\
 \midrule
+  \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
+\midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
+                    \quad(mean $x$-momentum density) \\
+  \var{ruym}      & $\left<\varrho u_y\right>$
+                    \quad(mean $y$-momentum density) \\
+  \var{ruzm}      & $\left<\varrho u_z\right>$
+                    \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
+  \var{rumax}     & $\max(\varrho |\uv|)$
+                    \quad(maximum modulus of momentum) \\
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
+  \var{oum}       & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>$ \\
+  \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
+                    \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
+                    \quad(rms Mach number) \\
+  \var{Mamax}     & $\max |\uv|/\cs$
+                    \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
@@ -893,6 +1081,14 @@
   \var{phip2}     & $\phi(x2,y2,z2)$ \\
   \var{phibzm}    & $\left<\phi B_z\right>$ \\
   \var{phibzmz}   & $\left<\phi B_z\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{lucky_droplet.f90}} \\
+\midrule
+  \var{tt1m}      & $\langle T \rangle$ \\
+  \var{qq1m}      & $\langle \ln T \rangle$ \\
+  \var{qq2m}      & $\langle \ln T^2 \rangle$ \\
+  \var{qq3m}      & $\langle \ln T^3 \rangle$ \\
+  \var{qq4m}      & $\langle \ln T^4 \rangle$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule
@@ -1255,66 +1451,6 @@
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{r75612.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{r75759.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{reaction_0D.f90}} \\
 \midrule
   \var{eem}       & $\langle \eta \rangle$ \\
@@ -1558,6 +1694,11 @@
   \var{psi21}     & $\psi_{21}k$ \\
   \var{psi12}     & $\psi_{12}k$ \\
   \var{psi22}     & $\psi_{22}k$ \\
+  \var{sig1}      & $\sigma_1$ \\
+  \var{sig2}      & $\sigma_2$ \\
+  \var{sig3}      & $\sigma_3$ \\
+  \var{tau1}      & $\tau_1$ \\
+  \var{tau2}      & $\tau_2$ \\
   \var{phiK}      & $\phi^K$ \\
   \var{phiM}      & $\phi^M$ \\
   \var{phiMK}     & $\phi^{MK}$ \\
@@ -1592,6 +1733,10 @@
   \var{u21rms}    & $\left<u_{21}^2\right>^{1/2}$ \\
   \var{u12rms}    & $\left<u_{12}^2\right>^{1/2}$ \\
   \var{u22rms}    & $\left<u_{22}^2\right>^{1/2}$ \\
+  \var{h11rms}    & $\left<h_{11}^2\right>^{1/2}$ \\
+  \var{h21rms}    & $\left<h_{21}^2\right>^{1/2}$ \\
+  \var{h12rms}    & $\left<h_{12}^2\right>^{1/2}$ \\
+  \var{h22rms}    & $\left<h_{22}^2\right>^{1/2}$ \\
   \var{j11rms}    & $\left<j_{11}^2\right>^{1/2}$ \\
   \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
   \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
@@ -1603,6 +1748,10 @@
   \var{uy11m}     & $\left<u_{11_y}\right>$ \\
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{h0rms}     & $\left<h_{0}^2\right>^{1/2}$ \\
+  \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
+  \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
+  \var{h0max}     & $\operatorname{max}h_{0}$ \\
   \var{jb0m}      & $\left<jb_{0}\right>$ \\
   \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
   \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
@@ -1771,6 +1920,8 @@
   \var{uy11m}     & $\left<u_{11_y}\right>$ \\
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
+  \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
   \var{jb0m}      & $\left<jb_{0}\right>$ \\
   \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
   \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
@@ -2294,8 +2445,6 @@
                     \fv_{\rm visc}\right>$ \\
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{slope_c_max} & Max value of characteric speed
-                    of slope limited diffusion \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to

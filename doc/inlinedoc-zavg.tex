@@ -25,9 +25,25 @@
   \var{uxmxy}     & $\left< u_x \right>_{z}$ \\
   \var{uymxy}     & $\left< u_y \right>_{z}$ \\
   \var{uzmxy}     & $\left< u_z \right>_{z}$ \\
+  \var{uxupmxy}   & $\left< u_{x\uparrow} \right>_{z}$ \\
+  \var{uxdownmxy} & $\left< u_{x\downarrow} \right>_{z}$ \\
+  \var{ruxupmxy}  & $\left<\rho u_{x\uparrow} \right>_{z}$ \\
+  \var{ruxdownmxy} & $\left<\rho u_{x\downarrow} \right>_{z}$ \\
+  \var{ux2upmxy}  & $\left< u^2_{x\uparrow} \right>_{z}$ \\
+  \var{ux2downmxy} & $\left< u^2_{x\downarrow} \right>_{z}$ \\
+  \var{ffdownmxy} & Filling factor of downflows \\
   \var{uxuymxy}   & $\left< u_x u_y \right>_{z}$ \\
   \var{uxuzmxy}   & $\left< u_x u_z \right>_{z}$ \\
   \var{uyuzmxy}   & $\left< u_y u_z \right>_{z}$ \\
+  \var{Rxymxy}    & $\left<u_x' u_y'\right>_{z}$ \\
+  \var{Rxyupmxy}  & $\left<(u_x' u_y')_\uparrow\right>_{z}$ \\
+  \var{Rxydownmxy} & $\left<(u_x' u_y')_\downarrow\right>_{z}$ \\
+  \var{Rxzmxy}    & $\left<u_x' u_z'\right>_{z}$ \\
+  \var{Rxzupmxy}  & $\left<(u_x' u_z')_\uparrow\right>_{z}$ \\
+  \var{Rxzdownmxy} & $\left<(u_x' u_z')_\downarrow\right>_{z}$ \\
+  \var{Ryzmxy}    & $\left<u_y' u_z'\right>_{z}$ \\
+  \var{Ryzupmxy}  & $\left<(u_y' u_z')_\uparrow\right>_{z}$ \\
+  \var{Ryzdownmxy} & $\left<(u_y' u_z')_\downarrow\right>_{z}$ \\
   \var{oxmxy}     & $\left< \omega_x \right>_{z}$ \\
   \var{oymxy}     & $\left< \omega_y \right>_{z}$ \\
   \var{ozmxy}     & $\left< \omega_z \right>_{z}$ \\
@@ -55,6 +71,10 @@
                     u_x\right>_{z}$ \\
   \var{fkinymxy}  & $\left<{1\over2}\varrho\uv^2
                     u_y\right>_{z}$ \\
+  \var{fkinxupmxy} & $\left<{1\over2}\varrho\uv^2
+                    u_{x\uparrow}\right>_{z}$ \\
+  \var{fkinxdownmxy} & $\left<{1\over2}\varrho\uv^2
+                    u_{x\downarrow}\right>_{z}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -121,6 +141,7 @@
   \var{poynzmxy}  & $\left< \Ev\times\Bv \right>_{z}$ \\
   \var{jbmxy}     & $\left< \Jv\cdot\Bv \right>_{z}$ \\
   \var{abmxy}     & $\left< \Av\cdot\Bv \right>_{z}$ \\
+  \var{ubmxy}     & $\left< \Uv\cdot\Bv \right>_{z}$ \\
   \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
   \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
   \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\

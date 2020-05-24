@@ -33,11 +33,14 @@
   \var{divru2mz}  & $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$ \\
   \var{fmasszmz}  & $\left< \varrho u_z \right>_{xy}$ \\
   \var{fkinzmz}   & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
+  \var{fkinzupmz} & $\left<{1\over2}\varrho\uv^2 u_{z\uparrow}\right>_{xy}$ \\
+  \var{fkinzdownmz} & $\left<{1\over2}\varrho\uv^2 u_{z\downarrow}\right>_{xy}$ \\
   \var{uxmz}      & $\left< u_x \right>_{xy}$
                     \quad(horiz. averaged $x$
                     velocity) \\
   \var{uymz}      & $\left< u_y \right>_{xy}$ \\
   \var{uzmz}      & $\left< u_z \right>_{xy}$ \\
+  \var{ffdownmz}  & Filling factor of downflows \\
   \var{uzupmz}    & $\left< u_{z\uparrow} \right>_{xy}$ \\
   \var{uzdownmz}  & $\left< u_{z\downarrow} \right>_{xy}$ \\
   \var{ruzupmz}   & $\left< \varrho u_{z\uparrow} \right>_{xy}$ \\
@@ -50,6 +53,8 @@
   \var{ux2mz}     & $\left<u_x^2\right>_{xy}$ \\
   \var{uy2mz}     & $\left<u_y^2\right>_{xy}$ \\
   \var{uz2mz}     & $\left<u_z^2\right>_{xy}$ \\
+  \var{uz2upmz}   & $\left<u_{z\uparrow}^2\right>_{xy}$ \\
+  \var{uz2downmz} & $\left<u_{z\downarrow}^2\right>_{xy}$ \\
   \var{ox2mz}     & $\left< \omega_x^2 \right>_{xy}$ \\
   \var{oy2mz}     & $\left< \omega_y^2 \right>_{xy}$ \\
   \var{oz2mz}     & $\left< \omega_z^2 \right>_{xy}$ \\
@@ -62,6 +67,15 @@
   \var{uxuymz}    & $\left<u_x u_y\right>_{xy}$ \\
   \var{uxuzmz}    & $\left<u_x u_z\right>_{xy}$ \\
   \var{uyuzmz}    & $\left<u_y u_z\right>_{xy}$ \\
+  \var{Rxymz}     & $\left<u_x' u_y'\right>_{xy}$ \\
+  \var{Rxyupmz}   & $\left<u_{x\downarrow}' u_{y\downarrow}'\right>_{xy}$ \\
+  \var{Rxydownmz} & $\left<u_{x\uparrow}' u_{y\uparrow}'\right>_{xy}$ \\
+  \var{Rxzmz}     & $\left<u_x' u_z'\right>_{xy}$ \\
+  \var{Rxzupmz}   & $\left<u_{x\downarrow}' u_{z\downarrow}'\right>_{xy}$ \\
+  \var{Rxzdownmz} & $\left<u_{x\uparrow}' u_{z\uparrow}'\right>_{xy}$ \\
+  \var{Ryzmz}     & $\left<u_y' u_z'\right>_{xy}$ \\
+  \var{Ryzupmz}   & $\left<u_{y\downarrow}' u_{z\downarrow}'\right>_{xy}$ \\
+  \var{Ryzdownmz} & $\left<u_{y\uparrow}' u_{z\uparrow}'\right>_{xy}$ \\
   \var{ruxuymz}   & $\langle\rho u_x u_y\rangle_{xy}$ \\
   \var{ruxuzmz}   & $\langle\rho u_x u_z\rangle_{xy}$ \\
   \var{ruyuzmz}   & $\langle\rho u_y u_z\rangle_{xy}$ \\
@@ -98,7 +112,7 @@
   \var{oxdivumz}  & $\left<\omega_x\nabla\cdot\uv\right>_{xy}$ \\
   \var{oydivumz}  & $\left<\omega_y\nabla\cdot\uv\right>_{xy}$ \\
   \var{ozdivumz}  & $\left<\omega_z\nabla\cdot\uv\right>_{xy}$ \\
-  \var{oxdivu2mz} & $\left<(\omega_x nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{oxdivu2mz} & $\left<(\omega_x\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{oydivu2mz} & $\left<(\omega_y\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{ozdivu2mz} & $\left<(\omega_z\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{accpowzmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy}$ \\
@@ -109,7 +123,14 @@
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
   \var{rhomz}     & $\left<\varrho\right>_{xy}$ \\
+  \var{rhoupmz}   & $\left<\varrho_\uparrow\right>_{xy}$ \\
+  \var{rhodownmz} & $\left<\varrho_\downarrow\right>_{xy}$ \\
   \var{rho2mz}    & $\left<\varrho^2\right>_{xy}$ \\
+  \var{rho2upmz}  & $\left<\varrho_\uparrow^2\right>_{xy}$ \\
+  \var{rho2downmz} & $\left<\varrho_\downarrow^2\right>_{xy}$ \\
+  \var{rhof2mz}   & $\left<\varrho'^2\right>_{xy}$ \\
+  \var{rhof2upmz} & $\left<\varrho'^2_\uparrow\right>_{xy}$ \\
+  \var{rhof2downmz} & $\left<\varrho'^2_\downarrow\right>_{xy}$ \\
   \var{gzlnrhomz} & $\left<\nabla_z\ln\varrho\right>_{xy}$ \\
   \var{uglnrhomz} & $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$ \\
   \var{ugrhomz}   & $\left<\uv\cdot\nabla\varrho\right>_{xy}$ \\
@@ -121,14 +142,33 @@
 \midrule
   \var{fradz}     & $\left<F_{\rm rad}\right>_{xy}$ \\
   \var{fconvz}    & $\left<c_p \varrho u_z T \right>_{xy}$ \\
+  \var{Fenthz}    & $\left<c_p (\varrho u_z)' T' \right>_{xy}$ \\
+  \var{Fenthupz}  & $\left<(c_p (\varrho u_z)' T')_\uparrow \right>_{xy}$ \\
+  \var{Fenthdownz} & $\left<(c_p (\varrho u_z)' T')_\downarrow \right>_{xy}$ \\
   \var{ssmz}      & $\left< s \right>_{xy}$ \\
+  \var{ssupmz}    & $\left< s_\uparrow \right>_{xy}$ \\
+  \var{ssdownmz}  & $\left< s_\downarrow \right>_{xy}$ \\
   \var{ss2mz}     & $\left< s^2 \right>_{xy}$ \\
+  \var{ss2upmz}   & $\left< s^2_\uparrow \right>_{xy}$ \\
+  \var{ss2downmz} & $\left< s^2_\downarrow \right>_{xy}$ \\
+  \var{ssf2mz}    & $\left< s'^2\right>_{xy}$ \\
+  \var{ssf2upmz}  & $\left< s'^2_\uparrow \right>_{xy}$ \\
+  \var{ssf2downmz} & $\left< s'^2_\downarrow \right>_{xy}$ \\
   \var{ppmz}      & $\left< p \right>_{xy}$ \\
   \var{TTmz}      & $\left< T \right>_{xy}$ \\
+  \var{TTdownmz}  & $\left< T_\downarrow \right>_{xy}$ \\
+  \var{TTupmz}    & $\left< T_\uparrow \right>_{xy}$ \\
   \var{TT2mz}     & $\left< T^2 \right>_{xy}$ \\
+  \var{TT2upmz}   & $\left< T^2_\uparrow \right>_{xy}$ \\
+  \var{TT2downmz} & $\left< T^2_\downarrow \right>_{xy}$ \\
+  \var{TTf2mz}    & $\left< T'^2 \right>_{xy}$ \\
+  \var{TTf2upmz}  & $\left< T'^2_\uparrow \right>_{xy}$ \\
+  \var{TTf2downmz} & $\left< T'^2_\downarrow \right>_{xy}$ \\
   \var{uxTTmz}    & $\left< u_x T \right>_{xy}$ \\
   \var{uyTTmz}    & $\left< u_y T \right>_{xy}$ \\
   \var{uzTTmz}    & $\left< u_z T \right>_{xy}$ \\
+  \var{uzTTupmz}  & $\left< (u_z T)_\uparrow \right>_{xy}$ \\
+  \var{uzTTdownmz} & $\left< (u_z T)_\downarrow \right>_{xy}$ \\
   \var{gTxgsxmz}  & $\left<(\nabla T\times\nabla s)_x\right>_{xy}$ \\
   \var{gTxgsymz}  & $\left<(\nabla T\times\nabla s)_y\right>_{xy}$ \\
   \var{gTxgszmz}  & $\left<(\nabla T\times\nabla s)_z\right>_{xy}$ \\
@@ -153,7 +193,7 @@
                     heat flux) \\
   \var{dcoolz}    & surface cooling flux \\
   \var{heatmz}    & heating \\
-  \var{Kkramersmz} & $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$ \\
+  \var{Kkramersmz} & $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$ \\
   \var{ethmz}     & $\left<\varrho e\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
