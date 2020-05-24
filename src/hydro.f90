@@ -346,8 +346,22 @@ module Hydro
                                 ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
   integer :: idiag_upmphi=0     ! PHIAVG_DOC: $\left<u_\varphi\right>_\varphi$
   integer :: idiag_uzmphi=0     ! PHIAVG_DOC: $\left<u_z\right>_\varphi$
+  integer :: idiag_rurmphi=0    ! PHIAVG_DOC: $\left<\rho u_\varpi\right>_\varphi$
+  integer :: idiag_rupmphi=0    ! PHIAVG_DOC: $\left<\rho u_\varphi\right>_\varphi$
+  integer :: idiag_ruzmphi=0    ! PHIAVG_DOC: $\left<\rho u_z\right>_\varphi$
+  integer :: idiag_ur2mphi=0    ! PHIAVG_DOC: $\left<u_\varpi^2\right>_\varphi$
+  integer :: idiag_up2mphi=0    ! PHIAVG_DOC: $\left<u_\varphi^2\right>_\varphi$
+  integer :: idiag_uz2mphi=0    ! PHIAVG_DOC: $\left<u_z^2\right>_\varphi$
+  integer :: idiag_urupmphi=0   ! PHIAVG_DOC: $\left<u_\varpi u_\varphi\right>_\varphi$
+  integer :: idiag_uruzmphi=0   ! PHIAVG_DOC: $\left<u_\varpi u_z \right>_\varphi$
+  integer :: idiag_upuzmphi=0   ! PHIAVG_DOC: $\left<u_\varphi u_z \right>_\varphi$
+  integer :: idiag_rurupmphi=0  ! PHIAVG_DOC: $\left<\rho u_\varpi u_\varphi\right>_\varphi$
+  integer :: idiag_ruruzmphi=0  ! PHIAVG_DOC: $\left<\rho u_\varpi u_z \right>_\varphi$
+  integer :: idiag_rupuzmphi=0  ! PHIAVG_DOC: $\left<\rho u_\varphi u_z \right>_\varphi$
   integer :: idiag_ursphmphi=0  ! PHIAVG_DOC: $\left<u_r\right>_\varphi$
   integer :: idiag_uthmphi=0    ! PHIAVG_DOC: $\left<u_\vartheta\right>_\varphi$
+  integer :: idiag_rursphmphi=0 ! PHIAVG_DOC: $\left<\rho u_r\right>_\varphi$
+  integer :: idiag_ruthmphi=0   ! PHIAVG_DOC: $\left<\rho u_\vartheta\right>_\varphi$
   ! For the manual: uumphi      ! PHIAVG_DOC: shorthand for \var{urmphi},
                                 ! PHIAVG_DOC: \var{upmphi} and \var{uzmphi}
                                 ! PHIAVG_DOC: together
@@ -355,6 +369,8 @@ module Hydro
                                 ! PHIAVG_DOC: \var{uthmphi} and \var{upmphi}
                                 ! PHIAVG_DOC: together
   integer :: idiag_u2mphi=0     ! PHIAVG_DOC: $\left<\uv^2\right>_\varphi$
+  integer :: idiag_fkinrsphmphi=0 ! PHIAVG_DOC: $\left<{1\over2}\varrho\uv^2
+                                ! PHIAVG_DOC: u_r\right>_{\varphi}$
   integer :: idiag_u2mr=0       ! DIAG_DOC:
   integer :: idiag_urmr=0       ! DIAG_DOC:
   integer :: idiag_upmr=0       ! DIAG_DOC:
@@ -2323,7 +2339,10 @@ module Hydro
           idiag_ruxuy2mz/=0 .or. idiag_ruxuz2mz/=0 .or. idiag_ruyuz2mz/=0 .or. idiag_uduum/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_rux2mx /= 0 .or. idiag_ruy2mx /= 0 .or. idiag_ruz2mx /= 0 .or. &
-          idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) lpenc_diagnos(i_rho) = .true.
+          idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0 .or. &
+          idiag_rurmphi/=0 .or. idiag_rupmphi/=0 .or. idiag_ruzmphi/=0 .or. &
+          idiag_rurupmphi/=0 .or. idiag_ruruzmphi/=0 .or. idiag_rursphmphi/=0 .or. &
+          idiag_ruthmphi/=0) lpenc_diagnos(i_rho) = .true.
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
@@ -2333,19 +2352,25 @@ module Hydro
           lpenc_diagnos2d(i_oo)=.true.
       if (idiag_pvzmxy/=0) lpenc_diagnos2d(i_rho)=.true.
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
-      if (idiag_urmr/=0 .or.  idiag_ormr/=0 .or. idiag_urmphi/=0) then
+      if (idiag_urmr/=0 .or.  idiag_ormr/=0 .or. idiag_urmphi/=0 .or. idiag_rurmphi/=0 .or. &
+          idiag_ur2mphi/=0 .or. idiag_urupmphi/=0 .or. idiag_uruzmphi/=0 .or. &
+          idiag_rurupmphi/=0 .or. idiag_ruruzmphi/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
-      if (idiag_ursphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
-      if (idiag_uthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
-      if (idiag_upmr/=0 .or. idiag_opmr/=0 .or. idiag_upmphi/=0) then
+      if (idiag_ursphmphi/=0 .or. idiag_rursphmphi/=0 .or. idiag_fkinrsphmphi/=0) &
+        lpenc_diagnos2d(i_evr)=.true.
+      if (idiag_uthmphi/=0 .or. idiag_ruthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
+      if (idiag_upmr/=0 .or. idiag_opmr/=0 .or. idiag_upmphi/=0 .or. idiag_rupmphi/=0 .or. &
+          idiag_up2mphi/=0 .or. idiag_urupmphi/=0 .or. idiag_upuzmphi/=0 .or. &
+          idiag_rurupmphi/=0 .or. idiag_rupuzmphi/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
            idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
-           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
+           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0 .or. &
+           idiag_fkinrsphmphi/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
@@ -3874,18 +3899,50 @@ module Hydro
       if (l2davgfirst) then
         if (idiag_urmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
+        if (idiag_ur2mphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)**2,idiag_ur2mphi)
         if (idiag_ursphmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%evr(:,1)+ &
               p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3),idiag_ursphmphi)
         if (idiag_uthmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%evth(:,1)+ &
               p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3),idiag_uthmphi)
+        if (idiag_rursphmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%evr(:,1)+ &
+              p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_rursphmphi)
+        if (idiag_ruthmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%evth(:,1)+ &
+              p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)),idiag_ruthmphi)
         if (idiag_upmphi/=0) &
             call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
+        if (idiag_up2mphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy)**2,idiag_up2mphi)
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
+        call phisum_mn_name_rz(p%uu(:,3)**2,idiag_uz2mphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
+        if (idiag_urupmphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy),idiag_urupmphi)
+        if (idiag_uruzmphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)*p%uu(:,3),idiag_uruzmphi)
+        if (idiag_upuzmphi/=0) &
+            call phisum_mn_name_rz((p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy)*p%uu(:,3),idiag_upuzmphi)
+        if (idiag_rurupmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy),idiag_rurupmphi)
+        if (idiag_ruruzmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)*p%uu(:,3),idiag_ruruzmphi)
+        if (idiag_rupuzmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy)*p%uu(:,3),idiag_rupuzmphi)
+        if (idiag_rurmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy),idiag_rurmphi)
+        if (idiag_rupmphi/=0) &
+            call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy),idiag_rupmphi)
+        if (idiag_rupmphi/=0) &
+            call phisum_mn_name_rz(p%rho*p%uu(:,3),idiag_ruzmphi)
         call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         call phisum_mn_name_rz(p%ou,idiag_oumphi)
+        if (idiag_fkinrsphmphi/=0) &
+            call phisum_mn_name_rz(p%ekin*(p%uu(:,1)*p%evr(:,1)+ &
+              p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_fkinrsphmphi)
 !
         call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
         call ysum_mn_name_xz(p%uu(:,2),idiag_uymxz)
@@ -5096,9 +5153,24 @@ module Hydro
         idiag_urmphi=0
         idiag_ursphmphi=0
         idiag_uthmphi=0
+        idiag_rursphmphi=0
+        idiag_ruthmphi=0
         idiag_upmphi=0
         idiag_uzmphi=0
+        idiag_rurmphi=0
+        idiag_rupmphi=0
+        idiag_ruzmphi=0
         idiag_u2mphi=0
+        idiag_ur2mphi=0
+        idiag_up2mphi=0
+        idiag_uz2mphi=0
+        idiag_urupmphi=0
+        idiag_uruzmphi=0
+        idiag_upuzmphi=0
+        idiag_rurupmphi=0
+        idiag_ruruzmphi=0
+        idiag_rupuzmphi=0
+        idiag_fkinrsphmphi=0
         idiag_uxmy=0
         idiag_uymy=0
         idiag_uzmy=0
@@ -5757,11 +5829,26 @@ module Hydro
         call parse_name(irz,cnamerz(irz),cformrz(irz),'urmphi',idiag_urmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ursphmphi',idiag_ursphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uthmphi',idiag_uthmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rursphmphi',idiag_rursphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ruthmphi',idiag_ruthmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'upmphi',idiag_upmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uzmphi',idiag_uzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rurmphi',idiag_rurmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rupmphi',idiag_rupmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ruzmphi',idiag_ruzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ur2mphi',idiag_ur2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'up2mphi',idiag_up2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uz2mphi',idiag_uz2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'u2mphi',idiag_u2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'urupmphi',idiag_urupmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uruzmphi',idiag_uruzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'upuzmphi',idiag_upuzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rurupmphi',idiag_rurupmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ruruzmphi',idiag_ruruzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rupuzmphi',idiag_rupuzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',idiag_oumphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ozmphi',idiag_ozmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fkinrsphmphi',idiag_fkinrsphmphi)
       enddo
 !
 !  check for those quantities for which we want phiz-averages
