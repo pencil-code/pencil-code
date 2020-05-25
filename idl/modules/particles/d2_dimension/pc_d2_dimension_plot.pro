@@ -5,7 +5,7 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
                           psxsize=psxsize, psysize=psysize, $
                           font_size=font_size, psfilename=psfilename, $
                           yrange=yrange, legendtext=legendtext, $
-                          yright=yright
+                          yright=yright, use_last_only=use_last_only
   compile_opt idl2
 
   if ~n_elements(file) then begin
@@ -23,6 +23,7 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
   if ~n_elements(psxsize) then psxsize = 6.50
   if ~n_elements(psysize) then psysize = 4.00
   if ~n_elements(thick) then thick = 1.0
+  use_last_only = keyword_set(use_last_only)
 
   format = '(l, f, d, d, d)'
   readcol, file, model, ap0, d2, xmin_mean, xmin_var, format=format
@@ -68,7 +69,7 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
     endelse
 
     xmargin = keyword_set(yright) ? [0.3, 6.5] : [6.5, 0.3]
-    ymargin = [3.2, 0.3]
+    ymargin = [3.3, 0.3]
     symsize = 1.0
 
     ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
@@ -88,7 +89,8 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
     oplot, 1d1 ^!x.crange, [3d0, 3d0], $
            linestyle=1, color=150, thick=thick
 
-    for i = 0L, n_model - 1L do begin
+    i_start = use_last_only ? n_model - 1L : 0L
+    for i = i_start, n_model - 1L do begin
       idx = where(model eq midx[i], count)
 
       alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
