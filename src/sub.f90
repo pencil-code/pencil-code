@@ -7206,7 +7206,7 @@ nameloop: do
       real, dimension (nx), optional, intent(out) :: heat, flux3
       character(LEN=*), optional, intent(in) :: heat_type
 !
-      real :: nlf, h_slope_limited
+      real :: nlf, h_slope_limited, one_16
       type (pencil_case), intent(in) :: p
       integer :: j,k
       logical :: lmag_diff,ldiv_4th
@@ -7214,6 +7214,7 @@ nameloop: do
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
+        one_16=1./16.
         if(present(heat)) heat=0.0
         if(present(flux3)) flux3=0.0
         div_flux=0.
@@ -7410,20 +7411,36 @@ nameloop: do
              lmag_diff=.true.
 !    x-direction:
 !
-             if (k == 1 .and. nxgrid /= 1) &
-             div_flux=0.5*(flux_ip12(:,1) + flux_im12(:,1))
+             if (k == 1 .and. nxgrid /= 1) then 
+               if(ldiv_4th) then
+                 div_flux=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,1)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+               else
+                div_flux=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+               endif
+             endif
 !
 !    y-direction:
 !
-             if (k == 2 .and. nygrid /= 1) &
-             heat=0.5*(flux_ip12(:,2) + flux_im12(:,2))
+             if (k == 2 .and. nygrid /= 1) then
+               if(ldiv_4th) then
+                 heat=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+               else
+                 heat=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+               endif
+             endif
 !
 !    z-direction:
 !
-             if (k == 3 .and. nzgrid /= 1) &
-             flux3=0.5*(flux_ip12(:,3) + flux_im12(:,3))
+             if (k == 3 .and. nzgrid /= 1) then
+               if(ldiv_4th) then
+                 flux3=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+               else
+                 flux3=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+               endif
+             endif
 !
             case('none')
+                heat=0.
 !
             case default
               call fatal_error('sub:calc_slope_diff_flux','other heating types not yet implemented')

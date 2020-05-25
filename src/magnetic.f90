@@ -3138,13 +3138,16 @@ module Magnetic
 !            if (lslope_limit_diff .and. llast) then
             if (lslope_limit_diff) then
               f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*tmp
-!           Fill nearest ghost points with boundary points, only important at real boundary
-              f(l1-1,m,n,isld_char) =f(l1-1,m,n,isld_char)+w_sldchar_mag*tmp(1)
-              f(l2+1,m,n,isld_char) =f(l2+1,m,n,isld_char)+w_sldchar_mag*tmp(nx)
-              if (m==m1) f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*tmp
-              if (m==m2) f(l1:l2,m+1,n,isld_char) =f(l1:l2,m+1,n,isld_char)+w_sldchar_mag*tmp
-              if (n==n1) f(l1:l2,m,n-1,isld_char) =f(l1:l2,n-1,n,isld_char)+w_sldchar_mag*tmp
-              if (n==n2) f(l1:l2,m,n+1,isld_char) =f(l1:l2,n+1,n,isld_char)+w_sldchar_mag*tmp
+!           Fill nearest 2 ghost points with boundary points, only important at real boundary
+            !  f(l1-2:l1-1,m,n,isld_char) =f(l1-2:l1-1,m,n,isld_char)+w_sldchar_mag*tmp(1)
+            !  f(l2+1:l2+2,m,n,isld_char) =f(l2+1:l2+2,m,n,isld_char)+w_sldchar_mag*tmp(nx)
+            !  if (m==m1) then
+            !    f(l1:l2,m-2,n,isld_char) =f(l1:l2,m-2,n,isld_char)+w_sldchar_mag*tmp
+            !    f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*tmp
+            !  endif
+            !  if (m==m2) f(l1:l2,m+1:m+2,n,isld_char) =f(l1:l2,m+1:m+2,n,isld_char)+w_sldchar_mag*tmp
+            !  if (n==n1) f(l1:l2,m,n-2:n-1,isld_char) =f(l1:l2,n-2:n-1,n,isld_char)+w_sldchar_mag*tmp
+            !  if (n==n2) f(l1:l2,m,n+1:n+2,isld_char) =f(l1:l2,n+1:n+2,n,isld_char)+w_sldchar_mag*tmp
            endif
           endif
         enddo mn_loop
@@ -4542,9 +4545,9 @@ module Magnetic
 !     where Dsld is the SLD operator
 !   old way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
-          call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1),'2nd',bx_flux(:,2),bx_flux(:,3),'magfield')
-          call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1),'2nd',by_flux(:,2),by_flux(:,3),'magfield')
-          call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1),'2nd',bz_flux(:,2),bz_flux(:,3),'magfield')
+          call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1),'4th',bx_flux(:,2),bx_flux(:,3),'magfield')
+          call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1),'4th',by_flux(:,2),by_flux(:,3),'magfield')
+          call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1),'4th',bz_flux(:,2),bz_flux(:,3),'magfield')
 !
           tmp2(:,1)= (-bz_flux(:,2) + by_flux(:,3))*fac_sld_magn
           tmp2(:,2)= (-bx_flux(:,3) + bz_flux(:,1))*fac_sld_magn
@@ -4555,6 +4558,7 @@ module Magnetic
 !     Heating is just jj*divF_sld
 !!!     Heating is just jj*(-e_ijk Dsld_k B_l)
 !
+
           if (lohmic_heat) then
             call dot(tmp2,p%jj,tmp1)
             if (lentropy) then
