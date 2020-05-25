@@ -55,4 +55,5 @@
 &pointmasses_run_pars
   lnogravz_star=T
   lfollow_particle=T,T
+  lexclude_hills=T
 /

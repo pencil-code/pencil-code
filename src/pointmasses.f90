@@ -58,7 +58,7 @@ module PointMasses
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
   logical :: lcorrect_gasgravity_lstart=.false.
-  logical :: lexclude_hills=.true.
+  logical :: lexclude_hills=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
