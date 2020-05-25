@@ -136,63 +136,59 @@ function pc_d2_dimension_mpfit_f, x, p
 end
 
 
-pro pc_d2_dimension_hplot, locations, obs, fitx=fitx, fity=fity, $
+pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
         filename=filename, log=log, charsize=charsize, font_size=font_size, $
         noshow=noshow, psfilename=psfilename, psxsize=psxsize, $
         psysize=psysize, xsize=xsize, ysize=ysize, legendtext=legendtext, $
-        comparison_fit=comparison_fit, thick=thick, $
-        yright=yright, xrange=xrange
+        comparison_fit=comparison_fit, thick=thick, yright=yright, xrange=xrange, $
+        animate=animate, data=data, pstruc=pstruc, j_max=j_max, $
+        nplot_x=nplot_x, nplot_y=nplot_y, do_postscript=do_postscript, $
+        ap=ap, file_string=file_string, warr=warr, do_grab=do_grab
   compile_opt hidden, IDL2
 
-  device, get_decomposed=decomposed
-
+  do_postscript = keyword_set(do_postscript)
   if ~n_elements(charsize) then charsize = 1.0
   if ~n_elements(thick) then thick = 1.0
+  charthick = thick
   if ~n_elements(log) then log = 1L
   if ~n_elements(noshow) then noshow = 1L
   if ~n_elements(psxsize) then psxsize = 6.5
   if ~n_elements(psysize) then psysize = 4.0
   if ~n_elements(font_size) then font_size = 10.0
+  do_grab = keyword_set(do_grab)
 
-  for jj = 0L, 1L do begin
+  if ~j then begin
+    pf = !p.font
+    device_name = !d.name
 
-    if jj then begin
+    if do_postscript then begin
 
-      device_name = !d.name
       set_plot, 'ps'
       device, xsize=psxsize, ysize=psysize
       device, filename=psfilename, /isolatin, /color, bits_per_pixel=8, $
               /encapsulated, inches=0, font_size=font_size
-      pf = !p.font
       !p.font = 0L
 
-      charthick = 1.5
     endif else begin
 
-      if noshow then begin
+      if noshow || animate then begin
         window, /free, xsize=xsize, ysize=ysize, /pixmap
+        if animate && ~do_grab then warr[i] = !d.window
       endif else begin
         window, 0L, xsize=xsize, ysize=ysize
       endelse
 
-      charthick = 2.0
     endelse
 
     xo = !x.omargin
     yo = !y.omargin
-    !x.omargin = 0
-    !y.omargin = 0
-    charthick = 1.5
-    xmargin = keyword_set(yright) ? [0.5, 8.0] : [8.0, 0.5]
-    ymargin = [3.5, 0.5]
-    xtitle = 'Minimum distance bins'
-    ytitle_pre = ' Normalized counts'
-    if keyword_set(log) then xtitle = 'log ' + xtitle
-    if keyword_set(log) then ytitle_pre = 'log ' + ytitle_pre
+    !x.omargin = keyword_set(yright) ? [0.5, 3.0] : [3.0, 0.5]
+    !y.omargin = [3.0, 0.0]
 
+    device, get_decomposed=decomposed
     device, decomposed=0L
     bottom = 7L & ncolors = !d.table_size - bottom
-    loadct, 74, bottom=bottom, ncolors=ncolors
+    loadct, 74, bottom=bottom, ncolors=ncolors, /silent
     tvlct,   0b,   0b ,  0b, 0L         ;; Black
     tvlct, 255b, 255b, 255b, 1L         ;; White
     tvlct, 213b,  94b,   0b, 2L         ;; Vermillion
@@ -200,87 +196,208 @@ pro pc_d2_dimension_hplot, locations, obs, fitx=fitx, fity=fity, $
     tvlct,   0b, 114b, 178b, 4L         ;; Blue
     tvlct, 230b, 159b,   0b, 5L         ;; Orange
     tvlct, 204b, 121b, 167b, 6L         ;; Purple (Mulberry)
-    background = 1L
-    color = 0L
 
-    locations_ = keyword_set(log) ? alog10(locations) : locations
+    pm = !p.multi
+    !p.multi = [0L, nplot_x, nplot_y, 0L, 0L]
 
-    yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : $
-             [min(obs), max(obs)]
-    obs_ = keyword_set(log) ? alog10(obs) : obs
-    obs_[0L] = - 10
+    pstruc = {pm:pm, pf:pf, xo:xo, yo:yo, decomposed:decomposed, $
+              device_name:device_name, window:!d.window}
 
-    ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
-    ytitle = keyword_set(yright) ? '' : ytitle_pre
-    ytickformat = keyword_set(yright) ? '(a1)' : ''
+  endif else begin
+    !p.multi = [nplot_x * nplot_y - j, nplot_x, nplot_y, 0L, 0L]
+  endelse
 
-    plot, locations_, obs_, charthick=charthick, $
-          background=background, charsize=charsize, color=color, $
-          xmargin=xmargin, xrange=xrange, /xstyle, xthick=thick, $
-          ymargin=ymargin, yrange=yrange, ystyle=ystyle, ythick=thick, $
-          xtitle=xtitle, ytitle=ytitle, ytickformat=ytickformat
+  background = 1L
+  color = 0L
 
-    if keyword_set(yright) then $
-       axis, color=0, /yaxis, yrange=yrange, charsize=charsize, $
-             charthick=charthick, /ystyle, ythick=thick, ytitle=ytitle_pre
+  jx_pos = j mod nplot_x
+  jy_pos = j / nplot_x
+  jx_pos_max = (j_max - 1L) mod nplot_x
+  show_x = (jy_pos eq (nplot_y - 1L)) or $
+           ((jy_pos eq (nplot_y - 2L)) and jx_pos gt jx_pos_max)
 
-    if n_elements(fitx) gt 0L then begin
-      fitx_ = keyword_set(log) ? alog10(fitx) : fitx
-      fity_ = keyword_set(log) ? alog10(fity) : fity
-      oplot, fitx_, fity_, linestyle=3, color=2, thick=thick * 1.5
+  if keyword_set(yright) then begin
+    show_y = (jx_pos eq nplot_x - 1L) or $
+             ((jy_pos eq (nplot_y - 2L)) and jx_pos gt jx_pos_max)
+  endif else begin
+    show_y = ~jx_pos
+  endelse
 
-      fity_ = keyword_set(log) ? alog10(comparison_fit) : comparison_fit
-      oplot, fitx_, fity_, linestyle=1, color=6, thick=thick * 1.5
+  charsize_leg = charsize * (nplot_x gt 2 or nplot_y gt 2 ? 0.5 : 1.0)
+  xmargin = keyword_set(yright) ? [0.5, 5.0] : [5.0, 0.5]
+  ymargin = [0.5, 0.5]
+  xtitle_ = 'Minimum distance bins'
+  if keyword_set(log) then xtitle_ = 'log ' + xtitle_
+  xtitle = show_x ? xtitle_ : ''
 
-      items = ['d!d2!n fit', 'd!d2!n = 3.0']
-      al_legend, items, charsize=charsize, charthick=charthick, box=0, $
-                 linestyle=[3, 1], color=[2, 6], thick=thick*1.5
+  locations_ = keyword_set(log) ? alog10(locations) : locations
 
+  yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : [min(obs), max(obs)]
+  if keyword_set(log) then begin
+    obs_ = obs * 0
+    idx = where(obs gt 1d-10, count, complement=cidx, ncomplement=ncount)
+    if  count ne 0L then obs_[ idx] = alog10(obs[idx])
+    if ncount ne 0L then obs_[cidx] = -10
+  endif else obs_ = obs
+  obs_[0L] = - 10
+
+  ystyle = 1L + (keyword_set(yright) ? 8L : 0L)
+
+  ytitle_ = 'Normalized counts'
+  if keyword_set(log) then ytitle_ = 'log ' + ytitle_
+  ytitle = show_y && ~keyword_set(yright) ? ytitle_ : ''
+  ytickformat = keyword_set(yright) ? '(a1)' : ''
+
+  xtickformat = show_x ? '' : '(a1)'
+
+  plot, locations_, obs_, charthick=charthick, /nodata, $
+        background=background, charsize=charsize, color=color, $
+        xmargin=xmargin, xrange=xrange, /xstyle, xthick=thick, $
+        xtickformat=xtickformat, xtitle=xtitle, $
+        ymargin=ymargin, yrange=yrange, ystyle=ystyle, ythick=thick, $
+        ytitle=ytitle, ytickformat=ytickformat
+
+  if keyword_set(yright) then begin
+     ytitle = show_y ? ytitle_ : ''
+     axis, color=color, /yaxis, yrange=yrange, charsize=charsize, $
+           charthick=charthick, /ystyle, ythick=thick, ytitle=ytitle
+  endif
+
+  oplot, locations_, obs_, color=4, thick=thick
+
+  if n_elements(fitx) gt 0L then begin
+    fitx_ = keyword_set(log) ? alog10(fitx) : fitx
+    fity_ = keyword_set(log) ? alog10(fity) : fity
+    oplot, fitx_, fity_, linestyle=3, color=2, thick=thick * 1.5
+
+    fity_ = keyword_set(log) ? alog10(comparison_fit) : comparison_fit
+    oplot, fitx_, fity_, linestyle=1, color=6, thick=thick
+
+    items = ['d!d2!n fit', 'd!d2!n=3.0']
+
+    al_legend, items, charsize=charsize_leg, charthick=charthick, box=0, $
+               linestyle=[3, 1], colors=[2, 6], $
+               thick=thick, linsize=0.33, textcolors=color
+
+  endif
+
+  if animate then begin
+    xpos = 0.05 * (!x.crange[1L] - !x.crange[0L]) + !x.crange[0L]
+    ypos = 0.08 * (!y.crange[1L] - !y.crange[0L]) + !y.crange[0L]
+    a_string = 'a=' + strtrim(string(ap, format='(e8.1)'), 2L)
+    xyouts, xpos, ypos, a_string, alignment=0.0, color=color, $
+            charsize=charsize_leg, charthick=charthick
+    if ~j then begin
+      ypos += 1.5 * !d.y_ch_size * charsize / ((!y.window[1L] - !y.window[0L]) * !d.y_size)
+      xyouts, xpos, ypos, file_string, alignment=0.0, color=color, $
+              charsize=charsize_leg, charthick=charthick
     endif
+  endif
 
-    if n_elements(legendtext) eq 1L then begin
-      al_legend, legendtext, /bottom, /left, charsize=charsize, box=0
-    endif
+  if n_elements(legendtext) eq 1L then begin
+    al_legend, legendtext, /bottom, /left, charsize=charsize, box=0, textcolor=color
+  endif
 
-    if jj then begin
+  if j eq j_max - 1L then begin
+    if do_postscript then begin
 
       device, /close_file
-      set_plot, device_name
-      !p.font = pf
+      set_plot, pstruc.device_name
+      !p.font = pstruc.pf
 
     endif else begin
 
       ;; Read image buffer and save to PNG file:
       device, decomposed=1L
       grab = tvrd(true=1)
-      tvlct, red, green, blue, /get
-      write_png, filename, grab, red, green, blue
-      device, decomposed=0L
+      if animate then begin
+        if do_grab then data[i] = ptr_new(grab)
+      endif else begin
+        tvlct, red, green, blue, /get
+        write_png, filename, grab, red, green, blue
+      endelse
+      device, decomposed=pstruc.decomposed
 
-      if noshow then wdelete, !d.window
+      if noshow || (animate && do_grab) then wdelete, pstruc.window
 
     endelse
+  endif
 
-  endfor
-
-  device, decomposed=decomposed
 
   return
 end ;;; pc_d2_dimension_hplot
 
 
-pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
-                     fixed_bins=fixed_bins, charsize=charsize, thick=thick, $
-                     font_size=font_size, psxsize=psxsize, psysize=psysize, $
-                     xsize=xsize, ysize=ysize, noshow=noshow, yright=yright, $
-                     log=log, recalculate=recalculate, legendtext=legendtext, $
-                     xrange=xrange
+pro pc_d2_dimension_animate, data, warr=warr, xsize=xsize, ysize=ysize, sleep=sleep
+  compile_opt hidden, IDL2
+
+  size = size(data, /dimensions)
+  if ~n_elements(sleep) then sleep = 0.1
+  do_grab = min(warr) eq - 1L ? 1L : 0L
+
+  if ~n_elements(xsize) then xsize = !d.x_size
+  if ~n_elements(ysize) then ysize = !d.y_size
+
+  window, /free, xsize=xsize, ysize=ysize
+  wid = !d.window
+
+  print, 'Loop: Interrupt with Ctrl-C.'
+  print, '   Enter "loop=0" followed by ".cont" to finish animation.'
+  print, '   Enter "pingpong=1" followed by ".cont" to have animation go back and forward.'
+  print, '   Enter "sleep=x.x" followed by ".cont" to set time between draws [s] (x >= 0.01).'
+
+  loop = 1L
+  i_plus = 1L
+  pingpong = 0L
+
+  device, get_decomposed=decomposed
+  device, decomposed=1L
+  while loop do begin
+
+    if i_plus then begin
+      i_0 = 0L
+      i_1 = size[0L] - 1L
+      i_stride = 1L
+    endif else begin
+      i_0 = size[0L] - 2L
+      i_1 = 1L
+      i_stride = - 1L
+    endelse
+
+    for i = i_0, i_1, i_stride do begin
+      if do_grab then begin
+        tv, *data[i], /true
+      endif else begin
+        copy = [0L, 0L, xsize, ysize, 0L, 0L, warr[i]]
+        device, copy=copy
+      endelse
+      wait, sleep
+
+    endfor
+
+    if pingpong then i_plus = ~i_plus else i_plus ? 1L
+
+  endwhile
+  device, decomposed=decomposed
+
+  return
+end ;;; pc_d2_dimension_animate
+
+
+pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
+                     cumulative=cumulative, fixed_bins=fixed_bins, charsize=charsize, $
+                     thick=thick, font_size=font_size, psxsize=psxsize, psysize=psysize, $
+                     xsize=xsize, ysize=ysize, noshow=noshow, yright=yright, log=log, $
+                     legendtext=legendtext, xrange=xrange, sleep=sleep, $
+                     postscript=postscript, animate=animate, grab=do_grab
   compile_opt IDL2
 
   python_all = keyword_set(allpython)
+  animate = keyword_set(animate) && ~python_all
   cumulative = keyword_set(cumulative)
   cumul_str = ''
   if ~n_elements(fixed_bins) then fixed_bins = 1L
+  do_postscript = ~n_elements(postscript) ? 1L : 0L
 
   ;; Determine if the input file is regular binary or HDF5:
 
@@ -296,10 +413,14 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
      qpvars_2[0L] eq '' && $
      qpvars_3[0L] eq '' then hdf5 = 1L
 
+
   pc_read_param, object=ps
 
   ap0 = ps.ap0 & nap0 = n_elements(ap0)
   j_str = ' / ' + strtrim(nap0, 2L)
+
+  nplot_x = ceil(sqrt(nap0))
+  nplot_y = nplot_x - 1L
 
   ;; Compile (Import) Python program (change directory to find the routine):
   if python_all then begin
@@ -312,6 +433,41 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
 
   ;; Cumulative sum, create a pointer array:
   if cumulative then obs_sum = ptrarr(nap0)
+
+
+  ;; Using ANIMATE, one doesn't set PVARS, but the tool finds out which ones
+  ;; exist by itself:
+
+  if animate and ~n_elements(pvars) then begin
+
+    for ij = 0UL, 2UL do begin
+
+      case ij of
+        0UL: files = file_search('histogram_PVAR?.*_hist.dat.gz')
+        1UL: files = file_search('histogram_PVAR??.*_hist.dat.gz')
+        2UL: files = file_search('histogram_PVAR???.*_hist.dat.gz')
+      endcase
+      if files[0L] eq '' then continue
+
+      nfiles = n_elements(files)
+      for i = 0UL, nfiles - 1UL do begin
+        pos = strpos(files[i], '.')
+        files[i] = strmid(files[i], 10L, pos - 10L)
+      endfor
+      if ~n_elements(pvars) then begin
+        pvars = files[uniq(files, sort(files))]
+      endif else begin
+        pvars = [pvars, files[uniq(files, sort(files))]]
+      endelse
+
+    endfor
+
+    if hdf5 then pvars = 'allprocs' + path_sep() + pvars + '.h5'
+
+    ;; Create pointer array that stores the data:
+    data = ptrarr(n_elements(pvars))
+    warr = lonarr(n_elements(pvars)) - 1L
+  endif
 
   ;; Open the output file:
   file = 'nnd_d2.dat'
@@ -510,7 +666,7 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
           ;;========================================
           ;; Retrieve the histogram from the saved file:
 
-          readcol, filenames[j], /compress, format='(f,f)', locations, obs
+          readcol, filenames[j], /compress, format='(f,f)', locations, obs, /silent
           nbins_fit = n_elements(obs)
 
           if keyword_set(cumulative) then begin
@@ -568,7 +724,7 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
         pi.value = [1d0, 1d0] ;; starting values
         p = mpfitfun('pc_d2_dimension_mpfit_f', x, y, dy, $
                      ftol=ftol, maxiter=maxiter, niter=niter, $
-                     parinfo=pi, status=status)
+                     parinfo=pi, status=status, /quiet)
         d2 = p[1L]
         yfit = pc_d2_dimension_mpfit_f(x, p)
 
@@ -587,27 +743,30 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
         ;;yfit = Python.yfit
         ;;D2 = popt[1L]
 
-        filename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-                   strtrim(j, 2L) + cumul_str + '_hist.png'
-        psfilename = 'nnd_d2_' + file_basename(pvars[i]) + '_' + $
-                   strtrim(j, 2L) + cumul_str + '_hist.eps'
-        pc_d2_dimension_hplot, locations, obs, fitx=x, fity=yfit, log=log, $
+        filename = 'nnd_d2_' + file_basename(pvars[i]) + cumul_str + '_hist.png'
+        psfilename = 'nnd_d2_' + file_basename(pvars[i]) + cumul_str + '_hist.eps'
+        file_string = file_basename(pvars[i])
+        pos = strpos(file_string, '.')
+        if pos gt 0L then file_string = strmid(file_string, 0L, pos)
+        pc_d2_dimension_hplot, locations, obs, i, j, fitx=x, fity=yfit, log=log, $
             filename=filename, psfilename=psfilename, psxsize=psxsize, $
             psysize=psysize, xsize=xsize, ysize=ysize, noshow=noshow, $
             charsize=charsize, comparison_fit=yfit_3, legendtext=legendtext, $
-            thick=thick, font_size=font_size, yright=yright, xrange=xrange
+            thick=thick, font_size=font_size, yright=yright, xrange=xrange, $
+            animate=animate, data=data, pstruc=pstruc, $
+            j_max=nap0, nplot_x=nplot_x, nplot_y=nplot_y, do_postscript=do_postscript, $
+            ap=ap0[j], file_string=file_string, warr=warr, do_grab=do_grab
 
 
-        eformat = '(e10.3)'
-        fformat = '(f6.3)'
-        if load_data then str = strtrim(i, 2L) + $
-                    stb + string(ap0[j], format=format) + $
-                    stb + strtrim(string(d2, format=fformat), 2L) + $
-                    stb + string(mean(xmil), format=eformat) + $
-                    stb + string(stdev(xmil), format=eformat)
-
-        ;help,xmil
-        ;stop
+        if load_data then begin
+          eformat = '(e10.3)'
+          fformat = '(f6.3)'
+          str = strtrim(i, 2L) + $
+                stb + string(ap0[j], format=format) + $
+                stb + strtrim(string(d2, format=fformat), 2L) + $
+                stb + string(mean(xmil), format=eformat) + $
+                stb + string(stdev(xmil), format=eformat)
+        endif
 
       endelse
 
@@ -618,6 +777,21 @@ pro pc_d2_dimension, pvars, allpython=allpython, cumulative=cumulative, $
     if load_data then pc_d2_dimension_write, '', append=append, file=file
 
   endfor
+
+  if animate then $
+     pc_d2_dimension_animate, data, xsize=xsize, ysize=ysize, sleep=sleep, warr=warr
+
+  ;; Release allocated memory, if any:
+  if animate then begin
+
+    if keyword_set(do_grab) then begin
+       for i = 0UL, n_elements(data) - 1UL do $
+          if ptr_valid(data[i]) then ptr_free, data[i]
+    endif else begin
+       for i = 0UL, n_elements(pvars) - 1UL do wdelete, warr[i]
+    endelse
+
+  endif
 
 
   return
