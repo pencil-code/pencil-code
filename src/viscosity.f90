@@ -1364,7 +1364,10 @@ module Viscosity
 !        pnu = nu + (nu*(nu_jump-1.))*step(abs(p%x_mn),xnu,widthnu)
 !
       if (lvisc_nu_profx.or.lvisc_nu_profr) then
-        if (lvisc_nu_profx) tmp3=p%x_mn
+        !if (lvisc_nu_profx) tmp3=p%x_mn
+!AB: Petri, Matthias, or somebody using spherical coordinates;
+!AB: the line above seems wrong and should simply be like so:
+        if (lvisc_nu_profx) tmp3=x(l1:l2)
         if (lvisc_nu_profr) then
           if (lspherical_coords.or.lsphere_in_a_box) then
             tmp3=p%r_mn
