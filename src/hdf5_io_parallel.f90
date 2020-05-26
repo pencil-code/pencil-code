@@ -894,8 +894,8 @@ module HDF5_IO
       call check_error (h5_err, 'populate torus data type', name)
 
       ! create data space
-      dims=(/1/)
-      call h5screate_simple_f (1, dims, h5_dspace, h5_err)
+      size = (/ 1 /)
+      call h5screate_simple_f (1, size, h5_dspace, h5_err)
       call check_error (h5_err, 'create torus data space', name)
 
       if (exists_in_hdf5 (name)) then
@@ -909,7 +909,6 @@ module HDF5_IO
       endif
 
       ptr = C_LOC(data)
-      size = (/ 1 /)
       call h5dwrite_f(h5_dset, h5_torustype, ptr, size, h5_err)
       call check_error (h5_err, 'write torus dataset', name)
 
