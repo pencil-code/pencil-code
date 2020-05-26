@@ -908,8 +908,9 @@ module HDF5_IO
         call check_error (h5_err, 'create torus dataset', name)
       endif
 
-      ptr = C_LOC(data)
-      call h5dwrite_vl_f(h5_dset, h5_torustype, ptr, size, h5_err)
+      ! [PAB] a pointer is not a valid argument for 'h5dwrite_f':
+      !ptr = C_LOC(data)
+      call h5dwrite_f(h5_dset, h5_torustype, data(1), size, h5_err) ! was 'ptr' before
       call check_error (h5_err, 'write torus dataset', name)
 
       ! close dataset and data space
