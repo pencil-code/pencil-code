@@ -918,6 +918,8 @@ module HDF5_IO
       call check_error (h5_err, 'close torus dataset', name)
       call h5sclose_f (h5_dspace, h5_err)
       call check_error (h5_err, 'close torus data space', name)
+      call h5tclose_f (h5_torustype, h5_err)
+      call check_error (h5_err, 'close torus data type', name)
 
       contains
 !----------------------------------------------------------------------
