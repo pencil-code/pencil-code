@@ -909,7 +909,7 @@ module HDF5_IO
       endif
 
       ptr = C_LOC(data)
-      call h5dwrite_f(h5_dset, h5_torustype, ptr, size, h5_err)
+      call h5dwrite_vl_f(h5_dset, h5_torustype, ptr, size, h5_err)
       call check_error (h5_err, 'write torus dataset', name)
 
       ! close dataset and data space
