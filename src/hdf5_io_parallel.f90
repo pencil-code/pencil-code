@@ -870,7 +870,7 @@ module HDF5_IO
 
 !
       integer(HID_T) :: h5_torustype, h5_vec3type
-      integer(HSIZE_T), dimension(1) :: dims
+      integer(HSIZE_T), dimension(1) :: dims, size
       real :: dummy
 
       ! create data type
@@ -909,7 +909,8 @@ module HDF5_IO
       endif
 
       ptr = C_LOC(data)
-      call h5dwrite_f(h5_dset, h5_torustype, ptr, h5_err)
+      size = (/ 1 /)
+      call h5dwrite_f(h5_dset, h5_torustype, ptr, size, h5_err)
       call check_error (h5_err, 'write torus dataset', name)
 
       ! close dataset and data space
