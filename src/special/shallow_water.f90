@@ -88,11 +88,12 @@ module Special
   logical :: lcalc_storm=.true.
   logical :: lupdate_as_var=.true.
 !
+  namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms
+!  
   namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
-       gamma_parameter,tstorm,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,tduration,rsize_storm,Omega_SB,&
-       interval_between_storms
+       gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
+       lmass_relaxation,Omega_SB
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init
@@ -268,6 +269,24 @@ module Special
       write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!                                
+      integer, intent(in) :: unit
+!                                
+      write(unit, NML=special_init_pars)
+!                                
+    endsubroutine write_special_init_pars
+!***********************************************************************              
+    subroutine read_special_init_pars(iostat)
+!                                
+      use File_io, only: parallel_unit
+!                                
+      integer, intent(out) :: iostat
+!                                
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+!                                
+    endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
@@ -458,6 +477,7 @@ module Special
           call get_storm(istorm)
         enddo
 !     
+        print*,rsize_storm
         call output_storms(trim(datadir)//'/storms.dat')
         if (lwrite_ic.and.lupdate_as_var) &
              call output_storms(trim(datadir)//'/STORMS0')
