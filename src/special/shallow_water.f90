@@ -57,7 +57,7 @@ module Special
 !
   real :: fcoriolis
   real :: Omega_SB=1.0
-  real :: gamma_parameter=0.001
+  real :: gamma_parameter=0.021
 !
 ! Different pre-defined forms of the bottom function
 !
@@ -412,13 +412,13 @@ module Special
           else
             storm_function(i) = 0.
           endif
-       enddo
+        enddo
 !
 !  Add storm function to equation of motion       
 !
        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
 !       
-    enddo
+      enddo
 !    
   endsubroutine calc_storm_function
 !***********************************************************************
