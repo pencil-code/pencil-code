@@ -2576,7 +2576,8 @@ following:
   \prompt{unix> } run.csh
   \end{alltt}
 
-\item Run \file{src/read_videofiles.x} to assemble global slice files from
+\item Say \file{make read_videofiles} to compile the routine and then
+  run \file{src/read_videofiles.x} to assemble global slice files from
   those scattered across \file{data/proc*/}:
   \begin{alltt}
   \prompt{unix> } src/read_videofiles.x
@@ -8394,6 +8395,7 @@ where \code{nw=nx*ny*nz}.
  256 &Triolith&0.030&$256^2\times512$ & magn/rad & 1x16x16& 17-mar-14 & AB \\
  256 &Triolith&0.0049&$256^3$ & magn/noentro & 1x16x16&  1-mar-14 & AB \\
  256&Beskow&3.36&$1{\!\times\!}1{\!\times\!}1024$&coag43&1x1x256&3-mar-15& AB \\
+ 256&Beskow&7e-3&$256^3$&coag43&1x16x16&9-jan-20& AB \\
  288 &Gardar&0.042&$576^2{\!\times\!}288$ & magn/rad & 1x18x16 & 17-mar-14&AB\\
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
@@ -12801,7 +12803,8 @@ double precision, $\varepsilon\approx10^{-15}$.
                  (so you keep the data from a hopefully relaxed run),
                  and just add whatever you need for the magnetic field.
                  In this connection you may want to \cmd{touch NOERASE},
-                 so as not to erase the previous data.\\
+                 so as not to erase the previous data. Also, put:
+                 \cmd{ireset_tstart=0,lread_oldsnap=T,lwrite_var_anyway=T} \\
   \var{lread_oldsnap_nomag} [\code{F}]
                & if set \code{T}, the old snapshot from a non-magnetic run
                  will be read in before producing (overwriting) initial
