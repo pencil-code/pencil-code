@@ -3617,9 +3617,11 @@ module Sub
 !
 !  Special treatment when dtout is negative.
 !  Now tout and nout refer to the next snapshopt to be written.
+!  For dtout<0, use multiplicative output times;
+!  abs(dtout) is then the first output time.
 !
           settout: if (dtout < 0.0) then
-            tout = log10(t)
+            tout = abs(dtout)
           elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
             t0 = max(t - dt, 0.0D0)
@@ -3655,6 +3657,7 @@ module Sub
 !  27-jul-15/MR  : try to fix a strange behavior with gfortran:
 !                  when crashing, a big number of unmotivated snapshots
 !                  is output -> test of NaN in t
+!  30-may-20/axel: new version of log-spaced output by x10^(1/3) for dtout<0
 !
       use General, only: itoa, notanumber_0d
 !
@@ -3678,13 +3681,9 @@ module Sub
         return
       endif
 !
-!  Use t_sp as a shorthand for either t or lg(t).
+!  Set t_sp, which is defined in single precision
 !
-      if (dtout<0.0) then
-        t_sp=log10(t)
-      else
-        t_sp=t
-      endif
+      t_sp=t
 !
 !  Check if no writing tout is requested.
 !
@@ -3717,8 +3716,18 @@ module Sub
       if ((t_sp >= tout) .or. &
 !      if (lout.or.t_sp    >= tout             .or. &
           (abs(t_sp-tout) <  deltat_threshold)) then
-        tout=tout+abs(dtout)
-!        if (.not.lout) tout=tout+abs(dtout)
+!
+!  Set next output time tout. If dtout<0, we interprete this as
+!  log-spaced output in intervals increasing by a factor 10^(1/ldt1),
+!  where ldt1 is the inverse logarithmic interval, currently ldt1=3.
+!
+        if (dtout<0.0) then
+          tout=tout*10.**onethird
+        else
+          tout=tout+abs(dtout)
+!         if (.not.lout) tout=tout+abs(dtout)
+        endif
+!
         nout=nout+1
         lout=.true.
 !
