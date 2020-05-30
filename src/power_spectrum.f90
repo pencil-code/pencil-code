@@ -1328,10 +1328,11 @@ module power_spectrum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,im,in,ivec, stat
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: Lor
+  real, dimension (:,:,:,:), allocatable :: tmpv
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
@@ -1358,6 +1359,14 @@ module power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
+  !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
+  !  velocity. In that case, we want the magnetic field instead.
+  !
+  if (.not.lhydro) then
+    allocate(tmpv(mx,my,mz,3),stat=stat)
+    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for tmpv')
+  endif
+  !
   !  initialize power spectrum to zero
   !
   k2m=0.
@@ -1378,6 +1387,7 @@ module power_spectrum
      call curl_mn(bij,jj,bb)
      call cross_mn(jj,bb,jxb)
      Lor(l1:l2,m,n,:)=jxb
+     if (.not.lhydro) tmpv(l1:l2,m,n,:)=bb
   enddo
   enddo
   !
@@ -1395,7 +1405,11 @@ module power_spectrum
           b_re(:,im,in)=Lor(l1:l2,m,n,ivec)
         enddo
       enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,ivec)
+      if (lhydro) then
+        a_re=f(l1:l2,m1:m2,n1:n2,ivec)
+      else
+        a_re=tmpv(l1:l2,m1:m2,n1:n2,ivec)
+      endif
       a_im=0.
       b_im=0.
 !
@@ -1497,6 +1511,8 @@ module power_spectrum
     endif
   endif
   !
+  if (allocated(tmpv)) deallocate(tmpv)
+
   endsubroutine powerLor
 !***********************************************************************
   subroutine powerEMF(f,sp)
