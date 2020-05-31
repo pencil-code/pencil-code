@@ -1330,10 +1330,11 @@ module power_spectrum
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec, stat
   real :: k2
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,3) :: Lor
-  real, dimension (:,:,:,:), allocatable :: tmpv
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(mx,my,mz,mfarray) :: f
+  real, dimension(mx,my,mz,3) :: Lor
+  real, dimension(:,:,:,:), allocatable :: tmpv, scrv
+  real, dimension(:,:,:), allocatable :: c_re, c_im
+  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks=0.,nks_sum=0.
@@ -1365,6 +1366,12 @@ module power_spectrum
   if (.not.lhydro) then
     allocate(tmpv(mx,my,mz,3),stat=stat)
     if (stat>0) call fatal_error('powerLor','Cannot allocate memory for tmpv')
+    allocate(scrv(mx,my,mz,3),stat=stat)
+    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for scrv')
+    allocate(c_re(nx,ny,nz),stat=stat)
+    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for c_re')
+    allocate(c_im(nx,ny,nz),stat=stat)
+    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for c_im')
   endif
   !
   !  initialize power spectrum to zero
@@ -1388,6 +1395,7 @@ module power_spectrum
      call cross_mn(jj,bb,jxb)
      Lor(l1:l2,m,n,:)=jxb
      if (.not.lhydro) tmpv(l1:l2,m,n,:)=bb
+     if (.not.lhydro) scrv(l1:l2,m,n,:)=jj
   enddo
   enddo
   !
@@ -1398,17 +1406,13 @@ module power_spectrum
 !  Lorentz force spectra (spectra of L*L^*)
 !
     if (sp=='Lor') then
-      do n=n1,n2
-        do m=m1,m2
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=Lor(l1:l2,m,n,ivec)
-        enddo
-      enddo
+      b_re=Lor(l1:l2,m1:m2,n1:n2,ivec)
       if (lhydro) then
         a_re=f(l1:l2,m1:m2,n1:n2,ivec)
       else
         a_re=tmpv(l1:l2,m1:m2,n1:n2,ivec)
+        c_re=scrv(l1:l2,m1:m2,n1:n2,ivec)
+        c_im=0.
       endif
       a_im=0.
       b_im=0.
@@ -1419,6 +1423,7 @@ module power_spectrum
 !
     call fft_xyz_parallel(a_re,a_im)
     call fft_xyz_parallel(b_re,b_im)
+    if (.not.lhydro) call fft_xyz_parallel(c_re,c_im)
 !
 !  integration over shells
 !
@@ -1431,10 +1436,17 @@ module power_spectrum
           if (k>=0 .and. k<=(nk-1)) then
 !
 !  sum energy and helicity spectra
+!  Remember: a=B, b=Lor, c=J, so for nonhydro, we want a.b and c.b
 !
-            spectrum(k+1)=spectrum(k+1) &
-               +b_re(ikx,iky,ikz)**2 &
-               +b_im(ikx,iky,ikz)**2
+            if (lhydro) then
+              spectrum(k+1)=spectrum(k+1) &
+                 +b_re(ikx,iky,ikz)**2 &
+                 +b_im(ikx,iky,ikz)**2
+            else
+              spectrum(k+1)=spectrum(k+1) &
+                 +c_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                 +c_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            endif
             spectrumhel(k+1)=spectrumhel(k+1) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)

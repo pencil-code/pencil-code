@@ -29,10 +29,9 @@
 !     equation                                     |
 !                                                  |
 !  Special equation                                | dspecial_dt
-!    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -71,7 +70,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module gravitational_waves_hTXk
 !
   use Cparam
   use Cdata
@@ -108,13 +107,13 @@ module Special
   real :: kscale_factor
 !
 ! input parameters
-  namelist /special_init_pars/ &
+  namelist /gravitational_waves_hTXk_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     lggTX_as_aux, lhhTX_as_aux
 !
 ! run parameters
-  namelist /special_run_pars/ &
+  namelist /gravitational_waves_hTXk_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, &
     nscale_factor_conformal, tshift, cc_light, &
@@ -286,19 +285,19 @@ module Special
 !     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
 !         'cs0 should probably not be unity')
 !
-      allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+      if (.not.allocated(Tpq_re)) allocate(Tpq_re(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_re')
 !
-      allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+      if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
 !
-      allocate(kx(nxgrid),stat=stat)
+      if (.not.allocated(kx)) allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
           'Could not allocate memory for kx')
-      allocate(ky(nygrid),stat=stat)
+      if (.not.allocated(ky)) allocate(ky(nygrid),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
           'Could not allocate memory for ky')
-      allocate(kz(nzgrid),stat=stat)
+      if (.not.allocated(kz)) allocate(kz(nzgrid),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
           'Could not allocate memory for kz')
 !
@@ -560,7 +559,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -568,7 +567,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=gravitational_waves_hTXk_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -578,7 +577,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -586,7 +585,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=gravitational_waves_hTXk_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1312,6 +1311,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../gravitational_waves_hTXk_dummies.inc'
 !********************************************************************
-endmodule Special
+endmodule gravitational_waves_hTXk
