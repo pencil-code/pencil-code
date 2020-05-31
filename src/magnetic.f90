@@ -105,6 +105,7 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
+  character (len=labellen) :: ihall_term='const'
 !
 ! Input parameters
 !
@@ -137,6 +138,7 @@ module Magnetic
   real :: rescale_aa=0.0
   real :: ampl_B0=0.0, D_smag=0.17, B_ext2, B_ext21, B_ext11
   real :: nu_ni=0.0, nu_ni1, hall_term=0.0, battery_term=0.0
+  real :: hall_tdep_t0=0.0, hall_tdep_exponent=0.0
   real :: initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0., brms_target=1.0, rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
@@ -334,6 +336,7 @@ module Magnetic
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
+      ihall_term, hall_tdep_t0, hall_tdep_exponent, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, eta_tdep_toffset, &
       tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
@@ -3839,7 +3842,7 @@ module Magnetic
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp
+      real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp, hall_term_
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer, parameter :: nxy=nxgrid*nygrid
@@ -4778,12 +4781,16 @@ module Magnetic
 !  Add Hall term.
 !
       if (hall_term/=0.0) then
-        if (headtt) print*,'daa_dt: hall_term=',hall_term
-        dAdt=dAdt-hall_term*p%jxb
+        select case (ihall_term)
+          case ('const'); hall_term_=hall_term
+          case ('t-dep'); hall_term_=hall_term*max(real(t),hall_tdep_t0)**hall_tdep_exponent
+        endselect
+        if (headtt) print*,'daa_dt: hall_term=',hall_term_
+        dAdt=dAdt-hall_term_*p%jxb
         if (lfirst.and.ldt) then
-          advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
-                     abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
+          advec_hall=abs(p%uu(:,1)-hall_term_*p%jj(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2)-hall_term_*p%jj(:,2))*dy_1(  m  )+ &
+                     abs(p%uu(:,3)-hall_term_*p%jj(:,3))*dz_1(  n  )
           if (notanumber(advec_hall)) print*, 'advec_hall =',advec_hall
           advec2=advec2+advec_hall**2
           if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
@@ -4935,6 +4942,7 @@ module Magnetic
 !mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
 ! Since the Alfven waves split into the fast whistler mode, the old advec_va2 is not right anymore.
 !  This is the generalization for Hall-MHD.
+!  This is not used in EMHD simulations.
 !
         if (lhydro.and.hall_term/=0.0) then
           if (lcartesian_coords) then
