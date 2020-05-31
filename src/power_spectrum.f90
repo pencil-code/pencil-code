@@ -1340,7 +1340,7 @@ module power_spectrum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
- real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
