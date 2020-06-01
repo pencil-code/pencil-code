@@ -1,5 +1,5 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
-          spec1=spec1,spec2=spec2,scal2=scal2,scal3=scal3, $
+          spec1=spec1,spec2=spec2,spec3=spec3,scal2=scal2,scal3=scal3, $
           i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
@@ -29,6 +29,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
 ;  k     : Returns the wavenumber vector
 ;  spec1 : Returns all the spectral snapshots of the first variable 
 ;  spec2 : Returns all the spectral snapshots of the second variable 
+;  spec3 : Returns all the spectral snapshots of the third variable
 ;  scal2 : Scaling factor for the second spectrum
 ;  i     : The index of the last time is i-2
 ;  tt    : Returns the times for the different snapshots (vector)
@@ -72,12 +73,12 @@ end
 if  keyword_set(wait) then begin
     w=wait
 end
-if  keyword_set(v1) then begin
+if  n_elements(v1) eq 1L then begin
     file1='power'+v1+'.dat'
 ;
 ;  second spectrum
 ;
-    if  keyword_set(v2) then begin
+    if n_elements(v2) eq 1L then begin
         file2='power'+v2+'.dat'
     end else begin
         file2=''
@@ -85,14 +86,14 @@ if  keyword_set(v1) then begin
 ;
 ;  third spectrum
 ;
-    if  keyword_set(v3) then begin
+    if n_elements(v3) eq 1L then begin
         file3='power'+v3+'.dat'
     end else begin
         file3=''
     end
 ;
 end else begin
-    if  keyword_set(v2) then begin
+    if n_elements(v2) eq 1L then begin
         print,'In order to set v2 you must also set v1!'
         print,'Exiting........'
         stop
@@ -104,7 +105,7 @@ end
 ;  plot only when iplot=1 (default)
 ;  can be turned off by using /noplot
 ;
-if keyword_set(noplot) then iplot=0 else iplot=1
+iplot = keyword_set(noplot) ? 0 : 1
 ;
 ;!p.multi=[0,1,1]
 ;!p.charsize=2
@@ -154,16 +155,15 @@ end
 globalmin=1e12
 globalmax=1e-30
 i=1L
-close,1
-openr,1, datatopdir+'/'+file1
-  while not eof(1) do begin
-    readf,1,time
-    readf,1,spectrum1
+openr, unit, datatopdir+'/'+file1, /get_lun
+  while ~eof(unit) do begin
+    readf,unit,time
+    readf,unit,spectrum1
     if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
     if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
-    i=i+1L
+    i++
   endwhile
-close,1
+free_lun, unit
 if keyword_set(double) then begin
   spec1=dblarr(imax,i-1)
 endif else begin
@@ -175,8 +175,8 @@ default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(s
 ;
 ;  Opening file 2 if it is defined
 ;
+unit_2__open = 0L
 if (file2 ne '') then begin
-  close,2
   if keyword_set(double) then begin
     spectrum2=dblarr(imax)
     spec2=dblarr(imax,i-1)
@@ -184,13 +184,14 @@ if (file2 ne '') then begin
     spectrum2=fltarr(imax)
     spec2=fltarr(imax,i-1)
   endelse
-  openr,2,datatopdir+'/'+file2
+  openr, unit_2,datatopdir+'/'+file2, /get_lun
+  unit_2__open = 1L
 endif
 ;
 ;  Opening file 3 if it is defined
 ;
+unit_3__open = 0L
 if (file3 ne '') then begin
-  close,3
   if keyword_set(double) then begin
     spectrum3=dblarr(imax)
     spec3=dblarr(imax,i-1)
@@ -198,7 +199,8 @@ if (file3 ne '') then begin
     spectrum3=fltarr(imax)
     spec3=fltarr(imax,i-1)
   endelse
-  openr,3,datatopdir+'/'+file3
+  openr, unit_3, datatopdir+'/'+file3, /get_lun
+  unit_3__open = 1L
   spec3=fltarr(imax,i-1)
 endif
 ;
@@ -227,10 +229,10 @@ endif else begin
 endelse
 ;
 i=1L
-openr,1, datatopdir+'/'+file1
-    while not eof(1) do begin 
-      	readf,1,time
-       	readf,1,spectrum1
+openr, unit_1, datatopdir+'/'+file1, /get_lun
+    while ~eof(unit_1) do begin
+      	readf,unit_1,time
+       	readf,unit_1,spectrum1
 	tt(i-1)=time
        	spec1(*,i-1)=spectrum1
        	maxy=max(spectrum1(1:*))
@@ -238,30 +240,37 @@ openr,1, datatopdir+'/'+file1
         ;
         ;  read second spectrum
         ;
-       	if (file2 ne '') then begin
-	  readf,2,time
-	  readf,2,spectrum2
+       	if unit_2__open then begin
+	  readf,unit_2,time
+	  readf,unit_2,spectrum2
           spec2(*,i-1)=spectrum2
           if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
           if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+          ;
+          ;  normalize?
+          ;
+          if keyword_set(norm) then begin
+            spectrum2=spectrum2/total(spectrum2)
+            print,'divide spectrum by total(spectrum2)'
+          endif
        	endif
         ;
         ;  read third spectrum
         ;
-       	if (file3 ne '') then begin
-	  readf,3,time
-	  readf,3,spectrum3
+       	if unit_3__open then begin
+	  readf,unit_3,time
+	  readf,unit_3,spectrum3
           spec3(*,i-1)=spectrum3
           if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
           if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
+          ;
+          ;  normalize?
+          ;
+          if keyword_set(norm) then begin
+            spectrum3=spectrum3/total(spectrum3)
+            print,'divide spectrum by total(spectrum3)'
+          endif
        	endif
-        ;
-        ;  normalize?
-        ;
-        if keyword_set(norm) then begin
-          spectrum2=spectrum2/total(spectrum2)
-          print,'divide spectrum by total(spectrum2)'
-        endif
         ;
        	if (last eq 0) then begin
 	  if (time ge tmin) then begin
@@ -274,7 +283,7 @@ openr,1, datatopdir+'/'+file1
                 ;
                 ;  second spectrum
                 ;
-         	if (file2 ne '') then begin
+         	if unit_2__open then begin
                   ;
 		  ; possibility of special settings for helicity plotting
 		  ; of second variable
@@ -293,7 +302,7 @@ openr,1, datatopdir+'/'+file1
                 ;
                 ;  third spectrum
                 ;
-         	if (file3 ne '') then begin
+         	if unit_3__open then begin
                   ;
 		  ; possibility of special settings for helicity plotting
 		  ; of second variable
@@ -310,7 +319,7 @@ openr,1, datatopdir+'/'+file1
             endif
 	  endif
        	endif
-       	i=i+1L
+       	i++
         ;
         ;  check whether we want to write png file (for movies)
         ;
@@ -324,7 +333,7 @@ openr,1, datatopdir+'/'+file1
           imgname = dir+'img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
           print,'itpng=',itpng
-          itpng=itpng+1 ;(counter)
+          itpng++ ;(counter)
         endif
       ;
     endwhile
@@ -332,7 +341,7 @@ openr,1, datatopdir+'/'+file1
 	!p.title='t=' + string(time)
 	!y.range=[miny,maxy]
 	plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
-      	if (file2 ne '') then begin
+      	if unit_2__open then begin
 		oplot,k,spectrum2*k^compensate,col=122
 		if (tot eq 1) then begin
 			oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
@@ -343,8 +352,12 @@ openr,1, datatopdir+'/'+file1
 		oplot,k(2:*),k(2:*)^(lin)*fac,lin=2,col=0
 	endif
     endif
-close,1
-close,2
+fstat = fstat(unit_1)
+if fstat.open then free_lun, unit1
+fstat = fstat(unit_2)
+if fstat.open then free_lun, unit2
+fstat = fstat(unit_3)
+if fstat.open then free_lun, unit3
 ;
 ;  scale k correctly
 ;
