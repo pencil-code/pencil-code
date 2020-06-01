@@ -20,8 +20,8 @@ pro pc_d2_dimension_plot, file, charsize=charsize, thick=thick, $
 
   if ~n_elements(font_size) then font_size = 10.0
   if ~n_elements(charsize) then charsize = 1.0
-  if ~n_elements(psxsize) then psxsize = 6.50
-  if ~n_elements(psysize) then psysize = 4.00
+  if ~n_elements(psxsize) then psxsize = 6.77
+  if ~n_elements(psysize) then psysize = 5.00
   if ~n_elements(thick) then thick = 1.0
   use_last_only = keyword_set(use_last_only)
 
