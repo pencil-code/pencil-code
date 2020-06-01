@@ -120,7 +120,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
     """
     # Author: Chao-Chin Yang
     # Created: 2015-04-22
-    # Last Modified: 2019-10-03
+    # Last Modified: 2020-06-01
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation, writers
     from matplotlib.colors import LogNorm, Normalize
@@ -174,7 +174,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
         fname = "pc_anim.mp4"
         FFMpegWriter = writers["ffmpeg"]
         metadata = dict(title='Pencil Code Animation', artist='ccyang')
-        writer = FFMpegWriter(fps=25, metadata=metadata, bitrate=16000)
+        writer = FFMpegWriter(fps=60, metadata=metadata, bitrate=16000)
         anim.save(fname, writer=writer)
         print("Saved the animation in {}. ".format(fname))
     else:
@@ -427,7 +427,9 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-05-05
+    # Author: Chao-Chin Yang
+    # Created: 2015-04-27
+    # Last Modified: 2020-06-01
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation, writers
     from matplotlib import cm
@@ -448,7 +450,10 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     vmax_dynamic = seq(vmax)
     vmin0 = vmin[0] if vmin_dynamic else vmin
     vmax0 = vmax[0] if vmax_dynamic else vmax
-    norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
+    if logscale:
+        norm = LogNorm(vmin=vmin0, vmax=vmax0)
+    else:
+        norm = Normalize(vmin=vmin0, vmax=vmax0)
     if logscale:
         a = min(vmin) if vmin_dynamic else vmin
         for p in planes:
@@ -456,24 +461,34 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     # Set the surfaces.
     nt = len(t)
     dtype = lambda nx, ny: [('value', np.float, (nt,nx,ny)),
-                            ('x', np.float, (nx+1,ny+1)), ('y', np.float, (nx+1,ny+1)), ('z', np.float, (nx+1,ny+1))]
+                            ('x', np.float, (nx+1,ny+1)),
+                            ('y', np.float, (nx+1,ny+1)),
+                            ('z', np.float, (nx+1,ny+1))]
     surfaces = []
     if 'xy' in planes or 'xy2' in planes:
         xmesh, ymesh = np.meshgrid(grid.x, grid.y, indexing='ij')
         if 'xy' in planes:
             zmesh = np.full(xmesh.shape, par.xyz0[2] - 0.7 * par.lxyz[2])
-            surfaces.append(np.rec.array((slices.xy, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
+            surfaces.append(np.rec.array(
+                    (slices.xy, xmesh, ymesh, zmesh),
+                    dtype=dtype(dim.nxgrid,dim.nygrid)))
         if 'xy2' in planes:
             zmesh = np.full(xmesh.shape, par.xyz1[2])
-            surfaces.append(np.rec.array((slices.xy2, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
+            surfaces.append(np.rec.array(
+                    (slices.xy2, xmesh, ymesh, zmesh),
+                    dtype=dtype(dim.nxgrid,dim.nygrid)))
     if 'xz' in planes:
         xmesh, zmesh = np.meshgrid(grid.x, grid.z, indexing='ij')
         ymesh = np.full(xmesh.shape, par.xyz0[1])
-        surfaces.append(np.rec.array((slices.xz, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nzgrid)))
+        surfaces.append(np.rec.array(
+                (slices.xz, xmesh, ymesh, zmesh),
+                dtype=dtype(dim.nxgrid,dim.nzgrid)))
     if 'yz' in planes:
         ymesh, zmesh = np.meshgrid(grid.y, grid.z, indexing='ij')
         xmesh = np.full(ymesh.shape, par.xyz0[0])
-        surfaces.append(np.rec.array((slices.yz, xmesh, ymesh, zmesh), dtype=dtype(dim.nygrid,dim.nzgrid)))
+        surfaces.append(np.rec.array(
+                (slices.yz, xmesh, ymesh, zmesh),
+                dtype=dtype(dim.nygrid,dim.nzgrid)))
     # Set up the 3D view.
     print("Initializing...")
     fig = plt.figure()
@@ -488,7 +503,8 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     ax.set_zlabel('z')
     # Plot the first surfaces.
     cmap = cm.get_cmap()
-    cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[0])), linewidth=0, shade=False)
+    cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[0])),
+                            linewidth=0, shade=False)
             for s in surfaces]
     mappable = cm.ScalarMappable(cmap=cmap, norm=norm)
     mappable.set_array([])
@@ -500,7 +516,9 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     def update(num, surfaces):
         nonlocal cols
         oldcols = cols
-        cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[num])), linewidth=0, shade=False)
+        cols = [ax.plot_surface(
+                    s.x, s.y, s.z, facecolors=cmap(norm(s.value[num])),
+                    linewidth=0, shade=False)
                 for s in surfaces]
         for c in oldcols:
             ax.collections.remove(c)
@@ -512,7 +530,8 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
             mappable.set_norm(norm)
         timestamp.set_text("$t = {:#.4G}$".format(t[num]))
         return cols
-    anim = FuncAnimation(fig, update, nt, fargs=(surfaces,), interval=1, blit=False, repeat=False)
+    anim = FuncAnimation(fig, update, nt, fargs=(surfaces,), interval=1,
+                         blit=False, repeat=False)
     # Save or show the animation.
     if "ffmpeg" in writers.list():
         writer = "ffmpeg"
@@ -526,7 +545,7 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         fname = "pc_anim.mp4"
         FFMpegWriter = writers["ffmpeg"]
         metadata = dict(title='Pencil Code Animation', artist='ccyang')
-        writer = FFMpegWriter(fps=25, metadata=metadata, bitrate=16000)
+        writer = FFMpegWriter(fps=60, metadata=metadata, bitrate=16000)
         anim.save(fname, writer=writer)
         print("Saved the animation in {}. ".format(fname))
     else:
