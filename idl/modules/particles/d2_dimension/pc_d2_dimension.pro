@@ -375,7 +375,7 @@ pro pc_d2_dimension_animate, data, warr=warr, xsize=xsize, ysize=ysize, sleep=sl
 
     endfor
 
-    if pingpong then i_plus = ~i_plus else i_plus ? 1L
+    if pingpong then i_plus = ~i_plus else i_plus = 1L
 
   endwhile
   device, decomposed=decomposed
@@ -440,19 +440,25 @@ pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
 
   if animate and ~n_elements(pvars) then begin
 
-    for ij = 0UL, 2UL do begin
+    pstr = hdf5 ? '.' : '_'
 
+    for ij = 0UL, 2UL do begin
       case ij of
-        0UL: files = file_search('histogram_PVAR?.*_hist.dat.gz')
-        1UL: files = file_search('histogram_PVAR??.*_hist.dat.gz')
-        2UL: files = file_search('histogram_PVAR???.*_hist.dat.gz')
+        0UL: files = file_search('histogram_PVAR?' + pstr + '*_hist.dat.gz')
+        1UL: files = file_search('histogram_PVAR??' + pstr + '*_hist.dat.gz')
+        2UL: files = file_search('histogram_PVAR???' + pstr + '*_hist.dat.gz')
       endcase
       if files[0L] eq '' then continue
 
       nfiles = n_elements(files)
       for i = 0UL, nfiles - 1UL do begin
-        pos = strpos(files[i], '.')
-        files[i] = strmid(files[i], 10L, pos - 10L)
+        if hdf5 then begin
+          pos = strpos(files[i], '.')
+          files[i] = strmid(files[i], 10L, pos - 10L)
+        endif else begin
+          pos = strpos(strmid(files[i], 1L + strpos(files[i], '_')), '_')
+          files[i] = strmid(files[i], 10L, pos)
+        endelse
       endfor
       if ~n_elements(pvars) then begin
         pvars = files[uniq(files, sort(files))]
