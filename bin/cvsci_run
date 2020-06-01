@@ -46,6 +46,9 @@ foreach pdir ($dirlist)
       if ( -e time_series.h5 ) then
           cvs add -kb time_series.h5
       endif
+      if ( -e grid.h5 ) then
+          cvs add -kb grid.h5
+      endif
   else
       echo "no data directory found"
   endif
