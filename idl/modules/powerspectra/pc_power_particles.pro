@@ -1,3 +1,34 @@
+function pc_power_particles_range, i, n=n, k=k, specptr=specptr, xrange=xrange
+  compile_opt hidden, IDL2
+
+  for ii = 0UL, n - 1UL do begin
+    idx = where(k gt xrange[0L] and k le xrange[1L], count)
+    min = min((*specptr[ii])[idx, i], max=max)
+    yrange = ~ii ? [min, max] : $
+             [min([yrange[0L], min]), max([yrange[1L], max])]
+  endfor
+
+
+  return, yrange
+end ;;; function: pc_power_particles_range
+
+
+function pc_power_particles_range_er, i, n=n, k=k, spec=spec, xrange=xrange, div=div
+  compile_opt hidden, IDL2
+
+  idx = where(k gt xrange[0L] and k le xrange[1L], count)
+  if ~n_elements(div) then begin
+    min = min(spec[idx, i]           , max=max)
+  endif else begin
+    min = min(spec[idx, i] * div[idx], max=max)
+  endelse
+  yrange = [min, max]
+
+
+  return, yrange
+end ;;; function: pc_power_particles_range_er
+
+
 pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
         stride=stride, noloop=noloop, snapshot_i=snapshot_i, $
         urms_relaxed=urms_relaxed, sleep=sleep, charsize=charsize, $
@@ -5,8 +36,13 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
         psfilename=psfilename, shift_yrange=shift_yrange, $
         scalefactor=scalefactor, separate_yrange=separate_yrange_, $
         xrange=xrange, xsize=xsize, xtitle=xtitle, psxsize=psxsize, $
-        yrange=yrange, ysize=ysize, ytitle=ytitle, psysize=psysize
+        yrange=yrange, ysize=ysize, ytitle=ytitle, psysize=psysize, $
+        legend_linsize=legend_linsize_, legend_spacing=legend_spacing_, $
+        legend_top=legend_top, legend_log_aps=legend_log_aps, $
+        legend_short=legend_short, legend_text=legend_text
   compile_opt IDL2
+
+  ;on_error, 2
 
   if ~n_elements(t_start) then t_start = 0d0
   if ~n_elements(t_relaxed) then t_relaxed = t_start
@@ -23,9 +59,15 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
   if ~n_elements(shift_yrange) then shift_yrange = 0d0
   if ~n_elements(scalefactor) then scalefactor = 1d0
   separate_yrange = keyword_set(separate_yrange_)
-  if shift_yrange ne 0d0 then separate_yrange_shift = 1L
+  separate_yrange_shift = shift_yrange ne 0d0 ? 1L : 0L
+  separate_yrange = keyword_set(separate_yrange_) or  shift_yrange ne 0d0
   scalefactor_use = separate_yrange ? 1d0 : scalefactor
   if ~n_elements(xtitle) then xtitle = 'k/k!d1!n'
+  legend_spacing = charsize * (~n_elements(legend_spacing_) ? 1.5 : legend_spacing_)
+  legend_linsize = ~n_elements(legend_linsize_) ? 0.4 : legend_linsize_
+  legend_top = keyword_set(legend_top)
+  if ~n_elements(legend_log_aps) then legend_log_aps = 1L
+  legend_short = ~n_elements(legend_short) ? 1L : 0L
 
   ;; Color indices:
   colorbg = 1b
@@ -111,8 +153,13 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       endif
     endelse
 
+    ;; For the k^2 guide:
+    k_l1_na = 1d1 & k_l2_na = 4d1
+
     plot_na = 1L
   endif
+
+  k_l1_nn = 2.5d0 & k_l2_nn = 9d0
 
   if ~plot_lnrho && ~plot_kin && ~plot_omega && ~plot_na then $
      message, 'There are no power spectra to plot.'
@@ -123,7 +170,23 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
   pc_read_param, object=ps2, /param2
   pc_read_ts, object=ts
 
-  aps = strtrim(string(ps.ap0, format='(e10.3)'), 2L)
+  digits = legend_log_aps ? 3UL : 1UL
+  f_done = 0UL
+  repeat begin
+    if legend_log_aps then begin
+      format = '(f' + strtrim(digits + 4UL, 2L) + '.' + strtrim(digits, 2L) + ')'
+    endif else begin
+      format = '(e' + strtrim(digits + 7UL, 2L) + '.' + strtrim(digits, 2L) + ')'
+    endelse
+    aps = strtrim(string(legend_log_aps ? alog10(ps.ap0) : ps.ap0, format=format), 2L)
+    idx = uniq(aps, sort(aps))
+    if n_elements(idx) eq n_elements(ps.ap0) or digits ge (legend_log_aps ? 6UL : 4UL) then begin
+      f_done = 1UL
+    endif else begin
+      digits ++
+    endelse
+  endrep until f_done
+
 
   ;; Check for the existence of the "epsk" variable:
   epsk_available = 0L
@@ -135,7 +198,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
   ;;@parameters
 
   if ~n_elements(xrange) then xrange = [1d0, max(k)]
-  if ~n_elements(yrange) then yrange = [3d-12, 3d-2]
+
 
   k1 = 1d0 / k
 
@@ -241,6 +304,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     repeat begin
       if pos ge 0L then ytitle_s = strmid(ytitle_s, 0L, pos) + $
                                    '!9r!x' + strmid(ytitle_s, pos + 3L)
+      pos = strpos(ytitle_s, 'RHO')
     endrep until pos eq - 1L
 
   endelse
@@ -252,10 +316,6 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
   ;;===========================================================================
   ;; Loop over the spectra:
 
-  n_spec_na = n_elements(spec_na)
-  icolors = intarr(n_spec_na)
-  ilinestyle = intarr(n_spec_na)
-  iitems = strarr(n_spec_na)
   scaling = 2.0
 
   if ~(noloop && postscript) then begin
@@ -281,7 +341,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       psfilename_use = fils + '_' + strtrim(i, 2L) + file
 
       device, filename=psfilename_use, /isolatin1, /color, bits_per_pixel=8, $
-              /encapsulated, /portrait, xsize=psxsize, ysize=psysize
+              /encapsulated, /portrait, xsize=psxsize, ysize=psysize, font_size=10
       pf = !p.font
       !p.font = 0L
 
@@ -302,13 +362,14 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       staut = '!9t!x!dt!n='
       stKol = '!9t!x!dK!n='
       sStokes = ', St='
-      sdens = '!9r!x!dg!n'
-      somega = '!9W!x!drms!n'
+      sdens = '!9r!x'
+      sdens = '!9r!x'
+      somega = '!9W!x'
 
     endif else begin
 
-      sdens = '!4q!x!dg!n'
-      somega = '!4X!x!drms!n'
+      sdens = '!4q!x'
+      somega = '!4X!x'
 
       charthick_use = charthick
       charsize_use = charsize
@@ -321,43 +382,86 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       wset, win_id_pixmap
     endelse
 
+    n_spec_na = n_elements(spec_na)
+    icolors = intarr(n_spec_na)
+    ilinestyle = intarr(n_spec_na)
+    iitems = strarr(n_spec_na)
+    linestyle = 2
+    for ii = 0UL, n_spec_na - 1UL do begin
+      icolors[ii] = na_colors[ii / 5L]
+      iitems[ii] = (legend_log_aps ? 'log ' : '') + 'a=' + aps[ii]
+      if ~legend_short then $
+         iitems[i] += ', ' + staus + str_tau_stop[ii] + sStokes + vStokes[ii]
+      ilinestyle[ii] = linestyle
+
+      linestyle ++
+      if linestyle eq 6 then linestyle = 1
+    endfor
+
     title = 't=' + strtrim(string(t[i], format='(f10.3)'), 2L) + $
             ' :: ' + staut + str_tau_turnover
     if epsk_available then title += ' :: ' + stKol + str_tau_Kolmogorov
 
+    yrange_nn = [1d50, -1d50]
+    ki2r = 1d0 / k ^ 2
+    if plot_kin then begin
+      yrange_ne  = pc_power_particles_range_er(i, k=k, spec=spec_kin, xrange=[k_l1_nn, k_l2_nn], div=ki2r)
+      yrange_nn = [min([yrange_nn[0L], yrange_ne[0L]]), max([yrange_nn[1L], yrange_ne[1L]])]
+    endif
+    if plot_lnrho then begin
+      yrange_nr  = pc_power_particles_range_er(i, k=k, spec=spec_lr  , xrange=[k_l1_nn, k_l2_nn])
+      yrange_nn = [min([yrange_nn[0L], yrange_nr[0L]]), max([yrange_nn[1L], yrange_nr[1L]])]
+    endif
+    if plot_omega then begin
+      yrange_no  = pc_power_particles_range_er(i, k=k, spec=spec_o  , xrange=[k_l1_nn, k_l2_nn], div=ki2r)
+      yrange_nn = [min([yrange_nn[0L], yrange_no[0L]]), max([yrange_nn[1L], yrange_no[1L]])]
+    endif
+
+    if plot_na then begin
+      yrange_na  = pc_power_particles_range(i, n=n_spec_na, $
+                                            k=k, specptr=spec_na, xrange=xrange)
+      yrange_nax = pc_power_particles_range(i, n=n_spec_na, $
+                                            k=k, specptr=spec_na, xrange=[k_l1_na, k_l2_na])
+      if ~n_elements(yrange) then $
+         yrange = [min([3d-12, yrange_na[0L]]), $
+                   max([3d-2 , yrange_na[1L]])]
+    endif else begin
+      if ~n_elements(yrange) then yrange = [3d-12, 3d-2]
+    endelse
+
+    yminor = 9
     xstyle = 1
     ystyle = plot_na && separate_yrange ? 9 : 1
-    xmargin = plot_na && separate_yrange ? [10.0, 10.0] : [10.0, 0.3]
+    xmargin = plot_na && separate_yrange ? [8.0, 8.0] : [8.0, 0.3]
     ymargin = [3.3, 0.3]
     plot, k, /nodata, background=colorbg, color=colorfg, $
           charsize=charsize, charthick=charthick, $
           /xlog, xmargin=xmargin, xrange=xrange, xstyle=xstyle, $
           xthick=thick, xtitle=xtitle, $
-          /ylog, ymargin=ymargin, yrange=yrange, ystyle=ystyle, $
+          /ylog, ymargin=ymargin, yminor=yminor, yrange=yrange, ystyle=ystyle, $
           ythick=thick, ytitle=ytitle
 
-    xpos = 0.50d0 * (!x.window[1L] - !x.window[0L]) + !x.window[0L]
-    ypos = 0.95d0 * (!y.window[1L] - !y.window[0L]) + !y.window[0L]
-    xyouts, xpos, ypos, title, charsize=charsize, charthick=charthick, $
-            color=colorfg, alignment=0.5, /normal
+    if ~legend_short then begin
+      xpos = 0.50d0 * (!x.window[1L] - !x.window[0L]) + !x.window[0L]
+      ypos = 0.95d0 * (!y.window[1L] - !y.window[0L]) + !y.window[0L]
+      xyouts, xpos, ypos, title, charsize=charsize, charthick=charthick, $
+              color=colorfg, alignment=0.5, /normal
+    endif
 
-    if plot_kin || plot_lnrho then begin
+    if plot_kin || plot_lnrho || plot_omega then begin
       ;; guide: 1 / k^2
-      k_l1 = 2.5d0 & k_l2 = 9d0
-      k_arr = [k_l1, k_l2]
-      y_arr = 1d0 / k_arr ^ 2 * 1d-2
+      k_arr = [k_l1_nn, k_l2_nn]
+      y_arr = k_arr ^ (- 2d0) / k_l2_nn ^ (- 2d0) * yrange_nn[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=coloror, thick=thick * 2
   
       ;; guide: 1 / k^(5/3)
-      k_l1 = 2.5d0 & k_l2 = 9d0
-      k_arr = [k_l1, k_l2]
-      y_arr = 1d0 / k_arr ^ (5d0 / 3d0) * 1d-2
+      y_arr = k_arr ^ (- 5d0 / 3d0) / k_l2_nn ^(- 5d0 / 3d0) * yrange_nn[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=colorgn, thick=thick * 2
     endif
 
     if plot_kin then begin
-      oplot, k, spec_kin[*, i] / k ^ 2, color=colorfg, thick=thick, linestyle=5
-    endif
+      oplot, k, spec_kin[*, i] / k ^ 2, color=colorfg, thick=thick, linestyle=2
+   endif
 
     if plot_omega then begin
       oplot, k, spec_o[*, i] / k ^ 2, color=colorpr, thick=thick
@@ -368,93 +472,89 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     endif
 
     if plot_kin then begin
-      l_items = ['E!dk!n']
+      l_items = ['E!d' + sdens + '!n(k)']
       l_colors = [colorfg]
-      l_linestyle = [5]
+      l_linestyle = [2]
       l_thick = thick * [1.0]
     endif
 
     if plot_lnrho then begin
-      l_items = ~n_elements(l_items) ? [sdens] : [l_items, sdens]
+      l_items = ~n_elements(l_items) ? ['P!d' + sdens + '!n'] : $
+                                       [l_items, 'P!d' + sdens + '!n']
       l_colors = ~n_elements(l_colors) ? [colorlb] : [l_colors, colorlb]
       l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
       l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
     endif
     
     if plot_omega then begin
-      l_items = ~n_elements(l_items) ? [somega] : [l_items, somega]
+      l_items = ~n_elements(l_items) ? ['P!d' + somega + '!n'] : $
+                                       [l_items, 'P!d' + somega + '!n']
       l_colors = ~n_elements(l_colors) ? [colorpr] : [l_colors, colorpr]
       l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
       l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
     endif
 
     if plot_kin || plot_lnrho then begin
-      l_items = [l_items, 'guide: k!u-2!n', 'guide: k!u5/3!n']
+      l_items = [l_items, 'k!u-2!n', 'k!u5/3!n']
       l_colors = [l_colors, coloror, colorgn]
       l_linestyle = [l_linestyle, 0, 0]
       l_thick = [l_thick, 2.0, 2.0]
     endif
 
     if plot_na then begin
-      l_items = ~n_elements(l_items) ? 'guide: k!u2!n' : $
-                [l_items, 'guide: k!u2!n']
+      l_items = ~n_elements(l_items) ? 'k!u2!n' : [l_items, 'k!u2!n']
       l_colors = [l_colors, colorrd]
       l_linestyle = [l_linestyle, 0]
       l_thick = [l_thick, 2.0]
     endif
 
-    al_legend, l_items, linestyle=l_linestyle, /top, /right, box=0, $
+    if legend_short then begin
+      l_items = [iitems, l_items]
+      l_colors = [icolors, l_colors]
+      l_linestyle = [ilinestyle, l_linestyle]
+      l_thick = [fltarr(n_elements(iitems)) + thick, l_thick]
+    endif
+    al_legend, l_items, linestyle=l_linestyle, top=legend_top, /right, box=0, $
                charsize=charsize, charthick=charthick, color=l_colors, $
-               thick=l_thick * thick, linsize=0.5, $
-               textcolors=colorfg, spacing=spacing
+               thick=l_thick * thick, linsize=legend_linsize, $
+               textcolors=colorfg, spacing=legend_spacing
+
+    if n_elements(legend_text) eq 1L then begin
+      al_legend, legend_text, /bottom, /left, textcolors=colorfg, $
+                 charsize=charsize, charthick=charthick, box=0
+    endif
 
 
     if plot_na then begin
 
       if separate_yrange then begin
 
-        if separate_yrange_shift then begin
-          yrange_na = yrange + shift_yrange[0L]
-        endif else begin
-          for ii = 0UL, n_spec_na - 1UL do begin
-            idx = where(k gt xrange[0L] and k le xrange[1L], count)
-            min = min((*spec_na[ii])[idx, i], max=max)
-            yrange_na = ~ii ? [min, max] : $
-                        [min([yrange_na[0L], min]), max([yrange_na[1L], max])]
-          endfor
-        endelse
-
-        axis, charsize=charsize, charthick=charthick, color=colorfg, /yaxis, $
-              /ystyle, yrange=yrange_na, ythick=thick, ytitle=ytitle_na, /save
+        yrange_yaxis = separate_yrange_shift ? yrange * shift_yrange[0L] : yrange_na
+        axis, charsize=charsize, charthick=charthick, color=colorfg, /yaxis, /ylog, yminor=yminor, $
+              /ystyle, yrange=yrange_yaxis, ythick=thick, ytitle=ytitle_na, /save
 
       endif
 
 
       ;; guide: k^2
-      k_l1 = 1d1 & k_l2 = 4d1
-      k_arr = [k_l1, k_l2]
-      y_arr = k_arr ^ 2 / k_l1 ^ 2 * 0.5 * 1d1 ^ !y.crange[0L]
+      k_arr = [k_l1_na, k_l2_na]
+      y_arr = k_arr ^ 2 / k_l1_na ^ 2 * yrange_nax[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=colorrd, thick=thick * 2
 
       linestyle = 2
-
       for ii = 0UL, n_spec_na - 1UL do begin
         color = na_colors[ii / 5L]
         oplot, k, scalefactor_use * (*spec_na[ii])[*, i], $
                linestyle=linestyle, color=color, thick=thick
 
-        icolors[ii] = color
-        iitems[ii] = 'a=' + aps[ii] + ', ' + $
-                     staus + str_tau_stop[ii] + sStokes + vStokes[ii]
-        ilinestyle[ii] = linestyle
-
         linestyle ++
         if linestyle eq 6 then linestyle = 1
       endfor
 
-      al_legend, iitems, linestyle=ilinestyle, /bottom, box=0, thick=thick, $
-                 charsize=charsize, charthick=charthick, color=icolors, $
-                 linsize=0.5, textcolors=colorfg, spacing=spacing
+      if ~legend_short then $
+         al_legend, iitems, linestyle=ilinestyle, /bottom, box=0, thick=thick, $
+                    charsize=charsize, charthick=charthick, color=icolors, $
+                    linsize=legend_linsize, textcolors=colorfg, spacing=legend_spacing
 
     endif ;; plot_na
 
