@@ -353,11 +353,11 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
 	endif
     endif
 fstat = fstat(unit_1)
-if fstat.open then free_lun, unit1
+if fstat.open then free_lun, unit_1
 fstat = fstat(unit_2)
-if fstat.open then free_lun, unit2
+if fstat.open then free_lun, unit_2
 fstat = fstat(unit_3)
-if fstat.open then free_lun, unit3
+if fstat.open then free_lun, unit_3
 ;
 ;  scale k correctly
 ;
