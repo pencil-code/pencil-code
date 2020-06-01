@@ -241,7 +241,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     repeat begin
       if pos ge 0L then ytitle_s = strmid(ytitle_s, 0L, pos) + $
                                    '!9r!x' + strmid(ytitle_s, pos + 3L)
-    endrep unitl pos eq - 1L
+    endrep until pos eq - 1L
 
   endelse
 
