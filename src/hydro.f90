@@ -4435,8 +4435,9 @@ module Hydro
         if (lcentrifugal_force) then
 !
           if (headtt) print*,'coriolis_cartesian: add Centrifugal force; Omega=',Omega
-          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*Omega**2
-          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*Omega**2
+!
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*amp_centforce*Omega**2
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*amp_centforce*Omega**2
 !
         endif
 !
