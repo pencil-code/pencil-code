@@ -29,7 +29,40 @@ function pc_power_particles_range_er, i, n=n, k=k, spec=spec, xrange=xrange, div
 end ;;; function: pc_power_particles_range_er
 
 
-pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
+pro pc_power_dimension_annotate, k, data, text, left=left, $
+                                 charsize=charsize, charthick=charthick
+  compile_opt hidden, IDL2
+
+  left = keyword_set(left)
+
+  dpx = charsize * !d.x_ch_size / !d.x_size
+  dpy = charsize * !d.y_ch_size / !d.y_size
+
+  ;; Place text just above lower axis:
+  value = 0.03 * (!y.crange[1L] - !y.crange[0L]) + !y.crange[0L]
+
+  ;; Locate data point near this position:
+  min = min(abs(alog10(data) - value), idx, /nan)
+
+  pos = convert_coord(k[idx], 1d1 ^ value, /data, /to_normal)
+  ypos = pos[1L]
+
+  ;; Put the text to the left or the right of the point:
+  if keyword_set(left) then begin
+    xpos = pos[0L] - 1.0 * dpx
+    alignment = 1.0
+  endif else begin
+    xpos = pos[0L] + 0.2 * dpx
+    alignment = 0.0
+  endelse
+  xyouts, xpos, ypos, text, alignment=alignment, /normal, $
+          charsize=charsize, charthick=charthick, color=colorfg
+
+  return
+end ;;; procedure: pc_power_dimension_annotate
+
+pro pc_power_particles, noekin=noekin, norho=norho, noomega=noomega, $
+        t_start=t_start, t_relaxed=t_relaxed, $
         stride=stride, noloop=noloop, snapshot_i=snapshot_i, $
         urms_relaxed=urms_relaxed, sleep=sleep, charsize=charsize, $
         charthick=charthick, thick=thick, postscript=postscript, $
@@ -39,7 +72,8 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
         yrange=yrange, ysize=ysize, ytitle=ytitle, psysize=psysize, $
         legend_linsize=legend_linsize_, legend_spacing=legend_spacing_, $
         legend_top=legend_top, legend_log_aps=legend_log_aps, $
-        legend_short=legend_short, legend_text=legend_text
+        legend_short=legend_short, legend_text=legend_text, $
+        leftann_ekin=left_ekin, leftann_rho=left_lnrho, leftann_omega=left_omega
   compile_opt IDL2
 
   ;on_error, 2
@@ -89,7 +123,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
 
   filename_kin = '_kin'
   filename_kin_full = 'data' + path_sep() + 'power' + filename_kin + '.dat'
-  if file_test(filename_kin_full, /read, /regular) then begin
+  if file_test(filename_kin_full, /read, /regular) && ~keyword_set(noekin) then begin
     power, v1=filename_kin, k=k, spec1=spec_kin, i=n, tt=t, /noplot
     ytitle_s = 'E!dRHO!n(k)'
     plot_kin = 1L
@@ -97,7 +131,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
 
   filename_lnrho = '_lr'
   filename_lnrho_full = 'data' + path_sep() + 'power' + filename_lnrho + '.dat'
-  if file_test(filename_lnrho_full, /read, /regular) then begin
+  if file_test(filename_lnrho_full, /read, /regular) && ~keyword_set(norho) then begin
     power, v1=filename_lnrho, k=k, spec1=spec_lr, i=n, tt=t, /noplot
     ytitle_s_tmp = 'P!dRHO!n'
     if ~n_elements(ytitle_s) then begin
@@ -110,7 +144,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
 
   filename_omega = 'o'
   filename_omega_full = 'data' + path_sep() + 'power' + filename_omega + '.dat'
-  if file_test(filename_omega_full, /read, /regular) then begin
+  if file_test(filename_omega_full, /read, /regular) && ~keyword_set(noomega) then begin
     power, v1=filename_omega, k=k, spec1=spec_o, i=n, tt=t, /noplot
     ytitle_s_tmp = 'P!dOMEGA!n'
     if ~n_elements(ytitle_s) then begin
@@ -170,7 +204,10 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
   pc_read_param, object=ps2, /param2
   pc_read_ts, object=ts
 
-  digits = legend_log_aps ? 3UL : 1UL
+  alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
+  if legend_log_aps then alpha = alog10(alpha)
+
+  digits = legend_log_aps ? 1UL : 1UL
   f_done = 0UL
   repeat begin
     if legend_log_aps then begin
@@ -178,9 +215,9 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     endif else begin
       format = '(e' + strtrim(digits + 7UL, 2L) + '.' + strtrim(digits, 2L) + ')'
     endelse
-    aps = strtrim(string(legend_log_aps ? alog10(ps.ap0) : ps.ap0, format=format), 2L)
+    aps = strtrim(string(alpha, format=format), 2L)
     idx = uniq(aps, sort(aps))
-    if n_elements(idx) eq n_elements(ps.ap0) or digits ge (legend_log_aps ? 6UL : 4UL) then begin
+    if n_elements(idx) eq n_elements(alpha) or digits ge (legend_log_aps ? 6UL : 4UL) then begin
       f_done = 1UL
     endif else begin
       digits ++
@@ -296,7 +333,7 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     pos = strpos(ytitle_s, 'OMEGA')
     repeat begin
       if pos ge 0L then ytitle_s = strmid(ytitle_s, 0L, pos) + $
-                                   '!9W!x' + strmid(ytitle_s, pos + 5L)
+                                   '!9w!x' + strmid(ytitle_s, pos + 5L)
       pos = strpos(ytitle_s, 'OMEGA')
     endrep until pos eq - 1L
 
@@ -364,12 +401,14 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       sStokes = ', St='
       sdens = '!9r!x'
       sdens = '!9r!x'
-      somega = '!9W!x'
+      somega = '!9w!x'
+      salpha = '!9a!x'
 
     endif else begin
 
       sdens = '!4q!x'
       somega = '!4X!x'
+      salpha = '!4a!x'
 
       charthick_use = charthick
       charsize_use = charsize
@@ -382,14 +421,17 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       wset, win_id_pixmap
     endelse
 
+    dpx = charsize * !d.x_ch_size / !d.x_size
+    dpy = charsize * !d.y_ch_size / !d.y_size
+
     n_spec_na = n_elements(spec_na)
-    icolors = intarr(n_spec_na)
-    ilinestyle = intarr(n_spec_na)
-    iitems = strarr(n_spec_na)
+    icolors = intarr(n_spec_na + 1L)
+    ilinestyle = intarr(n_spec_na + 1L) - 1L
+    iitems = strarr(n_spec_na + 1L)
     linestyle = 2
     for ii = 0UL, n_spec_na - 1UL do begin
       icolors[ii] = na_colors[ii / 5L]
-      iitems[ii] = (legend_log_aps ? 'log ' : '') + 'a=' + aps[ii]
+      iitems[ii] = (legend_log_aps ? 'log(' : '') + salpha + ')=' + aps[ii]
       if ~legend_short then $
          iitems[i] += ', ' + staus + str_tau_stop[ii] + sStokes + vStokes[ii]
       ilinestyle[ii] = linestyle
@@ -405,23 +447,27 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
     yrange_nn = [1d50, -1d50]
     ki2r = 1d0 / k ^ 2
     if plot_kin then begin
-      yrange_ne  = pc_power_particles_range_er(i, k=k, spec=spec_kin, xrange=[k_l1_nn, k_l2_nn], div=ki2r)
+      xrange_ = [k_l1_nn, k_l2_nn]
+      yrange_ne  = pc_power_particles_range_er(i, k=k, spec=spec_kin, xrange=xrange_, div=ki2r)
       yrange_nn = [min([yrange_nn[0L], yrange_ne[0L]]), max([yrange_nn[1L], yrange_ne[1L]])]
     endif
     if plot_lnrho then begin
-      yrange_nr  = pc_power_particles_range_er(i, k=k, spec=spec_lr  , xrange=[k_l1_nn, k_l2_nn])
+      xrange_ = [k_l1_nn, k_l2_nn]
+      yrange_nr  = pc_power_particles_range_er(i, k=k, spec=spec_lr  , xrange=xrange_)
       yrange_nn = [min([yrange_nn[0L], yrange_nr[0L]]), max([yrange_nn[1L], yrange_nr[1L]])]
     endif
     if plot_omega then begin
-      yrange_no  = pc_power_particles_range_er(i, k=k, spec=spec_o  , xrange=[k_l1_nn, k_l2_nn], div=ki2r)
+      xrange_ = [k_l1_nn, k_l2_nn]
+      yrange_no  = pc_power_particles_range_er(i, k=k, spec=spec_o  , xrange=xrange_, div=ki2r)
       yrange_nn = [min([yrange_nn[0L], yrange_no[0L]]), max([yrange_nn[1L], yrange_no[1L]])]
     endif
 
     if plot_na then begin
       yrange_na  = pc_power_particles_range(i, n=n_spec_na, $
                                             k=k, specptr=spec_na, xrange=xrange)
+      xrange_ = [k_l1_na, k_l2_na]
       yrange_nax = pc_power_particles_range(i, n=n_spec_na, $
-                                            k=k, specptr=spec_na, xrange=[k_l1_na, k_l2_na])
+                                            k=k, specptr=spec_na, xrange=xrange_)
       if ~n_elements(yrange) then $
          yrange = [min([3d-12, yrange_na[0L]]), $
                    max([3d-2 , yrange_na[1L]])]
@@ -448,75 +494,114 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
               color=colorfg, alignment=0.5, /normal
     endif
 
+
+    ;;=========================================================================
+    ;;=========================================================================
+    ;; Guides:
+
     if plot_kin || plot_lnrho || plot_omega then begin
-      ;; guide: 1 / k^2
+      ;; Guide: 1 / k^2
       k_arr = [k_l1_nn, k_l2_nn]
       y_arr = k_arr ^ (- 2d0) / k_l2_nn ^ (- 2d0) * yrange_nn[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=coloror, thick=thick * 2
   
-      ;; guide: 1 / k^(5/3)
+      ;; Annotation:
+      xpos = k_arr[0L]
+      ypos = y_arr[0L]
+      pos = convert_coord(xpos, ypos, /data, /to_normal)
+      xpos = pos[0L] - 0.25 * dpx
+      ypos = pos[1L] - 0.25 * dpy
+      alignment = 1.0
+      text = 'k!u-2!n'
+      xyouts, xpos, ypos, text, alignment=alignment, /normal, $
+              charsize=charsize, charthick=charthick, color=colorfg
+
+      ;; Guide: 1 / k^(5/3)
       y_arr = k_arr ^ (- 5d0 / 3d0) / k_l2_nn ^(- 5d0 / 3d0) * yrange_nn[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=colorgn, thick=thick * 2
+
+      ;; Annotation:
+      xpos = 1d1 ^ (0.25 * (alog10(k_arr[1L]) - alog10(k_arr[0L])) + alog10(k_arr[0L]))
+      ypos = y_arr[0L]
+      pos = convert_coord(xpos, ypos, /data, /to_normal)
+      xpos = pos[0L]
+      ypos = pos[1L] - 2.5 * dpy
+      alignment = 0.5
+      text = 'k!u-5/3!n '
+      xyouts, xpos, ypos, text, alignment=alignment, /normal, $
+              charsize=charsize, charthick=charthick, color=colorfg
+
     endif
 
     if plot_kin then begin
-      oplot, k, spec_kin[*, i] / k ^ 2, color=colorfg, thick=thick, linestyle=2
-   endif
+      ekin = spec_kin[*, i] / k ^ 2
+      oplot, k, ekin, color=colorfg, thick=thick, linestyle=3
+
+      pc_power_dimension_annotate, k, ekin, 'E(k)', $
+          left=keyword_set(left_ekin), charsize=charsize, charthick=charthick
+    endif
 
     if plot_omega then begin
-      oplot, k, spec_o[*, i] / k ^ 2, color=colorpr, thick=thick
+      omega = spec_o[*, i] / k ^ 2
+      oplot, k, omega, color=colorpr, thick=thick
+
+      pc_power_dimension_annotate, k, omega, 'P!d' + somega + '!n', $
+          left=keyword_set(left_omega), charsize=charsize, charthick=charthick
     endif
 
     if plot_lnrho then begin
       oplot, k, spec_lr[*, i], color=colorlb, thick=thick
+
+      pc_power_dimension_annotate, k, spec_lr[*, i], 'P!d' + sdens + '!n', $
+          left=keyword_set(left_lnrho), charsize=charsize, charthick=charthick
     endif
 
-    if plot_kin then begin
-      l_items = ['E!d' + sdens + '!n(k)']
-      l_colors = [colorfg]
-      l_linestyle = [2]
-      l_thick = thick * [1.0]
-    endif
+    ;if plot_kin then begin
+    ;  l_items = ['E!d' + sdens + '!n(k)']
+    ;  l_colors = [colorfg]
+    ;  l_linestyle = [2]
+    ;  l_thick = thick * [1.0]
+    ;endif
 
-    if plot_lnrho then begin
-      l_items = ~n_elements(l_items) ? ['P!d' + sdens + '!n'] : $
-                                       [l_items, 'P!d' + sdens + '!n']
-      l_colors = ~n_elements(l_colors) ? [colorlb] : [l_colors, colorlb]
-      l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
-      l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
-    endif
-    
-    if plot_omega then begin
-      l_items = ~n_elements(l_items) ? ['P!d' + somega + '!n'] : $
-                                       [l_items, 'P!d' + somega + '!n']
-      l_colors = ~n_elements(l_colors) ? [colorpr] : [l_colors, colorpr]
-      l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
-      l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
-    endif
+    ;if plot_lnrho then begin
+    ;  l_items = ~n_elements(l_items) ? ['P!d' + sdens + '!n'] : $
+    ;                                   [l_items, 'P!d' + sdens + '!n']
+    ;  l_colors = ~n_elements(l_colors) ? [colorlb] : [l_colors, colorlb]
+    ;  l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
+    ;  l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
+    ;endif
+    ;
+    ;if plot_omega then begin
+    ;  l_items = ~n_elements(l_items) ? ['P!d' + somega + '!n'] : $
+    ;                                   [l_items, 'P!d' + somega + '!n']
+    ;  l_colors = ~n_elements(l_colors) ? [colorpr] : [l_colors, colorpr]
+    ;  l_linestyle = ~n_elements(l_linestyle) ? [0] : [l_linestyle, 0]
+    ;  l_thick = ~n_elements(l_thick) ? [1.0] : [l_thick, 1.0]
+    ;endif
 
-    if plot_kin || plot_lnrho then begin
-      l_items = [l_items, 'k!u-2!n', 'k!u5/3!n']
-      l_colors = [l_colors, coloror, colorgn]
-      l_linestyle = [l_linestyle, 0, 0]
-      l_thick = [l_thick, 2.0, 2.0]
-    endif
+    ;if plot_kin || plot_lnrho then begin
+    ;  l_items = [l_items, 'k!u-2!n', 'k!u5/3!n']
+    ;  l_colors = [l_colors, coloror, colorgn]
+    ;  l_linestyle = [l_linestyle, 0, 0]
+    ;  l_thick = [l_thick, 2.0, 2.0]
+    ;endif
 
-    if plot_na then begin
-      l_items = ~n_elements(l_items) ? 'k!u2!n' : [l_items, 'k!u2!n']
-      l_colors = [l_colors, colorrd]
-      l_linestyle = [l_linestyle, 0]
-      l_thick = [l_thick, 2.0]
-    endif
+    ;if plot_na then begin
+    ;  l_items = ~n_elements(l_items) ? 'k!u2!n' : [l_items, 'k!u2!n']
+    ;  l_colors = [l_colors, colorrd]
+    ;  l_linestyle = [l_linestyle, 0]
+    ;  l_thick = [l_thick, 2.0]
+    ;endif
 
-    if legend_short then begin
-      l_items = [iitems, l_items]
-      l_colors = [icolors, l_colors]
-      l_linestyle = [ilinestyle, l_linestyle]
-      l_thick = [fltarr(n_elements(iitems)) + thick, l_thick]
-    endif
-    al_legend, l_items, linestyle=l_linestyle, top=legend_top, /right, box=0, $
-               charsize=charsize, charthick=charthick, color=l_colors, $
-               thick=l_thick * thick, linsize=legend_linsize, $
+    ;if legend_short then begin
+    ;  l_items = [l_items, iitems]
+    ;  l_colors = [l_colors, icolors]
+    ;  l_linestyle = [l_linestyle, ilinestyle]
+    ;  l_thick = [l_thick, fltarr(n_elements(iitems)) + thick]
+    ;endif
+    al_legend, iitems, linestyle=ilinestyle, top=legend_top, /right, box=0, $
+               charsize=charsize, charthick=charthick, color=icolors, $
+               thick=thick, linsize=legend_linsize, $
                textcolors=colorfg, spacing=legend_spacing
 
     if n_elements(legend_text) eq 1L then begin
@@ -536,10 +621,29 @@ pro pc_power_particles, t_start=t_start, t_relaxed=t_relaxed, $
       endif
 
 
-      ;; guide: k^2
+      ;;=======================================================================
+      ;;=======================================================================
+      ;; Guide: k^2
+
       k_arr = [k_l1_na, k_l2_na]
       y_arr = k_arr ^ 2 / k_l1_na ^ 2 * yrange_nax[0L] * 0.5
       oplot, k_arr, y_arr, linestyle=0, color=colorrd, thick=thick * 2
+
+      ;; Annotation:
+      xpos = 0.2 * (k_arr[1L] - k_arr[0L]) + k_arr[0L]
+      ypos = y_arr[0L]
+      pos = convert_coord(xpos, ypos, /data, /to_normal)
+      xpos = pos[0L]
+      ypos = pos[1L] - 0.5 * dpy
+      alignment = 1.0
+      text = 'k!u2!n '
+      xyouts, xpos, ypos, text, alignment=alignment, /normal, $
+              charsize=charsize, charthick=charthick, color=colorfg
+
+
+      ;;=======================================================================
+      ;;=======================================================================
+      ;; Plot particle density spectra:
 
       linestyle = 2
       for ii = 0UL, n_spec_na - 1UL do begin
