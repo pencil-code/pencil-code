@@ -256,19 +256,19 @@ class Tracers(object):
                             np.dot(eeInt, (stream.tracers[l+1] - stream.tracers[l]))
 
                 # Create the color mapping.
-                if (sub_z1[int(ix/n_proc), iy] > self.params.Oz+self.params.Lz-self.params.dz*4):
-                    if (self.x0[ix, iy, t_idx] - sub_x1[int(ix/n_proc), iy]) > 0:
-                        if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
-                            sub_mapping[int(ix/n_proc), iy, :] = [0, 1, 0]
-                        else:
-                            sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 0]
+#                if (sub_z1[int(ix/n_proc), iy] > self.params.Oz+self.params.Lz-self.params.dz*12):
+                if (self.x0[ix, iy, t_idx] - sub_x1[int(ix/n_proc), iy]) > 0:
+                    if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
+                        sub_mapping[int(ix/n_proc), iy, :] = [0, 1, 0]
                     else:
-                        if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
-                            sub_mapping[int(ix/n_proc), iy, :] = [0, 0, 1]
-                        else:
-                            sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
+                        sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 0]
                 else:
-                    sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
+                    if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
+                        sub_mapping[int(ix/n_proc), iy, :] = [0, 0, 1]
+                    else:
+                        sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
+#                else:
+#                    sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
 
         queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping,
                    sub_curly_A, sub_ee))
