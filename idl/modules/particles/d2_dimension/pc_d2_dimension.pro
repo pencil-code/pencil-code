@@ -82,7 +82,46 @@
 ;;   > idl
 ;;   IDL> pvars = 'allprocs/' + ['PVAR' + ['20', '24', '28'], 'pvar'] + '.h5'
 ;;   IDL> pc_d2_dimension, pvars
-;;   
+;;
+;;   Note!
+;;     On some machines, such as certain clusters (SNIC/PDC/Beskow and Tegner),
+;;     it is necessary to adjust environment variables in the correct order
+;;     to use the Python bridge from within IDL. Here is an approach that I
+;;     found is working for me (CS):
+;;
+;;     1) Assuming Anaconda is installed and that it uses a version of
+;;       Python that isn't supported by IDL as yet (currently, 2020-06-03,
+;;       IDL can only use Python 3.6, while Anaconda comes with Python 3.7),
+;;       install an environment using Python 3.6:
+;;
+;;       $ conda create -n py36 python=3.6
+;;       $ conda deactivate
+;;       $ conda activate py36
+;;       $ conda install scipy
+;;
+;;
+;;     2) Create a script that sets up the environment variables that need
+;;       to be correctly set. Create a file that looks something like the
+;;       following; I call this script "py36_runme.sh":
+;;
+;;       === Contents of py36_runme.sh:
+;;       #!/bin/bash
+;;       # Adjust the following line no point at the location of your own Anaconda installation:
+;;       export PYTHONHOME=/cfs/klemming/nobackup/c/csandin/anaconda3/envs/py36
+;;       export PYTHONPATH=$PYTHONPATH:${IDL_DIR}/lib/bridges:${IDL_DIR}/bin/bin.linux.x86_64
+;;       export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$PYTHONHOME/lib:/usr/lib64:${IDL_DIR}/bin/bin.linux.x86_64
+;;       ===
+;;
+;;
+;;     3) Whenever you log in to the machine in question and wish to use
+;;       the Python bridge from IDL, change environment and adjust the
+;;       environment variables. Finally, launch IDL:
+;;
+;;       $ conda deactivate
+;;       $ conda activate py36
+;;       $ source ./py36_runme.sh
+;;       $ idl
+;;
 ;;
 ;; Written by: Christer Sandin, 2020
 ;;
