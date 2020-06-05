@@ -48,6 +48,7 @@
   G_condensation = 1.17e-10
 /
 &particles_radius_run_pars
+  tstart_condensation_par=0.
   lcondensation_par=T
   lcondensation_rate=T
   ldt_condensation_off=T
