@@ -1386,7 +1386,7 @@ module Special
             if ((z(n) .lt. z_ff(2)) .and. (z(n) .gt. z_ff(1))) then
                uu(:,1)=uu_drive(1)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
                uu(:,2)=uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
-               uu(:,3)=uu_drive(3)*cos(pi*nwave(2)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)
+               uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)*cos(pi*nwave(2)*y(m1:m2)/Lxyz(2))
                f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
                f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
