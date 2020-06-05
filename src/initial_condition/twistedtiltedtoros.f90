@@ -211,7 +211,7 @@ module InitialCondition
       real, dimension (nx,3) :: tmpv,aa,bb
       real, dimension (nx) :: xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,psi
       real, dimension (nx) :: tmpx,tmpy,tmpz,dfy,dfz
-      real :: xi,umax,amax,ymid,zmid,rr,r1,prof
+      real :: xi,umax,amax,ymid,zmid,rr,r1,prof,th_p
       integer :: l
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part) 
@@ -243,8 +243,22 @@ module InitialCondition
               xx1=xx0-posx
               yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*(zz0-posz)
               zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*(zz0-posz)
-              f(l1,m,n,iaz)= scale_aa*(0.5*(tanh(-(y(m)-thn)/wid)+ &
-              tanh((y(m)-ths)/wid)))**4/sin(y(m))
+!              f(l1,m,n,iaz)= scale_aa*(0.5*(tanh(-(y(m)-thn)/wid)+ &
+!              tanh((y(m)-ths)/wid)))**4/sin(y(m))
+              th_p=pi/2-thn-wid/2
+              if (y(m) .gt. pi/2-thn-wid .and. y(m) .lt. pi/2-thn) then
+                f(l1,m,n,iaz)=-wid*sin(th_p)*scale_aa*(1-cos(pi/wid*(y(m)-(pi/2-wid-thn))))/pi
+              endif
+              if (y(m) .gt. pi/2-thn .and. y(m) .lt. pi/2+thn) then
+                f(l1,m,n,iaz)=-2*wid*sin(th_p)*scale_aa/pi
+              endif
+              if (y(m) .gt. pi/2+thn .and. y(m) .lt. pi/2+thn+wid) then
+                f(l1,m,n,iaz)=-wid*sin(th_p)*scale_aa/pi*(1+cos(pi/wid*(y(m)-(pi/2+thn))))
+              endif
+              if (y(m) .lt. pi/2-thn-wid .and. y(m) .ge. y(m1)) &
+              f(l1,m,n,iaz)=0.0
+              if (y(m) .le. y(m2) .and. y(m) .gt. pi/2+thn+wid) &
+              f(l1,m,n,iaz)=0.0
               call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,posx,tmpv,PROFILE='gaussian')
             ! calculate D*tmpv
               tmpx=tmpv(:,1)

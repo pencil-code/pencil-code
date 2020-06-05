@@ -84,7 +84,7 @@ module Special
 !
   real :: fring=0.0d0,r0=0.2,tilt=0.0,width=0.02,&
           dIring=0.0,dposx=0.0,dposz=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
-  real :: posy=0.0,alpha=1.25
+  real :: posy=0.0,alpha=1.25,velx
   real, save :: posx,posz,Iring
   integer :: nwid=1,nwid2=1,nlf=4
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
@@ -94,7 +94,7 @@ module Special
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
-           lnrho_min,lnrho_min_tau
+           lnrho_min,lnrho_min_tau,alpha
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -361,18 +361,24 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Sub, only: calc_slope_diff_flux
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx) :: fdiff
+      integer :: i
+      real :: nlf_sld
+      logical :: luu_nolog=.true.
       type (pencil_case), intent(in) :: p
 !!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      if (lslope_limited_special) then
+        nlf_sld=nlf
+        do i=1,3
+!              call calc_slope_diff_flux(f,iux+(i-1),p,alpha,nlf_sld,fdiff,'2nd')
+              call div_diff_flux(f,iux+(i-1),p,fdiff,luu_nolog)
+              df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + fdiff
+        enddo
+      endif
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -679,14 +685,16 @@ module Special
         if (poszold.gt.poslimit) dposz=0.0
         if (Iringold.gt.Ilimit) dIring=0.0
         if (lupin.and.(posxold.gt.1.0)) lring=.false.
-        posx=posx+dposx*dt_
+!        velx=dposx*0.5*(1-tanh((posx-poslimit+0.01)/0.01))
+        velx=dposx
+        posx=posx+velx*dt_
         posz=posz+dposz*dt_
         Iring=Iring+dIring*dt_
         tilt=tilt+dtilt*dt_
       endif
       call mpibcast_double(posxold)
       call mpibcast_double(posx)
-      call mpibcast_double(dposx)
+      call mpibcast_double(velx)
       call mpibcast_double(poszold)
       call mpibcast_double(posz)
       call mpibcast_double(dposz)
@@ -833,7 +841,7 @@ module Special
                       endif
                     endif
                     if (distyz.lt.nwid2*width) then
-                      vv(1)=dposx
+                      vv(1)=velx
                       vv(2)=0.0
                       vv(3)=0.0
                     else
@@ -854,7 +862,7 @@ module Special
 ! Uniform translation velocity for induction equation at boundary
 !
                 if (dposx.ne.0) then
-                  vv(1)=dposx
+                  vv(1)=velx
                   vv(2)=0.0
                   vv(3)=0.0
                   tmpx=vv(1)
