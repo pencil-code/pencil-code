@@ -44,6 +44,8 @@
   lnoselfcollision=T, cdtpcoag=0.3
   ldroplet_coagulation=T
   droplet_coagulation_model='shima'
+  luser_random_number_wrapper=F
+  tstart_droplet_coagulation=0.0
 /
 &particles_stalker_run_pars
   dstalk=0.1
