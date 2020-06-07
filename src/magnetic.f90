@@ -312,6 +312,7 @@ module Magnetic
   logical :: lremove_meanaz=.false., lremove_meanax=.false., &
              lremove_meanaxy=.false.,lremove_meanaxz=.false.
   logical :: ladd_efield=.false.
+  logical :: lsld_bb=.false.
   logical :: lA_relprof_global=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
@@ -331,6 +332,7 @@ module Magnetic
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
   character (len=labellen) :: ambipolar_diffusion='constant'
+  character (len=labellen) :: div_sld_magn='2nd'
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
@@ -373,12 +375,12 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanaxy, lremove_meanaxz, &
       eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, eta_cspeed, &
+      ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, lsld_bb, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
-      lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn
+      lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -975,7 +977,7 @@ module Magnetic
       if (any(iresistivity=='eta-slope-limited')) then
         lslope_limit_diff = .true.
         if (dimensionality<3)lisotropic_advection=.true.
-        lbb_as_comaux=.true.
+        lbb_as_comaux=lsld_bb
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
           if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
@@ -1398,7 +1400,14 @@ module Magnetic
           if (lroot) print*, 'resistivity: eta proportional to uz'
           lresi_eta_proptouz=.true.
         case ('eta-slope-limited')
-          if (lroot) print*,'resistivity: slope-limited diffusion'
+          if (lroot) then
+            if (lsld_bb) then
+              print*,'resistivity: slope-limited diffusion on bb'
+            else
+              print*,'resistivity: slope-limited diffusion on aa'
+            endif
+            print*, 'resistivity: using ',trim(div_sld_magn),' order'
+          endif
           lmagnetic_slope_limited=.true.
         case ('none')
           ! do nothing
@@ -3118,7 +3127,6 @@ module Magnetic
 !
 !  Find alfven speed as communicated auxiliary
 !
-!          if (lalfven_as_aux.or.(lslope_limit_diff .and. llast)) then
           if (lalfven_as_aux.or. lslope_limit_diff) then
             if (ldensity) then
               if (ldensity_nolog) then
@@ -3138,19 +3146,8 @@ module Magnetic
               tmp=abs(tmp)
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
-!            if (lslope_limit_diff .and. llast) then
             if (lslope_limit_diff) then
               f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*tmp
-!           Fill nearest 2 ghost points with boundary points, only important at real boundary
-            !  f(l1-2:l1-1,m,n,isld_char) =f(l1-2:l1-1,m,n,isld_char)+w_sldchar_mag*tmp(1)
-            !  f(l2+1:l2+2,m,n,isld_char) =f(l2+1:l2+2,m,n,isld_char)+w_sldchar_mag*tmp(nx)
-            !  if (m==m1) then
-            !    f(l1:l2,m-2,n,isld_char) =f(l1:l2,m-2,n,isld_char)+w_sldchar_mag*tmp
-            !    f(l1:l2,m-1,n,isld_char) =f(l1:l2,m-1,n,isld_char)+w_sldchar_mag*tmp
-            !  endif
-            !  if (m==m2) f(l1:l2,m+1:m+2,n,isld_char) =f(l1:l2,m+1:m+2,n,isld_char)+w_sldchar_mag*tmp
-            !  if (n==n1) f(l1:l2,m,n-2:n-1,isld_char) =f(l1:l2,n-2:n-1,n,isld_char)+w_sldchar_mag*tmp
-            !  if (n==n2) f(l1:l2,m,n+1:n+2,isld_char) =f(l1:l2,n+1:n+2,n,isld_char)+w_sldchar_mag*tmp
            endif
           endif
         enddo mn_loop
@@ -4535,33 +4532,36 @@ module Magnetic
 !
 !   Slope limited diffusion for magnetic field
 !
-!        if (lmagnetic_slope_limited.and.llast) then
-        if (lmagnetic_slope_limited) then
-!          do j=1,3
-!            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1)
-!            tmp2(:,j)=tmp1
-!          enddo
-!          fres=fres+tmp2
+        if (lmagnetic_slope_limited.and.llast) then
+!       if (lmagnetic_slope_limited) then
+          if (lsld_bb) then
 !
 !   Using diffusive flux of B on A
 !   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
 !     where Dsld is the SLD operator
 !   old way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
-          call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1),'4th',bx_flux(:,2),bx_flux(:,3),'magfield')
-          call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1),'4th',by_flux(:,2),by_flux(:,3),'magfield')
-          call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1),'4th',bz_flux(:,2),bz_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1),div_sld_magn,bx_flux(:,2),bx_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1),div_sld_magn,by_flux(:,2),by_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1),div_sld_magn,bz_flux(:,2),bz_flux(:,3),'magfield')
 !
-          tmp2(:,1)= (-bz_flux(:,2) + by_flux(:,3))*fac_sld_magn
-          tmp2(:,2)= (-bx_flux(:,3) + bz_flux(:,1))*fac_sld_magn
-          tmp2(:,3)= (-by_flux(:,1) + bx_flux(:,2))*fac_sld_magn
+            tmp2(:,1)= (-bz_flux(:,2) + by_flux(:,3))*fac_sld_magn
+            tmp2(:,2)= (-bx_flux(:,3) + bz_flux(:,1))*fac_sld_magn
+            tmp2(:,3)= (-by_flux(:,1) + bx_flux(:,2))*fac_sld_magn
 !
-          fres=fres + tmp2
+            fres=fres + tmp2
+          else
 !
-!     Heating is just jj*divF_sld
-!!!     Heating is just jj*(-e_ijk Dsld_k B_l)
+            do j=1,3
+              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn)
+              tmp2(:,j)=tmp1
+            enddo
+            fres=fres+tmp2
+          endif
 !
-
+!     Heating is jj*divF_sld
+!     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
+!
           if (lohmic_heat) then
             call dot(tmp2,p%jj,tmp1)
             if (lentropy) then

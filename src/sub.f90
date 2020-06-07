@@ -7173,7 +7173,6 @@ nameloop: do
           endif
         case(2)
           ! y-direction
-! 
           cmax_im12 =sqrt(0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char)))
           cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char)))
           if (ldiv_4th) then
@@ -7181,7 +7180,7 @@ nameloop: do
             cmax_ipp12=sqrt(0.5*(f(l1:l2,m+1,n,isld_char)+f(l1:l2,m+2,n,isld_char)))
           endif
         case(3)
-!
+          ! z-direction
           cmax_im12 =sqrt(0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char)))
           cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char)))
           if (ldiv_4th) then
@@ -7491,7 +7490,7 @@ nameloop: do
             if (lspherical_coords) then
               div_flux=div_flux &
                       +(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
-                      /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1))+tini)
+                      /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
             elseif (lcylindrical_coords) then
               div_flux=div_flux &
                       +(flux_ip12(:,2)-flux_im12(:,2))&
@@ -7659,8 +7658,8 @@ nameloop: do
             do i=l1,l2
               ix=i-nghost
               fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
-              fim12_r(ix) = f(i,m,n,j)-delfy(ix)
-              fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+              fim12_r(ix) = f(i,m,n,j)  -delfy(ix)
+              fip12_l(ix) = f(i,m,n,j)  +delfy(ix)
               fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
               fim1(ix) = f(i,m-1,n,j)
               fip1(ix) = f(i,m+1,n,j)
@@ -7720,7 +7719,7 @@ nameloop: do
               tmp3=f(i,m,n+1,j)-f(i,m,n  ,j)
               tmp4=f(i,m,n+2,j)-f(i,m,n+1,j)
               delfzm1(ix) = minmod_alt(tmp1,tmp2)
-              delfz(ix) = minmod_alt(tmp2,tmp3)
+              delfz(ix)   = minmod_alt(tmp2,tmp3)
               delfzp1(ix) = minmod_alt(tmp3,tmp4)
               if(ldiv_4th) then
                 tmp0=f(i,m,n-2,j)-f(i,m,n-3,j)
@@ -7732,8 +7731,8 @@ nameloop: do
             do i=l1,l2
               ix=i-nghost
               fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
-              fim12_r(ix) = f(i,m,n,j)-delfz(ix)
-              fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+              fim12_r(ix) = f(i,m,n,j)  -delfz(ix)
+              fip12_l(ix) = f(i,m,n,j)  +delfz(ix)
               fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
               fim1(ix) = f(i,m,n-1,j)
               fip1(ix) = f(i,m,n+1,j)

@@ -3071,6 +3071,9 @@ module Hydro
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
         call identify_bcs('uz',iuz)
+        if(lslope_limit_diff) then
+          call identify_bcs('sld_char',isld_char)
+        endif
       endif
 !
 !  Advection term.
