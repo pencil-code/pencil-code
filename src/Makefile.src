@@ -1348,6 +1348,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Piyali on Nova
 ##
 #FFLAGS= -O2 -mcmodel=large #(nova)
+##FFLAGS= -g -traceback -CB -mcmodel=large #(nova)
 #FC=mpiifort #(nova)
 #CC=mpiicc #(nova)
 #CFLAGS=-O2 -DFUNDERSC=1 #(nova)

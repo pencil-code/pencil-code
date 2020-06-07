@@ -1386,7 +1386,11 @@ module Special
             if ((z(n) .lt. z_ff(2)) .and. (z(n) .gt. z_ff(1))) then
                uu(:,1)=uu_drive(1)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
                uu(:,2)=uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
-               uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)*cos(pi*nwave(2)*y(m1:m2)/Lxyz(2))
+               if (Lxyz(2) /=  0.) then
+                 uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)*cos(pi*nwave(2)*y(m)/Lxyz(2))
+               else
+                 uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)
+               endif
                f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
                f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
@@ -2861,12 +2865,17 @@ module Special
 ! Do nothing actually!
 !
       case(2)
-        call get_shared_variable('z_cutoff',&
+        if (lradiation) then
+          call get_shared_variable('z_cutoff',&
              z_cutoff,ierr)
-        if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
+          if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
              'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
           *step(z(n),z_cutoff,0.2)
+        else
+        rtv_cool = rtv_cool &
+          *step(z(n),1.2,0.2)
+        endif
       case default
         call fatal_error('cool_RTV_cutoff:','wrong value')
       endselect
