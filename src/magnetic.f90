@@ -4595,9 +4595,12 @@ module Magnetic
 !     where Dsld is the SLD operator
 !   old way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
-            call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1),div_sld_magn,bx_flux(:,2),bx_flux(:,3),'magfield')
-            call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1),div_sld_magn,by_flux(:,2),by_flux(:,3),'magfield')
-            call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1),div_sld_magn,bz_flux(:,2),bz_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1), &
+                                      div_sld_magn,bx_flux(:,2),bx_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1), &
+                                      div_sld_magn,by_flux(:,2),by_flux(:,3),'magfield')
+            call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1), &
+                                      div_sld_magn,bz_flux(:,2),bz_flux(:,3),'magfield')
 !
             tmp2(:,1)= (-bz_flux(:,2) + by_flux(:,3))*fac_sld_magn
             tmp2(:,2)= (-bx_flux(:,3) + bz_flux(:,1))*fac_sld_magn
