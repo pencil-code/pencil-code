@@ -156,7 +156,7 @@ module Energy
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0
   logical :: lheat_cool_gravz=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
-  character (len=labellen) :: borderss='nothing', div_sld_ene
+  character (len=labellen) :: borderss='nothing', div_sld_ene='2nd'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
