@@ -214,10 +214,10 @@ module Magnetic
   logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
-  logical :: letasmag_as_aux=.false.
+  logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
-  logical :: lreset_aa=.false.
+  logical :: lreset_aa=.false., lsmooth_jj=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
   logical :: lax_ext_global=.false.,lay_ext_global=.false.,&
@@ -234,7 +234,7 @@ module Magnetic
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, &
       mu_r, mu_ext_pot, lB_ext_pot, &
-      alp_aniso, &
+      alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
@@ -359,7 +359,7 @@ module Magnetic
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_r0, eta_r1, &
       eta1_aniso_ratio, eta1_aniso, eta1_aniso_r, eta1_aniso_d, alp_aniso, quench_aniso, &
       eta_aniso_BB, &
-      eta_spitzer, borderaa, &
+      eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
@@ -927,6 +927,7 @@ module Magnetic
   real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid = 0.0
   real :: eta_shock_jump1=1.0,eta_tdep=0.0,Arms=0.0
+  real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   contains
 !***********************************************************************
@@ -1024,7 +1025,7 @@ module Magnetic
 !  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !  28-feb-18/piyali: moved back the calculation of clight2_zdep to calc_pencils to use va2 pencil
 !
-      use Sub, only: register_report_aux, write_zprof, step
+      use Sub, only: register_report_aux, write_zprof, step, get_smooth_kernel
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -1038,6 +1039,14 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,myl,nycap
       real :: J_ext2
+!
+!  Set ljj_as_comaux=T and get kernels
+!   if lsmooth_jj is used
+!
+      if(lsmooth_jj) then
+        ljj_as_comaux=lsmooth_jj
+        call get_smooth_kernel(kern_jjsmooth,LGAUSS=.true.)
+      endif
 !
 !  Set initial value for alfven speed in farray if used
 !
@@ -1624,7 +1633,8 @@ module Magnetic
 !
       if (lbb_as_aux .or. lbb_as_comaux) &
         call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
-      if (ljj_as_aux ) call register_report_aux('jj',ijj,ijx,ijy,ijz)
+      if (ljj_as_aux .or. ljj_as_comaux) &
+        call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
 !
       if (lbbt_as_aux) then
         call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
@@ -2978,7 +2988,7 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
-      if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
+      if ((lpencil_in(i_jj)) .and. .not. (ljj_as_comaux)) lpencil_in(i_bij)=.true.
 !
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
@@ -3093,21 +3103,21 @@ module Magnetic
 !  30-may-14/ccyang: coded
 !
       use Boundcond, only: update_ghosts, zero_ghosts
-      use Sub, only: gij, curl_mn, dot2_mn
+      use Sub, only: gij, gij_etc, curl_mn, dot2_mn
       use EquationOfState, only: rho0
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
-      real, dimension(nx,3,3) :: aij
-      real, dimension(nx,3) :: bb
+      real, dimension(nx,3,3) :: aij, bij
+      real, dimension(nx,3) :: bb, jj
       real, dimension(nx) :: rho1, b2, tmp
       real, dimension(3) :: b_ext
       integer :: j
 !
-!  Find bb if as communicated auxiliary.
+!  Find bb and jj if as communicated auxiliary.
 !
-!      getbb: if (lbb_as_comaux.or.lalfven_as_aux.or.(lslope_limit_diff.and. llast)) then
-      getbb: if (lbb_as_comaux.or.lalfven_as_aux.or. lslope_limit_diff) then
+      getbb: if (lbb_as_comaux .or. ljj_as_comaux .or. &
+                 lalfven_as_aux.or. lslope_limit_diff) then
         call zero_ghosts(f, iax, iaz)
         call update_ghosts(f, iax, iaz)
         mn_loop: do imn = 1, ny * nz
@@ -3115,6 +3125,20 @@ module Magnetic
           n = nn(imn)
           call gij(f, iaa, aij, 1)
           call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
+!
+!  calculate jj if requested
+!
+          if(ljj_as_comaux) then
+            if (lcartesian_coords) then
+              call gij_etc(f,iaa,BIJ=bij)
+              call curl_mn(bij,jj)
+            else
+              call gij_etc(f,iaa,AA=f(:,m,n,iax:iaz),AIJ=aij,BIJ=bij, &
+                           LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+              call curl_mn(bij,jj, A=bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+            endif
+            f(l1:l2,m,n,ijx:ijz) = jj
+          endif
 !
 !  Add imposed field, if any
 !
@@ -3400,22 +3424,22 @@ module Magnetic
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
-          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
+          if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,DEL2=p%del2a,&
 !                               GRADDIV=p%graddiva,&
                                LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-          if (lpenc_loc(i_jj)) &
+          if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) &
               call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij)
-          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
+          if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
                        LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-          if (lpenc_loc(i_jj)) &
+          if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) &
               call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       elseif (lpenc_loc(i_del2a).and..not.lpenc_loc(i_bij)) then
@@ -3431,6 +3455,23 @@ module Magnetic
           call bij_tilde(f,p%bb,p%bijtilde,p%bij_cov_corr)
         else
           call bij_tilde(f,p%bb,p%bijtilde)
+        endif
+      endif
+!
+!     Possibility that jj is already calculated as comaux
+!
+      if (ljj_as_comaux .and. lpenc_loc(i_jj)) then
+!
+!  Apply a gaussian smoothing using 3 points before and after
+!  make sense to use with SLD on magnetic field or vector potential
+!  uses the kern_jjsmooth as kernels
+!
+        if (lsmooth_jj) then
+          do j=1,3
+            call smooth_mn(f,ijx+(j-1),kern_jjsmooth,p%jj(:,j))
+          enddo
+        else
+          p%jj=f(l1:l2,m,n,ijx:ijz)
         endif
       endif
 !
@@ -3691,7 +3732,7 @@ module Magnetic
 !  know we are?
 !
       if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
-      if (ljj_as_aux ) f(l1:l2,m,n,ijx  :ijz  )=p%jj
+      if (ljj_as_aux .and. .not. ljj_as_comaux) f(l1:l2,m,n,ijx:ijz) = p%jj
       if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
 !
 !  Calculate magnetic mean-field pencils.
@@ -3852,6 +3893,19 @@ module Magnetic
         call identify_bcs('Ax',iax)
         call identify_bcs('Ay',iay)
         call identify_bcs('Az',iaz)
+        if(lbb_as_comaux) then
+          call identify_bcs('Bx',ibx)
+          call identify_bcs('By',iby)
+          call identify_bcs('Bz',ibz)
+        endif
+        if(ljj_as_comaux) then
+          call identify_bcs('Jx',ijx)
+          call identify_bcs('Jy',ijy)
+          call identify_bcs('Jz',ijz)
+        endif
+        if(lslope_limit_diff) then
+          call identify_bcs('sld_char',isld_char)
+        endif
       endif
 !
 ! set dAdt to zero at the beginning of each execution of this routine

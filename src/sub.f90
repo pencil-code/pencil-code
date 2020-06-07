@@ -88,7 +88,7 @@ module Sub
   public :: tensor_diffusion_coef
 !
   public :: smooth_kernel, despike
-  public :: smooth, get_smooth_kernel
+  public :: smooth, smooth_mn, get_smooth_kernel
 !
   public :: ludcmp, lubksb
   public :: bspline_basis, bspline_interpolation, bspline_precondition
@@ -3919,16 +3919,20 @@ module Sub
 !
     endsubroutine smooth_kernel
 !***********************************************************************
-    subroutine smooth(f, ivar)
+    subroutine smooth(f, ivar,lgauss)
 !
 !  Smoothes the f-variable ivar with a polynomial kernel.  It assumes
 !  that the boundary conditions for ivar have been applied, and the
 !  ghost cells are not treated upon return.
 !
 !  23-jan-14/ccyang: coded.
+!  05-jun-20/joenr: add gaussian kernels
+!
+      use General, only: loptest
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar
+      logical, intent(in), optional :: lgauss
 !
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kernel = 0.0
       real, dimension(nx,ny,nz) :: work
@@ -3939,7 +3943,7 @@ module Sub
 !  Initialization at first call.
 !
       init: if (lfirstcall) then
-        call get_smooth_kernel(kernel)
+        call get_smooth_kernel(kernel,loptest(lgauss))
         xdim: if (nxgrid > 1) then
           i1 = -nghost
           i2 = nghost
@@ -3969,20 +3973,67 @@ module Sub
 !
     endsubroutine smooth
 !***********************************************************************
-    subroutine get_smooth_kernel(kernel)
+    subroutine smooth_mn(f, ivar,kernel,smth)
+!
+!  The same routine as smooth put to be used inside the mn loop
+!  kernel need to be calculated previously by calling get_smooth_kernel
+!  in ...
+!
+!  05-jun-20/joern: coded, adapted from smooth
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ivar
+      real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(in) :: kernel
+      real, dimension(nx), intent(out) :: smth
+!
+      integer :: i=0, j=0, k=0, l
+!
+      if (nxgrid /=1) i=nghost
+      if (nygrid /=1) j=nghost
+      if (nzgrid /=1) k=nghost
+!
+!  Smooth the field (assuming boundary conditions for ivar has been applied).
+!
+!if (ivar==ijy) print*, 'n', n
+!if (ivar==ijy)      print*, 'farray before', f(l1:l2,m,n,ivar)
+      do l = l1, l2
+        smth(l-l1+1) = sum(kernel(-i:i,-j:j,-k:k) * f(l-i:l+i,m-j:m+j,n-k:n+k,ivar))
+!if (ivar==ijy)        print*,'kernel', kernel(-i:i,-j:j,-k:k)
+!if (ivar==ijy)        print*,'farray', f(l-i:l+i,m-j:m+j,n-k:n+k,ivar)
+!if (ivar==ijy)        print*, 'sum', sum(kernel(-i:i,-j:j,-k:k) * f(l-i:l+i,m-j:m+j,n-k:n+k,ivar))
+      enddo
+!print*, 'i', i
+!print*, 'j', j
+!print*, 'k', k
+!print*, n-k, n, n+k, 'n-k, n, n+k'
+
+!print*, 'kernel', kernel(-i:i,-j:j,-k:k)
+!if (ivar==ijy)      print*, 'farray after', f(l1:l2,m,n,ivar)
+!
+    endsubroutine smooth_mn
+!***********************************************************************
+    subroutine get_smooth_kernel(kernel,lgauss)
 !
 !  Gets the smooth kernel used by subroutine smooth.
 !
 !  15-feb-14/ccyang: coded
+!  05-jun-20/joenr: add gaussian kernels
+!
+      use General, only: loptest
 !
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(out) :: kernel
+      logical, intent(in), optional :: lgauss
 !
       integer, dimension(-nghost:nghost) :: b
       real, dimension(-nghost:nghost) :: weight
       integer :: k
 !
-      call binomial(b)
-      weight = real(b)
+      if (loptest(lgauss)) then
+        call gaussian_kernel(weight)
+      else
+        call binomial(b)
+        weight = real(b)
+      endif
       k = 2 * nghost + 1
       kernel = 0.0
       kernel(0,0,0) = 1.0
@@ -4012,6 +4063,25 @@ module Sub
       b(n+1) = 1
 !
     endsubroutine binomial
+!***********************************************************************
+    subroutine gaussian_kernel(weight)
+!
+!  Finds calculated gaussian kernel.
+!
+!  05-jun-20/joern: coded
+!
+      real, dimension(-nghost:nghost), intent(out) :: weight
+!
+      integer :: i
+      real    :: width
+!
+      width = real(nghost) - 1.
+!
+      do i=-nghost, nghost
+        weight(i)=exp(-real(i*i)/(2.*width))
+      enddo
+!
+    endsubroutine gaussian_kernel
 !***********************************************************************
     subroutine identify_bcs(varname_input,idx)
 !
