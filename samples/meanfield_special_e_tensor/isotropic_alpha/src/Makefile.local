@@ -24,3 +24,4 @@ SHEAR     = noshear
 
 SPECIAL   = special/meanfield_e_tensor
 
+REAL_PRECISION=double
