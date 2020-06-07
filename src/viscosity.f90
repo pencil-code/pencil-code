@@ -189,6 +189,12 @@ module Viscosity
                                 ! ZAVG_DOC: \mathcal{S}_{iy} \right>_{z}$
                                 ! ZAVG_DOC: ($y$-xomponent of viscous flux)
 !
+! phi averaged diagnostics given in phiaver.in
+!
+  integer :: idiag_fviscrsphmphi ! PHIAVG_DOC: $\left<2\nu\varrho u_i
+                                 ! PHIAVG_DOC: \mathcal{S}_{ir} \right>_\varphi$
+                                 ! PHIAVG_DOC: ($r$-xomponent of viscous flux)
+!
 ! Module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
@@ -775,7 +781,7 @@ module Viscosity
 !
       logical :: lreset
       logical, optional :: lwrite
-      integer :: iname,inamex,inamez,ixy
+      integer :: iname,inamex,inamez,ixy,irz
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -788,7 +794,7 @@ module Viscosity
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
-        idiag_fviscmax=0; idiag_fviscmin=0
+        idiag_fviscmax=0; idiag_fviscmin=0; idiag_fviscrsphmphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -837,6 +843,11 @@ module Viscosity
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscmxy',idiag_fviscmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscymxy',idiag_fviscymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscsmmxy',idiag_fviscsmmxy)
+      enddo
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fviscrsphmphi',idiag_fviscrsphmphi)
       enddo
 !
 !  write column where which viscosity variable is stored
@@ -1020,6 +1031,7 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
 !        lpenc_diagnos(i_sij2)=.true.
 ! JW: There are also viscosities, which do not need sij
+! PJK: But what if you don't use one of those?
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
       if (idiag_epsK/=0.or.idiag_epsKmz/=0.or.idiag_epsK_LES/=0) then
@@ -1070,6 +1082,7 @@ module Viscosity
 !        lpenc_diagnos(i_sij)=.true.
 !      endif
 ! JW: There are also viscosities, which do not need sij or rho
+! PJK: But what if you don't use one of those?
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
@@ -1081,6 +1094,10 @@ module Viscosity
 !        lpenc_diagnos2d(i_sij)=.true.
 !      endif
 ! JW: There are also viscosities, which do not need sij or rho
+! PJK: But what if you don't use one of those?
+      if (idiag_fviscrsphmphi/=0) then
+         lpenc_diagnos2d(i_evr)=.true.
+      endif
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
 !
@@ -2317,7 +2334,7 @@ module Viscosity
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
-          yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name
+          yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name, phisum_mn_name_rz
       use Sub, only: cross, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2471,6 +2488,13 @@ module Viscosity
             p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+ &
             p%uu(:,3)*p%sij(:,3,2)),idiag_fviscymxy)
           endif
+        endif
+        if (idiag_fviscrsphmphi/=0) then
+          fluxv(:,1)=p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+p%uu(:,3)*p%sij(:,3,1)
+          fluxv(:,2)=p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+p%uu(:,3)*p%sij(:,3,2)
+          fluxv(:,3)=p%uu(:,1)*p%sij(:,1,3)+p%uu(:,2)*p%sij(:,2,3)+p%uu(:,3)*p%sij(:,3,3)
+          call phisum_mn_name_rz(-2.*p%rho*nu*(fluxv(:,1)*p%evr(:,1)+ &
+             fluxv(:,2)*p%evr(:,2)+fluxv(:,3)*p%evr(:,3)),idiag_fviscrsphmphi)
         endif
       endif
 !
