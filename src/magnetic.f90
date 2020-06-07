@@ -216,6 +216,7 @@ module Magnetic
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
+  logical :: lbb_sph_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false., lsmooth_jj=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
@@ -251,7 +252,7 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
       lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
-      source_zav,nzav,indzav,izav_start, k1hel, k2hel
+      source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux
 !
 ! Run parameters
 !
@@ -380,7 +381,8 @@ module Magnetic
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
-      lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn
+      lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
+      lbb_sph_as_aux
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1568,8 +1570,7 @@ module Magnetic
         endselect
       endif
 !
-!
-!  write profile (uncomment for debugging)
+!  Write profile (uncomment for debugging)
 !
 !     if (lfirst_proc_xy) then
 !       do n=1,mz
@@ -1648,6 +1649,9 @@ module Magnetic
 !
       if (lua_as_aux ) call register_report_aux('ua',iua)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
+!
+      if (lbb_sph_as_aux) &
+        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
 !
 !  Register va as auxilliary array if asked for also requires
 !  ! MAUX CONTRIBUTION 1
@@ -1976,6 +1980,8 @@ module Magnetic
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case ('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+!PJK
+        case ('Bzcosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
@@ -2641,6 +2647,17 @@ module Magnetic
 !  ua pencil if lua_as_aux
 !
       if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
+!
+!  Request unit vectors for transformation of magnetic field from
+!  Cartesian to spherical coordinates.
+!
+      if (lbb_sph_as_aux.and.lsphere_in_a_box) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_evr)=.true.
+        lpenc_requested(i_evth)=.true.
+        lpenc_requested(i_phix)=.true.
+        lpenc_requested(i_phiy)=.true.
+      endif
 !
 !  diagnostics pencils
 !
@@ -4655,7 +4672,6 @@ module Magnetic
 !
       if (lno_ohmic_heat_bound_z.and.lohmic_heat) &
          etatotal=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
-
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
@@ -5050,6 +5066,15 @@ module Magnetic
 ! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !
       if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
+!
+!  Magnetic field in spherical coordinates from a Cartesian simulation
+!  for sphere-in-a-box setups
+!
+      if (lbb_sph_as_aux.and.lsphere_in_a_box) then
+        f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
+        f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
+        f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
+      endif
 !
 ! Now add all the contribution to dAdt so far into df.
 ! This is done here, such that contribution from mean-field models are not added to

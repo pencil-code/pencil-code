@@ -127,6 +127,7 @@ module Hydro
   logical :: loo_as_aux = .false.
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
   logical :: luu_fluc_as_aux=.false.
+  logical :: luu_sph_as_aux=.false.
   logical :: lscale_tobox=.true.
   logical, target :: lpressuregradient_gas=.true.
   logical :: lcoriolis_force=.true.
@@ -167,7 +168,7 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux
+      ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux
 !
 !  Run parameters.
 !
@@ -254,7 +255,7 @@ module Hydro
       lcdt_tauf, cdt_tauf, ulev, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
-      limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner
+      limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -758,7 +759,7 @@ module Hydro
       endif
 !
 !  Velocity fluctuation for computation of turbulent Reynolds stress etc.
-!  directly in the code
+!  directly in the code.
 !
       if (luu_fluc_as_aux) then
         if (iuu_fluc==0) then
@@ -767,6 +768,19 @@ module Hydro
         else
           if (lroot) print*, 'initialize_hydro: iuu_fluc = ', iuu_fluc
           call farray_index_append('iuu_fluc',iuu_fluc)
+        endif
+      endif
+!
+!  Velocity in spherical coordinates from Cartesian simulation, useful
+!  for sphere-in-a-box models.
+!
+      if (luu_sph_as_aux.and.lsphere_in_a_box) then
+        if (iuu_sph==0) then
+          call farray_register_auxiliary('uu_sph',iuu_sph,vector=3)
+          iuu_sphr = iuu_sph; iuu_spht = iuu_sph+1; iuu_sphp = iuu_sph+2;
+        else
+          if (lroot) print*, 'initialize_hydro: iuu_sph = ', iuu_sph
+          call farray_index_append('iuu_sph',iuu_sph)
         endif
       endif
 !
@@ -2270,6 +2284,16 @@ module Hydro
         lpenc_requested(i_uuadvec_guu)=.true.
       endif
 !
+!  Request unit vectors for transformation of velocity from Cartesian
+!  to spherical coordinates.
+!
+      if (luu_sph_as_aux.and.lsphere_in_a_box) then
+        lpenc_requested(i_evr)=.true.
+        lpenc_requested(i_evth)=.true.
+        lpenc_requested(i_phix)=.true.
+        lpenc_requested(i_phiy)=.true.
+      endif
+!
 !  video pencils
 !
       if (lwrite_slices) then
@@ -2369,12 +2393,11 @@ module Hydro
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
            idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
-           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0 .or. &
-           idiag_fkinrsphmphi/=0) then
+           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
-          idiag_fkinxupmxy/=0 .or. idiag_fkinxdownmxy/=0) then
+          idiag_fkinxupmxy/=0 .or. idiag_fkinxdownmxy/=0 .or. idiag_fkinrsphmphi/=0) then
         lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_ekin)=.true.
       endif
@@ -3241,6 +3264,15 @@ module Hydro
       if (ladv_der_as_aux) then
         f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
         if (lgrav) f(l1:l2,m,n,i_adv_derx:i_adv_derz) = f(l1:l2,m,n,i_adv_derx:i_adv_derz) + p%gg
+      endif
+!
+!  Velocity in spherical coordinates from a Cartesian simulation
+!  for sphere-in-a-box setups
+!
+      if (luu_sph_as_aux.and.lsphere_in_a_box) then
+        f(l1:l2,m,n,iuu_sphr) = p%uu(:,1)*p%evr(:,1)+p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)
+        f(l1:l2,m,n,iuu_spht) = p%uu(:,1)*p%evth(:,1)+p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)
+        f(l1:l2,m,n,iuu_sphp) = p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -4438,6 +4470,7 @@ module Hydro
         if (lcentrifugal_force) then
 !
           if (headtt) print*,'coriolis_cartesian: add Centrifugal force; Omega=',Omega
+          if (headtt) print*,'coriolis_cartesian: Centrifugal force amplitude; amp_centforce=',amp_centforce
 !
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*amp_centforce*Omega**2
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*amp_centforce*Omega**2

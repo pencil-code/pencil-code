@@ -327,6 +327,7 @@ module Cdata
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
+  integer :: ibb_sph=0, ibb_sphr=0, ibb_spht=0, ibb_sphp=0
   integer :: inusmag=0, ietasmag=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0,ialfven=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
@@ -362,6 +363,7 @@ module Cdata
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
+  integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
 !
 !  Parameters related to message passing.
 !
