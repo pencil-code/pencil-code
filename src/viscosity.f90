@@ -1032,6 +1032,7 @@ module Viscosity
 !        lpenc_diagnos(i_sij2)=.true.
 ! JW: There are also viscosities, which do not need sij
 ! PJK: But what if you don't use one of those?
+! JW: then they are anyway requested.
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
       if (idiag_epsK/=0.or.idiag_epsKmz/=0.or.idiag_epsK_LES/=0) then
@@ -1077,24 +1078,27 @@ module Viscosity
         lpenc_diagnos(i_fvisc)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
-!      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
+      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
+        lpenc_diagnos(i_uu)=.true.
 !        lpenc_diagnos(i_rho)=.true.
 !        lpenc_diagnos(i_sij)=.true.
-!      endif
+      endif
 ! JW: There are also viscosities, which do not need sij or rho
 ! PJK: But what if you don't use one of those?
+! JW: p%uu is needed, these others are already requested.
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
-!      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
-!          idiag_fviscsmmxy/=0) then
+      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
+          idiag_fviscsmmxy/=0) then
 !        lpenc_diagnos2d(i_nu_smag)=.true.
-!        lpenc_diagnos2d(i_uu)=.true.
+        lpenc_diagnos2d(i_uu)=.true.
 !        lpenc_diagnos2d(i_rho)=.true.
 !        lpenc_diagnos2d(i_sij)=.true.
-!      endif
+      endif
 ! JW: There are also viscosities, which do not need sij or rho
 ! PJK: But what if you don't use one of those?
+! JW: p%uu is needed, these others are already requested.
       if (idiag_fviscrsphmphi/=0) then
          lpenc_diagnos2d(i_evr)=.true.
       endif
