@@ -1454,8 +1454,8 @@ module power_spectrum
                  +c_re(ikx,iky,ikz)**2 &
                  +c_im(ikx,iky,ikz)**2
               spectrum2hel(k+1)=spectrum2hel(k+1) &
-                 +c_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                 +c_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+                 +c_re(ikx,iky,ikz)*a_re(ikx,iky,ikz) &
+                 +c_im(ikx,iky,ikz)*a_im(ikx,iky,ikz)
             endif
             spectrumhel(k+1)=spectrumhel(k+1) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
