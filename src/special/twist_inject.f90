@@ -626,6 +626,22 @@ module Special
           topbot='bot'
           call bc_nfc_x(f,topbot,j)
       bc%done=.true.
+        case (iBC_Y_TOP)
+          topbot='top'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
+        case (iBC_Y_BOT)
+          topbot='bot'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
+        case (iBC_Z_TOP)
+          topbot='top'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
+        case (iBC_Z_BOT)
+          topbot='bot'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
         end select
       case ('go')
       j=bc%ivar
