@@ -182,6 +182,9 @@ module Special
   integer :: idiag_emfrms=0
   integer :: idiag_emfcoefrms=0
   integer :: idiag_emfdiffrms=0
+! timestep diagnostics
+  integer :: idiag_dtemf_ave=0
+  integer :: idiag_dtemf_dif=0
 !
 !  2D diagnostics
 !
@@ -1500,7 +1503,7 @@ endif
         idiag_emfxdiffmax=0
         idiag_emfydiffmax=0
         idiag_emfzdiffmax=0
-        ! RMS diagnostics
+!     RMS diagnostics
         idiag_alpharms=0
         idiag_betarms=0
         idiag_gammarms=0
@@ -1512,6 +1515,10 @@ endif
         idiag_emfrms=0
         idiag_emfcoefrms=0
         idiag_emfdiffrms=0
+!    timestep diagnostics
+        idiag_dtemf_ave=0
+        idiag_dtemf_dif=0
+!    2D diagnostics
         idiag_emfxmxy=0; idiag_emfymxy=0; idiag_emfzmxy=0
         idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
       endif
@@ -1564,6 +1571,9 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfdiffrms',idiag_emfdiffrms)
+!    timestep diagnostics
+        call parse_name(iname,cname(iname),cform(iname),'dtemf_ave',idiag_dtemf_ave)
+        call parse_name(iname,cname(iname),cform(iname),'dtemf_dif',idiag_dtemf_dif)
       enddo
 
       do iname=1,nnamexy
@@ -1628,8 +1638,12 @@ endif
           call dot_mn(dline_1, abs(p%utensor_coefs), tmpline)
           advec_special=advec_special+tmpline
         end if
-
+!
         maxadvec=maxadvec+advec_special
+!
+        if (ldiagnos.and.idiag_dtemf_ave/=0) then      
+          call max_mn_name(advec_special/cdt,idiag_dtemf_ave,l_dt=.true.)
+        endif
 !
 ! Calculate diffus_special
 !
@@ -1653,7 +1667,11 @@ endif
         end if
 
         maxdiffus=max(maxdiffus,diffus_special)
-
+!
+        if (ldiagnos.and.idiag_dtemf_dif/=0) then      
+          call max_mn_name(diffus_special/cdtv,idiag_dtemf_dif,l_dt=.true.)
+        endif
+!
       end if 
 !
     endsubroutine special_calc_magnetic
