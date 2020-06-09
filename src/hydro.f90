@@ -1113,7 +1113,9 @@ module Hydro
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
 !
-      lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz      ! lcalc_uumean for compatibility
+      lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz .or. &      ! lcalc_uumean for compatibility
+                      lremove_uumeanz .or. lremove_uumeanz_horizontal
+      lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy
 !
       if (Omega/=0. .and. lyinyang) then
         if (phi==0.) then
