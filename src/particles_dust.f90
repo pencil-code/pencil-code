@@ -387,7 +387,7 @@ module Particles
           !  iapn(k) = ind_tmp
           !enddo
           !
-          call farray_register_auxiliary('np_ap',iapn(1),vector=ndustrad,aux=.true.)
+          call farray_register_auxiliary('np_ap',iapn(1),array=ndustrad,aux=.true.)
           iapn = iapn(1) + indgen(ndustrad) - 1
           call farray_index_append('n_np_ap',ndustrad)
         else
