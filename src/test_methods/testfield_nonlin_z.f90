@@ -66,7 +66,8 @@ module Testfield
   logical :: luxb_as_aux=.false., ljxb_as_aux=.false., lugu_as_aux=.false.
   logical :: linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lignore_ugutestm=.false., &
-             lphase_adjust=.false., luse_main_run=.true., lvisc_simplified_testfield=.false.
+             lphase_adjust=.false., luse_main_run=.true., lvisc_simplified_testfield=.false., &
+             lremove_E0, lremove_F0
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
