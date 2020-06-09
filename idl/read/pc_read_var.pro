@@ -173,9 +173,10 @@ COMPILE_OPT IDL2,HIDDEN
     for pos = 0, num_quantities-1 do begin
 
       quan=quantities[pos]
+
       if stregex(quan,'aatest',/bool) or $
          stregex(quan,'uutest',/bool) or $
-         stregex(quan,'np_ap',/bool) then begin
+         stregex(quan,'np_aptest',/bool) then begin
         testdata=strmid(quan,0,2)+'test' & itestdata=2 & quan=testdata+'1'
       endif else if (quan eq 'dummy') then begin
         if testdata ne '' then begin
@@ -183,9 +184,11 @@ COMPILE_OPT IDL2,HIDDEN
           itestdata++
         endif else $
           continue
+      endif else if stregex(quan,'np_ap',/bool) then begin
+        ;; Not implemented...
+        continue
       endif else $
         testdata=''
-
       label=quan
       object = create_struct (label, pc_read (quan, trimall=trimall, processor=proc, dim=dim),object)
     end
