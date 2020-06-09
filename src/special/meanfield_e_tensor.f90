@@ -1641,7 +1641,7 @@ endif
 !
         maxadvec=maxadvec+advec_special
 !
-        if (ldiagnos.and.idiag_dtemf_ave/=0) then      
+        if (ldiagnos.and.idiag_dtemf_ave/=0) then
           call max_mn_name(advec_special/cdt,idiag_dtemf_ave,l_dt=.true.)
         endif
 !
@@ -1668,7 +1668,7 @@ endif
 
         maxdiffus=max(maxdiffus,diffus_special)
 !
-        if (ldiagnos.and.idiag_dtemf_dif/=0) then      
+        if (ldiagnos.and.idiag_dtemf_dif/=0) then
           call max_mn_name(diffus_special/cdtv,idiag_dtemf_dif,l_dt=.true.)
         endif
 !
