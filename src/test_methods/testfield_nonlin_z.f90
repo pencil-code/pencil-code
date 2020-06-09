@@ -101,7 +101,7 @@ module Testfield
        lforcing_cont_uutest,ampl_fcont_uutest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,rescale_uutest, luse_main_run, lupw_uutest, Omega, lvisc_simplified_testfield, &
-       linitialize0_from_mainrun
+       linitialize0_from_mainrun, lremove_E0, lremove_F0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -423,6 +423,9 @@ module Testfield
 !
       if (.not.(lmagnetic.and.lhydro)) luse_main_run=.false.
 !
+      lremove_E0 = lremove_E0 .and. lmagnetic
+      lremove_F0 = lremove_F0 .and. lhydro
+
       if (ivid_bb11/=0) then
         if (lwrite_slice_xy .and..not.allocated(bb11_xy) ) allocate(bb11_xy (nx,ny,3))
         if (lwrite_slice_xz .and..not.allocated(bb11_xz) ) allocate(bb11_xz (nx,nz,3))
@@ -889,7 +892,11 @@ module Testfield
               idiag_M11/=0.or.idiag_M22/=0.or.idiag_M33/=0.or. &
               idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0) then
             call dyadic2(bbtest,Mijtest)
-            Mijpq(:,:,:,jtest)=Mijtest*bamp12
+            if (jtest==iE0) then
+              Mijpq(:,:,:,jtest)=Mijtest
+            else
+              Mijpq(:,:,:,jtest)=Mijtest*bamp12
+            endif
           endif
         endif
         bpq(:,:,jtest)=bbtest
@@ -905,9 +912,15 @@ module Testfield
 !
 !  evaluate different contributions to <uxb> and <jxb>
 !
-        Eipq(:,:,jtest)=uxbtest*bamp1
-        Fipq(:,:,jtest)=jxbtest*bamp1/rho0
-        if (lugu) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest*bamp1
+        if (jtest==iE0) then
+          Eipq(:,:,jtest)=uxbtest
+          Fipq(:,:,jtest)=jxbtest/rho0
+          if (lugu) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest
+        else
+          Eipq(:,:,jtest)=uxbtest*bamp1
+          Fipq(:,:,jtest)=jxbtest*bamp1/rho0
+          if (lugu) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest*bamp1
+        endif
 !
         if (lfirst.and.ldt) then
 !
@@ -939,6 +952,9 @@ module Testfield
         call dot(B_ext_inv,jxbtestMK,phiMK)
       endif
 !
+      if (lremove_E0) df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - Eipq(:,:,iE0)
+      if (lremove_F0) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - Fipq(:,:,iE0)
+
       if (lfirst.and.ldt) then
         maxadvec=maxadvec+advec_uu
         advec2=advec2+advec_va2
