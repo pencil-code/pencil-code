@@ -575,7 +575,7 @@ module Special
     use General, only: random_number_wrapper
 !
     real :: r,p,srand,trand
-    real, dimension(6) :: smax_values=(/-5.0,-2.5,-1.0,1.0,2.5,5.0/)
+    real, dimension(6) :: smax_values=(/-0.003,-0.0014,-0.00054,0.00054,0.0014,0.003/)
     integer :: ismax
 !    
     integer, intent(in) :: istorm
