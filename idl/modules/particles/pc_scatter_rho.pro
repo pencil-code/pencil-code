@@ -204,19 +204,15 @@ pro pc_scatter_rho, varfile, pvarfile, $
 
     plots, lg_rho, np_ap[*, *, *, j], color=colorfg, psym=psym, symsize=symsize
 
-    ;; Stokes number label:
-    ;item = 'St = ' + vStokes[j]
-    ;al_legend, item, charsize=charsize_label, charthick=charthick, box=0, textcolors=colorfg, $
-    ;           /right, background_color=colorbg, outline_color=colorfg, font=font
 
     item = legend_log_aps ? 'log(' + salpha + ') = ' : salpha + ' = '
     item += strtrim(string(alpha[j], format=format), 2L)
     item += legend_log_aps ? ', log(a) = ' : ', a = '
     item += strtrim(string(legend_log_aps ? alog10(ps.ap0[j]) : ps.ap0[j], format=format), 2L)
     if n_elements(ps.ap0) gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
-    item = [item, '   St = ' + vStokes[j]]
+    item = [item, '    St = ' + vStokes[j]]
     al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, box=0, $
-                     /left, /top_legend, background_color=colorbg, outline_color=colorfg, font=font
+                     /left, /top_legend, font=font
 
   endfor
 
