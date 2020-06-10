@@ -2,12 +2,8 @@ pro pc_scatter_particles__height, height, charsize=charsize, $
         npx=npx, npy=npy, width=width, xmargin=xmargin, ymargin=ymargin
   compile_opt hidden, IDL2
 
-  ;; Calculate the panel width (pixels):
-
   panel_wh = long((width - total(!x.omargin) * charsize * !d.x_ch_size) / double(npx) - $
                   total(xmargin) * charsize * !d.x_ch_size)
-
-  ;; Calculate the window height (pixels):
 
   height = long(npy * (panel_wh + total(ymargin) * charsize * !d.y_ch_size) + $
                 total(!y.omargin) * charsize * !d.y_ch_size)
@@ -19,13 +15,18 @@ end ;;; procedure: pc_scatter_particles__position
 
 pro pc_scatter_particles__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, $
         npx=npx, npy=npy, v_minmax=v_minmax, col_minmax=col_minmax, $
-        colorbg=colorbg, colorfg=colorfg, thick=thick, font=font
+        colorbg=colorbg, colorfg=colorfg, thick=thick, font=font, top=top
   compile_opt hidden, IDL2
 
   x0 = !x.window[0L]
   x1 = !x.window[1L]
-  y0 = !y.window[0L] - 1.3d0 * !d.y_ch_size * ch2 / !d.y_size
-  y1 = !y.window[0L] - 0.3d0 * !d.y_ch_size * ch2 / !d.y_size
+  if keyword_set(top) then begin
+    y0 = !y.window[1L] + 2.7d0 * !d.y_ch_size * ch2 / !d.y_size
+    y1 = !y.window[1L] + 3.7d0 * !d.y_ch_size * ch2 / !d.y_size
+  endif else begin
+    y0 = !y.window[0L] - 1.3d0 * !d.y_ch_size * ch2 / !d.y_size
+    y1 = !y.window[0L] - 0.3d0 * !d.y_ch_size * ch2 / !d.y_size
+  endelse
 
   bar_x = !d.x_size * (x1 - x0)
   bar_y = ceil(!d.y_size * (y1 - y0))
@@ -67,9 +68,9 @@ end ;;; procedure: pc_scatter_particles__colorbar
 
 pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
        center=center_, Lxw=Lxw_, Lyw=Lyw_, Lzw=Lzw_, $
-       allagr=allagr, agr_index=agr_index, $
+       allagr=allagr, agr_index=agr_index, colorbar_top=colorbar_top, $
        charsize=charsize_in, charthick=charthick, colortable=colortable, $
-       psym=psym, symsize=symsize, set_font=set_font, $
+       psym=psym, symsize=symsize, set_font=set_font, t_start=t_start, $
        xsize=xsize, cmxsize=cmxsize, dpi=dpi, thick=thick, font_size=font_size, $
        legend_log_aps=legend_log_aps, legendtext=legendtext, xrange=xrange, $
        ofilename=ofilename, common_range=common_range
@@ -86,21 +87,35 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
   if ~n_elements(xsize) then xsize = 800L
   if ~n_elements(cmxsize) then cmxsize = 13.5
   if n_elements(dpi) eq 1L then xsize = cmxsize * dpi / 2.54d0
+  if ~n_elements(t_start) then t_start = 0d0
   if ~n_elements(fraction_) then fraction_ = 1d0
   fraction = fraction_ < 1.0 > 0.0
   pos = strpos(pvar, '.h5', /reverse_search)
   hdf5 = pos eq strlen(pvar) - 3L ? 1L : 0L
   spvar = hdf5 ? file_basename(strmid(pvar, 0L, pos)) : pvar
-  if ~n_elements(ofilename) then ofilename = 'pc_scatter_particles_' + spvar + '.png'
   if ~n_elements(legend_log_aps) then legend_log_aps = 1L
   if ~keyword_set(common_range) then common_range = 0L
   font = ~n_elements(set_font) ? - 1L : 1L
   tt_font = font eq 1L ? 1L : 0L
 
+  if Lxw_ gt 1L then begin
+    str = '_YZ' + strtrim(Lxw_, 2L)
+    if ~n_elements(ofilename) then ofilename = 'pc_scatter_particles_' + spvar + str + '.png'
+  endif else if Lyw_ gt 1L then begin
+    str = '_XZ' + strtrim(Lyw_, 2L)
+    if ~n_elements(ofilename) then ofilename = 'pc_scatter_particles_' + spvar + str + '.png'
+  endif else if Lzw_ gt 1L then begin
+    str = '_XY' + strtrim(Lzw_, 2L)
+    if ~n_elements(ofilename) then ofilename = 'pc_scatter_particles_' + spvar + str + '.png'
+  endif else begin
+    if ~n_elements(ofilename) then ofilename = 'pc_scatter_particles_' + spvar + '_3D.png'
+  endelse
+
   ;; Determine if the input file is regular binary or HDF5:
 
   pc_read_param, object=ps, /quiet
   pc_read_dim, object=pd, /quiet
+  pc_read_ts, object=ts, /quiet
 
   alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
   if legend_log_aps then alpha = alog10(alpha)
@@ -112,13 +127,14 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
     uniq = uniq(object.ap, sort(object.ap))
     agr = object.ap[uniq]
     nagr = ulong(n_elements(temporary(uniq)))
-    if n_elements(agr_) eq 1L then begin
+    if n_elements(agr_index) eq 1L then begin
       agr = agr[agr_index]
       nagr = 1UL
-    endif
+    endif else agr_index = 0L
   endif else begin
     agr = 0d0
     nagr = 1UL
+    agr_index = 0L
   endelse
 
   nx = pd.nxgrid  & ny = pd.nygrid & nz = pd.nzgrid
@@ -128,6 +144,23 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
   xrange = [x_0, x_1]
   yrange = [y_0, y_1]
   zrange = [z_0, z_1]
+
+
+  ;;===========================================================================
+  ;;===========================================================================
+  ;; Time scales:
+
+  ;; Drag force: stopping time:
+  tau_stop = sqrt(!dpi / 8d0) * ps.rhopmat * ps.ap0 / (ps.rho0 * ps.cs0)
+
+  ;; Mean turnover time:
+  min = min(abs(ts.t - t_start), t_start_index)
+  tau_turnover = 1d0 / mean(ts.urms[t_start_index : *])
+
+  ;; Stokes; grain-size dependent:
+  vStokes = strarr(n_elements(ps.ap0))
+  for i = 0L, nagr - 1L do vStokes[i] = $
+     strtrim(string(tau_stop[i] / tau_turnover, format='(e9.2)'), 2L)
 
 
   ;;===========================================================================
@@ -150,26 +183,33 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
   ;; Setup the plot:
 
   oldway = 1L
+  p_multi = !p.multi
+  npx = 1L
+  npy = 1L
 
   if ~allagr then begin
-    npx = ceil(sqrt(n_elements(ps.ap0)))
-    npy = floor(sqrt(n_elements(ps.ap0)))
-    if oldway then !p.multi = [0L, npx, npy, 0L, 0L]
-  endif
+    if nagr ne 1UL then begin
+      npx = ceil(sqrt(n_elements(ps.ap0)))
+      npy = floor(sqrt(n_elements(ps.ap0)))
+      if oldway then !p.multi = [0L, npx, npy, 0L, 0L]
+    endif
+  endif else begin
+    if oldway then !p.multi = 0
+  endelse
 
   charsize_label = charsize_in
   charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
 
   xmargin = [0.3, 0.3]
-  ymargin = [4.0, 0.3]
+  ymargin = [4.3, 0.3]
   zmargin = [0.3, 0.3]
+  if keyword_set(colorbar_top) then ymargin[1L] += 10.0
 
   ;; Calculate the window height to get a 1.0 aspect ratio:
   pc_scatter_particles__height, ysize, charsize=charsize_in, npx=npx, npy=npy, $
       width=xsize, xmargin=xmargin, ymargin=ymargin
 
   device, get_decomposed=decomposed
-  p_multi = !p.multi
 
   plot_3d = 0L
   if ~(Lxw_ gt 1L || Lyw_ gt 1L || Lzw_ gt 1L) then begin
@@ -204,6 +244,7 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
 
   if tt_font then device, set_font=set_font, /tt_font
 
+  salpha = font ? '!9a!x' : '!4a!x'
 
   ;; Kinetic energy of each particle, one for all, and size-dependent:
   if common_range then begin
@@ -230,6 +271,14 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
   endelse
 
   if Lxw_ gt 1L || Lyw_ gt 1L || Lzw_ gt 1L then begin
+
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;; Slice:
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;;=================================================================================================
 
     if Lxw_ gt 1L then begin
       xrange = [y_0, y_1]
@@ -286,8 +335,8 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
 
     endelse
 
-   xstyle = 1 + 4 & xtickformat = '(a1)'
-   ystyle = 1 + 4 & ytickformat = '(a1)'
+    xstyle = 1 + 4 & xtickformat = '(a1)'
+    ystyle = 1 + 4 & ytickformat = '(a1)'
 
     if allagr then begin
       plot, [0], /nodata, background=colorbg, charsize=charsize, charthick=charthick, $
@@ -297,10 +346,10 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
 
       i = - 1L
       while 1 do begin
-         i += long(1d0 / fraction)
-         if i ge n then break
-         if object_cp[i] lt vi_low || object_cp[i] gt vi_hig then continue
-         plots, object_xp[i], object_yp[i], psym=psym, symsize=symsize, color=color[i]
+        i += long(1d0 / fraction)
+        if i ge n then break
+        if object_cp[i] lt vi_low || object_cp[i] gt vi_hig then continue
+        plots, object_xp[i], object_yp[i], psym=psym, symsize=symsize, color=color[i]
       endwhile
 
     endif else begin
@@ -330,16 +379,22 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
           endwhile
 
           ai = nagr eq 1UL ? agr_index : j
-          item = legend_log_aps ? 'log(!4a!x)=' : '!4a!x='
+
+          ;; Stokes number label:
+          item = 'St = ' + vStokes[ai]
+          al_legend, item, charsize=charsize_label, charthick=charthick, /box, textcolors=colorfg, $
+                 /right, background_color=colorbg, outline_color=colorfg, font=font
+
+          item = legend_log_aps ? 'log(' + salpha + ') = ' : salpha + ' = '
           item += strtrim(string(alpha[ai], format=format), 2L)
-          item += legend_log_aps ? ', log(a)=' : ', a='
+          item += legend_log_aps ? ', log(a) = ' : ', a = '
           item += strtrim(string(legend_log_aps ? alog10(ps.ap0[ai]) : ps.ap0[ai], format=format), 2L)
           if nagr gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
           al_legend, item, charsize=charsize_label, charthick=charthick, /box, textcolors=colorfg, $
                      /right, /bottom, background_color=colorbg, outline_color=colorfg, font=font
 
           pc_scatter_particles__colorbar, charsize=charsize, ch2=charsize_in, charthick=charthick, $
-              font=font, col_minmax=mimi[*, j], npx=npx, npy=npy, $
+              font=font, col_minmax=mimi[*, j], npx=npx, npy=npy, top=colorbar_top, $
               v_minmax=mima[*, j], colorbg=colorbg, colorfg=colorfg, thick=thick
 
 
@@ -365,8 +420,9 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
           sym_size = 0.04
 
           rgb_table = 74
-          myPlot = scatterplot(x, y, aspect_ratio=1.0, background_color=background_color, current=current, $
-               dimensions=[xsize, ysize], layout=layout, magnitude=magnitude, margin=margin, $
+          myPlot = scatterplot(x, y, aspect_ratio=1.0, background_color=background_color, $
+               current=current, dimensions=[xsize, ysize], layout=layout, magnitude=magnitude, $
+               margin=margin, $
                overplot=overplot, rgb_table=rgb_table, symbol='o', /sym_filled, sym_size=sym_size, $
                xrange=xrange, xstyle=xstyle, xthick=thick, xtickformat=xtickformat, $
                yrange=yrange, ystyle=ystyle, ythick=thick, ytickformat=ytickformat)
@@ -405,6 +461,15 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
 
   endif else if nx gt 1L && ny gt 1L && nz gt 1L then begin
 
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;; 3D scatter plot:
+    ;;=================================================================================================
+    ;;=================================================================================================
+    ;;=================================================================================================
+
+    object_cp = object.xp
     object_xp = object.xp
     object_yp = object.yp
     object_zp = object.zp
@@ -413,40 +478,69 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
     ytickformat = '(a1)'
     ztickformat = '(a1)'
 
-    surface, [[0.0,0.0,0.0], [0.0,0.0,0.0]], /nodata, ax=ax, az=az, $
-             background=colorbg, charsize=charsize, charthick=charthick, color=colorfg, $
-             font=font, /save, $
-             xmargin=xmargin, xrange=xrange, /xstyle, xthick=thick, xtickformat=xtickformat, $
-             ymargin=ymargin, yrange=yrange, /ystyle, ythick=thick, ytickformat=ytickformat, $
-             zmargin=zmargin, zrange=zrange, /zstyle, zthick=thick, ztickformat=ztickformat
+    format = legend_log_aps ? '(f6.3)' : '(e10.3)'
+    object_ap = object.ap
+    text = string(bindgen(26) + 97b)
+    for j = 0UL, nagr - 1UL do begin
 
-    axis, xaxis=1, x_0, y_1, z_1, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, xthick=thick, xtickformat=xtickformat
-    axis, xaxis=1, x_0, y_1, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, xthick=thick, xtickformat=xtickformat
-    axis, yaxis=1, x_1, y_0, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, ythick=thick, ytickformat=ytickformat
-    axis, yaxis=1, x_1, y_0, z_1, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, ythick=thick, ytickformat=ytickformat
-    axis, zaxis=0, x_1, y_1, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, zthick=thick, ztickformat=ztickformat
-    axis, zaxis=0, x_1, y_0, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
-          /t3d, zthick=thick, ztickformat=ztickformat
+      surface, [[0.0,0.0,0.0], [0.0,0.0,0.0]], /nodata, ax=ax, az=az, $
+               background=colorbg, charsize=charsize, charthick=charthick, color=colorfg, $
+               font=font, /save, $
+               xmargin=xmargin, xrange=xrange, /xstyle, xthick=thick, xtickformat=xtickformat, $
+               ymargin=ymargin, yrange=yrange, /ystyle, ythick=thick, ytickformat=ytickformat, $
+               zmargin=zmargin, zrange=zrange, /zstyle, zthick=thick, ztickformat=ztickformat
 
-    i = - 1L
-    while 1 do begin
-      i += 1d0 / fraction
-      if i ge n then break
-      plots, object_xp[i], object_yp[i], object_zp[i], /t3d, $
-             psym=psym, symsize=symsize, color=color[i]
-    endwhile
+      axis, xaxis=1, x_0, y_1, z_1, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, xthick=thick, xtickformat=xtickformat
+      axis, xaxis=1, x_0, y_1, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, xthick=thick, xtickformat=xtickformat
+      axis, yaxis=1, x_1, y_0, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, ythick=thick, ytickformat=ytickformat
+      axis, yaxis=1, x_1, y_0, z_1, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, ythick=thick, ytickformat=ytickformat
+      axis, zaxis=0, x_1, y_1, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, zthick=thick, ztickformat=ztickformat
+      axis, zaxis=0, x_1, y_0, z_0, color=colorfg, charsize=charsize, charthick=charthick, $
+            /t3d, zthick=thick, ztickformat=ztickformat
 
-    axis, zaxis=1, x_0, y_0, z_0, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
-          zthick=thick, ztickformat=ztickformat
-    axis, yaxis=0, x_0, y_0, z_1, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
-          ythick=thick, ytickformat=ytickformat
-    axis, xaxis=0, x_0, y_0, z_1, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
-          xthick=thick, xtickformat=xtickformat
+      i = - 1L
+      while 1 do begin
+        i += long(1d0 / fraction)
+        if i ge n then break
+        if object_ap[i] ne agr[j] then continue
+        plots, object_xp[i], object_yp[i], object_zp[i], /t3d, $
+               psym=psym, symsize=symsize, color=color[i]
+      endwhile
+
+      axis, zaxis=1, x_0, y_0, z_0, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
+            zthick=thick, ztickformat=ztickformat
+      axis, yaxis=0, x_0, y_0, z_1, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
+            ythick=thick, ytickformat=ytickformat
+      axis, xaxis=0, x_0, y_0, z_1, /t3d, color=colorfg, charsize=charsize, charthick=charthick, $
+            xthick=thick, xtickformat=xtickformat
+
+      ai = nagr eq 1UL ? agr_index : j
+
+      ;; Stokes number label:
+      item = 'St = ' + vStokes[ai]
+      al_legend, item, charsize=charsize_label, charthick=charthick, /box, textcolors=colorfg, $
+                 /right, background_color=colorbg, outline_color=colorfg, font=font
+
+      ;; Alpha and a values:
+      item = legend_log_aps ? 'log(' + salpha + ') = ' : salpha + ' = '
+      item += strtrim(string(alpha[ai], format=format), 2L)
+      item += legend_log_aps ? ', log(a) = ' : ', a = '
+      item += strtrim(string(legend_log_aps ? alog10(ps.ap0[ai]) : ps.ap0[ai], format=format), 2L)
+      if nagr gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
+      al_legend, item, charsize=charsize_label, charthick=charthick, /box, textcolors=colorfg, $
+                 /right, /bottom, background_color=colorbg, outline_color=colorfg, font=font
+
+      ;; Color bar:
+      pc_scatter_particles__colorbar, charsize=charsize, ch2=charsize_in, charthick=charthick, $
+          font=font, col_minmax=mimi[*, j], npx=npx, npy=npy, top=colorbar_top, $
+          v_minmax=mima[*, j], colorbg=colorbg, colorfg=colorfg, thick=thick
+
+    endfor ;; j = 0UL, nagr - 1UL
 
   endif
 
