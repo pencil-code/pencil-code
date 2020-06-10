@@ -3887,8 +3887,8 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
-      real, dimension (nx,3) :: bx_flux,by_flux,bz_flux
       real, dimension (nx,3) :: dAdt, gradeta_shock
+      real, dimension (nx,3,3) :: d_sld_flux
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
@@ -4612,25 +4612,40 @@ module Magnetic
 !     where Dsld is the SLD operator
 !   old way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
-            call calc_slope_diff_flux(f,ibx,p,h_sld_magn,nlf_sld_magn,bx_flux(:,1), &
-                                      div_sld_magn,bx_flux(:,2),bx_flux(:,3),'magfield')
-            call calc_slope_diff_flux(f,iby,p,h_sld_magn,nlf_sld_magn,by_flux(:,1), &
-                                      div_sld_magn,by_flux(:,2),by_flux(:,3),'magfield')
-            call calc_slope_diff_flux(f,ibz,p,h_sld_magn,nlf_sld_magn,bz_flux(:,1), &
-                                      div_sld_magn,bz_flux(:,2),bz_flux(:,3),'magfield')
 !
-            tmp2(:,1)= (-bz_flux(:,2) + by_flux(:,3))*fac_sld_magn
-            tmp2(:,2)= (-bx_flux(:,3) + bz_flux(:,1))*fac_sld_magn
-            tmp2(:,3)= (-by_flux(:,1) + bx_flux(:,2))*fac_sld_magn
+            do j=1,3
+              call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
+                                        FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
+            enddo
+!
+            tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
+            tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
+            tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
 !
             fres=fres + tmp2
           else
 !
-            do j=1,3
-              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn)
-              tmp2(:,j)=tmp1
-            enddo
-            fres=fres+tmp2
+            if (lcylindrical_coords .or. lspherical_coords) then
+              do j=1,3
+                call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
+                                          FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
+              enddo
+!
+              if (lcylindrical_coords) then
+                fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
+                fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
+                fres(:,3)=fres(:,3)+tmp2(:,3)
+              elseif(lspherical_coords) then
+                fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
+                fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,1,2)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+                fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)-d_sld_flux(:,1,3)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
+              endif
+            else
+              do j=1,3
+                call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
+              enddo
+                fres=fres+tmp2
+            endif
           endif
 !
 !     Heating is jj*divF_sld

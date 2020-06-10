@@ -7262,7 +7262,7 @@ nameloop: do
     endsubroutine characteristic_speed
 !***********************************************************************
     subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,nlf,div_flux,div_type, &
-                                    heat,flux3,heat_type)
+                                    heat,heat_type,flux1,flux2,flux3)
 !
 !  Calculate diffusiv flux, divergence of diffusiv flux and
 !  the heating (optional) for variables in the f array.
@@ -7281,22 +7281,24 @@ nameloop: do
       real, dimension (nx) :: cmax_im12,cmax_ip12,cmax_imm12,cmax_ipp12
       character(LEN=*) :: div_type
 !
-      real, dimension (nx), optional, intent(out) :: heat, flux3
+      real, dimension (nx), optional, intent(out) :: heat,flux1, flux2, flux3
       character(LEN=*), optional, intent(in) :: heat_type
 !
       real :: nlf, h_slope_limited, one_16
       type (pencil_case), intent(in) :: p
       integer :: j,k
-      logical :: lmag_diff,ldiv_4th
+      logical :: ldiv_4th
 
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
         one_16=1./16.
         if(present(heat)) heat=0.0
+        if(present(flux1)) flux1=0.0
+        if(present(flux2)) flux2=0.0
         if(present(flux3)) flux3=0.0
         div_flux=0.
-        lmag_diff=.false.
+
 
 !
 !  Generate halfgrid points
@@ -7481,42 +7483,6 @@ nameloop: do
                 endif
               endif
 !
-            case('magfield')
-!
-!    This is not a heating type. Here the div_flux, heat and flux3 are filled with the components of the
-!    Flux tensor
-!
-             lmag_diff=.true.
-!    x-direction:
-!
-             if (k == 1 .and. nxgrid /= 1) then 
-               if(ldiv_4th) then
-                 div_flux=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,1)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
-               else
-                div_flux=0.5*(flux_ip12(:,k) + flux_im12(:,k))
-               endif
-             endif
-!
-!    y-direction:
-!
-             if (k == 2 .and. nygrid /= 1) then
-               if(ldiv_4th) then
-                 heat=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
-               else
-                 heat=0.5*(flux_ip12(:,k) + flux_im12(:,k))
-               endif
-             endif
-!
-!    z-direction:
-!
-             if (k == 3 .and. nzgrid /= 1) then
-               if(ldiv_4th) then
-                 flux3=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
-               else
-                 flux3=0.5*(flux_ip12(:,k) + flux_im12(:,k))
-               endif
-             endif
-!
             case('none')
                 heat=0.
 !
@@ -7525,66 +7491,97 @@ nameloop: do
 !
           endselect
         endif
+!
+!    For SLD acting on magnetic field, we need the averaged flux instead of the divergence
+!
+!    x-direction:
+!
+        if (k == 1 .and. nxgrid /= 1 .and. present(flux1)) then
+          if(ldiv_4th) then
+            flux1=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+          else
+            flux1=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+          endif
+        endif
+!
+!    y-direction:
+!
+        if (k == 2 .and. nygrid /= 1 .and. present(flux2)) then
+          if(ldiv_4th) then
+            flux2=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+          else
+            flux2=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+          endif
+        endif
+!
+!    z-direction:
+!
+        if (k == 3 .and. nzgrid /= 1 .and. present(flux3)) then
+          if(ldiv_4th) then
+            flux3=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
+          else
+            flux3=0.5*(flux_ip12(:,k) + flux_im12(:,k))
+          endif
+        endif
       enddo
+
 !
 ! Now calculate the 2nd and 4th order divergence
 !
-      if (.not. lmag_diff) then
-        if (nxgrid /= 1) then
-          if(ldiv_4th) then
-            div_flux=div_flux &
-                   +(-flux_ipp12(:,1)+27.*flux_ip12(:,1)-27.*flux_im12(:,1)+flux_imm12(:,1))&
+      if (nxgrid /= 1) then
+        if(ldiv_4th) then
+          div_flux=div_flux &
+                  +(-flux_ipp12(:,1)+27.*flux_ip12(:,1)-27.*flux_im12(:,1)+flux_imm12(:,1)) &
                   /(x12(l1:l2)-x12(l1-1:l2-1))/24.
+        else
+          if (lspherical_coords) then
+            div_flux=div_flux &
+                    +(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                    /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
+          elseif (lcylindrical_coords) then
+            div_flux=div_flux &
+                    +(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
+                    /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
           else
-            if (lspherical_coords) then
-              div_flux=div_flux &
-                      +(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-                      /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
-            elseif (lcylindrical_coords) then
-              div_flux=div_flux &
-                      +(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
-                      /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
-            else
-              div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                  /(x12(l1:l2)-x12(l1-1:l2-1))
-            endif
+            div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                    /(x12(l1:l2)-x12(l1-1:l2-1))
           endif
         endif
+      endif
 !
-        if (nygrid /= 1) then
-          if(ldiv_4th) then
+      if (nygrid /= 1) then
+        if(ldiv_4th) then
+          div_flux=div_flux &
+                  +(-flux_ipp12(:,2)+27.*flux_ip12(:,2)-27.*flux_im12(:,2)+flux_imm12(:,2))&
+                  /(y12(m)-y12(m-1))/24.
+        else
+          if (lspherical_coords) then
             div_flux=div_flux &
-                    +(-flux_ipp12(:,2)+27.*flux_ip12(:,2)-27.*flux_im12(:,2)+flux_imm12(:,2))&
-                    /(y12(m)-y12(m-1))/24.
+                    +(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
+                    /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
+          elseif (lcylindrical_coords) then
+            div_flux=div_flux &
+                    +(flux_ip12(:,2)-flux_im12(:,2))&
+                    /(x(l1:l2)*(y12(m)-y12(m-1)))
           else
-            if (lspherical_coords) then
-              div_flux=div_flux &
-                      +(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
-                      /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
-            elseif (lcylindrical_coords) then
-              div_flux=div_flux &
-                      +(flux_ip12(:,2)-flux_im12(:,2))&
-                      /(x(l1:l2)*(y12(m)-y12(m-1)))
-            else
-              div_flux=div_flux &
-                      +(flux_ip12(:,2)-flux_im12(:,2))&
-                      /(y12(m)-y12(m-1))
-            endif
+            div_flux=div_flux &
+                    +(flux_ip12(:,2)-flux_im12(:,2))&
+                    /(y12(m)-y12(m-1))
           endif
         endif
-        if (nzgrid /= 1) then
-          if(ldiv_4th) then
-            div_flux=div_flux &
-                    +(-flux_ipp12(:,3)+27.*flux_ip12(:,3)-27.*flux_im12(:,3)+flux_imm12(:,3))&
-                    /(z12(n)-z12(n-1))/24.
+      endif
+      if (nzgrid /= 1) then
+        if(ldiv_4th) then
+          div_flux=div_flux &
+                  +(-flux_ipp12(:,3)+27.*flux_ip12(:,3)-27.*flux_im12(:,3)+flux_imm12(:,3))&
+                  /(z12(n)-z12(n-1))/24.
+        else
+          if (lspherical_coords) then
+            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+                    /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
           else
-            if (lspherical_coords) then
-              div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-                      /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
-            else
-             div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
+            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
                     /(z12(n)-z12(n-1))
-            endif
           endif
         endif
       endif
