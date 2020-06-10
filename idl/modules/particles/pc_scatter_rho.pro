@@ -168,6 +168,7 @@ pro pc_scatter_rho, varfile, pvarfile, $
       width=xsize, xmargin=xmargin, ymargin=ymargin
 
   window, /free, xsize=xsize, ysize=ysize, /pixmap
+  winid = !d.window
 
   salpha = font eq 1 ? '!9a!x' : '!4a!x'
   srho = font eq 1 ? '!9r!x' : '!4q!x'
@@ -212,8 +213,8 @@ pro pc_scatter_rho, varfile, pvarfile, $
     item += strtrim(string(alpha[j], format=format), 2L)
     item += legend_log_aps ? ', log(a) = ' : ', a = '
     item += strtrim(string(legend_log_aps ? alog10(ps.ap0[j]) : ps.ap0[j], format=format), 2L)
-    item = [item, '   St = ' + vStokes[j]]
     if n_elements(ps.ap0) gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
+    item = [item, '   St = ' + vStokes[j]]
     al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, box=0, $
                      /left, /top_legend, background_color=colorbg, outline_color=colorfg, font=font
 
@@ -226,6 +227,13 @@ pro pc_scatter_rho, varfile, pvarfile, $
   device, decomposed=1L
   image = tvrd(/true)
   device, decomposed=decomposed
+
+  copy = [0L, 0L, xsize, ysize, 0L, 0L, winid]
+
+  window, xsize=xsize, ysize=ysize
+  device, copy=copy
+  wdelete, winid
+
 
   ;; Save the file:
   ofilename = 'pc_scatter_rho_' + varfile + '.png'
