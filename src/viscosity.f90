@@ -2044,8 +2044,8 @@ module Viscosity
               p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
             elseif(lspherical_coords) then
               p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-              p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,1,2)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-              p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)-d_sld_flux(:,1,3)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
+              p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+              p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
             endif
           else
             do i=1,3
