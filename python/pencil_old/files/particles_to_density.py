@@ -12,6 +12,7 @@ import sys
 
 def particles_to_density(xxp,yyp,zzp,x,y,z):
     dim = read_dim()
+
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -19,6 +20,20 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
     nnp = np.zeros([dim.mz,dim.my,dim.mx])
                 
     npar=len(xxp)
+
+    par = read_param(quiet=True)
+
+    dx = np.gradient(x)
+    dy = np.gradient(x)
+    dz = np.gradient(x)
+    
+    dx_1=1.0/dx
+    dy_1=1.0/dy
+    dz_1=1.0/dz
+    
+    dx_2=1.0d/dx^2
+    dy_2=1.0d/dy^2
+    dz_2=1.0d/dz^2
     
     for k in range(npar):
 
@@ -26,41 +41,34 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
         yp=yyp[k]
         zp=zzp[k]
 
-        ix0=find_index_bisect(xp,x)
-        iy0=find_index_bisect(yp,y)
-        iz0=find_index_bisect(zp,z)
-
+        if (par.grid_func[0]=='linear'):
+            ix0 = round((xp-x[0])*dx_1)
+        else:
+            ix0=find_index_bisect(xp,x)
+        if (ix0 == dim.l2+1) ix0=ix0-1
+        if (ix0 == dim.l1-1) ix0=ix0+1            
         ixx0=ix0-1
         ixx1=ix0+1
 
+            
+        if (par.grid_func[1]=='linear'):
+            iy0=find_index_bisect(yp,y)
+        else:
+            iy0 = round((yp-y[0])*dy_1)
+        if (iy0 == dim.m2+1) iy0=iy0-1
+        if (iy0 == dim.m1-1) iy0=iy0+1
         iyy0=iy0-1
         iyy1=iy0+1
 
+            
+        if (par.grid_func[2]=='linear'):
+            iz0=find_index_bisect(zp,z)
+        else:
+            iz0 = round((zp-z[0])*dz_1)
+        if (iz0 eq dim.n2+1) iz0=iz0-1
+        if (iz0 eq dim.n1-1) iz0=iz0+1            
         izz0=iz0-1
         izz1=iz0+1
-
-        if (dim.nx > 1):
-            dx=x[ix0]-x[ixx0]
-        else:
-            dx=1.0
-
-        if (dim.ny > 1):
-            dy=y[iy0]-y[iyy0]
-        else:
-            dy=1.0
-
-        if (dim.nz > 1):
-            dz=z[iz0]-z[izz0]
-        else:
-            dz=1.0
-
-        dx_1=1.0/dx
-        dy_1=1.0/dy
-        dz_1=1.0/dz
-#
-        dx_2=1.0/dx**2
-        dy_2=1.0/dy**2
-        dz_2=1.0/dz**2
     
 #if (not ghost) then begin
 #  mx=nx+6 & l1=3 & l2=l1+nx-1
