@@ -272,30 +272,30 @@ module Selfgravity
 
       if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
         if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcx=''p'', but the potential is not'
+          print*, 'initialize_selfgrav: igpotself has bcx=''p'', but the potential is not'
           print*, '                               periodic! (you must set a proper boundary'
           print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcx=', bcx
+          print*, 'initialize_selfgrav: bcx=', bcx
         endif
-        call fatal_error('initialize_particles_selfgrav','')
+        call fatal_error('initialize_selfgrav','')
       endif
       if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(ipotself)=='p')) then
         if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcy=''p'', but the potential is not'
+          print*, 'initialize_selfgrav: igpotself has bcy=''p'', but the potential is not'
           print*, '                               periodic! (you must set a proper boundary'
           print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcy=', bcy
+          print*, 'initialize_selfgrav: bcy=', bcy
         endif
-        call fatal_error('initialize_particles_selfgrav','')
+        call fatal_error('initialize_selfgrav','')
       endif
       if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(ipotself)=='p')) then
         if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcz=''p'', but the potential is not'
+          print*, 'initialize_selfgrav: igpotself has bcz=''p'', but the potential is not'
           print*, '                               periodic! (you must set a proper boundary'
           print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcz=', bcz
+          print*, 'initialize_selfgrav: bcz=', bcz
         endif
-        call fatal_error('initialize_particles_selfgrav','')
+        call fatal_error('initialize_selfgrav','')
       endif
 
 !
