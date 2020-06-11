@@ -8,6 +8,7 @@
 import numpy as np
 import os.path
 from .dim import read_dim
+from .param import read_param
 import sys
 
 def particles_to_density(xxp,yyp,zzp,x,y,z):
@@ -18,23 +19,27 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
     else:
         precision = 'f'
     nnp = np.zeros([dim.mz,dim.my,dim.mx])
-                
+
     npar=len(xxp)
 
     par = read_param(quiet=True)
 
     dx = np.gradient(x)
-    dy = np.gradient(x)
-    dz = np.gradient(x)
-    
-    dx_1=1.0/dx
-    dy_1=1.0/dy
-    dz_1=1.0/dz
-    
-    dx_2=1.0d/dx^2
-    dy_2=1.0d/dy^2
-    dz_2=1.0d/dz^2
-    
+    dy = np.gradient(y)
+    dz = np.gradient(z)
+#
+    dx1=1.0/dx
+    dy1=1.0/dy
+    dz1=1.0/dz
+#
+    dx2=1.0/dx**2
+    dy2=1.0/dy**2
+    dz2=1.0/dz**2
+#
+    if (par.grid_func[0]=='linear'): dx1_pt = dx1[0]
+    if (par.grid_func[1]=='linear'): dy1_pt = dy1[0]
+    if (par.grid_func[2]=='linear'): dz1_pt = dz1[0]
+#
     for k in range(npar):
 
         xp=xxp[k]
@@ -42,55 +47,41 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
         zp=zzp[k]
 
         if (par.grid_func[0]=='linear'):
-            ix0 = round((xp-x[0])*dx_1)
+            ix0 = int(round((xp-x[0])*dx1_pt))
         else:
             ix0=find_index_bisect(xp,x)
-        if (ix0 == dim.l2+1) ix0=ix0-1
-        if (ix0 == dim.l1-1) ix0=ix0+1            
-        ixx0=ix0-1
-        ixx1=ix0+1
-
-            
+        if (ix0 == dim.l2+1): ix0=ix0-1
+        if (ix0 == dim.l1-1): ix0=ix0+1
+        dx_1=dx1[ix0]
+        dx_2=dx2[ix0]
+#
         if (par.grid_func[1]=='linear'):
+            iy0 = int(round((yp-y[0])*dy1_pt))
+        else:
             iy0=find_index_bisect(yp,y)
-        else:
-            iy0 = round((yp-y[0])*dy_1)
-        if (iy0 == dim.m2+1) iy0=iy0-1
-        if (iy0 == dim.m1-1) iy0=iy0+1
-        iyy0=iy0-1
-        iyy1=iy0+1
-
-            
+        if (iy0 == dim.m2+1): iy0=iy0-1
+        if (iy0 == dim.m1-1): iy0=iy0+1
+        dy_1=dy1[iy0]
+        dy_2=dy2[iy0]
+#
         if (par.grid_func[2]=='linear'):
-            iz0=find_index_bisect(zp,z)
+            iz0 = int(round((zp-z[0])*dz1_pt))
         else:
-            iz0 = round((zp-z[0])*dz_1)
-        if (iz0 eq dim.n2+1) iz0=iz0-1
-        if (iz0 eq dim.n1-1) iz0=iz0+1            
-        izz0=iz0-1
-        izz1=iz0+1
-    
-#if (not ghost) then begin
-#  mx=nx+6 & l1=3 & l2=l1+nx-1
-#  x2=fltarr(mx)*one
-#  x2[l1:l2]=x
-#  for l=l1-1,   0,-1 do x2[l]=x2[l+1]-dx
-#  for l=l2+1,mx-1,+1 do x2[l]=x2[l-1]+dx
-#  x=x2
-                                                                                         
-#  my=ny+6 & m1=3 & m2=m1+ny-1
-#  y2=fltarr(my)*one
-#  y2[m1:m2]=y
-#  for m=m1-1,   0,-1 do y2[m]=y2[m+1]-dy
-#  for m=m2+1,my-1,+1 do y2[m]=y2[m-1]+dy
-#  y=y2
-#;                                                                                         
-#    if (dim.nz == 1): 
-#        for n in np.arange(3):
-#            nn=n+1
-#            z[dim.n1-nn]=z[dim.n1]-nn*dz
-#            z[dim.n2+nn]=z[dim.n2]+nn*dz
-
+            iz0=find_index_bisect(zp,z)
+        if (iz0 == dim.n2+1): iz0=iz0-1
+        if (iz0 == dim.n1-1): iz0=iz0+1
+        dz_1=dz1[iz0]
+        dz_2=dz2[iz0]
+#
+        ixx0 = ix0-1
+        ixx1 = ix0+1
+#
+        iyy0 = iy0-1
+        iyy1 = iy0+1
+#
+        izz0 = iz0-1
+        izz1 = iz0+1
+#
         for ixx in np.arange(ixx0,ixx1+1):
             for iyy in np.arange(iyy0,iyy1+1):
                 for izz in np.arange(izz0,izz1+1):
@@ -114,18 +105,20 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
                     if (dim.nx != 1): weight=weight*weight_x
                     if (dim.ny != 1): weight=weight*weight_y
                     if (dim.nz != 1): weight=weight*weight_z
-#                                                                                                                                                                                                         
+#
                     nnp[izz,iyy,ixx]=nnp[izz,iyy,ixx] + weight
 
     return nnp
-#---------------------------------------------------------------
-def find_index_bisect(qpar,q):
-
+#​
+# ---------------------------------------------------------------
+#
+def find_index_bisect(qpar, q):
+#
     jl=0
     ju=len(q)-1
-
+#
     while ((ju-jl)>1):
-        jm=(ju+jl)/2
+        jm=(ju+jl)//2
         if (qpar > q[jm]):
             jl=jm
         else:
