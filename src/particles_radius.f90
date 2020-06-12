@@ -40,6 +40,7 @@ module Particles_radius
   real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   real :: xi_accretion = 0., lambda = 1.
+  real :: n0 = 1., alpha = 1., b=1.
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -61,7 +62,8 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, rpbeta0, lparticles_radius_rpbeta, &
-      lfixed_particles_radius, lambda
+      lfixed_particles_radius, lambda, &
+      n0, b, alpha
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -189,7 +191,7 @@ module Particles_radius
       real, dimension(nbin_initdist) :: n_initdist, a_initdist
       integer, dimension(nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p
-      real :: lna0, lna1, lna, lna0_initdist
+      real :: lna0, lna1, lna, lna0_initdist, fp_sum_temp
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
 !
@@ -291,7 +293,15 @@ module Particles_radius
           fp(npar_low:npar_high,iap) = lambda*exp(-lambda*(fp(npar_low:npar_high,iap)-a0_initdist))
         
 !
-
+! exponential distribution, which could be extended to the Gamma distribution
+        case ('weibull')
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
+              'weibull=', a0_initdist
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp_sum_temp = sum(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = a0_initdist*(1./alpha)*(-log(fp(npar_low:npar_high,iap)))**(1./b)/fp_sum_temp
+!
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution.
 !  Initialize particle radii by a direct probabilistic calculation using
 !  gaussian noise for ln(a/a0)/sigma.
