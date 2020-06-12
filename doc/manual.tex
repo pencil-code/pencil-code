@@ -10485,6 +10485,24 @@ The remeshing code is part of the {\sc Pencil Code} repository.
 
 % --------------------------------------------------------------------- %
 
+\subsection{Restarting with different I/O strategy}
+\label{RestartinigDiffIOg
+\index{Restarting with different I/O}
+One might want to switch the I/O strategy for a run, ongoingly to be continued
+by restarts, typically from one of the more traditional schemes, reading and
+writing FORTRAN binary or formatted data, to using the HDF5 data format.
+For this, include a definition for IO_IN in Makefile.local, say IO_IN=io_dist,
+change the definition of IO, say into IO=io_hdf5, and recompile. The restarted run
+will write all data with the new I/O scheme and write an (empty) control file
+IO_LOCK which prevents the code from trying to read the data at the next restart
+still with the old I/O scheme, specified by IO_IN.
+A backswitch from HDF5 to binary format is also possible, but note that averages
+and slices will be continued to be written in HDF5 unless you recompile the code
+once more with IO_IN removed
+(to be improved).
+
+% --------------------------------------------------------------------- %
+
 \subsection{Restarting from a run with less physics}
 \label{RestartingFromLessPhysics}
 \index{Restarting}
