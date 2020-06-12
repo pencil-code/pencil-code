@@ -76,7 +76,7 @@ module InitialCondition
           do n=n1,n2
             do m=m1,m2
                r2 = x(l1:l2)**2 + y(m)**2
-               eta = Omega_SB**2 * (1.5*r2 - 0.25*gamma_parameter * r2**2)
+               eta = eta0 + Omega_SB**2 * (1.5*r2 - 0.25*gamma_parameter * r2**2)
                f(l1:l2,m,n,ilnrho) = log(eta)
             enddo
           enddo
