@@ -426,7 +426,7 @@ module Special
                (t_age_storm < t_duration_storm ) &
                ) then
             storm_function(i) = smax(istorm) * &
-                 exp(- ( rr(i) - rstorm(istorm))**2 &
+                 exp(- ( rr(i) / rstorm(istorm))**2 &
                  - ((t-tpeak(istorm))/tstorm(istorm))**2)
           else
             storm_function(i) = 0.
@@ -575,7 +575,7 @@ module Special
     use General, only: random_number_wrapper
 !
     real :: r,p,srand,trand
-    real, dimension(6) :: smax_values=(/-0.3,-0.14,-0.054,0.054,0.14,0.3/)
+    real, dimension(6) :: smax_values=(/-0.00271713,-0.00135856,-0.00054343,0.00054343,0.00135856,0.00271713/)
     integer :: ismax
 !    
     integer, intent(in) :: istorm
