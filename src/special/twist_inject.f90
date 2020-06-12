@@ -365,6 +365,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx) :: fdiff
+      real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
       real :: nlf_sld
       logical :: luu_nolog=.true.
@@ -375,9 +376,15 @@ module Special
         nlf_sld=nlf
         do i=1,3
 !              call calc_slope_diff_flux(f,iux+(i-1),p,alpha,nlf_sld,fdiff,'2nd')
-              call div_diff_flux(f,iux+(i-1),p,fdiff,luu_nolog)
+              call div_diff_flux(f,iux+(i-1),p,fdiff,luu_nolog,FLUX_SLD=flux_sld_ten(:,:,i))
               df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + fdiff
         enddo
+        if (lspherical_coords) then
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
+        endif
+!
       endif
 !
     endsubroutine special_calc_hydro
@@ -1357,10 +1364,10 @@ module Special
 !
     endsubroutine generate_halfgrid
 !*******************************************************************************
-    subroutine div_diff_flux(f,j,p,div_flux,lvar_nolog)
+    subroutine div_diff_flux(f,j,p,div_flux,lvar_nolog,flux_sld)
       intent(in) :: f,j, lvar_nolog
-!      intent(out) :: flux_im12,flux_ip12,div_flux
       intent(out) :: div_flux
+      real, dimension (nx,3), optional, intent(out) :: flux_sld
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: flux_im12,flux_ip12
@@ -1411,16 +1418,6 @@ module Special
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
       enddo
-!        if (abs(z(n)+0.00068366832).lt.1.0e-6.and.abs(y(m)-1.5262493).lt.1.0e-6) then
-!          if (lfirst_proc_x) then
-!          print*, 'flux_1:'
-!          print*, cmax_im12(3,1),cmax_ip12(3,1),flux_ip12(3,1),flux_im12(3,1)
-!          print*, 'flux_2:'
-!          print*, cmax_im12(3,2),cmax_ip12(3,2),flux_ip12(3,2),flux_im12(3,2)
-!          print*, 'flux_3:'
-!          print*, cmax_im12(3,3),cmax_ip12(3,3),flux_ip12(3,3),flux_im12(3,3)
-!          endif
-!        endif
 !
 ! Now calculate the 2nd order divergence
 !
@@ -1431,15 +1428,28 @@ module Special
         +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
                 sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
-!        if (abs(z(n)+0.00068366832).lt.1.0e-6.and.abs(y(m)-1.5262493).lt.1.0e-6) then
-!          if (lfirst_proc_x) then
-!          print*, 'div_flux:'
-!          print*, div_flux(2),div_flux(3)
-!          endif
-!        endif
       else
         call fatal_error('twist_inject:div_diff_flux','Not coded for cartesian and cylindrical')
       endif
+      if (present(flux_sld)) flux_sld=0.0
+!
+!    x-direction:
+!
+        if (nxgrid /= 1 .and. present(flux_sld)) then
+          flux_sld(:,1)=0.5*(flux_ip12(:,1) + flux_im12(:,1))
+        endif
+!
+!    y-direction:
+!
+        if (nygrid /= 1 .and. present(flux_sld)) then
+          flux_sld(:,2)=0.5*(flux_ip12(:,2) + flux_im12(:,2))
+        endif
+!
+!    z-direction:
+!
+        if (nzgrid /= 1 .and. present(flux_sld)) then
+          flux_sld(:,3)=0.5*(flux_ip12(:,3) + flux_im12(:,3))
+        endif
 !
     endsubroutine div_diff_flux
 !*******************************************************************************
