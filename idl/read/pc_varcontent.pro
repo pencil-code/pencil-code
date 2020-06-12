@@ -119,7 +119,6 @@ indices = [ $
   { name:'iuutest', label:'Testmethod velocity', dims:ntestflow }, $
   { name:'icctest', label:'Testmethod scalar', dims:ntestscalar }, $
   { name:'ilnrhotest', label:'Testmethod log(rho)', dims:ntestlnrho }, $
-;  { name:'iuxb', label:'Testfield vector potential', dims:ntestfield }, $  ; is this art or can it be removed?
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
