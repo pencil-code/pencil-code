@@ -216,7 +216,11 @@ indices_aux = [ $
   { name:'icondensationRate', label:'Condensation rate', dims:1 }, $
   { name:'iwaterMixingRatio', label:'Water mixing ratio', dims:1 }, $
   { name:'inusmag', label:'Smagorinsky viscosity', dims:1 }, $
-  { name:'ietasmag', label:'Smagorinsky diffusivity', dims:1 } $
+  { name:'ietasmag', label:'Smagorinsky diffusivity', dims:1 }, $
+  { name:'iuxbtest', label:'Testfield EMF', dims:ntestfield }, $
+  { name:'ijxbtest', label:'Testfield Lorentz force', dims:ntestfield }, $
+  { name:'iugutest', label:'Testflow advective acc.', dims:ntestfield }, $
+  { name:'iughtest', label:'Testflow enthalpy advection', dims:ntestfield } $
   ; don't forget to add a comma above when extending
 ]
 ;
@@ -279,13 +283,14 @@ endif
 ;  are writing auxiliary data or not. Auxiliary variables can be turned
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
+maux=0
 if (not keyword_set (noaux)) then begin
-  if ( maux gt 0 and (keyword_set(param.lwrite_aux) or keyword_set(run_param.lwrite_aux) or down )) then $
-    indices = [ indices, indices_aux ] $
-  else $
-    maux=0
-endif else $
-  maux=0
+  if maux gt 0 then $
+    if keyword_set(param.lwrite_aux) or down then $
+      indices = [ indices, indices_aux ] $
+    else if is_defined(run_param) then $
+      if  keyword_set(run_param.lwrite_aux) then indices = [ indices, indices_aux ] else maux=0
+endif
 ;
 ;  Predefine some variable types used regularly.
 ;
