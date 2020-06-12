@@ -2755,8 +2755,8 @@ module Magnetic
       if (idiag_epsAD/=0 .and. &
           .not. (lambipolar_strong_coupling.and.tauAD/=0.0)) &
           lpenc_diagnos(i_jxbr2)=.true.
-      if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
-          .or. idiag_jbrms/=0 &
+      if (idiag_jb_int/=0 .or. idiag_jbm/=0.or. idiag_jbmn/=0  .or. idiag_jbms/=0 &
+          .or. idiag_jbmz/=0 .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
       if (idiag_d6abmz/=0) lpenc_diagnos(i_d6ab)=.true.
       if (idiag_d6amz1/=0 .or. idiag_d6amz2 /=0 .or. idiag_d6amz3/=0) lpenc_diagnos(i_del6a)=.true.
