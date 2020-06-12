@@ -393,19 +393,25 @@ module Snapshot
 !
 !  Read data without testfield into new run with testfield.
 !
-      elseif (lread_oldsnap_notestfield) then
-        if (lroot) print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=', &
-                          iaatest,iaztestpq,mvar,msnap
-        print*,'read old snapshot file (but without testfield),ntestfield=',ntestfield
-        call input_snap(chsnap,f,msnap-ntestfield,mode)
+      elseif (lread_oldsnap_notestfield.or.lread_oldsnap_notestflow) then
+
+        if (lroot) then
+          if (lread_oldsnap_notestfield) print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=', &
+                            iaatest,iaztestpq,mvar,msnap
+          if (lread_oldsnap_notestflow) print*,'read old snapshot file (but without testflow),iuutest,iuztestpq,mvar,msnap=', &
+                            iuutest,iuztestpq,mvar,msnap
+        endif
+
+        print*,'read old snapshot file (but without testfield/testflow),ntestfield,ntestflow=',ntestfield,ntestflow
+        call input_snap(chsnap,f,msnap-ntestfield-ntestflow,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
-        if (iaztestpq<msnap) then
-          do ivar=iaztestpq+1,msnap
-            f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield)
+        if (iaztestpq>0.and.iaztestpq<msnap .or. iuztestpq>0.and.iuztestpq<msnap) then
+          do ivar=max(iaztestpq,iuztestpq)+1,msnap
+            f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield-ntestflow)
           enddo
-          f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+          f(:,:,:,iaatest:iaatest+ntestfield+ntestflow-1)=0.
         endif
 !
 !  Read data without testscalar into new run with testscalar.
