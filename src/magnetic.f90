@@ -2102,7 +2102,7 @@ module Magnetic
             f(l1:l2,m,n,iay)=.5*x(l1:l2)*amplaaB(j)
           enddo; enddo
 !
-!  Archimedian B-spiral in cylindrical coordinates
+!  Logarithmic B-spiral in cylindrical coordinates
 !
         case ('Bspiral(cyl)')
           cosalp=cos(alp_aniso*dtor)

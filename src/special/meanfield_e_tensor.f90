@@ -1013,7 +1013,7 @@ module Special
 
               if (any(real(eigenvals)<-eta)) then
 !
-!  If there are negatove eigenvalues of beta,
+!  If there are negative eigenvalues of beta,
 !
 !write(100,*) iproc, ll,mm,real(eigenvals)  !, &
 !sum(polcoeffs*(/1.d0,real(eigenvals(1)),real(eigenvals(1))**2,real(eigenvals(1))**3/)), &
