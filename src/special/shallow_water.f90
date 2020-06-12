@@ -426,7 +426,7 @@ module Special
                (t_age_storm < t_duration_storm ) &
                ) then
             storm_function(i) = smax(istorm) * &
-                 exp(- ( rr(i)           /rstorm(istorm))**2 &
+                 exp(- ( rr(i) - rstorm(istorm))**2 &
                  - ((t-tpeak(istorm))/tstorm(istorm))**2)
           else
             storm_function(i) = 0.
