@@ -21,7 +21,7 @@ module Equ
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils()
 !***********************************************************************
-    subroutine pde(f,df,p,itsub)
+    subroutine pde(f,df,p)
 !
 !  Call the different evolution equations.
 !
@@ -77,12 +77,10 @@ module Equ
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      integer, optional :: itsub
 !
       intent(inout):: f       ! inout due to lshift_datacube_x,
                               ! density floor, or velocity ceiling
       intent(out)  :: df,p
-      intent(in)   :: itsub
 !
       logical :: early_finalize
       real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
@@ -333,7 +331,7 @@ module Equ
       call timing('pde','after calc_for_chem_mixture')
 !
       if (lgpu) then
-        call rhs_gpu(f,ioptest(itsub,0),early_finalize)
+        call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           call copy_farray_from_GPU(f)
           call calc_all_module_diagnostics(f,p)
@@ -661,6 +659,7 @@ module Equ
 !  Reset lwrite_prof.
 !
       lwrite_prof=.false.
+if (lroot) print*, 'end of pde'
 !
     endsubroutine pde
 !****************************************************************************
