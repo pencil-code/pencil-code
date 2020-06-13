@@ -183,6 +183,7 @@ module Cdata
   logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
+  logical :: lread_oldsnap_notestflow=.false.
   logical :: lread_oldsnap_notestscalar=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.true.
