@@ -659,7 +659,8 @@ module Equ
 !  Reset lwrite_prof.
 !
       lwrite_prof=.false.
-if (lroot) print*, 'end of pde'
+!if (lroot) print*, 'end of pde'
+!AB: Matthias, this was not supposed to be here permanently, right? Better mark, so you find it!
 !
     endsubroutine pde
 !****************************************************************************
@@ -1208,7 +1209,7 @@ if (lroot) print*, 'end of pde'
 !
         headtt=.false.
       enddo mn_loop
-
+!
     endsubroutine rhs_cpu
 !***********************************************************************
     subroutine debug_imn_arrays
