@@ -949,10 +949,12 @@ program run
     endif
   endif
 !
-!  Save spectrum snapshot.
+!  Save spectrum snapshot. The spectrum of the last timestep is written by
+!  default, but this can be turned off by setting lwrite_last_powersnap=F
+!  in run_pars or init_pars.
 !
   if (save_lastsnap) then
-    if (dspec/=impossible) call powersnap(f,.true.)
+    if (dspec/=impossible) call powersnap(f,lwrite_last_powersnap)
   endif
 !
 !  Print wall clock time and time per step and processor for diagnostic
