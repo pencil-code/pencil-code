@@ -11,7 +11,7 @@ from .dim import read_dim
 from .param import read_param
 import sys
 
-def particles_to_density(xxp,yyp,zzp,x,y,z):
+def particles_to_density(xxp,yyp,zzp,x,y,z,density=True):
     dim = read_dim()
 
     if dim.precision == 'D':
@@ -101,18 +101,15 @@ def particles_to_density(xxp,yyp,zzp,x,y,z):
                     else:
                         if (dim.nz != 1): weight_z = 0.75 - (zp-z[izz])**2*dz_2
 
-#
-# IDL code to translate into python
-#    
-                    #if (density) then:
-                    #    if (n_elements(rhopswarm) eq 1):
-                    #        weight=rhopswarm
-                    #    else:
-                    #        weight=rhopswarm[k]
-                    #else:
-                    #    weight=1.0
-                    
-                    weight=1.0    
+                    if density then:
+                        if type(par.rhop_swarm) is float:
+                            weight=par.rhop_swarm
+                        else:
+                            weight=par.rhop_swarm[k]
+                    else:
+                        weight=1.0
+
+
                     if (dim.nx != 1): weight=weight*weight_x
                     if (dim.ny != 1): weight=weight*weight_y
                     if (dim.nz != 1): weight=weight*weight_z
