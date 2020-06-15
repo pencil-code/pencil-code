@@ -152,7 +152,7 @@ module Energy
   logical :: lFenth_as_aux=.false.
   logical :: lss_flucz_as_aux=.false.
   logical :: lTT_flucz_as_aux=.false.
-  logical :: lchi_t1_noprof=.false.
+  logical :: lchi_t1_noprof=.false., lsld_char_rho=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0
   logical :: lheat_cool_gravz=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -221,7 +221,7 @@ module Energy
       chit_fluct_prof1, chit_fluct_prof2, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, nsmooth_kramers, &
-      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, &
+      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, lsld_char_rho, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, radius_ss_x, &
       center1_x, center1_y, center1_z, &
@@ -3786,9 +3786,21 @@ module Energy
          if (ldensity_nolog) then
            cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
                           -lnrho0)+cv1*f(:,m,n,iss))
+!
+!  apply density correction, too enhace sld_char in regions of low
+!  density
+!
+           if (lsld_char_rho) cs2=cs2*exp(lnrho0)/f(:,m,n,irho)
+
          else
            cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
                           -lnrho0)+cv1*f(:,m,n,iss))
+
+!
+!  apply density correction, too enhace sld_char in regions of low
+!  density
+!
+           if (lsld_char_rho) cs2=cs2*exp(lnrho0-f(:,m,n,ilnrho))
          endif
          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
        enddo
