@@ -1,4 +1,4 @@
-pro pc_scatter_rho__height, height, charsize=charsize, $
+pro pc_rhonp__height, height, charsize=charsize, $
         npx=npx, npy=npy, width=width, xmargin=xmargin, ymargin=ymargin
   compile_opt hidden, IDL2
 
@@ -10,18 +10,75 @@ pro pc_scatter_rho__height, height, charsize=charsize, $
 
 
   return
-end ;;; procedure: pc_scatter_rho__height
+end ;;; procedure: pc_rhonp__height
 
 
-pro pc_scatter_rho, varfile, pvarfile, $
+pro pc_rhonp__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, font=font, $
+        npx=npx, npy=npy, v_minmax=v_minmax, col_minmax=col_minmax, $
+        colorbg=colorbg, colorfg=colorfg, thick=thick, title=title, top=top
+  compile_opt hidden, IDL2
+
+  x0 = !x.window[0L]
+  x1 = !x.window[1L]
+  if keyword_set(top) then begin
+    y0 = !y.window[1L] + 2.7d0 * !d.y_ch_size * ch2 / !d.y_size
+    y1 = !y.window[1L] + 3.7d0 * !d.y_ch_size * ch2 / !d.y_size
+  endif else begin
+    y0 = !y.window[0L] - 5.0d0 * !d.y_ch_size * ch2 / !d.y_size
+    y1 = !y.window[0L] - 4.0d0 * !d.y_ch_size * ch2 / !d.y_size
+  endelse
+
+  bar_x = !d.x_size * (x1 - x0)
+  bar_y = ceil(!d.y_size * (y1 - y0))
+
+  xrange = v_minmax
+  yrange = [0d0, 1d0]
+  bar = byte(lindgen(bar_x) / (bar_x - 1d0) * (col_minmax[1L] - col_minmax[0L]) + col_minmax[0L])
+
+  bar = rebin(bar, bar_x, bar_y)
+
+  px0 = x0 * !d.x_size
+  py0 = y0 * !d.y_size
+
+  xstyle = 1 + 4
+  ystyle = 1 + 4
+  ytickformat = '(a1)'
+  plot, [0], /nodata, background=colorbg, charsize=charsize, charthick=charthick, $
+        color=colorfg, font=font, /noerase, position=[x0, y0, x1, y1], $
+        xrange=xrange, xstyle=xstyle, xthick=thick, $
+        yrange=yrange, ystyle=ystyle, ythick=thick, ytickformat=ytickformat
+
+  tv, bar, px0, py0
+
+  tickformat = '(a1)'
+  ticklen = 0.2
+  axis, yaxis=0, charsize=charsize, charthick=charthick, color=colorfg, $
+        yminor=0L, yrange=yrange, /ystyle, ythick=thick, ytickformat=tickformat, ticklen=0
+  axis, yaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
+        yminor=0L, yrange=yrange, /ystyle, ythick=thick, ytickformat=tickformat, ticklen=0
+  axis, xaxis=0, charsize=charsize, charthick=charthick, color=colorfg, $
+        xrange=xrange, /xstyle, xthick=thick, xtitle=title, ticklen=xticklen, font=font
+  axis, xaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
+        xrange=xrange, /xstyle, xthick=thick, ticklen=xticklen, xtickformat=tickformat
+
+
+  return
+end ;;; procedure: pc_rhonp__colorbar
+
+
+pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
+        nbinrho=nbinrho_, nbinnp=nbinnp_, $
+        minlgrho=minlgrho, maxlgrho=maxlgrho, minnp=minnp_, maxnp=maxnp_, $
         charsize=charsize_in, charthick=charthick, colortable=colortable, $
         psym=psym, symsize=symsize, set_font=set_font, t_start=t_start, $
         xsize=xsize, cmxsize=cmxsize, dpi=dpi, thick=thick, font_size=font_size, $
         legend_log_aps=legend_log_aps, legendtext=legendtext, xrange=xrange, $
-        ofilename=ofilename, common_range=common_range
+        ofilename=ofilename, common_range=common_range, colorbar_top=colorbar_top
 
   compile_opt IDL2
 
+  if ~n_elements(histogram) then histogram = 1L
+  if ~n_elements(log) then log = 1L
   if ~n_elements(charsize_in) then charsize_in = 1d0
   if ~n_elements(colortable) then colortable = 74
   if ~n_elements(psym) then psym = 3
@@ -33,6 +90,8 @@ pro pc_scatter_rho, varfile, pvarfile, $
   if ~n_elements(legend_log_aps) then legend_log_aps = 1L
   font = ~n_elements(set_font) ? - 1L : 1L
   tt_font = font eq 1L ? 1L : 0L
+  common_range = keyword_set(common_range)
+  colorbar_top = keyword_set(colorbar_top)
 
   pc_read_param, object=ps, /quiet
   pc_read_dim, object=pd, /quiet
@@ -45,9 +104,6 @@ pro pc_scatter_rho, varfile, pvarfile, $
   x0 = ps.xyz0[0L] & dx = p_object.dx
   y0 = ps.xyz0[1L] & dy = p_object.dy
   z0 = ps.xyz0[2L] & dz = p_object.dz
-  ;x0 = p_object.x[pd.nghostx] & dx = p_object.dx
-  ;y0 = p_object.y[pd.nghosty] & dy = p_object.dy
-  ;z0 = p_object.z[pd.nghostz] & dz = p_object.dz
 
   alpha = ps.rhopmat / ps.rho0 * ps.ap0 / ps.Lx0
   if legend_log_aps then alpha = alog10(alpha)
@@ -69,15 +125,6 @@ pro pc_scatter_rho, varfile, pvarfile, $
     value_yp = dx_y - idx_yn & value_yn = 1d0 - value_yp
     value_zp = dx_z - idx_zn & value_zn = 1d0 - value_zp
 
-    if value_xn lt 0d0 || value_yn lt 0d0 || value_zn lt 0d0 then begin
-       print,"n ",i, value_xn, value_yn, value_zn
-       stop
-    endif
-    if value_xp lt 0d0 || value_yp lt 0d0 || value_zp lt 0d0 then begin
-       print,"p ",i, value_xp, value_yp, value_zp
-       stop
-    endif
-    
     idx_a = where(ps.ap0 eq p_object.ap[i])
 
        np_ap[idx_xn, idx_yn, idx_zn, idx_a] += value_xn * value_yn * value_zn
@@ -159,12 +206,16 @@ pro pc_scatter_rho, varfile, pvarfile, $
 
   ;; Calculate the window height to get a 1.0 aspect ratio:
 
-  !x.omargin = [2.0, 0.0]
-  !y.omargin = [3.0, 0.0]
-  xmargin = [4.3, 0.3]
-  ymargin = [0.3, 0.3]
+  charsize_label = charsize_in
+  charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
 
-  pc_scatter_rho__height, ysize, charsize=charsize_in, npx=npx, npy=npy, $
+  !x.omargin = [2.0, 0.0]
+  !y.omargin = [0.0, 0.0]
+  xmargin = [4.3, 0.3]
+  ymargin = [histogram ? 4.3 : 0.3, 0.3]
+  ymargin[colorbar_top ? 1L : 0L] += 4.5
+
+  pc_rhonp__height, ysize, charsize=charsize_in, npx=npx, npy=npy, $
       width=xsize, xmargin=xmargin, ymargin=ymargin
 
   window, /free, xsize=xsize, ysize=ysize, /pixmap
@@ -173,28 +224,60 @@ pro pc_scatter_rho, varfile, pvarfile, $
   salpha = font eq 1 ? '!9a!x' : '!4a!x'
   srho = font eq 1 ? '!9r!x' : '!4q!x'
 
-  charsize_label = charsize_in
-  charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
-
   lg_rho = v_object.lnrho / alog(1d1)
 
   xrange = minmax(lg_rho)
-  xstyle = 1
-  ystyle = 1
-  xtitle_ = 'log ' + srho
+  if ~n_elements(minlgrho) then minlgrho = xrange[0L]
+  if ~n_elements(maxlgrho) then maxlgrho = xrange[1L]
+  nbinrho = ~n_elements(nbinrho) ? (xrange[1L] - xrange[0L]) / 1d2 : nbinrho_
+
+  if common_range then begin
+    yrange = minmax(np_ap)
+    minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
+    maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
+    nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+  endif
+
+  xstyle = histogram ? 5 : 1
+  ystyle = histogram ? 5 : 1
+  xtitle = 'log ' + srho
   ytitle_ = 'n!dp!ii!n'
   symsize = 1.0
+
+  if histogram then background_color = colorbg
 
   format = legend_log_aps ? '(f6.3)' : '(e10.3)'
   text = string(bindgen(26) + 97b)
   for j = 0UL, n_elements(ps.ap0) - 1UL do begin
 
-    yrange = minmax(np_ap[*, *, *, j])
+    if ~common_range then begin
+      yrange = minmax(np_ap[*, *, *, j])
+      minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
+      maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
+      nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+    endif
+
+    if histogram then begin
+      hist_2d = hist_2d(lg_rho, np_ap[*, *, *, j], bin1=nbinrho, bin2=nbinnp, $
+                        min1=minlgrho, max1=maxlgrho, min2=minnp, max2=maxnp)
+      if ~common_range then zrange = minmax(hist_2d)
+      if log then begin
+        null_value = - 10d0
+        hist_2d = alog10(hist_2d + 1d1 ^ null_value)
+        idx = where(hist_2d eq null_value, count, complement=cidx)
+        if ~common_range then zrange = minmax(hist_2d[cidx])
+        color = byte((hist_2d + min(hist_2d)) / $
+                     (max(hist_2d) - min(hist_2d)) * (ncolors - 1d0) + bottom)
+        if count ne 0L then color[idx] = colorbg
+      endif else begin
+        color = byte(hist_2d / max(hist_2d) * (ncolors - 1d0) + bottom)
+      endelse
+    endif
 
     xtickformat = j ge n_elements(ps.ap0) - npx ? '' : '(a1)'
     ;;ytickformat = ~(j mod npx) ? '' : '(a1)'
 
-    xtitle = j ge n_elements(ps.ap0) - npx ? xtitle_ : ''
+    ;xtitle = j ge n_elements(ps.ap0) - npx ? xtitle_ : ''
     ytitle = ~(j mod npx) ? ytitle_ : ''
 
     plot, [0], /nodata, background=colorbg, charsize=charsize, charthick=charthick, $
@@ -202,7 +285,30 @@ pro pc_scatter_rho, varfile, pvarfile, $
           xmargin=xmargin, xrange=xrange, xstyle=xstyle, xthick=thick, xtickformat=xtickformat, $
           ymargin=ymargin, yrange=yrange, ystyle=ystyle, ythick=thick, ytickformat=ytickformat
 
-    plots, lg_rho, np_ap[*, *, *, j], color=colorfg, psym=psym, symsize=symsize
+    if histogram then begin
+
+      i_size_x = !d.x_size * (!x.window[1L] - !x.window[0L])
+      i_size_y = !d.y_size * (!y.window[1L] - !y.window[0L])
+
+      image = congrid(color, i_size_x, i_size_y, /center, /cubic)
+
+      tv, image, !x.window[0L] * !d.x_size, !y.window[0L] * !d.y_size
+
+      axis, xaxis=0L, xrange=xrange, /xstyle, xthick=thick, xtitle=xtitle, $
+            charsize=charsize, charthick=charthick, color=colorfg, font=font
+      axis, xaxis=1L, xrange=xrange, /xstyle, xthick=thick, xtickformat='(a1)', $
+            charsize=charsize, charthick=charthick, color=colorfg, font=font
+      axis, yaxis=0L, yrange=yrange, /ystyle, ythick=thick, ytitle=ytitle, $
+            charsize=charsize, charthick=charthick, color=colorfg, font=font
+      axis, yaxis=1L, yrange=yrange, /ystyle, ythick=thick, ytickformat='(a1)', $
+            charsize=charsize, charthick=charthick, color=colorfg, font=font
+
+    endif else begin
+
+      ;; Scatter plot, one color:
+      plots, lg_rho, np_ap[*, *, *, j], color=colorfg, psym=psym, symsize=symsize
+
+    endelse
 
 
     item = legend_log_aps ? 'log(' + salpha + ') = ' : salpha + ' = '
@@ -211,8 +317,13 @@ pro pc_scatter_rho, varfile, pvarfile, $
     item += strtrim(string(legend_log_aps ? alog10(ps.ap0[j]) : ps.ap0[j], format=format), 2L)
     if n_elements(ps.ap0) gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
     item = [item, '    St = ' + vStokes[j]]
-    al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, box=0, $
-                     /left, /top_legend, font=font
+    al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, box=histogram, $
+                     /left, /top_legend, font=font, background_color=background_color
+
+    title = (log ? 'log' : '') + ' counts'
+    pc_rhonp__colorbar, charsize=charsize, ch2=charsize_in, charthick=charthick, $
+        font=font, col_minmax=[bottom, !d.table_size], npx=npx, npy=npy, top=colorbar_top, $
+        v_minmax=zrange, colorbg=colorbg, colorfg=colorfg, thick=thick, title=title
 
   endfor
 
@@ -232,7 +343,7 @@ pro pc_scatter_rho, varfile, pvarfile, $
 
 
   ;; Save the file:
-  ofilename = 'pc_scatter_rho_' + varfile + '.png'
+  ofilename = 'pc_rhonp_' + varfile + '.png'
   if strpos(ofilename, '.png', /reverse_search) eq strlen(ofilename) - 4L then begin
     tvlct, red, green, blue, /get
     write_png, ofilename, image, red, green, blue
@@ -244,4 +355,4 @@ pro pc_scatter_rho, varfile, pvarfile, $
     write_tiff, ofilename, reverse(image, 3), 1, /compression
   endif
 
-end ;;; procedure: pc_scatter_rho
+end ;;; procedure: pc_rhonp
