@@ -80,16 +80,16 @@ semiauto-conf:
 # Compile tools for collecting, downscaling, and distributing data cubes
 tools: default
 
-pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid: Makefile.inc
+pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/$@.x )
-pc_meanfield_collect pc_h5collect: Makefile.inc
+pc_meanfield_collect pc_h5collect: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ experimental/$@.x )
-read_all_videofiles read_videofiles combine_videofiles read_vectorfiles start run: Makefile.inc
+read_all_videofiles read_videofiles combine_videofiles read_vectorfiles start run: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ $@.x )
-fast: Makefile.inc
+fast: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ fast )
 
