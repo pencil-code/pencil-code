@@ -283,8 +283,6 @@ endif
 ;  are writing auxiliary data or not. Auxiliary variables can be turned
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
-;;maux=0
-;JW: Matthias, I think you keept it there by mistake
 if (not keyword_set (noaux)) then begin
   if maux gt 0 then $
     if keyword_set(param.lwrite_aux) or down then $
