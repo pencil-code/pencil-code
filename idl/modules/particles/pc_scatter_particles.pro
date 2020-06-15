@@ -51,15 +51,15 @@ pro pc_scatter_particles__colorbar, charsize=charsize, ch2=ch2, charthick=charth
   tv, bar, px0, py0
 
   tickformat = '(a1)'
-  ticklen = 0.3 * !d.y_ch_size * ch2 / !d.y_size
+  ticklen = 0.2
   axis, yaxis=0, charsize=charsize, charthick=charthick, color=colorfg, $
         yminor=0L, yrange=yrange, /ystyle, ythick=thick, ytickformat=tickformat, ticklen=0
   axis, yaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
         yminor=0L, yrange=yrange, /ystyle, ythick=thick, ytickformat=tickformat, ticklen=0
   axis, xaxis=0, charsize=charsize, charthick=charthick, color=colorfg, $
-        xrange=xrange, /xstyle, xthick=thick, ticklen=xticklen, font=font
+        xrange=xrange, /xstyle, xthick=thick, ticklen=ticklen, font=font
   axis, xaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
-        xrange=xrange, /xstyle, xthick=thick, ticklen=xticklen, xtickformat=tickformat
+        xrange=xrange, /xstyle, xthick=thick, ticklen=ticklen, xtickformat=tickformat
 
 
   return

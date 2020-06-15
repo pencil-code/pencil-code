@@ -24,8 +24,8 @@ pro pc_rhonp__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, font=fo
     y0 = !y.window[1L] + 2.7d0 * !d.y_ch_size * ch2 / !d.y_size
     y1 = !y.window[1L] + 3.7d0 * !d.y_ch_size * ch2 / !d.y_size
   endif else begin
-    y0 = !y.window[0L] - 5.0d0 * !d.y_ch_size * ch2 / !d.y_size
-    y1 = !y.window[0L] - 4.0d0 * !d.y_ch_size * ch2 / !d.y_size
+    y0 = !y.window[0L] - 4.5d0 * !d.y_ch_size * ch2 / !d.y_size
+    y1 = !y.window[0L] - 3.5d0 * !d.y_ch_size * ch2 / !d.y_size
   endelse
 
   bar_x = !d.x_size * (x1 - x0)
@@ -57,9 +57,9 @@ pro pc_rhonp__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, font=fo
   axis, yaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
         yminor=0L, yrange=yrange, /ystyle, ythick=thick, ytickformat=tickformat, ticklen=0
   axis, xaxis=0, charsize=charsize, charthick=charthick, color=colorfg, $
-        xrange=xrange, /xstyle, xthick=thick, xtitle=title, ticklen=xticklen, font=font
+        xrange=xrange, /xstyle, xthick=thick, xtitle=title, ticklen=ticklen, font=font
   axis, xaxis=1, charsize=charsize, charthick=charthick, color=colorfg, $
-        xrange=xrange, /xstyle, xthick=thick, ticklen=xticklen, xtickformat=tickformat
+        xrange=xrange, /xstyle, xthick=thick, ticklen=ticklen, xtickformat=tickformat
 
 
   return
@@ -211,9 +211,9 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
 
   !x.omargin = [2.0, 0.0]
   !y.omargin = [0.0, 0.0]
-  xmargin = [4.3, 0.3]
+  xmargin = [2.8, 0.3]
   ymargin = [histogram ? 4.3 : 0.3, 0.3]
-  ymargin[colorbar_top ? 1L : 0L] += 4.5
+  ymargin[colorbar_top ? 1L : 0L] += 3.5
 
   pc_rhonp__height, ysize, charsize=charsize_in, npx=npx, npy=npy, $
       width=xsize, xmargin=xmargin, ymargin=ymargin
