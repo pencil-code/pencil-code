@@ -46,7 +46,7 @@ pro pc_scatter_particles__colorbar, charsize=charsize, ch2=ch2, charthick=charth
   plot, [0], /nodata, background=colorbg, charsize=charsize, charthick=charthick, $
         color=colorfg, font=font, /noerase, position=[x0, y0, x1, y1], $
         xrange=xrange, xstyle=xstyle, xthick=thick, $
-        yrange=yrange, ystyle=ystyle, ythick=ythick, ytickformat=ytickformat
+        yrange=yrange, ystyle=ystyle, ythick=thick, ytickformat=ytickformat
 
   tv, bar, px0, py0
 
@@ -396,7 +396,6 @@ pro pc_scatter_particles, pvar, ax=ax, az=az, fraction=fraction_, $
           pc_scatter_particles__colorbar, charsize=charsize, ch2=charsize_in, charthick=charthick, $
               font=font, col_minmax=mimi[*, j], npx=npx, npy=npy, top=colorbar_top, $
               v_minmax=mima[*, j], colorbg=colorbg, colorfg=colorfg, thick=thick
-
 
         endif else begin
 
