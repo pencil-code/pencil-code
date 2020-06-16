@@ -839,11 +839,20 @@ pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
         ;; Data for the D2 file:
         eformat = '(e10.3)'
         fformat = '(f6.3)'
+
+        if ~n_elements(xmil) then begin
+          mean_xmil = 0d0
+          stdev_xmil = 1d0
+        endif else begin
+          mean_xmil = mean(xmil)
+          stdev_xmil = stdev(xmil)
+        endelse
+
         d2_str = strtrim(i, 2L) + $
                  stb + string(ap0[j], format=format) + $
                  stb + strtrim(string(d2, format=fformat), 2L) + $
-                 stb + string(mean(xmil), format=eformat) + $
-                 stb + string(stdev(xmil), format=eformat)
+                 stb + string(mean_xmil, format=eformat) + $
+                 stb + string(stdev_xmil, format=eformat)
 
       endelse ;; python_all
 
