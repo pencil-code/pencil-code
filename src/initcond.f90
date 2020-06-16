@@ -5939,11 +5939,11 @@ module Initcond
         close (unit)
         ! distribute A component
         call distribute_xy(A_local, A_global)
-        f(l1:l2,m1:m2,1,3) = A_local
+        f(l1:l2,m1:m2,1,iaz) = A_local
       elseif (lfirst_proc_z) then
         call stop_it_if_any(.false.,'')
         call distribute_xy(A_local)
-        f(l1:l2,m1:m2,1,3) = A_local
+        f(l1:l2,m1:m2,1,iaz) = A_local
       else
         call stop_it_if_any(.false.,'')
       endif
