@@ -229,13 +229,13 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
   xrange = minmax(lg_rho)
   if ~n_elements(minlgrho) then minlgrho = xrange[0L]
   if ~n_elements(maxlgrho) then maxlgrho = xrange[1L]
-  nbinrho = ~n_elements(nbinrho) ? (xrange[1L] - xrange[0L]) / 1d2 : nbinrho_
+  nbinrho = ~n_elements(nbinrho) ? (xrange[1L] - xrange[0L]) / 2d2 : nbinrho_
 
   if common_range then begin
     yrange = minmax(np_ap)
     minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
     maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
-    nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+    nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 2d2 : nbinnp_
   endif
 
   xstyle = histogram ? 5 : 1
@@ -254,18 +254,25 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
       yrange = minmax(np_ap[*, *, *, j])
       minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
       maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
-      nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+      nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 2d2 : nbinnp_
     endif
 
     if histogram then begin
       hist_2d = hist_2d(lg_rho, np_ap[*, *, *, j], bin1=nbinrho, bin2=nbinnp, $
                         min1=minlgrho, max1=maxlgrho, min2=minnp, max2=maxnp)
-      if ~common_range then zrange = minmax(hist_2d)
+      if ~common_range then begin
+        zidx = where(hist_2d ge 1L)
+        zrange = minmax(hist_2d[zidx])
+      endif
+
       if log then begin
         null_value = - 10d0
         hist_2d = alog10(hist_2d + 1d1 ^ null_value)
         idx = where(hist_2d eq null_value, count, complement=cidx)
-        if ~common_range then zrange = minmax(hist_2d[cidx])
+        if ~common_range then begin
+          zidx = where(hist_2d gt null_value + 5d0)
+          zrange = minmax(hist_2d[zidx])
+        endif
         color = byte((hist_2d + min(hist_2d)) / $
                      (max(hist_2d) - min(hist_2d)) * (ncolors - 1d0) + bottom)
         if count ne 0L then color[idx] = colorbg
@@ -290,7 +297,7 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
       i_size_x = !d.x_size * (!x.window[1L] - !x.window[0L])
       i_size_y = !d.y_size * (!y.window[1L] - !y.window[0L])
 
-      image = congrid(color, i_size_x, i_size_y, /center, /cubic)
+      image = congrid(color, i_size_x, i_size_y, /center, cubic=0)
 
       tv, image, !x.window[0L] * !d.x_size, !y.window[0L] * !d.y_size
 
