@@ -358,7 +358,7 @@ module Special
     integer :: i,ju
     type (pencil_case), intent(in) :: p
 !
-!  Momentum equation; rho = g*h.  
+!  Momentum equation; rho = g*eta  
 !
     do i=1,3
       ju = i+iuu-1
