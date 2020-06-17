@@ -149,7 +149,7 @@ err:
   endif
 
   return
-end
+end ;;; procedure: pc_d2_dimension_write
 
 
 pro pc_d2_dimension_function, x, a, f, pder
@@ -165,14 +165,14 @@ pro pc_d2_dimension_function, x, a, f, pder
      pder = [[q * (1d0 + z)], [a[0L] * (w + q * alog(x) * (1d0 + z))]]
   
   return
-end
+end ;;; procedure: pc_d2_dimension_function
 
 
 function pc_d2_dimension_mpfit_f, x, p
   compile_opt hidden, IDL2
 
   return, p[0L] * p[1L] * x ^ (p[1L] - 1d0) * exp(- p[0L] * x ^ p[1L])
-end
+end ;;; procedure: pc_d2_dimension_mpfit_f
 
 
 pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
@@ -271,7 +271,8 @@ pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
 
   locations_ = keyword_set(log) ? alog10(locations) : locations
 
-  yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : [min(obs), max(obs)]
+  yrange = keyword_set(log) ? alog10([min(obs) > 1d-3, max(obs)]) : $
+                                     [min(obs), max(obs)]
   if keyword_set(log) then begin
     obs_ = obs * 0
     idx = where(obs gt 1d-10, count, complement=cidx, ncomplement=ncount)
@@ -297,9 +298,9 @@ pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
         ytitle=ytitle, ytickformat=ytickformat
 
   if keyword_set(yright) then begin
-     ytitle = show_y ? ytitle_ : ''
-     axis, color=color, /yaxis, yrange=yrange, charsize=charsize, $
-           charthick=charthick, /ystyle, ythick=thick, ytitle=ytitle
+    ytitle = show_y ? ytitle_ : ''
+    axis, color=color, /yaxis, yrange=yrange, charsize=charsize, $
+          charthick=charthick, /ystyle, ythick=thick, ytitle=ytitle
   endif
 
   oplot, locations_, obs_, color=4, thick=thick
@@ -327,7 +328,8 @@ pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
     xyouts, xpos, ypos, a_string, alignment=0.0, color=color, $
             charsize=charsize_leg, charthick=charthick
     if ~j then begin
-      ypos += 1.5 * !d.y_ch_size * charsize / ((!y.window[1L] - !y.window[0L]) * !d.y_size)
+      ypos += 1.5 * !d.y_ch_size * charsize / $
+              ((!y.window[1L] - !y.window[0L]) * !d.y_size)
       xyouts, xpos, ypos, file_string, alignment=0.0, color=color, $
               charsize=charsize_leg, charthick=charthick
     endif
@@ -364,7 +366,7 @@ pro pc_d2_dimension_hplot, locations, obs, i, j, fitx=fitx, fity=fity, $
 
 
   return
-end ;;; pc_d2_dimension_hplot
+end ;;; procedure: pc_d2_dimension_hplot
 
 
 pro pc_d2_dimension_animate, data, warr=warr, xsize=xsize, ysize=ysize, sleep=sleep
@@ -420,7 +422,7 @@ pro pc_d2_dimension_animate, data, warr=warr, xsize=xsize, ysize=ysize, sleep=sl
   device, decomposed=decomposed
 
   return
-end ;;; pc_d2_dimension_animate
+end ;;; procedure: pc_d2_dimension_animate
 
 
 pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
@@ -477,42 +479,73 @@ pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
   ;; Using ANIMATE, one doesn't set PVARS, but the tool finds out which ones
   ;; exist by itself:
 
-  if animate and ~n_elements(pvars) then begin
+  if ~n_elements(pvars) then begin
 
-    pstr = hdf5 ? '.' : '_'
+    if animate then begin
 
-    for ij = 0UL, 2UL do begin
-      case ij of
-        0UL: files = file_search('histogram_PVAR?' + pstr + '*_hist.dat.gz')
-        1UL: files = file_search('histogram_PVAR??' + pstr + '*_hist.dat.gz')
-        2UL: files = file_search('histogram_PVAR???' + pstr + '*_hist.dat.gz')
-      endcase
-      if files[0L] eq '' then continue
+      pstr = hdf5 ? '.' : '_'
 
-      nfiles = n_elements(files)
-      for i = 0UL, nfiles - 1UL do begin
-        if hdf5 then begin
-          pos = strpos(files[i], '.')
-          files[i] = strmid(files[i], 10L, pos - 10L)
+      for ij = 0UL, 2UL do begin
+        case ij of
+          0UL: files = file_search('histogram_PVAR?' + pstr + '*_hist.dat.gz')
+          1UL: files = file_search('histogram_PVAR??' + pstr + '*_hist.dat.gz')
+          2UL: files = file_search('histogram_PVAR???' + pstr + '*_hist.dat.gz')
+        endcase
+        if files[0L] eq '' then continue
+
+        nfiles = n_elements(files)
+        for i = 0UL, nfiles - 1UL do begin
+          if hdf5 then begin
+            pos = strpos(files[i], '.')
+            files[i] = strmid(files[i], 10L, pos - 10L)
+          endif else begin
+            pos = strpos(strmid(files[i], 1L + strpos(files[i], '_')), '_')
+            files[i] = strmid(files[i], 10L, pos)
+          endelse
+        endfor
+        if ~n_elements(pvars) then begin
+          pvars = files[uniq(files, sort(files))]
         endif else begin
-          pos = strpos(strmid(files[i], 1L + strpos(files[i], '_')), '_')
-          files[i] = strmid(files[i], 10L, pos)
+          pvars = [pvars, files[uniq(files, sort(files))]]
         endelse
+
       endfor
-      if ~n_elements(pvars) then begin
-        pvars = files[uniq(files, sort(files))]
+
+      if hdf5 then pvars = 'allprocs' + path_sep() + pvars + '.h5'
+
+      ;; Create pointer array that stores the data:
+      data = ptrarr(n_elements(pvars))
+      warr = lonarr(n_elements(pvars)) - 1L
+
+    endif else begin
+
+      ;; Use all files by default:
+
+      if hdf5 then begin
+        dirname = 'data' + path_sep() + 'allprocs' + path_sep()
+        files1 = file_search(dirname + 'PVAR?.h5')
+        files2 = file_search(dirname + 'PVAR??.h5')
+        files3 = file_search(dirname + 'PVAR???.h5')
       endif else begin
-        pvars = [pvars, files[uniq(files, sort(files))]]
+        dirname = 'data' + path_sep() + 'proc0' + path_sep()
+        files1 = file_search(dirname + 'PVAR?')
+        files2 = file_search(dirname + 'PVAR??')
+        files3 = file_search(dirname + 'PVAR???')
       endelse
 
-    endfor
+      pvars = ['']
+      if files1[0L] ne '' then pvars = [pvars, file_basename(files1)]
+      if files2[0L] ne '' then pvars = [pvars, file_basename(files2)]
+      if files3[0L] ne '' then pvars = [pvars, file_basename(files3)]
+      pvars = pvars[1L : *]
 
-    if hdf5 then pvars = 'allprocs' + path_sep() + pvars + '.h5'
+      pvars = [pvars, hdf5 ? 'pvar.h5' : 'pvar.dat']
 
-    ;; Create pointer array that stores the data:
-    data = ptrarr(n_elements(pvars))
-    warr = lonarr(n_elements(pvars)) - 1L
-  endif
+      if hdf5 then pvars = 'allprocs' + path_sep() + pvars
+
+    endelse ;; animate
+
+  endif ;; ~n_elements(pvars)
 
   ;; Open the output file:
   file = 'nnd_d2.dat'
@@ -803,23 +836,32 @@ pro pc_d2_dimension, pvars, allpython=allpython, recalculate=recalculate, $
             ap=ap0[j], file_string=file_string, warr=warr, do_grab=do_grab
 
 
-        if load_data then begin
-          eformat = '(e10.3)'
-          fformat = '(f6.3)'
-          str = strtrim(i, 2L) + $
-                stb + string(ap0[j], format=format) + $
-                stb + strtrim(string(d2, format=fformat), 2L) + $
-                stb + string(mean(xmil), format=eformat) + $
-                stb + string(stdev(xmil), format=eformat)
-        endif
+        ;; Data for the D2 file:
+        eformat = '(e10.3)'
+        fformat = '(f6.3)'
 
-      endelse
+        if ~n_elements(xmil) then begin
+          mean_xmil = 0d0
+          stdev_xmil = 1d0
+        endif else begin
+          mean_xmil = mean(xmil)
+          stdev_xmil = stdev(xmil)
+        endelse
 
-      if load_data then pc_d2_dimension_write, str, append=append, file=file
-      
+        d2_str = strtrim(i, 2L) + $
+                 stb + string(ap0[j], format=format) + $
+                 stb + strtrim(string(d2, format=fformat), 2L) + $
+                 stb + string(mean_xmil, format=eformat) + $
+                 stb + string(stdev_xmil, format=eformat)
+
+      endelse ;; python_all
+
+
+      pc_d2_dimension_write, d2_str, append=append, file=file
+
     endfor ;; j = 0UL, nap0 - 1UL
 
-    if load_data then pc_d2_dimension_write, '', append=append, file=file
+    pc_d2_dimension_write, '', append=append, file=file
 
   endfor
 

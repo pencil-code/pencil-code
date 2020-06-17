@@ -2,8 +2,8 @@ pro pc_rhonp__height, height, charsize=charsize, $
         npx=npx, npy=npy, width=width, xmargin=xmargin, ymargin=ymargin
   compile_opt hidden, IDL2
 
-  panel_wh = long((width - total(!x.omargin) * charsize * !d.x_ch_size) / double(npx) - $
-                  total(xmargin) * charsize * !d.x_ch_size)
+  panel_wh = long((width - total(!x.omargin) * charsize * !d.x_ch_size) / $
+                  double(npx) - total(xmargin) * charsize * !d.x_ch_size)
 
   height = long(npy * (panel_wh + total(ymargin) * charsize * !d.y_ch_size) + $
                 total(!y.omargin) * charsize * !d.y_ch_size)
@@ -38,7 +38,7 @@ pro pc_rhonp__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, font=fo
   bar = rebin(bar, bar_x, bar_y)
 
   px0 = x0 * !d.x_size
-  py0 = y0 * !d.y_size
+  py0 = ceil(y0 * !d.y_size)
 
   xstyle = 1 + 4
   ystyle = 1 + 4
@@ -66,32 +66,36 @@ pro pc_rhonp__colorbar, charsize=charsize, ch2=ch2, charthick=charthick, font=fo
 end ;;; procedure: pc_rhonp__colorbar
 
 
-pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
+pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, ylog=ylog, $
         nbinrho=nbinrho_, nbinnp=nbinnp_, $
         minlgrho=minlgrho, maxlgrho=maxlgrho, minnp=minnp_, maxnp=maxnp_, $
-        charsize=charsize_in, charthick=charthick, colortable=colortable, $
+        charsize=charsize_in_, charthick=charthick, colortable=colortable, $
         psym=psym, symsize=symsize, set_font=set_font, t_start=t_start, $
-        xsize=xsize, cmxsize=cmxsize, dpi=dpi, thick=thick, font_size=font_size, $
+        xsize=xsize, cmxsize=cmxsize, dpi=dpi, thick=thick_, font_size=font_size, $
         legend_log_aps=legend_log_aps, legendtext=legendtext, xrange=xrange, $
-        ofilename=ofilename, common_range=common_range, colorbar_top=colorbar_top
-
+        ofilename=ofilename, common_range=common_range, colorbar_top=colorbar_top, $
+        ret_val=ret_val, use_zbuffer=use_zbuffer, normalize_counts=normalize_counts
   compile_opt IDL2
 
   if ~n_elements(histogram) then histogram = 1L
   if ~n_elements(log) then log = 1L
-  if ~n_elements(charsize_in) then charsize_in = 1d0
+  if ~n_elements(ylog) then ylog = 1L
+  if ~n_elements(charsize_in_) then charsize_in_ = 1d0
   if ~n_elements(colortable) then colortable = 74
   if ~n_elements(psym) then psym = 3
   if ~n_elements(symsize) then symsize = 1.0
   if ~n_elements(xsize) then xsize = 800L
   if ~n_elements(cmxsize) then cmxsize = 13.5
-  if n_elements(dpi) eq 1L then xsize = cmxsize * dpi / 2.54d0
+  if n_elements(dpi) eq 1L then xsize = ceil(cmxsize * dpi / 2.54d0)
+  if ~n_elements(thick_) then thick_ = 1.0
   if ~n_elements(t_start) then t_start = 0d0
   if ~n_elements(legend_log_aps) then legend_log_aps = 1L
   font = ~n_elements(set_font) ? - 1L : 1L
   tt_font = font eq 1L ? 1L : 0L
   common_range = keyword_set(common_range)
   colorbar_top = keyword_set(colorbar_top)
+  if ~n_elements(use_zbuffer) then use_zbuffer = 1L
+  if ~n_elements(normalize_counts) then normalize_counts = 1L
 
   pc_read_param, object=ps, /quiet
   pc_read_dim, object=pd, /quiet
@@ -158,7 +162,7 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
   ;;===========================================================================
   ;;===========================================================================
   ;; Time scales:
-  
+
   ;; Drag force: stopping time:
   tau_stop = sqrt(!dpi / 8d0) * ps.rhopmat * ps.ap0 / (ps.rho0 * ps.cs0)
 
@@ -186,7 +190,48 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
   colorlb = 8b
   coloryl = 9b
 
+  if use_zbuffer then begin
+    scale_factor = 4L
+
+    charsize_in = charsize_in_ * scale_factor
+    charsize_label = charsize_in
+    charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
+    thick = thick_ * scale_factor
+  endif else begin
+    scale_factor = 1L
+
+    charsize_in = charsize_in_
+    charsize_label = charsize_in
+    charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
+    thick = thick_
+  endelse
+
   device, get_decomposed=decomposed
+
+  ;; Calculate the window height to get a 1.0 aspect ratio:
+
+  !x.omargin = [2.0, 0.0]
+  if normalize_counts then !x.omargin[1L] += 1.0
+  !y.omargin = [0.0, 0.0]
+  xmargin = [2.8, 0.3]
+  ymargin = [histogram ? 4.3 : 0.3, 0.3]
+  ymargin[colorbar_top ? 1L : 0L] += 3.5
+
+  pc_rhonp__height, ysize__scale_factor, charsize=charsize_in, npx=npx, npy=npy, $
+      width=xsize * scale_factor, xmargin=xmargin, ymargin=ymargin
+  ysize = ysize__scale_factor / scale_factor
+
+  if use_zbuffer then begin
+    device_plot = !d.name
+    set_plot, 'z'
+    erase
+    device, set_pixel_depth=24
+    device, set_resolution=[xsize, ysize] * scale_factor
+  endif else begin
+    window, /free, xsize=xsize, ysize=ysize, /pixmap
+    winid = !d.window
+  endelse
+
   device, decomposed=0
 
   bottom = 10L
@@ -204,23 +249,6 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
 
   if tt_font then device, set_font=set_font, /tt_font
 
-  ;; Calculate the window height to get a 1.0 aspect ratio:
-
-  charsize_label = charsize_in
-  charsize = charsize_in * (npx * npy gt 2L ? 2d0 : 1d0)
-
-  !x.omargin = [2.0, 0.0]
-  !y.omargin = [0.0, 0.0]
-  xmargin = [2.8, 0.3]
-  ymargin = [histogram ? 4.3 : 0.3, 0.3]
-  ymargin[colorbar_top ? 1L : 0L] += 3.5
-
-  pc_rhonp__height, ysize, charsize=charsize_in, npx=npx, npy=npy, $
-      width=xsize, xmargin=xmargin, ymargin=ymargin
-
-  window, /free, xsize=xsize, ysize=ysize, /pixmap
-  winid = !d.window
-
   salpha = font eq 1 ? '!9a!x' : '!4a!x'
   srho = font eq 1 ? '!9r!x' : '!4q!x'
 
@@ -229,48 +257,68 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
   xrange = minmax(lg_rho)
   if ~n_elements(minlgrho) then minlgrho = xrange[0L]
   if ~n_elements(maxlgrho) then maxlgrho = xrange[1L]
-  nbinrho = ~n_elements(nbinrho) ? (xrange[1L] - xrange[0L]) / 1d2 : nbinrho_
+  nbinrho = ~n_elements(nbinrho) ? (xrange[1L] - xrange[0L]) / 4d2 : nbinrho_
 
   if common_range then begin
     yrange = minmax(np_ap)
+    if ylog then yrange = alog10(yrange)
     minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
     maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
-    nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+    nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 4d2 : nbinnp_
   endif
 
   xstyle = histogram ? 5 : 1
   ystyle = histogram ? 5 : 1
   xtitle = 'log ' + srho
   ytitle_ = 'n!dp!ii!n'
+  if ylog then ytitle_ = 'log ' + ytitle_
   symsize = 1.0
 
-  if histogram then background_color = colorbg
+  if histogram && ~ylog then background_color = colorbg
 
   format = legend_log_aps ? '(f6.3)' : '(e10.3)'
   text = string(bindgen(26) + 97b)
   for j = 0UL, n_elements(ps.ap0) - 1UL do begin
 
+    y_value = np_ap[*, *, *, j]
+
     if ~common_range then begin
-      yrange = minmax(np_ap[*, *, *, j])
+      yrange = minmax(y_value)
+      if ylog then begin
+        tidx = where(y_value gt 0d0)
+        yrange[0L] = min(y_value[temporary(tidx)])
+        yrange = alog10(yrange)
+      endif
       minnp = ~n_elements(minnp_) ? yrange[0L] : minnp_
       maxnp = ~n_elements(maxnp_) ? yrange[1L] : maxnp_
-      nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 1d2 : nbinnp_
+      nbinnp = ~n_elements(nbinnp_) ? (yrange[1L] - yrange[0L]) / 2d2 : nbinnp_
     endif
 
+    null_value = - 10d0
+
     if histogram then begin
-      hist_2d = hist_2d(lg_rho, np_ap[*, *, *, j], bin1=nbinrho, bin2=nbinnp, $
+      hist_2d = hist_2d(lg_rho, ylog ? alog10(y_value) : y_value, $
+                        bin1=nbinrho, bin2=nbinnp, $
                         min1=minlgrho, max1=maxlgrho, min2=minnp, max2=maxnp)
-      if ~common_range then zrange = minmax(hist_2d)
+      if ~common_range then begin
+        zidx = where(hist_2d ge 1L)
+        zrange = minmax(hist_2d[zidx])
+        if normalize_counts then zrange /= max(zrange)
+      endif
+
       if log then begin
-        null_value = - 10d0
-        hist_2d = alog10(hist_2d + 1d1 ^ null_value)
-        idx = where(hist_2d eq null_value, count, complement=cidx)
-        if ~common_range then zrange = minmax(hist_2d[cidx])
-        color = byte((hist_2d + min(hist_2d)) / $
-                     (max(hist_2d) - min(hist_2d)) * (ncolors - 1d0) + bottom)
+        idx = where(hist_2d eq 0d0, count, complement=cidx)
+        max_h = double(max(hist_2d))
+        hist_2d = alog10(normalize_counts ? hist_2d / max_h : hist_2d)
+        min = min(hist_2d, /nan, max=max)
+        if ~common_range then zrange = [min, max]
+        color = byte((hist_2d - min) / (max - min) * (ncolors - 1d0) + bottom)
         if count ne 0L then color[idx] = colorbg
+        color_range = minmax(color[cidx])
       endif else begin
-        color = byte(hist_2d / max(hist_2d) * (ncolors - 1d0) + bottom)
+        color = byte((hist_2d - min(hist_2d)) / $
+                     (max(hist_2d) - min(hist_2d)) * (ncolors - 1d0) + bottom)
+        color_range = minmax(color)
       endelse
     endif
 
@@ -290,7 +338,7 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
       i_size_x = !d.x_size * (!x.window[1L] - !x.window[0L])
       i_size_y = !d.y_size * (!y.window[1L] - !y.window[0L])
 
-      image = congrid(color, i_size_x, i_size_y, /center, /cubic)
+      image = congrid(color, i_size_x, i_size_y, /center)
 
       tv, image, !x.window[0L] * !d.x_size, !y.window[0L] * !d.y_size
 
@@ -306,7 +354,8 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
     endif else begin
 
       ;; Scatter plot, one color:
-      plots, lg_rho, np_ap[*, *, *, j], color=colorfg, psym=psym, symsize=symsize
+      plots, lg_rho, ylog ? alog10(np_ap[*, *, *, j] > 1d1 ^ null_value) : np_ap[*, *, *, j], $
+             color=colorfg, psym=psym, symsize=symsize
 
     endelse
 
@@ -317,30 +366,59 @@ pro pc_rhonp, varfile, pvarfile, histogram=histogram, log=log, $
     item += strtrim(string(legend_log_aps ? alog10(ps.ap0[j]) : ps.ap0[j], format=format), 2L)
     if n_elements(ps.ap0) gt 1UL then item = strmid(text, j, 1L) + ')  ' + item
     item = [item, '    St = ' + vStokes[j]]
-    al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, box=histogram, $
-                     /left, /top_legend, font=font, background_color=background_color
 
-    title = (log ? 'log' : '') + ' counts'
+    xpos = 0.05 * (!x.window[1L] - !x.window[0L]) + !x.window[0L]
+    ypos = 0.05 * (!y.window[1L] - !y.window[0L]) + !y.window[0L]
+    xyouts, xpos, ypos, item[1L], alignment=0.0, charsize=charsize_label, charthick=charthick, $
+            color=colorfg, font=font, /normal
+    ypos += 1.4 * charsize_label * !d.y_ch_size / !d.y_size
+    xyouts, xpos, ypos, item[0L], alignment=0.0, charsize=charsize_label, charthick=charthick, $
+            color=colorfg, font=font, /normal
+
+    ;al_legend, item, charsize=charsize_label, charthick=charthick, textcolors=colorfg, $
+    ;           box=histogram && ~ylog, /left, top_legend=~ylog, font=font, $
+    ;           background_color=background_color
+
+    title = (log ? 'log' : '') + (normalize_counts ? ' normalized' : '') + ' counts'
     pc_rhonp__colorbar, charsize=charsize, ch2=charsize_in, charthick=charthick, $
-        font=font, col_minmax=[bottom, !d.table_size], npx=npx, npy=npy, top=colorbar_top, $
+        font=font, col_minmax=color_range, npx=npx, npy=npy, top=colorbar_top, $
         v_minmax=zrange, colorbg=colorbg, colorfg=colorfg, thick=thick, title=title
 
+    ; [bottom, !d.table_size]
+
   endfor
+
+
+  if use_zbuffer then begin
+
+    ;; Allows for antialiasing, by plotting to a figure 4 times the
+    ;; size and then scaling down the read out image:
+
+    image = tvrd(/true)
+
+    set_plot, device_plot
+    window, xsize=xsize, ysize=ysize
+    image = rebin(image, 3L, xsize, ysize)
+
+    tv, image, /true
+
+  endif else begin
+
+    device, decomposed=1L
+    image = tvrd(/true)
+
+    copy = [0L, 0L, xsize, ysize, 0L, 0L, winid]
+    window, xsize=xsize, ysize=ysize
+    device, copy=copy
+    wdelete, winid
+
+  endelse
+
+  device, decomposed=decomposed
 
   !p.multi = p_multi
   !x.omargin = x_omargin
   !y.omargin = y_omargin
-
-  device, decomposed=1L
-  image = tvrd(/true)
-  device, decomposed=decomposed
-
-  copy = [0L, 0L, xsize, ysize, 0L, 0L, winid]
-
-  window, xsize=xsize, ysize=ysize
-  device, copy=copy
-  wdelete, winid
-
 
   ;; Save the file:
   ofilename = 'pc_rhonp_' + varfile + '.png'
