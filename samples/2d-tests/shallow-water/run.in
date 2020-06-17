@@ -27,8 +27,7 @@
   nu_hyper3_mesh=5.,nu_shock=1  
 /
 &special_run_pars
-   gravity=1.0
-   c0=0.1
+   c0=0.1  ! = (g*h)0
 /
 &shock_run_pars
 /

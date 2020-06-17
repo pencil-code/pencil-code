@@ -1,6 +1,8 @@
 !                -*-f90-*-     (for Emacs)
 !
-! Kappa-mechanism in vertically stratified atmosphere
+! Gravity waves in shallow water - should reproduce
+! gravity wave velocity as ug=sqrt(gh).
+!
 ! Initialisation parameters
 !
 &init_pars
