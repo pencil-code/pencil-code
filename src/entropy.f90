@@ -3805,7 +3805,7 @@ module Energy
 !
 !  make sure cs2 contribution is always larger than 5.*cs2top
 !
-         if (lsld_char_cslimit) cs2=cs2 + 5.*cs2top
+         if (lsld_char_cslimit) cs2=cs2 + 10.*cs2top
          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
        enddo
        enddo
