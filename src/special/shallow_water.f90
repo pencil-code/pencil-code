@@ -53,13 +53,16 @@ module Special
 !
   include '../special.h'
 !
-! Global arrays
+! Global arrays and parameters
 !
-  real :: fcoriolis
   real :: Omega_SB=1.0
-  real :: gamma_parameter=0.021
+  real :: gamma_parameter=1.0
+  real :: fcoriolis           ! = 2*Omega - gamma*r**2
+  real :: Omega1_SB           ! = 1./Omega
+  real :: planetary_radius    ! = sqrt(Omega/gamma)
+  real :: eta0=0.0
 !
-! Different pre-defined forms of the bottom function
+! Different pre-defined forms of the base height
 !
   real :: c0=0.,cx1=0.,cx2=0.
   real :: cy1=0.,cy2=0.
@@ -78,22 +81,23 @@ module Special
 ! Mass relaxation
 !
   real, dimension (nx) :: advec_cg2=0.0
-  real, dimension (mx,my) :: bottom_function
-  real, dimension (nx,ny,2) :: gradlb
+  real, dimension (mx,my) :: h0
+  real, dimension (nx,ny,2) :: gradh0
   real, dimension (nx,ny) :: gamma_rr2,eta_relaxation
-  logical :: ladvection_bottom=.true.,lcompression_bottom=.true.
+  logical :: ladvection_base_height=.true.,lcompression_base_height=.true.
   logical :: lcoriolis_force=.true.
   logical :: lmass_relaxation=.true.
   logical :: lgamma_plane=.true.
   logical :: lcalc_storm=.true.
   logical :: lupdate_as_var=.true.
+  real :: storm_strength=1.0
 !
   namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms
 !  
-  namelist /special_run_pars/ ladvection_bottom,lcompression_bottom,&
+  namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB
+       lmass_relaxation,Omega_SB,eta0,storm_strength
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init
@@ -137,7 +141,7 @@ module Special
       real, dimension (nx) :: r2
 !
       do m=1,my
-        bottom_function(:,m) = c0 &
+        h0(:,m) = c0 &
              + cx1*x + cx2*x**2 &
              + cy1*y(m) + cy2*y(m)**2 &
              + cx1y1*x*y(m) &
@@ -146,12 +150,12 @@ module Special
       enddo
 !
       do m=m1,m2
-        gradlb(:,m-m1+1,1) = cx1 + 2*cx2*x(l1:l2) &
+        gradh0(:,m-m1+1,1) = cx1 + 2*cx2*x(l1:l2) &
              + cx1y1*y(m) &
              + cx1y2*y(m)**2 + 2*cx2y1*x(l1:l2)*y(m) &
              + 2*cx2y2*x(l1:l2)*y(m)**2
 !
-        gradlb(:,m-m1+1,2) = cy1 + 2*cy2*y(m) &
+        gradh0(:,m-m1+1,2) = cy1 + 2*cy2*y(m) &
              + cx1y1*x(l1:l2) &
              + 2*cx1y2*x(l1:l2)*y(m) + cx2y1*x(l1:l2)**2 &
              + 2*cx2y2*x(l1:l2)**2*y(m)
@@ -160,6 +164,8 @@ module Special
 ! Define the Coriolis parameters
 !
       fcoriolis = 2*Omega_SB
+      Omega1_SB = 1./Omega_SB
+      planetary_radius = sqrt(Omega_SB/gamma_parameter)
 !
       if (lgamma_plane) then
         do m=m1,m2
@@ -176,7 +182,8 @@ module Special
       if (lmass_relaxation) then
         do m=m1,m2
           r2 = x(l1:l2)**2 + y(m)**2
-          eta_relaxation(:,m-m1+1) = Omega_SB**2 * (1.5*r2 - 0.25*gamma_parameter * r2**2)
+          eta_relaxation(:,m-m1+1) = &
+               eta0 + Omega_SB**2*r2 * (1.5 - 0.25*gamma_parameter*Omega1_SB*r2)
         enddo
       endif
 !
@@ -294,24 +301,31 @@ module Special
 !
 !    d(gh)/dt = -(u.del)gh - gh*divu 
 !
-!   where h = eta + Lb, with Lb the function of the botton; either add the bottom function to an eta initial condition 
+!   where h = h0 + eta, with h0 being the base height. 
+!   In terms of eta, the continuity equation then becomes 
+!   
+!   d(g*eta)/dt = -(u.del)g*eta - g*eta*divu - (u.del)g*h0 - g*h0*divu
+!
+!   The density module takes care of adding -(u.del)g*eta and g*eta*divu.
+!      
+!   The other terms, (u.del)g*h0 and g*h0*divu are added here. 
 !
 !  04-dec-19/wlad+ali: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: ugLb
+      real, dimension (nx) :: ugh0
 !     
       if (.not.ldensity_nolog) call fatal_error("","")
 !
-      if (ladvection_bottom) then
-        ugLb = gradlb(:,m-m1+1,1)*p%uu(:,1)  + gradlb(:,m-m1+1,2)*p%uu(:,2) 
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - ugLb
+      if (ladvection_base_height) then
+        ugh0 = gradh0(:,m-m1+1,1)*p%uu(:,1)  + gradh0(:,m-m1+1,2)*p%uu(:,2) 
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - ugh0
       endif
 
-      if (lcompression_bottom) then
-        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - bottom_function(l1:l2,m)*p%divu
+      if (lcompression_base_height) then
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - h0(l1:l2,m)*p%divu
       endif
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019)       
@@ -333,9 +347,9 @@ module Special
 !  The momentum equation in shallow water does not have the pressure term. 
 !  Instead, we solve
 !
-!    du/dt = -(u.del)u - grad[g(h-Lb)],
+!    du/dt = -(u.del)u - grad[g(h-h0)],
 !
-!   where h is the height, and Lb is the bottom function. We use rho=h-LB=eta
+!   where h is the height, and h0 is the base height. We use rho = g*(h-h0) = g*eta
 !
 !  04-dec-19/wlad+ali: coded
 !
@@ -363,8 +377,9 @@ module Special
       df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) + q%gr2*p%uu(:,1)
     endif
     
-    if (lfirst.and.ldt) then 
-      advec_cg2 = (p%rho+bottom_function(l1:l2,m))**2 * dxyz_2
+    if (lfirst.and.ldt) then
+      advec_cg2 = (p%rho + h0(l1:l2,m))**2 * dxyz_2
+!       
       if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
       advec2    = advec2 + advec_cg2
     endif
@@ -477,7 +492,7 @@ module Special
           call get_storm(istorm)
         enddo
 !     
-        print*,rsize_storm
+        print*,"rsize_storm=",rsize_storm
         call output_storms(trim(datadir)//'/storms.dat')
         if (lwrite_ic.and.lupdate_as_var) &
              call output_storms(trim(datadir)//'/STORMS0')
@@ -575,7 +590,7 @@ module Special
     use General, only: random_number_wrapper
 !
     real :: r,p,srand,trand
-    real, dimension(6) :: smax_values=(/-0.271713,-0.135856,-0.054343,0.054343,0.135856,0.271713/)
+    real, dimension(6) :: smax_values=(/ -5.0 , -2.5 , -1.0 , 1.0 , 2.5 , 5.0 /)
     integer :: ismax
 !    
     integer, intent(in) :: istorm
@@ -595,11 +610,12 @@ module Special
     tpeak(istorm)  = t + (1.1+trand)*tstorm(istorm)
 !         
 ! Maximum strength of the storm - pick randomly between the values
-! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5)         
+! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5) -- values in m^2/s^3,
+! to be converted to code units by storm_strength
 !
     call random_number_wrapper(srand)
     ismax = nint(srand*5 + 1)
-    smax(istorm)   = smax_values(ismax)
+    smax(istorm)   = smax_values(ismax)*storm_strength
 !
   endsubroutine get_storm
 !***********************************************************************
