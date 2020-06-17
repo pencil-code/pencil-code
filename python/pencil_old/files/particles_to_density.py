@@ -101,7 +101,7 @@ def particles_to_density(xxp,yyp,zzp,x,y,z,density=True):
                     else:
                         if (dim.nz != 1): weight_z = 0.75 - (zp-z[izz])**2*dz_2
 
-                    if density then:
+                    if density:
                         if type(par.rhop_swarm) is float:
                             weight=par.rhop_swarm
                         else:
