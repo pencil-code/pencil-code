@@ -151,7 +151,7 @@ module Energy
   logical :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
   logical :: lss_flucz_as_aux=.false.
-  logical :: lTT_flucz_as_aux=.false.
+  logical :: lTT_flucz_as_aux=.false., lsld_char_cslimit=.false.
   logical :: lchi_t1_noprof=.false., lsld_char_rho=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0
   logical :: lheat_cool_gravz=.false.
@@ -224,7 +224,7 @@ module Energy
       xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, lsld_char_rho, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, radius_ss_x, &
-      center1_x, center1_y, center1_z, &
+      center1_x, center1_y, center1_z, lsld_char_cslimit, &
       lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene, &
@@ -3769,7 +3769,7 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      use EquationOfState, only : lnrho0, cs20, get_cv1
+      use EquationOfState, only : lnrho0, cs20, get_cv1, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2
@@ -3787,7 +3787,7 @@ module Energy
            cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
                           -lnrho0)+cv1*f(:,m,n,iss))
 !
-!  apply density correction, too enhace sld_char in regions of low
+!  apply density correction, to enhace sld_char in regions of low
 !  density
 !
            if (lsld_char_rho) cs2=cs2*exp(lnrho0)/f(:,m,n,irho)
@@ -3797,11 +3797,15 @@ module Energy
                           -lnrho0)+cv1*f(:,m,n,iss))
 
 !
-!  apply density correction, too enhace sld_char in regions of low
+!  apply density correction, to enhace sld_char in regions of low
 !  density
 !
            if (lsld_char_rho) cs2=cs2*exp(lnrho0-f(:,m,n,ilnrho))
          endif
+!
+!  make sure cs2 contribution is always larger than 5.*cs2top
+!
+         if (lsld_char_cslimit) cs2=cs2 + 5.*cs2top
          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
        enddo
        enddo
