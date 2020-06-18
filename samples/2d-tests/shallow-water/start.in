@@ -26,30 +26,16 @@
    k_eta=4.0
    x0_drop=1.69
    y0_drop=1.00
-   !alpha=1.0
-   !alpha=0.0
+   init_shallow_density='gaussian-blob'
 /
 &hydro_init_pars
-   !inituu='gaussian-noise'
-   !ampluu=1.0
-   !inituu='const_uu','sinwave-x'
-   !uu_const=0.1,0,0
-   !ampluu=0,1e-4
-   !kx_uu = 0.0314159265358979
    inituu='zero'
 /
 &density_init_pars
-   !rho_const=100.
-   !lnrho_const=4.605170185988092
-   initlnrho='const_rho'
-   !ampllnrho=1.
-   !kx_lnrho=0.0314159265358979
-   !6.2831853071795864
-   !rho_const=0.0
+   initlnrho='nothing'
    ldensity_nolog=T
 /
 &special_init_pars
-  init_shallow='gaussian-blob'
 /
 &shock_init_pars
 /

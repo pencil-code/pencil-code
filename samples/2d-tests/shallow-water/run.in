@@ -28,6 +28,11 @@
 /
 &special_run_pars
    c0=0.1  ! = (g*h)0
+   lcoriolis_force=F
+   lmass_relaxation=F
+   lgamma_plane=F
+   lcalc_storm=F
+   Omega_SB=0.0
 /
 &shock_run_pars
 /
