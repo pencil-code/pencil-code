@@ -3772,8 +3772,8 @@ module Energy
       use EquationOfState, only : lnrho0, cs20, get_cv1, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: cs2
-      real :: cv1
+      real, dimension (mx) :: cs2, fact
+      real :: cv1, w_sld1
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
@@ -3781,6 +3781,7 @@ module Energy
      if (lslope_limit_diff .and. llast) then
        call get_cv1(cv1)
        cs2=0.
+       w_sld1=1./w_sldchar_ene
        do m=1,my
        do n=1,mz
          if (ldensity_nolog) then
@@ -3803,10 +3804,14 @@ module Energy
            if (lsld_char_rho) cs2=cs2*exp(lnrho0-f(:,m,n,ilnrho))
          endif
 !
-!  make sure cs2 contribution is always larger than 5.*cs2top
+!  make sure cs2 contribution is always larger than cs2top
 !
-         if (lsld_char_cslimit) cs2=cs2 + 10.*cs2top
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
+         if (lsld_char_cslimit) then
+           fact=1+w_sld1*(cs2top/cs2)**2.
+         else
+           fact=1.
+         endif
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact
        enddo
        enddo
      endif
