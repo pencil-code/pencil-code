@@ -44,7 +44,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3)
-! PENCILS PROVIDED ugmu5; ugmuS; del2mu5; del2muS
+! PENCILS PROVIDED ugmu5; ugmuS; del2mu5; del2muS; del4mu5; del4muS
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -91,9 +91,11 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5, diffmuS, lambda5, mu5_const=0., gammaf5=0., Cw=0.
-   real :: muS_const=0., coef_muS=0., coef_mu5=0.
-   real :: meanmu5=0., flucmu5=0.
+   real :: diffmu5, diffmuS, diffmu5max, diffmuSmax
+   real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
+   real :: lambda5, mu5_const=0., gammaf5=0.
+   real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
+   real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -104,6 +106,8 @@ module Special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
+   logical :: ldiffmu5_hyper2_simplified=.false.
+   logical :: ldiffmuS_hyper2_simplified=.false.
    logical :: lmu5adv=.true., lmuSadv=.true.
 !
   character (len=labellen) :: initspecial='nothing'
@@ -116,7 +120,9 @@ module Special
       coef_muS, coef_mu5
 !
   namelist /special_run_pars/ &
-      diffmu5, diffmuS, lambda5, cdtchiral, gammaf5, &
+      diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
+      lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
+      ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -124,6 +130,7 @@ module Special
   integer :: idiag_muSm=0      ! DIAG_DOC: $\left<\mu_S\right>$
   integer :: idiag_muSrms=0    ! DIAG_DOC: $\left<\mu_S^2\right>^{1/2}$
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
+  integer :: idiag_mu51m=0     ! DIAG_DOC: $\left<|\mu_5|\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$     
   integer :: idiag_gmuSrms=0   ! DIAG_DOC: $\left<(\nabla\mu_S)^2\right>^{1/2}$     
@@ -165,9 +172,7 @@ module Special
 !
       if (lmuS) then
         call farray_register_pde('muS',imuS)
-! JEN:
         ispecialvar2=imuS
-! JEN.
       endif
 !
 !!      call farray_register_auxiliary('specaux',ispecaux)
@@ -226,8 +231,22 @@ module Special
           call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
 !
+        case ('double_sin')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2)) )
+          enddo; enddo
+          if (lmuS) f(:,:,:,imuS) = muS_const
+!
+        case ('triple_sin')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2))  &
+              + sin(4.*kx_mu5*x(l1:l2)) )
+          enddo; enddo
+          if (lmuS) f(:,:,:,imuS) = muS_const
+!
         case ('gaussian-noise')
           call gaunoise(amplmu5,f,imu5)
+          if (lmuS) call gaunoise(amplmuS,f,imuS)
 !
         case ('const_sinwave-phase')
             call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
@@ -268,6 +287,8 @@ module Special
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
+      if (ldiffmu5_hyper2_simplified) lpenc_requested(i_del4mu5)=.true.
+      if (ldiffmuS_hyper2_simplified) lpenc_requested(i_del4muS)=.true.
       if (lhydro.or.lhydro_kinematic) then
          lpenc_requested(i_uu)=.true.
          lpenc_requested(i_oo)=.true.
@@ -279,6 +300,7 @@ module Special
 !      if (lmagnetic) lpenc_requested(i_jij)=.true.
 !      if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
+      lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -302,7 +324,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, dot2_mn, del2v_etc, grad, dot, u_dot_grad, gij
+      use Sub, only: del2, del4, dot2_mn, del2v_etc, grad, dot, u_dot_grad, gij
       use Sub, only: multsv, curl, curl_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -321,6 +343,8 @@ module Special
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
+      if (lpencil(i_del4mu5)) call del4(f,imu5,p%del4mu5)
+      if (lpencil(i_del4muS)) call del4(f,imuS,p%del4muS)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -340,6 +364,7 @@ module Special
 !  29-sep-18/axel: included ldiffus_mu5_1_old and modified diffus_mu5_1
 !  25-noc-18/jenny: included muS terms in timestep calculation
 !  25-noc-18/jenny: added diffusion term to muS equation
+!  11-jun-20/jenny: added hyperdiffusion
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
       use Diagnostics, only: sum_mn_name, max_mn_name
@@ -352,9 +377,8 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2, u21
       real, dimension (nx,3) :: mu5bb, muSmu5oo
-      real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
 !
@@ -363,12 +387,21 @@ module Special
 !
 !  Compute E.B
 !
-        EB=eta*(p%jb-p%mu5*p%b2)
+      EB=eta*(p%jb-p%mu5*p%b2)
 !
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-        +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 
+          +lambda5*EB-gammaf5*p%mu5
+!
+      if (ldiffmu5_hyper2_simplified) then
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+            -diffmu5_hyper2*p%del4mu5
+      else
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+            +diffmu5*p%del2mu5 
+      endif
+! 
       if (lmu5adv) then
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
       endif
@@ -394,7 +427,16 @@ module Special
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-          + diffmuS*p%del2muS - coef_muS*bdotgmu5
+           -coef_muS*bdotgmu5
+! 
+        if (ldiffmuS_hyper2_simplified) then
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
+            -diffmuS_hyper2*p%del4muS
+        else
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
+              +diffmuS*p%del2muS
+        endif
+! 
         if (lmuSadv) then
           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
         endif
@@ -457,17 +499,16 @@ module Special
         if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
+        if (idiag_mu51m/=0) call sum_mn_name(sqrt(p%mu5**2),idiag_mu51m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
         endif
-!JEN:
         if (idiag_gmuSrms/=0) then
           call dot2_mn(p%gmuS,gmuS2)
           call sum_mn_name(gmuS2,idiag_gmuSrms,lsqrt=.true.)
         endif
-!JEN.
         if (idiag_gmu5mx/=0) call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
         if (idiag_gmu5my/=0) call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
         if (idiag_gmu5mz/=0) call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
@@ -564,11 +605,8 @@ module Special
 !
       if (lreset) then
         idiag_muSm=0; idiag_muSrms=0;
-!JEN:
-!        idiag_mu5m=0; idiag_mu5rms=0; idiag_gmu5rms=0; 
-        idiag_mu5m=0; idiag_mu5rms=0;
+        idiag_mu5m=0; idiag_mu51m=0; idiag_mu5rms=0;
         idiag_gmu5rms=0; idiag_gmuSrms=0; 
-!JEN.
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
@@ -582,11 +620,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'muSm',idiag_muSm)
         call parse_name(iname,cname(iname),cform(iname),'muSrms',idiag_muSrms)
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
+        call parse_name(iname,cname(iname),cform(iname),'mu51m',idiag_mu51m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
-!JEN:
         call parse_name(iname,cname(iname),cform(iname),'gmuSrms',idiag_gmuSrms)
-!JEN.
         call parse_name(iname,cname(iname),cform(iname),'gmu5mx',idiag_gmu5mx)
         call parse_name(iname,cname(iname),cform(iname),'gmu5my',idiag_gmu5my)
         call parse_name(iname,cname(iname),cform(iname),'gmu5mz',idiag_gmu5mz)
@@ -632,29 +669,32 @@ module Special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
-!  Calculate meanmu5
+!  Calculate meanmu5 and meanB2
 !
 !  11-oct-15/jenny: coded
 !
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: fact, meanmu5_tmp, nw1
+      real :: fact, meanmu5_tmp, nw1 !, meanB2_tmp
       intent(inout) :: f
 !
-!  compute meanmu5
+!  compute meanmu5 and meanB2
 !
       meanmu5=0.
+!      meanB2=0.
       do n=n1,n2; do m=m1,m2
         meanmu5=meanmu5+sum(f(l1:l2,m,n,imu5))
 !        print*, "sum(f(l1:l2,m,n,imu5))", sum(f(l1:l2,m,n,imu5))
       enddo; enddo
+!      meanB2=meanB2+sum(p%b2)
 !
 !  communicate and divide by all mesh meshpoints
 !
      if (nprocxy>1) then
    !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
        call mpiallreduce_sum(meanmu5,meanmu5_tmp)
+!       call mpiallreduce_sum(meanB2,meanB2_tmp)
      endif
 !     fact=1./ncpus
 !
@@ -662,6 +702,7 @@ module Special
       nw1=1./(nxgrid*nygrid*nzgrid)
 !
       meanmu5=nw1*meanmu5_tmp
+!      meanB2=nw1*meanB2_tmp
 !      flucmu5=p%mu5-meanmu5
 !
     endsubroutine special_after_boundary
