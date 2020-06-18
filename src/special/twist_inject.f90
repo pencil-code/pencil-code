@@ -90,11 +90,12 @@ module Special
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
              lslope_limited_special=.false.
   real, dimension (mx) :: x12,dx12
-  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
+          lnTT_min=-max_real, lnTT_min_tau=1.0
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
-           lnrho_min,lnrho_min_tau,alpha
+           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -372,18 +373,18 @@ module Special
       type (pencil_case), intent(in) :: p
 !!
 !!
-      if (lslope_limited_special) then
+      if (lslope_limited_special .and. llast) then
         nlf_sld=nlf
         do i=1,3
 !              call calc_slope_diff_flux(f,iux+(i-1),p,alpha,nlf_sld,fdiff,'2nd')
               call div_diff_flux(f,iux+(i-1),p,fdiff,luu_nolog,FLUX_SLD=flux_sld_ten(:,:,i))
               df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + fdiff
         enddo
-        if (lspherical_coords) then
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
-              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
-        endif
+!        if (lspherical_coords) then
+!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
+!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
+!              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
+!        endif
 !
       endif
 !
@@ -413,7 +414,7 @@ module Special
         where (fdiff < 0.0) fdiff = 0.0
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
-      if (lslope_limited_special) then
+      if (lslope_limited_special .and. llast) then
         if (headtt) print*,'special_calc_density: call div_diff_flux'
         if (ldensity_nolog) then
           call div_diff_flux(f,irho,p,fdiff,ldensity_nolog)
@@ -479,8 +480,17 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx) :: fdiff
       type (pencil_case), intent(in) :: p
-!!
-      if (lslope_limited_special .and. lentropy) then
+!
+      if (lnTT_min > -max_real) then
+        if (dt * lnTT_min_tau > 1.0) then
+          if (lroot) print *, "ERROR: dt=", dt, " lnTT_min_tau=", lnTT_min_tau
+          call fatal_error ('special_calc_density', "dt too large: dt * lnrho_min_tau > 1")
+        endif
+        fdiff = lnTT_min - p%lnTT
+        where (fdiff < 0.0) fdiff = 0.0
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + lnTT_min_tau * fdiff
+      endif
+      if (lslope_limited_special .and. lentropy .and. llast) then
         if (headtt) print*,'special_calc_energy: call div_diff_flux'
         if (ltemperature_nolog) then
           call div_diff_flux(f,iTT,p,fdiff,ltemperature_nolog)
@@ -522,15 +532,17 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      real, dimension (nx) :: fdiff
+      real, dimension (nx,3,3) :: flux_sld_ten
+      integer :: i
+      logical :: laa_nolog=.true.
+      if (lslope_limited_special .and. llast) then
+        do i=1,3
+              call div_diff_flux(f,iax+(i-1),p,fdiff,laa_nolog)
+!              df(l1:l2,m,n,iax+i-1) = df(l1:l2,m,n,iax+i-1) + fdiff
+        enddo
+      endif
+
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
