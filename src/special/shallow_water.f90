@@ -597,7 +597,7 @@ module Special
 !
     call random_number_wrapper(r)
     call random_number_wrapper(p)
-    r=r_int + sqrt(r) *((r_ext-0.2)-r_int)
+    r=r_int + sqrt(r) *((r_ext- wborder_ext)-r_int)
     p=2*pi*p
     xc(istorm)     = r*cos(p)
     yc(istorm)     = r*sin(p)
