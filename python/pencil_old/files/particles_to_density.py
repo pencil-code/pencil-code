@@ -117,7 +117,7 @@ def particles_to_density(xxp,yyp,zzp,x,y,z,density=True):
                     nnp[izz,iyy,ixx]=nnp[izz,iyy,ixx] + weight
 
     return nnp
-#​
+#
 # ---------------------------------------------------------------
 #
 def find_index_bisect(qpar, q):
