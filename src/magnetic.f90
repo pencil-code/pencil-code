@@ -6227,25 +6227,27 @@ module Magnetic
 !  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
 !
-      if (lremove_meanax) then
+      if (lrmv) then
+        if (lremove_meanax) then
 
-        fact=1./nyzgrid
-        do j=1,3
-          do l=1,mx
-            aamx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iax+j-1))
+          fact=1./nyzgrid
+          do j=1,3
+            do l=1,mx
+              aamx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iax+j-1))
+            enddo
           enddo
-        enddo
-        call finalize_aver(nprocyz,23,aamx)
+          call finalize_aver(nprocyz,23,aamx)
 !
-        do j=1,3
-          do l=1,mx
-            f(l,:,:,iax+j-1) = f(l,:,:,iax+j-1)-aamx(l,j)
+          do j=1,3
+            do l=1,mx
+              f(l,:,:,iax+j-1) = f(l,:,:,iax+j-1)-aamx(l,j)
+            enddo
           enddo
-        enddo
 
+        endif
       endif
 !
-      if (lcalc_aameanz.or.lremove_meanaz) then
+      if (lcalc_aameanz .or. lrmv.and.lremove_meanaz) then
 !
         fact=1./nxygrid
         do j=1,3
@@ -6255,7 +6257,7 @@ module Magnetic
         enddo
         call finalize_aver(nprocxy,12,aamz)
 !
-        if (lremove_meanaz) then
+        if (lrmv.and.lremove_meanaz) then
           do j=1,3
             do n=1,mz
               f(:,:,n,iax+j-1) = f(:,:,n,iax+j-1)-aamz(n,j)
@@ -6293,54 +6295,57 @@ module Magnetic
 !
 !  Remove mean field (y average).
 !
-      if (lremove_meanaxz) then
-!
-        fact=1./nygrid
-        do j=1,3
+      if (lrmv) then
 
-          aamxz=fact*sum(f(:,m1:m2,:,iaa+j-1),2)  ! requires equidistant grid
-          call finalize_aver(nprocy,2,aamxz)
+        if (lremove_meanaxz) then
 !
-          do m=1,my
-            f(:,m,:,iaa+j-1) = f(:,m,:,iaa+j-1)-aamxz
+          fact=1./nygrid
+          do j=1,3
+
+            aamxz=fact*sum(f(:,m1:m2,:,iaa+j-1),2)  ! requires equidistant grid
+            call finalize_aver(nprocy,2,aamxz)
+!
+            do m=1,my
+              f(:,m,:,iaa+j-1) = f(:,m,:,iaa+j-1)-aamxz
+            enddo
+
           enddo
-
-        enddo
-      endif
+        endif
 !
 !  Remove mean field (z average).
 !
-      if (lremove_meanaxy) then
+        if (lremove_meanaxy) then
 !
-        fact=1./nzgrid_eff
-        if (lyang) allocate(buffer(1,mx,my))
+          fact=1./nzgrid_eff
+          if (lyang) allocate(buffer(1,mx,my))
 
-        do j=1,3
+          do j=1,3
 
-          if (lyang) then
+            if (lyang) then
 !
 !  On Yang grid:
 !
-            do nl=n1,n2
-              do ml=1,my
-                call zsum_yy(buffer,1,ml,nl,f(:,ml,nl,iaa+j-1))
+              do nl=n1,n2
+                do ml=1,my
+                  call zsum_yy(buffer,1,ml,nl,f(:,ml,nl,iaa+j-1))
+                enddo
               enddo
-            enddo
-            aamxy=fact*buffer(1,:,:)
-          else
+              aamxy=fact*buffer(1,:,:)
+            else
 !
 ! Normal summing-up in Yin procs.
 ! 
-            aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
-          endif
+              aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
+            endif
 
-          call finalize_aver(nprocz,3,aamxy)
+            call finalize_aver(nprocz,3,aamxy)
 !
-          do n=1,mz
-            f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-aamxy
+            do n=1,mz
+              f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-aamxy
+            enddo
           enddo
-        enddo
 
+        endif
       endif
 !
 !  put u.a into auxiliary array
@@ -9729,8 +9734,8 @@ module Magnetic
       real :: dtsub
 !
       if (lfargo_advection) then
-        if (lkeplerian_gauge)       call keplerian_gauge(f)
-        if (lremove_volume_average) call remove_volume_average(f)
+        if (lkeplerian_gauge) call keplerian_gauge(f)
+        if (lrmv.and.lremove_volume_average) call remove_volume_average(f)
       endif
 !
       if (lresi_vAspeed) then
@@ -9743,8 +9748,6 @@ module Magnetic
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)
 !
-      call keep_compiler_quiet(dtsub)
-
     endsubroutine magnetic_after_timestep
 !***********************************************************************
     subroutine keplerian_gauge(f)

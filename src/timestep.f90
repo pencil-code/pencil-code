@@ -75,12 +75,14 @@ module Timestep
 
         lfirst=(itsub==1)
         llast=(itsub==itorder)
+
         if (lfirst) then
           if (.not.lgpu) df=0.0
           ds=0.0
         else
           if (.not.lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
           ds=alpha_ts(itsub)*ds
+          if (it_rmv>0) lrmv=.false.
         endif
 !
 !  Set up particle derivative array.
@@ -136,13 +138,13 @@ module Timestep
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
 !
-        advec: if (lshear) then
+        if (lshear) then
           call impose_floors_ceilings(f)
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
           call advance_shear(f, df, dtsub)
-        endif advec
+        endif
 !
-        call update_after_timestep(f,df,dtsub,llast)
+        call update_after_substep(f,df,dtsub,llast)
 !
 !  Increase time.
 !
@@ -181,7 +183,7 @@ module Timestep
 !
     endsubroutine split_update
 !***********************************************************************
-    subroutine update_after_timestep(f,df,dtsub,llast)
+    subroutine update_after_substep(f,df,dtsub,llast)
 !
 !   Hooks for modifying f and df after the timestep is performed.
 !
@@ -220,7 +222,7 @@ module Timestep
 !
       ighosts_updated=-1
 !
-    endsubroutine update_after_timestep
+    endsubroutine update_after_substep
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

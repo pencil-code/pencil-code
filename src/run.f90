@@ -587,14 +587,6 @@ program run
   Time_loop: do while (it<=nt)
 !
     lout   = (mod(it-1,it1) == 0) .and. (it > it1start)
-    l1davg = (mod(it-1,it1d) == 0)
-!
-    if (lwrite_sound) then
-      if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
-        lout_sound = .true.
-        tsound = t
-      endif
-    endif
 !
     if (lout .or. emergency_stop) then
 !
@@ -656,6 +648,20 @@ program run
         lreload_always_file = .false.
         lreloading          = .false.
       endif
+    endif
+!
+    if (lwrite_sound) then
+      if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
+        lout_sound = .true.
+        tsound = t
+      endif
+    endif
+!
+    l1davg = (mod(it-1,it1d) == 0)
+    if (it_rmv==0) then
+      lrmv=.true.
+    else
+      lrmv = (mod(it-1,it_rmv) == 0)
     endif
 !
 !  Remove wiggles in lnrho in sporadic time intervals.
@@ -743,6 +749,8 @@ program run
 !  in the flow, call time step on these grids. 
 ! 
     if (lsolid_cells) call time_step_ogrid(f)
+!
+    lrmv=.false.
 !
 !  Print diagnostic averages to screen and file.
 !

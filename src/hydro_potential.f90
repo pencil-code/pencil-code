@@ -1642,33 +1642,29 @@ module Hydro
 !
       real, dimension(nx,3) :: pv
 !
-      real, dimension (nx,nz) :: fsum_tmp_cyl
-      real, dimension (nx,ny) :: fsum_tmp_sph
-      real, dimension (nx) :: uphi
-      real :: nygrid1,nzgrid1
-      integer :: nnghost,mnghost
-!
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
 !
-      if (lremove_mean_momenta) then
-        call remove_mean_momenta(f,iux)
-      else
-        if (lremove_mean_flow) call remove_mean_flow(f,iux)
-        !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
-        if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
+      if (lrmv) then
+        if (lremove_mean_momenta) then
+          call remove_mean_momenta(f,iux,ilnrho)
+        else
+          if (lremove_mean_flow) call remove_mean_flow(f,iux)
+          !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
+          if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
+        endif
       endif
 !
 !  Calculate the vorticity field if required.
 !
-      getoo: if (ioo /= 0) then
-        nloop: do n = n1, n2
-          mloop: do m = m1, m2
+      if (ioo /= 0) then
+        do n = n1, n2
+          do m = m1, m2
             call curl(f, iux, pv)
             f(l1:l2,m,n,iox:ioz) = pv
-          enddo mloop
-        enddo nloop
-      endif getoo
+          enddo
+        enddo
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************

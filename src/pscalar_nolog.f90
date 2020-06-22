@@ -1014,7 +1014,7 @@ module Pscalar
       real, dimension(npscalar) :: ccm, ccm_tmp
       integer :: i
 
-      if (lremove_mean.and.lfirst) then
+      if (lremove_mean.and.lrmv) then
 
         do i=1,npscalar
           ccm_tmp(i) = sum(f(l1:l2,m1:m2,n1:n2,icc+i-1))
@@ -1023,8 +1023,8 @@ module Pscalar
         call mpiallreduce_sum(ccm_tmp,ccm,npscalar)
 
         do i=1,npscalar
-          f(l1:l2,m1:m2,n1:n2,icc+i-1) =   f(l1:l2,m1:m2,n1:n2,icc+i-1) &
-                                         - ccm(i)/nwgrid
+          f(l1:l2,m1:m2,n1:n2,icc+i-1) =  f(l1:l2,m1:m2,n1:n2,icc+i-1) &
+                                        - ccm(i)/nwgrid
         enddo
 
       endif

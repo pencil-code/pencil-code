@@ -2965,12 +2965,14 @@ module Hydro
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
 !
-      if (lremove_mean_momenta) then
-        call remove_mean_momenta(f,iux)
-      else
-        if (lremove_mean_flow) call remove_mean_flow(f,iux)
-        !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
-        if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
+      if (lrmv) then
+        if (lremove_mean_momenta) then
+          call remove_mean_momenta(f,iux,ilnrho)
+        else
+          if (lremove_mean_flow) call remove_mean_flow(f,iux)
+          !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
+          if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
+        endif
       endif
 !
 !  Calculate the vorticity field if required.
@@ -4281,33 +4283,35 @@ module Hydro
 !
 !  Remove mean flow (z average).
 !
-      if (lremove_uumeanxy) then
+      if (lrmv) then
+        if (lremove_uumeanxy) then
 !
-        do j=1,3
-          do n=1,mz
-            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumxy(:,:,j)
+          do j=1,3
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumxy(:,:,j)
+            enddo
           enddo
-        enddo
-      endif
+        endif
 !
 !  Remove mean flow (xy average).
 !
-      if (lremove_uumeanz) then
-        do j=1,3
-          do n=1,mz
-            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+        if (lremove_uumeanz) then
+          do j=1,3
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
           enddo
-        enddo
-      endif
+        endif
 !
 !  Remove only xy-averaged horizontal flows
 !
-      if (lremove_uumeanz_horizontal) then
-        do j=1,2
-          do n=1,mz
-            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+        if (lremove_uumeanz_horizontal) then
+          do j=1,2
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
           enddo
-        enddo
+        endif
       endif
 !
 !  Compute fluctuating velocity and put in an auxilliary array
@@ -6538,7 +6542,6 @@ module Hydro
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
-        !call remove_mean_flow(f,iux)         ! as this is equivalent to remove
         call remove_mean_flow(f,indux)       ! as this is equivalent to remove
                                              ! mean momenta for constant density
       endif

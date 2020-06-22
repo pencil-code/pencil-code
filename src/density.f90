@@ -1675,39 +1675,42 @@ module Density
         glnrhomz=fact*glnrhomz
         call finalize_aver(nprocxy,12,glnrhomz)
       endif
+!   
+      if (lrmv) then
 !
 !  Force mass conservation if requested
 !
-      masscons: if (lconserve_total_mass .and. total_mass > 0.0) then
+        masscons: if (lconserve_total_mass .and. total_mass > 0.0) then
 !
-        cur_mass=box_volume*mean_density(f)
+          cur_mass=box_volume*mean_density(f)
 !
-        if (lreference_state) then
-          fact=total_mass/(cur_mass+reference_state_mass)
-          tmp=(fact - 1.)*reference_state(:,iref_rho)
-        else
-          fact=total_mass/cur_mass
-        endif
-!
-        if (ldensity_nolog) then
           if (lreference_state) then
-            do n=n1,n2
-              do m=m1,m2
-                f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)*fact + tmp
-              enddo
-            enddo
+            fact=total_mass/(cur_mass+reference_state_mass)
+            tmp=(fact - 1.)*reference_state(:,iref_rho)
           else
-            f(:,:,:,irho) = f(:,:,:,irho)*fact
+            fact=total_mass/cur_mass
           endif
-        else
-          f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
-        endif
+!
+          if (ldensity_nolog) then
+            if (lreference_state) then
+              do n=n1,n2
+                do m=m1,m2
+                  f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)*fact + tmp
+                enddo
+              enddo
+            else
+              f(:,:,:,irho) = f(:,:,:,irho)*fact
+            endif
+          else
+            f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
+          endif
 !
 !  Conserve the momentum.
 !
-        if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
+          if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
 !
-      endif masscons
+        endif masscons
+      endif
 
       lupdate_mass_source = lmass_source .and. t>=tstart_mass_source .and. &
                             (tstop_mass_source==-1.0 .or. t<=tstop_mass_source)

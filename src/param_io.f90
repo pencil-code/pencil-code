@@ -114,7 +114,7 @@ module Param_IO
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
-      nt, it1, it1start, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
+      nt, it1, it1start, it1d, it_rmv, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, ldivu_perp, &
       dtracers, dfixed_points, unit_system, unit_length, &
@@ -538,6 +538,8 @@ module Param_IO
 
       if (tag_foreign>0) lforeign=.true.
 !
+      it_rmv=max(it_rmv,0)
+
     endsubroutine read_all_run_pars
 !***********************************************************************
     subroutine get_downpars(ind,n,ip)
