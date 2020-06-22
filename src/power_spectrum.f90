@@ -282,9 +282,9 @@ module power_spectrum
      elseif (trim(sp)=='a') then
         a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
      else
-        print*,'There are no such sp=',trim(sp)
+        print*,'There is no such sp=',trim(sp)
      endif
-     b1=0
+     b1=0.
 !
 !  Doing the Fourier transform
 !
