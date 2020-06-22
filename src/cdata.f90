@@ -539,7 +539,7 @@ module Cdata
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
-  logical :: EP_spec=.false.
+  logical :: EP_spec=.false., nd_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: sp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.

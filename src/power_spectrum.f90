@@ -2474,6 +2474,8 @@ module power_spectrum
     else
       a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
     endif
+  elseif (sp=='nd') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ind(1))
   elseif (sp=='np') then
     call get_shared_variable('inp', inp, caller='powerscl')
     a_re=f(l1:l2,m1:m2,n1:n2,inp)
