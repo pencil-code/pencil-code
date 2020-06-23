@@ -576,7 +576,7 @@ module Dustdensity
 !
       use Density, only: beta_glnrho_scaled
       use EquationOfState, only: cs20, gamma
-      use Initcond, only: hat3d, sinwave_phase
+      use Initcond, only: hat3d, sinwave_phase, posnoise
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
@@ -624,6 +624,8 @@ module Dustdensity
             f(l,m,n,ind(1)) = f(l,m,n,ind(1)) + &
                 amplnd*sin(kx_nd*x(l))*sin(ky_nd*y(m))*sin(kz_nd*z(n))
           enddo; enddo; enddo
+        case ('positive_noise')
+          call posnoise(amplnd,f,ind(1),ind(ndustspec))
         case ('gaussian_nd')
           if (lroot) print*, 'init_nd: Gaussian distribution in z'
           Hrho   = 1/sqrt(gamma)
@@ -1971,7 +1973,7 @@ module Dustdensity
 !  (This is not used by Natalia's routines, although it is not obvious why.)
 !
         if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
-      
+!
       endif
 !
 !  Loop over dust layers
