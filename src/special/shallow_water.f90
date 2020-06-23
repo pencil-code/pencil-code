@@ -71,7 +71,7 @@ module Special
 !
 ! Parameters for the storm model
 !
-  real :: tmass_relaxation=1.0,tmass_relaxation1
+  real :: tmass_relaxation=176.0,tmass_relaxation1
   real :: tduration=17.0,rsize_storm=0.03
   real :: interval_between_storms=17.0 
   integer, parameter :: nstorm=50
