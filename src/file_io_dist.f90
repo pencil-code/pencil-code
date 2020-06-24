@@ -42,9 +42,9 @@ module File_io
 !  Open file.
 !
       if (present(form)) then
-        open(parallel_unit, file=file, FORM=form, status='old')
+        open(parallel_unit, file=trim(file), FORM=form, status='old')
       else
-        open(parallel_unit, file=file, status='old')
+        open(parallel_unit, file=trim(file), status='old')
       endif
 !
     endsubroutine parallel_open

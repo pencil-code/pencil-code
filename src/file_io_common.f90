@@ -378,6 +378,7 @@ module File_io
       
         if (.not.found) then
           if (.not. lparam_nml) lnamelist_error = .true.
+          call parallel_rewind
           return
         endif
 !
