@@ -4029,15 +4029,21 @@ For a list of all Pencil Code commands start IPython and type
 To access the help of any command just type the command followed by a '?'
 (no spaces), e.g.:
 \begin{alltt}
-In [1]: pc.dot?
-Type:       function
-String Form:<function dot at 0x7f9d96cb0cf8>
-File:       ~/pencil-code/python/pencil/math/vector_multiplication.py
-Definition: pc.dot(a, b)
+In [1]: pc.math.dot?
+Signature: pc.math.dot(a, b)
 Docstring:
-take dot product of two pencil-code vectors a & b with shape
+Take dot product of two pencil-code vectors a and b.
 
-a.shape = (3,mz,my,mx)
+call signature:
+
+dot(a, b):
+
+Keyword arguments:
+
+*a*, *b*:
+  Pencil-code vectors with shape [3, mz, my, mx].
+File:      ~/pencil-code/python/pencil/math/vector_multiplication.py
+Type:      function
 \end{alltt}
 You can also use \texttt{help(pc.dot)} for a more complete documentation of the command.
 
@@ -4045,24 +4051,20 @@ There are various reading routines for the Pencil Code data.
 All of them return an object with the data.
 To store the data into a user defined variable type e.g.
 \begin{alltt}
-In [1]: ts = pc.read_ts()
+In [1]: ts = pc.read.ts()
 \end{alltt}
 
 Most commands take some arguments.
 For most of them there is a default value, e.g.
 \begin{alltt}
-In [1]: pc.read_ts(filename='time_series.dat', datadir='data', plot_data=True)
-\end{alltt}
-You can change the values by simply typing e.g.
-\begin{alltt}
-In [1]: pc.read_ts(plot_data = False)
+In [1]: pc.read.ts(file_name='time_series.dat', datadir='data').
 \end{alltt}
 
 \paragraph{Reading and Plotting Time Series}
 Reading the time series file is very easy.
 Simply type
 \begin{alltt}
-In [1]: ts = pc.read_ts()
+In [1]: ts = pc.read.ts()
 \end{alltt}
 and Python stores the data in the variable \texttt{ts}.
 The physical quantities are members of the object \texttt{ts} and can be accessed
@@ -4084,24 +4086,24 @@ In [1]: plt.savefig('plot.eps')
 \paragraph{Reading and Plotting VAR files and slice files}
 Read var files:
 \begin{alltt}
-In [1]: var = pc.read_var()
+In [1]: var = pc.read.var()
 \end{alltt}
 Read slice files:
 \begin{alltt}
-In [1]: slices, t = pc.read_slices(field='bb1', extension='xy')
+In [1]: slices = pc.read.slices(field='bb1', extension='xy')
 \end{alltt}
-This returns the array \texttt{slices} with indices \texttt{slices[nTimes, my, mx]}
+This returns the object \texttt{slices} with indices \texttt{slices[nTimes, my, mx]}
 and the time array \texttt{t}.
 
 If you want to plot e.g.\ the x-component of the magnetic field at the central plane simply type:
 \begin{alltt}
-In [1]: plt.imshow(zip(*var.bb[0, 128, :, :]), origin='lower', extent=[-4, 4, -4, 4])
+In [1]: plt.imshow(var.bb[0, 128, :, :].T, origin='lower', extent=[-4, 4, -4, 4])
 \end{alltt}
 For a complete list of arguments of \texttt{plt.imshow} refer to its documentation.
 
 For a more interactive plot use:
 \begin{alltt}
-In [1]: pc.animate_interactive(slices, t)
+In [1]: pc.visu.animate_interactive(slices.xy.bb1, t)
 \end{alltt}
 \textbf{Be aware}: arrays from the reading routines are ordered
 \texttt{f[nvar, mz, my, mx]}, i.e.\ reversed to IDL.
@@ -10486,7 +10488,7 @@ The remeshing code is part of the {\sc Pencil Code} repository.
 % --------------------------------------------------------------------- %
 
 \subsection{Restarting with different I/O strategy}
-\label{RestartinigDiffIOg
+\label{RestartinigDiffIOg}
 \index{Restarting with different I/O}
 One might want to switch the I/O strategy for a run, ongoingly to be continued
 by restarts, typically from one of the more traditional schemes, reading and
