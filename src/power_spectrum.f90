@@ -2475,7 +2475,7 @@ module power_spectrum
       a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
     endif
   elseif (sp=='nd') then
-    a_re=f(l1:l2,m1:m2,n1:n2,ind(1))
+    a_re=f(l1:l2,m1:m2,n1:n2,ind(iapn_index))
   elseif (sp=='np') then
     call get_shared_variable('inp', inp, caller='powerscl')
     a_re=f(l1:l2,m1:m2,n1:n2,inp)
@@ -2563,9 +2563,7 @@ module power_spectrum
   if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-!AB: the following line does not make sense for passive scalars
-!-- spectrum_sum=.5*spectrum_sum
-    if (sp=='na') then
+    if (sp=='na' .or. sp=='nd') then
        open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
             trim(itoa(iapn_index))//'.dat',position='append')
     else
