@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
-! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
+! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 !***************************************************************
 !
 module Hydro
@@ -40,7 +40,9 @@ module Hydro
 !  Slice precalculation buffers.
 !
   real, target, dimension (:,:,:), allocatable :: oo_xy,oo_xy2,oo_xy3,oo_xy4
-  real, target, dimension (:,:,:), allocatable :: oo_xz, oo_yz, oo_xz2
+  real, target, dimension (:,:,:), allocatable :: oo_xz,oo_yz,oo_xz2
+  real, target, dimension (:,:,:), allocatable :: uu_sph_xy,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4
+  real, target, dimension (:,:,:), allocatable :: uu_sph_xz,uu_sph_yz,uu_sph_xz2
   real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy
   real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
@@ -718,7 +720,7 @@ module Hydro
 !
 !  Video data.
 !
-  integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0
+  integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0, ivid_uu_sph=0
 !
 !  Auxiliary variables
 !
@@ -1195,6 +1197,16 @@ module Hydro
         if (lwrite_slice_xy3.and..not.allocated(mach_xy3)) allocate(mach_xy3(nx,ny))
         if (lwrite_slice_xy4.and..not.allocated(mach_xy4)) allocate(mach_xy4(nx,ny))
         if (lwrite_slice_xz2.and..not.allocated(mach_xz2)) allocate(mach_xz2(nx,nz))
+      endif
+      if (ivid_uu_sph/=0) then
+        !call alloc_slice_buffers(uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2)
+        if (lwrite_slice_xy .and..not.allocated(uu_sph_xy) ) allocate(uu_sph_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(uu_sph_xz) ) allocate(uu_sph_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(uu_sph_yz) ) allocate(uu_sph_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(uu_sph_xy2)) allocate(uu_sph_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(uu_sph_xy3)) allocate(uu_sph_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(uu_sph_xy4)) allocate(uu_sph_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(uu_sph_xz2)) allocate(uu_sph_xz2(nx,nz,3))
       endif
 !
 !  give warning if orms is not set in prints.in
@@ -2304,6 +2316,7 @@ module Hydro
         if (ivid_divu/=0) lpenc_video(i_divu)=.true.
         if (ivid_u2  /=0) lpenc_video(i_u2)=.true.
         if (ivid_Ma2 /=0) lpenc_video(i_Ma2)=.true.
+        if (ivid_uu_sph/=0) lpenc_video(i_uu_sph)=.true.
       endif
 !
 !  diagnostic pencils
@@ -2790,6 +2803,8 @@ module Hydro
           p%uuadvec_guu(:,3)=p%uuadvec_guu(:,3)+r1_mn*(p%uu(:,3)*p%uu(:,1)+p%uu(:,3)*p%uu(:,2)*cotth(m))
         endif
       endif
+!
+      if (lpenc_loc(i_uu_sph).and.luu_sph_as_aux) p%uu_sph=f(l1:l2,m,n,iuu_sphr:iuu_sphp)
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
@@ -4121,7 +4136,7 @@ module Hydro
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
-
+        if (ivid_uu_sph/=0) call store_slices(p%uu_sph,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2)
         if (othresh_per_orms/=0) then
           call calc_othresh
           call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
@@ -5401,7 +5416,7 @@ module Hydro
         idiag_taufmin=0
         idiag_dtF=0
         idiag_nshift=0
-        ivid_oo=0; ivid_o2=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0
+        ivid_oo=0; ivid_o2=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -5916,6 +5931,7 @@ module Hydro
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'divu',ivid_divu)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'u2',  ivid_u2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ma2', ivid_Ma2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu_sph',ivid_uu_sph)
       enddo
 !
 !  write column where which hydro variable is stored
@@ -5971,6 +5987,11 @@ module Hydro
 !
         case ('mach')
           call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
+!
+!  Velocity in spherical coordinates
+!
+        case ('uu_sph')
+          call assign_slices_vec(slices,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2)
 !
       endselect
 !

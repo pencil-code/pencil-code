@@ -30,6 +30,7 @@
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
+! PENCILS PROVIDED bb_sph(3)
 !***************************************************************
 module Magnetic
 !
@@ -54,13 +55,13 @@ module Magnetic
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (:,:,:), allocatable :: bb_xy, jj_xy, poynting_xy
-  real, target, dimension (:,:,:), allocatable :: bb_xy2,jj_xy2,poynting_xy2
-  real, target, dimension (:,:,:), allocatable :: bb_xy3,jj_xy3,poynting_xy3
-  real, target, dimension (:,:,:), allocatable :: bb_xy4,jj_xy4,poynting_xy4
-  real, target, dimension (:,:,:), allocatable :: bb_xz, jj_xz, poynting_xz
-  real, target, dimension (:,:,:), allocatable :: bb_yz, jj_yz, poynting_yz
-  real, target, dimension (:,:,:), allocatable :: bb_xz2,jj_xz2,poynting_xz2
+  real, target, dimension (:,:,:), allocatable :: bb_xy, jj_xy, poynting_xy ,bb_sph_xy
+  real, target, dimension (:,:,:), allocatable :: bb_xy2,jj_xy2,poynting_xy2,bb_sph_xy2
+  real, target, dimension (:,:,:), allocatable :: bb_xy3,jj_xy3,poynting_xy3,bb_sph_xy3
+  real, target, dimension (:,:,:), allocatable :: bb_xy4,jj_xy4,poynting_xy4,bb_sph_xy4
+  real, target, dimension (:,:,:), allocatable :: bb_xz, jj_xz, poynting_xz ,bb_sph_xz
+  real, target, dimension (:,:,:), allocatable :: bb_yz, jj_yz, poynting_yz ,bb_sph_yz
+  real, target, dimension (:,:,:), allocatable :: bb_xz2,jj_xz2,poynting_xz2,bb_sph_xz2
 !
   real, target, dimension (:,:), allocatable :: b2_xy, jb_xy, j2_xy,  ab_xy
   real, target, dimension (:,:), allocatable :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
@@ -920,7 +921,7 @@ module Magnetic
 !  Video data.
 !
   integer :: ivid_aps=0, ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
-             ivid_jb=0, ivid_beta1=0, ivid_poynting=0
+             ivid_jb=0, ivid_beta1=0, ivid_poynting=0, ivid_bb_sph=0
 !
 ! Module Variables
 !
@@ -1781,6 +1782,16 @@ module Magnetic
         if (lwrite_slice_xy4.and..not.allocated(j2_xy4)) allocate(j2_xy4(nx,ny))
         if (lwrite_slice_xz2.and..not.allocated(j2_xz2)) allocate(j2_xz2(nx,nz))
       endif
+      if (ivid_bb_sph/=0) then
+        !call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+        if (lwrite_slice_xy .and..not.allocated(bb_sph_xy) ) allocate(bb_sph_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb_sph_xz) ) allocate(bb_sph_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb_sph_yz) ) allocate(bb_sph_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb_sph_xy2)) allocate(bb_sph_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb_sph_xy3)) allocate(bb_sph_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb_sph_xy4)) allocate(bb_sph_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb_sph_xz2)) allocate(bb_sph_xz2(nx,nz,3))
+      endif
       if (ivid_ab/=0) then
         !call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
         if (lwrite_slice_xy .and..not.allocated(ab_xy) ) allocate(ab_xy (nx,ny))
@@ -2413,7 +2424,7 @@ module Magnetic
         lpenc_requested(i_b2)=.true.
         lpenc_requested(i_jxb)=.true.
       endif
-
+!
       if (lwrite_slices) then
         if (ivid_aps/=0) then
           lpenc_video(i_aps)=.true.
@@ -2423,6 +2434,7 @@ module Magnetic
         if (ivid_jj/=0) lpenc_video(i_jj)=.true.
         if (ivid_b2/=0) lpenc_video(i_b2)=.true.
         if (ivid_j2/=0) lpenc_video(i_j2)=.true.
+        if (ivid_bb_sph/=0) lpenc_video(i_bb_sph)=.true.
         if (ivid_jb/=0) lpenc_video(i_jb)=.true.
         if (ivid_ab/=0) lpenc_video(i_ab)=.true.
         if (ivid_beta1/=0) lpenc_video(i_beta1)=.true.
@@ -3751,6 +3763,7 @@ module Magnetic
       if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
       if (ljj_as_aux .and. .not. ljj_as_comaux) f(l1:l2,m,n,ijx:ijz) = p%jj
       if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
+      if (lpenc_loc(i_bb_sph).and.lbb_sph_as_aux) p%bb_sph(:,1:3)=f(l1:l2,m,n,ibb_sphr:ibb_sphp)
 !
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
@@ -5089,7 +5102,7 @@ module Magnetic
         f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
         f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
         f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
-      endif
+     endif
 !
 ! Now add all the contribution to dAdt so far into df.
 ! This is done here, such that contribution from mean-field models are not added to
@@ -5203,6 +5216,7 @@ module Magnetic
         if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
         if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
         if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+        if (ivid_bb_sph/=0) call store_slices(p%bb_sph,bb_sph_xy,bb_sph_xz,bb_sph_yz,bb_sph_xy2,bb_sph_xy3,bb_sph_xy4,bb_sph_xz2)
         if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
         if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
         if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
@@ -6914,6 +6928,11 @@ module Magnetic
 !
         case ('j2')
           call assign_slices_scal(slices,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+!
+!  Magnetic field in spherical coordinates (derived variable)
+!
+        case ('bb_sph')
+          call assign_slices_vec(slices,bb_sph_xy,bb_sph_xz,bb_sph_yz,bb_sph_xy2,bb_sph_xy3,bb_sph_xy4,bb_sph_xz2)
 !
 !  Current density times magnetic field (derived variable)
 !
@@ -9079,7 +9098,7 @@ module Magnetic
         idiag_hjparallelm=0;idiag_hjperpm=0
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
         ivid_aps=0; ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
-        ivid_jb=0; ivid_beta1=0; ivid_poynting=0; idiag_dteta3=0
+        ivid_jb=0; ivid_beta1=0; ivid_poynting=0; ivid_bb_sph=0; idiag_dteta3=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -9672,6 +9691,7 @@ module Magnetic
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jj',ivid_jj)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'b2',ivid_b2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'j2',ivid_j2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'bb_sph',ivid_bb_sph)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'ab',ivid_ab)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jb',ivid_jb)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
