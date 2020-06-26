@@ -22,14 +22,14 @@ o=a(3,*)
 print,n
 print
 print,total(n)
-plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2019.7]
+plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2020.7]
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55
 print,'total(n)=',fix(total(n))
 print,'total(c)=',fix(total(c))
 print,'total(o)=',fix(total(o)),' ',nint(100*total(o)/total(n)),'%'
 ;
-siz=2.0
+siz=1.9
 xyouts,2003.4,58,'w/o Brandenburg',col=55,siz=siz*.9
 xyouts,2003.4,52,'comp & ref papers',col=122,siz=siz*.8
 ;
