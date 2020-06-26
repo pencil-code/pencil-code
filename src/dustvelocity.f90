@@ -1623,6 +1623,7 @@ module Dustvelocity
       real, dimension (nx,3) :: uu
       real, dimension (nx,3) :: uud
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
+      real :: pifactor1, pifactor2
       integer :: k
 !
       select case (draglaw)
@@ -1644,6 +1645,9 @@ module Dustvelocity
           Rep=2*ad(k)*rho*sqrt(deltaud2)/mu_ext
           tausd1(:,k) = tausd1(:,k)*(1+0.15*Rep**0.687)
         endif
+!
+!  Allow for a sqrt(8/pi) factor (=pifactor1) and a
+!  9*pi/128 factor (=pifactor2) from Mattsson+Fynbo+Villarroel19
 !
       case ('epstein_var')
         call dot2(uud-uu,deltaud2)
