@@ -73,6 +73,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_polar=.false.
   logical :: lviscd_hyper3_mesh=.false.
   logical :: lstokes_highspeed_corr=.false.
+  logical :: lpifactor1=.false., lpifactor2=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
@@ -100,7 +101,7 @@ module Dustvelocity
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
       nud_hyper3, nud_hyper3_mesh, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
-      lstokes_highspeed_corr
+      lstokes_highspeed_corr, lpifactor1, lpifactor2
 !
   integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -1646,7 +1647,17 @@ module Dustvelocity
 !
       case ('epstein_var')
         call dot2(uud-uu,deltaud2)
-        csrho       = sqrt(cs2+deltaud2)*rho
+        if (lpifactor1) then
+          pifactor1=sqrt(8./pi)
+        else
+          pifactor1=1.
+        endif
+        if (lpifactor2) then
+          pifactor2=9.*pi/128.
+        else
+          pifactor2=1.
+        endif
+        csrho=pifactor1*sqrt(cs2+pifactor2*deltaud2)*rho
         tausd1(:,k) = csrho*rhodsad1(k)
       case ('epstein_gaussian_z')
         tausd1(:,k) = (1/tausd(k))*exp(-z(n)**2/(2*scaleHtaus**2))
