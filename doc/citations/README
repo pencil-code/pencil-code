@@ -19,4 +19,8 @@ Regular performance reviews are being published on:
 
   https://www.ohloh.net/p/pencil-code
 
-In 2017: 11 more citations
+Important note when you add something new:
+  New entries to ref.bib imply manual changes to notes.tex and times.txt.
+  Then, run ptimes.pro and produce a new ps file (cut+paste).
+  The script also gives a summary of data (number of papers, the number
+  of papers w/o Brandenburg, and code comparison-type papers, etc.)
