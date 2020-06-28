@@ -693,10 +693,8 @@ module PointMasses
 !  Allocate the point mass particles
 !
         do k=1,nqpar
-!
-             fq(k,ivxq:ivzq) = velocity(k,1:3)
-!
-         enddo
+          fq(k,ivxq:ivzq) = velocity(k,1:3)
+        enddo
 !
       case ('eccentric')
 !
