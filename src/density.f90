@@ -116,7 +116,7 @@ module Density
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
-  real :: density_ceiling=0.
+  real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -172,7 +172,7 @@ module Density
       density_zaver_range, rss_coef1, rss_coef2, &
       ieos_profile, width_eos_prof, beta_glnrho_global,&
       lconserve_total_mass, total_mass, density_ceiling, &
-      lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
+      lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho, &
       lsubtract_init_stratification, ireference_state, &
       h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens
 !
@@ -1589,9 +1589,10 @@ module Density
 !
       if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
-!  Impose density floor if requested.
+!  Impose density floor or ceiling if requested.
 !
       call impose_density_floor(f)
+      call impose_density_ceiling(f)
 !
 !  sanity check
 !
@@ -3837,11 +3838,25 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (density_ceiling>0.0) then
-        where (f(:,:,:,ilnrho) > density_ceiling) &
-          f(:,:,:,ilnrho) = density_ceiling
+      real, save :: density_ceiling_log
+      logical, save :: lfirstcall=.true.
+!
+!  Impose the density ceiling
+!
+      if (density_ceiling>0.) then
+        if (lfirstcall) then
+          density_ceiling_log=alog(density_ceiling)
+          lfirstcall=.false.
+        endif
+!
+        if (ldensity_nolog.and..not.lreference_state) then
+          where (f(:,:,:,irho)>density_ceiling) f(:,:,:,irho)=density_ceiling
+        else
+          where (f(:,:,:,ilnrho)>density_ceiling_log) &
+              f(:,:,:,ilnrho)=density_ceiling_log
+        endif
       endif
-
+!
     endsubroutine impose_density_ceiling
 !***********************************************************************
     subroutine pushpars2c(p_par)
