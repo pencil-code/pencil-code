@@ -7235,27 +7235,40 @@ nameloop: do
       select case (k)
         case(1)
           ! x-direction
-          cmax_im12 =sqrt(0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char)))
-          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char)))
+!          cmax_im12 =sqrt(0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char)))
+!          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char)))
+          cmax_im12 =0.5*(f(l1-1:l2-1,m,n,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12 =0.5*(f(l1:l2,m,n,isld_char)    +f(l1+1:l2+1,m,n,isld_char))
           if (ldiv_4th) then
-            cmax_ipp12=sqrt(0.5*(f(l1+1:l2+1,m,n,isld_char)+f(l1+2:l2+2,m,n,isld_char)))
-            cmax_imm12=sqrt(0.5*(f(l1-2:l2-2,m,n,isld_char)+f(l1-1:l2-1,m,n,isld_char)))
+!            cmax_ipp12=sqrt(0.5*(f(l1+1:l2+1,m,n,isld_char)+f(l1+2:l2+2,m,n,isld_char)))
+!            cmax_imm12=sqrt(0.5*(f(l1-2:l2-2,m,n,isld_char)+f(l1-1:l2-1,m,n,isld_char)))
+            cmax_ipp12=0.5*(f(l1+1:l2+1,m,n,isld_char)+f(l1+2:l2+2,m,n,isld_char))
+            cmax_imm12=0.5*(f(l1-2:l2-2,m,n,isld_char)+f(l1-1:l2-1,m,n,isld_char))
           endif
         case(2)
           ! y-direction
-          cmax_im12 =sqrt(0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char)))
-          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char)))
+!          cmax_im12 =sqrt(0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char)))
+!          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char)))
+          cmax_im12 =0.5*(f(l1:l2,m-1,n,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12 =0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m+1,n,isld_char))
+
           if (ldiv_4th) then
-            cmax_imm12=sqrt(0.5*(f(l1:l2,m-2,n,isld_char)+f(l1:l2,m-1,n,isld_char)))
-            cmax_ipp12=sqrt(0.5*(f(l1:l2,m+1,n,isld_char)+f(l1:l2,m+2,n,isld_char)))
+!            cmax_imm12=sqrt(0.5*(f(l1:l2,m-2,n,isld_char)+f(l1:l2,m-1,n,isld_char)))
+!            cmax_ipp12=sqrt(0.5*(f(l1:l2,m+1,n,isld_char)+f(l1:l2,m+2,n,isld_char)))
+            cmax_imm12=0.5*(f(l1:l2,m-2,n,isld_char)+f(l1:l2,m-1,n,isld_char))
+            cmax_ipp12=0.5*(f(l1:l2,m+1,n,isld_char)+f(l1:l2,m+2,n,isld_char))
           endif
         case(3)
           ! z-direction
-          cmax_im12 =sqrt(0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char)))
-          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char)))
-          if (ldiv_4th) then
-            cmax_imm12=sqrt(0.5*(f(l1:l2,m,n-2,isld_char)+f(l1:l2,m,n-1,isld_char)))
-            cmax_ipp12=sqrt(0.5*(f(l1:l2,m,n+1,isld_char)+f(l1:l2,m,n+2,isld_char)))
+!          cmax_im12 =sqrt(0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char)))
+!          cmax_ip12 =sqrt(0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char)))
+          cmax_im12 =0.5*(f(l1:l2,m,n-1,isld_char)+f(l1:l2,m,n,isld_char))
+          cmax_ip12 =0.5*(f(l1:l2,m,n,isld_char)  +f(l1:l2,m,n+1,isld_char))
+          if (ldiv_4th) then 
+!            cmax_imm12=sqrt(0.5*(f(l1:l2,m,n-2,isld_char)+f(l1:l2,m,n-1,isld_char)))
+!            cmax_ipp12=sqrt(0.5*(f(l1:l2,m,n+1,isld_char)+f(l1:l2,m,n+2,isld_char)))
+            cmax_imm12=0.5*(f(l1:l2,m,n-2,isld_char)+f(l1:l2,m,n-1,isld_char))
+            cmax_ipp12=0.5*(f(l1:l2,m,n+1,isld_char)+f(l1:l2,m,n+2,isld_char))
           endif
 !
         endselect

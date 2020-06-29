@@ -300,7 +300,7 @@ module Energy
 !
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 !
@@ -311,7 +311,7 @@ module Energy
 !      if (lslope_limit_diff) then
         do m=1,my
         do n=1,mz
-          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs20
+          f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs0
         enddo
         enddo
       endif

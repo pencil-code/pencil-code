@@ -1806,8 +1806,8 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-!     if (lslope_limit_diff .and. llast) then
-     if (lslope_limit_diff) then
+     if (lslope_limit_diff .and. llast) then
+!     if (lslope_limit_diff) then
        call get_cp1(cp1)
        cs2=0.
        do m=1,my
@@ -1817,7 +1817,7 @@ module Energy
          else
            cs2 = gamma_m1/cp1*exp(f(:,m,n,ilnTT))
          endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo
        enddo
      endif

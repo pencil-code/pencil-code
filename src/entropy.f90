@@ -150,10 +150,11 @@ module Energy
   logical :: lss_running_aver_as_var=.false.
   logical :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
-  logical :: lss_flucz_as_aux=.false.
+  logical :: lss_flucz_as_aux=.false., lsld_char_wprofr=.false.
   logical :: lTT_flucz_as_aux=.false., lsld_char_cslimit=.false.
-  logical :: lchi_t1_noprof=.false., lsld_char_rho=.false.
-  real :: h_sld_ene=2.0, nlf_sld_ene=1.0
+  logical :: lchi_t1_noprof=.false., lsld_char_rholimit=.false.
+  real :: h_sld_ene=2.0, nlf_sld_ene=1.0, w_sldchar_ene2=0.1
+  real :: w_sldchar_ene_r0=1.0, w_sldchar_ene_p=8.0
   logical :: lheat_cool_gravz=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing', div_sld_ene='2nd'
@@ -218,14 +219,14 @@ module Energy
       mixinglength_flux, chiB, lchiB_simplified, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
-      chit_fluct_prof1, chit_fluct_prof2, &
+      chit_fluct_prof1, chit_fluct_prof2, w_sldchar_ene2, lsld_char_wprofr, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, nsmooth_kramers, &
-      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, lsld_char_rho, &
+      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, lsld_char_rholimit, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, radius_ss_x, &
-      center1_x, center1_y, center1_z, lsld_char_cslimit, &
-      lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
+      center1_x, center1_y, center1_z, lsld_char_cslimit, w_sldchar_ene_r0, &
+      lborder_heat_variable, rescale_TTmeanxy, lread_hcond, w_sldchar_ene_p, &
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
@@ -3770,18 +3771,30 @@ module Energy
 !   1-apr-20/joern: coded
 !
       use EquationOfState, only : lnrho0, cs20, get_cv1, cs2top
+      use Sub, only : cubic_step
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: cs2, fact
-      real :: cv1, w_sld1
+      real, dimension (mx) :: cs2, fact_cs, fact_rho, fact_wsld
+      real :: cv1, rhotop, lnrhotop
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
      if (lslope_limit_diff .and. llast) then
        call get_cv1(cv1)
+       if (ldensity_nolog) then
+         rhotop=exp(lnrho0)*((cs2top/cs20)**(1./gamma_m1))
+       else
+         lnrhotop=lnrho0+(1./gamma_m1)*log(cs2top/cs20)
+       endif
        cs2=0.
-       w_sld1=1./w_sldchar_ene
+       fact_cs=1.
+       fact_rho=1.
+       fact_wsld=1.
+!
+       if (lsld_char_wprofr) fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.) &
+                                           *(x/w_sldchar_ene_r0)**w_sldchar_ene_p
+!
        do m=1,my
        do n=1,mz
          if (ldensity_nolog) then
@@ -3791,8 +3804,9 @@ module Energy
 !  apply density correction, to enhace sld_char in regions of low
 !  density
 !
-           if (lsld_char_rho) cs2=cs2*exp(lnrho0)/f(:,m,n,irho)
-
+           if (lsld_char_rholimit) &
+           fact_rho=1.+(rhotop/f(:,m,n,irho))**cs2top/cs2
+!
          else
            cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho) &
                           -lnrho0)+cv1*f(:,m,n,iss))
@@ -3801,17 +3815,16 @@ module Energy
 !  apply density correction, to enhace sld_char in regions of low
 !  density
 !
-           if (lsld_char_rho) cs2=cs2*exp(lnrho0-f(:,m,n,ilnrho))
+           if (lsld_char_rholimit) &
+           fact_rho=1.+ exp((lnrhotop-f(:,m,n,ilnrho)))*cs2top/cs2
+!
          endif
 !
 !  make sure cs2 contribution is always larger than cs2top
 !
-         if (lsld_char_cslimit) then
-           fact=1+w_sld1*(cs2top/cs2)**2.
-         else
-           fact=1.
-         endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact
+         if (lsld_char_cslimit) fact_cs=1.+(cs2top/cs2)**2.
+!         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
+         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho*fact_cs)
        enddo
        enddo
      endif

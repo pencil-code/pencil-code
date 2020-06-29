@@ -3146,7 +3146,7 @@ module Magnetic
 !  Find bb and jj if as communicated auxiliary.
 !
       getbb: if (lbb_as_comaux .or. ljj_as_comaux .or. &
-                 lalfven_as_aux.or. lslope_limit_diff) then
+                 lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
         call zero_ghosts(f, iax, iaz)
         call update_ghosts(f, iax, iaz)
         mn_loop: do imn = 1, ny * nz
@@ -3180,7 +3180,7 @@ module Magnetic
 !
 !  Find alfven speed as communicated auxiliary
 !
-          if (lalfven_as_aux.or. lslope_limit_diff) then
+          if (lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
             if (ldensity) then
               if (ldensity_nolog) then
                 rho1=1./f(l1:l2,m,n,irho)
@@ -3199,8 +3199,8 @@ module Magnetic
               tmp=abs(tmp)
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
-            if (lslope_limit_diff) then
-              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*tmp
+            if (lslope_limit_diff .and. llast) then
+              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
            endif
           endif
         enddo mn_loop
