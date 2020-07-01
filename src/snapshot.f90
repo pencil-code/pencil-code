@@ -586,6 +586,11 @@ module Snapshot
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
         if (lr_spec)  call powerscl(f,'lr')
+        if (ud_spec) then
+          do n=1,ndustspec
+            call power(f,'ud',n)
+          enddo
+        endif
         if (nd_spec) then
           do n=1,ndustspec
             call powerscl(f,'nd',n)

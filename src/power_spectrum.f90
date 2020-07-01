@@ -210,7 +210,7 @@ module power_spectrum
 !
     endsubroutine write_power_spectrum_run_pars
 !***********************************************************************
-    subroutine power(f,sp)
+    subroutine power(f,sp,iapn_index)
 !
 !  Calculate power spectra (on spherical shells) of the variable
 !  specified by `sp'.
@@ -219,8 +219,11 @@ module power_spectrum
 !
       use Fourier, only: fft_xyz_parallel
       use Mpicomm, only: mpireduce_sum
+      use General, only: itoa
       use Sub, only: curli
 !
+  integer, intent(in), optional :: iapn_index
+! integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
@@ -257,6 +260,9 @@ module power_spectrum
      if (trim(sp)=='u') then
         if (iuu==0) call fatal_error('power','iuu=0')
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+     elseif (trim(sp)=='ud') then
+        if (iuud(iapn_index)==0) call fatal_error('power','iuud=0')
+        a1=f(l1:l2,m1:m2,n1:n2,iuud(iapn_index)+ivec-1)
      elseif (trim(sp)=='r2u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
      elseif (trim(sp)=='r3u') then
@@ -320,7 +326,13 @@ module power_spectrum
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
     spectrum_sum=.5*spectrum_sum
-    open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    if (sp=='ud') then
+       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
+            trim(itoa(iapn_index))//'.dat',position='append')
+    else
+      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    endif
+!
     write(1,*) t
     write(1,'(1p,8e10.2)') spectrum_sum
     close(1)
