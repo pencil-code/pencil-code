@@ -423,9 +423,8 @@ for var = 0, num_vars-1 do begin
   endif else begin
     skip = dims
   endelse
-  
-  for component = 1, num_components do begin
 
+  for component = 1, num_components do begin
     if (pos[component-1] gt 0) then begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
