@@ -46,13 +46,17 @@ module power_spectrum
 !
     endsubroutine write_power_spectrum_run_pars
 !***********************************************************************
-    subroutine power(f,sp)
+    subroutine power(f,sp,iapn_index)
+!
+      use General, only: ioptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=1) :: sp
+      integer, optional :: iapn_index
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(ioptest(iapn_index))
 !
     endsubroutine power
 !***********************************************************************
