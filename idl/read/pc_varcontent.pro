@@ -405,6 +405,7 @@ varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', id
 ;
 ;  Fill varcontent array.
 ;
+vc_pos = 0
 for var = 0, num_vars-1 do begin
 
   tag = selected[var]
@@ -424,20 +425,21 @@ for var = 0, num_vars-1 do begin
   endelse
   
   for component = 1, num_components do begin
-     
+
     if (pos[component-1] gt 0) then begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
       if (num_components gt 1) then idl_var += str (component)
-      varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
-      varcontent[pos[component-1]-1].idlvar = idl_var
-      varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
-      varcontent[pos[component-1]-1].idlvarloc = idl_var+'_loc'
-      varcontent[pos[component-1]-1].idlinitloc = strjoin (INIT_DATA_LOC, joint)
-      varcontent[pos[component-1]-1].skip = skip - 1
+      varcontent[vc_pos+component-1].variable = indices[tag].label + ' ('+idl_var+')'
+      varcontent[vc_pos+component-1].idlvar = idl_var
+      varcontent[vc_pos+component-1].idlinit = strjoin (INIT_DATA, joint)
+      varcontent[vc_pos+component-1].idlvarloc = idl_var+'_loc'
+      varcontent[vc_pos+component-1].idlinitloc = strjoin (INIT_DATA_LOC, joint)
+      varcontent[vc_pos+component-1].skip = skip - 1
     endif
   endfor
 
+  vc_pos += skip
 endfor
 ;
 ;  Turn vector quantities into scalars if requested.
