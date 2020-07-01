@@ -3,8 +3,8 @@
 \setlength{\oddsidemargin}{-10mm}
 \setlength{\textheight}{220mm}
 \setlength{\topmargin}{-8mm}
-\bibliographystyle{apalike}
-\usepackage{natbib,url,wrapfig,graphicx}
+\bibliographystyle{gGAF}
+\usepackage{natbib,url,wrapfig,graphicx,multicol}
 \begin{document}
 \title{Scientific usage of the {\sc Pencil Code}}
 \author{Search results using \url{http://adslabs.org} and \\
@@ -1475,5 +1475,9 @@ or in comparison with other codes \citep{
 \def\pasj   {Pub.\ Astron.\ Soc.\ Japan}
 \def\jcap   {J..\ Cosmol.\ Astropart.\ Phys.}
 
+\begin{multicols}{2}
+\begin{scriptsize}
 \bibliography{ref}
+\end{scriptsize}
+\end{multicols}
 \end{document}
