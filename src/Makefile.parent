@@ -79,6 +79,7 @@ semiauto-conf:
 
 # Compile tools for collecting, downscaling, and distributing data cubes
 tools: default
+# MR: which is the target "default"?
 
 pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid: Makefile_inc
 	( cd src && \

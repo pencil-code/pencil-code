@@ -1279,17 +1279,19 @@ module Testfield
 !
 !  Remove mean flow from all 5 test problems.
 !
-      if (lremove_mean_flow_NLTFM_all) then
-        do jtest=1,njtest
-          iuxtest=iuutest+3*(jtest-1)
-          call remove_mean_flow(f,iuxtest)
-        enddo
+      if (lrmv) then
+        if (lremove_mean_flow_NLTFM_all) then
+          do jtest=1,njtest
+            iuxtest=iuutest+3*(jtest-1)
+            call remove_mean_flow(f,iuxtest)
+          enddo
 !
 !  Remove mean flow from the "0" problem only.
 !
-      elseif (lremove_mean_flow_NLTFM_zero) then
-        iuxtest=iuutest+3*(njtest-1)
-        call remove_mean_flow(f,iuxtest)
+        elseif (lremove_mean_flow_NLTFM_zero) then
+          iuxtest=iuutest+3*(njtest-1)
+          call remove_mean_flow(f,iuxtest)
+        endif
       endif
 !
     endsubroutine testfield_before_boundary
@@ -1343,7 +1345,7 @@ module Testfield
       if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need njtest=5 for u0ref')
 
-      if (lremove_zmeans_NLTFM_zero) then
+      if (lrmv.and.lremove_zmeans_NLTFM_zero) then
 !
 !  Remove averages from the zero test solution.
 !
