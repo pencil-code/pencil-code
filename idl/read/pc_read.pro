@@ -38,18 +38,21 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 
 	common pc_read_common, file
 
-	vectors = [ '^aa$', '^uu$', '^bb$', '^jj$','^ff$']   ;, '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
-	quantity=strtrim(quantity,2)
-        if n_elements(quantity) eq 1 then begin
-          vector = []
-	  for i=0,n_elements(vectors)-1 do $
-                if stregex(quantity,vectors[i],/bool) then vector=[vector,i]
-	  if is_defined(vector) then begin
-                numpos = stregex(quantity,'[1-9]')
-                if numpos ge 0 then quantity = strmid(quantity,0,numpos)+strtrim(string((fix(strmid(quantity,numpos))-1)/3+1),2)
-		quantity = strmid(quantity,1,1) + [ 'x', 'y', 'z' ]
-	  endif
-	endif
+	quantity = strtrim (quantity, 2)
+
+	if (n_elements (quantity) eq 1) then begin
+		; expand vector quantities
+		vectors = [ '^aa$', '^uu$', '^bb$', '^jj$', '^ff$', '^uud[0-9]+$' ] ; , '^aatest[1-9][0-9]*$', '^uutest[1-9][0-9]*$' ]
+		num_vectors = n_elements (vectors)
+		for pos = 0, num_vectors-1 do begin
+			if (stregex (quantity, vectors[pos], /bool)) then begin
+				start_pos = 1
+				if (stregex (quantity, '[0-9]', /bool)) then start_pos = 0
+				expanded = strmid (quantity, start_pos) + [ 'x', 'y', 'z' ]
+				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+			end
+		end
+	end
 
 	num_quantities = n_elements (quantity)
 	if (num_quantities gt 1) then begin
