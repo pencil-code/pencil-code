@@ -435,7 +435,7 @@ module Dustdensity
         if (lroot) print*, 'No such value for diffnd_law: ', trim(diffnd_law)
         call fatal_error('initialize_dustdensity','')
       endselect
-      if (lroot) print*, 'initialize_dustdensity: diffnd=',diffnd
+      if (lroot) print*, 'initialize_dustdensity: diffnd_ndustspec=',diffnd_ndustspec
 !
 !  check for self-collisions
 !
