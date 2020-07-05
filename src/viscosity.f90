@@ -96,6 +96,7 @@ module Viscosity
   logical :: lnusmag_as_aux=.false.
   logical :: lvisc_snr_damp=.false.
   logical :: lvisc_heat_as_aux=.false.
+  logical :: lvisc_forc_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
   logical :: lvisc_slope_limited=.false.
@@ -125,7 +126,7 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc
+      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -217,7 +218,6 @@ module Viscosity
 !
 !  Register characteristic speed: sld_char as auxilliary variable
 !  Needed for slope limited diffusion
-!  sld_char is actually a squared velocity
 !
       if (any(ivisc=='nu-slope-limited')) then
         lslope_limit_diff = .true.
@@ -250,6 +250,18 @@ module Viscosity
         aux_var(aux_count)=',visc_heat'
         if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+1
+      endif
+!
+!  Register an 3 extra aux slot for viscouse force (accelaration) if requested (so
+!  visc_forc is written to snapshots and can be easily analyzed later).
+!
+      if (lvisc_forc_as_aux) then
+        call farray_register_auxiliary('visc_forc',ivisc_forc,vector=3)
+        if (lroot) write(15,*) 'visc_forc = fltarr(mx,my,mz,3)*one'
+        aux_var(aux_count)=',visc_forc'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+3
+        ivisc_forcx=ivisc_forc;ivisc_forcy=ivisc_forc+1;ivisc_forcz=ivisc_forc+2
       endif
 !
     endsubroutine register_viscosity
@@ -2091,6 +2103,14 @@ module Viscosity
 !  know we are?
 !
       if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+!
+!  Store viscous force (acceleration) in auxiliary variable if requested.
+!
+      if (lvisc_forc_as_aux) then
+        do i=0,2
+          f(l1:l2,m,n,ivisc_forc+i) = p%fvisc(:,i+1)
+        enddo
+      endif
 !
 !  Do diagnostics related to viscosity.
 !
