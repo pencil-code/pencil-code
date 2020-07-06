@@ -2105,6 +2105,16 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-fdefault-real-8 #(puhti-[^g]|puhti[^-])
 #CFLAGS=-DFUNDERSC=1 -O1 #(puhti-[^g]|puhti[^-])
 ##
+## Mahti: Atos BullSequana XH2000 (Kajaani)
+##
+#FC=mpif90 #(mahti-[^g]|mahti[^-])
+#FSTD_95=-std95 #(mahti-[^g]|mahti[^-])
+#F90=$(FC) #(mahti-[^g]|mahti[^-])
+#CC=mpicc #(mahti-[^g]|mahti[^-])
+#FFLAGS=-O1 -fimplicit-none #(mahti-[^g]|mahti[^-])
+#FFLAGS_DOUBLE=-fdefault-real-8 #(mahti-[^g]|mahti[^-])
+#CFLAGS=-DFUNDERSC=1 -O1 #(mahti-[^g]|mahti[^-])
+##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
 #FC=mpifort #(login*|manterm1|kapylap1|rheinhm1)
