@@ -798,6 +798,15 @@ else if (($hn =~ r*c*)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
+else if (($hn =~ c*)) then
+  echo "Mahti - CSC, Kajaani, Finland"
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+#--------------------------------------------------
 else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
   echo "HLRN-IV - HLRN, Germany"
   module load intel
