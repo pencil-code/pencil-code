@@ -9,25 +9,25 @@ function check_slices_par, field, readdir, switches
 ;  7-jul-20/PAB: added regex hook, added check for existence of orig field
 ;
 fields=rstringlist('video.in')
-if fields[0] eq '' then begin
+if (fields[0] eq '') then begin
   print, 'No entries in video.in.'
   return, 0
 endif
 ;
-if is_defined(field) then begin
+if (is_defined(field)) then begin
 
-  if field ne '' then begin
+  if (field ne '') then begin
 
     pos=stregex(field,'[1-9][0-9]*[xyz]?$')
-    if pos lt 0 then pos=stregex(field,'[xyz]$')
+    if (pos lt 0) then pos=stregex(field,'[xyz]$')
 
     field_base = field
     if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
-    if strlen(field_base) lt 2 then field_base=field
+    if (strlen(field_base) lt 2) then field_base=field
 ;
 ;AB: Matthias, please check; without the "and ..." it would not work for us.
 ;
-    if (where(field_base eq fields))[0] eq -1 and (where(field eq fields))[0] eq -1 then begin
+    if (((where(field_base eq fields))[0] eq -1) and ((where(field eq fields))[0] eq -1)) then begin
       print, 'Field "'+strtrim(field_base,2)+'" not in video.in!!!'
       return, 0
     endif
