@@ -690,8 +690,6 @@ module HDF5_IO
 !
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-! Axel, please uncomment for debugging on Beskow:
-! write (123,*) '============> append to "index.pro" ivar,varname=', ivar, varname
         if (present (vector) .and. present (array)) then
           ! expand array: iuud => indgen(vector)
           write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
