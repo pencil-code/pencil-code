@@ -23,10 +23,10 @@ endif
 ;
 pos=stregex(field,'[1-9][0-9]*[xyz]?$')
 if (pos lt 0) then pos=stregex(field,'[xyz]$')
+if (pos le 1) then pos = 0
 
 field_base = field
 if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
-if (strlen(field_base) lt 2) then field_base=field
 ;
 ;AB: Matthias, please check; without the "or ..." it would not work for us.
 ;
