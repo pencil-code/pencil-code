@@ -181,10 +181,8 @@ module Dustdensity
         call farray_register_pde('nd'//sdust,ind_tmp)
         ind(k) = ind_tmp
       enddo
-      if (ndustspec/=1) then
-        call farray_index_append('nnd',ndustspec)
-        call farray_index_append('ind',ind(1),1,ndustspec)
-      endif
+      call farray_index_append('nnd',ndustspec)
+      call farray_index_append('ind',ind(1),1,ndustspec)
 !
 !  Register dust mass.
 !
@@ -195,10 +193,8 @@ module Dustdensity
           call farray_register_pde('md'//sdust,imd_tmp)
           imd(k) = imd_tmp
         enddo
-        if (ndustspec/=1) then
-          call farray_index_append('nmd',ndustspec)
-          call farray_index_append('imd',imd(1),1,ndustspec)
-        endif
+        call farray_index_append('nmd',ndustspec)
+        call farray_index_append('imd',imd(1),1,ndustspec)
       endif
 !
 !  Register ice mass.
@@ -210,10 +206,8 @@ module Dustdensity
           call farray_register_pde('mi'//sdust,imi_tmp)
           imd(k) = imi_tmp
         enddo
-        if (ndustspec/=1) then
-          call farray_index_append('nmi',ndustspec)
-          call farray_index_append('imi',imi(1),1,ndustspec)
-        endif
+        call farray_index_append('nmi',ndustspec)
+        call farray_index_append('imi',imi(1),1,ndustspec)
       endif
 !
 !  Register dust core distribution.
@@ -232,11 +226,8 @@ module Dustdensity
             idcj(k,i) = idc(k)+i-1
           enddo
         enddo
-!
-        if (ndustspec/=1) then
-          call farray_index_append('ndc',ndustspec)
-          call farray_index_append('imi',idc(1),1,ndustspec)
-        endif
+        call farray_index_append('ndc',ndustspec)
+        call farray_index_append('imi',idc(1),1,ndustspec)
 !
       endif
 !
