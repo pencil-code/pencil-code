@@ -72,6 +72,7 @@ module FArrayManager
 !
     character (len=30) :: varname
     integer            :: ncomponents
+    integer            :: narray
     integer            :: vartype
     type(pp), dimension(:), pointer :: ivar
 !
@@ -158,7 +159,7 @@ module FArrayManager
 ! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
       use General, only: ioptest
-
+!
       character (len=*), intent(in) :: varname
       integer, target, intent(out)  :: ivar
       integer, intent(in)  :: vartype
@@ -194,6 +195,16 @@ module FArrayManager
           call fatal_error("farray_register_variable", &
             "Registering "//trim(varname)//" fails: Name already exists but with a different "//&
             "number of components!")
+        endif
+        if (item%narray/=narray) then
+          if (present(ierr)) then
+            ierr=iFARRAY_ERR_WRONGSIZE
+            ivar=0
+            return
+          endif
+          call fatal_error("farray_register_variable", &
+            "Registering "//trim(varname)//" fails: Name already exists but with a different "//&
+            "array size!")
         endif
         if (item%vartype/=vartype) then
           if (present(ierr)) then
@@ -281,6 +292,7 @@ module FArrayManager
         new%varname     = varname
         new%vartype     = vartype
         new%ncomponents = ncomponents
+        new%narray      = narray
         allocate(new%ivar(nvars))
         new%ivar(1)%p => ivar
 !
@@ -337,7 +349,7 @@ module FArrayManager
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
         l = len(trim(component))
-        if (vector == 3 .and. use_aux.eqv..false.) then
+        if (vector == 3 .and. use_aux.eqv..false.) then ! .not. use_aux
           if (l == 3) then
             ! double endings: iuu, iaa, etc.
             if (component(2:2) == component(3:3)) l = 2
