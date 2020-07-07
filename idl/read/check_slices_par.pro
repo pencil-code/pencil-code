@@ -4,6 +4,10 @@ function check_slices_par, field, readdir, switches
 ; Reads slice switches from <readdir>/slice_position.dat into structure <switches>.
 ; Returns 1 on success, else 0.
 ;
+;  1-jun-18/MR: copy+pasted from 
+; 17-mar-20/MR: added xyz line
+;  7-jul-20/PAB: added regex hook, added check for existence of orig field
+;
 fields=rstringlist('video.in')
 if fields[0] eq '' then begin
   print, 'No entries in video.in.'
@@ -14,13 +18,15 @@ if is_defined(field) then begin
 
   if field ne '' then begin
 
-    pos=stregex(field,'[1-9][0-9]*')
-    if pos lt 0 then pos=stregex(field,'[xyz]')
+    pos=stregex(field,'[1-9][0-9]*[xyz]?$')
+    if pos lt 0 then pos=stregex(field,'[xyz]$')
 
     field_base = pos ge 0 ? strtrim(strmid(field,0,pos)) : field
     if strlen(field_base) lt 2 then field_base=field
-
-    if (where(field_base eq fields))[0] eq -1 then begin
+;
+;AB: Matthias, please check; without the "and ..." it would not work for us.
+;
+    if (where(field_base eq fields))[0] eq -1 and (where(field eq fields))[0] eq -1 then begin
       print, 'Field "'+strtrim(field_base,2)+'" not in video.in!!!'
       return, 0
     endif
