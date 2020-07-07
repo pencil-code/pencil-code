@@ -16,7 +16,7 @@ endif
 ;
 default, field, fields[0]
 ;
-if ((is_str (field) <= 0) or (field eq '')) then begin
+if ((is_str (field) le 0) or (field eq '')) then begin
   message, '"field" must be a non-empty string!', /warn
   return, 0
 endif
