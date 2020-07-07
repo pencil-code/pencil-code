@@ -157,6 +157,17 @@ module Dustvelocity
         iudz(k) = iuud(k)+2
       enddo
 !
+!  Overwrite automatic IDL indices, because pc_varcontent needs full names,
+!  like 'iuudx', which is then an array of f-array indices, where each index
+!  skips 3 (vector components).
+!
+      call farray_index_append('nuudx',ndustspec)
+      call farray_index_append('nuudy',ndustspec)
+      call farray_index_append('nuudz',ndustspec)
+      call farray_index_append('iuudx',iudx(1),3,ndustspec)
+      call farray_index_append('iuudy',iudy(1),3,ndustspec)
+      call farray_index_append('iuudz',iudz(1),3,ndustspec)
+!
 !  Writing files for use with IDL.
 !
       if (lroot) then
