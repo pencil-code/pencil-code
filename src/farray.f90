@@ -333,7 +333,7 @@ module FArrayManager
       if (present(aux)) use_aux=aux
 !
       call index_append(trim(varname),ivar,vector=vector,array=array)
-      if (.not. present (array) .and. present (vector)) then
+      if ((.not. present (array)) .and. present (vector)) then
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
         l = len(trim(component))
