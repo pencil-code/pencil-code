@@ -148,7 +148,9 @@ indices = [ $
   { name:'ieta', label:'Dust resistivity', dims:1 }, $
   { name:'izeta', label:'Ionization rate', dims:1 }, $
   { name:'ichemspec', label:'Chemical species mass fraction', dims:1 }, $
-  { name:'iuud', label:'Dust velocity', dims:3 }, $
+  { name:'iuudx', label:'Dust velocity x', dims:1 }, $
+  { name:'iuudy', label:'Dust velocity y', dims:1 }, $
+  { name:'iuudz', label:'Dust velocity z', dims:1 }, $
   { name:'ind', label:'Dust number density', dims:1 }, $
   { name:'imd', label:'Dust density', dims:1 }, $
   { name:'imi', label:'Dust mi ?something?', dims:1 }, $
