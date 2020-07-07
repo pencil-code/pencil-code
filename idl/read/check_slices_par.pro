@@ -10,33 +10,30 @@ function check_slices_par, field, readdir, switches
 ;
 fields=rstringlist('video.in')
 if (fields[0] eq '') then begin
-  print, 'No entries in video.in.'
+  message, 'No entries in "video.in"!', /warn
   return, 0
 endif
 ;
-if (is_defined(field)) then begin
-
-  if (field ne '') then begin
-
-    pos=stregex(field,'[1-9][0-9]*[xyz]?$')
-    if (pos lt 0) then pos=stregex(field,'[xyz]$')
-
-    field_base = field
-    if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
-    if (strlen(field_base) lt 2) then field_base=field
+default, field, fields[0]
 ;
-;AB: Matthias, please check; without the "and ..." it would not work for us.
+if ((is_str (field) <= 0) or (field eq '')) then begin
+  message, '"field" must be a non-empty string!', /warn
+  return, 0
+endif
 ;
-    if (((where(field_base eq fields))[0] eq -1) and ((where(field eq fields))[0] eq -1)) then begin
-      print, 'Field "'+strtrim(field_base,2)+'" not in video.in!!!'
-      return, 0
-    endif
+pos=stregex(field,'[1-9][0-9]*[xyz]?$')
+if (pos lt 0) then pos=stregex(field,'[xyz]$')
 
-  endif else $
-    field=fields[0]
-
-endif else $
-  field=fields[0]
+field_base = field
+if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
+if (strlen(field_base) lt 2) then field_base=field
+;
+;AB: Matthias, please check; without the "or ..." it would not work for us.
+;
+if (not (any (field_base eq fields) or any (field eq fields))) then begin
+  print, 'Field "'+strtrim(field_base,2)+'" is not listed in "video.in"!'
+  return, 0
+endif
 ;
 ; Read slice switches
 ;
