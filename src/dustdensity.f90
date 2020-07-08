@@ -174,7 +174,7 @@ module Dustdensity
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
-      call farray_register_pde('nd'//sdust,ind_tmp,array=ndustspec)
+      call farray_register_pde('nd',ind_tmp,array=ndustspec)
       do k=1,ndustspec
         ind(k) = ind_tmp + k-1
       enddo
@@ -183,7 +183,7 @@ module Dustdensity
 !  Register dust mass.
 !
       if (lmdvar) then
-        call farray_register_pde('md'//sdust,ind_tmp,array=ndustspec)
+        call farray_register_pde('md',ind_tmp,array=ndustspec)
         do k=1,ndustspec
           imd(k) = ind_tmp + k-1
         enddo
@@ -193,7 +193,7 @@ module Dustdensity
 !  Register ice mass.
 !
       if (lmice) then
-        call farray_register_pde('mi'//sdust,ind_tmp,array=ndustspec)
+        call farray_register_pde('mi',ind_tmp,array=ndustspec)
         do k=1,ndustspec
           imd(k) = ind_tmp + k-1
         enddo
@@ -206,7 +206,7 @@ module Dustdensity
 !
 !  Is this executed in all cases? Why ndustspec0 here?
 !
-        call farray_register_pde('dc'//sdust,ind_tmp,array=ndustspec*ndustspec0)
+        call farray_register_pde('dc',ind_tmp,array=ndustspec*ndustspec0)
         do k=1,ndustspec
           idc(k) = ind_tmp + (k-1)*ndustspec0
           do i=1,ndustspec0
