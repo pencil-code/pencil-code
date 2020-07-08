@@ -2560,6 +2560,7 @@ module HDF5_IO
     subroutine index_append(varname,ivar,vector,array)
 !
 ! 14-Oct-2018/PABourdin: coded
+! 09-Jul-2020/PAB: reworked
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar

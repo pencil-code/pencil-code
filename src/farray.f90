@@ -328,6 +328,7 @@ module FArrayManager
     subroutine farray_index_append(varname,ivar,vector,array)
 !
 ! 14-Oct-2018/PAB: coded
+! 09-Jul-2020/PAB: reworked
 !
       use General, only: ioptest
 !
