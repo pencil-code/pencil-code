@@ -685,22 +685,49 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
-      integer, intent(in), optional :: vector
-      integer, intent(in), optional :: array
+      integer, intent(in) :: vector
+      integer, intent(in) :: array
+!
+      character (len=len(varname)) :: component
+      integer :: pos, l
 !
       if (lroot) then
-        open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-        if (present (vector) .and. present (array)) then
-          ! expand array: iuud => indgen(array)*vector+ivar
-          write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
-        elseif (present (array)) then
+        open (lun_output, file=trim (datadir)//'/'//trim (index_pro), POSITION='append')
+        if ((vector > 0) .and. (array > 0)) then
+          ! expand vector array: iuud => [iuudx,iuudy,iuudz] => indgen(array)*vector+ivar+[0,1,2]
+          write (lun_output,*) trim(varname)//'='//trim (itoa(ivar)) ! only for backwards compatibility
+          write (lun_output,*) trim(varname)//'x=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar))
+          write (lun_output,*) trim(varname)//'y=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar+1))
+          write (lun_output,*) trim(varname)//'z=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar+2))
+        elseif (array > 0) then
           ! expand array: ind => indgen(array)+ivar
-          write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
+          write (lun_output,*) trim (varname)//'=indgen('//trim (itoa (array))//')+'//trim (itoa (ivar))
+        elseif (vector > 0) then
+          ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
+          if (vector == 3) then
+            component = trim (varname)
+            l = len (trim (component))
+            if (l == 3) then
+              ! double endings: iuu, iaa, etc.
+              if (component(2:2) == component(3:3)) l = 2
+            endif
+            write (lun_output,*) trim(component(1:l))//'x='//trim (itoa(ivar))
+            write (lun_output,*) trim(component(1:l))//'y='//trim (itoa(ivar+1))
+            write (lun_output,*) trim(component(1:l))//'z='//trim (itoa(ivar+2))
+          elseif (vector >= 2) then
+            ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
+            do pos = 1, vector
+              write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim (itoa(ivar+pos-1))
+            enddo
+          else
+            ! just for safety, should never occur!
+            write (lun_output,*) '; wrong vector size registered for "'//trim(varname)//'"'
+          endif
         else
           ! scalar: ilnrho => ivar
-          write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+          write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         endif
-        close(lun_output)
+        close (lun_output)
       endif
 !
     endsubroutine index_append
