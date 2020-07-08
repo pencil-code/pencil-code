@@ -170,44 +170,34 @@ module Dustdensity
       use FArrayManager, only: farray_register_pde, farray_index_append
       use General, only: itoa
 !
-      integer :: k, i, ind_tmp, imd_tmp, imi_tmp, dc_tmp
-      character (len=intlen) :: sdust
+      integer :: k, i, ind_tmp
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
+      call farray_register_pde('nd'//sdust,ind_tmp,array=ndustspec)
       do k=1,ndustspec
-        sdust='['//trim(itoa(k-1))//']'
-        if (ndustspec==1) sdust=''
-        call farray_register_pde('nd'//sdust,ind_tmp)
-        ind(k) = ind_tmp
+        ind(k) = ind_tmp + k-1
       enddo
       call farray_index_append('nnd',ndustspec)
-      call farray_index_append('ind',ind(1),1,ndustspec)
 !
 !  Register dust mass.
 !
       if (lmdvar) then
+        call farray_register_pde('md'//sdust,ind_tmp,array=ndustspec)
         do k=1,ndustspec
-          sdust='['//trim(itoa(k-1))//']'
-          if (ndustspec==1) sdust=''
-          call farray_register_pde('md'//sdust,imd_tmp)
-          imd(k) = imd_tmp
+          imd(k) = ind_tmp + k-1
         enddo
         call farray_index_append('nmd',ndustspec)
-        call farray_index_append('imd',imd(1),1,ndustspec)
       endif
 !
 !  Register ice mass.
 !
       if (lmice) then
+        call farray_register_pde('mi'//sdust,ind_tmp,array=ndustspec)
         do k=1,ndustspec
-          sdust='['//trim(itoa(k-1))//']'
-          if (ndustspec==1) sdust=''
-          call farray_register_pde('mi'//sdust,imi_tmp)
-          imd(k) = imi_tmp
+          imd(k) = ind_tmp + k-1
         enddo
         call farray_index_append('nmi',ndustspec)
-        call farray_index_append('imi',imi(1),1,ndustspec)
       endif
 !
 !  Register dust core distribution.
@@ -215,19 +205,15 @@ module Dustdensity
       if (ldcore) then
 !
 !  Is this executed in all cases? Why ndustspec0 here?
-!  *** WORK HERE: Someone please check and fix this...
 !
+        call farray_register_pde('dc'//sdust,ind_tmp,array=ndustspec*ndustspec0)
         do k=1,ndustspec
-          sdust='['//trim(itoa(k-1))//']'
-          if (ndustspec==1) sdust=''
-          call farray_register_pde('dc'//sdust,dc_tmp,vector=ndustspec0)
-          idc(k) = dc_tmp
+          idc(k) = ind_tmp + (k-1)*ndustspec0
           do i=1,ndustspec0
-            idcj(k,i) = idc(k)+i-1
+            idcj(k,i) = idc(k) + i-1
           enddo
         enddo
         call farray_index_append('ndc',ndustspec)
-        call farray_index_append('imi',idc(1),1,ndustspec)
 !
       endif
 !
