@@ -336,13 +336,12 @@ for tag = 1, num_tags do begin
     endif
   endif
   ; Identify f-array variables with multiple components.
-  matches = stregex (index_pro, '^ *'+search+' *= *(indgen *\( *[0-9]+ *\).*)$', /extract, /sub)
+  matches = stregex (index_pro, '^ *'+search+' *= *(indgen *\( *([0-9]+) *\).*)$', /extract, /sub)
   line = max (where (matches[0,*] ne ''))
   if (line ge 0) then begin
     if (not execute (index_pro[line])) then $
         message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-    if (not execute ('num_subtags = n'+strmid (search, 1))) then $
-        message, 'pc_varcontent: there was a problem with reading "n'+strmid (search, 1)+'" at line '+str (line)+'.', /info
+    num_subtags = matches[2,line]
     if (search eq 'ichemspec') then begin
       matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
       add_vars *= num_subtags
