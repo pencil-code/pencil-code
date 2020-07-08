@@ -342,7 +342,7 @@ for tag = 1, num_tags do begin
     if (not execute (index_pro[line])) then $
         message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
     if (not execute ('num_subtags = n'+strmid (search, 1))) then $
-        message, 'pc_varcontent: there was a problem with reading n"'+strmid (search, 1)+'" at line '+str (line)+'.', /info
+        message, 'pc_varcontent: there was a problem with reading "n'+strmid (search, 1)+'" at line '+str (line)+'.', /info
     if (search eq 'ichemspec') then begin
       matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
       add_vars *= num_subtags
