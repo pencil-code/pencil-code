@@ -691,9 +691,10 @@ module HDF5_IO
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
         if (present (vector) .and. present (array)) then
-          ! expand array: iuud => indgen(vector)
+          ! expand array: iuud => indgen(array)*vector+ivar
           write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         else
+          ! scalar: ilnrho => ivar
           write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         endif
         close(lun_output)
