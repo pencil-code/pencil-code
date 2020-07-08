@@ -128,7 +128,7 @@ module FArrayManager
 !
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,array,aux,ierr)
+    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,array,ierr)
 !
 !  Register an auxiliary variable in the f array.
 !
@@ -136,7 +136,7 @@ module FArrayManager
 !
       character (len=*), intent(in) :: varname
       integer, intent(out)  :: ivar
-      logical, optional, intent(in) :: communicated, aux
+      logical, optional, intent(in) :: communicated
       integer, optional, intent(in) :: vector, array
       integer, optional, intent(out) :: ierr
 !
@@ -148,11 +148,11 @@ module FArrayManager
         vartype = iFARRAY_TYPE_AUXILIARY
       endif
 !
-      call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,aux=aux,ierr=ierr)
+      call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
 !
     endsubroutine farray_register_auxiliary
 !***********************************************************************
-    subroutine farray_register_variable(varname,ivar,vartype,vector,array,aux,ierr)
+    subroutine farray_register_variable(varname,ivar,vartype,vector,array,ierr)
 !
 ! 12-may-12/MR: avoid writing of auxiliary variable index into index.pro if
 !               variable not written into var.dat
@@ -164,7 +164,6 @@ module FArrayManager
       integer, target, intent(out)  :: ivar
       integer, intent(in)  :: vartype
       integer, optional, intent(in) :: vector, array
-      logical, optional, intent(in) :: aux
       integer, optional, intent(out) :: ierr
 !
       type (farray_contents_list), pointer :: item, new
@@ -317,16 +316,16 @@ module FArrayManager
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
 !
-        if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
+        if (.not. lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
                                     vartype==iFARRAY_TYPE_AUXILIARY )) return
 !
-        call farray_index_append('i'//varname,ivar,vector=vector,array=array,aux=aux)
+        call farray_index_append('i'//varname,ivar,vector=vector,array=array)
 !
       endif
 !
     endsubroutine farray_register_variable
 !***********************************************************************
-    subroutine farray_index_append(varname,ivar,vector,array,aux)
+    subroutine farray_index_append(varname,ivar,vector,array)
 !
 ! 14-Oct-2018/PAB: coded
 !
@@ -335,21 +334,16 @@ module FArrayManager
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, optional, intent(in) :: vector, array
-      logical, optional, intent(in) :: aux
 !
       character (len=len(varname)) :: component
       integer :: pos, l
-      logical :: use_aux
-!
-      use_aux=.false.
-      if (present(aux)) use_aux=aux
 !
       call index_append(trim(varname),ivar,vector=vector,array=array)
       if ((.not. present (array)) .and. present (vector)) then
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
         l = len(trim(component))
-        if (vector == 3 .and. use_aux.eqv..false.) then ! .not. use_aux
+        if (vector == 3) then
           if (l == 3) then
             ! double endings: iuu, iaa, etc.
             if (component(2:2) == component(3:3)) l = 2
