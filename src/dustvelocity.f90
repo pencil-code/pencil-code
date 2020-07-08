@@ -134,51 +134,20 @@ module Dustvelocity
       use General, only: itoa
 !
       integer :: k, uud_tmp
-      character(len=intlen) :: sdust
 !
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Write dust index in short notation
-!
-      if (ndustspec >= 1) then
-        call farray_index_append('nuud',ndustspec)
-      endif
-!
-      do k=1,ndustspec
-        sdust = ''
-        if (ndustspec > 1) sdust = itoa(k-1)
-        call farray_register_pde('uud'//trim(sdust),uud_tmp,vector=3)
-        iuud(k) = uud_tmp
+      call farray_index_append('nuud',ndustspec)
+      call farray_register_pde('uud',uud_tmp,vector=3,array=ndustspec)
+      do k=1, ndustspec
+        iuud(k) = uud_tmp + (k-1)*3
         iudx(k) = iuud(k)
         iudy(k) = iuud(k)+1
         iudz(k) = iuud(k)+2
       enddo
-!
-!  Overwrite automatic IDL indices, because pc_varcontent needs full names,
-!  like 'iuudx', which is then an array of f-array indices, where each index
-!  skips 3 (vector components).
-!
-      call farray_index_append('nuudx',ndustspec)
-      call farray_index_append('nuudy',ndustspec)
-      call farray_index_append('nuudz',ndustspec)
-      call farray_index_append('iuudx',iudx(1),3,ndustspec)
-      call farray_index_append('iuudy',iudy(1),3,ndustspec)
-      call farray_index_append('iuudz',iudz(1),3,ndustspec)
-!
-!  Writing files for use with IDL.
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',uud $'
-          if (nvar == mvar) write(4,*) ',uud'
-        else
-          write(4,*) ',uud $'
-        endif
-        write(15,*) 'uud = fltarr(mx,my,mz,3)*one'
-      endif
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
