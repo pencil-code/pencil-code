@@ -329,34 +329,18 @@ module FArrayManager
 !
 ! 14-Oct-2018/PAB: coded
 !
-      use General, only: itoa
+      use General, only: ioptest
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, optional, intent(in) :: vector, array
 !
-      character (len=len(varname)) :: component
-      integer :: pos, l
+      integer :: num_vector, num_array
 !
-      call index_append(trim(varname),ivar,vector=vector,array=array)
-      if ((.not. present (array)) .and. present (vector)) then
-        ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
-        component = trim(varname)
-        l = len(trim(component))
-        if (vector == 3) then
-          if (l == 3) then
-            ! double endings: iuu, iaa, etc.
-            if (component(2:2) == component(3:3)) l = 2
-          endif
-          call index_append(trim(component(1:l))//'x',ivar)
-          call index_append(trim(component(1:l))//'y',ivar+1)
-          call index_append(trim(component(1:l))//'z',ivar+2)
-        elseif (vector >= 2) then
-          do pos=1, vector
-            call index_append(trim(component(1:l))//trim(itoa(pos)),ivar+pos-1)
-          enddo
-        endif
-      endif
+      num_vector = ioptest (vector, 0)
+      num_array = ioptest (array, 0)
+!
+      call index_append (trim (varname), ivar, num_vector, num_array)
 !
     endsubroutine farray_index_append
 !***********************************************************************
