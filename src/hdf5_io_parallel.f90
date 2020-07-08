@@ -2566,6 +2566,7 @@ module HDF5_IO
       integer, intent(in), optional :: vector
       integer, intent(in), optional :: array
 !
+      integer, parameter :: lun_output = 92
       integer :: pos
 !
       ! omit all unused variables
@@ -2575,30 +2576,30 @@ module HDF5_IO
       if (present (vector) .and. .not. present (array)) then
         ! backwards-compatibile addition: iuud => ivar
         if (lroot) then
-          open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-          write(3,*) trim(varname)//'='//trim(itoa(ivar))
-          close(3)
+          open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+          write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+          close(lun_output)
         endif
         return
       endif
 !
-      if (lroot) open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+      if (lroot) open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
       if (present (array)) then
         ! backwards-compatibile expansion: iuud => ivar ! + indgen(array)
-        if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar)) ! //'+indgen('//trim(itoa(array))//')'
+        if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar)) ! //'+indgen('//trim(itoa(array))//')'
         ! expand array: iuud => iuud#=ivar+#-1
         do pos=1, array
           if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
-          if (lroot) write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
+          if (lroot) write(lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
           call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
         enddo
       else
         if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)) then
-          if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar))
+          if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
           call index_register (trim(varname), ivar)
         endif
       endif
-      if (lroot) close(3)
+      if (lroot) close(lun_output)
 !
     endsubroutine index_append
 !***********************************************************************
