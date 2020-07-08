@@ -693,6 +693,9 @@ module HDF5_IO
         if (present (vector) .and. present (array)) then
           ! expand array: iuud => indgen(array)*vector+ivar
           write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+        elseif (present (array)) then
+          ! expand array: ind => indgen(array)+ivar
+          write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
         else
           ! scalar: ilnrho => ivar
           write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
