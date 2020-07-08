@@ -380,14 +380,8 @@ module Particles
       if (np_ap_spec) then
          lnp_ap_as_aux = .true. ! TEMPORARY...TO RUN MODELS THAT DIDN'T HAVE THIS FLAG.
          if (lnp_ap_as_aux) then
-          !! Loop over grain sizes:
-          !do k=1,ndustrad
-          !  sdust=trim(itoa(k))
-          !  call farray_register_auxiliary('np_ap'//sdust,ind_tmp)
-          !  iapn(k) = ind_tmp
-          !enddo
-          !
-          call farray_register_auxiliary('np_ap',iapn(1),array=ndustrad,aux=.true.)
+          call farray_register_auxiliary('np_ap',ind_tmp,array=ndustrad)
+          iapn(1) = ind_tmp
           iapn = iapn(1) + indgen(ndustrad) - 1
           call farray_index_append('n_np_ap',ndustrad)
         else
