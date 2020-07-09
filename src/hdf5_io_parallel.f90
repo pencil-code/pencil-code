@@ -2575,8 +2575,6 @@ module HDF5_IO
 !
       if (lroot) open (lun_output, file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
       if ((vector > 0) .and. (array > 0)) then
-        ! backwards-compatibile addition: iuud => ivar
-        if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         ! expand array: iuud => iuud[x,y,z][1,...,N]
         if (lroot) then
           write (lun_output,*) trim(varname)//'x=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
@@ -2585,24 +2583,31 @@ module HDF5_IO
         endif
         do arr = 1, array
           pos = (arr-1) * vector
-          if ('i'//trim(index_get (ivar+pos, quiet=.true.)) /= trim(varname)//'x'//trim(itoa(arr))) &
-              call index_register (trim(varname)//'x'//trim(itoa(arr)), ivar+pos)
-          if ('i'//trim(index_get (ivar+pos+1, quiet=.true.)) /= trim(varname)//'y'//trim(itoa(arr))) &
-              call index_register (trim(varname)//'y'//trim(itoa(arr)), ivar+pos+1)
-          if ('i'//trim(index_get (ivar+pos+2, quiet=.true.)) /= trim(varname)//'z'//trim(itoa(arr))) &
-              call index_register (trim(varname)//'z'//trim(itoa(arr)), ivar+pos+2)
+          if ('i'//trim(index_get (ivar+pos, quiet=.true.)) /= trim(varname)//'x'//trim(itoa(arr))) then
+            if (lroot) write (lun_output,*) trim(varname)//'x'//trim(itoa(arr))//'='//trim(itoa(ivar+pos))
+            call index_register (trim(varname)//'x'//trim(itoa(arr)), ivar+pos)
+          endif
+          if ('i'//trim(index_get (ivar+pos+1, quiet=.true.)) /= trim(varname)//'y'//trim(itoa(arr))) then
+            if (lroot) write (lun_output,*) trim(varname)//'y'//trim(itoa(arr))//'='//trim(itoa(ivar+pos+1))
+            call index_register (trim(varname)//'y'//trim(itoa(arr)), ivar+pos+1)
+          endif
+          if ('i'//trim(index_get (ivar+pos+2, quiet=.true.)) /= trim(varname)//'z'//trim(itoa(arr))) then
+            if (lroot) write (lun_output,*) trim(varname)//'z'//trim(itoa(arr))//'='//trim(itoa(ivar+pos+2))
+            call index_register (trim(varname)//'z'//trim(itoa(arr)), ivar+pos+2)
+          endif
         enddo
       elseif (array > 0) then
         ! expand array: ind => ind[1,...,N] = ivar + [0,...,N-1]
         if (lroot) write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
         do pos = 1, array
           if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
+          if (lroot) write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
           call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
         enddo
       elseif (vector > 0) then
-        ! backwards-compatibile addition: iuud => ivar
         if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         if (vector == 3) then
+          ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
           if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)//'x') then
             if (lroot) write (lun_output,*) trim(varname)//'x'//'='//trim(itoa(ivar))
             call index_register (trim(varname)//'x', ivar)
@@ -2616,6 +2621,7 @@ module HDF5_IO
             call index_register (trim(varname)//'z', ivar+2)
           endif
         elseif (vector >= 2) then
+          ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
           do pos = 1, vector
             if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
             if (lroot) write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
@@ -2626,8 +2632,9 @@ module HDF5_IO
           if (lroot) write (lun_output,*) '; wrong vector size registered for "'//trim(varname)//'"'
         endif
       else
+        ! scalar: ilnrho => ivar
         if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)) then
-          if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+          if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
           call index_register (trim(varname), ivar)
         endif
       endif
