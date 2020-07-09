@@ -3,9 +3,7 @@
 !  forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id$',
-  !nt=100, it1=10, isave=1000, itorder=3
-  nt=10, isave=1000, itorder=3
+  nt=10, it1=5, isave=1000, itorder=3
   lpencil_check_small=F
   lpencil_check=F
 /
