@@ -2564,36 +2564,67 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
-      integer, intent(in), optional :: vector
-      integer, intent(in), optional :: array
+      integer, intent(in) :: vector
+      integer, intent(in) :: array
 !
       integer, parameter :: lun_output = 92
-      integer :: pos
+      integer :: pos, vec, arr
 !
       ! omit all unused variables
       if (ivar <= 0) return
 !
-      ! ignore vectors because they get expanded in 'farray_index_append'
-      if (present (vector) .and. .not. present (array)) then
+      if (lroot) open (lun_output, file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+      if ((vector > 0) .and. (array > 0)) then
         ! backwards-compatibile addition: iuud => ivar
+        if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+        ! expand array: iuud => iuud[x,y,z][1,...,N]
         if (lroot) then
-          open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-          write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
-          close(lun_output)
+          write (lun_output,*) trim(varname)//'x=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+          write (lun_output,*) trim(varname)//'y=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar+1))
+          write (lun_output,*) trim(varname)//'z=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar+2))
         endif
-        return
-      endif
-!
-      if (lroot) open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-      if (present (array)) then
-        ! backwards-compatibile expansion: iuud => ivar ! + indgen(array)
-        if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar)) ! //'+indgen('//trim(itoa(array))//')'
-        ! expand array: iuud => iuud#=ivar+#-1
-        do pos=1, array
+        do arr = 1, array
+          pos = (arr-1) * vector
+          if ('i'//trim(index_get (ivar+pos, quiet=.true.)) /= trim(varname)//'x'//trim(itoa(arr))) &
+              call index_register (trim(varname)//'x'//trim(itoa(arr)), ivar+pos)
+          if ('i'//trim(index_get (ivar+pos+1, quiet=.true.)) /= trim(varname)//'y'//trim(itoa(arr))) &
+              call index_register (trim(varname)//'y'//trim(itoa(arr)), ivar+pos+1)
+          if ('i'//trim(index_get (ivar+pos+2, quiet=.true.)) /= trim(varname)//'z'//trim(itoa(arr))) &
+              call index_register (trim(varname)//'z'//trim(itoa(arr)), ivar+pos+2)
+        enddo
+      elseif (array > 0) then
+        ! expand array: ind => ind[1,...,N] = ivar + [0,...,N-1]
+        if (lroot) write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
+        do pos = 1, array
           if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
-          if (lroot) write(lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
           call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
         enddo
+      elseif (vector > 0) then
+        ! backwards-compatibile addition: iuud => ivar
+        if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+        if (vector == 3) then
+          if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)//'x') then
+            if (lroot) write (lun_output,*) trim(varname)//'x'//'='//trim(itoa(ivar))
+            call index_register (trim(varname)//'x', ivar)
+          endif
+          if ('i'//trim(index_get (ivar+1, quiet=.true.)) /= trim(varname)//'y') then
+            if (lroot) write (lun_output,*) trim(varname)//'y'//'='//trim(itoa(ivar+1))
+            call index_register (trim(varname)//'y', ivar+1)
+          endif
+          if ('i'//trim(index_get (ivar+2, quiet=.true.)) /= trim(varname)//'z') then
+            if (lroot) write (lun_output,*) trim(varname)//'z'//'='//trim(itoa(ivar+2))
+            call index_register (trim(varname)//'z', ivar+2)
+          endif
+        elseif (vector >= 2) then
+          do pos = 1, vector
+            if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
+            if (lroot) write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
+            call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
+          enddo
+        else
+          ! just for safety, should never occur!
+          if (lroot) write (lun_output,*) '; wrong vector size registered for "'//trim(varname)//'"'
+        endif
       else
         if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)) then
           if (lroot) write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
