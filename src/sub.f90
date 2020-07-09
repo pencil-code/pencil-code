@@ -5294,17 +5294,19 @@ nameloop: do
 !
     endsubroutine remove_prof
 !***********************************************************************
-    subroutine blob(ampl,f,i,radius,xblob,yblob,zblob,radius_x)
+    subroutine blob(ampl,f,i,radius,xblob,yblob,zblob,radius_x,lexp)
 !
 !  Single blob.
 !
 !  27-jul-02/axel: coded
+!   7-jul-20/axel: allowed for lexp=.true. to take exp of Gaussian
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
       real :: ampl,radius,x01=0.,y01=0.,z01=0.,fact, fact_x
       real, optional :: radius_x
+      logical, optional :: lexp
 !
 !  Single  blob.
 !
@@ -5325,10 +5327,18 @@ nameloop: do
           fact_x=fact
         endif
 !
-        f(:,:,:,i)=f(:,:,:,i)+ampl*( &
-           spread(spread(exp(-fact_x*(x-x01)**2),2,my),3,mz) &
-          *spread(spread(exp(-fact  *(y-y01)**2),1,mx),3,mz) &
-          *spread(spread(exp(-fact  *(z-z01)**2),1,mx),2,my))
+        if (present(lexp)) then
+          f(:,:,:,i)=f(:,:,:,i)+exp(ampl*( &
+             spread(spread(exp(-fact_x*(x-x01)**2),2,my),3,mz) &
+            *spread(spread(exp(-fact  *(y-y01)**2),1,mx),3,mz) &
+            *spread(spread(exp(-fact  *(z-z01)**2),1,mx),2,my)))
+        else
+!
+          f(:,:,:,i)=f(:,:,:,i)+ampl*( &
+             spread(spread(exp(-fact_x*(x-x01)**2),2,my),3,mz) &
+            *spread(spread(exp(-fact  *(y-y01)**2),1,mx),3,mz) &
+            *spread(spread(exp(-fact  *(z-z01)**2),1,mx),2,my))
+        endif
       endif
 !
     endsubroutine blob
