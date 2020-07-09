@@ -2568,7 +2568,8 @@ module HDF5_IO
       integer, intent(in) :: array
 !
       integer, parameter :: lun_output = 92
-      integer :: pos, vec, arr
+      character (len=len(varname)) :: quantity
+      integer :: pos, vec, arr, l
 !
       ! omit all unused variables
       if (ivar <= 0) return
@@ -2607,18 +2608,24 @@ module HDF5_IO
       elseif (vector > 0) then
         if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         if (vector == 3) then
+          quantity = trim (varname)
+          l = len (trim (quantity))
+          if (l == 3) then
+            ! double endings: iuu, iaa, etc.
+            if (quantity(2:2) == quantity(3:3)) quantity = trim (quantity(1:2))
+          endif
           ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
-          if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)//'x') then
-            if (lroot) write (lun_output,*) trim(varname)//'x'//'='//trim(itoa(ivar))
-            call index_register (trim(varname)//'x', ivar)
+          if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(quantity)//'x') then
+            if (lroot) write (lun_output,*) trim(quantity)//'x'//'='//trim(itoa(ivar))
+            call index_register (trim(quantity)//'x', ivar)
           endif
-          if ('i'//trim(index_get (ivar+1, quiet=.true.)) /= trim(varname)//'y') then
-            if (lroot) write (lun_output,*) trim(varname)//'y'//'='//trim(itoa(ivar+1))
-            call index_register (trim(varname)//'y', ivar+1)
+          if ('i'//trim(index_get (ivar+1, quiet=.true.)) /= trim(quantity)//'y') then
+            if (lroot) write (lun_output,*) trim(quantity)//'y'//'='//trim(itoa(ivar+1))
+            call index_register (trim(quantity)//'y', ivar+1)
           endif
-          if ('i'//trim(index_get (ivar+2, quiet=.true.)) /= trim(varname)//'z') then
-            if (lroot) write (lun_output,*) trim(varname)//'z'//'='//trim(itoa(ivar+2))
-            call index_register (trim(varname)//'z', ivar+2)
+          if ('i'//trim(index_get (ivar+2, quiet=.true.)) /= trim(quantity)//'z') then
+            if (lroot) write (lun_output,*) trim(quantity)//'z'//'='//trim(itoa(ivar+2))
+            call index_register (trim(quantity)//'z', ivar+2)
           endif
         elseif (vector >= 2) then
           ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
