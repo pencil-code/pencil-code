@@ -65,6 +65,7 @@ module Particles
   real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
+  real :: gaussian_x_frac=0.0
   real :: tstart_dragforce_par=0.0
   real :: tstart_grav_par=0.0, tstart_grav_x_par=0.0
   real :: tstart_grav_z_par=0.0, tstart_grav_r_par=0.0
@@ -196,7 +197,7 @@ module Particles
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, &
-      linterpolate_spline, &
+      gaussian_x_frac, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lparticle_gravity, &
       tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
@@ -1654,6 +1655,35 @@ module Particles
               fp(k,ixp) = xp0*sqrt(-2*alog(r))*cos(2*pi*p)
               if ((fp(k,ixp) >= xyz0(1)).and.(fp(k,ixp) <= xyz1(1))) exit
             enddo
+          enddo
+          if (nygrid /= 1) &
+              fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid /= 1) &
+              fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+!
+        case ('gaussian-x+random')
+          if (lroot) print*, 'init_particles: Gaussian particle positions+random'
+          do k = 1,npar_loc
+            if (nygrid /= 1) then
+              call random_number_wrapper(r)
+              fp(k,iyp) = r
+            endif
+            if (nzgrid /= 1) then
+              call random_number_wrapper(r)
+              fp(k,izp) = r
+            endif
+          enddo
+          do k = 1,nint(npar_loc*gaussian_x_frac)
+            do while (.true.)
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              fp(k,ixp) = xp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              if ((fp(k,ixp) >= xyz0(1)).and.(fp(k,ixp) <= xyz1(1))) exit
+            enddo
+          enddo
+          do k = nint(npar_loc*gaussian_x_frac)+1, npar_loc
+            call random_number_wrapper(r)
+            fp(k,ixp) = xyz0_par(1)+r*Lxyz_par(1)
           enddo
           if (nygrid /= 1) &
               fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
