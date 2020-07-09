@@ -59,6 +59,7 @@ module Dustdensity
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
   real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0
   real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
+  real :: radius_nd=1.0, xblob_nd=0.0, yblob_nd=0.0, zblob_nd=0.0
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
@@ -113,6 +114,7 @@ module Dustdensity
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
       adpeak, amplnd, amplnd_rel, phase_nd, kx_nd, ky_nd, kz_nd, &
       widthnd, Hepsd, Sigmad, &
+      radius_nd, xblob_nd, yblob_nd, zblob_nd, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
@@ -558,6 +560,7 @@ module Dustdensity
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
       use General, only: notanumber
+      use Sub, only: blob
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -629,6 +632,10 @@ module Dustdensity
               f(:,:,n,ilnrho) = lnrho_z
             endif
             if (lentropy) f(:,:,n,iss) = (1/gamma-1.0)*lnrho_z
+          enddo
+        case ('blob')
+          do k=1,ndustspec
+            call blob(amplnd,f,ind(k),radius_nd,xblob_nd,yblob_nd,zblob_nd,lexp=.true.)
           enddo
         case ('hat3d')
           call hat3d(amplnd,f,ind(1),widthnd,kx_nd,ky_nd,kz_nd)
