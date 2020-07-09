@@ -190,7 +190,7 @@ COMPILE_OPT IDL2,HIDDEN
       endif else $
         testdata=''
       label=quan
-      object = create_struct (label, pc_read (quan, trimall=trimall, processor=proc, dim=dim),object)
+      object = create_struct (object, label, pc_read (quan, trimall=trimall, processor=proc, dim=dim, varcontent=varcontent))
     end
     h5_close_file
     pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
