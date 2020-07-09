@@ -3,6 +3,8 @@
 !  forced helical MHD turbulence
 !
 &run_pars
+  ! nt is the number of time steps, and it1 is the output interval
+  ! for diagnostic output on the command line.
   nt=10, it1=5, isave=1000, itorder=3
   lpencil_check_small=F
   lpencil_check=F
@@ -17,8 +19,8 @@
   iforce='helical', force=0.05, relhel=1.,
 /
 &magnetic_run_pars
-  eta=5e-3
+  eta=2e-3
 /
 &viscosity_run_pars
-  nu=5e-3
+  nu=2e-3
 /
