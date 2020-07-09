@@ -3,14 +3,10 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
 MPICOMM=mpicomm
-GRAVITY=nogravity
 FORCING=forcing
-ENTROPY=noentropy
+#ENTROPY=noentropy
 MAGNETIC=magnetic
 HYDRO=hydro
 DENSITY=density
 IO=io_dist
-TRANSFORM=transform_mpi

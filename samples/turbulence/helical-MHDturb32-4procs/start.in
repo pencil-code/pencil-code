@@ -5,7 +5,7 @@
 !  gaussian seed magnetic field.
 !
 &init_pars
-  cvsid='$Id$',
+  lwrite_ic=F
 /
 &eos_init_pars
   gamma=1.

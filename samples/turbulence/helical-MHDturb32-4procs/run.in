@@ -4,9 +4,10 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=20000, it1=20, cdt=0.4, cdtv=0.4, isave=10, itorder=3,
-  dsnap=50., dvid=1., 
-  dspec=10, ou_spec=T, ab_spec=T
+  !nt=100, it1=10, isave=1000, itorder=3
+  nt=10, isave=1000, itorder=3
+  lpencil_check_small=F
+  lpencil_check=F
 /
 &eos_run_pars
 /
