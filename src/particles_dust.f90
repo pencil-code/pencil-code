@@ -5734,10 +5734,13 @@ module Particles
 !
 ! Calculate tausp1_par for 2d and 3d cases with and without particle_radius
 ! as a dynamical variable
+! In 1-D (nzgrid=1, for example), we still want to check whether we want
+! to excape to do some accretion disc experiment where OO /= 0.
+! Otherwise, continue as in other cases.
 !
       if (iap /= 0) then
         if (fp(k,iap) /= 0.0) then
-          if (nzgrid == 1) then
+          if (nzgrid == 1 .and. OO/=0.) then
             tausp1_par = 2*pi_1*OO* p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           else
             tausp1_par = sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)* &
@@ -5747,7 +5750,7 @@ module Particles
       else
 !normalize to make tausp1 not dependent on cs0 or rho0
 !bad because it comes at the expense of evil divisions
-        if (nzgrid == 1) then
+        if (nzgrid == 1 .and. OO/=0.) then
           if (luse_tau_ap) then
             tausp1_par = tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhopmat)
           else
