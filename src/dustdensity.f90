@@ -306,6 +306,7 @@ module Dustdensity
       endif
 !
 !  Reinitialize dustdensity
+!  'all_to_first' = reninitialize heavier particles to lightest one.
 !
       if (reinitialize_nd) then
         do j=1,ninit
@@ -313,8 +314,8 @@ module Dustdensity
           case ('old'); f(:,:,:,ind)=0.; call init_nd(f)
           case ('zero8'); f(:,:,:,ind(1):ind(min(ndustspec,8)))=0.
           case ('lognormal'); call initnd_lognormal(f,.true.)
-          case ('firsttwo'); f(:,:,:,ind) = 0.
-            do k=1,2; f(:,:,:,ind(k)) = nd0/2; enddo
+          case ('firsttwo'); f(:,:,:,ind) = 0.; do k=1,2; f(:,:,:,ind(k)) = nd0/2; enddo
+          case ('all_to_first'); do k=2,ndustspec; f(:,:,:,ind(k))=f(:,:,:,ind(1)); enddo
           endselect
         enddo
       endif

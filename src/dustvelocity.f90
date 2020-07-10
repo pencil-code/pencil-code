@@ -62,7 +62,7 @@ module Dustvelocity
   logical :: llin_radiusbins=.false., llog_massbins=.true.
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
-  logical :: ldust_pressure=.false.
+  logical :: ldust_pressure=.false., reinitialize_uud=.false.
   logical :: ldustvelocity_shorttausd=.false., lvshear_dust_global_eps=.false.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
   logical :: lviscd_simplified=.false., lviscd_nud_const=.false.
@@ -96,10 +96,10 @@ module Dustvelocity
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
-      viscd_law, viscd_exponent, adref_nud, &
+      viscd_law, viscd_exponent, adref_nud, inituud, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
-      beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
+      reinitialize_uud, beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
       nud_hyper3, nud_hyper3_mesh, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
       lstokes_highspeed_corr, lpifactor1, lpifactor2
 !
@@ -164,7 +164,7 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: i, k
+      integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
 !
 !  Copy boundary condition on first dust species to all others.
@@ -275,8 +275,23 @@ module Dustvelocity
         ad=(0.75*md*unit_md/(pi*rhods))**onethird
         llin_radiusbins=.false.
       endif
-
       if (lroot) print*,'initialize_dustvelocity: ad=',ad
+!
+!  Reinitialize dustvelocity
+!  'all_to_first' = reninitialize heavier particles to lightest one.
+!
+      if (reinitialize_uud) then
+        do j=1,ninit
+          select case (inituud(j))
+          case ('all_to_first')
+            do k=2,ndustspec
+            do i=0,2
+              f(:,:,:,iuud(k)+i)=f(:,:,:,iuud(1)+i)
+            enddo
+            enddo
+          endselect
+        enddo
+      endif
 !
 !  Calculate betad.
 !  By default (betad0=0), use Stokes formula, where Fd=6pi*mu_ext*ad*u.
