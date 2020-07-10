@@ -4,7 +4,7 @@
 
 ## Maintainer:
 
-Axel Brandenburg <brandenb/nordita[dot]dk>
+Axel Brandenburg <brandenb/nordita[dot]org>
 
 ## Added:
 
