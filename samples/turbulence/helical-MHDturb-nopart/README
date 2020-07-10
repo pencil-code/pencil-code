@@ -1,0 +1,4 @@
+This is a simplified version of the sample helical-MHDturb, but without
+particles. See the README file in that directory for standard information.
+Timing results for this case are in the manual in Section III.
+The present sample is suitable for performance tests.
