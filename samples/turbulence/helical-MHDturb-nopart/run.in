@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  forced helical MHD turbulence
+!
+&run_pars
+  ! nt is the number of time steps, and it1 is the output interval
+  ! for diagnostic output on the command line.
+  nt=10, it1=5, isave=1000, itorder=3
+  lpencil_check_small=F
+  lpencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.05, relhel=1.,
+/
+&magnetic_run_pars
+  eta=2e-3
+/
+&viscosity_run_pars
+  nu=2e-3
+/

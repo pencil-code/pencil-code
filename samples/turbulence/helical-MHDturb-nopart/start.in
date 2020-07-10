@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  initialization for forced helical MHD turbulence
+!  start with no velocity, uniform density, and weak
+!  gaussian seed magnetic field.
+!
+&init_pars
+  lwrite_ic=F
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-4
+/
