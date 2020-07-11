@@ -50,7 +50,7 @@ module Particles_radius
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
-  logical :: ldust_accretion = .false.
+  logical :: ldust_accretion = .false., lreinitialize_ap=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -74,7 +74,7 @@ module Particles_radius
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
       lconstant_radius_w_chem, &
-      initap, &
+      initap, lreinitialize_ap, ap0, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
@@ -107,7 +107,7 @@ module Particles_radius
 !
     endsubroutine register_particles_radius
 !***********************************************************************
-    subroutine initialize_particles_radius(f)
+    subroutine initialize_particles_radius(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -115,8 +115,54 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
       use SharedVariables, only: put_shared_variable, get_shared_variable
+      use General, only: random_number_wrapper
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray) :: fp
+      real :: radius_fraction
+      integer :: j, k, ind
+      integer :: pos
+!
+!  reinitialize
+!
+      if (lreinitialize_ap) then
+!
+!  Copied the following 6 code lines from subroutine read_particles_rad_init_pars,
+!  which is not called on lreinitialize_ap, so therefore the following lines here.
+!  Find how many different particle radii we are using. This must be done
+!  because not all parts of the code are adapted to work with more than one
+!  particle radius.
+!
+        npart_radii=0
+        do pos = 1,ndustrad
+          if (ap0(pos) /= 0) then
+            npart_radii = npart_radii+1
+          endif
+        enddo
+!
+        do j = 1,ninit
+          select case (initap(j))
+!
+          case ('constant')
+            if (lroot) print*, 'set_particles_radius: constant radius'
+            do k=1,npar_loc
+              if (npart_radii > 1) then
+                call random_number_wrapper(radius_fraction)
+                ind = ceiling(npart_radii*radius_fraction)
+              endif
+              fp(k,iap) = ap0(ind)
+            enddo
+!
+          case ('nothing')
+            if (lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
+!
+          case default
+            if (lroot) print*, 'initialize_particles_radius: '// &
+                'No such such value for initap: ', trim(initap(j))
+            call fatal_error('initialize_particles_radius','')
+          endselect
+        enddo
+      endif
 !
 !  Calculate the number density of bodies within a superparticle.
 !

@@ -208,7 +208,7 @@ module Particles_main
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
       call initialize_particles_number       (f)
-      call initialize_particles_radius       (f)
+      call initialize_particles_radius       (f,fp)
       call initialize_particles_grad         (f)
       call initialize_particles_selfgrav     (f)
       call initialize_particles_sink         (f)

@@ -30,7 +30,7 @@ module Particles_radius
 !
     endsubroutine register_particles_radius
 !***********************************************************************
-    subroutine initialize_particles_radius(f)
+    subroutine initialize_particles_radius(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -38,8 +38,10 @@ module Particles_radius
 !  25-nov-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
