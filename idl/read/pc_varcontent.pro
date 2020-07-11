@@ -148,9 +148,7 @@ indices = [ $
   { name:'ieta', label:'Dust resistivity', dims:1 }, $
   { name:'izeta', label:'Ionization rate', dims:1 }, $
   { name:'ichemspec', label:'Chemical species mass fraction', dims:1 }, $
-  { name:'iuudx', label:'Dust velocity x', dims:1 }, $
-  { name:'iuudy', label:'Dust velocity y', dims:1 }, $
-  { name:'iuudz', label:'Dust velocity z', dims:1 }, $
+  { name:'iuud', label:'Dust velocity', dims:3 }, $
   { name:'ind', label:'Dust number density', dims:1 }, $
   { name:'imd', label:'Dust density', dims:1 }, $
   { name:'imi', label:'Dust mi ?something?', dims:1 }, $
@@ -164,11 +162,11 @@ indices = [ $
   ; don't forget to add a comma above when extending
 ]
 
-indices_vector = [ $
-  { name:'iuu', components:['iux','iuy','iuz'] }, $
-  { name:'iaa', components:['iax','iay','iaz'] }, $
-  { name:'ibb', components:['ibx','iby','ibz'] }, $
-  { name:'ijj', components:['ijx','ijy','ijz'] } $
+indices_shortcut = [ $
+  { name:'iuu', replace:'iu' }, $
+  { name:'iaa', replace:'ia' }, $
+  { name:'ibb', replace:'ib' }, $
+  { name:'ijj', replace:'ij' } $
   ; don't forget to add a comma above when extending
 ]
 
@@ -305,98 +303,78 @@ INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 ;  that the array can be treated exactly like 3-D data.
 ;
 if (keyword_set(run2D)) then begin
-  INIT_DATA_LOC = [ $
-    'reform(make_array (dim.nx eq 1 ? 1 : mxloc,dim.ny eq 1 ? 1 : myloc,dim.nz eq 1 ? 1 : mzloc,', $
-                   'type=type_idl))' ]
+  INIT_DATA_LOC = [ 'reform(make_array (dim.nx eq 1 ? 1 : mxloc,dim.ny eq 1 ? 1 : myloc,dim.nz eq 1 ? 1 : mzloc,', 'type=type_idl))' ]
 endif else $
   INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 ;
 ;  Parse variables and count total number of variables.
 ;
-num_tags = n_elements(indices)
+num_tags = n_elements (indices)
 num_vars = 0
 
 offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsampled varfile if no MVAR variables are contained
 						     ; as indices in index.pro refer to the varfile not to the downsampled varfile
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
-  dims = indices[tag-1].dims
-  add_vars = dims
-  ; Backwards-compatibility for old runs with dustdensity or dustvelocity.
-  matches = stregex (index_pro, '^ *'+search+' *= *intarr *\( *([0-9]+) *\) *$', /extract, /sub)
-  line = max (where (matches[0,*] ne ''))
-  if (line ge 0) then begin
-    offset_matches = stregex (index_pro, '^ *'+search+' *\[ *0 *\] *= *([0-9]+) *$', /extract, /sub)
-    offset_line = max (where (offset_matches[0,*] ne ''))
-    if (offset_line ge 0) then begin
-      offset = long (offset_matches[1,offset_line])
-      index_pro[where (matches[0,*] ne '')] = ''
-      index_pro[line] = search+' = indgen ('+str (matches[1,line])+')*'+str (dims)+' + '+str (offset)
-      dummy = execute ('n'+strmid (search, 1)+' = '+str (matches[1,line]))
-    endif
-  endif
-  ; Identify f-array variables with multiple components.
-  matches = stregex (index_pro, '^ *'+search+' *= *(indgen *\( *([0-9]+) *\).*)$', /extract, /sub)
-  line = max (where (matches[0,*] ne ''))
-  if (line ge 0) then begin
-    if (not execute (index_pro[line])) then $
-        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-    num_subtags = matches[2,line]
-    if (search eq 'ichemspec') then begin
-      matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
-      add_vars *= num_subtags
-    endif else begin
-      matches = [ index_pro[line], matches[1,line] ]
-      add_vars *= num_subtags
-    endelse
-  endif else begin
-    ; Regular f-array variables.
-    found = where(search eq indices_vector[*].name, num_found)
-    if (num_found ge 1) then search = indices_vector[found].components[0]
-    matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
-  endelse
-  line = max (where (matches[0,*] ne ''))
-  if (line lt 0) then continue
+  vector = indices[tag-1].dims
+  ; Identify f-array variables with multiple vectors or components (arrays & arrays of vectors)
+  matches = stregex (index_pro, '^ *'+search+'([1-9][0-9]*)[xyz]? *= *(.*) *$', /extract, /sub)
+  lines = where (matches[0,*] ne '', num)
+  if (num ge 1) then begin
+    pos = min (long (matches[2,lines]))
+    array = max (long (matches[1,lines]))
+    if (num ne vector * array) then message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+  end else begin
+    array = 0
+    ; Translate shortcuts (e.g. iuu => iu[x,y,z])
+    found = where (search eq indices_shortcut[*].name, num)
+    if (num ge 1) then search = indices_shortcut[found].replace
+    ; Identify f-array variables with scalars & vectors (e.g. ilnrho, iu[x,y,z])
+    matches = stregex (index_pro, '^ *'+search+'([xyz]?) *= *([0-9][1-9]*) *$', /extract, /sub)
+    lines = where (matches[0,*] ne '', num)
+    if (num ge 1) then begin
+      pos = min (long (matches[2,lines]))
+      if (num ne vector) then message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+    end else begin
+      ; Quantity not contained in this run
+      continue
+    end
+  end
 
-  exec_str = 'pos = ' + matches[1,line]
-  if (not execute (exec_str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-  if (pos[0] le 0) then continue
+  if (pos le 0) then continue
+
   ; Append f-array variable to valid varcontent.
-  num_vars += 1
-  ncomps = n_elements(pos)
-
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str + offsetv ]
-    position = [ pos[0] ]
-    components = [ ncomps ]
+    position = [ pos ]
+    vectors = [ vector ]
+    arrays = [ array ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str + offsetv ]
-    position = [ position, pos[0] ]
-    components = [ components, ncomps ]
+    position = [ position, pos ]
+    vectors = [ vectors, vector ]
+    arrays = [ arrays, array ]
   end
+  num_vars += 1
 endfor
 ;
 ; Reorder to be ascending w.r.t. position.
 ;
-inds=sort(position)
-selected = selected[inds]
-executes = executes[inds]
-components = components[inds]
+sorted = sort (position)
+selected = selected[sorted]
+position = position[sorted]
+vectors = vectors[sorted]
+arrays = arrays[sorted]
 ;
 ; in the *ordered* list of hits
 ; only the first mvar+maux entries matter
 ;
 totalvars = 0L
-for var=0,num_vars-1 do begin
-  tag = selected[var]
-  totalvars += indices[tag].dims*components[var]
-  if totalvars eq mvar+maux then begin
+for var = 0, num_vars-1 do begin
+  totalvars += vectors[var] * (arrays[var] > 1)
+  if (totalvars eq mvar+maux) then begin
     selected = selected[0:var]
-    executes = executes[0:var]
-    num_vars=var+1
+    num_vars = var + 1
     break
   endif
 endfor
@@ -412,36 +390,30 @@ vc_pos = 0
 for var = 0, num_vars-1 do begin
 
   tag = selected[var]
-  dims = indices[tag].dims
-  if (dims eq 1) then joint = '' else joint = str (dims)+','
-  replace = where (inconsistent[*].name eq indices[tag].name)
+  pos = position[var]
+  vector = vectors[var]
+  array = arrays[var]
+  skip = vector
+
   name = strmid (indices[tag].name, 1)
-  dummy = execute (executes[var])
-  num_components = components[var]
+  replace = (where (inconsistent[*].name eq indices[tag].name))[0]
+  if (replace ge 0) then name = inconsistent[replace].inconsistent_name
 
-  if (strpos (executes[var], 'indgen') ge 0) then begin
-    joint += str (num_components)+','
-    skip = num_components * dims
-    num_components = 1
-  endif else begin
-    skip = dims
-  endelse
+  dim_str = ''
+  if (vector gt 1) then dim_str = str (vector)+','
+;  if (array ge 1) then dim_str += str (array)+','
 
-  for component = 1, num_components do begin
-    if (pos[component-1] gt 0) then begin
-      idl_var = name
-      if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
-      if (num_components gt 1) then idl_var += str (component)
-      varcontent[vc_pos+component-1].variable = indices[tag].label + ' ('+idl_var+')'
-      varcontent[vc_pos+component-1].idlvar = idl_var
-      varcontent[vc_pos+component-1].idlinit = strjoin (INIT_DATA, joint)
-      varcontent[vc_pos+component-1].idlvarloc = idl_var+'_loc'
-      varcontent[vc_pos+component-1].idlinitloc = strjoin (INIT_DATA_LOC, joint)
-      varcontent[vc_pos+component-1].skip = skip - 1
-    endif
+  for component = 1, (array > 1) do begin
+    idl_var = name
+    if (array ge 1) then idl_var += str (component)
+    varcontent[vc_pos].variable = indices[tag].label + ' ('+idl_var+')'
+    varcontent[vc_pos].idlvar = idl_var
+    varcontent[vc_pos].idlinit = strjoin (INIT_DATA, dim_str)
+    varcontent[vc_pos].idlvarloc = idl_var + '_loc'
+    varcontent[vc_pos].idlinitloc = strjoin (INIT_DATA_LOC, dim_str)
+    varcontent[vc_pos].skip = skip - 1
+    vc_pos += skip
   endfor
-
-  vc_pos += skip
 endfor
 ;
 ;  Turn vector quantities into scalars if requested.
