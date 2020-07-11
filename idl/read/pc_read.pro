@@ -32,7 +32,7 @@
 ;       $Id$
 ;       07-Apr-2019/PABourdin: coded
 ;
-function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, ghostless=ghostless, processor=processor, dim=dim, varcontent=varcontent, start=start, count=count, close=close
+function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, ghostless=ghostless, processor=processor, dim=dim, start=start, count=count, close=close
 
 	COMPILE_OPT IDL2,HIDDEN
 
@@ -42,26 +42,14 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 
 	if (n_elements (quantity) eq 1) then begin
 		; expand vector quantities
-		vectors = [ '^aa$', '^uu$', '^bb$', '^jj$', '^ff$' ]
+		vectors = [ 'aa', 'uu', 'bb', 'jj', 'ff' ]
 		num_vectors = n_elements (vectors)
 		for pos = 0, num_vectors-1 do begin
-			if (stregex (quantity, vectors[pos], /bool)) then begin
-				start_pos = 1
-				if (stregex (quantity, '[0-9]', /bool)) then start_pos = 0
-				expanded = strmid (quantity, start_pos) + [ 'x', 'y', 'z' ]
-				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
-			end
-		end
-
-		; expand array quantities
-		arrays = [ '^nd$', '^uud[xyz]$', '^aatest*$', '^uutest*$' ]
-		num_arrays = n_elements (arrays)
-		for pos = 0, num_arrays-1 do begin
-			if (stregex (quantity, arrays[pos], /bool)) then begin
-				if (size (vc, /type) eq 0) then varcontent = pc_varcontent (datadir=datadir, dim=dim, /quiet)
-				found = where (varcontent[*].idlvar eq quantity, num_found)
-				if (num_found le 0) then cycle
-				expanded = quantity + strtrim (1 + lindgen (varcontent[found].skip + 1), 2)
+			if (stregex (quantity, '^'+vectors[pos]+'[xyz]?$', /bool)) then begin
+				expanded = quantity
+				; translate two-letter shortcuts
+				if (strlen (vectors[pos]) eq 2) then expanded = strmid (quantity, 1)
+				if (stregex (quantity, '^'+vectors[pos]+'$', /bool)) then expanded += [ 'x', 'y', 'z' ]
 				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
 			end
 		end
