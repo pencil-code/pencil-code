@@ -2576,42 +2576,41 @@ module HDF5_IO
 !
       if (lroot) open (lun_output, file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
       if ((vector > 0) .and. (array > 0)) then
-        ! expand array: iuud => iuud[x,y,z][1,...,N]
-        if (lroot) then
-          write (lun_output,*) trim(varname)//'x=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
-          write (lun_output,*) trim(varname)//'y=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar+1))
-          write (lun_output,*) trim(varname)//'z=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar+2))
-        endif
+        ! expand array first: iuud => [iuud1,iuud2,iuud3,...]
+        ! expand vector then: iuud# => [iuud#x,iuud#y,iuud#z] => ivar+(#-1)*vector+[0,1,2]
         do arr = 1, array
-          pos = (arr-1) * vector
-          if ('i'//trim(index_get (ivar+pos, quiet=.true.)) /= trim(varname)//'x'//trim(itoa(arr))) then
-            if (lroot) write (lun_output,*) trim(varname)//'x'//trim(itoa(arr))//'='//trim(itoa(ivar+pos))
-            call index_register (trim(varname)//'x'//trim(itoa(arr)), ivar+pos)
+          pos = ivar + (arr-1) * vector
+          if ('i'//trim(index_get (pos, quiet=.true.)) /= trim(varname)//trim(itoa(arr))//'x') then
+            if (lroot) write (lun_output,*) trim(varname)//trim(itoa(arr))//'x='//trim(itoa(pos))
+            call index_register (trim(varname)//trim(itoa(arr))//'x', pos)
           endif
-          if ('i'//trim(index_get (ivar+pos+1, quiet=.true.)) /= trim(varname)//'y'//trim(itoa(arr))) then
-            if (lroot) write (lun_output,*) trim(varname)//'y'//trim(itoa(arr))//'='//trim(itoa(ivar+pos+1))
-            call index_register (trim(varname)//'y'//trim(itoa(arr)), ivar+pos+1)
+          if ('i'//trim(index_get (pos+1, quiet=.true.)) /= trim(varname)//trim(itoa(arr))//'y') then
+            if (lroot) write (lun_output,*) trim(varname)//trim(itoa(arr))//'y='//trim(itoa(pos+1))
+            call index_register (trim(varname)//trim(itoa(arr))//'y', pos+1)
           endif
-          if ('i'//trim(index_get (ivar+pos+2, quiet=.true.)) /= trim(varname)//'z'//trim(itoa(arr))) then
-            if (lroot) write (lun_output,*) trim(varname)//'z'//trim(itoa(arr))//'='//trim(itoa(ivar+pos+2))
-            call index_register (trim(varname)//'z'//trim(itoa(arr)), ivar+pos+2)
+          if ('i'//trim(index_get (pos+2, quiet=.true.)) /= trim(varname)//trim(itoa(arr))//'z') then
+            if (lroot) write (lun_output,*) trim(varname)//trim(itoa(arr))//'z='//trim(itoa(pos+2))
+            call index_register (trim(varname)//trim(itoa(arr))//'z', pos+2)
           endif
         enddo
       elseif (array > 0) then
+        ! backwards compatibility: ind => indgen(N) + ivar
+        !!! if (lroot) write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
         ! expand array: ind => ind[1,...,N] = ivar + [0,...,N-1]
-        if (lroot) write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
         do pos = 1, array
           if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
           if (lroot) write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
           call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
         enddo
       elseif (vector > 0) then
-        if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+        ! backwards compatibility: iuu => ivar
+        !!! if (lroot) write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
+        ! expand vectors
         if (vector == 3) then
           quantity = trim (varname)
           l = len (trim (quantity))
           if (l == 3) then
-            ! double endings: iuu, iaa, etc.
+            ! shortcuts for two-letter names: iuu, iaa, etc.
             if (quantity(2:2) == quantity(3:3)) quantity = trim (quantity(1:2))
           endif
           ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
@@ -2628,6 +2627,7 @@ module HDF5_IO
             call index_register (trim(quantity)//'z', ivar+2)
           endif
         elseif (vector >= 2) then
+          if (lroot)  write (lun_output,*) '; change this vector to an array: "'//trim(varname)//'"'
           ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
           do pos = 1, vector
             if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
@@ -2636,7 +2636,7 @@ module HDF5_IO
           enddo
         else
           ! just for safety, should never occur!
-          if (lroot) write (lun_output,*) '; wrong vector size registered for "'//trim(varname)//'"'
+          if (lroot) write (lun_output,*) '; change this vector to a scalar: "'//trim(varname)//'"'
         endif
       else
         ! scalar: ilnrho => ivar
