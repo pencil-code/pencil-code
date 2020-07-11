@@ -695,17 +695,26 @@ module HDF5_IO
       if (lroot) then
         open (lun_output, file=trim (datadir)//'/'//trim (index_pro), POSITION='append')
         if ((vector > 0) .and. (array > 0)) then
-          ! expand vector array: iuud => [iuudx,iuudy,iuudz] => indgen(array)*vector+ivar+[0,1,2]
-          write (lun_output,*) trim(varname)//'='//trim (itoa(ivar)) ! only for backwards compatibility
-          write (lun_output,*) trim(varname)//'x=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar))
-          write (lun_output,*) trim(varname)//'y=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar+1))
-          write (lun_output,*) trim(varname)//'z=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim (itoa(ivar+2))
+          ! expand array first: iuud => [iuud1,iuud2,iuud3,...]
+          ! expand vector then: iuud# => [iuud#x,iuud#y,iuud#z] => ivar+(#-1)*vector+[0,1,2]
+          do pos = 1, array
+            write (lun_output,*) trim(varname)//trim(itoa(pos))//'x='//trim(itoa(ivar+(pos-1)*vector))
+            write (lun_output,*) trim(varname)//trim(itoa(pos))//'y='//trim(itoa(ivar+(pos-1)*vector+1))
+            write (lun_output,*) trim(varname)//trim(itoa(pos))//'z='//trim(itoa(ivar+(pos-1)*vector+2))
+          enddo
         elseif (array > 0) then
-          ! expand array: ind => indgen(array)+ivar
+          ! backwards compatibility: ind => indgen(array)+ivar
           write (lun_output,*) trim (varname)//'=indgen('//trim (itoa (array))//')+'//trim (itoa (ivar))
+          ! expand array: ind => [ind1,ind2,...]
+          do pos = 1, array
+            write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+(pos-1)))
+          enddo
         elseif (vector > 0) then
           ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
           if (vector == 3) then
+            ! backwards compatibility: write original vector
+            write (lun_output,*) trim(varname)//'='//trim (itoa(ivar))
+            ! apply shortcuts
             component = trim (varname)
             l = len (trim (component))
             if (l == 3) then
@@ -716,13 +725,14 @@ module HDF5_IO
             write (lun_output,*) trim(component(1:l))//'y='//trim (itoa(ivar+1))
             write (lun_output,*) trim(component(1:l))//'z='//trim (itoa(ivar+2))
           elseif (vector >= 2) then
+            write (lun_output,*) '; change this vector to an array: "'//trim(varname)//'"'
             ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
             do pos = 1, vector
               write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim (itoa(ivar+pos-1))
             enddo
           else
             ! just for safety, should never occur!
-            write (lun_output,*) '; wrong vector size registered for "'//trim(varname)//'"'
+            write (lun_output,*) '; change this vector to a scalar: "'//trim(varname)//'"'
           endif
         else
           ! scalar: ilnrho => ivar
