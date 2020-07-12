@@ -6664,31 +6664,25 @@ nameloop: do
 !
       integer   :: vec
 !
-      vec=-1
-!
-      if ( present(ind_aux1) ) then
-        vec=1
-        if ( present(ind_aux2) ) then
-          if ( present(ind_aux3) ) then
-            vec=3
-          else
-            vec=2
-          endif
-        endif
-      endif
+      vec = -1
+      if (present (ind_aux1)) vec = 1
+      if ((vec == 1) .and. present(ind_aux2)) vec = 2
+      if ((vec == 2) .and. present(ind_aux3)) vec = 3
 !
       if (index == 0) then
-        call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
-        if (vec>=1) then
-          ind_aux1=index
-          if (vec>=2) then
-            ind_aux2=index+1
-            if (vec==3) ind_aux3=index+2
-          endif
+        if (vec == 3) then
+          call farray_register_auxiliary (trim(name), index, vector=3, communicated=communicated)
+        elseif (vec == 2) then
+          call farray_register_auxiliary (trim(name), index, array=2, communicated=communicated)
+        else
+          call farray_register_auxiliary (trim(name), index, communicated=communicated)
         endif
+        if (vec >= 1) ind_aux1 = index
+        if (vec >= 2) ind_aux2 = index + 1
+        if (vec >= 3) ind_aux3 = index + 2
       else
-        if (lroot) print*, 'register_report_aux: i'//trim(name)//' =', index
-        call farray_index_append('i'//trim(name),index,vec)
+        if (lroot) print *, 'register_report_aux: i'//trim(name)//' =', index
+        call farray_index_append ('i'//trim(name), index, vec)
       endif
 !
     endsubroutine register_report_aux

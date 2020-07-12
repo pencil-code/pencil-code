@@ -172,8 +172,8 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('hij',ihij,vector=6)
-      call farray_register_pde('gij',igij,vector=6)
+      call farray_register_pde('hij',ihij,array=6)
+      call farray_register_pde('gij',igij,array=6)
 !
 !  Register ggT and ggX as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
@@ -191,7 +191,7 @@ module Special
       if (lStress_as_aux) then
         call farray_register_auxiliary('StT',iStressT)
         call farray_register_auxiliary('StX',iStressX)
-        call farray_register_auxiliary('Str',iStress_ij,vector=6)
+        call farray_register_auxiliary('Str',iStress_ij,array=6)
       endif
 !
       if (lroot) call svn_id( &

@@ -119,7 +119,7 @@ module Pscalar
 !
       lpscalar_nolog = .true.
 !
-      call farray_register_pde('cc', icc, vector=npscalar)
+      call farray_register_pde('cc', icc, array=npscalar)
 !
 !  Identify version number.
 !

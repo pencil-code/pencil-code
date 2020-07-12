@@ -72,7 +72,7 @@ module Particles_lyapunov
 !
 !  Set indices for velocity gradient matrix at grid points
 !
-      call farray_register_auxiliary('guij',iguij,communicated=.true.,vector=9)
+      call farray_register_auxiliary('guij',iguij,communicated=.true.,array=9)
       igu11=iguij; igu12=iguij+1; igu13=iguij+2
       igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
       igu31=iguij+6; igu32=iguij+7; igu33=iguij+8

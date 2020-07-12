@@ -226,7 +226,7 @@ module Chemistry
 !
 !  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.
 !
-      call farray_register_pde('chemspec',ichemspec_tmp,vector=nchemspec)
+      call farray_register_pde('chemspec',ichemspec_tmp,array=nchemspec)
       do k = 1,nchemspec
         ichemspec(k) = ichemspec_tmp+k-1
       enddo

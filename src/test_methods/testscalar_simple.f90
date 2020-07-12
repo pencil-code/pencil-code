@@ -365,7 +365,7 @@ module Testscalar
 !
       if (lug_as_aux) then
         if (iug==0) then
-          call farray_register_auxiliary('ug',iug,vector=njtestscalar)
+          call farray_register_auxiliary('ug',iug,array=njtestscalar)
         else
           if (lroot) print*, 'initialize_testscalar: iug = ', iug
           call farray_index_append('iug',iug)

@@ -66,7 +66,7 @@ module Special
            "$Id$")
 !
 !      call farray_register_pde('spec_3vec',ispecial,vector=3)
-      call farray_register_pde('spec_4vec',ispecial,vector=4)
+      call farray_register_pde('spec_4vec',ispecial,array=4)
 !
       ispecial1=ispecial
       ispecial2=ispecial+1

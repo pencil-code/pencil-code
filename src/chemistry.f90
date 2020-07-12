@@ -275,7 +275,7 @@ module Chemistry
 !
 !  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.
 !
-      call farray_register_pde('chemspec',ichemspec_tmp,vector=nchemspec)
+      call farray_register_pde('chemspec',ichemspec_tmp,array=nchemspec)
       do k = 1,nchemspec
         ichemspec(k) = ichemspec_tmp+k-1
       enddo
@@ -493,7 +493,7 @@ module Chemistry
 !
       if (lreac_as_aux) then
         if (ireac == 0) then
-          call farray_register_auxiliary('reac',ireac,vector=nchemspec)
+          call farray_register_auxiliary('reac',ireac,array=nchemspec)
           do i = 0, nchemspec-1
             ireaci(i+1) = ireac+i
           enddo
@@ -3405,13 +3405,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
             cformv(iname)='DEFINED'
         endif
       enddo
-!
-!  Write chemistry index in short notation
-!
-      if (lwr) then
-        call farray_index_append('nchemspec',nchemspec)
-        call farray_index_append('ichemspec',ichemspec(1),1,nchemspec)
-      endif
 !
     endsubroutine rprint_chemistry
 !***********************************************************************

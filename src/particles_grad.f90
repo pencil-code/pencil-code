@@ -62,7 +62,7 @@ module Particles_grad
 !
 ! This module always demands gradu stored as an auxiliary array
 !
-      call farray_register_auxiliary('guij',iguij,vector=9)
+      call farray_register_auxiliary('guij',iguij,array=9)
       igradu11=iguij+0; igradu12=iguij+1; igradu13=iguij+2
       igradu21=iguij+3; igradu22=iguij+4; igradu23=iguij+5
       igradu31=iguij+6; igradu32=iguij+7; igradu33=iguij+8

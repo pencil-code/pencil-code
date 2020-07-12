@@ -69,10 +69,10 @@ module Polymer
 !
       use FArrayManager
 !
-      call farray_register_pde('poly',ipoly,vector=6)
-      ip11 = ipoly     ; ip12 = ipoly+1 ; ip13 = ipoly+2
+      call farray_register_pde('poly',ipoly,array=6)
+      ip11 = ipoly  ; ip12 = ipoly+1 ; ip13 = ipoly+2
       ip21 = ip12   ; ip22 = ipoly+3 ; ip23 = ipoly+4
-      ip31 = ip13   ; ip32 = ip23   ; ip33 = ipoly+5
+      ip31 = ip13   ; ip32 = ip23    ; ip33 = ipoly+5
       call farray_register_auxiliary('polyfr',ipoly_fr)
 !
       if (lroot) call svn_id( &

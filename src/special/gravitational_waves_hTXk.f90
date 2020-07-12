@@ -191,7 +191,7 @@ module gravitational_waves_hTXk
         call farray_register_auxiliary('StX',iStressX)
         call farray_register_auxiliary('StTim',iStressTim)
         call farray_register_auxiliary('StXim',iStressXim)
-        call farray_register_auxiliary('Str',iStress_ij,vector=6)
+        call farray_register_auxiliary('Str',iStress_ij,array=6)
       endif
 !
     endsubroutine register_special
