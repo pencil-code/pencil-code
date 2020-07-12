@@ -174,6 +174,7 @@ COMPILE_OPT IDL2,HIDDEN
       label = quantity
       if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
       object = create_struct (object, label, pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
+      pos += varcontent[pos].skip
     end
     h5_close_file
     pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
