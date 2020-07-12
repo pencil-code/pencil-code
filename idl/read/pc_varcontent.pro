@@ -401,7 +401,6 @@ for var = 0, num_vars-1 do begin
 
   dim_str = ''
   if (vector gt 1) then dim_str = str (vector)+','
-;  if (array ge 1) then dim_str += str (array)+','
 
   for component = 1, (array > 1) do begin
     idl_var = name
