@@ -24,7 +24,7 @@
 ;   see idlvarloc
 ;
 function pc_varcontent, datadir=datadir, dim=dim, param=param, par2=run_param, $
-                        run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single
+                        run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single, hdf5=hdf5
 ;
 ;    /single: enforces single precision of returned data.
 ;      /down: data read from downsampled snapshot.
@@ -39,6 +39,7 @@ if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quie
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
+default, hdf5, 0
 ;
 ;  Read the positions of variables in the f-array from the index file.
 ;
@@ -259,13 +260,15 @@ if (file_test (file_special)) then begin
   while (not eof (lun)) do begin
     readf, lun, line
     line_pos += 1
-    ; Backwards-compatibility for old runs with alphadisk, flux_limdiff, streamfunction, or turbpotential.
-    for pos = 0, num_inconsistent-1 do begin
-      search = inconsistent_special[pos].inconsistent_name
-      replace = inconsistent_special[pos].name
-      str = stregex (line, '^ *'+search+' *(=.*)$', /extract, /sub)
-      line = replace+str[1]
-    endfor
+    if (not keyword_set (hdf5)) then begin
+      ; Backwards-compatibility for old runs with alphadisk, flux_limdiff, streamfunction, or turbpotential.
+      for pos = 0, num_inconsistent-1 do begin
+        search = inconsistent_special[pos].inconsistent_name
+        replace = inconsistent_special[pos].name
+        str = stregex (line, '^ *'+search+' *(=.*)$', /extract, /sub)
+        line = replace+str[1]
+      endfor
+    endif
     ; Parse line with number of components.
     str = stregex (line, '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
     if (not execute (str)) then $
@@ -396,8 +399,11 @@ for var = 0, num_vars-1 do begin
   skip = vector
 
   name = strmid (indices[tag].name, 1)
-  replace = (where (inconsistent[*].name eq indices[tag].name))[0]
-  if (replace ge 0) then name = inconsistent[replace].inconsistent_name
+  if (not keyword_set (hdf5)) then begin
+    ; translate inconsistent names for old binary file format, not for HDF5
+    replace = (where (inconsistent[*].name eq indices[tag].name))[0]
+    if (replace ge 0) then name = inconsistent[replace].inconsistent_name
+  endif
 
   dim_str = ''
   if (vector gt 1) then dim_str = str (vector)+','

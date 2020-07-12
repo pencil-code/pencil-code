@@ -161,7 +161,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "pc_read_var: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     if (size (varcontent, /type) eq 0) then begin
-      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
+      varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, par2=par2, quiet=quiet, scalar=scalar, noaux=noaux, run2D=run2D, down=ldownsampled, single=single, /hdf5)
     end
     quantities = varcontent[*].idlvar
     num_quantities = n_elements (quantities)
