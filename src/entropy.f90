@@ -293,6 +293,7 @@ module Energy
   integer :: idiag_fconvrsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_r T \right>_\varphi$
   integer :: idiag_fconvthsphmphi=0 ! PHIAVG_DOC: $\left<c_p \varrho u_\theta T \right>_\varphi$
   integer :: idiag_fconvpsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_\phi T \right>_\varphi$
+  integer :: idiag_ursphTTmphi=0  ! PHIAVG_DOC: $\left<u_r T \right>_\varphi$
   integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
   integer :: idiag_yHmax=0      ! DIAG_DOC: max of hydrogen ionization
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
@@ -2956,7 +2957,8 @@ module Energy
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0) lpenc_diagnos(i_gTT)=.true.
-      if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0) lpenc_diagnos(i_evr)=.true.
+      if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_ursphTTmphi/=0) &
+        lpenc_diagnos(i_evr)=.true.
       if (idiag_fconvthsphmphi/=0) lpenc_diagnos(i_evth)=.true.
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
         lpenc_diagnos2d(i_cp)=.true.
@@ -3008,7 +3010,7 @@ module Energy
         lpenc_diagnos(i_TT) =.true.
       endif
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
-          idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
+          idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0 .or. idiag_ursphTTmphi/=0) &
         lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -3674,6 +3676,9 @@ module Energy
               p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)),idiag_fconvthsphmphi)
         if (idiag_fconvpsphmphi/=0) &
             call phisum_mn_name_rz(p%cp*p%rho*p%TT*p%uu(:,3),idiag_fconvpsphmphi)
+        if (idiag_ursphTTmphi/=0) &
+            call phisum_mn_name_rz(p%TT*(p%uu(:,1)*p%evr(:,1)+ &
+              p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_ursphTTmphi)
 
         call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         call ysum_mn_name_xz(p%TT,idiag_TTmxz)
@@ -6713,7 +6718,7 @@ module Energy
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_dcoolmphi=0; idiag_fradrsphmphi_kramers=0
         idiag_fconvrsphmphi=0; idiag_fconvthsphmphi=0; idiag_fconvpsphmphi=0
-        idiag_ufpresm=0; idiag_fradz_constchi=0
+        idiag_ufpresm=0; idiag_fradz_constchi=0; idiag_ursphTTmphi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
@@ -6904,6 +6909,7 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvrsphmphi',idiag_fconvrsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvthsphmphi',idiag_fconvthsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvpsphmphi',idiag_fconvpsphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ursphTTmphi',idiag_ursphTTmphi)
       enddo
 !
 !  check for those quantities for which we want video slices
