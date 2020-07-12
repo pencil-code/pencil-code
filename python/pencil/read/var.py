@@ -490,6 +490,10 @@ class DataCube(object):
             self.uu = self.f[index.ux-1:index.uz, ...]
         if hasattr(index, 'aa'):
             self.aa = self.f[index.ax-1:index.az, ...]
+        if hasattr(index, 'uu_sph'):
+            self.uu_sph = self.f[index.uu_sphx-1:index.uu_sphz, ...]
+        if hasattr(index, 'bb_sph'):
+            self.bb_sph = self.f[index.bb_sphx-1:index.bb_sphz, ...]
         # Special treatment for test method vector quantities.
         #Note index 1,2,3,...,0 last vector may be the zero field/flow
         if hasattr(index, 'aatest1'):
