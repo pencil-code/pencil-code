@@ -169,26 +169,8 @@ COMPILE_OPT IDL2,HIDDEN
     t = pc_read ('time', file=varfile, datadir=datadir)
     object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
     if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
-    testdata = ''
     for pos = 0, num_quantities-1 do begin
       quantity = quantities[pos]
-      if (stregex (quantity, '(aa|uu|np_ap)test', /bool)) then begin
-        testdata = strmid (quantity, 0, 2) + 'test'
-        itestdata = 2
-        quantity = testdata + '1'
-      endif else if (quantity eq 'dummy') then begin
-        if (testdata ne '') then begin
-          quantity = testdata + strtrim (string (itestdata), 2) 
-          itestdata++
-        endif else begin
-          continue
-        endelse
-      endif else if stregex (quantity, 'np_ap', /bool) then begin
-        ; not yet implemented...
-        continue
-      endif else begin
-        testdata = ''
-      endelse
       label = quantity
       if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
       object = create_struct (object, label, pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
