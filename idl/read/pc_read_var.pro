@@ -169,29 +169,29 @@ COMPILE_OPT IDL2,HIDDEN
     t = pc_read ('time', file=varfile, datadir=datadir)
     object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
     if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
-    testdata=''
+    testdata = ''
     for pos = 0, num_quantities-1 do begin
-
-      quan=quantities[pos]
-
-      if stregex(quan,'aatest',/bool) or $
-         stregex(quan,'uutest',/bool) or $
-         stregex(quan,'np_aptest',/bool) then begin
-        testdata=strmid(quan,0,2)+'test' & itestdata=2 & quan=testdata+'1'
-      endif else if (quan eq 'dummy') then begin
-        if testdata ne '' then begin
-          quan=testdata+strtrim(string(itestdata),2) 
+      quantity = quantities[pos]
+      if (stregex (quantity, '(aa|uu|np_ap)test', /bool)) then begin
+        testdata = strmid (quantity, 0, 2) + 'test'
+        itestdata = 2
+        quantity = testdata + '1'
+      endif else if (quantity eq 'dummy') then begin
+        if (testdata ne '') then begin
+          quantity = testdata + strtrim (string (itestdata), 2) 
           itestdata++
-        endif else $
+        endif else begin
           continue
-      endif else if stregex(quan,'np_ap',/bool) then begin
-        ;; Not implemented...
+        endelse
+      endif else if stregex (quantity, 'np_ap', /bool) then begin
+        ; not yet implemented...
         continue
-      endif else $
-        testdata=''
-      label=quan
-      if (varcontent[pos].skip eq 2) then quan += ['x','y','z']
-      object = create_struct (object, label, pc_read (quan, trimall=trimall, processor=proc, dim=dim))
+      endif else begin
+        testdata = ''
+      endelse
+      label = quantity
+      if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
+      object = create_struct (object, label, pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
     end
     h5_close_file
     pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
