@@ -724,15 +724,25 @@ module HDF5_IO
             write (lun_output,*) trim(component(1:l))//'x='//trim (itoa(ivar))
             write (lun_output,*) trim(component(1:l))//'y='//trim (itoa(ivar+1))
             write (lun_output,*) trim(component(1:l))//'z='//trim (itoa(ivar+2))
-          elseif (vector >= 2) then
-            write (lun_output,*) '; change this vector to an array: "'//trim(varname)//'"'
-            ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
-            do pos = 1, vector
-              write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim (itoa(ivar+pos-1))
-            enddo
+          elseif (vector == 6) then
+            ! expand symmetric 3x3 tensor (6 different components)
+            write (lun_output,*) trim(varname)//'_xx='//trim (itoa(ivar))
+            write (lun_output,*) trim(varname)//'_xy='//trim (itoa(ivar+1))
+            write (lun_output,*) trim(varname)//'_xz='//trim (itoa(ivar+2))
+            write (lun_output,*) trim(varname)//'_yy='//trim (itoa(ivar+3))
+            write (lun_output,*) trim(varname)//'_yz='//trim (itoa(ivar+4))
+            write (lun_output,*) trim(varname)//'_zz='//trim (itoa(ivar+5))
           else
-            ! just for safety, should never occur!
-            write (lun_output,*) '; change this vector to a scalar: "'//trim(varname)//'"'
+            ! expand asymmetric 3x3 tensor (9 different components)
+            write (lun_output,*) trim(varname)//'_xx='//trim (itoa(ivar))
+            write (lun_output,*) trim(varname)//'_xy='//trim (itoa(ivar+1))
+            write (lun_output,*) trim(varname)//'_xz='//trim (itoa(ivar+2))
+            write (lun_output,*) trim(varname)//'_yx='//trim (itoa(ivar+3))
+            write (lun_output,*) trim(varname)//'_yy='//trim (itoa(ivar+4))
+            write (lun_output,*) trim(varname)//'_yz='//trim (itoa(ivar+5))
+            write (lun_output,*) trim(varname)//'_zx='//trim (itoa(ivar+6))
+            write (lun_output,*) trim(varname)//'_zy='//trim (itoa(ivar+7))
+            write (lun_output,*) trim(varname)//'_zz='//trim (itoa(ivar+8))
           endif
         else
           ! scalar: ilnrho => ivar

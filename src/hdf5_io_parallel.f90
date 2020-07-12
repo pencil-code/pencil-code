@@ -2569,6 +2569,7 @@ module HDF5_IO
 !
       integer, parameter :: lun_output = 92
       character (len=len(varname)) :: quantity
+      character (len=2), dimension (9) :: components
       integer :: pos, vec, arr, l
 !
       ! omit all unused variables
@@ -2626,17 +2627,20 @@ module HDF5_IO
             if (lroot) write (lun_output,*) trim(quantity)//'z'//'='//trim(itoa(ivar+2))
             call index_register (trim(quantity)//'z', ivar+2)
           endif
-        elseif (vector >= 2) then
-          if (lroot)  write (lun_output,*) '; change this vector to an array: "'//trim(varname)//'"'
-          ! expand other quantities: iguij => [iguij1,...,iguij9] => ivar+[0,...,8]
-          do pos = 1, vector
-            if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
-            if (lroot) write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
-            call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
-          enddo
         else
-          ! just for safety, should never occur!
-          if (lroot) write (lun_output,*) '; change this vector to a scalar: "'//trim(varname)//'"'
+          ! expand tensors
+          if (vector == 6) then
+            ! expand symmetric 3x3 tensor (6 different components)
+            components = (/ 'xx', 'xy', 'xz', 'yy', 'yz', 'zz', '  ', '  ', '  ' /)
+          else
+            ! expand asymmetric 3x3 tensor (9 different components)
+            components = (/ 'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz' /)
+          endif
+          do pos = 1, vector
+            if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//'_'//trim(components(pos))) cycle
+            if (lroot) write (lun_output,*) trim(varname)//'_'//trim(components(pos))//'='//trim(itoa(ivar+pos-1))
+            call index_register (trim(varname)//'_'//trim(components(pos)), ivar+pos-1)
+          enddo
         endif
       else
         ! scalar: ilnrho => ivar
