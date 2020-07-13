@@ -6,7 +6,7 @@
 #           asdict and nest_dict also default. Only where parameter is present
 #           in more than one module is it nested. Run parameter values replace
 #           conflicting init values.
-# 
+#
 # Authors:
 # J. Oishi (joishi@amnh.org).
 # S. Candelaresi (iomsn1@gmail.com)
@@ -145,14 +145,14 @@ class Param(object):
                 for filen in files:
                     param_list, param_conflicts, name_list, super_name_list = \
                                 self.__read_nml(param_list, filen,
-                         param_conflicts, name_list, super_name_list, nest=True)
+                                                param_conflicts, name_list, super_name_list, nest=True)
             # Parameters with same name will be written by last value
             else:
                 for filen in files:
                     param_list, param_conflicts, name_list, super_name_list = \
                                 self.__read_nml(param_list, filen,
-                                    param_conflicts, name_list, super_name_list)
-            if len(param_conflicts) > 0:
+                                                param_conflicts, name_list, super_name_list)
+            if not param_conflicts:
                 subkey_list = list()
                 for super_name in super_name_list:
                     if super_name in param_conflicts.keys():
@@ -160,7 +160,7 @@ class Param(object):
                             subkey_list.append(subkey)
                 for super_name in super_name_list:
                     if not super_name in param_conflicts.keys():
-                        if param_list.__contains__(super_name): 
+                        if param_list.__contains__(super_name):
                             param_list.__delitem__(super_name)
                         super_name_list.remove(super_name)
                 for super_name in super_name_list:
@@ -171,14 +171,14 @@ class Param(object):
                 for key in name_list:
                     if key in param_list.keys() and key in subkey_list:
                         param_list.__delitem__(key)
-            
+
             # If nesting occurs report conflicts and record nests to retain
-            if len(param_conflicts) > 0:
+            if not param_conflicts:
                 for key in param_conflicts.keys():
                     for subkey in param_conflicts[key].keys():
                         if not conflicts_quiet:
-                            print(subkey, 'as',param_conflicts[key][subkey][0],
-                                  'in', key,'conflicts with',
+                            print(subkey, 'as', param_conflicts[key][subkey][0],
+                                  'in', key, 'conflicts with',
                                   param_conflicts[key][subkey][2], 'in',
                                   param_conflicts[key][subkey][1])
             # Create object container for nested contents
@@ -220,16 +220,17 @@ class Param(object):
                     return -1
 
         if append_units:
-            setattr(self,'unit_time', self.unit_length/self.unit_velocity)
-            setattr(self,'unit_mass', self.unit_density*self.unit_length**3)
-            setattr(self,'unit_flux', self.unit_mass/self.unit_time**3)
-            setattr(self,'unit_energy', self.unit_mass*self.unit_velocity**2)
-            setattr(self,'unit_energy_density',
-                                        self.unit_density*self.unit_velocity**2)
-            setattr(self,'unit_entropy',
-                                    self.unit_velocity**2/self.unit_temperature)
-            setattr(self,'unit_current',
-                                   self.unit_magnetic*self.unit_length/self.mu0)
+            setattr(self, 'unit_time', self.unit_length/self.unit_velocity)
+            setattr(self, 'unit_mass', self.unit_density*self.unit_length**3)
+            setattr(self, 'unit_flux', self.unit_mass/self.unit_time**3)
+            setattr(self, 'unit_energy', self.unit_mass*self.unit_velocity**2)
+            setattr(self, 'unit_energy_density',
+                    self.unit_density*self.unit_velocity**2)
+            setattr(self, 'unit_entropy',
+                    self.unit_velocity**2/self.unit_temperature)
+            if hasattr(param, 'mu0'):
+                setattr(self, 'unit_current',
+                        self.unit_magnetic*self.unit_length/self.mu0)
 
         return 0
 
@@ -286,7 +287,7 @@ class Param(object):
 
 
     def __read_nml(self, params, file_name, param_conflicts, name_list,
-                                                  super_name_list, nest=False):
+                   super_name_list, nest=False):
         """
         Reads in F90 namelist as dictionary object
 
@@ -315,9 +316,7 @@ class Param(object):
             lastrawline = rawline
             line = rawline.rstrip('\n')
             if line[1] == "&" or line[0] == "&":
-                super_name = line[2:].lower().rsplit('_pars'
-                                            )[0].rsplit('_init'
-                                            )[0].rsplit('_run')[0]
+                super_name = line[2:].lower().rsplit('_pars')[0].rsplit('_init')[0].rsplit('_run')[0]
                 if nest:
                     if not params.__contains__(super_name):
                         params[super_name] = dict()
@@ -343,7 +342,7 @@ class Param(object):
                     name_list.append(name)
                     if nest:
                         # Save all parameters nested and unnested
-                        if not super_name in ('run','init'):
+                        if not super_name in ('run', 'init'):
                             params[super_name][name] = value
         # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
@@ -358,9 +357,9 @@ class Param(object):
                                 if not super_name in param_conflicts.keys():
                                     param_conflicts[super_name] = dict()
                                 param_conflicts[super_name][name] = (
-                                                      params[super_name][name],
-                                                      alt_name,
-                                                      params[alt_name][name])
+                                    params[super_name][name],
+                                    alt_name,
+                                    params[alt_name][name])
 
         return params, param_conflicts, name_list, super_name_list
 
