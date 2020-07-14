@@ -191,7 +191,6 @@ module InitialCondition
 !
 !  global temperature derivative
 !
-        dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1.))
         dTdrc_global=0
         dTdrc_global(nsurf_global:nxgrid)=(Tcor-Tsurf)*der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
         dTdr_global(nsurf_global:nxgrid)=dTdr_global(nsurf_global:nxgrid)+(dTdrc_global(nsurf_global:nxgrid) - & 
@@ -405,7 +404,7 @@ module InitialCondition
 !  Compute temperatures at the surface and in the corona assuming solar
 !  temperature at the base of the convection zone.
 !
-         print*,'initial_condition: Temperature at the surface                 =',Tsurf*T00sun/T00, 'K'
+         print*,'initial_condition: Temperature at the surface (of domain)     =',Tsurf*T00sun/T00, 'K'
          print*,'initial_condition: Temperature at the bottom                  =',T00sun, 'K'
          if (lcorona) then
            print*,'initial_condition: Temperature in the corona                  =',Tcor*T00sun/T00, 'K'
