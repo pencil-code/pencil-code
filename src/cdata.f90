@@ -335,7 +335,7 @@ module Cdata
              iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
   integer :: isld_char=0, ivisc_forc=0,ivisc_forcx=0,ivisc_forcy=0,ivisc_forcz=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
-  integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0
+  integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0,iSghtest=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky,iviscosity=0
