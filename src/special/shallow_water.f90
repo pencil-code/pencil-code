@@ -182,8 +182,7 @@ module Special
       if (lmass_relaxation) then
         do m=m1,m2
           r2 = x(l1:l2)**2 + y(m)**2
-          eta_relaxation(:,m-m1+1) = &
-               eta0 + Omega_SB**2*r2 * (1.5 - 0.25*gamma_parameter*Omega1_SB*r2)
+          eta_relaxation(:,m-m1+1) = eta0 !+ Omega_SB**2*r2 * (1.5 - 0.25*gamma_parameter*Omega1_SB*r2)
         enddo
       endif
 !
