@@ -2425,7 +2425,7 @@ module power_spectrum
   !
   endsubroutine powerGWs
 !***********************************************************************
-  subroutine powerscl(f,sp,iapn_index)
+  subroutine powerscl(f,sp,iapn_index,lsqrt)
 !
 !  Calculate power spectrum of scalar quantity (on spherical shells) of the
 !  variable specified by `sp', e.g. spectra of cc, rho, etc.
@@ -2438,6 +2438,7 @@ module power_spectrum
     use Sub, only: curli, grad
     use SharedVariables, only: get_shared_variable
 !
+  logical, intent(in), optional :: lsqrt
   integer, intent(in), optional :: iapn_index
   integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nx/2
@@ -2540,6 +2541,12 @@ module power_spectrum
     a_im=0.
   endif
   a_im=0.
+!
+!  Allow for talking the square root defined for pos/neg arguments.
+!
+  if (present(lsqrt)) then
+    a_re=sqrt(abs(a_re))*sign(1.,a_re)
+  endif
 !
 !  Doing the Fourier transform
 !

@@ -134,16 +134,18 @@ module power_spectrum
 !
     endsubroutine powerGWs
 !***********************************************************************
-    subroutine powerscl(f,sp,iapn_index)
+    subroutine powerscl(f,sp,iapn_index,lsqrt)
 !
       use General, only: ioptest
 
+      logical, intent(in), optional :: lsqrt
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=2) :: sp
       integer, optional :: iapn_index
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(lsqrt)
       call keep_compiler_quiet(ioptest(iapn_index))
 !
     endsubroutine powerscl
