@@ -610,6 +610,7 @@ module Snapshot
         if (cr_spec)  call powerscl(f,'cr')
         if (sp_spec)  call powerscl(f,'sp')
         if (ssp_spec) call powerscl(f,'sp',lsqrt=lsqrt)
+        if (sssp_spec)call powerscl(f,'Ssp')
         if (mu_spec)  call powerscl(f,'mu')
         !if (smu_spec) call powerscl(f,'mu',lsqrt)
         if (har_spec) call powerscl(f,'hr')

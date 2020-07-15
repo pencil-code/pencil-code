@@ -2509,6 +2509,8 @@ module power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
   elseif (sp=='sp') then
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
+  elseif (sp=='Ssp') then
+    a_re=sqrt(abs(f(l1:l2,m1:m2,n1:n2,ispecialvar)))
   elseif (sp=='mu') then
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
   elseif (sp=='hr') then
@@ -2545,7 +2547,7 @@ module power_spectrum
 !  Allow for talking the square root defined for pos/neg arguments.
 !
   if (present(lsqrt)) then
-    a_re=sqrt(abs(a_re))*sign(1.,a_re)
+    a_re=sqrt(abs(a_re))*sign(a_re,1.)
   endif
 !
 !  Doing the Fourier transform
