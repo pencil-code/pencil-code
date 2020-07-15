@@ -529,7 +529,7 @@ module Snapshot
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
-      logical :: lfirstcall
+      logical :: lfirstcall, lsqrt=.true.
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -585,6 +585,7 @@ module Snapshot
         if (uzs_spec) call powerhel(f,'uzs')
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
+        !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (ud_spec) then
           do n=1,ndustspec
@@ -608,7 +609,9 @@ module Snapshot
         if (cc_spec)  call powerscl(f,'cc')
         if (cr_spec)  call powerscl(f,'cr')
         if (sp_spec)  call powerscl(f,'sp')
+        if (ssp_spec) call powerscl(f,'sp',lsqrt=lsqrt)
         if (mu_spec)  call powerscl(f,'mu')
+        !if (smu_spec) call powerscl(f,'mu',lsqrt)
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
         if (oned) then
