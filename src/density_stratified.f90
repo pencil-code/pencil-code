@@ -48,6 +48,7 @@ module Density
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
+  logical :: lrelativistic_eos=.false.
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
@@ -97,8 +98,8 @@ module Density
 !
 !  Dummy Variables
 !
-  real, dimension(nz) :: glnrhomz = 0.0
-  logical :: lcalc_glnrhomean = .false.
+  real, dimension(nz) :: lnrhomz,glnrhomz = 0.0
+  logical :: lcalc_lnrhomean = .false.,lcalc_glnrhomean = .false.
   logical :: lupw_lnrho = .false.
 !
   contains
@@ -110,6 +111,7 @@ module Density
 !  28-feb-13/ccyang: coded.
 !
       use FArrayManager, only: farray_register_pde
+      use SharedVariables, only: put_shared_variable
 !
 !  Register relative density as dynamical variable rho.
 !
@@ -122,6 +124,11 @@ module Density
 !  This module does not consider logarithmic density.
 !
       ldensity_nolog = .true.
+!
+!  Communicate lrelativistic_eos to entropy too.
+!
+      call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
+!
 !
 !  Identify version number.
 !
@@ -410,7 +417,7 @@ module Density
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: fdiff, del2rhos, penc, src_density
+      real, dimension(nx) :: fdiff, del2rhos, penc, src_density,diffus_diffrho,diffus_diffrho3
       integer :: j
 !
 !  Start the clock for this procedure.
@@ -945,4 +952,16 @@ module Density
 
     endsubroutine impose_density_ceiling
 !***********************************************************************
+    subroutine density_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine density_after_timestep
+!***********************************************************************
+
 endmodule Density
