@@ -187,6 +187,24 @@ module DensityMethods
 !
     endsubroutine getdlnrho_z
 !***********************************************************************
+    subroutine getderlnrho_z(f,iz,derlnrho)
+!
+!  16-jul-20/wlyra: dummy.
+!
+      integer,                             intent(in) :: iz
+      real, dimension(:,:,:,:),            intent(in) :: f
+      real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho
+      !integer, intent(in) :: rn, in
+      !real, dimension(mx,my,mz), intent(in) :: f
+      !real, dimension(mx,my), intent(out):: dlnrho
+!
+      call fatal_error('getderlnrho_z', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(iz)
+      call keep_compiler_quiet(derlnrho)
+!
+    endsubroutine getderlnrho_z
+!***********************************************************************
    subroutine putrho(f,rho)
 
       real, dimension(mx), intent(out):: f

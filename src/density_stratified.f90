@@ -33,6 +33,8 @@ module Density
   use General, only: keep_compiler_quiet
   use Messages
 !
+  use DensityMethods
+!
   implicit none
 !
   include 'density.h'
