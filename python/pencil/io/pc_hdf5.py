@@ -14,7 +14,7 @@ large datasets with memory limits.
 """
 import h5py
 
-def open(name, status, driver=None, comm=None):
+def open_h5(name, status, driver=None, comm=None):
     """This script opens file in serial or parallel.
 
     Keyword arguments:
