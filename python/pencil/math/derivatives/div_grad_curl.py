@@ -90,7 +90,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         print("grad: must have scalar 3-D array f[mz, my, mx] for gradient.")
         raise ValueError
 
-    grad_value = np.empty((3,) + f.shape)
+    grad_value = np.zeros((3,) + f.shape)
 
     if coordinate_system == 'cartesian':
         grad_value[0] = xder(f, dx)
@@ -153,7 +153,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
         print("curl: must have vector 4-D array f[3, mz, my, mx] for curl.")
         raise ValueError
 
-    curl_value = np.empty_like(f)
+    curl_value = np.zeros_like(f)
 
     if (dy != 0. and dz != 0.):
         # 3-D case
@@ -213,7 +213,7 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         print("curl2: must have vector 4-D array f[3, mz, my, mx] for curl2.")
         raise ValueError
 
-    curl2_value = np.empty(f.shape)
+    curl2_value = np.zeros(f.shape)
 
     if coordinate_system == 'cartesian':
         curl2_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
@@ -314,7 +314,7 @@ def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     import numpy as np
     from .der import xder2, yder2, zder2, yder, zder
 
-    del2v_value = np.empty(f.shape)
+    del2v_value = np.zeros(f.shape)
 
     if coordinate_system == 'cartesian':
         del2v_value[0] = xder2(f[0], dx) + yder2(f[0], dy) + zder2(f[0], dz)
@@ -369,7 +369,7 @@ def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
         raise ValueError
 
-    curl3_value = np.empty(f.shape)
+    curl3_value = np.zeros(f.shape)
 
     if coordinate_system == 'cartesian':
         curl3_value[0] = zder(xder2(f[1], dx) + yder2(f[1], dy), dz) + zder3(f[1], dz) - \
