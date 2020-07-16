@@ -1,0 +1,52 @@
+!                              -*-f90-*-     (for emacs)
+&init_pars
+  xyz0 = -0.10, -0.10, -0.10 ! change
+  Lxyz =  0.20,  0.20,  0.20 ! change
+  lwrite_ic = .true., lwrite_aux = .true.
+/
+&eos_init_pars
+  gamma = 1.0
+  rho0 = 1.0
+  cs0 = 6.28318530717958648
+  lstratz = .true., gztype = 'linear', gz_coeff = 6.28318530717958648
+/
+&hydro_init_pars
+  Omega = 6.28318530717958648
+/
+&density_init_pars
+  lmassdiff_fix = .true.
+  beta_glnrho_global = -0.1, 0.0, 0.0 ! if time, change
+/
+&selfgrav_init_pars
+  lselfgravity_gas = .false., lselfgravity_dust = .false.
+  rhs_poisson_const = 12.56637061435917296 ! change
+/
+&poisson_init_pars
+/
+&shear_init_pars
+  qshear = 1.5
+/
+&particles_init_pars
+  particle_mesh = 'tsc'
+  initxxp = 'random', lglobalrandom = .true.
+  initvvp = 'dragforce_equilibrium', ldragforce_equi_global_eps = .false.
+  tausp = 0.05, eps_dtog = 0.02 ! if time, change 
+  gravz_profile = 'linear', nu_epicycle = 6.28318530717958648
+/
+&particles_sink_init_pars
+  initaps = 'zero'
+  sink_birth_radius = 1.0
+  lsink_radius_dx_unit = .true.
+  lsink_communication_all_to_all = .false.
+  laccrete_sink_sink = .false.
+/
+&particles_dens_init_pars
+  initrhopswarm = 'particles-to-gas-ratio'
+  eps_dtog = 0.02 ! if time, change
+/
+&particles_selfgrav_init_pars
+/
+&particles_stalker_init_pars
+  dstalk = 0.01
+  lstalk_sink_particles = .true.
+/

@@ -1,0 +1,52 @@
+!
+&run_pars
+  nt = 10, it1 = 1, isave = 5000
+  tmax = 50.0, dsnap = 1.0, dvid = 0.1, d2davg = 0.1
+  dtmin = 1e-8
+  max_walltime = 0.86e5
+  cdt = 0.8, cdtv = 0.21, cdtv3 = 0.019
+  ldynamical_diffusion = .true., re_mesh = 0.1
+  slice_position = 'm'
+  lpencil_check=F
+  lpencil_check_small=F
+  !ldyndiff_useumax=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  diffrho_hyper3_mesh = 1.0
+/
+&selfgrav_run_pars
+  tstart_selfgrav = 25.0 ! if time, change
+  tselfgrav_gentle = 10.0 ! if time, change 
+/
+&poisson_run_pars
+  lklimit_shear = .false.
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  ivisc = 'hyper3_mesh'
+  nu_hyper3_mesh = 1.0
+/
+&shock_run_pars
+/
+&particles_run_pars
+  ldragforce_dust_par = .true., ldragforce_gas_par = .true.
+  lmigration_redo = .true.
+  epsp_friction_increase = 200.0
+/
+&particles_sink_run_pars
+  rhop_sink_create = 3000
+  lsink_create_one_per_cell = .true.
+/
+&particles_dens_run_pars
+/
+&particles_selfgrav_run_pars
+  lselfgravity_particles = .true.
+/
+&particles_stalker_run_pars
+  lstalk_sink_particles = .true.
+/
