@@ -11,7 +11,7 @@ import numpy as np
 from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, grad
 
-def helmholtz_fft(tot_field, grid, params, nghost=3,
+def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
                   lno_mean=False, nonperi_bc=None, field_scalar=[], s=None):
     """
     Creates the decomposition vector pair for the supplied vector field.
@@ -84,70 +84,96 @@ def helmholtz_fft(tot_field, grid, params, nghost=3,
         kfield[j] = np.fft.fftn(
                     field[j,nghost:-nghost,nghost:-nghost,nghost:-nghost],s=s
                                 )
-    #reverse fft to obtain the scalar potential
-    pfield = -1j*dot(kk,kfield)
-    pfield[np.where(knorm==0)] = 0.
-    #reverse fft to obtain the vector potential
-    rfield =  1j*cross(kk,kfield)
-    for j in range(3):
-        rfield[j][np.where(knorm==0)] = 0.
+    if pot:
+        #reverse fft to obtain the scalar potential
+        pfield = -1j*dot(kk,kfield)
+        pfield[np.where(knorm==0)] = 0.
+    if rot:
+        #reverse fft to obtain the vector potential
+        rfield =  1j*cross(kk,kfield)
+        for j in range(3):
+            rfield[j][np.where(knorm==0)] = 0.
     #avoid division by zero
     knorm[np.where(knorm==0)] = 1.
-    pfield /= knorm
-    for j in range(3):
-        rfield[j] /= knorm
+    if pot:
+        pfield /= knorm
+        pot_field = np.zeros_like(field)
+    if rot:
+        for j in range(3):
+            rfield[j] /= knorm
+        rot_field = np.zeros_like(field)
     if nonperi_bc:
         print('Please implement new nonperi_bc not yet implemented.\n',
               'Applying periodic boundary conditions for now.')
-    pot_field = np.zeros_like(field)
-    rot_field = np.zeros_like(field)
     for j in range(0,3):
-        pot_field[j,nghost:-nghost,nghost:-nghost,nghost:-nghost] =\
+        if pot:
+            pot_field[j,nghost:-nghost,nghost:-nghost,nghost:-nghost] =\
                                       np.fft.ifftn(1j*pfield*kk[j],s=invs).real
-        rot_field[j,nghost:-nghost,nghost:-nghost,nghost:-nghost] =\
+        if rot:
+            rot_field[j,nghost:-nghost,nghost:-nghost,nghost:-nghost] =\
                                np.fft.ifftn(cross(1j*kk,rfield)[j],s=invs).real
     #apply the periodic boundary conditions for the ghost zones:
     for j in range(0,3):
-        pot_field[j, :nghost,:,:] = pot_field[j,-2*nghost:-nghost,:,:]
-        pot_field[j,-nghost:,:,:] = pot_field[j, nghost: 2*nghost,:,:]
-        pot_field[j,:, :nghost,:] = pot_field[j,:,-2*nghost:-nghost,:]
-        pot_field[j,:,-nghost:,:] = pot_field[j,:, nghost: 2*nghost,:]
-        pot_field[j,:,:, :nghost] = pot_field[j,:,:,-2*nghost:-nghost]
-        pot_field[j,:,:,-nghost:] = pot_field[j,:,:, nghost: 2*nghost]
-        rot_field[j, :nghost,:,:] = rot_field[j,-2*nghost:-nghost,:,:]
-        rot_field[j,-nghost:,:,:] = rot_field[j, nghost: 2*nghost,:,:]
-        rot_field[j,:, :nghost,:] = rot_field[j,:,-2*nghost:-nghost,:]
-        rot_field[j,:,-nghost:,:] = rot_field[j,:, nghost: 2*nghost,:]
-        rot_field[j,:,:, :nghost] = rot_field[j,:,:,-2*nghost:-nghost]
-        rot_field[j,:,:,-nghost:] = rot_field[j,:,:, nghost: 2*nghost]
-    if nonperi_bc:
-        print('Please implement new nonperi_bc not yet implemented.\n',
-              'Applying periodic boundary conditions for now.')
+        if pot:
+            pot_field[j, :nghost,:,:] = pot_field[j,-2*nghost:-nghost,:,:]
+            pot_field[j,-nghost:,:,:] = pot_field[j, nghost: 2*nghost,:,:]
+            pot_field[j,:, :nghost,:] = pot_field[j,:,-2*nghost:-nghost,:]
+            pot_field[j,:,-nghost:,:] = pot_field[j,:, nghost: 2*nghost,:]
+            pot_field[j,:,:, :nghost] = pot_field[j,:,:,-2*nghost:-nghost]
+            pot_field[j,:,:,-nghost:] = pot_field[j,:,:, nghost: 2*nghost]
+        if rot:
+            rot_field[j, :nghost,:,:] = rot_field[j,-2*nghost:-nghost,:,:]
+            rot_field[j,-nghost:,:,:] = rot_field[j, nghost: 2*nghost,:,:]
+            rot_field[j,:, :nghost,:] = rot_field[j,:,-2*nghost:-nghost,:]
+            rot_field[j,:,-nghost:,:] = rot_field[j,:, nghost: 2*nghost,:]
+            rot_field[j,:,:, :nghost] = rot_field[j,:,:,-2*nghost:-nghost]
+            rot_field[j,:,:,-nghost:] = rot_field[j,:,:, nghost: 2*nghost]
     #compare internal energy of original and sum of decomposed vectors
-    rot2 = dot2(rot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
-    pot2 = dot2(pot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    if pot:
+        pot2 = dot2(pot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    if rot:
+        rot2 = dot2(rot_field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
     field2 = dot2(field)[nghost:-nghost,nghost:-nghost,nghost:-nghost]
     if len(field_scalar) > 0:
         #compare kinetic energy of original and sum of decomposed vectors
-        rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
-        pot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
         field2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
-    print('mean total field energy {} mean summed component energy {}'.format(
-          np.mean(field2), np.mean(rot2+pot2)))
+        if pot:
+            pot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+        if rot:
+            rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
+    if rot and not pot:
+        print('mean total field energy {} mean rotational energy {}'.format(
+              np.mean(field2), np.mean(rot2)))
+    elif pot and not rot:
+        print('mean total field energy {} mean irrotational energy {}'.format(
+              np.mean(field2), np.mean(pot2)))
+    elif rot and pot: 
+        print('mean total field energy {} mean summed component energy {}'.format(
+              np.mean(field2), np.mean(rot2+pot2)))
     #check div and curl approximate/equal zero
-    print('Max {} and mean {} of abs(curl(pot field))'.format(
-          max(grid.dx, grid.dy, grid.dz)*amp_field_1*
-          np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
+    if pot:
+        print('Max {} and mean {} of abs(curl(pot field))'.format(
+              max(grid.dx, grid.dy, grid.dz)*amp_field_1*
+              np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
                  )[nghost:-nghost,nghost:-nghost,nghost:-nghost].max(),
-          max(grid.dx, grid.dy, grid.dz)*amp_field_1*
-          np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
+              max(grid.dx, grid.dy, grid.dz)*amp_field_1*
+              np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
                  )[nghost:-nghost,nghost:-nghost,nghost:-nghost].mean()))
-    print('Max {} and mean {} of abs(div(rot field))'.format(
-          max(grid.dx, grid.dy, grid.dz)*amp_field_1*
-          np.abs(div(rot_field, grid.dx, grid.dy, grid.dz)
+    if rot:
+        print('Max {} and mean {} of abs(div(rot field))'.format(
+              max(grid.dx, grid.dy, grid.dz)*amp_field_1*
+              np.abs(div(rot_field, grid.dx, grid.dy, grid.dz)
              )[nghost:-nghost,nghost:-nghost,nghost:-nghost].max(),
-          max(grid.dx, grid.dy, grid.dz)*amp_field_1*
-          np.abs(div(rot_field, grid.dx, grid.dy, grid.dz)
+              max(grid.dx, grid.dy, grid.dz)*amp_field_1*
+              np.abs(div(rot_field, grid.dx, grid.dy, grid.dz)
              )[nghost:-nghost,nghost:-nghost,nghost:-nghost].mean()))
-    ret_opt = [rot_field, pot_field]
+    if rot and not pot:
+        ret_opt = rot_field
+    elif pot and not rot:
+        ret_opt = pot_field
+    elif rot and pot: 
+        ret_opt = [rot_field, pot_field]
+    else:
+        print('pot and/or rot must be True, returning ones')
+        ret_opt = np.ones_like(tot_field)
     return ret_opt
