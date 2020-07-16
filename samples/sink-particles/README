@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/sink-particles
+SVN Id:
+    $Id: README 13517 2016-04-28 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+    Chao-Chin Yang <ccyang/unlv[dot]edu>
+Added:
+    16-jul-2020
+Status:
+    works since 16-jul-2020
+Recommended resolution:
+    As in paper
+Comments:
+    Streaming Instability with sink particles.     
+Reference:
+    Urs Schafer, Chao-Chin Yang, and Anders Johansen A&A 597, A69 (2017)
+    Initial mass function of planetesimals formed by the streaming instability
