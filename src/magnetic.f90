@@ -140,6 +140,7 @@ module Magnetic
   real :: ampl_B0=0.0, D_smag=0.17, B_ext2, B_ext21, B_ext11
   real :: nu_ni=0.0, nu_ni1, hall_term=0.0, battery_term=0.0
   real :: hall_tdep_t0=0.0, hall_tdep_exponent=0.0
+  real :: Hhall=0., hall_zdep_exponent=4.0
   real :: initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0., brms_target=1.0, rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
@@ -172,7 +173,7 @@ module Magnetic
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: ladd_global_field=.false. 
   logical :: lresi_eta_const=.false.
-  logical :: lresi_eta_tdep=.false.
+  logical :: lresi_eta_tdep=.false., lresi_eta_ztdep=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_eta_aniso=.false., lquench_eta_aniso=.false.
   logical :: lresi_etaSS=.false.
@@ -339,8 +340,8 @@ module Magnetic
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
-      J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
-      ihall_term, hall_tdep_t0, hall_tdep_exponent, &
+      J_ext_quench, omega_Bz_ext, nu_ni, hall_term, Hhall, battery_term, &
+      ihall_term, hall_tdep_t0, hall_tdep_exponent, hall_zdep_exponent, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, eta_tdep_toffset, &
       tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
@@ -928,8 +929,9 @@ module Magnetic
   real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax=0.,dAmax=0.,ss0=0., &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
   real, dimension(nx,3) :: fres,uxbb
-  real, dimension(nzgrid) :: eta_zgrid = 0.0
-  real :: eta_shock_jump1=1.0,eta_tdep=0.0,Arms=0.0
+  real, dimension(nzgrid) :: eta_zgrid=0.0
+  real, dimension(mzgrid) :: feta_ztdep=0.0
+  real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   contains
@@ -1041,7 +1043,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,myl,nycap
-      real :: J_ext2
+      real :: J_ext2, eta_zdep_exponent
 !
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
@@ -1274,6 +1276,10 @@ module Magnetic
         case ('eta-tdep')
           if (lroot) print*, 'resistivity: time-dependent eta'
           lresi_eta_tdep=.true.
+        case ('eta-ztdep')
+          if (lroot) print*, 'resistivity: time-dependent eta'
+          lresi_eta_tdep=.true.
+          lresi_eta_ztdep=.true.
         case ('sqrtrhoeta-const')
           if (lroot) print*, 'resistivity: constant sqrt(rho)*eta'
           lresi_sqrtrhoeta_const=.true.
@@ -1431,6 +1437,16 @@ module Magnetic
           call fatal_error('initialize_magnetic','')
         endselect
       enddo
+!
+!  If lresi_eta_ztdep, compute z-dependent fraction here:
+!  It is called feta_ztdep, because it works only if lresi_eta_tdep.
+!  eta_zdep_exponent = (2/3)*hall_zdep_exponent; see Gourgouliatos+20.
+!
+      if (lresi_eta_ztdep) then
+        if (Hhall==0.) call fatal_error('initialize_magnetic','Hhall=0 not allowed.')
+        eta_zdep_exponent=(2./3.)*hall_zdep_exponent
+        feta_ztdep=1./(1.-(z-xyz1(3))/Hhall)**eta_zdep_exponent
+      endif
 !
       if (lyinyang) then
         if (lresi_eta_shock_profz.or.lresi_xydep.or.lresi_ydep.or.lresi_zdep) &
@@ -4039,12 +4055,22 @@ module Magnetic
       endif eta_const
 !
 !  Time-dependent resistivity
+!  If both z and t dependent, then use eta_tdep for del2 (in non-Weyl),
+!  and -(eta_zdep-1.)*eta_tdep*mu0*p%jj, where eta_zdep < 1 is assumed.
 !
       if (lresi_eta_tdep) then
-        if (lweyl_gauge) then
-          fres = fres - eta_tdep * mu0 * p%jj
+        if (lresi_eta_ztdep) then
+          if (lweyl_gauge) then
+            fres = fres                 -eta_tdep* feta_ztdep(n)    *mu0*p%jj
+          else
+            fres = fres+eta_tdep*p%del2a-eta_tdep*(feta_ztdep(n)-1.)*mu0*p%jj
+          endif
         else
-          fres = fres + eta_tdep * p%del2a
+          if (lweyl_gauge) then
+            fres = fres - eta_tdep * mu0 * p%jj
+          else
+            fres = fres + eta_tdep * p%del2a
+          endif
         endif
         if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_tdep
         etatotal = etatotal + eta_tdep
@@ -4885,6 +4911,7 @@ module Magnetic
         select case (ihall_term)
           case ('const'); hall_term_=hall_term
           case ('t-dep'); hall_term_=hall_term*max(real(t),hall_tdep_t0)**hall_tdep_exponent
+          case ('z-dep'); hall_term_=hall_term/(1.-(z(n)-xyz1(3))/Hhall)**hall_zdep_exponent
         endselect
         if (headtt) print*,'daa_dt: hall_term=',hall_term_
         dAdt=dAdt-hall_term_*p%jxb
@@ -6387,7 +6414,7 @@ module Magnetic
 !
         endif
       endif
-
+!
       if (lresi_eta_tdep) then
         eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
