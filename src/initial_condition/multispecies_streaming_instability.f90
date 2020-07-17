@@ -50,12 +50,14 @@ module InitialCondition
 ! 20-may-20/ccyang: coded
 !
       use EquationOfState, only: cs0
+      use Mpicomm, only: mpibcast
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       integer :: i
       real :: dlogtaus
 !
+      if (lrun) return
       call keep_compiler_quiet(f)
 !
 ! Assemble stopping times.
@@ -88,18 +90,25 @@ module InitialCondition
 !
 ! Find the equilibrium velocities.
 !
-      call dragforce_equi_multispecies(npar_species, taus, eps0, eta_vK, vpx0, vpy0, ux0, uy0)
       eqvel: if (lroot) then
+        call dragforce_equi_multispecies(npar_species, taus, eps0, eta_vK, vpx0, vpy0, ux0, uy0)
         print *, "initialize_initial_condition: ux0, uy0 = ", ux0, uy0
         print *, "initialize_initial_condition: vpx0 = ", vpx0
         print *, "initialize_initial_condition: vpy0 = ", vpy0
       endif eqvel
 !
+      call mpibcast(ux0)
+      call mpibcast(uy0)
+      call mpibcast(vpx0, npar_species)
+      call mpibcast(vpy0, npar_species)
+!
 ! Save the equilibrium velocities to a file.
 !
-      open(10, file="data/multisp_drag_eq.dat", form="unformatted", action="write")
-      write(10) ux0, uy0, vpx0, vpy0
-      close(10)
+      record: if (lroot) then
+        open(10, file="data/multisp_drag_eq.dat", form="unformatted", action="write")
+        write(10) ux0, uy0, vpx0, vpy0
+        close(10)
+      endif record
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************

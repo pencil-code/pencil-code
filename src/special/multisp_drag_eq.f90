@@ -51,28 +51,33 @@ module Special
 !****************************************************************************
     subroutine initialize_special(f)
 !
-!  Called after reading parameters, but before the time loop.
+! Called after reading parameters, but before the time loop.
 !
-!  04-oct-19/ccyang: coded
+! 17-jul-20/ccyang: coded
+!
+      use Mpicomm, only: mpibcast
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      call keep_compiler_quiet(f)
       if (lstart) return
+      call keep_compiler_quiet(f)
 !
 !  Read the equilibrium velocities from the initial conditions.
 !
-      open(10, file="data/multisp_drag_eq.dat", form="unformatted", action="read")
-      read(10) ux0, uy0, vpx0, vpy0
-      close(10)
+      eqvel: if (lroot) then
+        open(10, file="data/multisp_drag_eq.dat", form="unformatted", action="read")
+        read(10) ux0, uy0, vpx0, vpy0
+        close(10)
 !
-!  Log the velocities.
-!
-      info: if (lroot) then
         print *, "initialize_special: ux0, uy0 = ", ux0, uy0
         print *, "initialize_special: vpx0 = ", vpx0
         print *, "initialize_special: vpy0 = ", vpy0
-      endif info
+      endif eqvel
+!
+      call mpibcast(ux0)
+      call mpibcast(uy0)
+      call mpibcast(vpx0, npar_species)
+      call mpibcast(vpy0, npar_species)
 !
     endsubroutine initialize_special
 !***********************************************************************
