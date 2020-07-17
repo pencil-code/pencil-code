@@ -24,6 +24,7 @@ class FixedPoint(object):
         self.t = None
         self.fixed_index = None
         self.fixed_points = None
+        self.fixed_tracers = None
         self.fixed_sign = None
         self.poincare = None
         self.tracers = None
@@ -147,6 +148,9 @@ class FixedPoint(object):
                                   int(self.params.trace_sub*dim.ny), n_times])
         ix0 = range(0, int(self.params.nx*self.params.trace_sub)-1)
         iy0 = range(0, int(self.params.ny*self.params.trace_sub)-1)
+        self.fixed_points = []
+        self.fixed_sign = []
+        self.fixed_tracers = []
 
         # Start the parallelized fixed point finding.
         for tidx in range(n_times):
@@ -160,6 +164,7 @@ class FixedPoint(object):
             sub_data = []
             fixed = []
             fixed_sign = []
+            fixed_tracers = []
             for i_proc in range(self.params.n_proc):
                 proc.append(mp.Process(target=self.__sub_fixed,
                                        args=(queue, ix0, iy0, field, self.tracers,
@@ -174,21 +179,26 @@ class FixedPoint(object):
                 # Extract the data from the single cores. Mind the order.
                 sub_proc = sub_data[i_proc][0]
                 fixed.extend(sub_data[i_proc][1])
-                fixed_sign.extend(sub_data[i_proc][2])
-                self.fixed_index[tidx] += sub_data[i_proc][3]
-                self.poincare[sub_proc::self.params.n_proc, :, tidx] = sub_data[i_proc][4]
+                fixed_tracers.extend(sub_data[i_proc][2])
+                fixed_sign.extend(sub_data[i_proc][3])
+                self.fixed_index[tidx] += sub_data[i_proc][4]
+                self.poincare[sub_proc::self.params.n_proc, :, tidx] = sub_data[i_proc][5]
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
 
-            # Discard fixed points which lie too close to each other.
-            fixed, fixed_sign = self.__discard_close_fixed_points(np.array(fixed),
-                                                                  np.array(fixed_sign),
-                                                                  var)
-            if self.fixed_points is None:
-                self.fixed_points = []
-                self.fixed_sign = []
+#            # Discard fixed points which lie too close to each other.
+#            fixed, fixed_tracers, fixed_sign = self.__discard_close_fixed_points(np.array(fixed),
+#                                                                                 np.array(fixed_sign),
+#                                                                                 np.array(fixed_tracers),
+#                                                                                 var)
+#            if self.fixed_points is None:
+#                self.fixed_points = []
+#                self.fixed_sign = []
+#                self.fixed_tracers = []
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
+            print(fixed_tracers)
+            self.fixed_tracers.append(np.array(fixed_tracers))
 
         # Compute the traced quantities along the fixed point streamlines.
         if (self.params.int_q == 'curly_A') or (self.params.int_q == 'ee'):
@@ -239,6 +249,7 @@ class FixedPoint(object):
         diff = np.zeros((4, 2))
         fixed = []
         fixed_sign = []
+        fixed_tracers = []
         fixed_index = 0
         poincare_array = np.zeros((tracers.x0[i_proc::self.params.n_proc].shape[0],
                                    tracers.x0.shape[1]))
@@ -312,7 +323,12 @@ class FixedPoint(object):
                     fixed_sign.append(np.sign(poincare))
                     fixed_index += np.sign(poincare)
 
-        queue.put((i_proc, fixed, fixed_sign, fixed_index, poincare_array))
+                    # Find the streamline at the fixed point.
+                    time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                    stream = Stream(field, self.params, xx=np.array([fixed_point[0], fixed_point[1], self.params.Oz]), time=time)
+                    fixed_tracers.append(stream.tracers)
+
+        queue.put((i_proc, fixed, fixed_tracers, fixed_sign, fixed_index, poincare_array))
 
 
     # Find the Poincare index of this grid cell.
@@ -449,14 +465,16 @@ class FixedPoint(object):
 
 
     # Discard fixed points which are too close to each other.
-    def __discard_close_fixed_points(self, fixed, fixed_sign, var):
+    def __discard_close_fixed_points(self, fixed, fixed_sign, fixed_tracers, var):
         import numpy as np
 
         fixed_new = []
         fixed_sign_new = []
+        fixed_tracers_new = []
         if len(fixed) > 0:
             fixed_new.append(fixed[0])
             fixed_sign_new.append(fixed_sign[0])
+            fixed_tracers_new.append(fixed_tracers[0])
 
             dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
             dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
@@ -466,8 +484,9 @@ class FixedPoint(object):
                 if all(mask[idx, :idx]):
                     fixed_new.append(fixed[idx])
                     fixed_sign_new.append(fixed_sign[idx])
+                    fixed_tracers_new.append(fixed_tracers[idx])
 
-        return np.array(fixed_new), np.array(fixed_sign_new)
+        return np.array(fixed_new), np.array(fixed_sign_new), np.array(fixed_tracers_new)
 
 
     def write(self, datadir='data', destination='fixed_points.hdf5'):
@@ -544,7 +563,7 @@ class FixedPoint(object):
             self.tracers.write(datadir=self.params.datadir,
                                destination=tracer_file_name)
         else:
-            print("error: empty destination file")
+            print("Error: empty destination file")
 
 
     def read(self, datadir='data', file_name='fixed_points.hdf5'):
