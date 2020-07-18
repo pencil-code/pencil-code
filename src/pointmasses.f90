@@ -1247,7 +1247,7 @@ module PointMasses
 !  the position of the pointmass. TODO: other poisson methods
 !  should get the potential, take the gradient and interpolate.
 !
-!  14-mat-20/wlad: coded
+!  14-may-20/wlad: coded
 !
       use Mpicomm
       use Sub, only: get_radial_distance,cross
