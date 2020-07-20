@@ -43,7 +43,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: lheat_source
   logical :: ladvection_temperature=.true.
-  logical :: lviscosity_heat=.false.
+  logical :: lviscosity_heat=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lcalc_TTmean=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
@@ -422,7 +422,7 @@ module Energy
       if (lviscosity) then
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
-        lpenc_requested(i_visc_heat)=.true.
+        if (lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
       endif
 !
       if (lcalc_heat_cool) then
