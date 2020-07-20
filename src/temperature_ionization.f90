@@ -422,7 +422,7 @@ module Energy
       if (lviscosity) then
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
-        if (lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
+        lpenc_requested(i_visc_heat)=.true.
       endif
 !
       if (lcalc_heat_cool) then
