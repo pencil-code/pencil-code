@@ -19,6 +19,7 @@ if comm:
         cmd = 'mv data/grid.h5 data/grid.h5.bak'
         os.system(cmd)
 pc.io.sim2h5(
+             newdir='/users/fagent/pencil-code/python/tutorials/mps/ism_binary_h5',
              laver2D=False,
              lvars=True,
              lvids=True,
