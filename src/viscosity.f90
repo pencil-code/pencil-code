@@ -81,6 +81,7 @@ module Viscosity
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_polar=.false.
   logical :: lvisc_hyper3_mesh=.false.
+  logical :: lvisc_hyper3_mesh_residual=.false.
   logical :: lvisc_hyper3_csmesh=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
@@ -109,6 +110,7 @@ module Viscosity
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   logical :: lno_visc_heat_zbound=.false.
+  logical, pointer :: lcalc_uuavg
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
@@ -276,6 +278,7 @@ module Viscosity
       use Sub, only: write_zprof, step
 !
       integer :: i
+      integer :: ierr
 !
 !  Default viscosity.
 !
@@ -305,6 +308,7 @@ module Viscosity
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_polar=.false.
       lvisc_hyper3_mesh=.false.
+      lvisc_hyper3_mesh_residual=.false.
       lvisc_hyper3_csmesh=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
@@ -415,7 +419,13 @@ module Viscosity
         case ('hyper3-mesh','hyper3_mesh')
           if (lroot) print*,'viscous force: nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
           lvisc_hyper3_mesh=.true.
-        case ('hyper3-csmesh')
+        case ('hyper3-mesh-residual','hyper3_mesh-residual','hyper3-mesh_residual','hyper3_mesh_residual')
+          if (lroot) print*,'viscous force: nu_hyper3_mesh/pi^5 *(Delta(v-<v>)^6/Deltaq'
+          lvisc_hyper3_mesh_residual=.true.
+          call get_shared_variable('lcalc_uuavg',lcalc_uuavg,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","could not get lcalc_uuavg")
+          lcalc_uuavg=.true.
+       case ('hyper3-csmesh')
           if (lroot) print*,'viscous force: c_s*nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
           lvisc_hyper3_csmesh=.true.
         case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
@@ -525,6 +535,9 @@ module Viscosity
         if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3_mesh is zero!')
+        if (lvisc_hyper3_mesh_residual.and.nu_hyper3_mesh==0.0) &
+             call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_hyper3_mesh_residual is zero!')
         if (lvisc_hyper3_csmesh.and.nu_hyper3_mesh==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3_mesh is zero!')
@@ -555,9 +568,10 @@ module Viscosity
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
 !
         if (ldynamical_diffusion.and. &
-            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_csmesh)) then
+            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_mesh_residual.or.lvisc_hyper3_csmesh)) then
           call fatal_error("initialize_viscosity",&
-               "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh'or'hyper3-csmesh'")
+               "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh' "// &
+               "'hyper3-mesh-residual', or 'hyper3-csmesh'")
         endif
 !
       endif
@@ -1116,6 +1130,7 @@ module Viscosity
       endif
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
+      if (lvisc_hyper3_mesh_residual) lpenc_requested(i_der6u_res)=.true.
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -1707,7 +1722,7 @@ module Viscosity
               p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * tmp3 * dline_1(:,i)
             else
               p%fvisc(:,j) = p%fvisc(:,j) + &
-                  nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
+                   nu_hyper3_mesh*pi5_1/60.* tmp3 *dline_1(:,i)
             endif
           enddo
         enddo
@@ -1726,6 +1741,36 @@ module Viscosity
           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
         endif
       endif
+!
+!  Hyper-mesh diffusion with residual velocity instead of the full velocity.
+!
+      if (lvisc_hyper3_mesh_residual) then
+        do j=1,3
+          ju=j+iuu-1
+          do i=1,3
+            if (ldynamical_diffusion) then
+              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * p%der6u_res(:,i,j) * dline_1(:,i)
+            else
+              p%fvisc(:,j) = p%fvisc(:,j) + &
+                   nu_hyper3_mesh*pi5_1/60.*p%der6u_res(:,i,j)*dline_1(:,i)
+            endif
+          enddo
+        enddo
+        if (lpencil(i_visc_heat)) then
+          if (headtt) &
+            call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                         'is not implemented for lvisc_hyper3_mesh')
+        endif
+        if (lfirst .and. ldt) then
+          if (ldynamical_diffusion) then
+            p%diffus_total3 = p%diffus_total3 + nu_hyper3_mesh
+            advec_hypermesh_uu = 0.0
+          else
+            advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
+        endif
+      endif     
 !
       if (lvisc_hyper3_csmesh) then
         do j=1,3

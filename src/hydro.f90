@@ -23,6 +23,7 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
+! PENCILS PROVIDED der6u_res(3,3)
 !***************************************************************
 !
 module Hydro
@@ -59,8 +60,8 @@ module Hydro
 !
 !  phi-averaged arrays for orbital advection
 !
-  real, dimension (nx,nz) :: uu_average_cyl=0.
-  real, dimension (nx,ny) :: uu_average_sph=0.
+  real, dimension (mx,mz) :: uu_average_cyl=0.
+  real, dimension (mx,my) :: uu_average_sph=0.
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -229,6 +230,7 @@ module Hydro
 !
   real :: cdt_tauf=1.0, ulev=1.0
   logical :: lcdt_tauf=.false.
+  logical, target :: lcalc_uuavg=.false.
 !
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
@@ -1109,6 +1111,8 @@ module Hydro
           call get_shared_variable('profz_ffree',profz_ffree)
         endif
       endif
+!
+      if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
 !
 !  Get the reference state if requested
 !
@@ -2593,12 +2597,15 @@ module Hydro
       use WENO_transport
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: tmp4
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
+!
+      real, dimension(nx,3,3) :: tmp6
 !
       intent(in) :: lpenc_loc
       intent(out):: p
@@ -2700,6 +2707,23 @@ module Hydro
         call der6(f,iuy,p%del6u_bulk(:,2),2)
         call der6(f,iuz,p%del6u_bulk(:,3),3)
       endif
+! der6u_res
+      if (lpenc_loc(i_der6u_res)) then
+        if (lcartesian_coords) call fatal_error("calc_pencils_hydro_nonlinear",&
+                  "der6u_res: This pencil is not implemented for Cartesian coordinates")
+        do j=1,3
+          ju=j+iuu-1
+          do i=1,3
+            if (lcylindrical_coords.and.ju==iuy.and.i==1) then  
+              call der6_pencil(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)                
+            elseif (lspherical_coords.and.ju==iuz.and.i==1) then  
+              call der6_pencil(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)                
+            else   
+              call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)
+            endif
+          enddo
+        enddo
+      endif
 !
 ! del2u, graddivu
 !
@@ -2781,11 +2805,11 @@ module Hydro
 !
         p%uu_advec(:,1)=p%uu(:,1)
         if (lcylindrical_coords) then
-          p%uu_advec(:,2)=p%uu(:,2)-uu_average_cyl(:,n-nghost)
+          p%uu_advec(:,2)=p%uu(:,2)-uu_average_cyl(l1:l2,n)
           p%uu_advec(:,3)=p%uu(:,3)
         elseif (lspherical_coords) then
           p%uu_advec(:,2)=p%uu(:,2)
-          p%uu_advec(:,3)=p%uu(:,3)-uu_average_sph(:,m-nghost)
+          p%uu_advec(:,3)=p%uu(:,3)-uu_average_sph(l1:l2,m)
         endif
 !
         do j=1,3
@@ -2971,11 +2995,10 @@ module Hydro
 !
       real, dimension(nx,3) :: pv
 !
-      real, dimension (nx,nz) :: fsum_tmp_cyl
-      real, dimension (nx,ny) :: fsum_tmp_sph
-      real, dimension (nx) :: uphi
+      real, dimension (mx,mz) :: fsum_tmp_cyl
+      real, dimension (mx,my) :: fsum_tmp_sph
+      real, dimension (mx) :: uphi
       real :: nygrid1,nzgrid1
-      integer :: nnghost,mnghost
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3018,18 +3041,17 @@ module Hydro
 !  For FARGO (orbital advection) algorithm.
 !  Calculate the average velocity at the first sub-timestep.
 !
-      if (lfargo_advection.and.lfirst) then
+     if ((lfargo_advection.and.lfirst).or.lcalc_uuavg) then
 !
 !  Pre-calculate the average large scale (= phi-averaged) speed of the flow
 !
         if (lcylindrical_coords) then
           fsum_tmp_cyl=0.
           nygrid1=1./nygrid
-          do n=n1,n2
+          do n=1,mz
             do m=m1,m2
-              nnghost=n-nghost
-              uphi=f(l1:l2,m,n,iuy)
-              fsum_tmp_cyl(:,nnghost)=fsum_tmp_cyl(:,nnghost)+uphi*nygrid1
+              uphi=f(:,m,n,iuy)
+              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi*nygrid1
             enddo
           enddo
 !
@@ -3038,22 +3060,22 @@ module Hydro
 ! --only relevant for 3D, but is here for generality
 !
           call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,&
-               (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
+               (/mx,mz/),idir=2) !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
           nzgrid1=1./nzgrid
           fsum_tmp_sph=0.
           do n=n1,n2
-            do m=m1,m2
-              mnghost=m-nghost
-              uphi=f(l1:l2,m,n,iuz)
-              fsum_tmp_sph(:,mnghost)=fsum_tmp_sph(:,mnghost)+uphi*nzgrid1
+            do m=1,my
+              uphi=f(:,m,n,iuz)
+              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi*nzgrid1
             enddo
           enddo
           call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,&
-               (/nx,ny/),idir=3) !idir=2 is equal to old LSUMY=.true.
+               (/mx,my/),idir=3) !idir=2 is equal to old LSUMY=.true.
+!
         endif
-      endif
+     endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
@@ -3667,26 +3689,25 @@ module Hydro
 !
         if (lfargo_advection.and.idiag_nshift/=0) then
           if (lcylindrical_coords) then
-            !nnghost=n-nghost
-            !phidot=uu_average_cyl(:,nnghost)*rcyl_mn1
+            !phidot=uu_average_cyl(:,n)*rcyl_mn1
             !nshift=phidot*dt*dy_1(m)
             !call max_mn_name(nshift,idiag_nshift)
             if (dt==0.) then
               lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dy_1(m),idiag_nshift)
+              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift)
             else
-              call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
             endif
           elseif (lspherical_coords) then
             !mnghost=m-nghost
-            !phidot=uu_average_sph(:,nnghost)*rcyl_mn1  ! rcyl = r*sinth(m)
+            !phidot=uu_average_sph(:,n)*rcyl_mn1  ! rcyl = r*sinth(m)
             !nshift=phidot*dt*dz_1(n)
             !call max_mn_name(nshift,idiag_nshift)
             if (dt==0.) then
               lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dz_1(n),idiag_nshift)
+              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift)
             else
-              call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
+              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
             endif
           endif
         endif
@@ -6116,7 +6137,7 @@ module Hydro
       real, dimension (nx,ny) :: acyl_re,acyl_im
       real, dimension (nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
-      integer :: ivar,ng,mg,ig,i
+      integer :: ivar,ig,i
       real :: dt_
 !
 !  Pencil uses linear velocity. Fargo will shift based on
@@ -6124,8 +6145,7 @@ module Hydro
 !
       ifcoordinates: if (lcylindrical_coords) then
         zloopcyl: do n=n1,n2
-          ng=n-n1+1
-          phidot=uu_average_cyl(:,ng)*rcyl_mn1
+          phidot=uu_average_cyl(l1:l2,n)*rcyl_mn1
 !
           varloopcyl: do ivar=1,mvar
 !
@@ -6158,10 +6178,9 @@ module Hydro
         enddo zloopcyl
       elseif (lspherical_coords) then
         yloopsph: do m=m1,m2
-          mg=m-m1+1
           xloopsph: do i=l1,l2
             ig=i-l1+1
-            phidot=uu_average_sph(ig,mg)*rcyl_mn1
+            phidot=uu_average_sph(l1:l2,m)*rcyl_mn1
 !
             varloopsph: do ivar=1,mvar
 !
