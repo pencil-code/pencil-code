@@ -1115,7 +1115,10 @@ module Testfield
 !  evaluate different contributions to <uxb>, <jxb>/rho0 + u.gradu and u.grad h.
 !
           Eipq(:,:,jtest)=uxbtest*bamp1
-          Fipq(:,:,jtest)=(rho0test1*jxbtest-ugutest+2.*nutest*Sghtest)*bamp1
+          Fipq(:,:,jtest)=rho0test1*jxbtest
+          if (lugutest) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest
+          if (lSghtest) Fipq(:,:,jtest)=Fipq(:,:,jtest)+2.*nutest*Sghtest
+          Fipq(:,:,jtest)=Fipq(:,:,jtest)*bamp1
           Rpq(:,jtest)=ughtest*bamp1
 !if (lroot.and. maxval(ughtest)/=0. .and. abs(maxval(ughtest))<1e-10) print*, 'ughtest:', m,n,maxval(ughtest)
         endif
@@ -1554,7 +1557,8 @@ module Testfield
       ughtestmz=0.
 !
       if (luse_main_run) then
-        lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_bb,i_bij,i_jj,i_lnrho,i_glnrho/))=.true.
+        lpenc_loc = .false.
+        lpenc_loc((/i_uu,i_uij,i_divu,i_sij,i_bbb,i_bb,i_bij,i_jj,i_lnrho,i_glnrho/))=.true.
       endif
 !
 !
@@ -1698,9 +1702,8 @@ mn:   do n=n1,n2
             call u_dot_grad(f,ihxtest,ghhtest,uufluct,ughtest,UPWIND=lupw_hhtest)                         ! u.grad(htest)     tbc
             call u_dot_grad(f,ihhtest+3*(njtest-1),gh0ref,uutest,ughtest,UPWIND=lupw_hhtest,LADD=.true.)  ! utest.grad(h0)    tbc
 !
-            Sghtest=0.
-            call multmv(sijfluct,ghhtest,Sghtest)                                                         ! S'.grad(htest)
-            call multmv(sijtest,gh0ref,Sghtest,ladd=.true.)                                               ! Stest.grad(h0)
+            call multmv(sijfluct,ghhtest,Sghtest)                                                         ! S'.grad(htest)  !!!
+            call multmv(sijtest,gh0ref,Sghtest,ladd=.true.)                                               ! Stest.grad(h0)  !!!
 !
           endif
 !
@@ -1729,7 +1732,7 @@ mn:   do n=n1,n2
           endif
 !
 !  Add corresponding contribution into averaged arrays, uxbtestmz, jxbtestmz.
-!  Do the same for ugutestmz and ughtestmz.
+!  Do the same for ugutestmz, Sghtestmz and ughtestmz.
 !
           uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+fac*sum(uxbtest,1)
           jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
