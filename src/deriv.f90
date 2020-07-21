@@ -18,7 +18,7 @@ module Deriv
 !
   public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
-  public :: der6_other, der_pencil, der2_pencil
+  public :: der6_other, der_pencil, der2_pencil, der6_pencil
   public :: der4i2j,der2i2j2k,der3i3j,der3i2j1k,der4i1j1k
   public :: deri_3d_inds
   public :: der_x,der2_x
@@ -1059,15 +1059,13 @@ module Deriv
         igndx = .false.
       endif
       if (present(upwind)) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) then
+          call fatal_error('der6_other','upwind cannot be used with '//&
+              'non-equidistant grid.')
+        endif
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not. lequidist(j)) &
-             call fatal_error('der6_other','NOT IMPLEMENTED for '//&
-             'non equidistant grid')
-        if (.not.lcartesian_coords) &
-             call fatal_error('der6_other','in non-cartesian coordinates '//&
-             'just works if upwinding is used')
       endif
 !
       if (j==1) then
@@ -1077,7 +1075,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=dx_1(l1:l2)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n) &
                   + 15.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
@@ -1093,7 +1091,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=dy_1(m)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m  ,n) &
                   + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
@@ -1109,7 +1107,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=dz_1(n)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n  ) &
                   + 15.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
@@ -1121,6 +1119,105 @@ module Deriv
       endif
 !
     endsubroutine der6_other
+!***********************************************************************
+    subroutine der6_pencil(j,pencil,df6,ignoredx,upwind)
+!
+!  Calculate 6th derivative of any x, y or z pencil.
+!
+!  20-jul-20/wlyra: adapted from der2_pencil
+!
+      real, dimension (:) :: pencil,df6
+      real, dimension (nx) :: facx
+      real, dimension (ny) :: facy
+      real, dimension (nz) :: facz
+      integer :: j
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
+!
+      intent(in)  :: j, pencil,ignoredx,upwind
+      intent(out) :: df6
+
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+!     
+      if (present(upwind)) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) then
+          call fatal_error('der6','upwind cannot be used with '//&
+              'non-equidistant grid.')
+        endif
+        upwnd = upwind
+      else
+        upwnd = .false.
+      endif     
+!
+!  x-derivative
+!
+      if (j==1) then
+        if (size(pencil)/=mx) then
+          if (lroot) print*, 'der6_pencil: pencil must be of size mx for x derivative'
+          call fatal_error('der6_pencil','')
+        endif
+        if (igndx) then
+          facx=1.
+        elseif (upwnd) then
+          facx=(1.0/60)*dx_1(l1:l2)
+        else
+          facx=dx_1(l1:l2)**6
+        endif
+        df6=facx*(- 20.0* pencil(l1:l2) &
+                  + 15.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
+                  -  6.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
+                  +      (pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
+      else if (j==2) then
+!
+!  y-derivative
+!
+        if (size(pencil)/=my) then
+          if (lroot) &
+              print*, 'der6_pencil: pencil must be of size my for y derivative'
+          call fatal_error('der6_pencil','')
+        endif
+        if (igndx) then
+          facy=1.
+        else if (upwnd) then
+          facy=(1.0/60)*dy_1(m1:m2)
+        else
+          facy=dy_1(m1:m2)**6
+        endif
+        df6=facy*(- 20.0* pencil(m1:m2) &
+                  + 15.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
+                  -  6.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
+                  +      (pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+      else if (j==3) then
+!
+!  z-derivative
+!
+        if (size(pencil)/=mz) then
+          if (lroot) &
+              print*, 'der6_pencil: pencil must be of size mz for z derivative'
+          call fatal_error('der6_pencil','')
+        endif
+        if (igndx) then
+          facz=1.
+        else if (upwnd) then
+          facz=(1.0/60)*dz_1(n1:n2)
+        else
+          facz=dz_1(n1:n2)**6
+        endif
+        df6=facz*(- 20.0* pencil(n1:n2) &
+                  + 15.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
+                  -  6.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
+                  +      (pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+      else
+        if (lroot) print*, 'der6_pencil: no such direction j=', j
+        call fatal_error('der6_pencil','')
+      endif
+!
+    endsubroutine der6_pencil
 !***********************************************************************
     real function der5_single(f,j,dc1)
 !
