@@ -977,15 +977,12 @@ module Special
               !where(beta_mask==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta 
 
               numzeros=sum(beta_mask)
-              call mpireduce_sum_int(numzeros,numzeros_)
-              call mpibarrier
-              if (numzeros>0) call mpireduce_min(minbeta,minbeta_)
-              if (lroot) then
-                print'(a,i1,a,i1,a,i15,a$)', 'beta(',i,',',i,')+eta<=0 at ', numzeros_, ' positions'
-                if (numzeros>0) then 
+              call mpiallreduce_sum_int(numzeros,numzeros_)
+              if (numzeros_>0) then
+                call mpireduce_min(minbeta,minbeta_)
+                if (lroot) then
+                  print'(a,i1,a,i1,a,i15,a$)', 'beta(',i,',',i,')+eta<=0 at ', numzeros_, ' positions'
                   print'(a,i1,a,i1,a,e12.5)', ', min(beta(',i,',',i,')) = ', minbeta_
-                else
-                  print'(a/)', '.'
                 endif
               endif
             enddo
