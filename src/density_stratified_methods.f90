@@ -15,6 +15,10 @@ module DensityMethods
     module procedure getrho_2d
   endinterface
 !
+  interface getrho1
+    module procedure getrho1_1d
+  endinterface
+!
   interface getlnrho
     module procedure getlnrho_1d_x
     module procedure getlnrho_1d_y
@@ -22,11 +26,29 @@ module DensityMethods
     module procedure getlnrho_2d
   endinterface
 !
+  interface putlnrho
+    module procedure putlnrho_s
+    module procedure putlnrho_v
+  endinterface
+
+ !real, pointer :: rho0, lnrho0
+
   contains
 !***********************************************************************
     subroutine initialize_density_methods
 !
 !  03-apr-15/ccyang: dummy.
+!
+      use SharedVariables, only: get_shared_variable
+      use Messages, only: warning
+      use Cdata, only: lstratz
+!
+      if (lstratz) &
+        call warning('initialize_density_methods', &
+                     'density methods not yet implemented for density_stratified')
+!
+      !call get_shared_variable('rho0',rho0,caller='initialize_density_methods')
+      !call get_shared_variable('lnrho0',lnrho0)
 !
     endsubroutine initialize_density_methods
 !***********************************************************************
@@ -56,6 +78,20 @@ module DensityMethods
 !
     endsubroutine getrho_1d
 !***********************************************************************
+    subroutine getrho1_1d(f,rho1)
+!
+!  Fetches inverse of density.
+!
+!   4-oct-17/MR: derived from getrho_1d.
+!
+      real, dimension(mx), intent(in) :: f
+      real, dimension(nx), intent(out):: rho1
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rho1)
+!
+    endsubroutine getrho1_1d
+!***********************************************************************           
     subroutine getlnrho_1d_x(f, lnrho)
 !
 !  03-apr-15/ccyang: dummy.
@@ -227,4 +263,26 @@ module DensityMethods
 !
     endsubroutine putlnrho
 !***********************************************************************
+   subroutine putlnrho_v(f,lnrho)
+
+      real, dimension(mx), intent(out):: f
+      real, dimension(nx), intent(in) :: lnrho
+
+      call fatal_error('putlnrho', 'not implemented in nodensity.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
+    endsubroutine putlnrho_v
+!***********************************************************************
+    subroutine putlnrho_s(f,lnrho)
+
+      real, dimension(mx,my), intent(out):: f
+      real,                   intent(in ):: lnrho
+
+      call fatal_error('putlnrho', 'not implemented in nodensity.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
+    endsubroutine putlnrho_s
+!***********************************************************************     
 endmodule DensityMethods
