@@ -174,6 +174,7 @@ module Magnetic
   logical :: ladd_global_field=.false. 
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false., lresi_eta_ztdep=.false.
+  logical :: lresi_eta_tdep_t0_norm=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_eta_aniso=.false., lquench_eta_aniso=.false.
   logical :: lresi_etaSS=.false.
@@ -342,7 +343,8 @@ module Magnetic
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, Hhall, battery_term, &
       ihall_term, hall_tdep_t0, hall_tdep_exponent, hall_zdep_exponent, &
-      eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, eta_tdep_toffset, &
+      eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
+      eta_tdep_toffset, lresi_eta_tdep_t0_norm, &
       tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
@@ -6415,8 +6417,17 @@ module Magnetic
         endif
       endif
 !
+!  The following allows us to let eta change with time, t-eta_tdep_toffset.
+!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
+!
       if (lresi_eta_tdep) then
-        eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+        if (lresi_eta_tdep_t0_norm) then
+          eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
+        else
+          eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+        endif
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !

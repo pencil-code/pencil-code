@@ -67,6 +67,7 @@ module Viscosity
   logical :: lvisc_mu_cspeed=.false.
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_tdep=.false.
+  logical :: lvisc_nu_tdep_t0_norm=.false.
   logical :: lvisc_nu_prof=.false.
   logical :: lvisc_nu_profx=.false.
   logical :: lvisc_nu_profr=.false.
@@ -116,7 +117,8 @@ module Viscosity
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
 !
   namelist /viscosity_run_pars/ &
-      limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, nu_tdep_toffset, &
+      limplicit_viscosity, nu, nu_tdep_exponent, &
+      lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_toffset, &
       zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
@@ -1379,11 +1381,18 @@ module Viscosity
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu
       endif
 !
-!  viscous force: nu(t)*(del2u+graddivu/3+2S.glnrho)
-!  -- the correct expression for nu=const
+!  Viscous force: nu(t)*(del2u+graddivu/3+2S.glnrho) [correct for nu=const].
+!  The following allows us to let nu change with time, t-nu_tdep_toffset.
+!  The nu_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_nu_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then nu_tdep /= nu for t < nu_tdep_t0.
 !
       if (lvisc_nu_tdep) then
-        nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
+        if (lvisc_nu_tdep_t0_norm) then
+          nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
+        else
+          nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
+        endif
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu_tdep
