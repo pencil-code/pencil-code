@@ -157,7 +157,7 @@ module InitialCondition
 !
 ! Initialize logarithmic density.
 !
-!  30-mar-20/ccyang: coded
+! 30-mar-20/ccyang: coded
 !
       use EquationOfState, only: rho0
 !
@@ -312,7 +312,7 @@ module InitialCondition
 !
 ! Initialize particles' mass and velocity.
 !
-! 30-mar-20/ccyang: coded
+! 16-jul-20/ccyang: coded
 !
       use EquationOfState, only: rho0
       use SharedVariables, only: get_shared_variable
@@ -336,10 +336,29 @@ module InitialCondition
       rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
       if (lroot) print *, "initial_condition_vvp: rhopj = ", rhopj
 !
-! Assign the mass and velocity of each particle.
+! Override the stopping times in particles_dust.
+!
+      multisp: if (npar_species > 1) then
+        call get_shared_variable("tausp_species", tausp_species)
+        call get_shared_variable("tausp1_species", tausp1_species)
+        tausp_species = taus / omega
+        tausp1_species = omega / taus
+        if (lroot) print *, "initial_condition_vvp: override tausp_species = ", tausp_species
+      endif multisp
+!
+! Assign the mass and the equilibrium velocity of each particle.
+!
+      equil: do k = 1, npar_loc
+        p = npar_species * (ipar(k) - 1) / npar + 1
+        fp(k,irhopswarm) = rhopj(p)
+        fp(k,ivpx) = fp(k,ivpx) + vpx0(p)
+        fp(k,ivpy) = fp(k,ivpy) + vpy0(p)
+      enddo equil
+!
+! Perturb the velocity.
 !
       dv = amp_scale * eta_vK
-      ploop: do k = 1, npar_loc
+      perturb: do k = 1, npar_loc
         argx = si_kx * fp(k,ixp)
         argz = si_kz * fp(k,izp)
         sinkx = sin(argx)
@@ -354,20 +373,10 @@ module InitialCondition
         dvpz = -dv * (real(si_ev(i+2)) * sinkx + aimag(si_ev(i+2)) * coskx) * sinkz
 !
         fp(k,irhopswarm) = rhopj(p)
-        fp(k,ivpx) = fp(k,ivpx) + vpx0(p) + dvpx
-        fp(k,ivpy) = fp(k,ivpy) + vpy0(p) + dvpy
+        fp(k,ivpx) = fp(k,ivpx) + dvpx
+        fp(k,ivpy) = fp(k,ivpy) + dvpy
         fp(k,ivpz) = fp(k,ivpz) + dvpz
-      enddo ploop
-!
-! Override the stopping times in particles_dust.
-!
-      multisp: if (npar_species > 1) then
-        call get_shared_variable("tausp_species", tausp_species)
-        call get_shared_variable("tausp1_species", tausp1_species)
-        tausp_species = taus / omega
-        tausp1_species = omega / taus
-        if (lroot) print *, "initial_condition_vvp: override tausp_species = ", tausp_species
-      endif multisp
+      enddo perturb
 !
     endsubroutine initial_condition_vvp
 !***********************************************************************
