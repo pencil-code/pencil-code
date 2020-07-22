@@ -783,7 +783,7 @@ module Special
 !                alternative decomposition of tensors
 !
       use SharedVariables, only: get_shared_variable
-      use Mpicomm, only: mpireduce_sum_int, mpiallreduce_sum_int, mpibarrier, mpireduce_min
+      use Mpicomm, only: mpireduce_sum_int, mpiallreduce_sum_int, mpireduce_min
       use PolynomialRoots, only: cubicroots
       use Sub, only: dyadic2_other
 
