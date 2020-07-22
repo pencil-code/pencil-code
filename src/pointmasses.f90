@@ -311,6 +311,12 @@ module PointMasses
       l2Dsph=    lspherical_coords  .and.(lxpresent.and.(.not.lypresent).and.      lzpresent )
       l2D=l2Dcyl.or.l2Dsph
 !
+
+      if (lcylindrical_coords.and.bcqy=='p2pi'.and.lselfgravity) &
+           call fatal_error("initialize_pointmasses",&
+           "p2pi assumes the range is -pi/pi; selfgravity_logspirals" // & 
+           "assumes the range is 0/2pi. Change bcqy to 'p'")
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_pointmasses
@@ -2516,7 +2522,7 @@ module PointMasses
               endif
             endif
           elseif (boundy=='p2pi') then
-!  yp < y0
+!  yp < y0             
             if (fq(k,iyq)< -pi) then
               fq(k,iyq)=fq(k,iyq)+2*pi
               if (fq(k,iyq)<-pi) then
