@@ -11,7 +11,7 @@
   ip    = 14,                 ! debugging parameter
   xyz0  =   0.0,0.0,0.0,    ! first corner of box
   xyz1  =   4.0,4.0,0.0,   ! second corner of box
-  lperi = F , T , T,          ! periodic direction?
+  lperi = F , F , T,          ! periodic direction?
   lwrite_ic=T,
   lwrite_aux=T
   !   ux, uy, uz, h 
