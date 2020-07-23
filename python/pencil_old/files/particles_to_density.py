@@ -122,7 +122,7 @@ def particles_to_density(xxp,yyp,zzp,density=True):
 #
                     nnp[izz,iyy,ixx]=nnp[izz,iyy,ixx] + weight
 
-    return nnp
+    return nnp[dim.n1:dim.n2 + 1, dim.m1:dim.m2 + 1, dim.l1:dim.l2 + 1]
 #
 # ---------------------------------------------------------------
 #
