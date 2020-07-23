@@ -9,10 +9,16 @@ import numpy as np
 import os.path
 from .dim import read_dim
 from .param import read_param
+from .grid import read_grid
 import sys
 
-def particles_to_density(xxp,yyp,zzp,x,y,z,density=True):
+def particles_to_density(xxp,yyp,zzp,density=True):
     dim = read_dim()
+    grid = read_grid(quiet=True)
+
+    x = grid.x
+    y = grid.y
+    z = grid.z
 
     if dim.precision == 'D':
         precision = 'd'
