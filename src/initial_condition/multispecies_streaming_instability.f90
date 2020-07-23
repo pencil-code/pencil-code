@@ -210,7 +210,9 @@ module InitialCondition
 !
 ! Initialize particles' positions.
 !
-! 21-jul-20/ccyang: coded
+! 23-jul-20/ccyang: coded
+!
+      use General, only: random_number_wrapper
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
@@ -219,7 +221,7 @@ module InitialCondition
       real, dimension(npar_species) :: ar, ai, a1, a2, a3
       integer :: npps, npx, npz, ix, iz, is, k
       real :: dxp, dzp, xp, yp, zp, dxp1, dzp1
-      real :: argx, argz
+      real :: argx, argz, ampl
       real :: sinp, sinm, cosp, cosm
       real :: sinp2, sinm2, cosp2, cosm2
       real :: sin2kz, cos2kx, sin2kx
@@ -269,6 +271,7 @@ module InitialCondition
 !
 ! Uniform distribution plus random perturbations:
 !
+        ampl = si_amp * max(Lxyz(1), Lxyz(3)) / (10.0 * pi)
         k = 0
         yp = xyz0(2) + 0.5 * Lxyz(2)
         zloop1: do iz = 1, npz
@@ -276,10 +279,17 @@ module InitialCondition
           xloop1: do ix = 1, npx
             xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
             sloop1: do is = 1, npar_species
+              call random_number_wrapper(argx)
+              call random_number_wrapper(argz)
+              argx = ampl * sqrt(-2.0 * log(argx))
+              argz = 2.0 * pi * argz
+              dxp1 = argx * sin(argz)
+              dzp1 = argx * cos(argz)
+!
               k = k + 1
-              fp(k,ixp) = xp
+              fp(k,ixp) = xp + dxp1
               fp(k,iyp) = yp
-              fp(k,izp) = zp
+              fp(k,izp) = zp + dzp1
               ip(is) = ip(is) + 1
               ipar(k) = ip(is)
             enddo sloop1
