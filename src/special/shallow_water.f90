@@ -58,7 +58,6 @@ module Special
   real :: Omega_SB=1.0
   real :: gamma_parameter=1.0
   real :: fcoriolis           ! = 2*Omega - gamma*r**2
-  real :: Omega1_SB           ! = 1./Omega
   real :: planetary_radius    ! = sqrt(Omega/gamma)
   real :: eta0=0.0
 !
@@ -164,7 +163,6 @@ module Special
 ! Define the Coriolis parameters
 !
       fcoriolis = 2*Omega_SB
-      Omega1_SB = 1./Omega_SB
       planetary_radius = sqrt(Omega_SB/gamma_parameter)
 !
       if (lgamma_plane) then
@@ -182,7 +180,7 @@ module Special
       if (lmass_relaxation) then
         do m=m1,m2
           r2 = x(l1:l2)**2 + y(m)**2
-          eta_relaxation(:,m-m1+1) = eta0 !+ Omega_SB**2*r2 * (1.5 - 0.25*gamma_parameter*Omega1_SB*r2)
+          eta_relaxation(:,m-m1+1) = eta0
         enddo
       endif
 !
@@ -385,7 +383,7 @@ module Special
 !
     call keep_compiler_quiet(f,df)
     call keep_compiler_quiet(p)
-!q
+!
   endsubroutine special_calc_hydro
 !***********************************************************************
   subroutine calc_storm_function(df)
