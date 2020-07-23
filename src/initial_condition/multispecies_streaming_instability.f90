@@ -26,6 +26,7 @@ module InitialCondition
 ! Input Parameters
 !
   complex, dimension(4*(npar_species+1)) :: si_ev = (0.0, 0.0)
+  logical :: lsi_random = .false.
   logical :: ltaus_log_center = .true.
   real :: logtausmin = -4.0, logtausmax = -1.0
   real :: dlnndlntaus = -4.0
@@ -33,7 +34,7 @@ module InitialCondition
   real :: si_kx = 0.0, si_kz = 0.0, si_amp = 1E-6
 !
   namelist /initial_condition_pars/ &
-    ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
+    lsi_random, ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
 !
 ! Module Variables
 !
@@ -47,7 +48,7 @@ module InitialCondition
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 20-may-20/ccyang: coded
+! 21-jul-20/ccyang: coded
 !
       use EquationOfState, only: cs0
       use Mpicomm, only: mpibcast
@@ -110,13 +111,23 @@ module InitialCondition
         close(10)
       endif record
 !
+! Note the method of perturbations.
+!
+      perturb: if (lroot) then
+        if (lsi_random) then
+          print *, "initialize_initial_condition: randomly perturb particle positions"
+        else
+          print *, "initialize_initial_condition: exact wave mode"
+        endif
+      endif perturb
+!
     endsubroutine initialize_initial_condition
 !***********************************************************************
     subroutine initial_condition_uu(f)
 !
 ! Initialize the velocity field.
 !
-!  30-mar-20/ccyang: coded
+! 21-jul-20/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -127,6 +138,8 @@ module InitialCondition
 !
       f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux) + ux0
       f(l1:l2,m1:m2,n1:n2,iuy) = f(l1:l2,m1:m2,n1:n2,iuy) + uy0
+!
+      if (lsi_random) return
 !
 ! Perturb the gas.
 !
@@ -157,7 +170,7 @@ module InitialCondition
 !
 ! Initialize logarithmic density.
 !
-! 30-mar-20/ccyang: coded
+! 21-jul-20/ccyang: coded
 !
       use EquationOfState, only: rho0
 !
@@ -166,17 +179,26 @@ module InitialCondition
       real, dimension(nx) :: argx, drho
       real :: coskz
 !
-! Perturb the gas density.
+      random: if (lsi_random) then
 !
-      argx = si_kx * x(l1:l2)
-      drho = amp_scale * rho0 * (real(si_ev(4)) * cos(argx) - aimag(si_ev(4)) * sin(argx))
+! Uniform gas density,
 !
-      nloop: do n = n1, n2
-        coskz = cos(si_kz * z(n))
-        do m = m1, m2
-          f(l1:l2,m,n,irho) = rho0 + drho * coskz
-        enddo
-      enddo nloop
+        f(l1:l2,m1:m2,n1:n2,irho) = rho0
+!
+      else random
+!
+! Or perturb the gas density.
+!
+        argx = si_kx * x(l1:l2)
+        drho = amp_scale * rho0 * (real(si_ev(4)) * cos(argx) - aimag(si_ev(4)) * sin(argx))
+!
+        nloop: do n = n1, n2
+          coskz = cos(si_kz * z(n))
+          do m = m1, m2
+            f(l1:l2,m,n,irho) = rho0 + drho * coskz
+          enddo
+        enddo nloop
+      endif random
 !
 ! Convert to logarithmic density.
 !
@@ -188,7 +210,7 @@ module InitialCondition
 !
 ! Initialize particles' positions.
 !
-! 30-mar-20/ccyang: coded
+! 21-jul-20/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
@@ -243,68 +265,90 @@ module InitialCondition
       if (lroot) print *, "initial_condition_xxp: npx, npz = ", npx, npz
       if (lroot) print *, "initial_condition_xxp: dxp, dzp = ", dxp, dzp
 !
-! Compute repeated constants.
+      random: if (lsi_random) then
 !
-      c1x = si_kx**2 + si_kz**2
-      c2x = c1x**2
-      coeff: if (c1x > 0.0) then
-        c1x = 0.5 / c1x
-        c2x = 1.0 / c2x
-      endif coeff
-      c1z = c1x * si_kz
-      c2z = c2x * si_kz**3
-      c1x = c1x * si_kx
-      c2x = c2x * si_kx**3
+! Uniform distribution plus random perturbations:
 !
-      ar = amp_scale * real(si_ev(8::4)) / eps0
-      ai = amp_scale * aimag(si_ev(8::4)) / eps0
-      a1 = 0.25 * (ar**2 - ai**2)
-      a2 = 0.5 * ar * ai
-      a3 = 0.25 * (ar**2 + ai**2)
+        k = 0
+        yp = xyz0(2) + 0.5 * Lxyz(2)
+        zloop1: do iz = 1, npz
+          zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
+          xloop1: do ix = 1, npx
+            xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
+            sloop1: do is = 1, npar_species
+              k = k + 1
+              fp(k,ixp) = xp
+              fp(k,iyp) = yp
+              fp(k,izp) = zp
+              ip(is) = ip(is) + 1
+              ipar(k) = ip(is)
+            enddo sloop1
+          enddo xloop1
+        enddo zloop1
 !
-! Assign particle positions and IDs.
+      else random
 !
-      k = 0
-      yp = xyz0(2) + 0.5 * Lxyz(2)
+! Exact wave mode:
 !
-      zloop: do iz = 1, npz
-        zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
-        argz = si_kz * zp
-        sin2kz = sin(2.0 * argz)
+        c1x = si_kx**2 + si_kz**2
+        c2x = c1x**2
+        coeff: if (c1x > 0.0) then
+          c1x = 0.5 / c1x
+          c2x = 1.0 / c2x
+        endif coeff
+        c1z = c1x * si_kz
+        c2z = c2x * si_kz**3
+        c1x = c1x * si_kx
+        c2x = c2x * si_kx**3
 !
-        xloop: do ix = 1, npx
-          xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
-          argx = si_kx * xp
-          cos2kx = cos(2.0 * argx)
-          sin2kx = sin(2.0 * argx)
+        ar = amp_scale * real(si_ev(8::4)) / eps0
+        ai = amp_scale * aimag(si_ev(8::4)) / eps0
+        a1 = 0.25 * (ar**2 - ai**2)
+        a2 = 0.5 * ar * ai
+        a3 = 0.25 * (ar**2 + ai**2)
 !
-          sinp = sin(argx + argz)
-          sinm = sin(argx - argz)
-          cosp = cos(argx + argz)
-          cosm = cos(argx - argz)
+        k = 0
+        yp = xyz0(2) + 0.5 * Lxyz(2)
 !
-          sinp2 = sin(2.0 * (argx + argz))
-          sinm2 = sin(2.0 * (argx - argz))
-          cosp2 = cos(2.0 * (argx + argz))
-          cosm2 = cos(2.0 * (argx - argz))
+        zloop2: do iz = 1, npz
+          zp = xyz0_loc(3) + (real(iz) - 0.5) * dzp
+          argz = si_kz * zp
+          sin2kz = sin(2.0 * argz)
 !
-          sloop: do is = 1, npar_species
-            dxp1 = -c1x * (ar(is) * (sinp + sinm) + ai(is) * (cosp + cosm) &
-                         - a1(is) * (sinp2 + sinm2) - a2(is) * (cosp2 + cosm2)) &
-                   + c2x * (a2(is) * cos2kx + a1(is) * sin2kx)
-            dzp1 = -c1z * (ar(is) * (sinp - sinm) + ai(is) * (cosp - cosm) &
-                         - a1(is) * (sinp2 - sinm2) - a2(is) * (cosp2 - cosm2)) &
-                   + c2z * a3(is) * sin2kz
+          xloop2: do ix = 1, npx
+            xp = xyz0_loc(1) + (real(ix) - 0.5) * dxp
+            argx = si_kx * xp
+            cos2kx = cos(2.0 * argx)
+            sin2kx = sin(2.0 * argx)
 !
-            k = k + 1
-            fp(k,ixp) = xp + dxp1
-            fp(k,iyp) = yp
-            fp(k,izp) = zp + dzp1
-            ip(is) = ip(is) + 1
-            ipar(k) = ip(is)
-          enddo sloop
-        enddo xloop
-      enddo zloop
+            sinp = sin(argx + argz)
+            sinm = sin(argx - argz)
+            cosp = cos(argx + argz)
+            cosm = cos(argx - argz)
+!
+            sinp2 = sin(2.0 * (argx + argz))
+            sinm2 = sin(2.0 * (argx - argz))
+            cosp2 = cos(2.0 * (argx + argz))
+            cosm2 = cos(2.0 * (argx - argz))
+!
+            sloop2: do is = 1, npar_species
+              dxp1 = -c1x * (ar(is) * (sinp + sinm) + ai(is) * (cosp + cosm) &
+                           - a1(is) * (sinp2 + sinm2) - a2(is) * (cosp2 + cosm2)) &
+                     + c2x * (a2(is) * cos2kx + a1(is) * sin2kx)
+              dzp1 = -c1z * (ar(is) * (sinp - sinm) + ai(is) * (cosp - cosm) &
+                           - a1(is) * (sinp2 - sinm2) - a2(is) * (cosp2 - cosm2)) &
+                     + c2z * a3(is) * sin2kz
+!
+              k = k + 1
+              fp(k,ixp) = xp + dxp1
+              fp(k,iyp) = yp
+              fp(k,izp) = zp + dzp1
+              ip(is) = ip(is) + 1
+              ipar(k) = ip(is)
+            enddo sloop2
+          enddo xloop2
+        enddo zloop2
+      endif random
 !
     endsubroutine initial_condition_xxp
 !***********************************************************************
@@ -312,7 +356,7 @@ module InitialCondition
 !
 ! Initialize particles' mass and velocity.
 !
-! 16-jul-20/ccyang: coded
+! 21-jul-20/ccyang: coded
 !
       use EquationOfState, only: rho0
       use SharedVariables, only: get_shared_variable
@@ -354,6 +398,8 @@ module InitialCondition
         fp(k,ivpx) = fp(k,ivpx) + vpx0(p)
         fp(k,ivpy) = fp(k,ivpy) + vpy0(p)
       enddo equil
+!
+      if (lsi_random) return
 !
 ! Perturb the velocity.
 !
