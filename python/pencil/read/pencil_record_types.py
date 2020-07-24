@@ -1,7 +1,7 @@
 record_types = {
     'id_block_persistent':(2000,'i'),
     'random_seeds'       :(1   ,'i'),
-    'shear_delta_y'      :(320 ,'d'),
+    'random_seeds'       :(2   ,'i'),
     'hydro_tphase'       :(280 ,'d'),
     'hydro_phase1'       :(281 ,'d'),
     'hydro_phase2'       :(282 ,'d'),
@@ -25,6 +25,8 @@ record_types = {
     'ism_snrs_old'       :(1002,'d'),
     'forcing_location'   :(270 ,'d'),
     'forcing_tsforce'    :(271 ,'d'),
+    'forcing_torus'      :(272 ,'d'),
     'magnetic_phase'     :(311 ,'d'),
     'magnetic_ampl'      :(312 ,'d'),
+    'shear_delta_y'      :(320 ,'d'),
 }

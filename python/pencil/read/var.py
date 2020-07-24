@@ -148,30 +148,31 @@ class DataCube(object):
                variables in the depricated fortran binary format
             """
             record_types = {}
-            if precision != 'd':
-                for key in read.record_types.keys():
-                    if read.record_types[key][1] == 'd':
-                        record_types[key]=(read.record_types[key][0], 
-                                          precision)
-                    else:
-                        record_types[key] = read.record_types[key]
+            for key in read.record_types.keys():
+                if read.record_types[key][1] == 'd':
+                    record_types[key]=(read.record_types[key][0], 
+                                      precision)
+                else:
+                    record_types[key] = read.record_types[key]
 
             try:
-                tmp_arr = infile.read_record('h')
+                tmp_id = infile.read_record('h')
             except:
                 return -1
             block_id = 0
-            while block_id < 2000:
-                tmp_arr = infile.read_record('h')
-                block_id = tmp_arr[0]
+            for i in range(2000):
+                i += 1
+                tmp_id = infile.read_record('h')
+                block_id = tmp_id[0]
+                print('block_id',block_id)
                 if block_id == 2000:
                     break
                 for key in record_types.keys():
-                    if record_types[key][0] == tmp_arr[0]:
-                         if not quiet:
-                             print(key, record_types[key][0])
-                         tmp_arr = infile.read_record(record_types[key][1])
-                         self.__setattr__(key, tmp_arr)
+                    if record_types[key][0] == block_id:
+                         tmp_val = infile.read_record(record_types[key][1])
+                         self.__setattr__(key, tmp_val)
+                         #if not quiet:
+                         print(key, record_types[key][0],record_types[key][1],tmp_val)
             return self
 
         dim = None
@@ -245,6 +246,9 @@ class DataCube(object):
                 dz = tmp['grid/dz'][()]
                 if param.lshear:
                     deltay = tmp['persist/shear_delta_y'][(0)]
+                if lpersist:
+                    for key in tmp['persist'].keys():
+                        self.__setattr__(key, tmp['persist'][key][0])
         else:
             run2D = param.lwrite_2d
 
