@@ -48,7 +48,7 @@ module InitialCondition
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 21-jul-20/ccyang: coded
+! 24-jul-20/ccyang: coded
 !
       use EquationOfState, only: cs0
       use Mpicomm, only: mpibcast
@@ -84,11 +84,6 @@ module InitialCondition
       eps0 = taus**(4.0 + dlnndlntaus)
       eps0 = eps_dtog / sum(eps0) * eps0
 !
-! Determine the scale factor for the amplitude of the perturbations.
-!
-      amp_scale = si_amp * eps_dtog / sum(abs(si_ev(8::4)))
-      if (lroot) print *, "initialize_initial_condition: amp_scale = ", amp_scale
-!
 ! Find the equilibrium velocities.
 !
       eqvel: if (lroot) then
@@ -113,12 +108,11 @@ module InitialCondition
 !
 ! Note the method of perturbations.
 !
-      perturb: if (lroot) then
-        if (lsi_random) then
-          print *, "initialize_initial_condition: randomly perturb particle positions"
-        else
-          print *, "initialize_initial_condition: exact wave mode"
-        endif
+      perturb: if (lsi_random) then
+        if (lroot) print *, "initialize_initial_condition: randomly perturb particle positions, amplitude = ", si_amp
+      else perturb
+        amp_scale = si_amp * eps_dtog / sum(abs(si_ev(8::4)))
+        if (lroot) print *, "initialize_initial_condition: exact wave mode, scaled amplitude = ", amp_scale
       endif perturb
 !
     endsubroutine initialize_initial_condition
