@@ -434,7 +434,7 @@ module Special
 !        
         do i=1,nx
           if (&
-               (rr(i)       < rboundary_storm  ).or.&
+               (rr(i)       < rboundary_storm  ).and.&
                (t_age_storm < t_duration_storm ) &
                ) then
             storm_function(i) = smax(istorm) * &
