@@ -406,7 +406,7 @@ module Special
 !  28-feb-20/wlad+ali: coded
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(nx) :: rr,storm_function
+      real, dimension(nx) :: rr,storm_function, subsidence
       real :: rboundary_storm,t_age_storm,t_duration_storm
       integer :: i,istorm 
 !     
@@ -443,11 +443,25 @@ module Special
           else
             storm_function(i) = 0.
           endif
+!
+! Adding subsidence: we remove the storm_function value added everywhere 
+! outside the storm radius - at each step it matches the storm_function value 
+! and occurs only as long as the mass injection is implemented.  Note that 
+! this is a FLAT subsidence mass removal.
+!                    
+          if (&
+               (rr(i)       > rboundary_storm  ).and.&
+               (t_age_storm < t_duration_storm ) &
+               ) then
+            subsidence(i) = -1.0 * storm_function(i)
+          else
+            subsidence(i) = 0.
+          endif
         enddo
 !
 !  Add storm function to equation of motion       
 !
-       df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function
+       df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function + subsidence
 !       
       enddo
 !    
