@@ -38,7 +38,7 @@ module InitialCondition
 !
 ! Module Variables
 !
-  real, dimension(npar_species) :: taus = 0.0, eps0 = 0.0, vpx0 = 0.0, vpy0 = 0.0
+  real, dimension(npar_species) :: taus = 0.0, eps0 = 0.0, rhopj = 0.0, vpx0 = 0.0, vpy0 = 0.0
   real :: eta_vK = 0.0, ux0 = 0.0, uy0 = 0.0
   real :: amp_scale = 0.0
 !
@@ -48,9 +48,9 @@ module InitialCondition
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 24-jul-20/ccyang: coded
+! 25-jul-20/ccyang: coded
 !
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs0, rho0
       use Mpicomm, only: mpibcast
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -83,6 +83,11 @@ module InitialCondition
 !
       eps0 = taus**(4.0 + dlnndlntaus)
       eps0 = eps_dtog / sum(eps0) * eps0
+!
+! Find the mass of each particle.
+!
+      rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
+      if (lroot) print *, "initialize_initial_condition: rhopj = ", rhopj
 !
 ! Find the equilibrium velocities.
 !
@@ -204,7 +209,7 @@ module InitialCondition
 !
 ! Initialize particles' positions.
 !
-! 23-jul-20/ccyang: coded
+! 25-jul-20/ccyang: coded
 !
       use General, only: random_number_wrapper
 !
@@ -265,7 +270,7 @@ module InitialCondition
 !
 ! Uniform distribution plus random perturbations:
 !
-        ampl = si_amp * max(Lxyz(1), Lxyz(3)) / (10.0 * pi)
+        ampl = 3.2 * sqrt(real(npar / nxzgrid)) * si_amp * sqrt(dx * dz) / pi
         k = 0
         yp = xyz0(2) + 0.5 * Lxyz(2)
         zloop1: do iz = 1, npz
@@ -275,7 +280,7 @@ module InitialCondition
             sloop1: do is = 1, npar_species
               call random_number_wrapper(argx)
               call random_number_wrapper(argz)
-              argx = ampl * sqrt(-2.0 * log(argx))
+              argx = ampl * sqrt(-2.0 * log(argx)) * sqrt(rhop_swarm / rhopj(is))
               argz = 2.0 * pi * argz
               dxp1 = argx * sin(argz)
               dzp1 = argx * cos(argz)
@@ -360,9 +365,8 @@ module InitialCondition
 !
 ! Initialize particles' mass and velocity.
 !
-! 21-jul-20/ccyang: coded
+! 25-jul-20/ccyang: coded
 !
-      use EquationOfState, only: rho0
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -370,7 +374,7 @@ module InitialCondition
 !
       real, dimension(:), pointer :: tausp_species, tausp1_species
 !
-      real, dimension(npar_species) :: rhopj, vpx, vpy
+      real, dimension(npar_species) :: vpx, vpy
       real :: argx, argz, sinkx, coskx, sinkz, coskz
       real :: dv, dvpx, dvpy, dvpz
 !
@@ -378,11 +382,6 @@ module InitialCondition
       real :: ux, uy, hgas, zp
 !
       call keep_compiler_quiet(f)
-!
-! Find the mass of each particle.
-!
-      rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
-      if (lroot) print *, "initial_condition_vvp: rhopj = ", rhopj
 !
 ! Override the stopping times in particles_dust.
 !
