@@ -201,7 +201,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read variables from '*aver.in' file
 ;
 ;  run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
-  rd=strsplit('./'+datadir,'data',/extract,/regex)
+  if (datadir eq 'data') then begin
+    rd='./'
+   endif else begin
+    rd=strsplit(datadir,'data',/extract,/regex)
+  endelse
   run_dir=rd[0]
   variables_all = strarr(file_lines(run_dir+in_file))
   openr, lun, run_dir+in_file, /get_lun
