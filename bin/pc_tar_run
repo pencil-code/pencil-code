@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+#  This script creates a tar file from the current run.
+#  It takes all in and light data files.
+#
+# Usage:
+# pc_tar_run
+# pc_tar_run my_file_name.tar.gz
+
+# Create the list of files that will go into the tar file.
+FILE_LIST=""
+FILE_LIST="$FILE_LIST $(find -name '*.in')"
+FILE_LIST="$FILE_LIST $(find -name '*.local')"
+FILE_LIST="$FILE_LIST $(find -name '*.pro')"
+FILE_LIST="$FILE_LIST $(find -name '*.py')"
+FILE_LIST="$FILE_LIST $(find -name '*.nml')"
+FILE_LIST="$FILE_LIST $(find -name 'time_series.h5')"
+FILE_LIST="$FILE_LIST $(find -name 'grid.h5')"
+FILE_LIST="$FILE_LIST $(find -name 'time_series.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'grid.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'alpha_in.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'k.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'k_double.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'kvect.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'parameters.pro')"
+FILE_LIST="$FILE_LIST $(find -name 'testfield_info.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'chemistry*.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'chem.inp')"
+FILE_LIST="$FILE_LIST $(find -name 'tran.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'air.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'stratification.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'nnu2.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'particles_initial.dat')"
+FILE_LIST="$FILE_LIST $(find -name '.log')"
+FILE_LIST="$FILE_LIST $(find -name 'legend.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'params.log')"
+FILE_LIST="$FILE_LIST $(find -name 'cvsid.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'varname.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'runtime.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'jobid.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'svnid.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'pdim.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'pt_positions.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'tstalk.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'particles_stalker_header.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'alpeta.sav')"
+FILE_LIST="$FILE_LIST $(find -name 'power*.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'sf*.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'testfield_info.dat')"
+FILE_LIST="$FILE_LIST $(find -name 'remeshed_from.dir')"
+
+# Set the file name of the tar file.
+if [ "$1" != "" ]; then
+    TAR_FILE=$1
+else
+    TAR_FILE="$(basename "$PWD").tar.gz"
+fi
+
+# Put everything into a tar file.
+tar -cvzf $TAR_FILE $FILE_LIST
+
