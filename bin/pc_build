@@ -255,14 +255,13 @@ if ($serial) {
     }
     
 }
-print STDERR "Running make '", join("' '", @make_args, $target), "'\n"
-  unless ($quiet);
-if ($target eq "ALL"){
-  make(@make_args, 'fast');
-}
-else{
-  make(@make_args, $target);
-}
+
+if ($target eq "ALL") { $target = 'fast'; }
+
+my $make_cmd_line = "'".join("' '", @make_args, $target)."'";
+print STDERR "Running make ", $make_cmd_line, "\n" unless ($quiet);
+write_log_line('# make '.$make_cmd_line);
+make(@make_args, $target);
 
 # ---------------------------------------------------------------------- #
 sub make {
@@ -280,11 +279,9 @@ sub mention {
     my @args = @_;
 }
 # ---------------------------------------------------------------------- #
-sub log_command_line {
-# Write the current command line to log file that can be run in order to
-# compile with exactly the same parameters.
-    my ($cmd, $args_ref) = @_;
-    my @args = quote_spaces(@$args_ref);
+sub write_log_line {
+# Write one line to the log file.
+    my ($line) = @_;
     my $out;
 
     if (!-e $log_file) {
@@ -295,12 +292,22 @@ sub log_command_line {
         close $out;
     }
 
-    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
     open($out, '>> '.$log_file)
       or return warn_politely("Cannot write to $log_file");
-    print $out "\n# ", $timestamp, "\n";
-    print $out "$cmd @args", "\n";
+    print $out "$line", "\n";
     close $out;
+}
+# ---------------------------------------------------------------------- #
+sub log_command_line {
+# Write the current command line to log file that can be run in order to
+# compile with exactly the same parameters.
+    my ($cmd, $args_ref) = @_;
+    my @args = quote_spaces(@$args_ref);
+    my $out;
+
+    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
+    write_log_line("\n# ".$timestamp);
+    write_log_line("$cmd @args");
 }
 # ---------------------------------------------------------------------- #
 sub comment_out_all_lines {
