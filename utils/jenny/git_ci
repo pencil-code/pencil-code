@@ -1,0 +1,25 @@
+#!/bin/sh
+
+
+# Script to check in all relevant files of the run
+
+# Adding *.in
+git add $1/*.in *.pro
+git commit $1/*.in -m 'Adding *.in and *.pro'
+
+
+# Adding stuff from ./src
+# Adding $1/src/*.local
+git add $1/src/*.local
+git commit $1/src/*.local -m 'Adding ./src/*.local'
+
+
+# Adding stuff from ./data
+if [ -d "$1/data/*.dat" ]; then
+   git add $1/data/*.dat
+   git commit $1/data/*.dat -m 'Adding ./data/*.dat'
+else
+   echo "No data found."
+fi
+
+git push
