@@ -12,6 +12,7 @@
 %%   entropy_anelastic.f90
 %%   hydro_potential.f90
 %%   magnetic_shearboxJ.f90
+%%   viscosity.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -83,6 +84,7 @@
   \var{fconvrsphmphi} & $\left<c_p \varrho u_r T \right>_\varphi$ \\
   \var{fconvthsphmphi} & $\left<c_p \varrho u_\theta T \right>_\varphi$ \\
   \var{fconvpsphmphi} & $\left<c_p \varrho u_\phi T \right>_\varphi$ \\
+  \var{ursphTTmphi} & $\left<u_r T \right>_\varphi$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -146,6 +148,12 @@
   \var{b2mphi}    & $\left<\Bv^2\right>_\varphi$ \\
   \var{brsphmphi} & $\left<B_r\right>_\varphi$ \\
   \var{bthmphi}   & $\left<B_\vartheta\right>_\varphi$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
+\midrule
+  \var{fviscrsphmphi} & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{ir} \right>_\varphi$
+                    ($r$-xomponent of viscous flux) \\
 %
 \bottomrule
 \end{longtable}
