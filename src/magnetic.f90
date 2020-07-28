@@ -36,7 +36,7 @@ module Magnetic
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, loptest
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use EquationOfState, only: gamma1
@@ -8993,16 +8993,12 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound,inamev
-      logical :: lreset,lwr
-      logical, optional :: lwrite
+      logical :: lreset
+      logical, intent(in), optional :: lwrite
 !
       integer :: idum
-
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of RELOAD.
 !  (this needs to be consistent with what is defined above!)
@@ -9735,11 +9731,6 @@ module Magnetic
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
       enddo
-!
-      if (lwr) then
-        call farray_index_append('ihypres',ihypres)
-        call farray_index_append('ialfven',ialfven)
-      endif
 !
 !  call corresponding mean-field routine
 !

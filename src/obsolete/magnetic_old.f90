@@ -30,7 +30,7 @@ module Magnetic
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, loptest
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
 !
@@ -5882,11 +5882,8 @@ module Magnetic
       use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      logical :: lreset
+      logical, intent(in), optional :: lwrite
 !
 !  Reset everything in case of RELOAD.
 !  (this needs to be consistent with what is defined above!)
@@ -6350,16 +6347,11 @@ module Magnetic
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
 !
-      if (lwr) then
+      if (loptest (lwrite)) then
         call farray_index_append('nname',nname)
         call farray_index_append('nnamexy',nnamexy)
         call farray_index_append('nnamexz',nnamexz)
         call farray_index_append('nnamez',nnamez)
-        call farray_index_append('iaa',iaa)
-        call farray_index_append('iax',iax)
-        call farray_index_append('iay',iay)
-        call farray_index_append('iaz',iaz)
-        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine

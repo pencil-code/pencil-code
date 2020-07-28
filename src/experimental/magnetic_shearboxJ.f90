@@ -33,7 +33,7 @@ module Magnetic
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, loptest
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use EquationOfState, only: gamma1
@@ -7266,11 +7266,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
       use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,inamev,ixy,ixz,irz,inamer,iname_half,iname_sound,idum
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      logical :: lreset
+      logical, intent(in), optional :: lwrite
 !
 !  Reset everything in case of RELOAD.
 !  (this needs to be consistent with what is defined above!)
@@ -7924,16 +7921,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
       enddo
 !
-      if (lwr) then
+      if (loptest (lwrite)) then
         call farray_index_append('nname',nname)
         call farray_index_append('nnamexy',nnamexy)
         call farray_index_append('nnamexz',nnamexz)
         call farray_index_append('nnamez',nnamez)
-        call farray_index_append('iaa',iaa)
-        call farray_index_append('iax',iax)
-        call farray_index_append('iay',iay)
-        call farray_index_append('iaz',iaz)
-        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine
