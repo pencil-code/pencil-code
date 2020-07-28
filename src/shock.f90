@@ -207,7 +207,7 @@ module Shock
       use Diagnostics, only: parse_name
 !
       logical :: lreset
-      logical, optional :: lwrite
+      logical, intent(in), optional :: lwrite
       integer :: iname
 !
 !  reset everything in case of reset
