@@ -1,0 +1,10 @@
+To clone with Astaroth:
+
+git clone --recurse-submodules https://mrheinhardt@github.com/pencil-code/pencil-code.git
+cd src/astaroth/submodule
+git merge origin/master
+
+add Astaroth later:
+git submodule update --init --recursive
+cd src/astaroth/submodule 
+git checkout master
