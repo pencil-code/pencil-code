@@ -53,7 +53,6 @@ module PointMasses
   logical :: lramp=.false.
   logical :: ldt_pointmasses=.true.
   logical :: ldust=.false.
-  logical :: ltempering=.false.
   logical :: lretrograde=.false.
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
@@ -94,7 +93,6 @@ module PointMasses
       GNewton, bcqx, bcqy, bcqz, &
       laccretion, accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
-      ltempering, & 
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
@@ -1578,20 +1576,11 @@ module PointMasses
 !
 !  Exclude region inside a fraction (hills_tempering_fraction) of the Hill sphere.
 !
-      if (ltempering) then
+      if (lexclude_hills) then
         pcut=hills_tempering_fraction*hills
-        tempering = 1./(exp(-(sqrt(dist**2)/hills - pcut)/(.1*pcut))+1.)
+        tempering = 1./(exp(-(dist/hills - pcut)/(.1*pcut))+1.)
         torque_gas = torque_gas * tempering
         torque_par = torque_par * tempering
-      else
-        if (lexclude_hills) then 
-          do i=1,nx
-            if (dist(i)<hills) then
-              torque_gas(i)=0.
-              torque_par(i)=0.
-            endif
-          enddo
-        endif
       endif
 !
 !  Separate internal and external torques
