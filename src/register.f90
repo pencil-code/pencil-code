@@ -306,6 +306,11 @@ module Register
         kappa_es=kappa_es_cgs*1e-1/(unit_length**2/unit_mass)
         c_light=c_light_cgs*1e-2/unit_velocity
         G_Newton=G_Newton_cgs*1e-3*unit_length**2*unit_density/unit_velocity**2
+      elseif (unit_system=='set') then
+        sigmaSB=sigmaSB_set
+        c_light=c_light_set
+        k_B=k_B_set
+        m_u=m_u_set
       endif
 !
 !  Calculate additional constants (now all in code units).
@@ -477,6 +482,11 @@ module Register
                 *(hbar_cgs*1e-7/hbar))
            unit_length=sqrt((G_Newton_cgs*1e-3/G_Newton) &
                 *(hbar_cgs*1e-7/hbar)/unit_velocity**3)
+        elseif (unit_system == 'set') then
+           unit_velocity=1.
+           unit_density=1.
+           unit_length=1.
+           unit_magnetic=1.
         endif
       endif
 !
@@ -1048,6 +1058,11 @@ module Register
       endif
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
+!
+!  Set logical for 1-D averages.
+!
+      lwrite_1daverages= &
+          lwrite_xyaverages.or.lwrite_xzaverages.or.lwrite_yzaverages.or.lwrite_phizaverages
 !
 !  Set logical for 2-D averages.
 !

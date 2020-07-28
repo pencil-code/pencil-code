@@ -171,8 +171,7 @@ module Cdata
   character (len=fnlen) :: modify_filename='modify.dat'
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
-  real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
-  real :: dsound=0., tsound=0., soundeps=1.e-4
+  real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
@@ -249,7 +248,7 @@ module Cdata
              lsubstract_reference_state=.false.
   logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
-  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
+  logical :: lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.

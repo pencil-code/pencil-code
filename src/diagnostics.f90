@@ -21,7 +21,7 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_sound
-  public :: write_2daverages_prepare
+  public :: write_1daverages_prepare, write_2daverages_prepare
   public :: name_is_present
   public :: expand_cname, parse_name, fparse_name
 ! GPU-START
@@ -95,7 +95,7 @@ module Diagnostics
   real :: dVol_rel1
 
   integer :: mnamer
-  character (len=intlen) :: ch2davg
+  character (len=intlen) :: ch1davg, ch2davg
 !
 ! Variables for Yin-Yang grid: z-averages.
 !
@@ -996,6 +996,37 @@ module Diagnostics
       endif
 !
     endsubroutine write_1daverages
+!***********************************************************************
+    subroutine write_1daverages_prepare(lwrite)
+!
+!  Prepare l1davg for writing 2D averages.
+!  This needs to be done in the beginning of each time step, so
+!  the various routines know that they need to calculate averages.
+!
+!  28-jul-20/joern+axel: adapted from write_2daverages_prepare
+!
+      use Sub, only: update_snaptime, read_snaptime
+!
+      logical, intent(IN) :: lwrite
+      real, save :: t1davg
+      integer, save :: n1davg
+      logical, save :: lfirst=.true.
+      character (len=fnlen) :: file
+      logical :: lwrite_
+!
+      file=trim(datadir)//'/t1davg.dat'
+      if (lfirst) then
+        call read_snaptime(trim(file),t1davg,n1davg,d1davg,t)
+        lfirst = .false.
+      endif
+!
+!  This routine sets l1davg=T whenever its time to write 2D averages
+!    
+      lwrite_=lwrite
+      call update_snaptime(file,t1davg,n1davg,d1davg,t,lwrite_,ch1davg)
+      l1davg=lwrite_
+!
+    endsubroutine write_1daverages_prepare
 !***********************************************************************
     subroutine write_2daverages_prepare(lwrite)
 !

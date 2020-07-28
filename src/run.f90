@@ -657,11 +657,19 @@ program run
       endif
     endif
 !
-    l1davg = (mod(it-1,it1d) == 0)
-    if (it_rmv==0) then
-      lrmv=.true.
-    else
-      lrmv = (mod(it-1,it_rmv) == 0)
+!  1-D timestep control
+!
+    if (lwrite_1daverages) then
+      if (d1davg==impossible) then
+        l1davg = (mod(it-1,it1d) == 0)
+        if (it_rmv==0) then
+          lrmv=.true.
+        else
+          lrmv = (mod(it-1,it_rmv) == 0)
+        endif
+      else
+        call write_1daverages_prepare(t == 0.0 .and. lwrite_ic)
+      endif
     endif
 !
 !  Remove wiggles in lnrho in sporadic time intervals.
@@ -716,7 +724,8 @@ program run
 !
     lpencil = lpenc_requested
 !  MR: the following should only be done in the first substep, shouldn't it?
-    if (lout)   lpencil=lpencil .or. lpenc_diagnos
+!-- if (lout)   lpencil=lpencil .or. lpenc_diagnos
+    if (l1davg) lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
 !
