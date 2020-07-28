@@ -1,0 +1,20 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for a kinematic dynamo run
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2017/03/12 13:48:44 jennifer Exp $',
+/
+&eos_init_pars
+  gamma=1., cs0=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-9
+/
+&special_init_pars
+  initspecial='const', mu5_const=10.
+/

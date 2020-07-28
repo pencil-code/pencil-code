@@ -1,0 +1,8 @@
+it(i8)
+t(f12.3)
+dt(e9.2)
+urms(e9.2)
+brms(e12.4)
+mu5m(e11.2)
+mu5rms(e11.2)
+abm(e12.3)

@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for kinematic dynamo run with Glen Roberts flow
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2017/03/12 13:48:44 jennifer Exp $'
+  nt=200, it1=10, isave=10, itorder=3
+  dsnap=10, dvid=10
+  random_gen='nr_f90'
+  dspec=1, ou_spec=T, ab_spec=T, sp_spec=T
+  lpencil_check_small=T
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  eta=1e-2
+/
+&special_run_pars
+  diffmu5=1e-2, lambda5=10.
+/
+&viscosity_run_pars
+  nu=1e-2
+/
+&power_spectrum_run_pars
+/
