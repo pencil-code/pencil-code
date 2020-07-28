@@ -195,7 +195,7 @@ program run
   else
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
-  endif
+!  endif  JOERN
 !
 !  Shorthands (global).
 !
