@@ -724,8 +724,7 @@ program run
 !
     lpencil = lpenc_requested
 !  MR: the following should only be done in the first substep, shouldn't it?
-    if (lout)   lpencil=lpencil .or. lpenc_diagnos
-!-- if (l1davg) lpencil=lpencil .or. lpenc_diagnos
+    if (l1davg.or.lout) lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
 !

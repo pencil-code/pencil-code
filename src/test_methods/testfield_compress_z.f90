@@ -446,7 +446,8 @@ module Testfield
 !  set lrescaling_testfield=T if linit_aatest=T
 !
       if (linit_aatest) lrescaling_testfield=.true.
-      if (luse_main_run .and. .not.(lmagnetic.and.lhydro.and.ldensity)) then
+    ! if (luse_main_run .and. .not.(lmagnetic.and.lhydro.and.ldensity)) then
+      if (luse_main_run .and. .not.(lmagnetic.and.lhydro)) then
         luse_main_run=.false.
         call warning('initialize_testfield',  &
                      'Main run missing or incomplete -> switching to kinematic mode')

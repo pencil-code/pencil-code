@@ -91,7 +91,7 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5, diffmuS, diffmu5max, diffmuSmax
+   real :: diffmu5=0., diffmuS=0., diffmu5max, diffmuSmax
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: lambda5, mu5_const=0., gammaf5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
