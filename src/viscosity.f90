@@ -805,10 +805,9 @@ module Viscosity
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
-      logical, optional :: lwrite
+      logical, intent(in), optional :: lwrite
       integer :: iname,inamex,inamez,ixy,irz
 !
 !  reset everything in case of reset
@@ -877,14 +876,6 @@ module Viscosity
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fviscrsphmphi',idiag_fviscrsphmphi)
       enddo
-!
-!  write column where which viscosity variable is stored
-!
-      if (present(lwrite)) then
-        if (lwrite) then
-          call farray_index_append('ihypvis',ihypvis)
-        endif
-      endif
 !
     endsubroutine rprint_viscosity
 !***********************************************************************
