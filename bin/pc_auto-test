@@ -1,4 +1,4 @@
-#!/bin/sh
+#/bin/sh
 #  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
@@ -147,6 +147,7 @@ my %tests = (
                          2d-tests/conv-slab-MLT
                          2d-tests/2d_methane_flame
                          2d-tests/boussinesq_convection
+                         2d-tests/chiral_dynamo
                          conv-slab
                          interlocked-fluxrings
                          conv-slab-flat
