@@ -1061,14 +1061,10 @@ module Interstellar
 !  01-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      logical :: lreset
+      logical, intent(in), optional :: lwrite
 !
 !  Reset everything in case of reset
 !  (This needs to be consistent with what is defined above!)
@@ -1100,13 +1096,6 @@ module Interstellar
 !  check for those quantities for which we want video slices
 !
       where(cnamev=='ism_cool'.or.cnamev=='ism_netcool') cformv='DEFINED'
-!
-!  Write column in which each interstellar variable is stored
-!
-      if (lwr) then
-        call farray_index_append('icooling',icooling)
-        call farray_index_append('inetheat',inetheat)
-      endif
 !
     endsubroutine rprint_interstellar
 !*****************************************************************************
