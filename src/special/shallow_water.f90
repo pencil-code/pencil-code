@@ -489,7 +489,7 @@ module Special
 !  Normalization 
 !
         if (lsubsidence) &
-             subsidence_factor = rstorm(istorm)**2 * (1-exp(2.2**2)) / (r_ext**2 - rboundary_storm**2)
+             subsidence_factor = rstorm(istorm)**2 * (1-exp(- (2.2**2))) / (r_ext**2 - rboundary_storm**2)
 !        
         do i=1,nx
           if (&
