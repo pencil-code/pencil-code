@@ -321,8 +321,8 @@ module Diagnostics
 !  12-jan-17/MR: coded
 !
       character(len=*), dimension(:), intent(IN) :: cname,cform
-      integer,                         intent(IN) :: len
-      character(len=*),                intent(IN) :: file
+      integer,                        intent(IN) :: len
+      character(len=*),               intent(IN) :: file
 
       integer :: ind, i
       character(LEN=512) :: text
@@ -346,14 +346,23 @@ module Diagnostics
 
       if (lroot) then
         call report_undefined(cname,cform,nname,'print.in')
-        call report_undefined(cname_sound,cform_sound,nname_sound,'sound.in')
+        if (allocated(cname_sound)) &
+          call report_undefined(cname_sound,cform_sound,nname_sound,'sound.in')
+        if (allocated(cnamex)) &
         call report_undefined(cnamex,cformx,nnamex,'yzaver.in')
+        if (allocated(cnamey)) &
         call report_undefined(cnamey,cformy,nnamey,'xzaver.in')
+        if (allocated(cnamez)) &
         call report_undefined(cnamez,cformz,nnamez,'xyaver.in')
+        if (allocated(cnamer)) &
         call report_undefined(cnamer,cformr,nnamer,'phizaver.in')
+        if (allocated(cnamexy)) &
         call report_undefined(cnamexy,cformxy,nnamexy,'zaver.in')
+        if (allocated(cnamexz)) &
         call report_undefined(cnamexz,cformxz,nnamexz,'yaver.in')
+        if (allocated(cnamerz)) &
         call report_undefined(cnamerz,cformrz,nnamerz,'phiaver.in')
+        if (allocated(cnamev)) &
         call report_undefined(cnamev,cformv,nnamev,'video.in')
       endif
 
