@@ -82,7 +82,7 @@ module Special
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: h0
   real, dimension (nx,ny,2) :: gradh0
-  real, dimension (nx,ny) :: gamma_rr2,eta_relaxation
+  real, dimension (nx,ny) :: gamma_rr2,eta_relaxation,storm_function_grid,subsidence_grid
   logical :: ladvection_base_height=.true.,lcompression_base_height=.true.
   logical :: lcoriolis_force=.true.
   logical :: lmass_relaxation=.true.
@@ -90,16 +90,17 @@ module Special
   logical :: lcalc_storm=.true.
   logical :: lupdate_as_var=.true.
   real :: storm_strength=impossible
+  logical :: lsubsidence=.true.
 !
   namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB,eta0
+       lmass_relaxation,Omega_SB,eta0,lsubsidence
 !
   type InternalPencils
-     real, dimension(nx) :: gr2,eta_init
+     real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
   endtype InternalPencils
 !
   type (InternalPencils) :: q
@@ -188,6 +189,36 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
+    subroutine special_before_boundary(f)
+
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: storm_function_mn,subsidence_mn
+
+      if (lcalc_storm) then
+!
+        do n=n1,n2
+          do m=m1,m2
+!
+!  Define the storm function to the added to the d(gh)/dt RHS
+!
+            if (.not.lsubsidence) then 
+              call calc_storm_function(storm_function_mn)
+            else
+              call calc_storm_function(storm_function_mn,subsidence_mn)
+              subsidence_grid(:,m-m1+1) = subsidence_mn
+            endif
+!
+            storm_function_grid(:,m-m1+1) = storm_function_mn
+!
+          enddo
+        enddo
+!
+      endif
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
     subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
@@ -214,8 +245,12 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lgamma_plane) q%gr2 = gamma_rr2(:,m-m1+1)
-      if (lmass_relaxation) q%eta_init = eta_relaxation(:,m-m1+1)
+      if (lgamma_plane)     q%gr2            = gamma_rr2          (:,m-m1+1)
+      if (lmass_relaxation) q%eta_init       = eta_relaxation     (:,m-m1+1)
+      if (lcalc_storm) then
+                            q%storm_function = storm_function_grid(:,m-m1+1)
+         if (lsubsidence)   q%subsidence     = subsidence_grid    (:,m-m1+1)
+      endif
 !
     call keep_compiler_quiet(f)
     call keep_compiler_quiet(p)
@@ -327,7 +362,18 @@ module Special
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019)       
 !
-      if (lcalc_storm) call calc_storm_function(df)
+      if (lcalc_storm) then 
+!
+!  Add storm function to geopotential
+!
+        df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + q%storm_function
+!
+!  Compensate the mass added by the storms (subsidence)
+!
+
+        if (lsubsidence) df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + q%subsidence
+!
+      endif
 !
 !  Mass relaxation term to compensate for mass gained or loss in the simulation. 
 !      
@@ -386,7 +432,7 @@ module Special
 !
   endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine calc_storm_function(df)
+  subroutine calc_storm_function(storm_function_mn,subsidence_mn)
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019).
 !  This function simply takes the parameters from update_storms and constructs
@@ -405,10 +451,15 @@ module Special
 !     
 !  28-feb-20/wlad+ali: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(nx) :: rr,storm_function, subsidence
+      real, dimension(nx) :: rr,storm_function_mn
+
+      real, dimension(nx), optional :: subsidence_mn
+
       real :: rboundary_storm,t_age_storm,t_duration_storm
+      real :: expt, storm_amplitude, subsidence_factor
       integer :: i,istorm 
+!
+      intent(out) :: storm_function_mn,subsidence_mn
 !     
 !  Generate or update the storms. If a storm is updated,
 !  xc, yc, rstorm, tpeak, and tstorm will be re-written.
@@ -431,38 +482,32 @@ module Special
         rboundary_storm  = 2.2*rstorm(istorm)
         t_age_storm      = abs(t-tpeak(istorm))
         t_duration_storm = 2.2*tstorm(istorm)
+!
+        expt = exp(- ((t-tpeak(istorm))/tstorm(istorm))**2)
+        storm_amplitude = smax(istorm)*expt
+!
+!  Normalization 
+!
+        if (lsubsidence) &
+             subsidence_factor = rstorm(istorm)**2 * (1-exp(2.2**2)) / (r_ext**2 - rboundary_storm**2)
 !        
         do i=1,nx
           if (&
                (rr(i)       < rboundary_storm  ).and.&
                (t_age_storm < t_duration_storm ) &
                ) then
-            storm_function(i) = smax(istorm) * &
-                 exp(- ( rr(i) / rstorm(istorm))**2 &
-                 - ((t-tpeak(istorm))/tstorm(istorm))**2)
-          else
-            storm_function(i) = 0.
-          endif
 !
-! Adding subsidence: we remove the storm_function value added everywhere 
-! outside the storm radius - at each step it matches the storm_function value 
-! and occurs only as long as the mass injection is implemented.  Note that 
-! this is a FLAT subsidence mass removal.
-!                    
-          if (&
-               (rr(i)       > rboundary_storm  ).and.&
-               (t_age_storm < t_duration_storm ) &
-               ) then
-            subsidence(i) = -1.0 * storm_function(i)
+            storm_function_mn(i) = storm_amplitude * &
+                 exp(- ( rr(i) / rstorm(istorm))**2)
+!
+            if (lsubsidence) subsidence_mn(i) = 0.
           else
-            subsidence(i) = 0.
+            storm_function_mn(i) = 0.
+!
+            if (lsubsidence) subsidence_mn(i) = storm_amplitude*subsidence_factor
           endif
         enddo
 !
-!  Add storm function to equation of motion       
-!
-       df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + storm_function + subsidence
-!       
       enddo
 !    
   endsubroutine calc_storm_function
