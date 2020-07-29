@@ -73,7 +73,7 @@ module Special
   real :: tmass_relaxation=176.0,tmass_relaxation1
   real :: tduration=17.0,rsize_storm=0.03
   real :: interval_between_storms=17.0 
-  integer, parameter :: nstorm=50
+  integer, parameter :: nstorm=1
   real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
 
 !
@@ -92,7 +92,7 @@ module Special
   real :: storm_strength=impossible
   logical :: lsubsidence=.true.
 !
-  namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength,nstorm
+  namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
