@@ -1,0 +1,38 @@
+#!/bin/bash                                                                    
+#SBATCH -p small  #queue
+#SBATCH -t 0-12:00:00  # run time (hh:mm:ss)
+#SBATCH -p test     #queue
+#SBATCH -t 0:15:00  # run time (hh:mm:ss)
+#SBATCH -J ver_dipole_B	     # job name
+#SBATCH -o ver_dipole_B.o%j   # output and error file name (%j expands to jobID)
+#SBATCH -n 16       # total number of mpi tasks requested
+#SBATCH -N 1        # number of nodes
+#SBATCH --mail-user=fred.gent.ncl@gmail.com
+#SBATCH --mail-type=begin  # email me when the job starts
+#SBATCH --mail-type=end    # email me when the job finishes
+#SBATCH -A project_2001062    # project to be billed
+
+LOGFILE="ver_dipole_B.out"
+
+source src/.moduleinfo
+
+if [ \( ! -e ERROR \) -a \( ! -e ENDTIME \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -\
+a \( \! -e data/proc0/crash.dat \) -a \( ! -e data/allprocs/crash.h5 \) ]
+then
+    if [ ! -e data/param.nml ]
+    then
+       ./start.csh >>$LOGFILE 2>&1
+    else
+        echo "Skipping START..." >>$LOGFILE 2>&1
+    fi
+
+       ./run.csh >>$LOGFILE 2>&1
+
+    if [ \( ! -e ERROR \) -a \( ! -e ENDTIME \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -\
+a \( ! -e data/proc0/crash.dat \) -a \( ! -e data/allprocs/crash.h5 \) ]
+    then
+        echo "new submission ..." >>$LOGFILE 2>&1
+        sleep 10
+#        sbatch puhti-job.in
+    fi
+fi

@@ -1,0 +1,11 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  cparam.local
+!
+!  Local settings concerning grid size and number of CPUs.
+!  This file is included by cparam.f90
+!
+! MAUX CONTRIBUTION 4
+!
+integer, parameter :: ncpus=16,nprocy=4,nprocz=1,nprocx=4
+integer, parameter :: nxgrid=128,nygrid=128,nzgrid=256

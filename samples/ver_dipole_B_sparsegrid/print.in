@@ -1,0 +1,10 @@
+it(i9)
+t(f12.5)
+dt(e10.3)
+brms(e17.10)
+bx2m(e12.5)
+by2m(e12.5)
+bz2m(e12.5)
+dteta(f10.5)
+dtb(f10.5)
+
