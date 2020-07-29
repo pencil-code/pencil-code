@@ -48,6 +48,7 @@
   !lbackreaction=F
   llive_secondary=F
   lgas_gravity=F
+  lexclude_hills=T
 /
 &shock_run_pars
 /
