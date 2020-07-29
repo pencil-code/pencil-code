@@ -249,6 +249,13 @@ program start
       if (xyz1(i)/=impossible) & ! both Lxyz and xyz1 are set
         call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
     endif
+!
+!  Possibility that mesh size was given in units of pi
+!
+    if (xyz_units(i)=='pi') then
+      xyz0(i)=xyz0(i)*pi
+      Lxyz(i)=Lxyz(i)*pi
+    endif
   enddo
 !
   if (lyinyang) then
