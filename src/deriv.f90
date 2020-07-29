@@ -132,6 +132,7 @@ module Deriv
       real, parameter :: a = 1.0 / 60.0
       real, dimension(nx) :: fac
       logical :: withdx
+      integer :: nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
 !debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
@@ -167,11 +168,38 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (withdx) fac = a * dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-          if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
+          if (lpole(2) .and. lcoarse) then
+            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+            else
+              nphi = 1
+            endif
+            fac = a * dz_1(n)/nphi * r1_mn * sin1th(m)
+            if (lroot .and. n==n1 .and. m==m1) print*,'fred: lpole is True', fac(1) 
+            n1p = n+1*nphi
+            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
+            n2p = n+2*nphi
+            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            n3p = n+3*nphi
+            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n+1*nphi
+            if (n1n < 1) n1n = n1n + n2 + nghost
+            n2n = n+2*nphi
+            if (n1n < 1) n2n = n2n + n2 + nghost
+            n3n = n+3*nphi
+            if (n1n < 1) n3n = n3n + n2 + nghost
+            df=fac*(+ 45.0*(f(l1:l2,m,n1p,k)-f(l1:l2,m,n1n,k)) &
+                    -  9.0*(f(l1:l2,m,n2p,k)-f(l1:l2,m,n2n,k)) &
+                    +      (f(l1:l2,m,n3p,k)-f(l1:l2,m,n3n,k)))
+          else 
+            if (withdx) fac = a * dz_1(n)
+            df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                    -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                    +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+            if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
+          endif
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -237,6 +265,7 @@ module Deriv
       real, dimension (nz), intent(out) :: df
 !
       real, dimension (nz) :: fac
+      
 !
       if (nzgrid/=1) then
         fac=(1./60)*dz_1(n1:n2)
@@ -295,7 +324,7 @@ module Deriv
       intent(out) :: df
 
       real, dimension (size(df)) :: fac
-      integer :: l1_, l2_, sdf
+      integer :: l1_,l2_,sdf,nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -317,7 +346,7 @@ module Deriv
         else
           l1_=l1; l2_=l2 
         endif
-         if (j==2) then
+        if (j==2) then
           if (nygrid/=1) then
             fac=(1./60)*dy_1(m)
             df=fac*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
@@ -331,11 +360,42 @@ module Deriv
           endif
         elseif (j==3) then
           if (nzgrid/=1) then
-            fac=(1./60)*dz_1(n)
-            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            if (lspherical_coords) df=df*r1_mn*sin1th(m)
+            if (lpole(2) .and. lcoarse) then
+              if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              else
+                nphi = 1
+              endif
+              n1p = n+1*nphi
+              if (n1p > n2+nghost) n1p = n1p - n2 - nghost
+              n2p = n+2*nphi
+              if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+              n3p = n+3*nphi
+              if (n1p > n2+nghost) n3p = n3p - n2 - nghost
+              n1n = n+1*nphi
+              if (n1n < 1) n1n = n1n + n2 + nghost
+              n2n = n+2*nphi
+              if (n1n < 1) n2n = n2n + n2 + nghost
+              n3n = n+3*nphi
+              if (n1n < 1) n3n = n3n + n2 + nghost
+              fac = (1./60) * dz_1(n)/nphi * r1_mn * sin1th(m)
+              df=fac*(+ 45.0*(f(l1_:l2_,m,n1p)-f(l1_:l2_,m,n1n)) &
+                      -  9.0*(f(l1_:l2_,m,n2p)-f(l1_:l2_,m,n2n)) &
+                      +      (f(l1_:l2_,m,n3p)-f(l1_:l2_,m,n3n)))
+            else 
+              fac = (1./60) * dz_1(n)
+              df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+                      -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+                      +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+              if (lspherical_coords) df = df * r1_mn * sin1th(m)
+            endif
+            !fac=(1./60)*dz_1(n)
+            !df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+            !        -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+            !        +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            !if (lspherical_coords) df=df*r1_mn*sin1th(m)
           else
             df=0.
             if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
@@ -368,10 +428,10 @@ module Deriv
             + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
             -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
             +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
-      else if (j==2) then
 !
 !  y-derivative
 !
+      else if (j==2) then
         if (size(pencil)/=my) then
           if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
           call fatal_error('der_pencil','')
@@ -385,10 +445,10 @@ module Deriv
         elseif (lcylindrical_coords) then
           df(m1:m2)=df(m1:m2)*rcyl_mn1(lglob)
         endif
-      else if (j==3) then
 !
 !  z-derivative
 !
+      else if (j==3) then
         if (size(pencil)/=mz) then
           if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der_pencil','')
@@ -429,6 +489,7 @@ module Deriv
 !
       intent(in)  :: f,k,j,lwo_line_elem
       intent(out) :: df2
+      integer :: nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
@@ -467,17 +528,44 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=dz_1(n)**2
-          df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
-                   +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
-          if (.not.loptest(lwo_line_elem)) then
-            if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-          endif
-          if (.not.lequidist(j)) then
-            call der(f,k,df,j)
-            df2=df2+dz_tilde(n)*df
+          if (lpole(2) .and. lcoarse) then
+            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+            else
+              nphi = 1
+            endif
+            n1p = n+1*nphi
+            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
+            n2p = n+2*nphi
+            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            n3p = n+3*nphi
+            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n+1*nphi
+            if (n1n < 1) n1n = n1n + n2 + nghost
+            n2n = n+2*nphi
+            if (n1n < 1) n2n = n2n + n2 + nghost
+            n3n = n+3*nphi
+            if (n1n < 1) n3n = n3n + n2 + nghost
+            fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
+            df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
+                     +der2_coef1*(f(l1:l2,m,n1p,k)+f(l1:l2,m,n1n,k)) &
+                     +der2_coef2*(f(l1:l2,m,n2p,k)+f(l1:l2,m,n2n,k)) &
+                     +der2_coef3*(f(l1:l2,m,n3p,k)+f(l1:l2,m,n3n,k)) )
+          else
+            fac=dz_1(n)**2
+            df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
+                     +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                     +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                     +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
+            if (.not.loptest(lwo_line_elem)) then
+              if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+            endif
+            if (.not.lequidist(j)) then
+              call der(f,k,df,j)
+              df2=df2+dz_tilde(n)*df
+            endif
           endif
         else
           df2=0.
@@ -498,7 +586,7 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
-      integer :: j
+      integer :: j,nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
       intent(in)  :: f,j
       intent(out) :: df2
@@ -539,15 +627,42 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
-          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-          if (.not.lequidist(j)) then
-            call der(f,df,j)
-            df2=df2+dz_tilde(n)*df
+          if (lpole(2) .and. lcoarse) then
+            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+            else
+              nphi = 1
+            endif
+            n1p = n+1*nphi
+            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
+            n2p = n+2*nphi
+            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            n3p = n+3*nphi
+            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n+1*nphi
+            if (n1n < 1) n1n = n1n + n2 + nghost
+            n2n = n+2*nphi
+            if (n1n < 1) n2n = n2n + n2 + nghost
+            n3n = n+3*nphi
+            if (n1n < 1) n3n = n3n + n2 + nghost
+            fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
+            df2=fac*( der2_coef0* f(l1:l2,m,n) &
+                     +der2_coef1*(f(l1:l2,m,mod(n+1*nphi,n2))+f(l1:l2,m,mod(n-1*nphi,n2))) &
+                     +der2_coef2*(f(l1:l2,m,mod(n+2*nphi,n2))+f(l1:l2,m,mod(n-2*nphi,n2))) &
+                     +der2_coef3*(f(l1:l2,m,mod(n+3*nphi,n2))+f(l1:l2,m,mod(n-3*nphi,n2))) )
+          else
+            fac=(1./180)*dz_1(n)**2
+            df2=fac*(-490.0*f(l1:l2,m,n) &
+                     +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                     - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                     +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+            if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+            if (.not.lequidist(j)) then
+              call der(f,df,j)
+              df2=df2+dz_tilde(n)*df
+            endif
           endif
         else
           df2=0.
@@ -867,7 +982,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
-      integer :: j,k
+      integer :: j,k,nphi,n1n,n1p,n2p,n2n,n3p,n3n
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
 !
@@ -927,19 +1042,50 @@ module Deriv
         endif        
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (igndx) then
-            fac=1.
-          else if (upwnd) then
-            fac=(1.0/60)*dz_1(n)
+          if (lpole(2) .and. lcoarse) then
+            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+            else
+              nphi = 1
+            endif
+            n1p = n+1*nphi
+            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
+            n2p = n+2*nphi
+            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            n3p = n+3*nphi
+            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n+1*nphi
+            if (n1n < 1) n1n = n1n + n2 + nghost
+            n2n = n+2*nphi
+            if (n1n < 1) n2n = n2n + n2 + nghost
+            n3n = n+3*nphi
+            if (n1n < 1) n3n = n3n + n2 + nghost
+            if (upwnd) then
+              fac=(1.0/60)*dz_1(n)/nphi
+            else
+              fac = (dz_1(n)/nphi)**6 * (r1_mn * sin1th(m))**6
+            endif
+            df=fac*(- 20.0* f(l1:l2,m,    n           ,k) &
+                    + 15.0*(f(l1:l2,m,n1p,k)+f(l1:l2,m,n1n,k)) &
+                    +  6.0*(f(l1:l2,m,n2p,k)+f(l1:l2,m,n2n,k)) &
+                    +      (f(l1:l2,m,n3p,k)+f(l1:l2,m,n3n,k)) )
           else
-            fac=dz_1(n)**6
+            if (igndx) then
+              fac=1.
+            else if (upwnd) then
+              fac=(1.0/60)*dz_1(n)
+            else
+              fac=dz_1(n)**6
+            endif
+            df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
+                    + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                    -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                    +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+            if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
+              df = df * (r1_mn * sin1th(m))**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
-            df = df * (r1_mn * sin1th(m))**6
         else
           df=0.
         endif

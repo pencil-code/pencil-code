@@ -3930,7 +3930,7 @@ module Magnetic
       real, dimension(3) :: B_ext
       real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp, hall_term_
       real, parameter :: OmegaSS=1.0
-      integer :: i,j,k,ju,ix
+      integer :: i,j,k,ju,ix,nphi
       integer, parameter :: nxy=nxgrid*nygrid
 !
 !  Identify module and boundary conditions.
@@ -5042,9 +5042,22 @@ module Magnetic
                      * (1+(p%va2/p%clight2)**2.)**(-1.0/2.0)
           endif
           if (lspherical_coords) then
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+            if (lpole(2) .and. lcoarse) then
+              if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              else
+                nphi = 1
+              endif
+              advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                       (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
+                       (p%bb(:,3)*dz_1(  n  )/nphi*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
+            else
+              advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
                        (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
+            endif
           elseif (lcylindrical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  )*rcyl_mn1)**2+ &
@@ -5148,15 +5161,34 @@ module Magnetic
 !
       if (lfirst.and.ldt) then
 !
-        diffus_eta =diffus_eta *dxyz_2
-        diffus_eta2=diffus_eta2*dxyz_4
+        if (lpole(2) .and. lcoarse) then
+          if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+          elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+          else
+            nphi = 1
+          endif
+          diffus_eta =diffus_eta *dxyz_2/nphi**2
+          diffus_eta2=diffus_eta2*dxyz_4/nphi**4
 !
-        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+          if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+            diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)/nphi))
+          else
+            diffus_eta3 = diffus_eta3*dxyz_6/nphi**6
+          endif
+          if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2/nphi**2
         else
-          diffus_eta3 = diffus_eta3*dxyz_6
+          diffus_eta =diffus_eta *dxyz_2
+          diffus_eta2=diffus_eta2*dxyz_4
+!
+          if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+            diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+          else
+            diffus_eta3 = diffus_eta3*dxyz_6
+          endif
+          if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
         endif
-        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
 !
         if (headtt.or.ldebug) then
           print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)

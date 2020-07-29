@@ -98,13 +98,13 @@ module Cdata
                            lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
                            lpole=.false., &                                      ! in spherical coords: pole excluded
                            lequidist=.true.                                      ! grid equidistant in every direction
-  logical :: lignore_nonequi=.false.
+  logical :: lignore_nonequi=.false., lcoarse=.false.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
-  integer :: nghost_read_fewer=0
+  integer :: nghost_read_fewer=0, ncoarse=8
   integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
 !  Derivative parameters
