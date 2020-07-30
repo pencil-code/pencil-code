@@ -536,16 +536,6 @@ sub backup_file {
 
     return $file . '_previous';
 }
-
-# ---------------------------------------------------------------------- #
-sub backup_file {
-#
-# Return filename for backup of given file
-#
-    my ($file) = @_;
-
-    return $file . '_previous';
-}
 # ---------------------------------------------------------------------- #
 sub extract_decl {
 #
