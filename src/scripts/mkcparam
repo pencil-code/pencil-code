@@ -497,7 +497,7 @@ sub update_file {
 
     if (-e $file) {
         # read existing file's content
-        open (OLD, $file);
+        open (OLD, "< ".$file);
         @old_data = <OLD>;
         close (OLD);
 
@@ -522,7 +522,7 @@ sub write_file {
 #
     my ($file,$data) = @_;
 
-    open (my $fh, "> $file") or die "Can't open $file for writing!";
+    open (my $fh, "> ".$file) or die "Can't open $file for writing!";
     print $fh $data;
     close ($fh);
 }
