@@ -28,6 +28,7 @@ from . import read         # read data and parameters from pencil code directory
 from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
 from . import export       # exporter (e.g., vtk, xml)
 from . import backpack     # third party modules, tribute to the author!
+from . import ism_dyn      # diagnostics for ism dynamo simulations
 
 
 # Internal routines.
