@@ -15,6 +15,6 @@ from .tensors import *
 from .Reynolds import *
 try:
     from .aver2h5 import *
-except
+except:
     print('Warning: Could not import calc.aver2h5. Try:')
     print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
