@@ -4651,7 +4651,7 @@ module Magnetic
 !   Using diffusive flux of B on A
 !   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
 !     where Dsld is the SLD operator
-!   old way:  DA_i/dt = ... partial_j Dsld_j A_l
+!   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
 !
             do j=1,3
