@@ -95,7 +95,7 @@ class ParticleData(object):
             except:
                 print('! ERROR: no idl<->python bridge found. Try whats written in pstalk-comment to fix that issue.')
                 print('! ')
-                print('! Use something like: (enshure you have IDL 8.5.1 or larger)')
+                print('! Use something like: (ensure you have IDL 8.5.1 or larger)')
                 print('! export PYTHONPATH=$PYTHONPATH:$IDL_HOME/lib/bridges:$IDL_HOME/bin/bin.linux.x86_64')
                 print('! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64')
                 print('! in your .bashrc')
