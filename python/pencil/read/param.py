@@ -313,6 +313,8 @@ class Param(object):
         for rawline in open(file_name):
             if ' ' in rawline[1]:
                 rawline = lastrawline+rawline
+            if "'" in rawline[1]:
+                rawline = lastrawline+rawline
             lastrawline = rawline
             line = rawline.rstrip('\n')
             if line[1] == "&" or line[0] == "&":
