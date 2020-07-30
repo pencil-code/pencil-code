@@ -334,7 +334,10 @@ for tag = 1, num_tags do begin
   if (num ge 1) then begin
     pos = min (long (matches[2,lines]))
     array = max (long (matches[1,lines]))
-    if (num ne vector * array) then message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+    if (num ne vector * array) then begin
+      message, "HINT: a module might register '"+search+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
+      message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+    end
   end else begin
     array = 0
     ; Translate shortcuts (e.g. iuu => iu[x,y,z])
@@ -345,7 +348,10 @@ for tag = 1, num_tags do begin
     lines = where (matches[0,*] ne '', num)
     if (num ge 1) then begin
       pos = min (long (matches[2,lines]))
-      if (num ne vector) then message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+      if (num ne vector) then begin
+        message, "HINT: a module might register '"+search+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
+        message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+      end
     end else begin
       ; Quantity not contained in this run
       continue
