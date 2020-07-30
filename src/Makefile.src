@@ -2811,17 +2811,6 @@ buildinfo:
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
 	scripts/mkcparam -b $(preprocess)
-# [PABourdin]: This does not work if I try to recompile, it just leaves an empty 'cparam.inc' and compilation aborts!
-#	scripts/mkcparam -b $(preprocess) -o cparam.inc.tmp
-#	# please also comment the following line:
-#	@cat cparam.inc.tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
-#	@rm -f cparam.inc.tmp
-#	# why don't we solve this inside of 'mkcparam' instead? This would me much simpler.
-#	@if [ ! -e cparam.inc ] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
-#	  mv -f cparam.inc.prelim cparam.inc; \
-#	else \
-#	  rm -f cparam.inc.prelim; \
-#	fi
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
