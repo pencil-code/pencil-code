@@ -170,26 +170,25 @@ module Deriv
         if (nzgrid/=1) then
           if (lpole(2) .and. lcoarse) then
             if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
             elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
             else
               nphi = 1
             endif
             fac = a * dz_1(n)/nphi * r1_mn * sin1th(m)
-            if (lroot .and. n==n1 .and. m==m1) print*,'fred: lpole is True', fac(1) 
             n1p = n+1*nphi
             if (n1p > n2+nghost) n1p = n1p - n2 - nghost
             n2p = n+2*nphi
-            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
             n3p = n+3*nphi
-            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n+1*nphi
+            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n-1*nphi
             if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n+2*nphi
-            if (n1n < 1) n2n = n2n + n2 + nghost
-            n3n = n+3*nphi
-            if (n1n < 1) n3n = n3n + n2 + nghost
+            n2n = n-2*nphi
+            if (n2n < 1) n2n = n2n + n2 + nghost
+            n3n = n-3*nphi
+            if (n3n < 1) n3n = n3n + n2 + nghost
             df=fac*(+ 45.0*(f(l1:l2,m,n1p,k)-f(l1:l2,m,n1n,k)) &
                     -  9.0*(f(l1:l2,m,n2p,k)-f(l1:l2,m,n2n,k)) &
                     +      (f(l1:l2,m,n3p,k)-f(l1:l2,m,n3n,k)))
@@ -362,24 +361,24 @@ module Deriv
           if (nzgrid/=1) then
             if (lpole(2) .and. lcoarse) then
               if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
               elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
               else
                 nphi = 1
               endif
               n1p = n+1*nphi
               if (n1p > n2+nghost) n1p = n1p - n2 - nghost
               n2p = n+2*nphi
-              if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+              if (n2p > n2+nghost) n2p = n2p - n2 - nghost
               n3p = n+3*nphi
-              if (n1p > n2+nghost) n3p = n3p - n2 - nghost
-              n1n = n+1*nphi
+              if (n3p > n2+nghost) n3p = n3p - n2 - nghost
+              n1n = n-1*nphi
               if (n1n < 1) n1n = n1n + n2 + nghost
-              n2n = n+2*nphi
-              if (n1n < 1) n2n = n2n + n2 + nghost
-              n3n = n+3*nphi
-              if (n1n < 1) n3n = n3n + n2 + nghost
+              n2n = n-2*nphi
+              if (n2n < 1) n2n = n2n + n2 + nghost
+              n3n = n-3*nphi
+              if (n3n < 1) n3n = n3n + n2 + nghost
               fac = (1./60) * dz_1(n)/nphi * r1_mn * sin1th(m)
               df=fac*(+ 45.0*(f(l1_:l2_,m,n1p)-f(l1_:l2_,m,n1n)) &
                       -  9.0*(f(l1_:l2_,m,n2p)-f(l1_:l2_,m,n2n)) &
@@ -530,24 +529,24 @@ module Deriv
         if (nzgrid/=1) then
           if (lpole(2) .and. lcoarse) then
             if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
             elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
             else
               nphi = 1
             endif
             n1p = n+1*nphi
             if (n1p > n2+nghost) n1p = n1p - n2 - nghost
             n2p = n+2*nphi
-            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
             n3p = n+3*nphi
-            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n+1*nphi
+            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n-1*nphi
             if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n+2*nphi
-            if (n1n < 1) n2n = n2n + n2 + nghost
-            n3n = n+3*nphi
-            if (n1n < 1) n3n = n3n + n2 + nghost
+            n2n = n-2*nphi
+            if (n2n < 1) n2n = n2n + n2 + nghost
+            n3n = n-3*nphi
+            if (n3n < 1) n3n = n3n + n2 + nghost
             fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
             df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
                      +der2_coef1*(f(l1:l2,m,n1p,k)+f(l1:l2,m,n1n,k)) &
@@ -629,24 +628,24 @@ module Deriv
         if (nzgrid/=1) then
           if (lpole(2) .and. lcoarse) then
             if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
             elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
             else
               nphi = 1
             endif
             n1p = n+1*nphi
             if (n1p > n2+nghost) n1p = n1p - n2 - nghost
             n2p = n+2*nphi
-            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
             n3p = n+3*nphi
-            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n+1*nphi
+            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n-1*nphi
             if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n+2*nphi
-            if (n1n < 1) n2n = n2n + n2 + nghost
-            n3n = n+3*nphi
-            if (n1n < 1) n3n = n3n + n2 + nghost
+            n2n = n-2*nphi
+            if (n2n < 1) n2n = n2n + n2 + nghost
+            n3n = n-3*nphi
+            if (n3n < 1) n3n = n3n + n2 + nghost
             fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
             df2=fac*( der2_coef0* f(l1:l2,m,n) &
                      +der2_coef1*(f(l1:l2,m,mod(n+1*nphi,n2))+f(l1:l2,m,mod(n-1*nphi,n2))) &
@@ -1044,24 +1043,24 @@ module Deriv
         if (nzgrid/=1) then
           if (lpole(2) .and. lcoarse) then
             if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
             elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
             else
               nphi = 1
             endif
             n1p = n+1*nphi
             if (n1p > n2+nghost) n1p = n1p - n2 - nghost
             n2p = n+2*nphi
-            if (n1p > n2+nghost) n2p = n2p - n2 - nghost
+            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
             n3p = n+3*nphi
-            if (n1p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n+1*nphi
+            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
+            n1n = n-1*nphi
             if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n+2*nphi
-            if (n1n < 1) n2n = n2n + n2 + nghost
-            n3n = n+3*nphi
-            if (n1n < 1) n3n = n3n + n2 + nghost
+            n2n = n-2*nphi
+            if (n2n < 1) n2n = n2n + n2 + nghost
+            n3n = n-3*nphi
+            if (n3n < 1) n3n = n3n + n2 + nghost
             if (upwnd) then
               fac=(1.0/60)*dz_1(n)/nphi
             else
