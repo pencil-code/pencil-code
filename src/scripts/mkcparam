@@ -135,12 +135,8 @@ GetOptions(\%opts,
 
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
-my $outfile  = ($opts{o} || $opts{output}   || "-");
+my $outfile  = ($opts{o} || $opts{output}   || "cparam.inc");
 my $backdate = ($opts{b} || $opts{backdate} || "");
-
-my $out = open_file($outfile);
-my $out_pencil = open_file("cparam_pencils.inc");
-my $out_penc_init = open_file("pencil_init.inc");
 
 #
 # Cycle through files (later files will overwrite effect of earlier files)
@@ -290,7 +286,7 @@ if ($nadsspec >= 1) {
 # cparam.inc
 #
 
-print $out <<"EOF";
+my $data_cparam = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  cparam.inc
 !
@@ -322,16 +318,16 @@ EOF
 
 # Set npar (number of particles) to one if particles are not used:
 if ($mpvar == 0) {
-  print $out "integer, parameter :: npar=1\n\n";
+  $data_cparam .= "integer, parameter :: npar=1\n\n";
 } else {
-  print $out "! npar should be declared and set in cparam.local\n\n";
+  $data_cparam .= "! npar should be declared and set in cparam.local\n\n";
 }
 
 # Set nqpar (number of massive particles, i.e, point masses) to one if point masses are not used:
 if ($mqvar == 0) {
-  print $out "integer, parameter :: nqpar=1\n\n";
+  $data_cparam .= "integer, parameter :: nqpar=1\n\n";
 } else {
-  print $out "! nqpar should be declared and set in cparam.local\n\n";
+  $data_cparam .= "! nqpar should be declared and set in cparam.local\n\n";
 }
 
 #
@@ -367,26 +363,27 @@ foreach $line (@cparam) {
 }
 
 # Write default values of undefined particle parameters to cparam.inc:
-print $out "integer, parameter :: mpar_loc=npar\n"  unless $mpar_loc;
-print $out "integer, parameter :: npar_mig=1\n"     unless $npar_mig;
-print $out "integer, parameter :: npar_species=1\n" unless $npar_species;
-#print $out "integer, parameter :: nqpar=1\n"        unless $nqpar;
-print $out "integer, parameter :: npar_stalk=0\n"   unless $npar_stalk;
-print $out "integer, parameter :: nbrickx=1\n"      unless $nbrickx;
-print $out "integer, parameter :: nbricky=1\n"      unless $nbricky;
-print $out "integer, parameter :: nbrickz=1\n"      unless $nbrickz;
-print $out "integer, parameter :: nblockmax=1\n"    unless $nblockmax;
+$data_cparam .= "integer, parameter :: mpar_loc=npar\n"  unless $mpar_loc;
+$data_cparam .= "integer, parameter :: npar_mig=1\n"     unless $npar_mig;
+$data_cparam .= "integer, parameter :: npar_species=1\n" unless $npar_species;
+#$data_cparam .= "integer, parameter :: nqpar=1\n"        unless $nqpar;
+$data_cparam .= "integer, parameter :: npar_stalk=0\n"   unless $npar_stalk;
+$data_cparam .= "integer, parameter :: nbrickx=1\n"      unless $nbrickx;
+$data_cparam .= "integer, parameter :: nbricky=1\n"      unless $nbricky;
+$data_cparam .= "integer, parameter :: nbrickz=1\n"      unless $nbrickz;
+$data_cparam .= "integer, parameter :: nblockmax=1\n"    unless $nblockmax;
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules:
-print $out join("\n", @cparam_lines);
+$data_cparam .= join("\n", @cparam_lines);
+update_file ($outfile, $data_cparam);
 
 
 #
 # cparam_pencils.inc
 #
 
-print $out_pencil <<"EOF";
+my $data_cparam_pencil = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  cparam_pencils.inc
 !
@@ -401,7 +398,7 @@ EOF
 
 # Generate cparam_pencils.inc where the pencil case is defined and
 # initialized:
-print $out_pencil <<"EOF";
+$data_cparam_pencil .= <<"EOF";
 integer, parameter :: npencils=$npencils
 type pencil_case
 EOF
@@ -409,15 +406,15 @@ EOF
 # Define pencils in pencil case:
 my $i=0;
 foreach my $pencil_name (@pencil_names) {
-  print $out_pencil "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
+  $data_cparam_pencil .= "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
   $i = $i+1;
 }
-print $out_pencil "endtype pencil_case\n\n";
+$data_cparam_pencil .= "endtype pencil_case\n\n";
 
 # Define pencil indices:
 $i=1;
 foreach my $pencil (@pencil_names) {
-  print $out_pencil "integer :: i_$pencil=$i\n";
+  $data_cparam_pencil .= "integer :: i_$pencil=$i\n";
   $i++;
 }
 
@@ -433,19 +430,19 @@ while (defined($line=<INPUT>)) {
 }
 
 # Define pencil names:
-print $out_pencil "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+$data_cparam_pencil .= "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 $i=0;
 foreach my $pencil (@pencil_names){
-  print $out_pencil ", " if ($i != 0);
-  print $out_pencil "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
-  print $out_pencil "  &\n   " if (($i % 4) == 3);
+  $data_cparam_pencil .= ", " if ($i != 0);
+  $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
+  $data_cparam_pencil .= "  &\n   " if (($i % 4) == 3);
   $i++;
 }
-print $out_pencil " /)\n";
+$data_cparam_pencil .= " /)\n";
 
 # Define pencil logicals, used by the code to distinguish between needed
 # and not needed pencils:
-print $out_pencil <<"EOF";
+$data_cparam_pencil .= <<"EOF";
 logical, parameter, dimension(npencils):: lpenc_required  = .false.
 logical,            dimension(npencils):: lpenc_diagnos   = .false.
 logical,            dimension(npencils):: lpenc_diagnos2d = .false.
@@ -455,6 +452,7 @@ logical,            dimension(npencils):: lpencil         = .false.
 
 
 EOF
+update_file ("cparam_pencils.inc", $data_cparam_pencil);
 
 
 #
@@ -462,7 +460,7 @@ EOF
 #
 
 # Generate pencil_init.inc, for initializing the pencil case:
-print $out_penc_init <<"EOF";
+my $data_pencil_init = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  pencil_init.inc
 !
@@ -481,49 +479,52 @@ EOF
 
 #
 foreach my $pencil (@pencil_names) {
-  print $out_penc_init "  p%$pencil = penc0\n";
+  $data_pencil_init .= "  p%$pencil = penc0\n";
 }
 #
-print $out_penc_init "\nendsubroutine initialize_pencils";
-
-close_files();
+$data_pencil_init .= "\nendsubroutine initialize_pencils";
+update_file ("pencil_init.inc", $data_pencil_init);
 
 
 # ---------------------------------------------------------------------- #
-sub open_file {
+sub update_file {
 #
-# Open a file for writing, backing it up if necessary, and register it.
+# Update a file's content, if necessary.
 #
-    my ($file) = @_;
+    my ($file,$data) = @_;
 
-    if ($backdate) {
-        rename $file, backup_file($file);
-    }
+    my @old_data;
 
-    open(my $fh, "> $file") or die "Can't open $file for writing";
-    $open_files{$file} = $fh;
+    if (-e $file) {
+        # read existing file's content
+        open (OLD, $file);
+        @old_data = <OLD>;
+        close (OLD);
 
-    return $fh;
-}
+        if (join ('', @old_data) eq $data) {
+            # file exists and is up-to-date => nothing to be done
+            return;
+        }
 
-# ---------------------------------------------------------------------- #
-sub close_files {
-#
-# Close all open file handles.
-# If appropriate, revert to older files to backdate the file.
-# Remove files that are no longer needed.
-#
-    while (my ($filename, $fh) = each(%open_files)) {
-        close $fh;
-        my $previous = backup_file($filename);
-        my $unchanged = (system('cmp', '-s', $previous, $filename) == 0);
-        if ($unchanged && $backdate) {
-            # backdate file by copying previous version
-            rename $previous, $filename;
-        } else {
-            unlink $previous;
+        if ($backdate) {
+            # create the requested backup
+            write_file (backup_file ($file), @old_data);
         }
     }
+
+    write_file ($file, $data);
+}
+
+# ---------------------------------------------------------------------- #
+sub write_file {
+#
+# Write a file
+#
+    my ($file,$data) = @_;
+
+    open (my $fh, "> $file") or die "Can't open $file for writing!";
+    print $fh $data;
+    close ($fh);
 }
 
 # ---------------------------------------------------------------------- #
@@ -536,6 +537,15 @@ sub backup_file {
     return $file . '_previous';
 }
 
+# ---------------------------------------------------------------------- #
+sub backup_file {
+#
+# Return filename for backup of given file
+#
+    my ($file) = @_;
+
+    return $file . '_previous';
+}
 # ---------------------------------------------------------------------- #
 sub extract_decl {
 #
