@@ -82,6 +82,7 @@ class ParticleData(object):
                 sim = get_sim()
         datadir = sim.datadir
 
+        l_h5 = False
         if os.path.exists(os.path.join(datadir,'grid.h5')):
             l_h5 = True
             import h5py 
