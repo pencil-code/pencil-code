@@ -5044,9 +5044,9 @@ module Magnetic
           if (lspherical_coords) then
             if (lpole(2) .and. lcoarse) then
               if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
               elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
               else
                 nphi = 1
               endif
@@ -5163,12 +5163,13 @@ module Magnetic
 !
         if (lpole(2) .and. lcoarse) then
           if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse),1)
+            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
           elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse),1)
+            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
           else
             nphi = 1
           endif
+          !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
           diffus_eta =diffus_eta *dxyz_2/nphi**2
           diffus_eta2=diffus_eta2*dxyz_4/nphi**4
 !
