@@ -38,7 +38,7 @@ def open_h5(filename, status, driver=None, comm=None, overwrite=False, rank=0):
     if not ('.h5' == filename[-3:] or '.hdf5' == filename[-5:]):
         if rank == 0:
             print('Relabelling h5 '+fname+' to '+fname+'.h5 on path '+path)
-	fname = str.strip(fname,'.dat')+'.h5'
+        fname = str.strip(fname,'.dat')+'.h5'
     mkdir(path)
     if comm:
         comm.barrier()
