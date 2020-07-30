@@ -60,12 +60,13 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
                 quiet=True):
     xdiv, ydiv, zdiv = common_factors(nx,ny,nz,nmin=nmin)
     
-    lpower = False
-    if len(par) > 0:
-        if par['lpower_spectrum']:
-            lpower = True
-    if lpower:
-        xdiv = [1]
+    #fft_xyz_parallel removes need for x constraint
+    #lpower = False
+    #if len(par) > 0:
+    #    if par['lpower_spectrum']:
+    #        lpower = True
+    #if lpower:
+    #    xdiv = [1]
     nvar=mvar+maux
     #size of farray in MB
     nsize=8*nvar*nx*ny*nz/1024**2
@@ -76,7 +77,7 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
     for div in (xdiv,ydiv,zdiv):
         tmp = list()
         for nt in div:
-            if nt < ncpu_max:
+            if nt <= ncpu_max:
                 tmp.append(nt)
         cpu_list.append(tmp)
     xdiv, ydiv, zdiv = cpu_list
@@ -96,9 +97,10 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
             if not quiet:
                print(div, ncpu_list[-1])
     ncpu_max = max(ncpu_list)
-    if lpower:
-        nprocyz_max = min(ncpu_max,max(ny,nz))
-        ncpu_max = min(ncpu_max,max(ny,nz))
+    #fft_xyz_parallel removes need for x constraint
+    #if lpower:
+    #    nprocyz_max = min(ncpu_max,max(ny,nz))
+    #    ncpu_max = min(ncpu_max,max(ny,nz))
     print('ncpu_max divisible',ncpu_max)
     nprocx = max(xdiv)
     nprocy = max(ydiv)
