@@ -60,6 +60,7 @@ module Special
   real :: fcoriolis           ! = 2*Omega - gamma*r**2
   real :: planetary_radius    ! = sqrt(Omega/gamma)
   real :: eta0=0.0
+  real :: k_const=2.2
 !
 ! Different pre-defined forms of the base height
 !
@@ -97,7 +98,7 @@ module Special
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB,eta0,lsubsidence
+       lmass_relaxation,Omega_SB,eta0,lsubsidence,k_const
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
@@ -479,9 +480,9 @@ module Special
 !  A storm is truncated at 2.2*rstorm, taken as the "boundary" of the storm.
 !  A storm is also truncated at 2.2 times its lifetime
 !
-        rboundary_storm  = 2.2*rstorm(istorm)
+        rboundary_storm  = k_const*rstorm(istorm)
         t_age_storm      = abs(t-tpeak(istorm))
-        t_duration_storm = 2.2*tstorm(istorm)
+        t_duration_storm = k_const*tstorm(istorm)
 !
         expt = exp(- ((t-tpeak(istorm))/tstorm(istorm))**2)
         storm_amplitude = smax(istorm)*expt
@@ -489,7 +490,7 @@ module Special
 !  Normalization 
 !
         if (lsubsidence) &
-             subsidence_factor = rstorm(istorm)**2 * (1-exp(- (2.2**2))) / (r_ext**2 - rboundary_storm**2)
+             subsidence_factor = rstorm(istorm)**2 * (1-exp(- (k_const**2))) / (r_ext**2 - rboundary_storm**2)
 !        
         do i=1,nx
           if (&
