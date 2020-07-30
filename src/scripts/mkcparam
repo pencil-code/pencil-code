@@ -375,7 +375,9 @@ $data_cparam .= "integer, parameter :: nblockmax=1\n"    unless $nblockmax;
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules:
-$data_cparam .= join("\n", @cparam_lines);
+foreach $line (@cparam_lines) {
+    add_line_avoid_duplicate ($data_cparam, $line);
+}
 update_file ($outfile, $data_cparam);
 
 
@@ -485,6 +487,19 @@ foreach my $pencil (@pencil_names) {
 $data_pencil_init .= "\nendsubroutine initialize_pencils";
 update_file ("pencil_init.inc", $data_pencil_init);
 
+
+# ---------------------------------------------------------------------- #
+sub add_line_avoid_duplicate {
+#
+# Add a line but avoid duplicate lines.
+#
+    my ($data,$line) = @_;
+
+    if (index ($data, $line."\n") == -1) {
+        # update $data in caller
+        $_[0] .= $line."\n";
+    }
+}
 
 # ---------------------------------------------------------------------- #
 sub update_file {
