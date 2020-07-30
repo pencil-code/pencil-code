@@ -65,7 +65,6 @@ for line = 1, num_lines do begin
   inactive = stregex (index_pro[line-1], '^ *[^= ]+ *= *(0+|- *1) *$', /extract)
   if (inactive) then index_pro[line-1] = ""
 endfor
-stop
 
 mvar=dim.mvar & maux=dim.maux
 ;
