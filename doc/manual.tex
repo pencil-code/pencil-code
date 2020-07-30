@@ -3972,12 +3972,15 @@ If not, it can be installed via your preferred package manager or downloaded
 from the website \url{https://www.python.org/}.
 For convenience, it is strongly recommend to also install IPython, which is a
 more convenient console for Python.
-You will also need the NumPy, matplotlib and Tk library.
+You will also need the NumPy, matplotlib, h5py and Tk library.
 
 Perhaps the easiest way to obtain all the required software mentioned above
 is to install either Continuum's Anaconda or Enthought's Canopy.
 These Python distributions also provide (or indeed are) integrated graphical
 development environments.
+
+Another way of installing libraries, particularly on a cluster without root
+privileges you can use pip or pip3: \texttt{pip install h5py} or \texttt{pip3 install h5py}.
 
 In order for Python to find the Pencil Code commands you will have to add to your
 \texttt{.bashrc}:
@@ -4149,6 +4152,7 @@ can run a job with \code{nygrid=64} points in that direction, but if you
 try to run a problem with \code{nygrid=65} or \code{nygrid=94}, the code
 will complain about an inconsistency and stop.
 (So far, this has not been a serious restriction for us.)
+
 
 \subsubsection{How to run a sample problem in parallel}
 
