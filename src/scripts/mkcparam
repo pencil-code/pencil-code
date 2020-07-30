@@ -508,7 +508,7 @@ sub update_file {
 
         if ($backdate) {
             # create the requested backup
-            write_file (backup_file ($file), join ('', @old_data));
+            rename $file, backup_file ($file);
         }
     }
 
