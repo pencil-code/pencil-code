@@ -31,7 +31,7 @@
 !  Special equation                                | dspecial_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -70,7 +70,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module gravitational_waves_hTXk
+module Special
 !
   use Cparam
   use Cdata
@@ -107,13 +107,13 @@ module gravitational_waves_hTXk
   real :: kscale_factor
 !
 ! input parameters
-  namelist /gravitational_waves_hTXk_init_pars/ &
+  namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     lggTX_as_aux, lhhTX_as_aux
 !
 ! run parameters
-  namelist /gravitational_waves_hTXk_run_pars/ &
+  namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, &
     nscale_factor_conformal, tshift, cc_light, &
@@ -559,7 +559,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gravitational_waves_hTXk_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -567,7 +567,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gravitational_waves_hTXk_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -577,7 +577,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gravitational_waves_hTXk_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -585,7 +585,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gravitational_waves_hTXk_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -653,14 +653,15 @@ module gravitational_waves_hTXk
       spectra%GWm=0.; spectra%GWmhel=0.
       spectra%Str=0.; spectra%Strhel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
-
-      do iky=1,nz
-        do ikx=1,ny
-          do ikz=1,nx
 !
-            k1=kx(ikx+ipy*ny)
-            k2=ky(iky+ipz*nz)
-            k3=kz(ikz+ipx*nx)
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+!
+            k1=kx(ikx+ipx*nx)
+            k2=ky(iky+ipy*ny)
+            k3=kz(ikz+ipz*nz)
+!
             ksqr=k1**2+k2**2+k3**2
 !
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
@@ -700,8 +701,8 @@ module gravitational_waves_hTXk
               do q=1,3
               do p=1,3
                 pq=ij_table(p,q)
-                SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikz,ikx,iky,pq)
-                SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikz,ikx,iky,pq)
+                SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikx,iky,ikz,pq)
+                SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikx,iky,ikz,pq)
               enddo
               enddo
             endif
@@ -712,8 +713,8 @@ module gravitational_waves_hTXk
                 VCT_im(q)=-twothird*kvec(q)*SCL_re
                 do p=1,3
                   pq=ij_table(p,q)
-                  VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikz,ikx,iky,pq)
-                  VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikz,ikx,iky,pq)
+                  VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikx,iky,ikz,pq)
+                  VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikx,iky,ikz,pq)
                 enddo
               enddo
             endif
@@ -814,7 +815,7 @@ module gravitational_waves_hTXk
                 do q=1,3
                 do p=1,3
                   pq=ij_table(p,q)
-                  spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikz,ikx,iky,pq)**2+Tpq_im(ikz,ikx,iky,pq)**2)
+                  spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikx,iky,ikz,pq)**2+Tpq_im(ikx,iky,ikz,pq)**2)
                 enddo
                 enddo
               endif
@@ -947,17 +948,9 @@ module gravitational_waves_hTXk
 !  Assemble stress, Tpq
 !
       if (label=='St') then
-        Tpq_re=0.0
+        Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
         Tpq_im=0.0
-        do ij=1,6
-          jStress_ij=iStress_ij-1+ij
-          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jStress_ij)
-!
-!  Fourier transform all 6 components
-!
-          call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
-!--       call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
-        enddo
+        call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -967,16 +960,16 @@ module gravitational_waves_hTXk
 !
 !  P11, P22, P33, P12, P23, P31
 !
-      do iky=1,nz
-        do ikx=1,ny
-          do ikz=1,nx
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
 !
 !  compute e_T and e_X; determine first preferred direction,
 !  which is a component with the smallest component by modulus.
 !
-            k1=kx(ikx+ipy*ny)
-            k2=ky(iky+ipz*nz)
-            k3=kz(ikz+ipx*nx)
+            k1=kx(ikx+ipx*nx)
+            k2=ky(iky+ipy*ny)
+            k3=kz(ikz+ipz*nz)
             k1sqr=k1**2
             k2sqr=k2**2
             k3sqr=k3**2
@@ -1068,8 +1061,8 @@ module gravitational_waves_hTXk
               pq=ij_table(p,q)
               ip=ij_table(i,p)
               jq=ij_table(j,q)
-              Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikz,ikx,iky,pq)
-              Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikz,ikx,iky,pq)
+              Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikx,iky,ikz,pq)
+              Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikx,iky,ikz,pq)
             enddo
             enddo
             enddo
@@ -1083,24 +1076,24 @@ module gravitational_waves_hTXk
             do j=1,3
             do i=1,3
               ij=ij_table(i,j)
-              S_T_re(ikz,ikx,iky)=S_T_re(ikz,ikx,iky)+.5*e_T(ij)*Sij_re(ij)
-              S_T_im(ikz,ikx,iky)=S_T_im(ikz,ikx,iky)+.5*e_T(ij)*Sij_im(ij)
-              S_X_re(ikz,ikx,iky)=S_X_re(ikz,ikx,iky)+.5*e_X(ij)*Sij_re(ij)
-              S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ij)
+              S_T_re(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)+.5*e_T(ij)*Sij_re(ij)
+              S_T_im(ikx,iky,ikz)=S_T_im(ikx,iky,ikz)+.5*e_T(ij)*Sij_im(ij)
+              S_X_re(ikx,iky,ikz)=S_X_re(ikx,iky,ikz)+.5*e_X(ij)*Sij_re(ij)
+              S_X_im(ikx,iky,ikz)=S_X_im(ikx,iky,ikz)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
-            hhTre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )
-            hhXre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )
-            hhTim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)
-            hhXim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)
+            hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+            hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+            hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+            hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
 !
-            ggTre=f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )
-            ggXre=f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
-            ggTim=f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
-            ggXim=f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)
+            ggTre=f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )
+            ggXre=f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
+            ggTim=f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
+            ggXim=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
 !
 !  compute omega (but assume c=1), omega*t, etc.
 !
@@ -1116,14 +1109,14 @@ module gravitational_waves_hTXk
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-            coefAre=(hhTre-om12*S_T_re(ikz,ikx,iky))
-            coefAim=(hhTim-om12*S_T_im(ikz,ikx,iky))
-            coefBre=ggTre*om1 !+omt1*om12*S_T_re(ikz,ikx,iky)
-            coefBim=ggTim*om1 !+omt1*om12*S_T_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot !-omt1*om1*S_T_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot !-omt1*om1*S_T_im(ikz,ikx,iky)
+            coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
+            coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
+            coefBre=ggTre*om1
+            coefBim=ggTim*om1
+            f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om-coefAre*om*sinot
+            f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om-coefAim*om*sinot
 !
 !  Debug output
 !
@@ -1135,14 +1128,14 @@ module gravitational_waves_hTXk
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-            coefAre=(hhXre-om12*S_X_re(ikz,ikx,iky))
-            coefAim=(hhXim-om12*S_X_im(ikz,ikx,iky))
-            coefBre=ggXre*om1 !+omt1*om12*S_X_re(ikz,ikx,iky)
-            coefBim=ggXim*om1 !+omt1*om12*S_X_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot !-omt1*om1*S_X_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot !-omt1*om1*S_X_im(ikz,ikx,iky)
+            coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
+            coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
+            coefBre=ggXre*om1
+            coefBim=ggXim*om1
+            f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om-coefAre*om*sinot
+            f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om-coefAim*om*sinot
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
@@ -1158,10 +1151,10 @@ module gravitational_waves_hTXk
 !
 !  Set stress components in f-array.
 !
-            f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )=S_T_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)=S_T_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )=S_T_re(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)=S_T_im(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )=S_X_re(ikx,iky,ikz)
+            f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)=S_X_im(ikx,iky,ikz)
 !
 !  end of ikx, iky, and ikz loops
 !
@@ -1171,8 +1164,6 @@ module gravitational_waves_hTXk
 !
 !  back to real space
 !
-  !   call fourier_transform(S_T_re,S_T_im,linv=.true.)
-  !   call fourier_transform(S_X_re,S_X_im,linv=.true.)
 !--   call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
 !--   call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
 !
@@ -1311,6 +1302,6 @@ module gravitational_waves_hTXk
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../gravitational_waves_hTXk_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
-endmodule gravitational_waves_hTXk
+endmodule Special
