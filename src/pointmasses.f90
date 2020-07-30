@@ -790,7 +790,6 @@ module PointMasses
       real :: accg_local,accg
       integer :: ks,j,ju
       logical :: lintegrate, lparticle_out
-      logical :: ldiagnostic_only
 !
       intent (in) :: f, p
       intent (inout) :: df
@@ -810,18 +809,24 @@ module PointMasses
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
 !
-        ldiagnostic_only=ldiagnos.and.idiag_torque(isecondary)/=0
-!
-        if (llive_secondary.or.ldiagnostic_only) then
+        if (llive_secondary) then
           pointmasses1: do ks=1,nqpar
             lparticle_out=.false.
+!
+!  Check if the particle is out of the box. 
+!
             if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
                  (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
                  (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))) then
                !particle out of box
                lparticle_out=.true.
-             endif
-             lintegrate=(.not.lselfgravity).or.lparticle_out.or.ldiagnostic_only
+            endif
+!
+!  A live particle needs to be integrated if selfgravity is not being used (poisson
+!  equation not being solved) or if it is not in the grid (in which case the selfgravity
+!  cannot be interpolated. 
+!
+             lintegrate=(.not.lselfgravity).or.lparticle_out
 !
 !  Sometimes making the star feel the selfgravity of the disk leads to
 !  numerical troubles as the star is too close to the origin (in cylindrical
@@ -847,16 +852,14 @@ module PointMasses
 !
 !  Add it to its dfp
 !
-               if (llive_secondary) then
-                 do j=1,3
-                   accg_local =   sum(accg_mn(:,j))
-                   call mpireduce_sum(accg_local,accg,1)
-                   if (lroot) then
-                     ju=j-1+ivxq
-                     dfq(ks,ju) = dfq(ks,ju) + accg
-                   endif
-                 enddo
-               endif
+               do j=1,3
+                 accg_local =   sum(accg_mn(:,j))
+                 call mpireduce_sum(accg_local,accg,1)
+                 if (lroot) then
+                    ju=j-1+ivxq
+                    dfq(ks,ju) = dfq(ks,ju) + accg
+                 endif
+               enddo
 !
 !  Calculate torques for output, if needed
 !
