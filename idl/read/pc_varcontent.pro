@@ -59,7 +59,7 @@ default, ntestlnrho, 0
 default, n_np_ap, 0
 
 for line = 1, num_lines do begin
-  str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
+  str = stregex (index_pro[line-1], '^ *n[^= ]+ *= *[0-9]+ *$', /extract)
   if (not execute (str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
 endfor
