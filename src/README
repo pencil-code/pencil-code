@@ -152,3 +152,17 @@ Non-Cartesian grids
 In spherical coordinates, there are open questions about the decay rate
 when using perfect conductor boundary conditions.
 
+IO strategies
+-------------
+
+Please fill in:
+
+-rw-r--r-- 1 brandenb brandenb 43K May 27 07:28 io_hdf5.f90
+-rw-r--r-- 1 brandenb brandenb 52K May 27 07:28 io_mpi2.f90
+-rw-r--r-- 1 brandenb brandenb 22K May 27 07:28 io_wrapper.f90
+-rw-r--r-- 1 brandenb brandenb 51K May 27 07:28 io_collect.f90
+-rw-r--r-- 1 brandenb brandenb 44K May 27 07:28 io_collect_xy_f2003.f90
+-rw-r--r-- 1 brandenb brandenb 48K May 27 07:28 io_collect_xy.f90
+-rw-r--r-- 1 brandenb brandenb 60K May 27 07:28 io_dist.f90
+-rw-r--r-- 1 brandenb brandenb 71K May  8 07:45 io_dist_outlog.f90
+
