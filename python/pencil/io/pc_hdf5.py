@@ -13,12 +13,14 @@ TODO open h5 pencil var object etc, as alternative to var object for
 large datasets with memory limits.
 """
 import h5py
+import numpy as np
 from . import mkdir
 from os.path import exists, join
 import subprocess as sub
 
 #==============================================================================
-def open_h5(filename, status, driver=None, comm=None, overwrite=False, rank=0):
+def open_h5(filename, status, driver=None, comm=None, overwrite=False,
+            size=1, rank=0):
     """This function opens hdf5 file in serial or parallel.
 
     Keyword arguments:
@@ -30,26 +32,32 @@ def open_h5(filename, status, driver=None, comm=None, overwrite=False, rank=0):
         rank:      processor rank with root = 0.
     """
     if '/' in filename:
-        fname = str.split(filename,'/')[-1]
-        path = str.strip(filename,fname)
+        fname = filename.split('/')[-1]
+        path = filename.split(fname)[0]
     else:
         fname = filename
         path = './'
     if not ('.h5' == filename[-3:] or '.hdf5' == filename[-5:]):
-        if rank == 0:
-            print('Relabelling h5 '+fname+' to '+fname+'.h5 on path '+path)
+        if np.mod(rank,size) == 0:
+            print('Relabelling h5 '+fname+' to '+
+                   str.strip(fname,'.dat')+'.h5 on path '+path)
         fname = str.strip(fname,'.dat')+'.h5'
-    mkdir(path)
-    if comm:
-        comm.barrier()
-    if rank == 0 and exists(join(path,fname)):
+    mkdir(path, rank=rank)
+    if exists(join(path,fname)):
         if status == 'w' and not overwrite:
-            cmd = 'mv '+join(path,fname)+' '+join(path,fname+'.bak')
-            process = sub.Popen(cmd.split(),stdout=sub.PIPE)
-            output, error = process.communicate()
-            print(cmd,output,error)
-    if comm:
-        comm.barrier()
+            if exists(join(path,'movefnametobak')):
+                while exists(join(path,'movefnametobak')):
+                    pass
+            else:
+                try:
+                    open(join(path,'movefnametobak','a')).close()
+                    cmd = 'mv '+join(path,fname)+' '+join(path,fname+'.bak')
+                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                    output, error = process.communicate()
+                    print(cmd,output,error)
+                except:
+                    while not exists(join(path,fname)):
+                        pass
     if comm:
         if not driver:
             driver = 'mpio'
@@ -60,7 +68,8 @@ def open_h5(filename, status, driver=None, comm=None, overwrite=False, rank=0):
     return dset
 
 #==============================================================================
-def group_h5(h5obj, groupname, status='r', delete=False, overwrite=False, rank=0):
+def group_h5(h5obj, groupname, status='r', delete=False, overwrite=False,
+             rank=0, size=1, comm=None):
     """This function adds/removes hdf5 group objects.
 
     Keyword arguments:
@@ -70,30 +79,37 @@ def group_h5(h5obj, groupname, status='r', delete=False, overwrite=False, rank=0
         delete:    flag to remove existing group from h5 object.
         overwrite: flag to replace existing group from h5 object.
         rank:      processor rank with root = 0.
+        comm:      only present for parallel version of h5py.
     """
+    #if both overwrite and delete, delete is False
+    if delete:
+        delete = not overwrite
     if not h5obj.__contains__(groupname):
         if status == 'r':
-            if rank == 0:
+            if np.mod(rank,size) == 0:
                 print('group_h5: '+h5obj.filename+' does not contain '+groupname)
-            return 0
+            return False
         else:
             h5obj.create_group(groupname)
     else:
         if not status == 'r' and (delete or overwrite):
-            h5obj.__delitem__(groupname)
-            if rank == 0:
-                print('group_h5: '+groupname+' deleted from '+h5obj.filename)
-            if not overwrite:
-                return 0
-            else:
-                if rank == 0:
-                    print('group_h5: '+groupname+' replaced in '+h5obj.filename)
+            try:
+                h5obj.__delitem__(groupname)
+            except:
+                pass
+            if np.mod(rank,size) == 0:
+                 print('group_h5: '+groupname+' deleted from '+h5obj.filename)
+            if not delete:
                 h5obj.create_group(groupname)
+                if np.mod(rank,size) == 0:
+                    print('group_h5: '+groupname+' replaced in '+h5obj.filename)
+            else:
+                return False
     return h5obj[groupname]
 
 #==============================================================================
-def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
-               overwrite=False, delete=False, rank=0):
+def dataset_h5(h5obj, dataname, status='r', data=None, shape=None, dtype=None,
+               overwrite=False, delete=False, rank=0, size=1, comm=None):
     """This function adds/removes hdf5 dataset objects.
 
     Keyword arguments:
@@ -106,27 +122,31 @@ def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
         delete:    flag to remove existing group from h5 object.
         overwrite: flag to replace existing group from h5 object.
         rank:      processor rank with root = 0.
+        comm:      only present for parallel version of h5py.
     """
     try:
         ldata = len(data)>0
     except:
-        ldata = data is not None    
+        ldata = data is not None
     try:
         lshape = len(shape)>0
     except:
         lshape = shape is not None
+    #if both overwrite and delete, delete is False
+    if delete:
+        delete = not overwrite
     if not h5obj.__contains__(dataname):
-        if mode == 'r':
-            if rank == 0:
+        if status == 'r':
+            if np.mod(rank,size) == 0:
                 print(h5obj.name+' does not contain '+dataname)
-            return 0
+            return False
         else:
             if not ldata:
                 if not lshape:
-                    if rank == 0:
+                    if np.mod(rank,size) == 0:
                         print('dataset_h5: data or shape must be provided')
                 elif not dtype:
-                    if rank == 0:
+                    if np.mod(rank,size) == 0:
                         print('dataset_h5: data not present, provide dtype')
                 else:
                     h5obj.create_dataset(dataname, shape, dtype=dtype)
@@ -136,20 +156,20 @@ def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
                 else:
                     h5obj.create_dataset(dataname, data=data, dtype=dtype)
     else:
-        if not mode == 'r':
-            if delete:
+        if not status == 'r' and (delete or overwrite):
+            try:
                 h5obj.__delitem__(dataname)
-                if rank == 0:
-                    print('dataset_h5: '+dataname+' deleted from '+h5obj.name)
-                return 0
-            if overwrite:
-                h5obj.__delitem__(dataname)
-                if ldata:
-                    if lshape:
-                        if rank == 0:
+            except:
+                pass
+            if np.mod(rank,size) == 0:
+                print('dataset_h5: '+dataname+' deleted from '+h5obj.name)
+            if not delete:
+                if not ldata:
+                    if not lshape:
+                        if np.mod(rank,size) == 0:
                             print('dataset_h5: data or shape must be provided')
                     elif not dtype:
-                        if rank == 0:
+                        if np.mod(rank,size) == 0:
                             print('dataset_h5: data not present, provide dtype')
                     else:
                         h5obj.create_dataset(dataname, shape, dtype=dtype)
@@ -158,4 +178,6 @@ def dataset_h5(h5obj, dataname, mode='r', data=None, shape=None, dtype=None,
                         h5obj.create_dataset(dataname, data=data)
                     else:
                         h5obj.create_dataset(dataname, data=data, dtype=dtype)
+            else:
+                return False
     return h5obj[dataname]

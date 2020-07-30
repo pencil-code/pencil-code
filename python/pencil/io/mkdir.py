@@ -7,7 +7,7 @@
 #####################################################################################
 
 
-def mkdir(destination):
+def mkdir(destination, rank=0):
   ##
   ## external modules
   import os
@@ -15,6 +15,7 @@ def mkdir(destination):
   ## 
   ## create dir if not existing
   if not os.path.exists(destination):
-    os.makedirs(destination)
+    if rank == 0:
+        os.makedirs(destination)
     return True
   return False
