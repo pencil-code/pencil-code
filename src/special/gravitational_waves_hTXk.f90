@@ -102,7 +102,6 @@ module Special
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
-  real, dimension (:), allocatable :: kx, ky, kz
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor
 !
@@ -206,7 +205,6 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: stat, i
-      logical :: lscale_tobox1=.true.
 !
 !  set index table
 !
@@ -291,29 +289,10 @@ module Special
       if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
 !
-      if (.not.allocated(kx)) allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for kx')
-      if (.not.allocated(ky)) allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for ky')
-      if (.not.allocated(kz)) allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij', &
-          'Could not allocate memory for kz')
+!  calculate kscale_factor (for later binning)
 !
-!  calculate kx, ky, kz
+      kscale_factor=2*pi/Lx
 !
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Lx
-      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*kscale_factor
-!
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Ly
-      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*kscale_factor
-!
-      kscale_factor=1
-      if (lscale_tobox1) kscale_factor=2*pi/Lz
-      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*kscale_factor
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -658,9 +637,9 @@ module Special
         do iky=1,ny
           do ikx=1,nx
 !
-            k1=kx(ikx+ipx*nx)
-            k2=ky(iky+ipy*ny)
-            k3=kz(ikz+ipz*nz)
+            k1=kx_fft(ikx+ipx*nx)
+            k2=ky_fft(iky+ipy*ny)
+            k3=kz_fft(ikz+ipz*nz)
 !
             ksqr=k1**2+k2**2+k3**2
 !
@@ -967,9 +946,9 @@ module Special
 !  compute e_T and e_X; determine first preferred direction,
 !  which is a component with the smallest component by modulus.
 !
-            k1=kx(ikx+ipx*nx)
-            k2=ky(iky+ipy*ny)
-            k3=kz(ikz+ipz*nz)
+            k1=kx_fft(ikx+ipx*nx)
+            k2=ky_fft(iky+ipy*ny)
+            k3=kz_fft(ikz+ipz*nz)
             k1sqr=k1**2
             k2sqr=k2**2
             k3sqr=k3**2
