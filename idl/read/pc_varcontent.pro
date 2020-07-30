@@ -62,7 +62,10 @@ for line = 1, num_lines do begin
   cmd = stregex (index_pro[line-1], '^ *n[^= ]+ *= *[0-9]+ *$', /extract)
   if (not execute (cmd)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
+  inactive = stregex (index_pro[line-1], '^ *[^= ]+ *= *(0+|- *1) *$', /extract)
+  if (inactive) then index_pro[line-1] = ""
 endfor
+stop
 
 mvar=dim.mvar & maux=dim.maux
 ;
