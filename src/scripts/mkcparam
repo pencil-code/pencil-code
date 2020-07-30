@@ -495,7 +495,12 @@ sub add_line_avoid_duplicate {
 #
     my ($data,$line) = @_;
 
-    if (index ($data, $line."\n") == -1) {
+    my $search = $line;
+
+    $search =~ s/=.*$/=/gs;
+    $search =~ s/^ +//s;
+
+    if (index ($data, "\n".$search) == -1) {
         # update $data in caller
         $_[0] .= $line."\n";
     }
