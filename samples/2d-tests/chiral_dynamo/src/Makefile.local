@@ -11,5 +11,5 @@ VISCOSITY =   viscosity
 EOS       =   eos_idealgas
 SPECIAL   =   special/chiral_mhd
 REAL_PRECISION = double
-FOURIER   =   fourier_fftpack
-POWER     =   power_spectrum
+#FOURIER   =   fourier_fftpack
+#POWER     =   power_spectrum
