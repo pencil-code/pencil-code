@@ -27,9 +27,13 @@ from .change_value_in_file import change_value_in_file
 from .rename_in_submit_script import rename_in_submit_script
 
 # dill im-/exporter
-from .dill_load import dill_load as load
-from .dill_save import dill_save as save
-from .dill_exists import dill_exists as exists
+try:
+    from .dill_load import dill_load as load
+    from .dill_save import dill_save as save
+    from .dill_exists import dill_exists as exists
+except:
+    print('Warning: Could not import io.dill*. Try:')
+    print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
 
 # pkl im-/exporter
 from .pkl_load import pkl_load #as load
