@@ -164,15 +164,15 @@ class DataCube(object):
                 i += 1
                 tmp_id = infile.read_record('h')
                 block_id = tmp_id[0]
-                print('block_id',block_id)
                 if block_id == 2000:
                     break
                 for key in record_types.keys():
                     if record_types[key][0] == block_id:
                          tmp_val = infile.read_record(record_types[key][1])
-                         self.__setattr__(key, tmp_val)
-                         #if not quiet:
-                         print(key, record_types[key][0],record_types[key][1],tmp_val)
+                         self.__setattr__(key, tmp_val[0])
+                         if not quiet:
+                             print(key, record_types[key][0],
+                                        record_types[key][1],tmp_val)
             return self
 
         dim = None
