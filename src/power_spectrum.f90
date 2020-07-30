@@ -294,10 +294,7 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
- if (trim(sp)=='u') write (200+iproc,*) 'u (7,7,7)', ivec, a1(7,7,7), t
      call fft_xyz_parallel(a1,b1)
- if (trim(sp)=='u') write (200+iproc,*) 'fa1 (7,7,7)', ivec, a1(7,7,7)
- if (trim(sp)=='u') write (200+iproc,*) 'fb1 (7,7,7)', ivec, b1(7,7,7)
 !
 !  integration over shells
 !
@@ -306,7 +303,6 @@ module power_spectrum
         do iky=1,ny
            do ikx=1,nx
               k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
- if ((k==0).and.(trim(sp)=='u')) write (200+iproc,*) 'spec(ikx,iky,ikz,ivec)', ikx-1, iky-1, ikz-1, ivec, &
      a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
               if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                    +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
@@ -315,14 +311,11 @@ module power_spectrum
      enddo
      !
   enddo !(loop over ivec)
- if (trim(sp)=='u') write (200+iproc,*) 'spectrum(k=0)', spectrum(0+1)
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
- if ((iproc==0).and.(trim(sp)=='u')) write (200+iproc,*) 'spectrum_sum(k=1)', spectrum_sum(0+1)
- if ((iproc==0).and.(trim(sp)=='u')) write (200+iproc,*) '0.5*spectrum_sum(k=1)', 0.5*spectrum_sum(0+1)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
