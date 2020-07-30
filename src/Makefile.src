@@ -2810,7 +2810,7 @@ buildinfo:
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	scripts/mkcparam -b $(preprocess) -o cparam.inc
+	scripts/mkcparam -b $(preprocess)
 # [PABourdin]: This does not work if I try to recompile, it just leaves an empty 'cparam.inc' and compilation aborts!
 #	scripts/mkcparam -b $(preprocess) -o cparam.inc.tmp
 #	# please also comment the following line:
