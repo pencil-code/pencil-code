@@ -272,12 +272,17 @@ if (file_test (file_special)) then begin
     ; Parse line with number of components.
     str = stregex (line, '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
     if (not execute (str)) then $
-        message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+str (line_pos)+'.', /info
+        message, 'there was a problem with "'+file_special+'" at line '+str (line_pos)+'.', /info
     ; Parse line with "ispecial = ..." or similar.
     str = stregex (line, '^ *(i[^= ]+)[= ]+.*$', /extract, /sub)
     if (str[1] ne '') then begin
-      indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
-      index_pro = [ index_pro, line ]
+      ; Avoid duplicate entries
+      if (total (index_pro eq line) ge 1) then begin
+        message, "duplicate entry '"+str[1]+"', please remove it from 'index_special.pro' or 'index.pro'.", /info
+      endif else begin
+        indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
+        index_pro = [ index_pro, line ]
+      endelse
     endif
   endwhile
   close, lun
