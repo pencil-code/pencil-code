@@ -8811,7 +8811,7 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for recv_buf!', .true.)
 !
-      do ibox = 0, nprocx-1
+      do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
         if (iproc == partner) then
           ! data is local
