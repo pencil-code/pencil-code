@@ -266,7 +266,9 @@ if (file_test (file_special)) then begin
         search = inconsistent_special[pos].inconsistent_name
         replace = inconsistent_special[pos].name
         str = stregex (line, '^ *'+search+' *(=.*)$', /extract, /sub)
-        line = replace+str[1]
+        if (str[1] ne '') then begin
+          line = replace+str[1]
+        endif
       endfor
     endif
     ; Parse line with number of components.
