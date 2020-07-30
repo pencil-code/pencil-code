@@ -281,6 +281,7 @@ if (file_test (file_special)) then begin
       ; Avoid duplicate entries
       if (total (index_pro eq line) ge 1) then begin
         message, "duplicate entry '"+str[1]+"', please remove it from 'index_special.pro' or 'index.pro'.", /info
+        message, "HINT: a module probably registers this variable twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
       endif else begin
         indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
         index_pro = [ index_pro, line ]
