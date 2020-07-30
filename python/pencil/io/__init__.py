@@ -8,14 +8,13 @@ from .npfile import npfile
 from .mkdir import mkdir
 from .debug_breakpoint import debug_breakpoint
 from .timestamp import timestamp
+from .pc_hdf5 import *
+from .snapshot import *
 try:
-    from .pc_hdf5 import *
-    from .snapshot import *
     from .fort2h5 import *
 except:
-    print('Warning: Could not import io.pc_hdf5. Try:')
-    print('$ pip install h5py')
-    from .snapshot import write_snapshot
+    print('Warning: Could not import io.fort2h5. Try:')
+    print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
 
 # io operation on cluster/computer
 from .get_systemid import get_systemid
