@@ -60,7 +60,7 @@ module Special
   real :: fcoriolis           ! = 2*Omega - gamma*r**2
   real :: planetary_radius    ! = sqrt(Omega/gamma)
   real :: eta0=0.0
-  real :: k_const=2.2
+  real :: storm_truncation_factor=2.2
 !
 ! Different pre-defined forms of the base height
 !
@@ -98,7 +98,7 @@ module Special
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB,eta0,lsubsidence,k_const
+       lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
@@ -478,19 +478,23 @@ module Special
         rr = sqrt((x(l1:l2)-xc(istorm))**2 + (y(m)-yc(istorm))**2)
 !
 !  A storm is truncated at 2.2*rstorm, taken as the "boundary" of the storm.
-!  A storm is also truncated at 2.2 times its lifetime
+!  A storm is also truncated at 2.2 times its lifetime.  Here the truncation 
+!  constant is called  storm_truncation_factor.
 !
-        rboundary_storm  = k_const*rstorm(istorm)
+        rboundary_storm  = storm_truncation_factor*rstorm(istorm)
         t_age_storm      = abs(t-tpeak(istorm))
-        t_duration_storm = k_const*tstorm(istorm)
+        t_duration_storm = storm_truncation_factor*tstorm(istorm)
 !
         expt = exp(- ((t-tpeak(istorm))/tstorm(istorm))**2)
         storm_amplitude = smax(istorm)*expt
 !
-!  Normalization 
+!  The subsidence factor is the spatial integral of the gaussian mass injection. 
+!  It has the following closed analytical solution:
+!  Total mass injected over r_storm =  pi * rstorm(istorm)**2 * (1-exp(- (storm_truncation_factor**2)))
+!  We normalize this by  pi * (r_ext**2 - rboundary_storm**2) as the subsidence occurs outside the mass injection domain.
 !
         if (lsubsidence) &
-             subsidence_factor = rstorm(istorm)**2 * (1-exp(- (k_const**2))) / (r_ext**2 - rboundary_storm**2)
+             subsidence_factor = rstorm(istorm)**2 * (1-exp(- (storm_truncation_factor**2))) / (r_ext**2 - rboundary_storm**2)
 !        
         do i=1,nx
           if (&
