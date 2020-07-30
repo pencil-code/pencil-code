@@ -826,15 +826,15 @@ module PointMasses
 !  equation not being solved) or if it is not in the grid (in which case the selfgravity
 !  cannot be interpolated. 
 !
-             lintegrate=(.not.lselfgravity).or.lparticle_out
+            lintegrate=(.not.lselfgravity).or.lparticle_out
 !
 !  Sometimes making the star feel the selfgravity of the disk leads to
 !  numerical troubles as the star is too close to the origin (in cylindrical
 !  coordinates).
 !
-             if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
+            if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
 !
-             integrategas: if (lintegrate) then
+            integrategas: if (lintegrate) then
 !
 !  Get the acceleration particle ks suffers due to self-gravity.
 !
