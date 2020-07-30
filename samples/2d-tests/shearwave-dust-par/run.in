@@ -3,7 +3,7 @@
 !  velocity field.
 !
 &run_pars
-  nt = 100, it1 = 1
+  nt = 100, it1 = 5
   tmax = 10.0
 /
 &eos_run_pars
