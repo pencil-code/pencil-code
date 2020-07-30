@@ -337,16 +337,41 @@ open CPARAM, "cparam.local";
 my @cparam = <CPARAM>;
 close CPARAM;
 
+#
+# Find out which particle parameters are defined in cparam.local.
+#
+my $mpar_loc=0;
+my $npar_mig=0;
+my $npar_species=0;
+my $nqpar=0;
+my $npar_stalk=0;
+my $nbrickx=0;
+my $nbricky=0;
+my $nbrickz=0;
+my $nblockmax=0;
+foreach $line (@cparam) {
+  $line=substr($line, 0, index($line,"!")); # ignore comment lines
+  $mpar_loc=1     if ($line =~ 'mpar_loc');
+  $npar_mig=1     if ($line =~ 'npar_mig');
+  $npar_species=1 if ($line =~ 'npar_species');
+#  $nqpar=1        if ($line =~ 'nqpar');
+  $npar_stalk=1   if ($line =~ 'npar_stalk');
+  $nbrickx=1      if ($line =~ 'nbrickx');
+  $nbricky=1      if ($line =~ 'nbricky');
+  $nbrickz=1      if ($line =~ 'nbrickz');
+  $nblockmax=1    if ($line =~ 'nblockmax');
+}
+
 # Write default values of undefined particle parameters to cparam.inc:
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: mpar_loc=npar");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_mig=1");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_species=1");
-#add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nqpar=1");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_stalk=0");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickx=1");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbricky=1");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickz=1");
-add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nblockmax=1");
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: mpar_loc=npar")  unless $mpar_loc;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_mig=1")     unless $npar_mig;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_species=1") unless $npar_species;
+#add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nqpar=1")        unless $nqpar;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: npar_stalk=0")   unless $npar_stalk;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickx=1")      unless $nbrickx;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbricky=1")      unless $nbricky;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickz=1")      unless $nbrickz;
+add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nblockmax=1")    unless $nblockmax;
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules:
