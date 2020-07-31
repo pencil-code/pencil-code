@@ -703,7 +703,7 @@ module Special
 !  Debug output
 !
             if (ldebug_print) then
-              if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
+              if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
               1000 format(2i5,1p,4e11.2)
             endif
 !
@@ -713,49 +713,49 @@ module Special
 !
               if (GWs_spec) then
                 spectra%GWs(ik)=spectra%GWs(ik) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)**2
                 spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                   -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
               endif
 !
 !  Gravitational wave strain spectrum computed from h
 !
               if (GWh_spec) then
                 spectra%GWh(ik)=spectra%GWh(ik) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2
                 spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                   -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
               endif
 !
 !  Gravitational wave mixed spectrum computed from h and g
 !
               if (GWm_spec) then
                 spectra%GWm(ik)=spectra%GWm(ik) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
                 spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
-                   -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
-                   -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
               endif
 !
 !  Stress spectrum computed from Str
@@ -763,15 +763,15 @@ module Special
 !
               if (Str_spec) then
                 spectra%Str(ik)=spectra%Str(ik) &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )**2 &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)**2
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)**2
                 spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
-                   +f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  ) &
-                   -f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  ) &
-                   *f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim) )
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim) )
               endif
 !
 !  Stress spectrum computed from the scalar mode, SCL.
