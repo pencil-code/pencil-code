@@ -495,21 +495,23 @@ module Special
 !
         if (lsubsidence) &
              subsidence_factor = rstorm(istorm)**2 * (1-exp(- (storm_truncation_factor**2))) / (r_ext**2 - rboundary_storm**2)
-!        
+!
         do i=1,nx
-          if (&
-               (rr(i)       < rboundary_storm  ).and.&
-               (t_age_storm < t_duration_storm ) &
-               ) then
+! 
+! Do time loop first then space loop;
+! mass injection and subsidence are done at different regions
+! 
+          if (t_age_storm < t_duration_storm ) then
+            if (rr(i)       < rboundary_storm  ) then
+              storm_function_mn(i) = storm_amplitude * &
+                   exp(- ( rr(i) / rstorm(istorm))**2)
 !
-            storm_function_mn(i) = storm_amplitude * &
-                 exp(- ( rr(i) / rstorm(istorm))**2)
+              if (lsubsidence) subsidence_mn(i) = 0.
+            else
+              storm_function_mn(i) = 0.
 !
-            if (lsubsidence) subsidence_mn(i) = 0.
-          else
-            storm_function_mn(i) = 0.
-!
-            if (lsubsidence) subsidence_mn(i) = storm_amplitude*subsidence_factor
+              if (lsubsidence) subsidence_mn(i) = -storm_amplitude*subsidence_factor
+            endif
           endif
         enddo
 !
