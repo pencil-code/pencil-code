@@ -58,12 +58,24 @@ default, ntestscalar, 0
 default, ntestlnrho, 0
 default, n_np_ap, 0
 
-for line = 1, num_lines do begin
-  cmd = stregex (index_pro[line-1], '^ *n[^= ]+ *= *[0-9]+ *$', /extract)
+for line = 0, num_lines-1 do begin
+  cmd = stregex (index_pro[line], '^ *n[^= ]+ *= *[0-9]+ *$', /extract)
   if (not execute (cmd)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-  inactive = stregex (index_pro[line-1], '^ *[^= ]+ *= *(0+|- *1) *$', /extract)
-  if (inactive) then index_pro[line-1] = ""
+      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line+1)+'.', /info
+  inactive = stregex (index_pro[line], '^ *[^= ]+ *= *(0+|- *1) *$', /extract)
+  if (inactive) then index_pro[line] = ""
+  if ((line ge 2) and (index_pro[line] ne '')) then begin
+    ; Check for (and remove) double entries
+    for against = 0, line-2 do begin
+      if (index_pro[against] eq '') then continue
+      if (index_pro[against] eq index_pro[line]) then begin
+        message, "HINT: some module used 'farray_register_*' and 'farray_index_append', twice, where the latter call should be removed!", /info
+        message, "HINT: the offending line in 'index.pro' is: '"+index_pro[line]+"'", /info
+        index_pro[line] = ''
+      end
+    end
+print, index_pro+' | '
+  end
 endfor
 
 mvar=dim.mvar & maux=dim.maux
@@ -338,7 +350,6 @@ for tag = 1, num_tags do begin
     pos = min (long (matches[2,lines]))
     array = max (long (matches[1,lines]))
     if (num ne vector * array) then begin
-      message, "HINT: a module might register '"+original+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
       message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
     end
   end else begin
