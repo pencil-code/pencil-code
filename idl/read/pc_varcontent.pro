@@ -74,7 +74,6 @@ for line = 0, num_lines-1 do begin
         index_pro[line] = ''
       end
     end
-print, index_pro+' | '
   end
 endfor
 
