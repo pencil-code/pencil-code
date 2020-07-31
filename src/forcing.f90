@@ -5768,6 +5768,7 @@ flush(6)
           force(:,3) = force(:,3) + cos_kdotxwt*KS_A(3,modeN) + &
                                     sin_kdotxwt*KS_B(3,modeN)
         enddo
+        force=ampl_ff(i)*force
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
