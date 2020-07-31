@@ -282,7 +282,8 @@ if (file_test (file_special)) then begin
     if (str[1] ne '') then begin
       ; Avoid duplicate entries
       if (total (index_pro eq line) ge 1) then begin
-        message, "duplicate entry '"+str[1]+"', please remove it from 'index_special.pro' or 'index.pro'.", /info
+        default, search, str[1]
+        message, "duplicate entry '"+search+"', please remove it from 'index_special.pro' or 'index.pro'.", /info
         message, "HINT: a module probably registers this variable twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
       endif else begin
         indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
@@ -328,21 +329,22 @@ num_vars = 0
 offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsampled varfile if no MVAR variables are contained
 						     ; as indices in index.pro refer to the varfile not to the downsampled varfile
 for tag = 1, num_tags do begin
-  search = indices[tag-1].name
+  original = indices[tag-1].name
   vector = indices[tag-1].dims
   ; Identify f-array variables with multiple vectors or components (arrays & arrays of vectors)
-  matches = stregex (index_pro, '^ *'+search+'([1-9][0-9]*)[xyz]? *= *(.*) *$', /extract, /sub)
+  matches = stregex (index_pro, '^ *'+original+'([1-9][0-9]*)[xyz]? *= *(.*) *$', /extract, /sub)
   lines = where (matches[0,*] ne '', num)
   if (num ge 1) then begin
     pos = min (long (matches[2,lines]))
     array = max (long (matches[1,lines]))
     if (num ne vector * array) then begin
-      message, "HINT: a module might register '"+search+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
-      message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+      message, "HINT: a module might register '"+original+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
+      message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
     end
   end else begin
     array = 0
     ; Translate shortcuts (e.g. iuu => iu[x,y,z])
+    search = original
     found = where (search eq indices_shortcut[*].name, num)
     if (num ge 1) then search = indices_shortcut[found].replace
     ; Identify f-array variables with scalars & vectors (e.g. ilnrho, iu[x,y,z])
@@ -351,8 +353,8 @@ for tag = 1, num_tags do begin
     if (num ge 1) then begin
       pos = min (long (matches[2,lines]))
       if (num ne vector) then begin
-        message, "HINT: a module might register '"+search+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
-        message, 'Dimensions of "'+search+'" do not fit to number of entries in "index.pro"!'
+        message, "HINT: a module might register '"+original+"' twice by using 'farray_register_*' and 'farray_index_append', where the latter should be removed!", /info
+        message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
       end
     end else begin
       ; Quantity not contained in this run
