@@ -798,7 +798,7 @@ else if (($hn =~ r*c*)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
-else if (($hn =~ c*)) then
+else if (($hn =~ c*.mahti.csc.fi)) then
   echo "Mahti - CSC, Kajaani, Finland"
   set mpirun = 'srun'
   set npops = "-n $ncpus"
