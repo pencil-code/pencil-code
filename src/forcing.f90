@@ -5220,10 +5220,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
       allocate(KS_B(3,KS_modes))
       allocate(KS_omega(KS_modes))
 !
-      !kmin=2.*pi      !/(1.0*Lxyz(1))
-      !kmax=128.*pi    !nx*pi
-print*, 'KS:',(KS_modes-1.)
-flush(6)
+      kmin=2.*pi      !/(1.0*Lxyz(1))
+      kmax=128.*pi    !nx*pi
       a=(kmax/kmin)**(1./(KS_modes-1.))
 !
 !  Loop over all modes.
