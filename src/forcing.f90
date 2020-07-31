@@ -181,6 +181,12 @@ module Forcing
   real, dimension(:), allocatable :: kkx,kky,kkz
   real, dimension(:), allocatable :: kkx2,kky2,kkz2
 !
+  real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field
+!for each wavenumber?
+  real, allocatable, dimension (:) :: KS_omega !or through whole field for each
+!wavenumber?
+  integer :: KS_modes = 25
+!
   contains
 !
 !***********************************************************************
@@ -903,6 +909,11 @@ module Forcing
           if (lroot) print*,'forcing_cont: fluxring cylindrical'
         elseif (iforcing_cont(i)=='vortex') then
           call torus_init(torus)
+        elseif (iforcing_cont(i)=='KS') then
+        !call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
+        !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
+        call random_isotropic_KS_setup_test !Test KS model code with 3 specific
+        !modes.
         endif
       enddo
       if (lroot .and. n_forcing_cont==0) &
@@ -5179,6 +5190,227 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
+    subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
+!
+!  Produces random, isotropic field from energy spectrum following the
+!  KS method (Malik and Vassilicos, 1999.)
+!
+!  More to do; unsatisfactory so far - at least for a steep power-law
+!  energy spectrum.
+!
+!  27-may-05/tony: modified from snod's KS hydro initial
+!  03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
+!                    KS modes.
+!
+      use Sub, only: cross, dot2
+      use General, only: random_number_wrapper
+!
+      integer :: modeN
+!
+      real, dimension (3) :: k_unit
+      real, dimension (3) :: ee,e1,e2
+      real, dimension (6) :: r
+      real :: initpower,kmin,kmax
+      real, dimension(KS_modes) :: k,dk,energy,ps
+      real :: theta,phi,alpha,beta
+      real :: ex,ey,ez,norm,a
+!
+      allocate(KS_k(3,KS_modes))
+      allocate(KS_A(3,KS_modes))
+      allocate(KS_B(3,KS_modes))
+      allocate(KS_omega(KS_modes))
+!
+      !kmin=2.*pi      !/(1.0*Lxyz(1))
+      !kmax=128.*pi    !nx*pi
+print*, 'KS:',(KS_modes-1.)
+flush(6)
+      a=(kmax/kmin)**(1./(KS_modes-1.))
+!
+!  Loop over all modes.
+!
+      do modeN=1,KS_modes
+!
+!  Pick wavenumber.
+!
+        k=kmin*(a**(modeN-1.))
+!
+!  Pick 4 random angles for each mode.
+!
+        call random_number_wrapper(r);
+        theta=pi*(r(1) - 0.)
+        phi=pi*(2*r(2) - 0.)
+        alpha=pi*(2*r(3) - 0.)
+        beta=pi*(2*r(4) - 0.)
+!
+!  Make a random unit vector by rotating fixed vector to random position
+!  (alternatively make a random transformation matrix for each k).
+!
+        k_unit(1)=sin(theta)*cos(phi)
+        k_unit(2)=sin(theta)*sin(phi)
+        k_unit(3)=cos(theta)
+!
+        energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
+            *exp(-0.5*(k/kmax)**2.)
+!
+!  Make a vector KS_k of length k from the unit vector for each mode.
+!
+        KS_k(:,modeN)=k*k_unit(:)
+        KS_omega(:)=sqrt(energy(:)*(k(:)**3.))
+!
+!  Construct basis for plane having rr normal to it
+!  (bit of code from forcing to construct x', y').
+!
+      if ((k_unit(2)==0).and.(k_unit(3)==0)) then
+          ex=0.; ey=1.; ez=0.
+        else
+          ex=1.; ey=0.; ez=0.
+        endif
+        ee = (/ex, ey, ez/)
+!
+        call cross(k_unit(:),ee,e1)
+!  e1: unit vector perp. to KS_k
+        call dot2(e1,norm); e1=e1/sqrt(norm)
+        call cross(k_unit(:),e1,e2)
+!  e2: unit vector perp. to KS_k, e1
+        call dot2(e2,norm); e2=e2/sqrt(norm)
+!
+!  Make two random unit vectors KS_B and KS_A in the constructed plane.
+!
+        KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
+        KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
+!
+!  Make sure dk is set.
+!
+        call error('random_isotropic_KS_setup', 'Using uninitialized dk')
+        dk=0.                     ! to make compiler happy
+!
+        ps=sqrt(2.*energy*dk)   !/3.0)
+!
+!  Give KS_A and KS_B length ps.
+!
+        KS_A(:,modeN)=ps*KS_A(:,modeN)
+        KS_B(:,modeN)=ps*KS_B(:,modeN)
+!
+      enddo
+!
+!  Form RA = RA x k_unit and RB = RB x k_unit.
+!  Note: cannot reuse same vector for input and output.
+!
+      do modeN=1,KS_modes
+        call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
+        call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
+      enddo
+!
+      call keep_compiler_quiet(initpower)
+!
+    endsubroutine random_isotropic_KS_setup
+!***********************************************************************
+    subroutine random_isotropic_KS_setup_test
+!
+!  Produces random, isotropic field from energy spectrum following the
+!  KS method (Malik and Vassilicos, 1999.)
+!  This test case only uses 3 very specific modes (useful for comparison
+!  with Louise's kinematic dynamo code.
+!
+!  03-feb-06/weezy: modified from random_isotropic_KS_setup
+!
+      use Sub, only: cross
+      use General, only: random_number_wrapper
+!
+      integer :: modeN
+!
+      real, dimension (3,KS_modes) :: k_unit
+      real, dimension(KS_modes) :: k,dk,energy,ps
+      real :: initpower,kmin,kmax
+!
+      allocate(KS_k(3,KS_modes))
+      allocate(KS_A(3,KS_modes))
+      allocate(KS_B(3,KS_modes))
+      allocate(KS_omega(KS_modes))
+!
+      initpower=-5./3.
+      kmin=10.88279619
+      kmax=23.50952672
+!
+      KS_k(1,1)=2.00*pi
+      KS_k(2,1)=-2.00*pi
+      KS_k(3,1)=2.00*pi
+!
+      KS_k(1,2)=-4.00*pi
+      KS_k(2,2)=0.00*pi
+      KS_k(3,2)=2.00*pi
+!
+      KS_k(1,3)=4.00*pi
+      KS_k(2,3)=2.00*pi
+      KS_k(3,3)=-6.00*pi
+!
+      KS_k(1,1)=+1; KS_k(2,1)=-1; KS_k(3,1)=1
+      KS_k(1,2)=+0; KS_k(2,2)=-2; KS_k(3,2)=1
+      KS_k(1,3)=+0; KS_k(2,3)=-0; KS_k(3,3)=1
+!
+      k(1)=kmin
+      k(2)=14.04962946
+      k(3)=kmax
+!
+      do modeN=1,KS_modes
+        k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
+      enddo
+!
+      kmax=k(KS_modes)
+      kmin=k(1)
+!
+      do modeN=1,KS_modes
+        if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
+        if (modeN>1.and.modeN<KS_modes) &
+            dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
+        if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
+      enddo
+!
+      do modeN=1,KS_modes
+         energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
+             *exp(-0.5*(k(modeN)/kmax)**2)
+      enddo
+!
+      ps=sqrt(2.*energy*dk)
+!
+      KS_A(1,1)=1.00/sqrt(2.00)
+      KS_A(2,1)=-1.00/sqrt(2.00)
+      KS_A(3,1)=0.00
+!
+      KS_A(1,2)=1.00/sqrt(3.00)
+      KS_A(2,2)=1.00/sqrt(3.00)
+      KS_A(3,2)=-1.00/sqrt(3.00)
+!
+      KS_A(1,3)=-1.00/2.00
+      KS_A(2,3)=-1.00/2.00
+      KS_A(3,3)=1.00/sqrt(2.00)
+!
+      KS_B(1,3)=1.00/sqrt(2.00)
+      KS_B(2,3)=-1.00/sqrt(2.00)
+      KS_B(3,3)=0.00
+!
+      KS_B(1,1)=1.00/sqrt(3.00)
+      KS_B(2,1)=1.00/sqrt(3.00)
+      KS_B(3,1)=-1.00/sqrt(3.00)
+!
+      KS_B(1,2)=-1.00/2.00
+      KS_B(2,2)=-1.00/2.00
+      KS_B(3,2)=1.00/sqrt(2.00)
+!
+      do modeN=1,KS_modes
+        KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
+        KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
+      enddo
+!
+!  Form RA = RA x k_unit and RB = RB x k_unit.
+!
+       do modeN=1,KS_modes
+         call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
+         call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
+       enddo
+!
+    endsubroutine random_isotropic_KS_setup_test
+!***********************************************************************
     subroutine forcing_cont(i,force,rho1)
 !
 !   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
@@ -5202,7 +5434,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx) :: tmp
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1
       real :: kf, kx, ky, kz, nu, arg, ecost, esint
-      integer :: i2d1=1,i2d2=2,i2d3=3
+      integer :: i2d1=1,i2d2=2,i2d3=3,modeN
+      real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
 !
         select case (iforcing_cont(i))
         case('Fz=const')
@@ -5520,6 +5753,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
             force(:,2)=0.
           endwhere
           force(:,3)=0.
+!
+!  KS-flow
+!
+      case ('KS')
+        force=0.
+        do modeN=1,KS_modes  ! sum over KS_modes modes
+          kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
+          cos_kdotxwt=cos(kdotxwt) ;  sin_kdotxwt=sin(kdotxwt)
+          force(:,1) = force(:,1) + cos_kdotxwt*KS_A(1,modeN) + &
+                                    sin_kdotxwt*KS_B(1,modeN)
+          force(:,2) = force(:,2) + cos_kdotxwt*KS_A(2,modeN) + &
+                                    sin_kdotxwt*KS_B(2,modeN)
+          force(:,3) = force(:,3) + cos_kdotxwt*KS_A(3,modeN) + &
+                                    sin_kdotxwt*KS_B(3,modeN)
+        enddo
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
