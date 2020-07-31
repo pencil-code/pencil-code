@@ -58,6 +58,7 @@ default, ntestscalar, 0
 default, ntestlnrho, 0
 default, n_np_ap, 0
 
+found = 0
 for line = 0, num_lines-1 do begin
   cmd = stregex (index_pro[line], '^ *n[^= ]+ *= *[0-9]+ *$', /extract)
   if (not execute (cmd)) then $
@@ -69,9 +70,10 @@ for line = 0, num_lines-1 do begin
     for against = 0, line-2 do begin
       if (index_pro[against] eq '') then continue
       if (index_pro[against] eq index_pro[line]) then begin
-        message, "HINT: some module used 'farray_register_*' and 'farray_index_append', twice, where the latter call should be removed!", /info
-        message, "HINT: the offending line in 'index.pro' is: '"+index_pro[line]+"'", /info
+        if (found eq 0) then message, "HINT: some module used 'farray_register_*' and 'farray_index_append', twice, where the latter call should be removed!", /info
+        message, 'the offending line in "data/index.pro" is: '+index_pro[line], /info
         index_pro[line] = ''
+        found++
       end
     end
   end
