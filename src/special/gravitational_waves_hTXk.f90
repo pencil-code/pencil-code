@@ -633,6 +633,8 @@ module Special
       spectra%Str=0.; spectra%Strhel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
 !
+!  Loop over all positions in k-space.
+!
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
