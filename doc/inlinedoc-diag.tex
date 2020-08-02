@@ -24,6 +24,7 @@
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
 %%   gravitational_waves_hTXk.f90
+%%   gravitational_waves_hTXk_no_xpara.f90
 %%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
@@ -842,6 +843,32 @@
   \var{strXpt}    & $S_{\rm X}(x_1,y_1,z_1,t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk.f90}} \\
+\midrule
+  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
+  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
+  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
+  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
+  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
+  \var{EEGW}      & $\bra{g_T^2+g_X^2}\,c^2/(32\pi G)$ \\
+  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{hhT2m}     & $\bra{h_T^2}$ \\
+  \var{hhX2m}     & $\bra{h_X^2}$ \\
+  \var{hhTXm}     & $\bra{h_T h_X}$ \\
+  \var{ggT2m}     & $\bra{g_T^2}$ \\
+  \var{ggX2m}     & $\bra{g_X^2}$ \\
+  \var{ggTXm}     & $\bra{g_T g_X}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk_no_xpara.f90}} \\
 \midrule
   \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
   \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\

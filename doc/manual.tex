@@ -2240,8 +2240,8 @@ as a function $z(\zeta)$ of an equidistant grid
 $\zeta_i$ with grid spacing $\Delta\zeta = 1$.
 
 The way the parameters are handled, the box size and position are
-\emph{not} changed when you switch to a non-equidistant grid, i.e.~they are
-still determined by \var{xyz0} and \var{Lxyz}.
+\emph{not} changed when you switch to a non-equidistant grid, i.e.,
+they are still determined by \var{xyz0} and \var{Lxyz}.
 
 The first and second derivatives can be calculated by
 \begin{equation} \label{Eq-nonequi-fprime}
@@ -2628,7 +2628,14 @@ Therefore, your \file{start.in} file will look something similar to:
   xyz0 = -3.14159, -3.14159, -3.14159
   Lxyz = 6.28319, 6.28319, 9.42478
 \end{Verbatim}
-Now you can analyze quickly the surface of interest and some other $xy-$slice
+A smarter way of specifying the box size in units of $\pi$ is to write
+\begin{Verbatim}
+&init_pars
+  xyz_units = 'pi', 'pi', 'pi'
+  xyz0 = -1., -1., -1.
+  Lxyz =  2.,  2.,  2.
+\end{Verbatim}
+Now you can analyze quickly the surface of interest and some other $xy$ slice
 setting \var{zbot_slice} and \var{ztop_slice} in the \file{run.in} file:
 \begin{Verbatim}
 &run_pars
@@ -8345,7 +8352,7 @@ where \code{nw=nx*ny*nz}.
   16 &Triolith&0.075& $128^3$ & magn/noentro & 2x2x4  &  1-mar-14 & AB \\
   16 &Triolith&0.065& $128^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
   16 &Triolith&0.054& $256^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
-  16 &Coma & 0.603 & $128^3$ & GW/magn/noentro & 1x4x4  & 27-jul-17 & SM \\
+  16 &Coma & 0.603 & $128^3$ & GWo/magn/noentro & 1x4x4  & 27-jul-17 & SM \\
   24 &Gardar & 0.44 & $128^2\times48$ & magn/noentro &        & 6-nov-13 & AB \\
   24 &Summit & 0.041& $144^3$ & magn/noentro &        & 28-jul-17 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
@@ -8366,7 +8373,7 @@ where \code{nw=nx*ny*nz}.
   36 &Kraken&0.177&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x6x2&12-jan-12&WL\\
   36 &scylla &0.096&  $72^3$ & magn/noentro & 1x6x6  &  8-may-16 & AB \\
   48 & janus & 0.028 & $72^2*216$ & magn/noentro &  4x12   &  28-mar-16 & AB \\
-  64 &Coma & 0.573 & $128^3$ & GW/magn/noentro & 1x8x8  & 7-aug-17 & SM \\
+  64 &Coma & 0.573 & $128^3$ & GWo/magn/noentro & 1x8x8  & 7-aug-17 & SM \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -8462,12 +8469,14 @@ where \code{nw=nx*ny*nz}.
 1152&Kraken& 0.00549  &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1152&Lindgren&0.016&$512^2{\!\times\!}512$&magn/rad&1x36x32&17-mar-14& AB \\
 1152&Lindgren&0.0066&$1152^3$&magn/noentro&1x32x36&25-nov-14& AB \\
-1152&Beskow&0.0055&$1152^3$&magn/noentro/GW&1x32x36&27-aug-17& AB \\
+1152&Beskow&0.0055&$1152^3$&GWo/magn/noentro&1x32x36&27-aug-17& AB \\
 1152&Beskow&0.0024&$1152^3$&magn/noentro&1x32x36&20-jan-15& AB \\
 1152&Beskow&0.00098&$1152^3$&magn/noentro&1x32x36&18-jan-16& AB-gnu \\
 1152&Beskow&0.00090&$1152^3$&magn/noentro&1x32x36&30-mar-17& AB \\
-1152&Beskow&0.0060 &$1152^3$&magn/noentro/GW&1x32x36 &31-mar-18 & AB \\
+1152&Beskow&0.0060 &$1152^3$&GWo/magn/noentro&1x32x36 &31-mar-18 & AB \\
 1152&Beskow&0.0063 &$ 576^3$&magn/entro/rad&1x32x36 &17-feb-18 & AB \\
+1152&Beskow&0.0030 &$1152^3$&GWn/nomagn/noentro&1x32x36 &30-jul-20 & AB \\
+1152&Beskow&0.0017 &$1152^3$&GWo/nomagn/noentro&1x32x36 &30-jul-20 & AB \\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048&Hermit&0.00451&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&2x32x32&22-aug-13&PJK\\
 2048&Hermit&0.00380&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x16x16&22-aug-13&PJK\\
