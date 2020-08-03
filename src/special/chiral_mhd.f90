@@ -285,22 +285,18 @@ module Special
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
-!      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (ldiffmu5_hyper2_simplified) lpenc_requested(i_del4mu5)=.true.
       if (ldiffmuS_hyper2_simplified) lpenc_requested(i_del4muS)=.true.
       if (lhydro.or.lhydro_kinematic) then
          lpenc_requested(i_uu)=.true.
-         lpenc_requested(i_oo)=.true.
+         if (lCVE) lpenc_requested(i_oo)=.true.
       endif
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
       endif
-!      if (lmagnetic) lpenc_requested(i_jij)=.true.
-!      if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
-      lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -338,13 +334,13 @@ module Special
         if (lpencil(i_gmuS)) call grad(f,imuS,p%gmuS)
         if (lpencil(i_ugmuS)) call dot(p%uu,p%gmuS,p%ugmuS)
         if (lpencil(i_del2muS)) call del2(f,imuS,p%del2muS)
+        if (lpencil(i_del4muS)) call del4(f,imuS,p%del4muS)
       endif
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_del4mu5)) call del4(f,imu5,p%del4mu5)
-      if (lpencil(i_del4muS)) call del4(f,imuS,p%del4muS)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -377,7 +373,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2, u21
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2
       real, dimension (nx,3) :: mu5bb, muSmu5oo
 !
 !  Identify module and boundary conditions.
@@ -413,7 +409,9 @@ module Special
 !
 !  Contributions to timestep from mu5 equation
       dt1_lambda5 = lambda5*eta*p%b2
-      dt1_CVE2 = p%muS*lambda5*eta*p%b2
+      if (lmuS) then
+         dt1_CVE2 = p%muS*lambda5*eta*p%b2
+      endif
       dt1_D5 = diffmu5*dxyz_2
 !      if (lmuS) then
 !        dt1_mu5_3 = p%muS*coef_mu5*sqrt(p%b2)
@@ -466,7 +464,9 @@ module Special
       endif
 !  Contributions to timestep from bb equation
       dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
-      dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
+      if (lCVE) then 
+         dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
+      endif
 !
 !  Additions to the test-field equations
 !
