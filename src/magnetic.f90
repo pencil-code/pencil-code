@@ -469,6 +469,9 @@ module Magnetic
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_1,y_1,z_1,t)$
   integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_1,y_1,z_1,t)$
   integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_1,y_1,z_1,t)$
+  integer :: idiag_bxbypt=0     ! DIAG_DOC: $(B_x B_y)(x_1,y_1,z_1,t)$
+  integer :: idiag_bybzpt=0     ! DIAG_DOC: $(B_y B_z)(x_1,y_1,z_1,t)$
+  integer :: idiag_bzbxpt=0     ! DIAG_DOC: $(B_z B_x)(x_1,y_1,z_1,t)$
   integer :: idiag_jxpt=0       ! DIAG_DOC: $J_x(x_1,y_1,z_1,t)$
   integer :: idiag_jypt=0       ! DIAG_DOC: $J_y(x_1,y_1,z_1,t)$
   integer :: idiag_jzpt=0       ! DIAG_DOC: $J_z(x_1,y_1,z_1,t)$
@@ -5253,6 +5256,9 @@ module Magnetic
             call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
             call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
             call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,1)*p%bb(lspoint-nghost,2),idiag_bxbypt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,2)*p%bb(lspoint-nghost,3),idiag_bybzpt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,3)*p%bb(lspoint-nghost,1),idiag_bzbxpt,isound)
             call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
             call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
             call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
@@ -5856,6 +5862,9 @@ module Magnetic
         if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
         if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
         if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
+        if (idiag_bxbypt/=0) call save_name(p%bb(lpoint-nghost,1)*p%bb(lpoint-nghost,2),idiag_bxbypt)
+        if (idiag_bybzpt/=0) call save_name(p%bb(lpoint-nghost,2)*p%bb(lpoint-nghost,3),idiag_bybzpt)
+        if (idiag_bzbxpt/=0) call save_name(p%bb(lpoint-nghost,3)*p%bb(lpoint-nghost,1),idiag_bzbxpt)
         if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
         if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
         if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
@@ -9059,6 +9068,7 @@ module Magnetic
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
+        idiag_bxbypt=0; idiag_bybzpt=0; idiag_bzbxpt=0
         idiag_jxpt=0; idiag_jypt=0; idiag_jzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
         idiag_axpt=0; idiag_aypt=0; idiag_azpt=0
@@ -9382,6 +9392,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'bxbypt',idiag_bxbypt)
+        call parse_name(iname,cname(iname),cform(iname),'bybzpt',idiag_bybzpt)
+        call parse_name(iname,cname(iname),cform(iname),'bzbxpt',idiag_bzbxpt)
         call parse_name(iname,cname(iname),cform(iname),'jxpt',idiag_jxpt)
         call parse_name(iname,cname(iname),cform(iname),'jypt',idiag_jypt)
         call parse_name(iname,cname(iname),cform(iname),'jzpt',idiag_jzpt)
@@ -9737,6 +9750,9 @@ module Magnetic
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bxpt',idiag_bxpt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bypt',idiag_bypt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bzpt',idiag_bzpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bxbypt',idiag_bxbypt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bybzpt',idiag_bybzpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bzbxpt',idiag_bzbxpt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'axpt',idiag_axpt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'aypt',idiag_aypt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'azpt',idiag_azpt)
