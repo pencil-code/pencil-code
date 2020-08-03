@@ -278,6 +278,9 @@ module Hydro
   integer :: idiag_uxp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
   integer :: idiag_uyp2=0       ! DIAG_DOC: $u_y(x_2,y_2,z_2,t)$
   integer :: idiag_uzp2=0       ! DIAG_DOC: $u_z(x_2,y_2,z_2,t)$
+  integer :: idiag_uxuypt=0     ! DIAG_DOC: $(u_x u_y)(x_1,y_1,z_1,t)$
+  integer :: idiag_uyuzpt=0     ! DIAG_DOC: $(u_y u_z)(x_1,y_1,z_1,t)$
+  integer :: idiag_uzuxpt=0     ! DIAG_DOC: $(u_z u_x)(x_1,y_1,z_1,t)$
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_xaver_range
@@ -3503,6 +3506,9 @@ module Hydro
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          if (idiag_uxuypt/=0) call save_name(p%uu(lpoint-nghost,1)*p%uu(lpoint-nghost,2),idiag_uxuypt)
+          if (idiag_uyuzpt/=0) call save_name(p%uu(lpoint-nghost,2)*p%uu(lpoint-nghost,3),idiag_uyuzpt)
+          if (idiag_uzuxpt/=0) call save_name(p%uu(lpoint-nghost,3)*p%uu(lpoint-nghost,1),idiag_uzuxpt)
         endif
 !
 !  Velocity components at point 2 (=p2).
@@ -5089,6 +5095,9 @@ module Hydro
         idiag_uxp2=0
         idiag_uyp2=0
         idiag_uzp2=0
+        idiag_uxuypt=0
+        idiag_uyuzpt=0
+        idiag_uzuxpt=0
         idiag_urms=0
         idiag_durms=0
         idiag_urmsx=0
@@ -5566,6 +5575,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxp2',idiag_uxp2)
         call parse_name(iname,cname(iname),cform(iname),'uyp2',idiag_uyp2)
         call parse_name(iname,cname(iname),cform(iname),'uzp2',idiag_uzp2)
+        call parse_name(iname,cname(iname),cform(iname),'uxuypt',idiag_uxuypt)
+        call parse_name(iname,cname(iname),cform(iname),'uyuzpt',idiag_uyuzpt)
+        call parse_name(iname,cname(iname),cform(iname),'uzuypt',idiag_uzuxpt)
         call parse_name(iname,cname(iname),cform(iname),'fintm',idiag_fintm)
         call parse_name(iname,cname(iname),cform(iname),'fextm',idiag_fextm)
         call parse_name(iname,cname(iname),cform(iname),'divuHrms',idiag_divuHrms)
