@@ -5577,7 +5577,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzp2',idiag_uzp2)
         call parse_name(iname,cname(iname),cform(iname),'uxuypt',idiag_uxuypt)
         call parse_name(iname,cname(iname),cform(iname),'uyuzpt',idiag_uyuzpt)
-        call parse_name(iname,cname(iname),cform(iname),'uzuypt',idiag_uzuxpt)
+        call parse_name(iname,cname(iname),cform(iname),'uzuxpt',idiag_uzuxpt)
         call parse_name(iname,cname(iname),cform(iname),'fintm',idiag_fintm)
         call parse_name(iname,cname(iname),cform(iname),'fextm',idiag_fextm)
         call parse_name(iname,cname(iname),cform(iname),'divuHrms',idiag_divuHrms)
