@@ -7372,8 +7372,11 @@ nameloop: do
 !     imm12
 !
           do ix=1,nx
-            rfac(ix)=abs(fimm12_r(ix)-fimm12_l(ix)) &
-                     /(abs(fim1(ix)-fimm1(ix))+tini)
+            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+              rfac(ix)=(fimm12_r(ix)-fimm12_l(ix))/(fim1(ix)-fimm1(ix))
+            endif
             q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
           enddo
           flux_imm12(:,k)=0.5*cmax_imm12*q1*(fimm12_r-fimm12_l)
@@ -7381,8 +7384,11 @@ nameloop: do
 !     ipp12
 !
           do ix=1,nx
-            rfac(ix)=abs(fipp12_r(ix)-fipp12_l(ix)) &
-                     /(abs(fipp1(ix)-fip1(ix))+tini)
+            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+              rfac(ix)=(fipp12_r(ix)-fipp12_l(ix))/(fipp1(ix)-fip1(ix))
+            endif
             q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
           enddo
           flux_ipp12(:,k)=0.5*cmax_ipp12*q1*(fipp12_r-fipp12_l)
@@ -7392,11 +7398,17 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
-                     fim1(ix))+tini)
+            if ((fim12_r(ix)-fim12_l(ix))*(exp(f(ix+nghost,m,n,j))-fim1(ix)) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+              rfac(ix)=(fim12_r(ix)-fim12_l(ix))/(exp(f(ix+nghost,m,n,j))-fim1(ix))
+            endif
           else
-            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
-                     fim1(ix))+tini)
+            if ((fim12_r(ix)-fim12_l(ix))*(f(ix+nghost,m,n,j)-fim1(ix)) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+              rfac(ix)=(fim12_r(ix)-fim12_l(ix))/(f(ix+nghost,m,n,j)-fim1(ix))
+            endif
           endif
           q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
@@ -7406,11 +7418,18 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
-                     exp(f(ix+nghost,m,n,j)))+tini)
+            if ((fip12_r(ix)-fip12_l(ix))*(fip1(ix)-exp(f(ix+nghost,m,n,j))) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+              rfac(ix)=(fip12_r(ix)-fip12_l(ix))/(fip1(ix)-exp(f(ix+nghost,m,n,j)))
+            endif
           else
-            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+            if ((fip12_r(ix)-fip12_l(ix))*(fip1(ix)-f(ix+nghost,m,n,j)) .le. 0.0) then
+              rfac(ix) = 0.0
+            else
+             rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
                      f(ix+nghost,m,n,j))+tini)
+            endif
           endif
           q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
         enddo
