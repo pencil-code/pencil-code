@@ -79,7 +79,7 @@ module Param_IO
 ! 
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
-      xyz_units, coord_system, lpole, lcoarse, ncoarse, lfix_unit_std, &
+      xyz_units, k1, coord_system, lpole, lcoarse, ncoarse, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, dvid, ldivu_perp, &

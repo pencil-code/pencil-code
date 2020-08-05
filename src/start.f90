@@ -198,6 +198,12 @@ program start
 !  Set box dimensions, make sure Lxyz and xyz1 are in sync.
 !  Box defaults to [-pi,pi] for all directions if none of xyz1 or Lxyz are set.
 !  If luniform_z_mesh_aspect_ratio=T, the default Lz scales with nzgrid/nxgrid.
+!  If k1 is set, we initialize Lxyz for a cubic domain of size 2*pi/k1.
+!
+  if (k1/=impossible) then
+    Lxyz=twopi/k1
+    xyz0=-Lxyz/2.
+  endif
 !
   do i=1,3
     if (Lxyz(i) == impossible) then
