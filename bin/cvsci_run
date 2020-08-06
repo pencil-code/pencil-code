@@ -63,9 +63,9 @@ foreach pdir ($dirlist)
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few such files)
 #
-  \ls | egrep 'power.*\.dat' >/dev/null
+  \ls | egrep '*power.*\.dat' >/dev/null
   if ( ! $status ) then
-    cvs add power*.dat
+    cvs add *power*.dat
   endif
 #
 #  add structure functions, if they exist
