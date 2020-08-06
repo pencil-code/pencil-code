@@ -1934,7 +1934,12 @@ else if ($hn =~ node* && $masterhost == 'vsl176') then
 # NASA Pleiades system
 else if ($masterhost =~ pfe) then
   echo "Running on NASA Pleiades system"
-  module load comp-intel mpi/mpt.1.25
+  module load comp-intel mpi-sgi/mpt
+  if (! $?PENCIL_HOME) setenv PENCIL_HOME $HOME/pencil-code
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
   set mpirun = "mpiexec"
 #----------------------------------------------
 # For ukmhd cluster St Andrews

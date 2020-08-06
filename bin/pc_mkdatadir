@@ -223,6 +223,8 @@ else if ( ($hn =~ gardar*) ) then
   set str='s/home/scratch/g'
 else if ($hn =~ darwin*) then
   set str='s/Users/var\/tmp/g'
+else if (($hn =~ pfe*) && ($USER =~ jwarnec1))then # joern on Pleiades
+  set str='s/home3\//nobackup\//g'
 else if (($hn =~ hydra*) && ($USER =~ joernw))then # joern on hydra
   set str='s/u\//ptmp\//g'
 else if (($hn =~ cobra*) && ($USER =~ joernw))then # joern on cobra
