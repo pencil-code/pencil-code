@@ -33,7 +33,7 @@ module power_spectrum
 !
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
-  logical :: lhalf_factor_in_GW=.false.
+  logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
   integer :: firstout = 0
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -44,7 +44,7 @@ module power_spectrum
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz, n_segment_x, lhalf_factor_in_GW, &
+      lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale
 !
   contains
@@ -924,6 +924,8 @@ module power_spectrum
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -954,6 +956,13 @@ module power_spectrum
   spectrum_sum=0.
   spectrumhel=0.
   spectrumhel_sum=0.
+  !
+  if (lcylindrical_spectra) then
+    cyl_spectrum=0.
+    cyl_spectrum_sum=0.
+    cyl_spectrumhel=0.
+    cyl_spectrumhel_sum=0.
+  endif
   !
   !  loop over all the components
   !
@@ -1263,14 +1272,48 @@ module power_spectrum
         enddo
       enddo
     enddo
+!
+!  allow for possibility of cylindrical spectral
+!
+    if (lcylindrical_spectra) then
+      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+           !+kz(ikz+ipz*nz)**2
+            k=nint(sqrt(k2))
+            if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+              cyl_spectrum(k+1,ikz)=cyl_spectrum(k+1,ikz) &
+                 +b_re(ikx,iky,ikz)**2 &
+                 +b_im(ikx,iky,ikz)**2
+              cyl_spectrumhel(k+1,ikz)=cyl_spectrumhel(k+1,ikz) &
+                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  end of loop through all points
+!
+            endif
+          enddo
+        enddo
+      enddo
+    endif
     !
   enddo !(from loop over ivec)
   !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !
+  if (lcylindrical_spectra) then
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+  endif
 !
 !  compute krms only once
 !
@@ -1312,6 +1355,38 @@ module power_spectrum
       write(1,'(1p,8e10.2)') spectrumhel_sum
     endif
     close(1)
+    !
+    if (lcylindrical_spectra) then
+      if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
+           ,' to ',trim(datadir)//'/cyl_power_'//trim(sp)//'.dat'
+    !
+      cyl_spectrum_sum=.5*cyl_spectrum_sum
+      open(1,file=trim(datadir)//'/cyl_power_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do ikz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, ikz, cyl_spectrum_sum(k,ikz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrum_sum
+      endif
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cyl_powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do ikz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, ikz, cyl_spectrumhel_sum(k,ikz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
+      endif
+      close(1)
+    endif
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
