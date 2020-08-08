@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale
+          lkscale=lkscale,cyl=cyl
 ;
 ;  $Id$
 ;
@@ -98,8 +98,14 @@ end else begin
         print,'Exiting........'
         stop
     end
-    file1='power'+var1+'.dat'
-    file2='power'+var2+'.dat'
+    if keyword_set(cyl) then begin
+      file1='cyl_power'+var1+'.dat'
+      file2='cyl_power'+var2+'.dat'
+      print,'AXEL2'
+    endif else begin
+      file1='power'+var1+'.dat'
+      file2='power'+var2+'.dat'
+    endelse
 end 
 ;
 ;  plot only when iplot=1 (default)
@@ -132,11 +138,21 @@ if  keyword_set(v1) then begin
 end
 ;print,'nx=',nx
 imax=nx/2
-if keyword_set(double) then begin
-  spectrum1=dblarr(imax)
+print,'AXEL',dim.nx,dim.nz
+if keyword_set(cyl) then begin
+  if keyword_set(double) then begin
+    spectrum1=dblarr(imax,dim.nz)
+  endif else begin
+    spectrum1=fltarr(imax,dim.nz)
+  endelse
 endif else begin
-  spectrum1=fltarr(imax)
+  if keyword_set(double) then begin
+    spectrum1=dblarr(imax)
+  endif else begin
+    spectrum1=fltarr(imax)
+  endelse
 endelse
+;
 if n_elements(size) eq 0 then size=2.*!pi
 k0=2.*!pi/size
 wavenumbers=indgen(imax)*k0 
@@ -159,30 +175,56 @@ openr, unit, datatopdir+'/'+file1, /get_lun
   while ~eof(unit) do begin
     readf,unit,time
     readf,unit,spectrum1
-    if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
-    if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
+    ;if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
+    ;if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
+    ;AB: can include 0, I think.
+    if (max(spectrum1) gt globalmax) then globalmax=max(spectrum1)
+    if (min(spectrum1) lt globalmin) then globalmin=min(spectrum1)
     i++
   endwhile
+print,'AXEL3'
+stop
 free_lun, unit
-if keyword_set(double) then begin
-  spec1=dblarr(imax,i-1)
+if keyword_set(cyl) then begin
+  if keyword_set(double) then begin
+    spec1=dblarr(imax,dim.nz,i-1)
+  endif else begin
+    spec1=fltarr(imax,dim.nz,i-1)
+  endelse
 endif else begin
-  spec1=fltarr(imax,i-1)
+  if keyword_set(double) then begin
+    spec1=dblarr(imax,i-1)
+  endif else begin
+    spec1=fltarr(imax,i-1)
+  endelse
 endelse
+print,'AXEL4'
+;
 tt=fltarr(i-1)
 lasti=i-2
 default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
+print,'AXEL5'
 ;
 ;  Opening file 2 if it is defined
 ;
 unit_2__open = 0L
 if (file2 ne '') then begin
-  if keyword_set(double) then begin
-    spectrum2=dblarr(imax)
-    spec2=dblarr(imax,i-1)
+  if keyword_set(cyl) then begin
+    if keyword_set(double) then begin
+      spectrum2=dblarr(imax,dim.nz)
+      spec2=dblarr(imax,dim.nz,i-1)
+    endif else begin
+      spectrum2=fltarr(imax,dim.nz)
+      spec2=fltarr(imax,dim.nz,i-1)
+    endelse
   endif else begin
-    spectrum2=fltarr(imax)
-    spec2=fltarr(imax,i-1)
+    if keyword_set(double) then begin
+      spectrum2=dblarr(imax)
+      spec2=dblarr(imax,i-1)
+    endif else begin
+      spectrum2=fltarr(imax)
+      spec2=fltarr(imax,i-1)
+    endelse
   endelse
   openr, unit_2,datatopdir+'/'+file2, /get_lun
   unit_2__open = 1L
@@ -192,16 +234,26 @@ endif
 ;
 unit_3__open = 0L
 if (file3 ne '') then begin
-  if keyword_set(double) then begin
-    spectrum3=dblarr(imax)
-    spec3=dblarr(imax,i-1)
+  if keyword_set(cyl) then begin
+    if keyword_set(double) then begin
+      spectrum3=dblarr(imax,dim.nz)
+      spec3=dblarr(imax,dim.nz,i-1)
+    endif else begin
+      spectrum3=fltarr(imax,dim.nz)
+      spec3=fltarr(imax,dim.nz,i-1)
+    endelse
   endif else begin
-    spectrum3=fltarr(imax)
-    spec3=fltarr(imax,i-1)
+    if keyword_set(double) then begin
+      spectrum3=dblarr(imax)
+      spec3=dblarr(imax,i-1)
+    endif else begin
+      spectrum3=fltarr(imax)
+      spec3=fltarr(imax,i-1)
+    endelse
   endelse
   openr, unit_3, datatopdir+'/'+file3, /get_lun
   unit_3__open = 1L
-  spec3=fltarr(imax,i-1)
+  ;spec3=fltarr(imax,i-1)
 endif
 ;
 ;  Plotting the results for last time frame
@@ -234,18 +286,34 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
       	readf,unit_1,time
        	readf,unit_1,spectrum1
 	tt(i-1)=time
-       	spec1(*,i-1)=spectrum1
-       	maxy=max(spectrum1(1:*))
-       	miny=min(spectrum1(1:*))
+  ;if keyword_set(cyl) then begin
+  ;endif else begin
+  ;endelse
+        if keyword_set(cyl) then begin
+       	  spec1(*,*,i-1)=spectrum1
+        endif else begin
+       	  spec1(*,i-1)=spectrum1
+        endelse
+;
+       	;maxy=max(spectrum1(1:*))
+       	;miny=min(spectrum1(1:*))
+       	maxy=max(spectrum1)
+       	miny=min(spectrum1)
         ;
         ;  read second spectrum
         ;
        	if unit_2__open then begin
 	  readf,unit_2,time
 	  readf,unit_2,spectrum2
-          spec2(*,i-1)=spectrum2
-          if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
-          if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+          if keyword_set(cyl) then begin
+            spec2(*,*,i-1)=spectrum2
+          endif else begin
+            spec2(*,i-1)=spectrum2
+          endelse
+          ;if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
+          ;if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+          if (max(spectrum2) gt maxy) then maxy=max(spectrum2)
+          if (min(spectrum2) lt miny) then miny=min(spectrum2)
           ;
           ;  normalize?
           ;
@@ -260,9 +328,16 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
        	if unit_3__open then begin
 	  readf,unit_3,time
 	  readf,unit_3,spectrum3
-          spec3(*,i-1)=spectrum3
-          if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
-          if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
+          if keyword_set(cyl) then begin
+            spec3(*,*,i-1)=spectrum3
+          endif else begin
+            spec3(*,i-1)=spectrum3
+          endelse
+          ;
+          ;if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
+          ;if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
+          if (max(spectrum3) gt maxy) then maxy=max(spectrum3)
+          if (min(spectrum3) lt miny) then miny=min(spectrum3)
           ;
           ;  normalize?
           ;
