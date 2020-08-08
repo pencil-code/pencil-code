@@ -364,6 +364,10 @@ for tag = 1, num_tags do begin
     lines = where (matches[0,*] ne '', num)
     if (num ge 1) then begin
       pos = min (long (matches[2,lines]))
+      if (vector eq 3) then begin
+        matches = stregex (index_pro, '^ *'+search+'([xyz]) *= *([1-9][0-9]*) *$', /extract, /sub)
+        lines = where (matches[0,*] ne '', num)
+      end
       if (num ne vector) then begin
         message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
       end
