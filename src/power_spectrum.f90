@@ -914,7 +914,7 @@ module power_spectrum
     use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, im, in, ivec, ivec_jj
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
@@ -1281,16 +1281,16 @@ module power_spectrum
         do iky=1,ny
           do ikx=1,nx
             k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-           !+kz(ikz+ipz*nz)**2
+            jkz=nint(kz(ikz+ipz*nz))
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
 !  sum energy and helicity spectra
 !
-              cyl_spectrum(k+1,ikz)=cyl_spectrum(k+1,ikz) &
+              cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
                  +b_re(ikx,iky,ikz)**2 &
                  +b_im(ikx,iky,ikz)**2
-              cyl_spectrumhel(k+1,ikz)=cyl_spectrumhel(k+1,ikz) &
+              cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
@@ -1363,9 +1363,9 @@ module power_spectrum
       cyl_spectrum_sum=.5*cyl_spectrum_sum
       open(1,file=trim(datadir)//'/cyl_power_'//trim(sp)//'.dat',position='append')
       if (lformat) then
-        do ikz = 1, nzgrid
+        do jkz = 1, nzgrid
         do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, ikz, cyl_spectrum_sum(k,ikz)
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
         enddo
         enddo
       else
@@ -1376,9 +1376,9 @@ module power_spectrum
       !
       open(1,file=trim(datadir)//'/cyl_powerhel_'//trim(sp)//'.dat',position='append')
       if (lformat) then
-        do ikz = 1, nzgrid
+        do jkz = 1, nzgrid
         do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, ikz, cyl_spectrumhel_sum(k,ikz)
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrumhel_sum(k,jkz)
         enddo
         enddo
       else
@@ -1415,7 +1415,7 @@ module power_spectrum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec, stat
+  integer :: i, k, ikx, iky, ikz, im, in, ivec, stat
   real :: k2
   real, dimension(mx,my,mz,mfarray) :: f
   real, dimension(mx,my,mz,3) :: Lor
