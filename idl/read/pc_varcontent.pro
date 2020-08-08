@@ -360,7 +360,7 @@ for tag = 1, num_tags do begin
     found = where (search eq indices_shortcut[*].name, num)
     if (num ge 1) then search = indices_shortcut[found].replace
     ; Identify f-array variables with scalars & vectors (e.g. ilnrho, iu[x,y,z])
-    matches = stregex (index_pro, '^ *'+search+'([xyz]?) *= *([0-9][1-9]*) *$', /extract, /sub)
+    matches = stregex (index_pro, '^ *'+search+'([xyz]?) *= *([1-9][0-9]*) *$', /extract, /sub)
     lines = where (matches[0,*] ne '', num)
     if (num ge 1) then begin
       pos = min (long (matches[2,lines]))
