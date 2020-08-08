@@ -209,7 +209,7 @@ indices_aux = [ $
   { name:'ipotself', label:'Self gravity potential', dims:1 }, $
   { name:'igpotselfx', label:'Gradient of self gravity potential', dims:3 }, $
   { name:'ivisc_heat', label:'Viscous dissipation', dims:1 }, $
-  { name:'ivisc_forcx', label:'Viscous force (acceleration)', dims:3 }, $
+  { name:'ivisc_forc', label:'Viscous force (acceleration)', dims:3 }, $
   { name:'ihypvis', label:'Hyperviscosity', dims:3 }, $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
   { name:'ihcond', label:'Thermal conductivity', dims:1 }, $
@@ -254,7 +254,7 @@ inconsistent = [ $
   { name:'igpotselfx', inconsistent_name:'gpotself' }, $
   { name:'ihypvis', inconsistent_name:'hyv' }, $
   { name:'ihypres', inconsistent_name:'hyr' }, $
-  { name:'ivisc_forcx', inconsistent_name:'visc_force' } $
+  { name:'ivisc_forc', inconsistent_name:'visc_force' } $
   ; don't forget to add a comma above when extending
 ]
 
