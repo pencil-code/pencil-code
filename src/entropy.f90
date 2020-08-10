@@ -429,6 +429,7 @@ module Energy
   integer :: idiag_fradymxy_Kprof=0 ! ZAVG_DOC: $F^{\rm rad}_y$ ($y$-component of radiative flux, $z$-averaged, from Kprof)
   integer :: idiag_fradxy_kramers=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged,
                                     ! ZAVG_DOC: from Kramers' opacity)
+  integer :: idiag_fradr_constchixy=0 ! ZAVG_DOC: $F_{\rm rad}$ (from chi_const)
   integer :: idiag_fturbxy=0   ! ZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                ! ZAVG_DOC: s\right>_{z}$
   integer :: idiag_fturbymxy=0 ! ZAVG_DOC: $\left<\varrho T \chi_t \nabla_y
@@ -1232,7 +1233,10 @@ module Energy
 
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) &
         idiag_fturbz=0
-      if (.not.lheatc_chiconst) idiag_fradz_constchi=0
+      if (.not.lheatc_chiconst) then 
+       idiag_fradz_constchi=0
+       idiag_fradr_constchixy=0
+      endif       
       if (.not.(lheatc_Kprof.or.lheatc_Kconst)) idiag_fradmx=0
 
       if (.not.lheatc_Kprof) then
@@ -3561,6 +3565,7 @@ module Energy
         call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         if (idiag_fradz_constchi/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
+        if (idiag_fradr_constchixy/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradr_constchixy)
         if (idiag_TT2mx/=0) call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
         if (idiag_TT2mz/=0) call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         if (idiag_uxTTmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
@@ -6724,7 +6729,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
-        idiag_chikrammin=0; idiag_chikrammax=0
+        idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0;
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
       endif
 !
@@ -6872,6 +6877,7 @@ module Energy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbymxy',idiag_fturbymxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbrxy',idiag_fturbrxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradr_constchixy',idiag_fradr_constchixy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradymxy_Kprof',idiag_fradymxy_Kprof)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_kramers',idiag_fradxy_kramers)
