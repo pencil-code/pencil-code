@@ -2060,6 +2060,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##NS: to allow for long lines in source codes (max col no def was 132)
 ##FFLAGS=-O3 -ffree-line-length-0 -large #(beskow*)
 #FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(beskow*)
+#FFLAGS=-O3 -ffree-line-length-0 #(beskow*)
 ##NS: use following for debugging the code
 ##FFLAGS=-O3 -fcheck=all #(beskow*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(beskow*)

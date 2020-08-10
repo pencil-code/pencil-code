@@ -1281,7 +1281,7 @@ module power_spectrum
         do iky=1,ny
           do ikx=1,nx
             k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-            jkz=nint(kz(ikz+ipz*nz))
+            jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !

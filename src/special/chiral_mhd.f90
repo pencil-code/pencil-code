@@ -35,7 +35,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of chiral_mhd_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -76,7 +76,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module chiral_mhd
 !
   use Cparam
   use Cdata
@@ -112,14 +112,14 @@ module Special
 !
   character (len=labellen) :: initspecial='nothing'
 !
-  namelist /special_init_pars/ &
+  namelist /chiral_mhd_init_pars/ &
       initspecial, mu5_const, &
       lmuS, lCVE, lmu5adv, lmuSadv, muS_const, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5
 !
-  namelist /special_run_pars/ &
+  namelist /chiral_mhd_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
@@ -553,7 +553,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=chiral_mhd_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -561,7 +561,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=chiral_mhd_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -571,7 +571,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=chiral_mhd_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -579,7 +579,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=chiral_mhd_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -715,6 +715,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../chiral_mhd_dummies.inc'
 !*********************************************************************** 
-endmodule Special
+endmodule chiral_mhd
