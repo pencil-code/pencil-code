@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl
+          lkscale=lkscale,cyl=cyl,zwav=zwav
 ;
 ;  $Id$
 ;
@@ -101,7 +101,6 @@ end else begin
     if keyword_set(cyl) then begin
       file1='cyl_power'+var1+'.dat'
       file2='cyl_power'+var2+'.dat'
-      print,'AXEL2'
     endif else begin
       file1='power'+var1+'.dat'
       file2='power'+var2+'.dat'
@@ -136,9 +135,7 @@ if  keyword_set(v1) then begin
      size=grid.Lz
   end
 end
-;print,'nx=',nx
 imax=nx/2
-print,'AXEL',dim.nx,dim.nz
 if keyword_set(cyl) then begin
   if keyword_set(double) then begin
     spectrum1=dblarr(imax,dim.nz)
@@ -156,8 +153,9 @@ endelse
 if n_elements(size) eq 0 then size=2.*!pi
 k0=2.*!pi/size
 wavenumbers=indgen(imax)*k0 
-k=findgen(imax)+1.
+;k=findgen(imax)+1.
 k=findgen(imax)
+zwav=findgen(dim.nz)-dim.nz/2
 if  keyword_set(v1) then begin
   if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
        OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
@@ -182,8 +180,6 @@ openr, unit, datatopdir+'/'+file1, /get_lun
     if (min(spectrum1) lt globalmin) then globalmin=min(spectrum1)
     i++
   endwhile
-print,'AXEL3'
-stop
 free_lun, unit
 if keyword_set(cyl) then begin
   if keyword_set(double) then begin
@@ -198,12 +194,10 @@ endif else begin
     spec1=fltarr(imax,i-1)
   endelse
 endelse
-print,'AXEL4'
 ;
 tt=fltarr(i-1)
 lasti=i-2
 default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
-print,'AXEL5'
 ;
 ;  Opening file 2 if it is defined
 ;
