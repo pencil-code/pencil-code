@@ -12,9 +12,7 @@ tags:
   - combustion
 authors:
   - name: The Pencil Code Collaboration
-   affiliation: 1
 affiliations:
- - name: Science Insitutes
    index: 1
 date: 13 August 2020
 bibliography: paper.bib
