@@ -12,7 +12,9 @@ tags:
   - combustion
 authors:
   - name: The Pencil Code Collaboration
+   affiliation: 1
 affiliations:
+ - name: Science Insitutes
    index: 1
 date: 13 August 2020
 bibliography: paper.bib
@@ -26,7 +28,7 @@ Pencil Code: Finite-difference Code for Compressible Hydrodynamic Flows.
 
 # Acknowledgements
 
-We acknowledge contributions from all submitters and their surporting
+We acknowledge contributions from all submitters and their supporting
 funding agencies.
 
 # References
