@@ -9,6 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+!
 !***************************************************************
 !
 !-------------------------------------------------------------------
@@ -74,7 +75,7 @@ module Special
   real :: tmass_relaxation=176.0,tmass_relaxation1
   real :: tduration=17.0,rsize_storm=0.03
   real :: interval_between_storms=17.0 
-  integer, parameter :: nstorm=1
+  integer, parameter :: nstorm=50
   real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
 
 !
@@ -194,18 +195,20 @@ module Special
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: storm_function_mn,subsidence_mn
+      logical :: lfirstloop
 
       if (lcalc_storm) then
 !
         do n=n1,n2
           do m=m1,m2
+             lfirstloop = (n==n1.and.m==m1)
 !
 !  Define the storm function to the added to the d(gh)/dt RHS
 !
             if (.not.lsubsidence) then 
-              call calc_storm_function(storm_function_mn)
+              call calc_storm_function(storm_function_mn,lfirstloop)
             else
-              call calc_storm_function(storm_function_mn,subsidence_mn)
+              call calc_storm_function(storm_function_mn,lfirstloop,subsidence_mn)
               subsidence_grid(:,m-m1+1) = subsidence_mn
             endif
 !
@@ -433,7 +436,7 @@ module Special
 !
   endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine calc_storm_function(storm_function_mn,subsidence_mn)
+  subroutine calc_storm_function(storm_function_mn,lfirstloop,subsidence_mn)
 !
 !  Storm function as defined in Showman (2007) and Brueshaber et al. (2019).
 !  This function simply takes the parameters from update_storms and constructs
@@ -459,6 +462,7 @@ module Special
       real :: rboundary_storm,t_age_storm,t_duration_storm
       real :: expt, storm_amplitude, subsidence_factor
       integer :: i,istorm 
+      logical :: lfirstloop
 !
       intent(out) :: storm_function_mn,subsidence_mn
 !     
@@ -466,10 +470,13 @@ module Special
 !  xc, yc, rstorm, tpeak, and tstorm will be re-written.
 !  Call it only on the first stage, and the first imn point.
 !
-      if (lfirst.and.lfirstpoint.and.it/=1) call update_storms()
+      if (lfirst.and.lfirstloop.and.it/=1) call update_storms()
 !         
 !  Now that we have the parameters of the storms, construct the
 !  function and add to the equation of motion. 
+!
+      storm_function_mn = 0.
+      if (lsubsidence) subsidence_mn = 0.
 !
       do istorm=1,nstorm
 !
@@ -503,14 +510,11 @@ module Special
 ! 
           if (t_age_storm < t_duration_storm ) then
             if (rr(i)       < rboundary_storm  ) then
-              storm_function_mn(i) = storm_amplitude * &
-                   exp(- ( rr(i) / rstorm(istorm))**2)
-!
-              if (lsubsidence) subsidence_mn(i) = 0.
+              storm_function_mn(i) = storm_function_mn(i) + &
+                   storm_amplitude * exp(- ( rr(i) / rstorm(istorm))**2)
             else
-              storm_function_mn(i) = 0.
-!
-              if (lsubsidence) subsidence_mn(i) = -storm_amplitude*subsidence_factor
+              if (lsubsidence) subsidence_mn(i) = subsidence_mn(i) - &
+                   storm_amplitude*subsidence_factor
             endif
           endif
         enddo
@@ -580,7 +584,7 @@ module Special
          print*,'list of storms will be read from file, '
          print*,'to regenerate the storm structure.'
          print*,''
-         print*,'m,n=',m,n
+         !print*,'m,n=',m,n
        endif
 !      
 !  Reading storm data stored in storms.dat. Every processors reads it.
