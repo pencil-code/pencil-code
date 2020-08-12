@@ -1,21 +1,21 @@
 ---
 title: 'Pencil Code: A modular MPI code for partial differential equation'
 tags:
-  - Fortran90
-  - fluid dynamics
-  - magnetohydrodynamics
-  - Python
-  - IDL
-  - astronomy
-  - radiation
-  - inertial particles
-  - combustion
+ - Fortran90
+ - fluid dynamics
+ - magnetohydrodynamics
+ - Python
+ - IDL
+ - astronomy
+ - radiation
+ - inertial particles
+ - combustion
 authors:
-  - name: The Pencil Code Collaboration
-    affiliation: 1
+ - name: The Pencil Code Collaboration
+   affiliation: 1
 affiliations:
-  - name: Independent Researchers
-    index: 1
+ - name: Independent Researchers
+   index: 1
 date: 13 August 2020
 bibliography: paper.bib
 ---
