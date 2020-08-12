@@ -75,7 +75,6 @@ module Special
   real :: tmass_relaxation=176.0,tmass_relaxation1
   real :: tduration=17.0,rsize_storm=0.03
   real :: interval_between_storms=17.0 
-  integer, parameter :: nstorm=50
   real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
 
 !
