@@ -209,7 +209,7 @@ module Special
   logical :: lregularize_beta=.false., &
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
-             lremove_beta_zeros=.false.
+             lremove_beta_negativ=.false.
   real :: rel_eta=.01    ! should be > 0
 
   ! Input dataset name
@@ -238,7 +238,7 @@ module Special
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
-      lalt_decomp, lremove_beta_zeros
+      lalt_decomp, lremove_beta_negativ, rel_eta
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -969,9 +969,10 @@ module Special
 
 !if (lroot.and.lbeta) write(200,*) beta_data(1,:,:,1,:,:)
 
-           if (lbeta.and.lremove_beta_zeros) then
+           if (lbeta.and.lremove_beta_negativ) then
+           if (iload==1) call get_shared_variable('eta', eta)
              do i=1,3
-               where(beta_data(:,:,:,:,i,i)<0.0) beta_data(:,:,:,:,i,i)=0.0
+               where(beta_data(:,:,:,:,i,i)<eta*rel_eta) beta_data(:,:,:,:,i,i)=eta*rel_eta
              enddo
            endif
 
