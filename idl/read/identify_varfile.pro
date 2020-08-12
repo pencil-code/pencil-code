@@ -7,6 +7,7 @@
 ;  Returns filename.
 ;
 ;     path: relative path to file.
+;  datadir: base path to the data directory.
 ;  /nohdf5: ignore .h5 files.
 ;
      default, filename, 'var.dat'
