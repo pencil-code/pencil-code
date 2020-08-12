@@ -1,0 +1,49 @@
+!                -*-f90-*-     (for Emacs)
+!
+! Kappa-mechanism in vertically stratified atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.3 2016/07/01 06:29:30 wlyra Exp $',
+! 
+  ip    = 14,                 ! debugging parameter
+  xyz0  =  -0.55,-0.55,-0.55,    ! first corner of box
+  xyz1  =   0.55, 0.55, 0.55,   ! second corner of box
+  lperi = T , T , T,          ! periodic direction?
+  lwrite_ic=T,
+  lwrite_aux=T
+  !   ux, uy, uz, h 
+  !bcx='a','s','a','s','s'
+  !bcy='s','a','a','s','s'
+  ! a  ->0           ; zero
+  ! s  ->der=0       ; zero gradient
+  ! a2 ->der2=const  ; constant gradient
+  lcylinder_in_a_box=T
+  r_int=0.0
+  r_ext=0.5
+  lwrite_ic=T
+/
+&initial_condition_pars
+   !init_shallow_density='solid-body'
+   !init_shallow_hydro='solid-body'
+   !Omega_SB=1.0
+   !gamma_parameter=1.0
+   !eta0=0.0
+/
+&hydro_init_pars
+   inituu='zero'
+/
+&density_init_pars
+   initlnrho='const_rho'
+   rho_const=0.0
+   ldensity_nolog=T
+/
+&special_init_pars
+  !tstorm
+  !tduration
+  rsize_storm=0.01
+  !interval_between_storms
+  storm_strength=1.13445643e-05
+/
+&shock_init_pars
+/

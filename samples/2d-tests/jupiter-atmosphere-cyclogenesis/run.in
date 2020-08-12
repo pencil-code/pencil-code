@@ -1,0 +1,66 @@
+!                               -*-f90-*- (for emacs)
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2016/02/10 09:25:12 wlyra Exp $',
+  ip=14
+  nt=50, it1=10, isave=1000, itorder=3
+  cdt=0.4
+  cdtv=0.4
+  cdtv3=0.1
+  lpencil_check=F
+  lpencil_check_small=F
+  lwrite_dvar=T
+  dsnap=6.283185307179586 ! 1 rotation = 2*pi
+  tmax=628.3185307179586 ! 100 rotations
+  wfreeze_ext= 0.
+  wborder_ext=0.025
+  tborder=0.1
+
+  dtmin=1e-6
+  crash_file_dtmin_factor=10.
+/
+&density_run_pars
+  idiff='hyper3-mesh','diffrho-shock'
+  diffrho_hyper3_mesh=5.
+  diffrho_shock=5.
+  lfreeze_lnrhoext=T
+  borderlnrho='initial-condition'
+/
+&hydro_run_pars
+  lpressuregradient_gas=F
+  lfreeze_uext=T
+  borderuu='initial-condition'
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh','shock-simple'
+  nu_hyper3_mesh=5.,nu_shock=5.
+/
+&special_run_pars
+   !gravity=1.0
+   c0=0.0004   ! c0= (gh)_0
+
+   !ladvection_base_height=T
+   !lcompression_base_height=T
+   lmass_relaxation=T
+   lcalc_storm=T
+
+   lcoriolis_force=T
+   lgamma_plane=T
+
+   Omega_SB=1.0
+   gamma_parameter=1.0
+
+   eta0=0.0
+
+   lsubsidence=T
+
+   !logical :: lcoriolis_force=.true.
+   !logical :: lmass_relaxation=.true.
+   !logical :: lgamma_plane=.true.
+   !logical :: lcalc_storm=.true.
+!   
+   !storm_strength=1.13445643e-05 ! 1 m^2/s^3 in these units
+/
+&shock_run_pars
+/
