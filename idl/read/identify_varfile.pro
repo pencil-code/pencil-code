@@ -1,4 +1,4 @@
-   function identify_varfile, filename=filename, path=file, nohdf5=nohdf5
+   function identify_varfile, filename=filename, path=file, nohdf5=nohdf5, datadir=datadir
 ;
 ;  Identifies which of allprocs/var.dat, allprocs/var.h5, proc0/var.dat is the youngest
 ;  If filename is provided, correspondingly which of allprocs/<filename>, allprocs/<h5filename>, proc0/<filename> 
@@ -11,7 +11,7 @@
 ;
      default, filename, 'var.dat'
 
-     datadir=pc_get_datadir()
+     if (size (datadir, /type) ne 7) then datadir=pc_get_datadir()
 
      dotpos=strpos(filename,'.dat')
      issnap=0
