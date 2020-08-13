@@ -344,6 +344,10 @@ offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsa
 for tag = 1, num_tags do begin
   original = indices[tag-1].name
   vector = indices[tag-1].dims
+; Quick fix to read scalar arrays (e.g. inp_ap1...inp_ap7)
+  if (vector eq 7) then begin 
+     vector=1
+  endif
   ; Identify f-array variables with multiple vectors or components (arrays & arrays of vectors)
   matches = stregex (index_pro, '^ *'+original+'([1-9][0-9]*)[xyz]? *= *(.*) *$', /extract, /sub)
   lines = where (matches[0,*] ne '', num)
