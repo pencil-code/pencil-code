@@ -378,17 +378,11 @@ module Particles
 !
 !  Store the number of particles per grid cell if requested.
 !
-      if (np_ap_spec) then
-         lnp_ap_as_aux = .true. ! TEMPORARY...TO RUN MODELS THAT DIDN'T HAVE THIS FLAG.
-         if (lnp_ap_as_aux) then
-          call farray_register_auxiliary('np_ap',ind_tmp,array=ndustrad)
-          iapn(1) = ind_tmp
-          iapn = iapn(1) + indgen(ndustrad) - 1
-          call farray_index_append('n_np_ap',ndustrad)
-        else
-          call fatal_error('register_particles','Must set lnp_ap_as_aux=T in &part&
-               &icles_init_pars to calculate particle-size-dependent spectra.')
-        endif
+      if (np_ap_spec.or.lnp_ap_as_aux) then
+        call farray_register_auxiliary('np_ap',ind_tmp,array=ndustrad)
+        iapn(1) = ind_tmp
+        iapn = iapn(1) + indgen(ndustrad) - 1
+        call farray_index_append('n_np_ap',ndustrad)
       end if
       call put_shared_variable('iapn', iapn, caller='register_particles')
 !
