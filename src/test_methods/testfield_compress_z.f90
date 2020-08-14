@@ -446,11 +446,16 @@ module Testfield
 !  set lrescaling_testfield=T if linit_aatest=T
 !
       if (linit_aatest) lrescaling_testfield=.true.
-    ! if (luse_main_run .and. .not.(lmagnetic.and.lhydro.and.ldensity)) then
-      if (luse_main_run .and. .not.(lmagnetic.and.lhydro)) then
-        luse_main_run=.false.
-        call warning('initialize_testfield',  &
-                     'Main run missing or incomplete -> switching to kinematic mode')
+
+      if (luse_main_run) then
+        if (.not.(lmagnetic.and.lhydro)) then
+          luse_main_run=.false.
+          call warning('initialize_testfield',  &
+                       'Main run missing or incomplete -> switching to kinematic mode')
+        elseif (.not.ldensity) then
+          call warning('initialize_testfield', &
+                       "Main run doesn't contain density -> fluctuating grad(h) is set to zero")
+        endif
       endif
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
@@ -652,7 +657,7 @@ module Testfield
         lpenc_requested(i_bbb)=.true.
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_glnrho)=.true.
+        if (ldensity) lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_sij)=.true.
 !
         lpenc_diagnos(i_oo)=.true.
@@ -878,11 +883,11 @@ module Testfield
 !  Contribution 2*nu(stest.grad Hmean + Smean.grad htest).
 !
             sglnrho=0.
-            if (lcalc_glnrhomean) then
+            if (ldensity.and.lcalc_glnrhomean) then
               call traceless_strain(uijtest,divutest,sijtest,uutest,.true.)
-              sglnrho = sglnrho+sijtest(:,:,3)*glnrhomz(nl)
+              sglnrho = sglnrho+sijtest(:,:,3)*glnrhomz(nl)                             ! sij^T.grad(Hbar)
             endif
-            if (lcalc_uumeanz) sglnrho(:,3) = sglnrho(:,3) + guumz(nl,3)*ghhtest(:,3)
+            if (lcalc_uumeanz) sglnrho(:,3) = sglnrho(:,3) + guumz(nl,3)*ghhtest(:,3)   ! Sijbar.grad(hh^T)
 
             df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest)+nutest*2.*sglnrho
           endif
@@ -947,10 +952,10 @@ module Testfield
 !
 !  mean density terms
 !
-          if (lcalc_glnrhomean) then
-            ughm = ughm + uutest(:,3)*glnrhomz(nl)          ! u^T.grad Hbar
-            df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-ughm
-          endif
+          if (ldensity.and.lcalc_glnrhomean) &
+            ughm = ughm + uutest(:,3)*glnrhomz(nl)                                     ! u^T.grad Hbar
+
+          df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-ughm
         endif
 !
 !  possibility of non-soca terms (always used for reference problem)
@@ -1003,7 +1008,7 @@ module Testfield
 !
 !  subtract average Sgh, unless we ignore the (Sgh)' term (lignore_Sghtestm=T)
 !
-          if (lSghtest) then
+          if (.not.lvisc_simplified_testfield.and.lSghtest) then
             if (iSghtest/=0.and..not.ltest_Sgh) then                            ! here Sgh is aux!
               Sghtest=f(l1:l2,m,n,iSghtest+3*(jtest-1):iSghtest+3*jtest-1)
               if (lignore_Sghtestm) then
@@ -1113,15 +1118,14 @@ module Testfield
           if (idiag_jb0m/=0.or.idiag_j11rms/=0) jpq(:,:,jtest)=jjtest
           hpq(:,jtest)=f(l1:l2,m,n,ihxtest)
 !
-!  evaluate different contributions to <uxb>, <jxb>/rho0 + u.gradu and u.grad h.
+!  evaluate different contributions to <uxb>, <jxb>/rho0 + <u.gradu> + 2*nu*<S'*grad h> and u.grad h.
 !
           Eipq(:,:,jtest)=uxbtest*bamp1
           Fipq(:,:,jtest)=rho0test1*jxbtest
           if (lugutest) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest
-          if (lSghtest) Fipq(:,:,jtest)=Fipq(:,:,jtest)+2.*nutest*Sghtest
+          if (.not.lvisc_simplified_testfield.and.lSghtest) Fipq(:,:,jtest)=Fipq(:,:,jtest)+2.*nutest*Sghtest
           Fipq(:,:,jtest)=Fipq(:,:,jtest)*bamp1
           Rpq(:,jtest)=ughtest*bamp1
-!if (lroot.and. maxval(ughtest)/=0. .and. abs(maxval(ughtest))<1e-10) print*, 'ughtest:', m,n,maxval(ughtest)
         endif
 !
         if (lfirst.and.ldt) then
@@ -1556,6 +1560,7 @@ module Testfield
       jxbtestmz=0.
       ugutestmz=0.
       ughtestmz=0.
+      Sghtestmz=0.
 !
       if (luse_main_run) then
         lpenc_loc = .false.
@@ -1587,17 +1592,22 @@ mn:   do n=n1,n2
           else
             uufluct=f(l1:l2,m,n,iux:iuz)
           endif
+
+          if (ldensity) then
 !
 !  Calculate ghhfluct = grad(H) - d_z Hmean.
-!  Note that glnrhomz has dimensions mz*3, not nz*3.
 !
-          ghhfluct=p%glnrho
-          if (lcalc_glnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl)
+            ghhfluct=p%glnrho
+            if (lcalc_glnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl)
+          else
+            ghhfluct=0.
+          endif
 !
 !  Calculate Sfluct = S(U) - S(Umean).
 !  Note that glnrhomz has dimensions mz*3, not nz*3.
 !
-          sijfluct=p%sij; sijfluct(:,3,3) = sijfluct(:,3,3) - guumz(nl,3)
+          sijfluct=p%sij
+          if (lcalc_uumeanz) sijfluct(:,3,3) = sijfluct(:,3,3) - guumz(nl,3)
 !
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
@@ -1703,8 +1713,8 @@ mn:   do n=n1,n2
             call u_dot_grad(f,ihxtest,ghhtest,uufluct,ughtest,UPWIND=lupw_hhtest)                         ! u.grad(htest)     tbc
             call u_dot_grad(f,ihhtest+3*(njtest-1),gh0ref,uutest,ughtest,UPWIND=lupw_hhtest,LADD=.true.)  ! utest.grad(h0)    tbc
 !
-            call multmv(sijfluct,ghhtest,Sghtest)                                                         ! S'.grad(htest)  !!!
-            call multmv(sijtest,gh0ref,Sghtest,ladd=.true.)                                               ! Stest.grad(h0)  !!!
+            call multmv(sijfluct,ghhtest,Sghtest)                                                         ! S'.grad(htest)
+            call multmv(sijtest,gh0ref,Sghtest,ladd=.true.)                                               ! Stest.grad(h0)
 !
           endif
 !
@@ -1723,9 +1733,8 @@ mn:   do n=n1,n2
             f(l1:l2,m,n,jugu:jugu+2)=ugutest
           endif
           if (iughtest/=0) then 
-            jugh=iughtest+  (jtest-1)
-!if (lroot.and. maxval(ughtest)/=0. .and. abs(maxval(ughtest))<1e-20) print*, 'ughtest:', m,n,maxval(ughtest)
-            f(l1:l2,m,n,jugh       )=ughtest
+            jugh=iughtest+(jtest-1)
+            f(l1:l2,m,n,jugh)=ughtest
           endif
           if (iSghtest/=0) then
             jSgh=iSghtest+3*(jtest-1)
