@@ -24,7 +24,7 @@
   lwrite_ic=T
 /
 &initial_condition_pars
-   !init_shallow_density='solid-body'
+   init_shallow_density='linear-zero'
    !init_shallow_hydro='solid-body'
    !Omega_SB=1.0
    !gamma_parameter=1.0
@@ -34,7 +34,7 @@
    inituu='zero'
 /
 &density_init_pars
-   !initlnrho='nothing'
+   !initlnrho='const_rho'
    rho_const=0.0
    ldensity_nolog=T
 /

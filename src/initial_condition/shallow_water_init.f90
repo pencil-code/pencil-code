@@ -75,6 +75,9 @@ module InitialCondition
 !
         select case (init_shallow_density(j))
 !
+        case('linear-zero')
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=-impossible 
+!
         case('solid-body')   
 !
           do n=n1,n2
