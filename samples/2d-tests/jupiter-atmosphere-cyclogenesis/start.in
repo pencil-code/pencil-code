@@ -34,7 +34,7 @@
    inituu='zero'
 /
 &density_init_pars
-   initlnrho='const_rho'
+   !initlnrho='nothing'
    rho_const=0.0
    ldensity_nolog=T
 /
