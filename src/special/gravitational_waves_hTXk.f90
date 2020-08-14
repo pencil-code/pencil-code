@@ -95,8 +95,8 @@ module Special
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
   logical :: lno_transverse_part=.false.
-  logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
-  logical :: lStress_as_aux=.true., lreynolds=.false.
+  logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
+  logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   real, dimension(3,3) :: ij_table
@@ -114,7 +114,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    ldebug_print, lswitch_sign_e_X, &
+    ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
@@ -624,7 +624,7 @@ module Special
 
       integer :: ikx, iky, ikz, q, p, pq, ik
       real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
-      real :: SCL_re, SCL_im
+      real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
       real, dimension(3) :: VCT_re, VCT_im, kvec
 
       spectra%GWs=0.; spectra%GWshel=0.
@@ -632,6 +632,14 @@ module Special
       spectra%GWm=0.; spectra%GWmhel=0.
       spectra%Str=0.; spectra%Strhel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
+!
+!  Define negative Nyquist wavenumbers if lswitch_symmetric
+!
+      if (lswitch_symmetric) then
+        k1mNy=kx_fft(nxgrid/2+1)
+        k2mNy=ky_fft(nygrid/2+1)
+        k3mNy=kz_fft(nzgrid/2+1)
+      endif
 !
 !  Loop over all positions in k-space.
 !
@@ -667,6 +675,13 @@ module Special
               endif
             endif
 !
+!  Put sign_switch to zero for the negative Nyquist values, because they
+!  don't exist for the corresponding positive values and cause asymmetry.
+!
+            if (lswitch_symmetric) then
+              if (k1==k1mNy .or.k2==k2mNy .or.  k3==k3mNy) sign_switch=0.
+            endif
+!
 !  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
 !  for the Fortran index ik. Note, however, that 
 !
@@ -687,6 +702,9 @@ module Special
               enddo
               enddo
             endif
+!
+!  V_i = -i*ki (2/3) S - (4/3) i*kj/k^4 Tij
+!      = -i*ki (2/3) (S'+iS") -  2*i*kj/k^2 (Tij'+iTik")
 !
             if (VCT_spec) then
               do q=1,3
@@ -888,7 +906,7 @@ module Special
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (3) :: e1, e2, kvec
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
-      real :: fact, sign_switch
+      real :: fact
       real :: ksqr, one_over_k2, one_over_k4, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
@@ -1008,20 +1026,16 @@ module Special
             enddo
             enddo
 !
-!  possibility of swapping the sign
+!  possibility of swapping the sign of e_X
 !
-            sign_switch=1.
             if (lswitch_sign_e_X) then
               if (k3<0.) then
-                sign_switch=-1.
                 e_X=-e_X
               elseif (k3==0.) then
                 if (k2<0.) then
-                  sign_switch=-1.
                   e_X=-e_X
                 elseif (k2==0.) then
                   if (k1<0.) then
-                    sign_switch=-1.
                     e_X=-e_X
                   endif
                 endif
