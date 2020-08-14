@@ -6,3 +6,4 @@
 !
 integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=1
 integer, parameter :: nxgrid=64,nygrid=64,nzgrid=1
+integer, parameter :: nstorm=1
