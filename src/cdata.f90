@@ -128,7 +128,7 @@ module Cdata
   integer :: nt=10000000, it=1, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  double precision :: t=0.
+  double precision :: t=0., toutoff=0.
   real :: dt=0.0
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01

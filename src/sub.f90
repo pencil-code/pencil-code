@@ -3720,9 +3720,10 @@ module Sub
 !  Set next output time tout. If dtout<0, we interprete this as
 !  log-spaced output in intervals increasing by a factor 10^(1/ldt1),
 !  where ldt1 is the inverse logarithmic interval, currently ldt1=3.
+!  When toutoff=1., the output times would be 1.1, 1.2, 1.5, etc.
 !
         if (dtout<0.0) then
-          tout=tout*10.**onethird
+          tout=toutoff+(tout-toutoff)*10.**onethird
         else
           tout=tout+abs(dtout)
 !         if (.not.lout) tout=tout+abs(dtout)
