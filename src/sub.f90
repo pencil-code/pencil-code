@@ -3621,7 +3621,7 @@ module Sub
 !  abs(dtout) is then the first output time.
 !
           settout: if (dtout < 0.0) then
-            tout = abs(dtout)
+            tout = abs(dtout)+toutoff
           elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
             t0 = max(t - dt, 0.0D0)
