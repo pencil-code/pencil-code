@@ -5136,9 +5136,9 @@ module Initcond
             enddo
 !  In 3-D
           else
-            do iky=1,nz
-              do ikx=1,ny
-                do ikz=1,nx
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
@@ -5213,9 +5213,9 @@ module Initcond
           enddo
 !  In 3-D
         else
-          do iky=1,nz
-            do ikx=1,ny
-              do ikz=1,nx
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
 !
 !  (vx, vy, vz) -> ux
 !
