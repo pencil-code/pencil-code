@@ -200,7 +200,7 @@ indices_aux = [ $
   { name:'inetheat', label:'Net applied ISM heating term', dims:1 }, $
   { name:'idetonate', label:'Detonation energy', dims:1 }, $
   { name:'inp', label:'Particle number', dims:1 }, $
-  { name:'inp_ap', label:'Particle number, size dependent', dims:n_np_ap }, $
+  { name:'inp_ap', label:'Particle number', dims:1 }, $
   { name:'iphiuu', label:'Potential of curl-free part of velocity field', dims:1 }, $
   { name:'irhop', label:'Particle mass density', dims:1 }, $
   { name:'iuup', label:'Particle velocity field', dims:3 }, $
