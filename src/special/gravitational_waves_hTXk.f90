@@ -104,7 +104,7 @@ module Special
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
-  real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2.
+  real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -118,7 +118,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    tau_stress_kick, tnext_stress_kick, fac_stress_kick, &
+    tau_stress_kick, tnext_stress_kick, fac_stress_kick, accum_stress_kick, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -479,8 +479,9 @@ module Special
       if (tau_stress_kick>0.) then
         if (t>=tnext_stress_kick) then
           tnext_stress_kick=tnext_stress_kick+tau_stress_kick
-          stress_prefactor2=stress_prefactor2*fac_stress_kick
+          accum_stress_kick=accum_stress_kick+fac_stress_kick
         endif
+        stress_prefactor2=stress_prefactor2*accum_stress_kick
       endif
 !
 !  Assemble rhs of GW equations.
