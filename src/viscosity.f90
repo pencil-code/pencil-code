@@ -1579,7 +1579,7 @@ module Viscosity
         pnu  = nu + (nu*(nu_jump-1.))*prof
 !
         gradnu(:,1) = 0.
-        gradnu(:,2) = nu + (nu*(nu_jump-1.))*derprof/tmp3
+        gradnu(:,2) = (nu*(nu_jump-1.))*derprof/tmp3
         gradnu(:,3) = 0.
 
         call multmv(p%sij,gradnu,sgradnu)
