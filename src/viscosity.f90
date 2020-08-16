@@ -401,7 +401,6 @@ module Viscosity
           if (.not. lshock) &
            call stop_it('initialize_viscosity: shock viscosity'// &
                            ' but module setting SHOCK=noshock')
-JOERN
         case ('nu-shock-profz')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)  with a vertical profile'
           lvisc_nu_shock_profz=.true.
