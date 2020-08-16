@@ -103,7 +103,7 @@ module Special
   real :: c_light2=1.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
-  real :: kscale_factor
+  real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -116,7 +116,7 @@ module Special
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, &
-    lStress_as_aux, lkinGW, aux_stress, &
+    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -439,7 +439,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: scale_factor, stress_prefactor2, sign_switch=0
+      real :: scale_factor, stress_prefactor2, sign_switch=0, fac_stress_comp
       type (pencil_case) :: p
 !
       integer :: ij
@@ -463,6 +463,13 @@ module Special
         scale_factor=(t+tshift)**nscale_factor_conformal
       endif
       stress_prefactor2=stress_prefactor/scale_factor
+!
+!  Possibilty to compensate against the decaying stress in decaying turbulence.
+!
+      if (tau_stress_comp>0.) then
+        fac_stress_comp=(1.+(t+tshift)/tau_stress_comp)**exp_stress_comp
+        stress_prefactor2=stress_prefactor2*fac_stress_comp
+      endif
 !
 !  Assemble rhs of GW equations.
 !
