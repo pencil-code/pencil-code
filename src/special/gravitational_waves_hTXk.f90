@@ -469,7 +469,6 @@ module Special
       if (tau_stress_comp>0.) then
         fac_stress_comp=(1.+(t-tstart)/tau_stress_comp)**exp_stress_comp
         stress_prefactor2=stress_prefactor2*fac_stress_comp
-if (m==m1.and.n==n1) print*,'AXEL',t,fac_stress_comp
       endif
 !
 !  Assemble rhs of GW equations.
