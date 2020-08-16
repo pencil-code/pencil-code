@@ -3565,7 +3565,6 @@ module Energy
         call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         if (idiag_fradz_constchi/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
-        if (idiag_fradr_constchixy/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradr_constchixy)
         if (idiag_TT2mx/=0) call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
         if (idiag_TT2mz/=0) call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         if (idiag_uxTTmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
@@ -3698,6 +3697,8 @@ module Energy
             call zsum_mn_name_xy(p%uu,idiag_fconvyxy,(/0,1,0/),p%cp*p%rho*p%TT)
         if (idiag_fconvzxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_fconvzxy,(/0,0,1/),p%cp*p%rho*p%TT)
+        if (idiag_fradr_constchixy/=0) &
+           call zsum_mn_name_xy(-chi*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradr_constchixy)
         call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
         call zsum_mn_name_xy(p%gTT,idiag_gTymxy,(/0,1,0/))
         call zsum_mn_name_xy(p%gTT,idiag_gTzmxy,(/0,0,1/))
