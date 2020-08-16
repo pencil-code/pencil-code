@@ -83,7 +83,7 @@ module Sub
   public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, rdim
-  public :: write_xprof, write_zprof, remove_prof
+  public :: write_xprof, write_yprof, write_zprof, remove_prof
 !
   public :: tensor_diffusion_coef
 !
@@ -5239,6 +5239,25 @@ nameloop: do
       endif
  
     endsubroutine write_zprof
+!***********************************************************************
+    subroutine write_yprof(fname,a)
+!
+!  Writes y-profile to a file.
+!
+!  11-aug-20/joern: adapted from write_zprof
+!
+      use HDF5_IO, only: output_profile
+!
+      real, dimension(:), intent(in) :: a
+      character (len=*), intent(in) :: fname
+
+      if (size(a) == my) then
+        call output_profile(fname, y, a, 'y', lsave_name=.true., lhas_ghost=.true.)
+      else
+        call output_profile(fname, y(m1:m2), a, 'y', lsave_name=.true.)
+      endif
+!
+    endsubroutine write_yprof
 !***********************************************************************
     subroutine write_xprof(fname,a)
 !
