@@ -104,6 +104,7 @@ module Special
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
+  real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -117,6 +118,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
+    tau_stress_kick, tnext_stress_kick, fac_stress_kick, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -449,7 +451,8 @@ module Special
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+      if (lfirst) then
+        if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
 !  Compute scale factor.
 !  Note: to prevent division by zero, it is best to put tstart=1. in start.in.
@@ -469,6 +472,15 @@ module Special
       if (tau_stress_comp>0.) then
         fac_stress_comp=(1.+(t-tstart)/tau_stress_comp)**exp_stress_comp
         stress_prefactor2=stress_prefactor2*fac_stress_comp
+      endif
+!
+!  Possibilty to introduce later kicks by a factor fac_stress_kick.
+!
+      if (tau_stress_kick>0.) then
+        if (t>=tnext_stress_kick) then
+          tnext_stress_kick=tnext_stress_kick+tau_stress_kick
+          stress_prefactor2=stress_prefactor2*fac_stress_kick
+        endif
       endif
 !
 !  Assemble rhs of GW equations.
@@ -536,6 +548,9 @@ module Special
            endif
          endif
        endif
+      else
+        if (headtt.or.ldebug) print*,'dspecial_dt: DONT SOLVE dspecial_dt'
+      endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -616,7 +631,9 @@ module Special
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
-      if (llast) call compute_gT_and_gX_from_gij(f,'St')
+      !if (llast) call compute_gT_and_gX_from_gij(f,'St')
+!AB: 16-aug-20 changed
+      if (lfirst) call compute_gT_and_gX_from_gij(f,'St')
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
