@@ -250,6 +250,7 @@ module Viscosity
 !  Register an extra aux slot for dissipation rate if requested (so
 !  visc_heat is written to snapshots and can be easily analyzed later).
 !
+JOERN
       if (lvisc_heat_as_aux) then
         call farray_register_auxiliary('visc_heat',ivisc_heat)
         if (lroot) write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
