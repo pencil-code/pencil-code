@@ -449,6 +449,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init
 !
+!  Part of the initialization which can be done before input parameters are known.
 !  Get processor number, number of procs, and whether we are root.
 !
 !  20-aug-01/wolf: coded
@@ -456,19 +457,35 @@ module Mpicomm
 !
       use Syscalls, only: sizeof_real
 !
-      integer :: iapp, key
+      !integer(KIND=ikind8) :: iapp
+      integer :: iapp
+      integer :: flag
 
       lmpicomm = .true.
 !
       call MPI_INIT(mpierr)
+!
+! Size and rank w.r.t. MPI_COMM_WORLD
+!
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
-!     call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, key, mpierr)
-!     call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, key, MPI_COMM_PENCIL, mpierr)
-!AB: skype call with MR: some MPI routines are not ok
-      MPI_COMM_PENCIL=MPI_COMM_WORLD
 !
-      lroot = (iproc==root)                              ! refers to root of MPI_COMM_WORLD!
+! If mpirun/mpiexec calls also other applications than Pencil:
+! Get rank within the set of applications, iapp.
+! iapp=0 if there is only one application or Pencil is the first one.
+!
+      call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
+!
+! New comm MPI_COMM_PENCIL which comprises only the procs of the Pencil
+! application. iproc becomes rank in MPI_COMM_PENCIL.
+! Attention: If there is more than one application envisaged, Pencil needs to be compiled
+! with FPPFLAGS=-DMPI_COMM_WORLD=MPI_COMM_PENCIL.
+! If there is only one application, iproc is unchanged and MPI_COMM_PENCIL=MPI_COMM_WORLD.
+!
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
+      call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
+!
+      lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
@@ -483,7 +500,7 @@ module Mpicomm
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
 
-      MPI_COMM_GRID=MPI_COMM_WORLD
+      MPI_COMM_GRID=MPI_COMM_PENCIL
       iproc_world=iproc
 !
 !  Check consistency in processor layout.
@@ -527,6 +544,7 @@ module Mpicomm
 !***********************************************************************
     subroutine initialize_mpicomm
 !
+!  Part of the initialization which can only be done after input parameters are known.
 !  Initialise MPI communication and set up some variables.
 !  The arrays leftneigh and rghtneigh give the processor numbers
 !  to the left and to the right.
@@ -544,16 +562,17 @@ module Mpicomm
 !
       use General, only: itoa
 
-      integer :: nprocs_penc
+      integer :: nprocs_penc, nprocs_foreign
 
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
 !  Check total number of processors.
 !
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
+      nprocs_foreign=nprocs-nprocs_penc
 
       if (.not.( lyinyang.and.nprocs_penc==2*ncpus .or. &
-                 (lforeign.and.nprocs>ncpus .or. .not.lforeign).and.nprocs_penc==ncpus )) then
+                 (lforeign.and.nprocs_foreign>0 .or. .not.lforeign).and.nprocs_penc==ncpus )) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
@@ -561,7 +580,7 @@ module Mpicomm
           elseif (nprocs_penc/=ncpus) then
             print*, 'Compiled with ncpus = ', ncpus, &
                 ', but running on ', nprocs_penc, ' processors'
-          elseif (lforeign.and.nprocs==ncpus) then
+          elseif (lforeign.and.nprocs_foreign==0) then
             print*, 'number of processors '//trim(itoa(nprocs))// &
                     '= number of own processors -> no procs for foreign code left'
           endif
@@ -589,7 +608,11 @@ module Mpicomm
         lyang=iproc>=ncpus             ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
       endif
 
-      if (lyinyang.or.lforeign) call MPI_COMM_SPLIT(MPI_COMM_WORLD, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
+      if (lyinyang) then
+        call MPI_COMM_SPLIT(MPI_COMM_PENCIL, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
+      else
+        MPI_COMM_GRID=MPI_COMM_PENCIL
+      endif
 !
 !  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
 !
@@ -1878,6 +1901,8 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
                                        lucorns,TOlus,comm,isend_rq_TOlu,mpierr)
 !
       endif
+!if (itsub>=3.and.it>116) write(78,*) 'after corner comm it,itsub,iproc=', &
+!it,itsub,iproc
 !
 !  communication sample
 !  (commented out, because compiler does like this for 0-D runs)
@@ -4910,13 +4935,15 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
       integer, optional, intent(IN) :: comm
 !
+!$omp barrier
+!
       call MPI_BARRIER(ioptest(comm,MPI_COMM_PENCIL), mpierr)
 !
     endsubroutine mpibarrier
 !***********************************************************************
     subroutine mpifinalize
 !
-      call MPI_BARRIER(MPI_COMM_UNIVERSE, mpierr)
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
 !
     endsubroutine mpifinalize
