@@ -616,6 +616,7 @@ module Viscosity
 !  Write out shock viscosity z-profile.
 !  At present only correct for Cartesian geometry
 !
+JOERN
         if (lvisc_nu_shock_profz) &
           call write_zprof('visc_shock', &
                            nu_shock+(nu_shock*(nu_jump_shock-1.))*step(z(n1:n2),znu_shock,-widthnu_shock))
