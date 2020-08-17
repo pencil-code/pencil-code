@@ -8625,11 +8625,10 @@ module Magnetic
 !  Default to spread gradient over ~5 grid cells,
 !
           if (eta_ywidth == 0.) eta_ywidth = 5.*dy
-          eta_y = eta + (eta*(eta_jump-1.))* &
+          eta_y = (eta*(eta_jump-1.))* &
           (step(y,xyz0(2)+3*eta_ywidth,eta_ywidth)-step(y,xyz1(2)-3*eta_ywidth,-eta_ywidth))
 !
-!  ... and its gradient. Note that the sign of the second term enters
-!  with the opposite sign, because we have used negative eta_ywidth.
+!  ... and its gradient.
 !
           if (present(geta_y)) then
             geta_y =  (eta*(eta_jump-1.))* &
