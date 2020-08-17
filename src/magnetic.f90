@@ -899,9 +899,10 @@ module Magnetic
   integer :: idiag_bxbymxy=0    ! ZAVG_DOC: $\left< B_x B_y \right>_{z}$
   integer :: idiag_bxbzmxy=0    ! ZAVG_DOC: $\left< B_x B_z \right>_{z}$
   integer :: idiag_bybzmxy=0    ! ZAVG_DOC: $\left< B_y B_z \right>_{z}$
-  integer :: idiag_poynxmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{x}$
-  integer :: idiag_poynymxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{y}$
-  integer :: idiag_poynzmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}$
+  integer :: idiag_poynxmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}|_x$
+  integer :: idiag_poynymxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}|_y$
+  integer :: idiag_poynzmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}|_z$
+  integer :: idiag_etatotalmxy=0 ! ZAVG_DOC: $\left<\eta\right>_{z}$
   integer :: idiag_jbmxy=0      ! ZAVG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
   integer :: idiag_abmxy=0      ! ZAVG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
   integer :: idiag_ubmxy=0      ! ZAVG_DOC: $\left< \Uv\cdot\Bv \right>_{z}$
@@ -5968,8 +5969,8 @@ module Magnetic
         if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
         if (.not.lgpu) then
           if (idiag_epsMmz/=0) call xysum_mn_name_z(etatotal*mu0*p%j2,idiag_epsMmz)
-          call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
-          call xysum_mn_name_z(etatotal,idiag_etatotalmz)
+          if (idiag_etatotalmx/=0) call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
+          if (idiag_etatotalmz/=0) call xysum_mn_name_z(etatotal,idiag_etatotalmz)
         endif
         if (idiag_vmagfricmz/=0) then
           call dot2_mn(p%vmagfric,tmp1)
@@ -6062,9 +6063,9 @@ module Magnetic
             p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
         if (idiag_bpmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,&
                                                     idiag_bpmphi)
-        call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
-        call phisum_mn_name_rz(p%b2,idiag_b2mphi)
-        call phisum_mn_name_rz(p%jb,idiag_jbmphi)
+        if (idiag_bzmphi/=0) call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
+        if (idiag_b2mphi/=0) call phisum_mn_name_rz(p%b2,idiag_b2mphi)
+        if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
         if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
           if (idiag_uxbrmphi/=0) call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
           if (idiag_uxbpmphi/=0) call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
@@ -6080,15 +6081,15 @@ module Magnetic
           if (idiag_apmphi/=0) call phisum_mn_name_rz(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmphi)
           call phisum_mn_name_rz(p%aa(:,3),idiag_azmphi)
         endif
-        call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
-        call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
-        call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
-        call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
-        call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
-        call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
-        call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
-        call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
-        call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
+        if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
+        if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
+        if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
+        if (idiag_jxmxy/=0) call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
+        if (idiag_jymxy/=0) call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
+        if (idiag_jzmxy/=0) call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
+        if (idiag_axmxy/=0) call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
+        if (idiag_aymxy/=0) call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
+        if (idiag_azmxy/=0) call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
         if (lcovariant_magnetic) then
           if (idiag_dbxdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,1)+p%bij_cov_corr(:,1,1),idiag_dbxdxmxy)
           if (idiag_dbxdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2),idiag_dbxdymxy)
@@ -6164,9 +6165,10 @@ module Magnetic
             tmp2(:,1)=0.
             tmp2(:,2)=etatotal*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
             tmp2(:,3)=etatotal*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
+            if (idiag_poynymxy/=0) call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
+            if (idiag_poynzmxy/=0) call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
           endif
-          call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
-          call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
+          if (idiag_etatotalmxy/=0) call zsum_mn_name_xy(etatotal,idiag_etatotalmxy)
         endif
         call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
 !
@@ -9716,6 +9718,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynxmxy',idiag_poynxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynymxy',idiag_poynymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynzmxy',idiag_poynzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'etatotalmxy',idiag_etatotalmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdxmxy',idiag_dbxdxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdymxy',idiag_dbxdymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdzmxy',idiag_dbxdzmxy)
