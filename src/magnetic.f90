@@ -2495,6 +2495,7 @@ module Magnetic
          lpenc_requested(i_r_mn)=.true.
          lpenc_requested(i_r_mn1)=.true.
       endif
+      if (lresi_ydep .and. lspherical_coords) lpenc_requested(i_r_mn1)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) &
          lpenc_requested(i_diva)=.true.
          lpenc_requested(i_uij)=.true.
@@ -4179,7 +4180,11 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_y(m)*p%del2a(:,j)
         enddo
-        fres(:,2)=fres(:,2)+geta_y(m)*p%diva
+        if (lspherical_coords) then
+          fres(:,2)=fres(:,2)+p%r_mn1*geta_y(m)*p%diva
+        else
+          fres(:,2)=fres(:,2)+geta_y(m)*p%diva
+        endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_y(m)
         etatotal=etatotal+eta_y(m)
       endif
@@ -8627,14 +8632,14 @@ module Magnetic
 !  Default to spread gradient over ~5 grid cells,
 !
           if (eta_ywidth == 0.) eta_ywidth = 5.*dy
-          eta_y = (eta*(eta_jump-1.))* &
-          (step(y,xyz0(2)+3*eta_ywidth,eta_ywidth)-step(y,xyz1(2)-3*eta_ywidth,-eta_ywidth))
+          eta_y = eta + (eta*(eta_jump-1.))* &
+          (step(y,xyz1(2)-3.*eta_ywidth,eta_ywidth)+step(y,xyz0(2)+3.*eta_ywidth,-eta_ywidth))
 !
 !  ... and its gradient.
 !
           if (present(geta_y)) then
             geta_y =  (eta*(eta_jump-1.))* &
-          (der_step(y,xyz0(2)+3*eta_ywidth,eta_ywidth)-der_step(y,xyz1(2)-3*eta_ywidth,-eta_ywidth))
+           (der_step(y,xyz1(2)-3.*eta_ywidth,eta_ywidth)+der_step(y,xyz0(2)+3.*eta_ywidth,-eta_ywidth))
           endif
 
       endselect
