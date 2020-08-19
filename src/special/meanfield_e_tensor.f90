@@ -121,8 +121,8 @@ module Special
   logical, dimension(6)    :: lalpha_c, lbeta_c, lacoef_c
   logical, dimension(3)    :: lgamma_c, ldelta_c, lutensor_c, lmeanuu_c
   logical, dimension(3,6)  :: lkappa_c, lbcoef_c
-  logical :: lalpha=.true., lbeta=.true., lgamma=.true., ldelta=.true., lkappa=.true.
-  logical :: lutensor=.true., lmeanuu=.true., lacoef=.false., lbcoef=.false., lusecoefs=.false.
+  logical :: lalpha=.false., lbeta=.false., lgamma=.false., ldelta=.false., lkappa=.false.
+  logical :: lutensor=.false., lmeanuu=.false., lacoef=.false., lbcoef=.false., lusecoefs=.false.
   logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, meanuu_scale, acoef_scale, bcoef_scale
   character (len=fnlen) :: defaultname
