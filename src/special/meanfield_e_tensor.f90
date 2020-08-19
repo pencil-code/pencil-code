@@ -797,7 +797,7 @@ module Special
       integer, dimension(:,:,:,:), allocatable :: beta_mask
       real, dimension(4) :: polcoeffs
       complex, dimension(3) :: eigenvals
-      real, dimension(3,3) :: ev
+      real, dimension(3,3) :: ev, beta_sav
 
       call keep_compiler_quiet(f)
 
@@ -1009,6 +1009,7 @@ module Special
 !
             numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
             do mm=1,ny; do ll=1,nx
+              beta_sav=beta_data(1,ll,mm,1,:,:)
               polcoeffs=(/2.*beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3)*beta_data(1,ll,mm,1,2,3) &
                            - beta_data(1,ll,mm,1,1,2)**2*beta_data(1,ll,mm,1,3,3) &
                            - beta_data(1,ll,mm,1,1,3)**2*beta_data(1,ll,mm,1,2,2) &
@@ -1025,7 +1026,9 @@ module Special
               call cubicroots(polcoeffs, eigenvals)
               if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
 
-              if (any(real(eigenvals)<-eta)) then
+!              if (any(real(eigenvals)<-eta)) then
+!              if (ll <= 3 .and. mm <= 84 .and. mm >= 82) print*, 'JOERN: eigenvalues-real:', real(eigenvals)
+!              if (ll <= 3 .and. mm <= 84 .and. mm >= 82) print*, 'JOERN: eigenvalues-imag:', imag(eigenvals)
 !
 !  If there are negative eigenvalues of beta,
 !
@@ -1052,7 +1055,9 @@ module Special
 !
 ! Eigenvalues < -eta are set to (-1.+rel_eta)*eta with rel_eta>0.
 !
-                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
+! output here: eigenvalues JOERN
+!
+!                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
                 enddo
 
                 beta_data(1,ll,mm,1,:,:)=0.
@@ -1066,8 +1071,8 @@ module Special
                 enddo
                 newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
                 if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace=', ll,mm,abs(oldtrace-newtrace)
-              endif
-
+!              endif
+!            if (maxval(abs((beta_sav-beta_data(1,ll,mm,1,:,:))/beta_sav)) > 1e-6) print*, 'JOERN', ll, mm, maxval(abs((beta_sav-beta_data(1,ll,mm,1,:,:))/beta_sav))
             enddo; enddo
             call mpiallreduce_sum_int(numzeros,numzeros_)
             if (numzeros_>0) then
@@ -1080,6 +1085,8 @@ module Special
             call mpireduce_sum_int(numcomplex,numzeros_)
             if (lroot.and.numzeros_>0) print'(a,i15,a)', 'beta has complex eigenvalues at', numzeros_,' positions.'
           endif
+
+!if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
 
           if (lsymmetrize) then
             do i=1,3 
