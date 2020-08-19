@@ -17,10 +17,15 @@ authors:
    affiliation: "1, 2, 3"
    orcid: 0000-0002-7304-021X
  - name: Anders Johansen
+   affiliation: 4
  - name: Philippe A. Bourdin
+   affiliation: 5
  - name: Wolfgang Dobler
+   affiliation: 6
  - name: Wladimir Lyra
+   affiliation: 7
  - name: Add Yourself
+   affiliation: 8
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -29,6 +34,16 @@ affiliations:
  - name: McWilliams Center for Cosmology & Department of Physics, Carnegie Mellon University
    index: 3
  - name: New Mexico State Univ.
+   index: 4
+ - name: Four
+   index: 5
+ - name: Five
+   index: 6
+ - name: Six
+   index: 7
+ - name: Seven
+   index: 8
+ - name: Eight
 date: 20 August 2020
 bibliography: paper.bib
 ---
