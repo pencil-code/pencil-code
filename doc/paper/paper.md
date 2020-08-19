@@ -11,7 +11,7 @@ tags:
  - inertial particles
  - combustion
 authors:
- - name: The Pencil Code Collaboration:
+ - name: The Pencil Code Collaboration
    affiliation: 1
  - name: Axel Brandenburg
    affiliation: "1, 2, 3"
