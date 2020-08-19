@@ -29,7 +29,7 @@ module Special
   real, dimension(npar_species) :: vpx0 = 0.0, vpy0 = 0.0
   real :: ux0 = 0.0, uy0 = 0.0
 !
-! Diagnostic variables (needs to be consistent with reset list below).
+! Diagnostic variables
 !
   integer :: idiag_rduxm = 0
   integer :: idiag_rduym = 0
@@ -46,6 +46,19 @@ module Special
   integer :: idiag_rhopdvpx2m = 0
   integer :: idiag_rhopdvpy2m = 0
   integer :: idiag_rhopvpz2m = 0
+!
+! yz-averages
+!
+  integer :: idiag_rduxmx = 0
+  integer :: idiag_rduymx = 0
+  integer :: idiag_rdux2mx = 0
+  integer :: idiag_rduy2mx = 0
+  integer :: idiag_rduxduymx = 0
+  integer :: idiag_ruzduxmx = 0
+  integer :: idiag_ruzduymx = 0
+!
+  integer :: idiag_drhopmx = 0
+  integer :: idiag_drhop2mx = 0
 !
   contains
 !****************************************************************************
@@ -85,16 +98,20 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
 !
-!  04-oct-19/ccyang: coded
+!  03-aug-20/ccyang: coded
 !
       gas: if (idiag_rduxm /= 0 .or. idiag_rduym /= 0 .or. &
                idiag_rdux2m /= 0 .or. idiag_rduy2m /= 0 .or. &
-               idiag_rduxduym /= 0 .or. idiag_ruzduxm /= 0 .or. idiag_ruzduym /= 0) then
+               idiag_rduxduym /= 0 .or. idiag_ruzduxm /= 0 .or. idiag_ruzduym /= 0 .or. &
+               idiag_rduxmx /= 0 .or. idiag_rduymx /= 0 .or. &
+               idiag_rdux2mx /= 0 .or. idiag_rduy2mx /= 0 .or. &
+               idiag_rduxduymx /= 0 .or. idiag_ruzduxmx /= 0 .or. idiag_ruzduymx /= 0) then
         lpenc_diagnos(i_rho) = .true.
         lpenc_diagnos(i_uu) = .true.
       endif gas
 !
-      if (idiag_drhopm /= 0 .or. idiag_drhop2m /= 0) lpenc_diagnos(i_rhop) = .true.
+      if (idiag_drhopm /= 0 .or. idiag_drhop2m /= 0 .or. &
+          idiag_drhopmx /= 0 .or. idiag_drhop2mx /= 0) lpenc_diagnos(i_rhop) = .true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -110,9 +127,9 @@ module Special
 !  Several precalculated Pencils of information are passed for
 !  efficiency.
 !
-!  04-oct-19/ccyang: coded
+!  03-aug-20/ccyang: coded
 !
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, yzsum_mn_name_x
       use EquationOfState, only: rho0
       use Particles_cdata, only: eps_dtog
 !
@@ -128,11 +145,17 @@ module Special
 !
       if (headtt.or.ldebug) print *, "dspecial_dt: special diagnostics"
 !
+!  Pencil precalculations
+!
+      penc: if (ldiagnos .or. l1davgfirst) then
+        dux = p%uu(:,1) - ux0
+        duy = p%uu(:,2) - uy0
+        drhop = p%rhop - eps_dtog * rho0
+      endif penc
+!
 !  Diagnostics
 !
       diag: if (ldiagnos) then
-        dux = p%uu(:,1) - ux0
-        duy = p%uu(:,2) - uy0
         if (idiag_rduxm /= 0) call sum_mn_name(p%rho * dux, idiag_rduxm)
         if (idiag_rduym /= 0) call sum_mn_name(p%rho * duy, idiag_rduym)
         if (idiag_rdux2m /= 0) call sum_mn_name(p%rho * dux**2, idiag_rdux2m)
@@ -141,10 +164,24 @@ module Special
         if (idiag_ruzduxm /= 0) call sum_mn_name(p%rho * p%uu(:,3) * dux, idiag_ruzduxm)
         if (idiag_ruzduym /= 0) call sum_mn_name(p%rho * p%uu(:,3) * duy, idiag_ruzduym)
 !
-        drhop = p%rhop - eps_dtog * rho0
         if (idiag_drhopm /= 0) call sum_mn_name(drhop, idiag_drhopm)
         if (idiag_drhop2m /= 0) call sum_mn_name(drhop**2, idiag_drhop2m)
       endif diag
+!
+!  1D averages
+!
+      avg1d: if (l1davgfirst) then
+        if (idiag_rduxmx /= 0) call yzsum_mn_name_x(p%rho * dux, idiag_rduxmx)
+        if (idiag_rduymx /= 0) call yzsum_mn_name_x(p%rho * duy, idiag_rduymx)
+        if (idiag_rdux2mx /= 0) call yzsum_mn_name_x(p%rho * dux**2, idiag_rdux2mx)
+        if (idiag_rduy2mx /= 0) call yzsum_mn_name_x(p%rho * duy**2, idiag_rduy2mx)
+        if (idiag_rduxduymx /= 0) call yzsum_mn_name_x(p%rho * dux * duy, idiag_rduxduymx)
+        if (idiag_ruzduxmx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,3) * dux, idiag_ruzduxmx)
+        if (idiag_ruzduymx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,3) * duy, idiag_ruzduymx)
+!
+        if (idiag_drhopmx /= 0) call yzsum_mn_name_x(drhop, idiag_drhopm)
+        if (idiag_drhop2mx /= 0) call yzsum_mn_name_x(drhop**2, idiag_drhop2m)
+      endif avg1d
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -198,7 +235,7 @@ module Special
 !
 !  Reads and registers print parameters relevant to special.
 !
-!  04-oct-19/ccyang: coded
+!  03-aug-20/ccyang: coded
 !
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
@@ -207,7 +244,7 @@ module Special
       logical, intent(in), optional :: lwrite
 !
       logical :: lwr
-      integer :: iname
+      integer :: iname, inamex
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
@@ -230,6 +267,17 @@ module Special
         idiag_rhopdvpx2m = 0
         idiag_rhopdvpy2m = 0
         idiag_rhopvpz2m = 0
+!
+        idiag_rduxmx = 0
+        idiag_rduymx = 0
+        idiag_rdux2mx = 0
+        idiag_rduy2mx = 0
+        idiag_rduxduymx = 0
+        idiag_ruzduxmx = 0
+        idiag_ruzduymx = 0
+!
+        idiag_drhopmx = 0
+        idiag_drhop2mx = 0
       endif reset
 !
 !  Turn on requested diagnostics.
@@ -252,6 +300,21 @@ module Special
         call parse_name(iname, cname(iname), cform(iname), "rhopvpz2m", idiag_rhopvpz2m)
       enddo diag
 !
+!  Turn on requested yz-averages.
+!
+      mx: do inamex = 1, nnamex
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "rduxmx", idiag_rduxmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "rduymx", idiag_rduymx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "rdux2mx", idiag_rdux2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "rduy2mx", idiag_rduy2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "rduxduymx", idiag_rduxduymx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "ruzduxmx", idiag_ruzduxmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "ruzduymx", idiag_ruzduymx)
+!
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "drhopmx", idiag_drhopmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), "drhop2mx", idiag_drhop2mx)
+      enddo mx
+!
 !  Write column where which magnetic variable is stored
 !
       wr: if (lwr) then
@@ -270,6 +333,17 @@ module Special
         call farray_index_append("idiag_rhopdvpx2m", idiag_rhopdvpx2m)
         call farray_index_append("idiag_rhopdvpy2m", idiag_rhopdvpy2m)
         call farray_index_append("idiag_rhopvpz2m", idiag_rhopvpz2m)
+!
+        call farray_index_append("idiag_rduxmx", idiag_rduxmx)
+        call farray_index_append("idiag_rduymx", idiag_rduymx)
+        call farray_index_append("idiag_rdux2mx", idiag_rdux2mx)
+        call farray_index_append("idiag_rduy2mx", idiag_rduy2mx)
+        call farray_index_append("idiag_rduxduymx", idiag_rduxduymx)
+        call farray_index_append("idiag_ruzduxmx", idiag_ruzduxmx)
+        call farray_index_append("idiag_ruzduymx", idiag_ruzduymx)
+!
+        call farray_index_append("idiag_drhopmx", idiag_drhopmx)
+        call farray_index_append("idiag_drhop2mx", idiag_drhop2mx)
       endif wr
 !
     endsubroutine rprint_special
