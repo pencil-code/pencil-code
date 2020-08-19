@@ -4819,7 +4819,7 @@ module Initcond
 !  06-jul-08/nils+andre: Fixed problem when running on
 !      mult. procs (thanks to Andre Kapelrud for finding the bug)
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
 !
       logical, intent(in), optional :: lscale_tobox
       logical :: lscale_tobox1
@@ -4881,7 +4881,7 @@ module Initcond
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
-              k2(ikx,iky,ikz)=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
             enddo
           enddo
         enddo
@@ -4905,7 +4905,7 @@ module Initcond
             u_im = u_im*exp(-(k2/cutoff**2.)**2)
           endif
           ! back to real space
-          call fourier_transform(u_re,u_im,linv=.true.)
+          call fft_xyz_parallel(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
           if (lroot) then
             if (cutoff==0) then
