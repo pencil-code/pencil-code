@@ -2012,7 +2012,7 @@ module Density
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
-      if (ldiff_hyper3_mesh) lpenc_requested(i_rho1)=.true.
+      if (ldiff_hyper3_mesh.and.(.not.ldensity_nolog)) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
         if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
