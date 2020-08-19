@@ -92,13 +92,16 @@ module Special
   logical :: lupdate_as_var=.true.
   real :: storm_strength=impossible
   logical :: lsubsidence=.true.
+  logical :: lhyperdiff=.true.
+  real :: diffrho_hyper3_mesh=5.
 !
   namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor
+       lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor,&
+       lhyperdiff,diffrho_hyper3_mesh
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
@@ -195,7 +198,7 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: storm_function_mn,subsidence_mn
       logical :: lfirstloop
-
+!
       if (lcalc_storm) then
 !
         do n=n1,n2
@@ -384,8 +387,43 @@ module Special
         df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) - (p%rho-q%eta_init)*tmass_relaxation1
       endif
 !
+      if (lhyperdiff) call hyperdiff_for_rho_pert(f,df,p)
+!
     endsubroutine special_calc_density
-!***********************************************************************     
+!***********************************************************************
+    subroutine hyperdiff_for_rho_pert(f,df,p)
+!
+!  Hyperdiffusion using rho as perturbation, instead of full density.
+!  Avoids the infinity when using rho1 = 1/rho in the density module
+!  when using perturbation density in the shallow water formulation.
+!
+!  19-aug-20/wlad+ali: coded
+!
+      use Deriv, only: der6
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      real, dimension (nx) :: tmp
+      integer :: j
+!
+      do j=1,3
+        call der6(f,irho,tmp,j,IGNOREDX=.true.)
+        tmp=tmp/(c0+p%rho)
+        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + &
+             diffrho_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
+      enddo
+!
+      if (lfirst.and.ldt) then
+        !advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        !advec2_hypermesh=advec2_hypermesh + advec_hypermesh_rho**2
+        advec2_hypermesh=advec2_hypermesh + (diffrho_hyper3_mesh*pi5_1)**2*dxyz_2
+      endif
+!
+      if (headtt) print*,'hyperdiff_for_rho_pert', diffrho_hyper3_mesh
+!
+    endsubroutine hyperdiff_for_rho_pert
+!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
       use General, only: notanumber
