@@ -119,11 +119,12 @@ module Special
   logical, dimension(3)    :: lgamma_arr, ldelta_arr, lutensor_arr
   logical, dimension(3,3,3):: lkappa_arr, lbcoef_arr
   logical, dimension(6)    :: lalpha_c, lbeta_c, lacoef_c
-  logical, dimension(3)    :: lgamma_c, ldelta_c, lutensor_c
+  logical, dimension(3)    :: lgamma_c, ldelta_c, lutensor_c, lmeanuu_c
   logical, dimension(3,6)  :: lkappa_c, lbcoef_c
-  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, lusecoefs 
+  logical :: lalpha=.true., lbeta=.true., lgamma=.true., ldelta=.true., lkappa=.true.
+  logical :: lutensor=.true., lmeanuu=.true., lacoef=.false., lbcoef=.false., lusecoefs=.false.
   logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
-  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, meanuu_scale, acoef_scale, bcoef_scale
   character (len=fnlen) :: defaultname
   character (len=fnlen) :: alpha_name, beta_name,    &
                            gamma_name, delta_name,   &
@@ -223,6 +224,7 @@ module Special
       ldelta,   ldelta_c,   delta_name,   delta_scale, &
       lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
       lutensor, lutensor_c, utensor_name, utensor_scale, &
+      lmeanuu,  lmeanuu_c,                meanuu_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs, lloop
@@ -234,6 +236,7 @@ module Special
       ldelta,   ldelta_c,   delta_name,   delta_scale, &
       lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
       lutensor, lutensor_c, utensor_name, utensor_scale, &
+      lmeanuu,  lmeanuu_c,                meanuu_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry, &
@@ -462,7 +465,7 @@ module Special
           call closeDataset(kappa_id)
         endif
 
-        if (lutensor) then
+        if (lutensor .or. lmeanuu) then
           if (.not.allocated(utensor_data)) then 
             allocate(utensor_data(dataload_len,nx,ny,nz,3))
             call openDataset('utensor',utensor_id)
@@ -538,6 +541,11 @@ module Special
           if (lutensor) then
             write (*,*) 'U-tensor scale:  ', utensor_scale
             write (*,*) 'U-tensor components used: '
+            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+          endif
+          if (lmeanuu) then
+            write (*,*) 'Mean U scale:  ', meanuu_scale
+            write (*,*) 'Mean U components used: '
             write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
           endif
           if (lacoef) then
@@ -752,7 +760,7 @@ module Special
         if (lgamma)   call closeDataset(gamma_id)
         if (ldelta)   call closeDataset(delta_id)
         if (lkappa)   call closeDataset(kappa_id)
-        if (lutensor) call closeDataset(utensor_id)
+        if (lutensor .or. lmeanuu) call closeDataset(utensor_id)
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
 
@@ -829,7 +837,7 @@ module Special
           if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
           if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
           if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
-          if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
+          if (lutensor .or. lmeanuu) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
           if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
           if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
@@ -935,7 +943,7 @@ module Special
             do i=1,3
               if (lgamma) call smooth_rbound(gamma_data(:,:,:,:,i),nsmooth_rbound)
               if (ldelta) call smooth_rbound(delta_data(:,:,:,:,i),nsmooth_rbound)
-              if (lutensor) call smooth_rbound(utensor_data(:,:,:,:,i),nsmooth_rbound)
+              if (lutensor .or. lmeanuu) call smooth_rbound(utensor_data(:,:,:,:,i),nsmooth_rbound)
               do j=1,3
                 if (lacoef) call smooth_rbound(acoef_data(:,:,:,:,i,j),nsmooth_rbound)
                 if (lalpha) call smooth_rbound(alpha_data(:,:,:,:,i,j),nsmooth_rbound)
@@ -952,7 +960,7 @@ module Special
             do i=1,3
               if (lgamma) call smooth_thbound(gamma_data(:,:,:,:,i),nsmooth_thbound)
               if (ldelta) call smooth_thbound(delta_data(:,:,:,:,i),nsmooth_thbound)
-              if (lutensor) call smooth_thbound(utensor_data(:,:,:,:,i),nsmooth_thbound)
+              if (lutensor .or. lmeanuu) call smooth_thbound(utensor_data(:,:,:,:,i),nsmooth_thbound)
               do j=1,3
                 if (lacoef) call smooth_thbound(acoef_data(:,:,:,:,i,j),nsmooth_thbound)
                 if (lalpha) call smooth_thbound(alpha_data(:,:,:,:,i,j),nsmooth_thbound)
@@ -1092,7 +1100,7 @@ module Special
             do i=1,3 
               if (lgamma) call symmetrize(gamma_data(:,:,:,:,i),lgamma_sym(i))
               if (ldelta) call symmetrize(delta_data(:,:,:,:,i),ldelta_sym(i))
-              if (lutensor) call symmetrize(utensor_data(:,:,:,:,i),lutensor_sym(i))
+              if (lutensor.or. lmeanuu) call symmetrize(utensor_data(:,:,:,:,i),lutensor_sym(i))
               do j=1,3
                 if (lalpha) call symmetrize(alpha_data(:,:,:,:,i,j),lalpha_sym(i,j))
                 if (lbeta) call symmetrize(beta_data(:,:,:,:,i,j),lbeta_sym(i,j))
@@ -1264,8 +1272,8 @@ module Special
         p%emf = p%emf - p%kappa_emf
       end if
 !
-      if (lutensor) then
-        ! Calculate utensor x B
+      if (lutensor .or. lmeanuu) then
+        ! Calculate U x B
         do i=1,3
           if (lutensor_arr(i)) then
             p%utensor_coefs(:,i)=emf_interpolate(utensor_data(1:dataload_len,:,m-nghost,n-nghost,i))
@@ -1632,7 +1640,7 @@ endif
         emftmp=0
         if (lacoef) emftmp = emftmp + p%acoef_emf
         if (lbcoef) emftmp = emftmp - p%bcoef_emf
-        if (lutensor) emftmp = emftmp + p%utensor_emf
+        if (lutensor .or. lmeanuu) emftmp = emftmp + p%utensor_emf
       else
         emftmp = p%emf
       end if
@@ -1655,7 +1663,7 @@ endif
           call dot_mn(dline_1, abs(p%gamma_coefs), tmpline)
           advec_special=advec_special+tmpline
         end if
-        if (lutensor) then
+        if (lutensor .or. lmeanuu) then
           call dot_mn(dline_1, abs(p%utensor_coefs), tmpline)
           advec_special=advec_special+tmpline
         end if
@@ -2130,6 +2138,10 @@ endif
       lutensor_arr=.false.
       utensor_scale=1.0
       utensor_name='data'
+      !  meauu
+      lmeanuu=.false.
+      lmeanuu_c=.false.
+      meanuu_scale=1.0
       ! acoef
       lacoef=.false.
       lacoef_c=.false.
@@ -2284,6 +2296,17 @@ endif
       else if (lutensor) then
         lutensor_arr  = .true.
       end if
+
+      if (any(lmeanuu_c)) then
+        lmeanuu = .true.
+        lutensor_arr  = lmeanuu_c
+      else if (lmeanuu) then
+        lutensor_arr  = .true.
+      end if
+
+      if (lmeanuu .and. (meanuu_scale /= 1.0)) then
+        utensor_scale=meanuu_scale
+      endif
 !
 ! Store scales
 !
