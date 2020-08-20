@@ -68,35 +68,48 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
 
-Coagulation and condensation in turbulence [@2017JAMES...9.1116L],
-radiative transfer [@2006A&A...448..731H,@2020GApFD.114..162B],
-chiral magnetic effect in relativistic plasmas [@2018ApJ...858..124S],
-primordial gravitational waves [@2020GApFD.114..130R],
-combustion and detonation [@2011JCoPh.230....1B,@Zhang_etal_2020comb,@2020GApFD.114...58Q],
-test-field method for turbulent MHD transport coefficients [@2010PhST..142a4028B],
-spherical shell convection [@2020GApFD.114....8K].
+An idea about the range of available modules can be obtained by
+inspecting the examples under pencil-code/samples/, which include
+cartesian-convection-kramers, CollidingParticles, conv-slab, corona,
+coronae_heatflux_boris, cosmicray, cylindrical-globaldisk-dzone,
+debris-photoelectric-fluid, dust_turb_globaldisk, GravitationalWaves,
+helical-MHDturb, implicit_resistivity, incompress_conv_peri,
+interlocked-fluxrings, interstellar, kin-dynamo, mdwarf,
+ParticlesCaustics, ParticlesLyapunov, ParticlesTetrad, potential_field,
+sedimentation, sink-particles, solar-atmosphere-magnetic,
+spherical-convection-kramers, star-in-a-box_MHS,
+supernova-driven-turbulence, superparticle-condensation-coagulation,
+testfield_nonlin_z, testfield_xz, 1d-tests/ambipolar_diffusion,
+1d-tests/H2_flamespeed, 1d-tests/reversed_field_pinch,
+2d-tests/battery_term, 2d-tests/boussinesq_convection,
+2d-tests/chiral_dynamo, 2d-tests/cylinder_deposition_ogrid,
+2d-tests/dynamical_alpha, 2d-tests/field-loop-fargo,
+2d-tests/Kelvin-Helmholtz, 2d-tests/resolved_char,
+2d-tests/selfgravdisk-deadzone-dust, 2d-tests/shallow-water.
 
-* Coagulation and condensation in turbulence [@2017JAMES...9.1116L]
-* Radiative transfer [@2006A&A...448..731H,@2020GApFD.114..162B]
-* Chiral magnetic effect in relativistic plasmas [@2018ApJ...858..124S]
-* Primordial gravitational waves [@2020GApFD.114..130R]
-* Combustion and detonation [@2011JCoPh.230....1B,@Zhang_etal_2020comb,@2020GApFD.114...58Q]
-* Test-field method for turbulent MHD transport coefficients [@2010PhST..142a4028B]
-* Spherical shell convection [@2020GApFD.114....8K]
+Below a list of application that are described in dedicated papers:
+
+* Coagulation and condensation in turbulence [@2017JAMES.9.1116L]
+* Radiative transfer [@2006A&A.448.731H,@2020GApFD.114.162B]
+* Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
+* Primordial gravitational waves [@2020GApFD.114.130R]
+* Combustion and detonation [@2011JCoPh.230.1B,@Zhang_etal_2020comb,@2020GApFD.114.58Q]
+* Test-field method for turbulent MHD transport coefficients [@2010PhST.142a4028B]
+* Spherical shell convection [@2020GApFD.114.8K]
 
 # Statement of need and purpose of software
 
-The code provides an easily adaptable tool for solving both well
-established equations and new ones, such as the test-field equations.
+The code provides an easily adaptable tool for solving both standard
+equations and others, such as the test-field equations.
 Significant amounts of runtime diagnostics is available.
-Users have access to the latest development version and can
+Users have access to the latest development version and can ask to
 join the circle of developers.
-Every revision on GitHub is verified on 12 tests on travis-ci.com.
+Every revision on GitHub is verified on 9 tests on travis-ci.com.
 The current version is also automatically being tested on 59 hourly
 tests and on 79 daily tests.
 Continuous progress on the code is driven by the research of the
 individual developers.
-Among the currently 86 developers with check-in permission, there are
+Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 comments.
 Further developments and interactions between developers and users is
@@ -117,22 +130,22 @@ the Pencil Code [@zenodo.3466444].
 # Key references
 
 * Planet formation [@2007Natur.448.1022J]
-* Solar dynamo [@2005ApJ...625..539B]
-* MHD turbulence and cascades [@2004PhRvE..70a6308H]
-* Fully convective star in a box [@2006ApJ...638..336D]
-* Dynamo wave in spherical shell convection [@2012ApJ...755L..22K]
-* Turbulent diffusivity quenching with test fields [@2008ApJ...676..740B,@2014ApJ...795...16K]
-* Global simulations of debris disks [@2013Natur.499..184L]
+* Solar dynamo [@2005ApJ.625.539B]
+* MHD turbulence and cascades [@2004PhRvE.70a6308H]
+* Fully convective star in a box [@2006ApJ.638.336D]
+* Dynamo wave in spherical shell convection [@2012ApJ.755L.22K]
+* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B,@2014ApJ...795...16K]
+* Global simulations of debris disks [@2013Natur.499.184L]
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
-* Clustering in in supersonic turbulent molecular clouds [@2019MNRAS.483.5623M]
-* Solar corona above active regions [@2013A&A...555A.123B]
-* Stratified shearing box simulations [@2011ApJ...740...18O]
+* Clustering in in supersonic turbulence [@2019MNRAS.483.5623M]
+* Solar corona above active regions [@2013A&A.55A.123B]
+* Stratified shearing box simulations [@2011ApJ.740.18O]
 
 # Acknowledgements
 
 We acknowledge contributions from all submitters and their supporting
 funding agencies.
-This work was supported in part through the Swedish Research Council,
+In particular, we mention the Swedish Research Council,
 grants 2012-5797, 2013-03992, 2017-03865, and 2019-04234,
 the National Science Foundation under the grant AAG-1615100,
 the FRINATEK grant 231444 under the Research Council of Norway, SeRC,
