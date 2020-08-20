@@ -24,8 +24,11 @@ authors:
    affiliation: 6
  - name: Wladimir Lyra
    affiliation: 7
+ - name: Frederick Gent
+   affiliation: "8, 9"
+   orcid: 0000-0002-1331-2260
  - name: Add Yourself
-   affiliation: 8
+   affiliation: 10
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -43,7 +46,9 @@ affiliations:
    index: 7
  - name: Seven
    index: 8
- - name: Eight
+ - name: Astroinformatics, Department of Computer Science, Aalto University
+   index: 9
+ - name: School of Mathematics, Statistics and Physics, Newcastle University 
 date: 20 August 2020
 bibliography: paper.bib
 ---
