@@ -49,6 +49,8 @@ affiliations:
  - name: Astroinformatics, Department of Computer Science, Aalto University
    index: 9
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
+   index: 10
+
 date: 20 August 2020
 bibliography: paper.bib
 ---
