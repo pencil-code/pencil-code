@@ -55,8 +55,8 @@ module Mpicomm
   include 'mpicomm.h'
 !
   interface mpirecv_logical
-     module procedure mpirecv_logical_scl
-     module procedure mpirecv_logical_arr
+    module procedure mpirecv_logical_scl
+    module procedure mpirecv_logical_arr
   endinterface
 !
   interface mpirecv_char
@@ -479,7 +479,7 @@ module Mpicomm
 ! New comm MPI_COMM_PENCIL which comprises only the procs of the Pencil
 ! application. iproc becomes rank in MPI_COMM_PENCIL.
 ! Attention: If there is more than one application envisaged, Pencil needs to be compiled
-! with FPPFLAGS=-DMPI_COMM_WORLD=MPI_COMM_PENCIL.
+! with FPPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL.
 ! If there is only one application, iproc is unchanged and MPI_COMM_PENCIL=MPI_COMM_WORLD.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
@@ -566,7 +566,7 @@ module Mpicomm
 
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
-!  Check total number of processors.
+!  Check total number of processors assigned to Pencil.
 !
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
       nprocs_foreign=nprocs-nprocs_penc
@@ -576,13 +576,13 @@ module Mpicomm
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
-                ', but running on ', nprocs, ' processors'
+                ', but running on ', nprocs_penc, ' processors'
           elseif (nprocs_penc/=ncpus) then
             print*, 'Compiled with ncpus = ', ncpus, &
                 ', but running on ', nprocs_penc, ' processors'
           elseif (lforeign.and.nprocs_foreign==0) then
-            print*, 'number of processors '//trim(itoa(nprocs))// &
-                    '= number of own processors -> no procs for foreign code left'
+            print*, 'number of processors = '//trim(itoa(nprocs))// &
+                    ' = number of own processors -> no procs for foreign code left'
           endif
         
           call stop_it('initialize_mpicomm')
