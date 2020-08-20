@@ -39,21 +39,21 @@ affiliations:
    index: 2
  - name: McWilliams Center for Cosmology & Department of Physics, Carnegie Mellon University
    index: 3
- - name: New Mexico State Univ.
+ - name: Lund Observatory, Department of Astronomy and Theoretical Physics, Lund University
    index: 4
- - name: Four
-   index: 5
  - name: Five
-   index: 6
+   index: 5
  - name: Six
+   index: 6
+ - name: New Mexico State University
    index: 7
- - name: Seven
-   index: 8
  - name: Astroinformatics, Department of Computer Science, Aalto University
-   index: 9
+   index: 8
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
+   index: 9
+ - name: Max Planck Institute for Solar System Research 
    index: 10
- - name: Max Planck Insitute for Solar System Research 
+ - name: Eleven
    index: 11
 
 date: 20 August 2020
@@ -66,7 +66,7 @@ The Pencil Code is highly modular and can be adapted to a wide
 range of applications.
 It is primarily designed to solving partial differential equations
 (PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
-but the framework is general and can also be applied in situations not
+but the framework is general and can also be applied to situations not
 related to PDEs, for example when just the message passing interface or
 input/output strategies of the code are to be used.
 
@@ -81,16 +81,16 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 # High-level functionality
 
 An idea about the range of available modules can be obtained by inspecting
-the examples under pencil-code/samples/, which include cartesian
-convection with Kramers opacities, colliding particles, convection
-in a slab, coronae with heatflux and Boris correction, cosmic rays,
-cylindrical global disks with a dead zone, photoelectric fluids, dust
-in turbulent global disks, gravitational waves, helical MHD turbulence,
-implicit resistivity, interlocked fluxrings, interstellar supernova-driven
-turbulence, kinematic dynamos, M dwarfs, particles, potential field
-boundary condition, sedimentation, sink particles, solar atmosphere,
-spherical convection with Kramers opacity, star-in-a-box, superparticles
-for condensation-coagulation, nonlinear testfields, ambipolar diffusion,
+the examples under pencil-code/samples/, which include Cartesian and
+spherical shell convection with Kramers opacities, 
+solar atmosphere with radiation and ionization, M dwarfs as a star-in-a-box, 
+coronae with heatflux and Boris correction, kinematic dynamos,
+helical MHD turbulence, implicit resistivity, interlocked fluxrings,
+cylindrical global disks with a dead zone, photoelectric fluids, 
+dust in turbulent global disks, cosmic rays, gravitational waves
+in the early universe, interstellar supernova-driven turbulence,
+inertial particles, potential field boundary condition, sedimentation, sink particles, 
+superparticles for condensation-coagulation, nonlinear test fields, ambipolar diffusion,
 H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
 dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
 fargo, Kelvin-Helmholtz instability, resolved char, shallow water.
@@ -111,7 +111,7 @@ Below a list of application that are described in dedicated papers:
 # Statement of need and purpose of software
 
 The code provides an easily adaptable tool for solving both standard
-equations and others, such as the test-field equations.
+equations as well as others, such as the test-field equations.
 Significant amounts of runtime diagnostics is available.
 Users have access to the latest development version and can ask to
 join the circle of developers.
@@ -122,7 +122,7 @@ Continuous progress on the code is driven by the research of the
 individual developers.
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
-Of the developers, 34 have done more than 34 comments.
+Of the developers, 34 have done more than 34 commits.
 Further developments and interactions between developers and users is
 being promoted through annual user meetings since 2004 and a newsletters
 since 2020.
@@ -155,7 +155,7 @@ the Pencil Code [@zenodo.3466444].
 
 # Key references
 
-* Planet formation [@2007Natur.448.1022J; @2009A&A.497.869L]
+* Planet and planetesimal formation [@2007Natur.448.1022J; @2009A&A.497.869L]
 * Solar dynamo [@2005ApJ.625.539B]
 * MHD turbulence and cascades [@2004PhRvE.70a6308H]
 * Fully convective star in a box [@2006ApJ.638.336D]
