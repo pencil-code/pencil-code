@@ -102,8 +102,11 @@ Below a list of application that are described in dedicated papers:
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Combustion, detonation, and burning particles [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
-* Test-field method for turbulent MHD transport [@2010PhST.142a4028B]
-* Spherical shell convection [@2020GApFD.114.8K]
+* Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B]
+* Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114....8K]
+* Boris correction for coronal physics [@2020GApFD.114.213C]
+* Thermal instability and mixing [@2012ApJ.758.48Y]
+* Implicit solver for temperature [@2008A&A.484.29G]
 
 # Statement of need and purpose of software
 
@@ -152,16 +155,16 @@ the Pencil Code [@zenodo.3466444].
 
 # Key references
 
-* Planet formation [@2007Natur.448.1022J]
+* Planet formation [@2007Natur.448.1022J; @2009A&A.497.869L]
 * Solar dynamo [@2005ApJ.625.539B]
 * MHD turbulence and cascades [@2004PhRvE.70a6308H]
 * Fully convective star in a box [@2006ApJ.638.336D]
-* Dynamo wave in spherical shell convection [@2012ApJ.755L.22K]
+* Dynamo wave in spherical shell convection [@2012ApJ.755L.22K; @2014ApJ.796L.12W]
 * Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K]
 * Global simulations of debris disks [@2013Natur.499.184L]
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
 * Clustering in in supersonic turbulence [@2019MNRAS.483.5623M]
-* Solar corona above active regions [@2013A&A.555A.123B]
+* Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B]
 * Stratified shearing box simulations [@2011ApJ.740.18O]
 
 # Acknowledgements
