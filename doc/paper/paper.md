@@ -103,7 +103,7 @@ Below a list of application that are described in dedicated papers:
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Combustion, detonation, and burning particles [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B]
-* Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114....8K]
+* Spherical shell dynamos and convection [@2009A&A.495.1M; @2020GApFD.114....8K]
 * Boris correction for coronal physics [@2020GApFD.114.213C]
 * Thermal instability and mixing [@2012ApJ.758.48Y]
 * Implicit solver for temperature [@2008A&A.484.29G]
