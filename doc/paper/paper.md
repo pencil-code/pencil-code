@@ -68,33 +68,29 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
 
-An idea about the range of available modules can be obtained by
-inspecting the examples under pencil-code/samples/, which include
-cartesian-convection-kramers, CollidingParticles, conv-slab, corona,
-coronae_heatflux_boris, cosmicray, cylindrical-globaldisk-dzone,
-debris-photoelectric-fluid, dust_turb_globaldisk, GravitationalWaves,
-helical-MHDturb, implicit_resistivity, incompress_conv_peri,
-interlocked-fluxrings, interstellar, kin-dynamo, mdwarf,
-ParticlesCaustics, ParticlesLyapunov, ParticlesTetrad, potential_field,
-sedimentation, sink-particles, solar-atmosphere-magnetic,
-spherical-convection-kramers, star-in-a-box_MHS,
-supernova-driven-turbulence, superparticle-condensation-coagulation,
-testfield_nonlin_z, testfield_xz, 1d-tests/ambipolar_diffusion,
-1d-tests/H2_flamespeed, 1d-tests/reversed_field_pinch,
-2d-tests/battery_term, 2d-tests/boussinesq_convection,
-2d-tests/chiral_dynamo, 2d-tests/cylinder_deposition_ogrid,
-2d-tests/dynamical_alpha, 2d-tests/field-loop-fargo,
-2d-tests/Kelvin-Helmholtz, 2d-tests/resolved_char,
-2d-tests/selfgravdisk-deadzone-dust, 2d-tests/shallow-water.
+An idea about the range of available modules can be obtained by inspecting
+the examples under pencil-code/samples/, which include cartesian
+convection with Kramers opacities, colliding particles, convection
+in a slab, coronae with heatflux and Boris correction, cosmic rays,
+cylindrical global disks with a dead zone, photoelectric fluids, dust
+in turbulent global disks, gravitational waves, helical MHD turbulence,
+implicit resistivity, interlocked fluxrings, interstellar supernova-driven
+turbulence, kinematic dynamos, M dwarfs, particles, potential field
+boundary condition, sedimentation, sink particles, solar atmosphere,
+spherical convection with Kramers opacity, star-in-a-box, superparticles
+for condensation-coagulation, nonlinear testfields, ambipolar diffusion,
+H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
+dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
+fargo, Kelvin-Helmholtz instability, resolved char, shallow water.
 
 Below a list of application that are described in dedicated papers:
 
-* Coagulation and condensation in turbulence [@2017JAMES.9.1116L]
-* Radiative transfer [@2006A&A.448.731H; @2020GApFD.114.162B]
+* Coagulation and condensation in turbulence [@2008A&A...486..597J; @2017JAMES.9.1116L]
+* Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
-* Combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
-* Test-field method for turbulent MHD transport coefficients [@2010PhST.142a4028B]
+* Combustion, detonation, and burning particles [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
+* Test-field method for turbulent MHD transport [@2010PhST.142a4028B]
 * Spherical shell convection [@2020GApFD.114.8K]
 
 # Statement of need and purpose of software
@@ -134,11 +130,11 @@ the Pencil Code [@zenodo.3466444].
 * MHD turbulence and cascades [@2004PhRvE.70a6308H]
 * Fully convective star in a box [@2006ApJ.638.336D]
 * Dynamo wave in spherical shell convection [@2012ApJ.755L.22K]
-* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ...795...16K]
+* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K]
 * Global simulations of debris disks [@2013Natur.499.184L]
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
 * Clustering in in supersonic turbulence [@2019MNRAS.483.5623M]
-* Solar corona above active regions [@2013A&A.55A.123B]
+* Solar corona above active regions [@2013A&A.555A.123B]
 * Stratified shearing box simulations [@2011ApJ.740.18O]
 
 # Acknowledgements
