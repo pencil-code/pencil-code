@@ -27,8 +27,11 @@ authors:
  - name: Frederick Gent
    affiliation: "8, 9"
    orcid: 0000-0002-1331-2260
- - name: Add Yourself
+ - name: Jörn Warnecke
    affiliation: 10
+   orcid: 0000-0002-9292-4600
+ - name: Add Yourself
+   affiliation: 11
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -50,6 +53,8 @@ affiliations:
    index: 9
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
    index: 10
+ - name: Max Planck Insitute for Solar System Research 
+   index: 11
 
 date: 20 August 2020
 bibliography: paper.bib
