@@ -188,6 +188,7 @@ module Cdata
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestflow=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lread_oldsnap_nosink=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.true.
   logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
