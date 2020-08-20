@@ -50,10 +50,10 @@ bibliography: paper.bib
 
 # Summary
 
-The Pencil Code is a highly modular to and be adapted to a wide
+The Pencil Code is highly modular and can be adapted to a wide
 range of applications.
-It is primarily designed for solving partial differential equations
-(PDEs) of compressible magnetohydrodynamics (MHD) [@2010ascl.soft10060B],
+It is primarily designed to solving partial differential equations
+(PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
 but the framework is general and can also be applied in situations not
 related to PDEs, for example when just the message passing interface or
 input/output strategies of the code are to be used.
@@ -67,6 +67,14 @@ There are also different diffusion operators to allow for both direct numerical
 simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
+
+Coagulation and condensation in turbulence [@2017JAMES...9.1116L],
+radiative transfer [@2006A&A...448..731H,@2020GApFD.114..162B],
+chiral magnetic effect in relativistic plasmas [@2018ApJ...858..124S],
+primordial gravitational waves [@2020GApFD.114..130R],
+combustion and detonation [@2011JCoPh.230....1B,@Zhang_etal_2020comb,@2020GApFD.114...58Q],
+test-field method for turbulent MHD transport coefficients [@2010PhST..142a4028B],
+spherical shell convection [@2020GApFD.114....8K].
 
 * Coagulation and condensation in turbulence [@2017JAMES...9.1116L]
 * Radiative transfer [@2006A&A...448..731H,@2020GApFD.114..162B]
