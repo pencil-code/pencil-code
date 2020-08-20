@@ -90,10 +90,10 @@ testfield_nonlin_z, testfield_xz, 1d-tests/ambipolar_diffusion,
 Below a list of application that are described in dedicated papers:
 
 * Coagulation and condensation in turbulence [@2017JAMES.9.1116L]
-* Radiative transfer [@2006A&A.448.731H,@2020GApFD.114.162B]
+* Radiative transfer [@2006A&A.448.731H; @2020GApFD.114.162B]
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
-* Combustion and detonation [@2011JCoPh.230.1B,@Zhang_etal_2020comb,@2020GApFD.114.58Q]
+* Combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
 * Test-field method for turbulent MHD transport coefficients [@2010PhST.142a4028B]
 * Spherical shell convection [@2020GApFD.114.8K]
 
@@ -134,7 +134,7 @@ the Pencil Code [@zenodo.3466444].
 * MHD turbulence and cascades [@2004PhRvE.70a6308H]
 * Fully convective star in a box [@2006ApJ.638.336D]
 * Dynamo wave in spherical shell convection [@2012ApJ.755L.22K]
-* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B,@2014ApJ...795...16K]
+* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ...795...16K]
 * Global simulations of debris disks [@2013Natur.499.184L]
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
 * Clustering in in supersonic turbulence [@2019MNRAS.483.5623M]
