@@ -72,7 +72,9 @@ input/output strategies of the code are to be used.
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
+<!--- AB: comment for Joern, and commented out Yin--Yang
 A preliminary implementation of a Yin--Yang mesh is also in place.
+--->
 One can choose between different time stepping schemes and different
 spatial derivative operators.
 There are also different diffusion operators to allow for both direct numerical
@@ -102,7 +104,7 @@ Below a list of application that are described in dedicated papers:
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Combustion, detonation, and burning particles [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
-* Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B]
+* Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
 * Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
 * Boris correction for coronal physics [@2020GApFD.114.213C]
 * Thermal instability and mixing [@2012ApJ.758.48Y]
