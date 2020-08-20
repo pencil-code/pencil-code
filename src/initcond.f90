@@ -4877,14 +4877,26 @@ module Initcond
 !  integration over shells
 !
         if (lroot .AND. ip<10) &
-             print*,'power_randomphase:fft done; now integrate over shells...'
-        do ikz=1,nz
+               print*,'power_randomphase:fft done; now integrate over shells...'
+!  In 2-D
+        if (nz==1) then
+          ikz=1
           do iky=1,ny
             do ikx=1,nx
-              k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
             enddo
           enddo
-        enddo
+!  In 3-D
+        else
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              enddo
+            enddo
+          enddo
+        endif
+!
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
