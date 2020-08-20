@@ -85,7 +85,7 @@ fargo, Kelvin-Helmholtz instability, resolved char, shallow water.
 
 Below a list of application that are described in dedicated papers:
 
-* Coagulation and condensation in turbulence [@2008A&A...486..597J; @2017JAMES.9.1116L]
+* Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L]
 * Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
@@ -117,9 +117,24 @@ community.
 
 # Ongoing research using the Pencil Code
 
-Current research with the code includes solar and stellar convection,
-planetesimal formation, coagulation and condensation in raindrop and dust formation,
-turbulent combustion, and gravitational waves from the early universe.
+Current research topics with the code includes
+interstellar and intercluster medium as well as early Universe;
+small-scale dynamos and reconnection;
+primordial magnetic fields and decaying turbulence;
+gravitational waves from turbulent sources;
+planet formation and inertial particles;
+accretion discs and shear flows;
+coronal heating and coronal mass ejections;
+helical dynamos, helical turbulence, and catastrophic quenching;
+helioseismology;
+strongly stratified MHD turbulence and negative effective magnetic pressure instability;
+convection in Cartesian domains;
+global convection and dynamo simulations;
+turbulent transport and test-field methods;
+hydrodynamic and MHD instabilities;
+chiral MHD;
+Hydrodynamic and MHD turbulence;
+turbulent combustion, front propagation, radiation & ionization.
 As of July 2020, 564 papers have been published that acknowledge use of
 the Pencil Code [@zenodo.3466444].
 
