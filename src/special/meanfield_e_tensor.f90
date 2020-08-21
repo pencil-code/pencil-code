@@ -18,10 +18,10 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED alpha_coefs(3,3); beta_coefs(3,3); gamma_coefs(3)
-! PENCILS PROVIDED delta_coefs(3); kappa_coefs(3,3,3); utensor_coefs(3)
+! PENCILS PROVIDED delta_coefs(3); kappa_coefs(3,3,3); umean_coefs(3)
 ! PENCILS PROVIDED acoef_coefs(3,3); bcoef_coefs(3,3,3)
 ! PENCILS PROVIDED alpha_emf(3); beta_emf(3); gamma_emf(3)
-! PENCILS PROVIDED delta_emf(3); kappa_emf(3); utensor_emf(3)
+! PENCILS PROVIDED delta_emf(3); kappa_emf(3); umean_emf(3)
 ! PENCILS PROVIDED acoef_emf(3); bcoef_emf(3)
 ! PENCILS PROVIDED bij_symm(3,3)
 ! PENCILS PROVIDED emf(3)
@@ -81,7 +81,7 @@ module Special
   ! Actual datasets
 
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data, acoef_data
-  real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, utensor_data
+  real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, umean_data
   real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data, bcoef_data
  
   real, dimension(:), allocatable :: tensor_times
@@ -94,7 +94,7 @@ module Special
                                                 .true. ,.false.,.true.  /), shape(lbeta_sym))
   logical, dimension(3) :: lgamma_sym  =[.true. ,.false.,.true. ], &
                            ldelta_sym  =[.false.,.true. ,.false.], &
-                           lutensor_sym=[.true. ,.false.,.true. ]
+                           lumean_sym  =[.true. ,.false.,.true. ]
   !logical, dimension(3,3,3)::lkappa_sym=[[.false.,.true. ,.false.],[.true. ,.false.,.true. ],[.false.,.true.,.false.], &
   !                                       [.true. ,.false.,.true. ],[.false.,.true. ,.false.],[.true. ,.false.,.true.], &
   !                                       [.false.,.true. ,.false.],[.true. ,.false.,.true. ],[.false.,.true.,.false.]]
@@ -106,7 +106,7 @@ module Special
 
   integer,parameter :: alpha_id=1, beta_id=2,    &
                        gamma_id=3, delta_id=4,   &
-                       kappa_id=5, utensor_id=6, & 
+                       kappa_id=5, umean_id=6, & 
                        acoef_id=7, bcoef_id=8
   integer,parameter :: time_id=1
 
@@ -116,19 +116,21 @@ module Special
   ! Dataset logical variables
 
   logical, dimension(3,3)  :: lalpha_arr, lbeta_arr, lacoef_arr
-  logical, dimension(3)    :: lgamma_arr, ldelta_arr, lutensor_arr
+  logical, dimension(3)    :: lgamma_arr, ldelta_arr, lumean_arr
   logical, dimension(3,3,3):: lkappa_arr, lbcoef_arr
   logical, dimension(6)    :: lalpha_c, lbeta_c, lacoef_c
-  logical, dimension(3)    :: lgamma_c, ldelta_c, lutensor_c, lmeanuu_c
+  logical, dimension(3)    :: lgamma_c, ldelta_c, lumean_c
   logical, dimension(3,6)  :: lkappa_c, lbcoef_c
   logical :: lalpha=.false., lbeta=.false., lgamma=.false., ldelta=.false., lkappa=.false.
-  logical :: lutensor=.false., lmeanuu=.false., lacoef=.false., lbcoef=.false., lusecoefs=.false.
+  logical :: lumean=.false., lacoef=.false., lbcoef=.false., lusecoefs=.false.
   logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
-  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, meanuu_scale, acoef_scale, bcoef_scale
-  character (len=fnlen) :: defaultname
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, umean_scale, acoef_scale, bcoef_scale
+
+  character (len=fnlen) :: dataset
+
   character (len=fnlen) :: alpha_name, beta_name,    &
                            gamma_name, delta_name,   &
-                           kappa_name, utensor_name, &
+                           kappa_name, umean_name, &
                            acoef_name, bcoef_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
   character (len=fnlen), dimension(nscalars) :: scalar_names=(/'t'/)
@@ -152,9 +154,9 @@ module Special
   integer :: idiag_kappaxmax=0
   integer :: idiag_kappaymax=0
   integer :: idiag_kappazmax=0
-  integer :: idiag_utensorxmax=0
-  integer :: idiag_utensorymax=0
-  integer :: idiag_utensorzmax=0
+  integer :: idiag_umeanxmax=0
+  integer :: idiag_umeanymax=0
+  integer :: idiag_umeanzmax=0
   integer :: idiag_acoefxmax=0
   integer :: idiag_acoefymax=0
   integer :: idiag_acoefzmax=0
@@ -177,7 +179,7 @@ module Special
   integer :: idiag_gammarms=0
   integer :: idiag_deltarms=0
   integer :: idiag_kapparms=0
-  integer :: idiag_utensorrms=0
+  integer :: idiag_umeanrms=0
   integer :: idiag_acoefrms=0
   integer :: idiag_bcoefrms=0
   integer :: idiag_emfrms=0
@@ -211,7 +213,7 @@ module Special
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
-  real :: rel_eta=.01    ! should be > 0
+  real :: rel_eta=1e-3    ! must be > 0
 
   ! Input dataset name
   ! Input namelist
@@ -223,11 +225,10 @@ module Special
       lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
       ldelta,   ldelta_c,   delta_name,   delta_scale, &
       lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
-      lutensor, lutensor_c, utensor_name, utensor_scale, &
-      lmeanuu,  lmeanuu_c,                meanuu_scale, &
+      lumean,   lumean_c,   umean_name,   umean_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname, lusecoefs, lloop
+      interpname, dataset, lusecoefs, lloop
   namelist /special_run_pars/ &
       emftensors_file, &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
@@ -235,11 +236,10 @@ module Special
       lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
       ldelta,   ldelta_c,   delta_name,   delta_scale, &
       lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
-      lutensor, lutensor_c, utensor_name, utensor_scale, &
-      lmeanuu,  lmeanuu_c,                meanuu_scale, &
+      lumean,   lumean_c,   umean_name,   umean_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry, &
+      interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
       lalt_decomp, lremove_beta_negativ, rel_eta
 
@@ -343,7 +343,7 @@ module Special
 
       if (lrun) then 
 
-        if (trim(defaultname) == 'time-series' .or. trim(defaultname) == 'time-crop') then
+        if (trim(dataset) == 'time-series' .or. trim(dataset) == 'time-crop') then
           lread_time_series=.true.
         else
         !  call fatal_error('initialize_special','Unknown dataset chosen!')
@@ -413,7 +413,7 @@ module Special
         if (lalpha) then
           if (.not.allocated(alpha_data)) then
             allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
-            call openDataset('alpha',alpha_id)
+            call openDataset((/'alpha'/),alpha_id)
           endif
           alpha_data = 0.
         elseif (allocated(alpha_data)) then
@@ -424,7 +424,7 @@ module Special
         if (lbeta) then
           if (.not.allocated(beta_data)) then
             allocate(beta_data(dataload_len,nx,ny,nz,3,3))
-            call openDataset('beta',beta_id)
+            call openDataset((/'beta'/),beta_id)
           endif
           beta_data = 0.
         elseif (allocated(beta_data)) then
@@ -435,7 +435,7 @@ module Special
         if (lgamma) then
           if (.not.allocated(gamma_data)) then
             allocate(gamma_data(dataload_len,nx,ny,nz,3))
-            call openDataset('gamma',gamma_id)
+            call openDataset((/'gamma'/),gamma_id)
           endif
           gamma_data = 0.
         elseif (allocated(gamma_data)) then
@@ -446,7 +446,7 @@ module Special
         if (ldelta) then
           if (.not.allocated(delta_data)) then
             allocate(delta_data(dataload_len,nx,ny,nz,3))
-            call openDataset('delta',delta_id)
+            call openDataset((/'delta'/),delta_id)
           endif
           delta_data = 0.
         elseif (allocated(delta_data)) then
@@ -457,7 +457,7 @@ module Special
         if (lkappa) then
           if (.not.allocated(kappa_data)) then
             allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
-            call openDataset('kappa',kappa_id)
+            call openDataset((/'kappa'/),kappa_id)
           endif
           kappa_data = 0.
         elseif (allocated(kappa_data)) then
@@ -465,21 +465,21 @@ module Special
           call closeDataset(kappa_id)
         endif
 
-        if (lutensor .or. lmeanuu) then
-          if (.not.allocated(utensor_data)) then 
-            allocate(utensor_data(dataload_len,nx,ny,nz,3))
-            call openDataset('utensor',utensor_id)
+        if (lumean) then
+          if (.not.allocated(umean_data)) then 
+            allocate(umean_data(dataload_len,nx,ny,nz,3))
+            call openDataset((/'umean','utensor'/),umean_id)
           endif
-          utensor_data = 0.
-        elseif (allocated(utensor_data)) then
-          deallocate(utensor_data)
-          call closeDataset(utensor_id)
+          umean_data = 0.
+        elseif (allocated(umean_data)) then
+          deallocate(umean_data)
+          call closeDataset(umean_id)
         endif
 
         if (lacoef) then
           if (.not.allocated(acoef_data)) then
             allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
-            call openDataset('acoef', acoef_id)
+            call openDataset((/'acoef'/), acoef_id)
           endif
           acoef_data = 0.
         elseif (allocated(acoef_data)) then
@@ -490,7 +490,7 @@ module Special
         if (lbcoef) then
           if (.not.allocated(bcoef_data)) then 
             allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
-            call openDataset('bcoef', bcoef_id)
+            call openDataset((/'bcoef'/), bcoef_id)
           endif
           bcoef_data = 0.
         elseif (allocated(bcoef_data)) then
@@ -538,15 +538,10 @@ module Special
             end do
             write(*,*) '|'
           endif
-          if (lutensor) then
-            write (*,*) 'U-tensor scale:  ', utensor_scale
-            write (*,*) 'U-tensor components used: '
-            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
-          endif
-          if (lmeanuu) then
-            write (*,*) 'Mean U scale:  ', meanuu_scale
-            write (*,*) 'Mean U components used: '
-            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+          if (lumean) then
+            write (*,*) 'U-mean scale:  ', umean_scale
+            write (*,*) 'U-mean components used: '
+            write (*,'(A3,3L3,A3)') '|', lumean_arr, '|'
           endif
           if (lacoef) then
             write (*,*) 'acoef scale:   ', acoef_scale
@@ -753,14 +748,14 @@ module Special
         if (allocated(gamma_data)) deallocate(gamma_data)
         if (allocated(delta_data)) deallocate(delta_data)
         if (allocated(kappa_data)) deallocate(kappa_data)
-        if (allocated(utensor_data)) deallocate(utensor_data)
+        if (allocated(umean_data)) deallocate(umean_data)
 
         if (lalpha)   call closeDataset(alpha_id)
         if (lbeta)    call closeDataset(beta_id)
         if (lgamma)   call closeDataset(gamma_id)
         if (ldelta)   call closeDataset(delta_id)
         if (lkappa)   call closeDataset(kappa_id)
-        if (lutensor .or. lmeanuu) call closeDataset(utensor_id)
+        if (lumean)   call closeDataset(umean_id)
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
 
@@ -837,7 +832,7 @@ module Special
           if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
           if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
           if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
-          if (lutensor .or. lmeanuu) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
+          if (lumean) call loadDataset(umean_data, lumean_arr, umean_id, iload-1,'Umean') !!!
           if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
           if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
@@ -943,7 +938,7 @@ module Special
             do i=1,3
               if (lgamma) call smooth_rbound(gamma_data(:,:,:,:,i),nsmooth_rbound)
               if (ldelta) call smooth_rbound(delta_data(:,:,:,:,i),nsmooth_rbound)
-              if (lutensor .or. lmeanuu) call smooth_rbound(utensor_data(:,:,:,:,i),nsmooth_rbound)
+              if (lumean) call smooth_rbound(umean_data(:,:,:,:,i),nsmooth_rbound)
               do j=1,3
                 if (lacoef) call smooth_rbound(acoef_data(:,:,:,:,i,j),nsmooth_rbound)
                 if (lalpha) call smooth_rbound(alpha_data(:,:,:,:,i,j),nsmooth_rbound)
@@ -960,7 +955,7 @@ module Special
             do i=1,3
               if (lgamma) call smooth_thbound(gamma_data(:,:,:,:,i),nsmooth_thbound)
               if (ldelta) call smooth_thbound(delta_data(:,:,:,:,i),nsmooth_thbound)
-              if (lutensor .or. lmeanuu) call smooth_thbound(utensor_data(:,:,:,:,i),nsmooth_thbound)
+              if (lumean) call smooth_thbound(umean_data(:,:,:,:,i),nsmooth_thbound)
               do j=1,3
                 if (lacoef) call smooth_thbound(acoef_data(:,:,:,:,i,j),nsmooth_thbound)
                 if (lalpha) call smooth_thbound(alpha_data(:,:,:,:,i,j),nsmooth_thbound)
@@ -973,8 +968,6 @@ module Special
             enddo
           endif
 
-
-
 !if (lroot.and.lbeta) write(200,*) beta_data(1,:,:,1,:,:)
 
            if (lbeta.and.lremove_beta_negativ) then
@@ -983,8 +976,6 @@ module Special
                where(beta_data(:,:,:,:,i,i)<eta*rel_eta) beta_data(:,:,:,:,i,i)=eta*rel_eta
              enddo
            endif
-
-
 
 !if (lroot.and.lbeta) write(300,*) beta_data(1,:,:,1,:,:)
 
@@ -1017,7 +1008,10 @@ module Special
 !
             numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
             do mm=1,ny; do ll=1,nx
+
+              oldtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
               beta_sav=beta_data(1,ll,mm,1,:,:)
+
               polcoeffs=(/2.*beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3)*beta_data(1,ll,mm,1,2,3) &
                            - beta_data(1,ll,mm,1,1,2)**2*beta_data(1,ll,mm,1,3,3) &
                            - beta_data(1,ll,mm,1,1,3)**2*beta_data(1,ll,mm,1,2,2) &
@@ -1034,9 +1028,10 @@ module Special
               call cubicroots(polcoeffs, eigenvals)
               if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
 
-!              if (any(real(eigenvals)<-eta)) then
-!              if (ll <= 3 .and. mm <= 84 .and. mm >= 82) print*, 'JOERN: eigenvalues-real:', real(eigenvals)
-!              if (ll <= 3 .and. mm <= 84 .and. mm >= 82) print*, 'JOERN: eigenvalues-imag:', imag(eigenvals)
+              newtrace=sum(real(eigenvals))
+              if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (1)=', ll,mm,abs(oldtrace-newtrace),oldtrace,newtrace
+
+              if (any(real(eigenvals)<-eta)) then
 !
 !  If there are negative eigenvalues of beta,
 !
@@ -1053,19 +1048,20 @@ module Special
 !
                 ev(:,3)=-1.
                 do iv=1,3
-                  det = (beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(1))) &
+!
+! Eigenvalues < -eta are set to (-1.+rel_eta)*eta with rel_eta>0.
+!
+! output here: eigenvalues JOERN
+!
+                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
+
+                  det = (beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
                         -beta_data(1,ll,mm,1,1,2)**2
                   ev(iv,1)= (beta_data(1,ll,mm,1,1,3)*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
                             -beta_data(1,ll,mm,1,2,3)*beta_data(1,ll,mm,1,1,2))/det
                   ev(iv,2)=((beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*beta_data(1,ll,mm,1,2,3) &
                             -beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3))/det
                   ev(iv,:)=ev(iv,:)/sqrt(sum(ev(iv,:)**2))    ! normalization
-!
-! Eigenvalues < -eta are set to (-1.+rel_eta)*eta with rel_eta>0.
-!
-! output here: eigenvalues JOERN
-!
-!                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
                 enddo
 
                 beta_data(1,ll,mm,1,:,:)=0.
@@ -1078,10 +1074,16 @@ module Special
                   oldtrace=oldtrace+real(eigenvals(iv))
                 enddo
                 newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
-                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace=', ll,mm,abs(oldtrace-newtrace)
-!              endif
-!            if (maxval(abs((beta_sav-beta_data(1,ll,mm,1,:,:))/beta_sav)) > 1e-6) print*, 'JOERN', ll, mm, maxval(abs((beta_sav-beta_data(1,ll,mm,1,:,:))/beta_sav))
+                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (2) =', ll,mm,abs(oldtrace-newtrace)
+              endif
+do i=1,3; do j=1,3
+  if (beta_sav(i,j)/=0.) then
+!     if (abs(beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j) > 1e-1)  &
+!       print*, 'JOERN', ll, mm, abs((beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j)),beta_sav(i,j) 
+  endif
+enddo; enddo
             enddo; enddo
+
             call mpiallreduce_sum_int(numzeros,numzeros_)
             if (numzeros_>0) then
               if (lroot) print'(a,i15,a)', 'beta is negative definite at', numzeros_,' positions.'
@@ -1100,7 +1102,7 @@ module Special
             do i=1,3 
               if (lgamma) call symmetrize(gamma_data(:,:,:,:,i),lgamma_sym(i))
               if (ldelta) call symmetrize(delta_data(:,:,:,:,i),ldelta_sym(i))
-              if (lutensor.or. lmeanuu) call symmetrize(utensor_data(:,:,:,:,i),lutensor_sym(i))
+              if (lumean) call symmetrize(umean_data(:,:,:,:,i),lumean_sym(i))
               do j=1,3
                 if (lalpha) call symmetrize(alpha_data(:,:,:,:,i,j),lalpha_sym(i,j))
                 if (lbeta) call symmetrize(beta_data(:,:,:,:,i,j),lbeta_sym(i,j))
@@ -1272,21 +1274,22 @@ module Special
         p%emf = p%emf - p%kappa_emf
       end if
 !
-      if (lutensor .or. lmeanuu) then
-        ! Calculate U x B
+      if (lumean) then
+        ! Calculate Umean x B
         do i=1,3
-          if (lutensor_arr(i)) then
-            p%utensor_coefs(:,i)=emf_interpolate(utensor_data(1:dataload_len,:,m-nghost,n-nghost,i))
+          if (lumean_arr(i)) then
+            p%umean_coefs(:,i)=emf_interpolate(umean_data(1:dataload_len,:,m-nghost,n-nghost,i))
           else
-            p%utensor_coefs(:,i)=0
+            p%umean_coefs(:,i)=0
           end if
         end do
-        call cross_mn(p%utensor_coefs,p%bb,p%utensor_emf)
-        p%emf = p%emf + p%utensor_emf
+        call cross_mn(p%umean_coefs,p%bb,p%umean_emf)
+        p%emf = p%emf + p%umean_emf
       end if
 !
 if (.false.) then
-if (maxval(abs(p%bcoef_coefs(:,2,2,1)-p%bcoef_coefs(:,2,1,2)-2.*(p%beta_coefs(:,2,3)-p%delta_coefs(:,1))))>1.e-9) print*, '2,3,m,n=', m,n
+if (maxval(abs(p%bcoef_coefs(:,2,2,1)-p%bcoef_coefs(:,2,1,2)-2.*(p%beta_coefs(:,2,3)-p%delta_coefs(:,1))))>1.e-9) &
+  print*, '2,3,m,n=', m,n
 if (maxval(abs(p%bijtilde(:,2,1)-p%bijtilde(:,1,2)+p%bb(:,2)/x(l1:l2)-p%jj(:,3)))>1.e-10) print*, 'jphi,m=', m, &
 maxval(abs(p%jj(:,3))), maxval(abs(p%bijtilde(:,2,1)-p%bijtilde(:,1,2)+p%bb(:,2)/x(l1:l2)))
 endif
@@ -1351,9 +1354,9 @@ endif
         if (idiag_kappaxmax/=0) call max_mn_name(p%kappa_emf(:,1),idiag_kappaxmax)
         if (idiag_kappaymax/=0) call max_mn_name(p%kappa_emf(:,2),idiag_kappaymax)
         if (idiag_kappazmax/=0) call max_mn_name(p%kappa_emf(:,3),idiag_kappazmax)
-        if (idiag_utensorxmax/=0) call max_mn_name(p%utensor_emf(:,1),idiag_utensorxmax)
-        if (idiag_utensorymax/=0) call max_mn_name(p%utensor_emf(:,2),idiag_utensorymax)
-        if (idiag_utensorzmax/=0) call max_mn_name(p%utensor_emf(:,3),idiag_utensorzmax)
+        if (idiag_umeanxmax/=0) call max_mn_name(p%umean_emf(:,1),idiag_umeanxmax)
+        if (idiag_umeanymax/=0) call max_mn_name(p%umean_emf(:,2),idiag_umeanymax)
+        if (idiag_umeanzmax/=0) call max_mn_name(p%umean_emf(:,3),idiag_umeanzmax)
         if (idiag_acoefxmax/=0) call max_mn_name(p%acoef_emf(:,1),idiag_acoefxmax)
         if (idiag_acoefymax/=0) call max_mn_name(p%acoef_emf(:,2),idiag_acoefymax)
         if (idiag_acoefzmax/=0) call max_mn_name(p%acoef_emf(:,3),idiag_acoefzmax)
@@ -1396,9 +1399,9 @@ endif
           call dot2_mn(p%kappa_emf,tmpline)
           call sum_mn_name(tmpline,idiag_kapparms,lsqrt=.true.)
         end if
-        if (idiag_utensorrms/=0) then
-          call dot2_mn(p%utensor_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_utensorrms,lsqrt=.true.)
+        if (idiag_umeanrms/=0) then
+          call dot2_mn(p%umean_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_umeanrms,lsqrt=.true.)
         end if
         if (idiag_acoefrms/=0) then
           call dot2_mn(p%acoef_emf,tmpline)
@@ -1513,9 +1516,9 @@ endif
         idiag_kappaxmax=0
         idiag_kappaymax=0
         idiag_kappazmax=0
-        idiag_utensorxmax=0
-        idiag_utensorymax=0
-        idiag_utensorzmax=0
+        idiag_umeanxmax=0
+        idiag_umeanymax=0
+        idiag_umeanzmax=0
         idiag_acoefxmax=0
         idiag_acoefymax=0
         idiag_acoefzmax=0
@@ -1538,7 +1541,7 @@ endif
         idiag_gammarms=0
         idiag_deltarms=0
         idiag_kapparms=0
-        idiag_utensorrms=0
+        idiag_umeanrms=0
         idiag_acoefrms=0
         idiag_bcoefrms=0
         idiag_emfrms=0
@@ -1569,9 +1572,9 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'kappaxmax',idiag_kappaxmax)
         call parse_name(iname,cname(iname),cform(iname),'kappaymax',idiag_kappaymax)
         call parse_name(iname,cname(iname),cform(iname),'kappazmax',idiag_kappazmax)
-        call parse_name(iname,cname(iname),cform(iname),'utensorxmax',idiag_utensorxmax)
-        call parse_name(iname,cname(iname),cform(iname),'utensorymax',idiag_utensorymax)
-        call parse_name(iname,cname(iname),cform(iname),'utensorzmax',idiag_utensorzmax)
+        call parse_name(iname,cname(iname),cform(iname),'umeanxmax',idiag_umeanxmax)
+        call parse_name(iname,cname(iname),cform(iname),'umeanymax',idiag_umeanymax)
+        call parse_name(iname,cname(iname),cform(iname),'umeanzmax',idiag_umeanzmax)
         call parse_name(iname,cname(iname),cform(iname),'acoefxmax',idiag_acoefxmax)
         call parse_name(iname,cname(iname),cform(iname),'acoefymax',idiag_acoefymax)
         call parse_name(iname,cname(iname),cform(iname),'acoefzmax',idiag_acoefzmax)
@@ -1594,7 +1597,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'gammarms',idiag_gammarms)
         call parse_name(iname,cname(iname),cform(iname),'deltarms',idiag_deltarms)
         call parse_name(iname,cname(iname),cform(iname),'kapparms',idiag_kapparms)
-        call parse_name(iname,cname(iname),cform(iname),'utensorrms',idiag_utensorrms)
+        call parse_name(iname,cname(iname),cform(iname),'umeanrms',idiag_umeanrms)
         call parse_name(iname,cname(iname),cform(iname),'acoefrms',idiag_acoefrms)
         call parse_name(iname,cname(iname),cform(iname),'bcoefrms',idiag_bcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
@@ -1640,7 +1643,7 @@ endif
         emftmp=0
         if (lacoef) emftmp = emftmp + p%acoef_emf
         if (lbcoef) emftmp = emftmp - p%bcoef_emf
-        if (lutensor .or. lmeanuu) emftmp = emftmp + p%utensor_emf
+        if (lumean) emftmp = emftmp + p%umean_emf
       else
         emftmp = p%emf
       end if
@@ -1663,8 +1666,8 @@ endif
           call dot_mn(dline_1, abs(p%gamma_coefs), tmpline)
           advec_special=advec_special+tmpline
         end if
-        if (lutensor .or. lmeanuu) then
-          call dot_mn(dline_1, abs(p%utensor_coefs), tmpline)
+        if (lumean) then
+          call dot_mn(dline_1, abs(p%umean_coefs), tmpline)
           advec_special=advec_special+tmpline
         end if
 !
@@ -1705,26 +1708,36 @@ endif
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
-    subroutine openDataset(datagroup,tensor_id)
+    subroutine openDataset(datagroup_,tensor_id)
 
       ! Open a dataset e.g. /emftensor/alpha/data and auxillary dataspaces
 
-      character(len=*), intent(in)    :: datagroup     ! name of data group
+      character(len=*), dimension(:), intent(in) :: datagroup_     ! name of data group
       integer, intent(in)             :: tensor_id
 !
       integer(HSIZE_T), dimension(10) :: dimsizes, maxdimsizes
-      integer :: ndims
+      integer :: ndims, i
       integer(HSIZE_T) :: num
-      logical :: hdf_exists
+      logical :: hdf_exists, lok
       character(len=fnlen)            :: dataset
+      character(len=len(datagroup_))  :: datagroup
 
       dataset = tensor_names(tensor_id)               ! name of dataset.
       ! Check that datagroup e.g. /emftensor/alpha exists
-      call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
-      if (.not. hdf_exists) then
-        call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
+
+      lok=.false.
+      do i=1,size(datagroup_)
+        datagroup=datagroup_(i)
+        call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
+        if (hdf_exists) then
+          lok=.true.
+          exit
+        end if
+      enddo
+      if (.not. lok) &
+          call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           ' does not exist')
-      end if
+
       ! Open datagroup, returns identifier in tensor_id_G. 
       call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id),hdferr)
       if (hdferr /= 0) then
@@ -2132,16 +2145,12 @@ endif
       lkappa_arr=.false.
       kappa_scale=1.0
       kappa_name='data'
-      ! utensor
-      lutensor=.false.
-      lutensor_c=.false.
-      lutensor_arr=.false.
-      utensor_scale=1.0
-      utensor_name='data'
-      !  meauu
-      lmeanuu=.false.
-      lmeanuu_c=.false.
-      meanuu_scale=1.0
+      ! umean
+      lumean=.false.
+      lumean_c=.false.
+      lumean_arr=.false.
+      umean_scale=1.0
+      umean_name='data'
       ! acoef
       lacoef=.false.
       lacoef_c=.false.
@@ -2156,10 +2165,10 @@ endif
       bcoef_name='data'
       ! other
       interpname  = 'none'
-      defaultname = '' 
+      dataset = '' 
       tensor_maxvals=0.0
       tensor_minvals=0.0
-      lusecoefs    = .false.
+      lusecoefs = .false.
       lloop = .false.
 
     end subroutine setParameterDefaults
@@ -2288,57 +2297,46 @@ endif
         lbcoef_arr = .true.
       end if
 !
-! Load boolean array for utensor
+! Load boolean array for umean
 !
-      if (any(lutensor_c)) then
-        lutensor = .true.
-        lutensor_arr  = lutensor_c
-      else if (lutensor) then
-        lutensor_arr  = .true.
+      if (any(lumean_c)) then
+        lumean = .true.
+        lumean_arr  = lumean_c
+      else if (lumean) then
+        lumean_arr  = .true.
       end if
-
-      if (any(lmeanuu_c)) then
-        lmeanuu = .true.
-        lutensor_arr  = lmeanuu_c
-      else if (lmeanuu) then
-        lutensor_arr  = .true.
-      end if
-
-      if (lmeanuu .and. (meanuu_scale /= 1.0)) then
-        utensor_scale=meanuu_scale
-      endif
 !
 ! Store scales
 !
-      tensor_scales(alpha_id)   = alpha_scale
-      tensor_scales(beta_id)    = beta_scale
-      tensor_scales(gamma_id)   = gamma_scale
-      tensor_scales(delta_id)   = delta_scale
-      tensor_scales(kappa_id)   = kappa_scale
-      tensor_scales(utensor_id) = utensor_scale
-      tensor_scales(acoef_id)   = acoef_scale
-      tensor_scales(bcoef_id)   = bcoef_scale
+      tensor_scales(alpha_id) = alpha_scale
+      tensor_scales(beta_id)  = beta_scale
+      tensor_scales(gamma_id) = gamma_scale
+      tensor_scales(delta_id) = delta_scale
+      tensor_scales(kappa_id) = kappa_scale
+      tensor_scales(umean_id) = umean_scale
+      tensor_scales(acoef_id) = acoef_scale
+      tensor_scales(bcoef_id) = bcoef_scale
 !
 ! Store names
 !
-      if (trim(defaultname) /= '') then
-        alpha_name    = defaultname
-        beta_name     = defaultname
-        gamma_name    = defaultname
-        delta_name    = defaultname
-        kappa_name    = defaultname
-        utensor_name  = defaultname
-        acoef_name    = defaultname
-        bcoef_name    = defaultname
+      if (trim(dataset) /= '') then
+        alpha_name  = dataset
+        beta_name   = dataset
+        gamma_name  = dataset
+        delta_name  = dataset
+        kappa_name  = dataset
+        umean_name  = dataset
+        acoef_name  = dataset
+        bcoef_name  = dataset
       end if
-      tensor_names(alpha_id)    = alpha_name
-      tensor_names(beta_id)     = beta_name
-      tensor_names(gamma_id)    = gamma_name
-      tensor_names(delta_id)    = delta_name
-      tensor_names(kappa_id)    = kappa_name
-      tensor_names(utensor_id)  = utensor_name
-      tensor_names(acoef_id)    = acoef_name
-      tensor_names(bcoef_id)    = bcoef_name
+      tensor_names(alpha_id)  = alpha_name
+      tensor_names(beta_id)   = beta_name
+      tensor_names(gamma_id)  = gamma_name
+      tensor_names(delta_id)  = delta_name
+      tensor_names(kappa_id)  = kappa_name
+      tensor_names(umean_id)  = umean_name
+      tensor_names(acoef_id)  = acoef_name
+      tensor_names(bcoef_id)  = bcoef_name
             
     end subroutine parseParameters
 !*****************************************************************************
