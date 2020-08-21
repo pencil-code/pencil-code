@@ -24,6 +24,8 @@ authors:
    affiliation: 6
  - name: Wladimir Lyra
    affiliation: 7
+ - name: Matthias Rheinhardt
+   affiliation: 8
  - name: Frederick Gent
    affiliation: "8, 9"
    orcid: 0000-0002-1331-2260
@@ -44,9 +46,9 @@ affiliations:
    index: 3
  - name: Lund Observatory, Department of Astronomy and Theoretical Physics, Lund University
    index: 4
- - name: Five
+ - name: Space Research Institute, Graz
    index: 5
- - name: Six
+ - name: Bruker, Potsdam
    index: 6
  - name: New Mexico State University
    index: 7
@@ -67,8 +69,8 @@ bibliography: paper.bib
 
 # Summary
 
-The Pencil Code is highly modular and can be adapted to a wide
-range of applications.
+The Pencil Code is a highly modular physics-oriented simulation code
+that can be adapted to a wide range of applications.
 It is primarily designed to solving partial differential equations
 (PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
 but the framework is general and can also be applied to situations not
