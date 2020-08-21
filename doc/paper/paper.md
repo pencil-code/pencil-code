@@ -29,12 +29,12 @@ authors:
  - name: Frederick Gent
    affiliation: "8, 9"
    orcid: 0000-0002-1331-2260
- - name: Jörn Warnecke
-   affiliation: 10
-   orcid: 0000-0002-9292-4600
  - name: Nils Erland L. Haugen
-   affiliation: 11
+   affiliation: 10
    orcid: 0000-0002-9184-8722
+ - name: Jörn Warnecke
+   affiliation: 11
+   orcid: 0000-0002-9292-4600
  - name: Chao-Chin Yang
    affiliation: 12
    orcid: 0000-0003-2589-5034
@@ -59,9 +59,9 @@ affiliations:
    index: 8
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
    index: 9
- - name: Max Planck Institute for Solar System Research 
-   index: 10
  - name: SINTEF Energy Research, Trondheim, Norway
+   index: 10
+ - name: Max Planck Institute for Solar System Research 
    index: 11
  - name: University of Nevada, Las Vegas
    index: 12
@@ -112,7 +112,7 @@ H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
 dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
 fargo, Kelvin-Helmholtz instability, resolved reacting char particles, shallow water.
 
-Below a list of application that are described in dedicated papers:
+Below a list of method papers that describe the various applications and tests:
 
 * Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L]
 * Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
