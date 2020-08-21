@@ -2,7 +2,7 @@
 #
 # Read phi-average files.
 #
-# Adapted from averages.py by P. Käpylä (pkaepyl@uni-goettingen.de)
+# Adapted from averages.py by P. Kaepylae (pkaepyl@uni-goettingen.de)
 """
 Contains the classes and methods to read phi-averaged files.
 """
