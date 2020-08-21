@@ -74,6 +74,9 @@ It is primarily designed to solving partial differential equations
 but the framework is general and can also be applied to situations not
 related to PDEs, for example when just the message passing interface or
 input/output strategies of the code are to be used.
+The code can also solve for Lagrangian (inertial and noninertial)
+particles, their coagulation and condensation, as well as their
+interaction with the fluid.
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
@@ -121,7 +124,7 @@ Below a list of application that are described in dedicated papers:
 
 The code provides an easily adaptable tool for solving both standard
 equations as well as others, such as the test-field equations.
-Significant amounts of runtime diagnostics is available.
+Significant amounts of runtime diagnostics are available.
 Users have access to the latest development version and can ask to
 join the circle of developers.
 Every revision on GitHub is verified on 9 tests on travis-ci.com.
