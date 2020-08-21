@@ -1027,7 +1027,13 @@ module Io
       if (nv > 0) then
         ! Read particle number identifier and then particle data.
         read (lun_input) ipar(1:nv)
-        read (lun_input) ap(1:nv,:)
+        if (lread_oldsnap_nosink) then
+          if (lroot) print*,'read old snapshot file (but without sink particles)'
+          read (lun_input) ap(1:nv,1:mparray-1)
+          ap(1:nv,mparray)=0.0
+        else
+          read (lun_input) ap(1:nv,:)
+        endif
       endif
       close (lun_input)
       if (ip<=8 .and. lroot) print*, 'input_particles: read ', file
