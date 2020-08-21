@@ -110,7 +110,7 @@ Below a list of application that are described in dedicated papers:
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
 * Burning particles, resolved or un-resolved [@2020GApFD.114.58Q; @2017CNF.185a160]
-* Flows around immersed solid objects [@2019IJCFD..33...43A;@2020GApFD.114.35A;@2010JFM.661a239]
+* Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
 * Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
 * Boris correction for coronal physics [@2020GApFD.114.213C]
