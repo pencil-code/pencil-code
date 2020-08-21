@@ -30,8 +30,11 @@ authors:
  - name: Jörn Warnecke
    affiliation: 10
    orcid: 0000-0002-9292-4600
- - name: Add Yourself
+ - name: Nils Erland L. Haugen
    affiliation: 11
+   orcid: 0000-0002-9184-8722
+ - name: Add Yourself
+   affiliation: 12
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -53,7 +56,7 @@ affiliations:
    index: 9
  - name: Max Planck Institute for Solar System Research 
    index: 10
- - name: Eleven
+ - name: SINTEF Energy Research, Trondheim, Norway
    index: 11
 
 date: 20 August 2020
@@ -95,7 +98,7 @@ inertial particles, potential field boundary condition, sedimentation, sink part
 superparticles for condensation-coagulation, nonlinear test fields, ambipolar diffusion,
 H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
 dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
-fargo, Kelvin-Helmholtz instability, resolved char, shallow water.
+fargo, Kelvin-Helmholtz instability, resolved reacting char particles, shallow water.
 
 Below a list of application that are described in dedicated papers:
 
@@ -103,7 +106,9 @@ Below a list of application that are described in dedicated papers:
 * Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
-* Combustion, detonation, and burning particles [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2020GApFD.114.58Q]
+* Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
+* Burning particles, resolved or un-resolved [@2020GApFD.114.58Q; @2017CNF.185a160]
+* Flows around immersed solid objects [@2019IJCFD..33...43A;@2020GApFD.114.35A;@2010JFM.661a239]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
 * Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
 * Boris correction for coronal physics [@2020GApFD.114.213C]
@@ -151,7 +156,8 @@ turbulent transport and test-field methods;
 hydrodynamic and MHD instabilities;
 chiral MHD;
 Hydrodynamic and MHD turbulence;
-turbulent combustion, front propagation, radiation & ionization.
+turbulent gaseous and solid combustion, particle clustering and deposition on solid walls,
+front propagation, radiation & ionization.
 As of July 2020, 564 papers have been published that acknowledge use of
 the Pencil Code [@zenodo.3466444].
 
