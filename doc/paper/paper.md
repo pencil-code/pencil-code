@@ -188,7 +188,7 @@ In particular, we mention the Swedish Research Council,
 grants 2012-5797, 2013-03992, 2017-03865, and 2019-04234,
 the National Science Foundation under the grant AAG-1615100,
 the FRINATEK grant 231444 under the Research Council of Norway, SeRC,
-the grant ``Bottlenecks for particle growth in turbulent aerosols''
+the grant "Bottlenecks for particle growth in turbulent aerosols"
 from the Knut and Alice Wallenberg Foundation, Dnr.\ KAW 2014.0048,
 and the University of Colorado through its support of the
 George Ellery Hale visiting faculty appointment,
