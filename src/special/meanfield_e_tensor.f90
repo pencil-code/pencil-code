@@ -336,8 +336,12 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Messages, only: information
+
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
+      integer(HID_T) :: datatype_id
+      logical :: flag
 !
       call keep_compiler_quiet(f)
 
@@ -351,24 +355,29 @@ module Special
 
         if (.not.lreloading) then
 
+          call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
+          if (.not. hdf_exists) then
+            call H5Fclose_F(hdf_emftensors_file, hdferr)
+            call H5Pclose_F(hdf_emftensors_plist, hdferr)
+            call H5close_F(hdferr)
+            call fatal_error('initialize_special','group /grid/ does not exist!')
+          end if
+
+          call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
+          if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
+
+          call openDataset_grid(time_id)
+        
+          if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+
+          call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
+          call H5Tequal_f(datatype_id, hdf_memtype, flag, hdferr)
+          if (.not.flag.and.lroot) &
+            call information('initialize_special','Type of stored HDF5 data different from type in memory - converting while reading!')
+
           if (lread_time_series) then 
 
-            call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
-            if (.not. hdf_exists) then
-              call H5Fclose_F(hdf_emftensors_file, hdferr)
-              call H5Pclose_F(hdf_emftensors_plist, hdferr)
-              call H5close_F(hdferr)
-              call fatal_error('initialize_special','group /grid/ does not exist!')
-            end if
-
-            call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-            if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
-
-            call openDataset_grid(time_id)
             allocate(tensor_times(scalar_dims(time_id))) 
-          
-            if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
-
             call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
                            [scalar_dims(time_id)], hdferr)
             if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
@@ -379,7 +388,7 @@ module Special
               print*, 'max time array=',maxval(tensor_times)
             endif
    
-          end if
+          endif
         endif
 
         ! Set dataset offsets
@@ -759,10 +768,10 @@ module Special
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
 
+        call closeDataset_grid(time_id)
+        call H5Gclose_F(hdf_grid_group, hdferr)
         if (lread_time_series) then
           if (allocated(tensor_times)) deallocate(tensor_times)
-          call closeDataset_grid(time_id)
-          call H5Gclose_F(hdf_grid_group, hdferr)
         endif
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
