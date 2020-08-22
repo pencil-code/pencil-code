@@ -118,6 +118,7 @@ Below a list of method papers that describe the various applications and tests:
 * Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
+* Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B]
 * Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
 * Burning particles, resolved or un-resolved [@2020GApFD.114.58Q; @2017CNF.185a160]
 * Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
