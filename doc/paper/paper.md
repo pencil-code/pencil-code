@@ -38,10 +38,8 @@ authors:
  - name: Chao-Chin Yang
    affiliation: 12
    orcid: 0000-0003-2589-5034
-%JS: added
  - name: Jennifer Schober
    affiliation: 13
-%JS.
  - name: Add Yourself
    affiliation: 14
 affiliations:
@@ -70,10 +68,8 @@ affiliations:
  - name: University of Nevada, Las Vegas
    index: 12
  - name: twelve
-%JS: added
    index: 13
  - name: Laboratoire d’Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
-%JS.
    index: 14
 
 date: 20 August 2020
@@ -84,13 +80,8 @@ bibliography: paper.bib
 
 The Pencil Code is a highly modular physics-oriented simulation code
 that can be adapted to a wide range of applications.
-%JS: to solving -> to solve
-%It is primarily designed to solving partial differential equations
 It is primarily designed to solve partial differential equations
-%JS: define MHD
-%(PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
 (PDEs) of compressible magnetohydrodynamics (MHD) [@2010ascl.soft10060B],
-%JS.
 but the framework is general and can also be applied to situations not
 related to PDEs, for example when just the message passing interface or
 input/output strategies of the code are to be used.
@@ -100,9 +91,6 @@ interaction with the fluid.
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
-<!--- AB: comment for Joern, and commented out Yin--Yang
-A preliminary implementation of a Yin--Yang mesh is also in place.
---->
 One can choose between different time stepping schemes and different
 spatial derivative operators.
 There are also different diffusion operators to allow for both direct numerical
@@ -110,11 +98,11 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
 
+<!--
 %JS: I find the paragraph below a bit long. It is basically a list, that is repeated
 %JS: more or less in the next paragraph.
 %JS: Maybe one could rather list the different fields of research here: solar/stellar
 %JS: physics, dynamo theory, ISM physics, turbulence, cosmology,...
-An idea about the range of available modules can be obtained by inspecting
 the examples under pencil-code/samples/, which include Cartesian and
 spherical shell convection with Kramers opacities, 
 solar atmosphere with radiation and ionization, M dwarfs as a star-in-a-box, 
@@ -128,7 +116,13 @@ superparticles for condensation-coagulation, nonlinear test fields, ambipolar di
 H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
 dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
 fargo, Kelvin-Helmholtz instability, resolved reacting char particles, shallow water.
-
+%AB: given that these tests can all be found on pencil-code/samples/,
+%AB: it may be best to just say the following.
+-->
+An idea about the range of available modules can be obtained by inspecting
+the examples under pencil-code/samples/.
+Those are low resolution versions related to applications published in the literature.
+Some of the run directories of actual production runs are pubished through Zenodo.
 Below a list of method papers that describe the various applications and tests:
 
 * Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L]
@@ -148,10 +142,7 @@ Below a list of method papers that describe the various applications and tests:
 # Statement of need and purpose of software
 
 The code provides an easily adaptable tool for solving both standard
-%JS: added "MHD"
-%equations as well as others, such as the test-field equations.
 MHD equations as well as others, such as the test-field equations.
-%JS.
 Significant amounts of runtime diagnostics are available.
 Users have access to the latest development version and can ask to
 join the circle of developers.
@@ -163,10 +154,7 @@ individual developers.
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
-%JS: is -> are
-%Further developments and interactions between developers and users is
 Further developments and interactions between developers and users are
-%JS.
 being promoted through annual user meetings since 2004 and a newsletters
 since 2020.
 Since 2016, a steering committee of five elected owners reviews the
@@ -191,10 +179,7 @@ global convection and dynamo simulations;
 turbulent transport and test-field methods;
 hydrodynamic and MHD instabilities;
 chiral MHD;
-%JS: lower case
-%Hydrodynamic and MHD turbulence;
 hydrodynamic and MHD turbulence;
-%JS.
 turbulent gaseous and solid combustion, particle clustering and deposition on solid walls,
 front propagation, radiation & ionization.
 As of July 2020, 564 papers have been published that acknowledge use of
