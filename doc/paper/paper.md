@@ -175,7 +175,7 @@ the Pencil Code [@zenodo.3466444].
 
 # Key references
 
-* Planet and planetesimal formation [@2007Natur.448.1022J; @2009A&A.497.869L]
+* Planet and planetesimal formation [@2007Natur.448.1022J; @2007ApJ.670.805O; @2009A&A.497.869L]
 * Solar dynamo and sunspots [@2005ApJ.625.539B; @2007ApJ.669.1390H]
 * MHD turbulence and cascades [@2004PhRvE.70a6308H]
 * Fully convective star in a box [@2006ApJ.638.336D]
