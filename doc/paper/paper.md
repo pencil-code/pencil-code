@@ -38,8 +38,12 @@ authors:
  - name: Chao-Chin Yang
    affiliation: 12
    orcid: 0000-0003-2589-5034
- - name: Add Yourself
+%JS: added
+ - name: Jennifer Schober
    affiliation: 13
+%JS.
+ - name: Add Yourself
+   affiliation: 14
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -66,7 +70,11 @@ affiliations:
  - name: University of Nevada, Las Vegas
    index: 12
  - name: twelve
+%JS: added
    index: 13
+ - name: Laboratoire d’Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+%JS.
+   index: 14
 
 date: 20 August 2020
 bibliography: paper.bib
@@ -76,8 +84,13 @@ bibliography: paper.bib
 
 The Pencil Code is a highly modular physics-oriented simulation code
 that can be adapted to a wide range of applications.
-It is primarily designed to solving partial differential equations
-(PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
+%JS: to solving -> to solve
+%It is primarily designed to solving partial differential equations
+It is primarily designed to solve partial differential equations
+%JS: define MHD
+%(PDEs) of compressible magnetohydrodynamics [@2010ascl.soft10060B],
+(PDEs) of compressible magnetohydrodynamics (MHD) [@2010ascl.soft10060B],
+%JS.
 but the framework is general and can also be applied to situations not
 related to PDEs, for example when just the message passing interface or
 input/output strategies of the code are to be used.
@@ -97,6 +110,10 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
 
+%JS: I find the paragraph below a bit long. It is basically a list, that is repeated
+%JS: more or less in the next paragraph.
+%JS: Maybe one could rather list the different fields of research here: solar/stellar
+%JS: physics, dynamo theory, ISM physics, turbulence, cosmology,...
 An idea about the range of available modules can be obtained by inspecting
 the examples under pencil-code/samples/, which include Cartesian and
 spherical shell convection with Kramers opacities, 
@@ -131,7 +148,10 @@ Below a list of method papers that describe the various applications and tests:
 # Statement of need and purpose of software
 
 The code provides an easily adaptable tool for solving both standard
-equations as well as others, such as the test-field equations.
+%JS: added "MHD"
+%equations as well as others, such as the test-field equations.
+MHD equations as well as others, such as the test-field equations.
+%JS.
 Significant amounts of runtime diagnostics are available.
 Users have access to the latest development version and can ask to
 join the circle of developers.
@@ -143,7 +163,10 @@ individual developers.
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
-Further developments and interactions between developers and users is
+%JS: is -> are
+%Further developments and interactions between developers and users is
+Further developments and interactions between developers and users are
+%JS.
 being promoted through annual user meetings since 2004 and a newsletters
 since 2020.
 Since 2016, a steering committee of five elected owners reviews the
@@ -168,7 +191,10 @@ global convection and dynamo simulations;
 turbulent transport and test-field methods;
 hydrodynamic and MHD instabilities;
 chiral MHD;
-Hydrodynamic and MHD turbulence;
+%JS: lower case
+%Hydrodynamic and MHD turbulence;
+hydrodynamic and MHD turbulence;
+%JS.
 turbulent gaseous and solid combustion, particle clustering and deposition on solid walls,
 front propagation, radiation & ionization.
 As of July 2020, 564 papers have been published that acknowledge use of
