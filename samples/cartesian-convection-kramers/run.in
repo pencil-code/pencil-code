@@ -15,8 +15,8 @@
 /
 &density_run_pars
   lupw_lnrho=T
-  lconserve_total_mass=T
-  total_mass=1088.6033
+!  lconserve_total_mass=T
+!  total_mass=272.177
 /
 &grav_run_pars
   gravz_profile='const',gravz=-1.
