@@ -201,8 +201,8 @@ the Pencil Code [@zenodo.3466444].
 * Global simulations of debris disks [@2013Natur.499.184L]
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
 * Clustering in supersonic turbulence [@2019MNRAS.483.5623M]
-* Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B]
-* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y; @2016PhRvL.116j1101C]
+* Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C]
+* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y]
 
 # Acknowledgements
 
