@@ -40,8 +40,11 @@ authors:
    orcid: 0000-0003-2589-5034
  - name: Jennifer Schober
    affiliation: 13
- - name: Add Yourself
+ - name: Piyali Chatterjee
    affiliation: 14
+   orcid: 0000-0002-0181-2495
+ - name: Add Yourself
+   affiliation: 15
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -69,8 +72,10 @@ affiliations:
    index: 12
  - name: Laboratoire d’Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 13
- - name: Currently The Last One
+ - name: Indian Institute of Astrophysics, Bengaluru-560034, India
    index: 14
+ - name: Currently The Last One
+   index: 15
 
 date: 20 August 2020
 bibliography: paper.bib
@@ -197,7 +202,7 @@ the Pencil Code [@zenodo.3466444].
 * Supernova-driven turbulence [@2013MNRAS.432.1396G]
 * Clustering in supersonic turbulence [@2019MNRAS.483.5623M]
 * Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B]
-* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y]
+* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y; @2016PhRvL.116j1101C]
 
 # Acknowledgements
 
