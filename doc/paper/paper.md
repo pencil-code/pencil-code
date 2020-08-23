@@ -26,23 +26,23 @@ authors:
    affiliation: 7
  - name: Matthias Rheinhardt
    affiliation: 8
- - name: Frederick Gent
-   affiliation: "8, 9"
-   orcid: 0000-0002-1331-2260
  - name: Nils Erland L. Haugen
-   affiliation: 10
+   affiliation: 9
    orcid: 0000-0002-9184-8722
- - name: Jörn Warnecke
-   affiliation: 11
-   orcid: 0000-0002-9292-4600
+ - name: Frederick Gent
+   affiliation: "8, 10"
+   orcid: 0000-0002-1331-2260
  - name: Chao-Chin Yang
-   affiliation: 12
+   affiliation: 11
    orcid: 0000-0003-2589-5034
- - name: Jennifer Schober
-   affiliation: 13
+ - name: Jörn Warnecke
+   affiliation: 12
+   orcid: 0000-0002-9292-4600
  - name: Piyali Chatterjee
-   affiliation: 14
+   affiliation: 13
    orcid: 0000-0002-0181-2495
+ - name: Jennifer Schober
+   affiliation: 14
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
@@ -65,17 +65,17 @@ affiliations:
    index: 7
  - name: Astroinformatics, Department of Computer Science, Aalto University
    index: 8
- - name: School of Mathematics, Statistics and Physics, Newcastle University 
-   index: 9
  - name: SINTEF Energy Research, Trondheim, Norway
+   index: 9
+ - name: School of Mathematics, Statistics and Physics, Newcastle University 
    index: 10
- - name: Max Planck Institute for Solar System Research 
-   index: 11
  - name: University of Nevada, Las Vegas
+   index: 11
+ - name: Max Planck Institute for Solar System Research 
    index: 12
- - name: Laboratoire d’Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
-   index: 13
  - name: Indian Institute of Astrophysics, Bengaluru-560034, India
+   index: 13
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 14
  - name: Currently The Last One
    index: 15
