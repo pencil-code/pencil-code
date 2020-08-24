@@ -153,6 +153,7 @@ Below a list of method papers that describe the various applications and tests:
 * Boris correction for coronal physics [@2020GApFD.114.213C]
 * Thermal instability and mixing [@2012ApJ.758.48Y]
 * Implicit solver for temperature [@2008A&A.484.29G]
+* Dust-gas dynamics with mutual drag interaction [@2007ApJ.662.613Y; @2016ApJS.224.39Y]
 
 # Statement of need and purpose of software
 
