@@ -455,7 +455,7 @@ module Special
             -2.*Cw*p%muS*oogmuS
         endif
 !  Contributions to timestep from muS equation
-        dt1_CMW = coef_mu5*coef_muS*sqrt(p%b2)*dxyz_2
+        dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
         dt1_Dmu = diffmuS*dxyz_2
       endif
 !                          
