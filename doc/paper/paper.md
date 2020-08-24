@@ -89,11 +89,15 @@ bibliography: paper.bib
 
 The Pencil Code is a highly modular physics-oriented simulation code
 that can be adapted to a wide range of applications.
-It is primarily designed to solve partial differential equations
-(PDEs) of compressible magnetohydrodynamics (MHD) [@2010ascl.soft10060B],
-but the framework is general and can also be applied to situations not
-related to PDEs, for example when just the message passing interface or
-input/output strategies of the code are to be used.
+It is primarily designed to solve partial differential equations (PDEs)
+of compressible hydrodynamics and has lots of add-ons ranging from
+astrophysical magnetohydrodynamics (MHD) [@2010ascl.soft10060B] to
+meteorological cloud microphysics [@2017JAMES.9.1116L] and engineering
+applications in combustion [@2011JCoPh.230.1B].
+Nevertheless, the framework is general and can also be applied to
+situations not related to hydrodynamics or even PDEs, for example when
+just the message passing interface or input/output strategies of the
+code are to be used.
 The code can also solve for Lagrangian (inertial and noninertial)
 particles, their coagulation and condensation, as well as their
 interaction with the fluid.
