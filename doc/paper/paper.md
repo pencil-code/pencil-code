@@ -137,7 +137,7 @@ fargo, Kelvin-Helmholtz instability, resolved reacting char particles, shallow w
 An idea about the range of available modules can be obtained by inspecting
 the examples under pencil-code/samples/.
 Those are low resolution versions related to applications published in the literature.
-Some of the run directories of actual production runs are pubished through Zenodo.
+Some of the run directories of actual production runs are published through Zenodo.
 Below a list of method papers that describe the various applications and tests:
 
 * Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L]
