@@ -102,6 +102,8 @@ The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
 One can choose between different time stepping schemes and different
 spatial derivative operators.
+High-order first and second derivatives are used to deal with weakly 
+compressible turbulent flows.
 There are also different diffusion operators to allow for both direct numerical
 simulations (DNS) and various types of large-eddy simulations (LES).
 
@@ -152,7 +154,8 @@ Below a list of method papers that describe the various applications and tests:
 
 The code provides an easily adaptable tool for solving both standard
 MHD equations as well as others, such as the test-field equations.
-Significant amounts of runtime diagnostics are available.
+Significant amounts of runtime diagnostics 
+as well as python and IDL libraries for post-processing are available.
 Users have access to the latest development version and can ask to
 join the circle of developers.
 Every revision on GitHub is verified on 9 tests on travis-ci.com.
