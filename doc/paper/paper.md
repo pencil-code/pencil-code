@@ -114,27 +114,6 @@ simulations (DNS) and various types of large-eddy simulations (LES).
 
 # High-level functionality
 
-<!--
-%JS: I find the paragraph below a bit long. It is basically a list, that is repeated
-%JS: more or less in the next paragraph.
-%JS: Maybe one could rather list the different fields of research here: solar/stellar
-%JS: physics, dynamo theory, ISM physics, turbulence, cosmology,...
-the examples under pencil-code/samples/, which include Cartesian and
-spherical shell convection with Kramers opacities, 
-solar atmosphere with radiation and ionization, M dwarfs as a star-in-a-box, 
-coronae with heatflux and Boris correction, kinematic dynamos,
-helical MHD turbulence, implicit resistivity, interlocked fluxrings,
-cylindrical global disks with a dead zone, photoelectric fluids, 
-dust in turbulent global disks, cosmic rays, gravitational waves
-in the early universe, interstellar supernova-driven turbulence,
-inertial particles, potential field boundary condition, sedimentation, sink particles, 
-superparticles for condensation-coagulation, nonlinear test fields, ambipolar diffusion,
-H2 flame speed tests, reversed field pinch, Boussinesq convection, chiral
-dynamos, cylinder deposition with overlayed grid, dynamical alpha effect,
-fargo, Kelvin-Helmholtz instability, resolved reacting char particles, shallow water.
-%AB: given that these tests can all be found on pencil-code/samples/,
-%AB: it may be best to just say the following.
--->
 An idea about the range of available modules can be obtained by inspecting
 the examples under pencil-code/samples/.
 Those are low resolution versions related to applications published in the literature.
@@ -147,7 +126,7 @@ Below a list of method papers that describe the various applications and tests:
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B]
 * Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
-* Burning particles, resolved or un-resolved [@2020GApFD.114.58Q; @2017CNF.185a160]
+* Burning particles, resolved or unresolved [@2020GApFD.114.58Q; @2017CNF.185a160]
 * Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
 * Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
@@ -162,16 +141,19 @@ The code provides an easily adaptable tool for solving both standard
 MHD equations as well as others, such as the test-field equations.
 Significant amounts of runtime diagnostics 
 as well as python and IDL libraries for post-processing are available.
-Users have access to the latest development version and can ask to
-join the circle of developers.
-Every revision on GitHub is verified on 9 tests on travis-ci.com.
-The current version is also automatically being tested on 59 hourly
-tests and on 79 daily tests.
-Continuous progress on the code is driven by the research of the
-individual developers.
+
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
+Users have access to the latest development version and can ask to
+join the circle of developers by contacting one of the owners.
+
+Every revision on GitHub is verified on 9 tests on travis-ci.com.
+The current version is also automatically being tested on 59 hourly
+tests and on 79 daily tests.
+Continuous progress on the code is driven by the research of
+individual developers.
+
 Further developments and interactions between developers and users are
 being promoted through annual user meetings since 2004 and a newsletters
 since 2020.
@@ -205,17 +187,35 @@ the Pencil Code [@zenodo.3466444].
 
 # Key references
 
-* Planet and planetesimal formation [@2007Natur.448.1022J; @2007ApJ.670.805O; @2009A&A.497.869L]
-* Solar dynamo and sunspots [@2005ApJ.625.539B; @2007ApJ.669.1390H]
-* MHD turbulence and cascades [@2004PhRvE.70a6308H]
-* Fully convective star in a box [@2006ApJ.638.336D]
-* Dynamo wave in spherical shell convection [@2012ApJ.755L.22K; @2014ApJ.796L.12W]
-* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K]
-* Global simulations of debris disks [@2013Natur.499.184L]
-* Supernova-driven turbulence [@2013MNRAS.432.1396G]
-* Clustering in supersonic turbulence [@2019MNRAS.483.5623M]
-* Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C]
-* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y]
+The Pencil Code is unique in two ways:
+the high level of flexibility and modularity, and the way it is organized
+(open source, distributed ownership, openness of development version).
+
+Other software addressing related needs include: 
+Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, and several other LES codes.
+There are also several other engineering DNS codes such as
+the Sandia-3-Dimensional (S3D) high-order compressible
+optimized for combustion, which is not open source, however.
+In addition, there is the Dedalus code, which allows one to
+program the equations in symbolic form.
+
+Some recent research areas that made use of the Pencil Code, as
+evidenced by the aforementioned document listing all those papers
+[@zenodo.3466444], include:
+
+* Flows around immersed solid objects [@2010JFM.661a239]
+* Particle clustering in supersonic and subsonic turbulence [@2019MNRAS.483.5623M; @Karchniwy_etal_2019],
+* Cloud microphysics [@2017JAMES.9.1116L],
+* Planet and planetesimal formation [@2007Natur.448.1022J; @2007ApJ.670.805O; @2009A&A.497.869L],
+* Global simulations of debris disks [@2013Natur.499.184L],
+* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y].
+* Supernova-driven turbulence [@2013MNRAS.432.1396G],
+* Solar dynamo and sunspots [@2005ApJ.625.539B; @2007ApJ.669.1390H],
+* Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C],
+* Fully convective star in a box [@2006ApJ.638.336D],
+* Dynamo wave in spherical shell convection [@2012ApJ.755L.22K; @2014ApJ.796L.12W],
+* MHD turbulence and cascades [@2004PhRvE.70a6308H],
+* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K],
 
 # Acknowledgements
 
