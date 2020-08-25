@@ -51,8 +51,11 @@ authors:
  - name: Jørgen R. Aarnes
    affiliation: 15
    orcid: 0000-0002-5899-2597
- - name: Add Yourself
+ - name: Raphaël Plasson
    affiliation: 16
+   orcid: 0000-0003-2319-1463
+ - name: Add Yourself
+   affiliation: 17
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -84,8 +87,10 @@ affiliations:
    index: 14
  - name: Norwegian University of Science and Technology
    index: 15
- - name: Currently The Last One
+ - name: Avignon Université, France
    index: 16
+ - name: Currently The Last One
+   index: 17
 
 date: 20 August 2020
 bibliography: paper.bib
@@ -130,6 +135,7 @@ Below a list of method papers that describe the various applications and tests:
 * Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B]
+* Modeling of patterned photochemical systems [@2012ChemEurJ]
 * Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
 * Burning particles, resolved or unresolved [@2020GApFD.114.58Q; @2017CNF.185a160]
 * Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
