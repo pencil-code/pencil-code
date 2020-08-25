@@ -28,7 +28,7 @@ authors:
  - name: Matthias Rheinhardt
    affiliation: 8
  - name: Nils Erland L. Haugen
-   affiliation: 9
+   affiliation: "9, 15, 1"
    orcid: 0000-0002-9184-8722
  - name: Frederick Gent
    affiliation: "8, 10"
@@ -48,8 +48,11 @@ authors:
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
- - name: Add Yourself
+ - name: Jørgen R. Aarnes
    affiliation: 15
+   orcid: 0000-0002-5899-2597
+ - name: Add Yourself
+   affiliation: 16
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -79,8 +82,10 @@ affiliations:
    index: 13
  - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 14
- - name: Currently The Last One
+ - name: Norwegian University of Science and Technology
    index: 15
+ - name: Currently The Last One
+   index: 16
 
 date: 20 August 2020
 bibliography: paper.bib
