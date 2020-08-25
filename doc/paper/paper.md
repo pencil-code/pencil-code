@@ -60,7 +60,7 @@ affiliations:
    index: 2
  - name: McWilliams Center for Cosmology & Department of Physics, Carnegie Mellon University
    index: 3
- - name: Lund Observatory, Department of Astronomy and Theoretical Physics, Lund University
+ - name: GLOBE Institute, University of Copenhagen
    index: 4
  - name: Space Research Institute, Graz
    index: 5
