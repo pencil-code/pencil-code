@@ -24,6 +24,7 @@ authors:
    affiliation: 6
  - name: Wladimir Lyra
    affiliation: 7
+   orcid: 0000-0002-3768-7542
  - name: Matthias Rheinhardt
    affiliation: 8
  - name: Nils Erland L. Haugen
@@ -62,7 +63,7 @@ affiliations:
    index: 5
  - name: Bruker, Potsdam
    index: 6
- - name: New Mexico State University
+ - name: New Mexico State University, Department of Astronomy, PO Box 30001, MSC 4500 Las Cruces, NM 88001
    index: 7
  - name: Astroinformatics, Department of Computer Science, Aalto University
    index: 8
