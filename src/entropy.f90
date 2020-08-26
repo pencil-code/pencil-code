@@ -153,6 +153,7 @@ module Energy
   logical :: lss_flucz_as_aux=.false., lsld_char_wprofr=.false.
   logical :: lTT_flucz_as_aux=.false., lsld_char_cslimit=.false.
   logical :: lchi_t1_noprof=.false., lsld_char_rholimit=.false.
+  logical :: lsmooth_ss_run_aver=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0, w_sldchar_ene2=0.1
   real :: w_sldchar_ene_r0=1.0, w_sldchar_ene_p=8.0
   logical :: lheat_cool_gravz=.false.
@@ -235,7 +236,7 @@ module Energy
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, &
-      lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz
+      lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3852,7 +3853,7 @@ module Energy
 !
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum, stop_it
-      use Sub, only: finalize_aver,calc_all_diff_fluxes,div
+      use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth
       use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
@@ -4043,6 +4044,7 @@ module Energy
       if (lss_running_aver) then
         if (t.lt.dt) f(:,:,:,iss_run_aver)=f(:,:,:,iss)
         f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
+        if (lsmooth_ss_run_aver.and.lrmv) call smooth(f,iss_run_aver)
       endif
 !
 !  Enthalpy flux as auxilliary array
