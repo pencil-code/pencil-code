@@ -54,8 +54,11 @@ authors:
  - name: Raphaël Plasson
    affiliation: 16
    orcid: 0000-0003-2319-1463
- - name: Add Yourself
+ - name: Petri Käpylä
    affiliation: 17
+   orcid: 0000-0001-9619-0053
+ - name: Add Yourself
+   affiliation: 18
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -89,8 +92,10 @@ affiliations:
    index: 15
  - name: Avignon Université, France
    index: 16
- - name: Currently The Last One
+ - name: Institute for Astrophysics, University of Göttingen
    index: 17
+ - name: Currently The Last One
+   index: 18
 
 date: 20 August 2020
 bibliography: paper.bib
