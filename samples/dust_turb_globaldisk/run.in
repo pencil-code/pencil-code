@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$',
   ip=14,
-  nt=10, it1=1, isave=500, itorder=3, 
+  nt=5, it1=1, isave=500, itorder=3, 
   cdt=0.4, 
   cdtv=0.4, 
   dtmin=1e-6,
