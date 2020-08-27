@@ -1,5 +1,5 @@
 ---
-title: 'Pencil Code, a modular MPI code for partial differential equation: multipurpose and multiuser-maintained'
+title: 'Pencil Code, a modular MPI code for partial differential equations: multipurpose and multiuser-maintained'
 tags:
  - Fortran90
  - fluid dynamics
@@ -117,6 +117,8 @@ code are to be used.
 The code can also solve for Lagrangian (inertial and noninertial)
 particles, their coagulation and condensation, as well as their
 interaction with the fluid.
+A related module has also been adapted to perform ray tracing
+to solve the eikonal equation.
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
