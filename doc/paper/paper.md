@@ -39,24 +39,24 @@ authors:
  - name: Jörn Warnecke
    affiliation: 12
    orcid: 0000-0002-9292-4600
- - name: Piyali Chatterjee
+ - name: Petri Käpylä
    affiliation: 13
+   orcid: 0000-0001-9619-0053
+ - name: Piyali Chatterjee
+   affiliation: 14
    orcid: 0000-0002-0181-2495
  - name: Jennifer Schober
-   affiliation: 14
+   affiliation: 15
    orcid: 0000-0001-7888-6671
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Jørgen R. Aarnes
-   affiliation: 15
+   affiliation: 16
    orcid: 0000-0002-5899-2597
  - name: Raphaël Plasson
-   affiliation: 16
-   orcid: 0000-0003-2319-1463
- - name: Petri Käpylä
    affiliation: 17
-   orcid: 0000-0001-9619-0053
+   orcid: 0000-0003-2319-1463
  - name: Add Yourself
    affiliation: 18
 affiliations:
@@ -84,15 +84,15 @@ affiliations:
    index: 11
  - name: Max Planck Institute for Solar System Research 
    index: 12
- - name: Indian Institute of Astrophysics, Bengaluru-560034, India
-   index: 13
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
-   index: 14
- - name: Norwegian University of Science and Technology
-   index: 15
- - name: Avignon Université, France
-   index: 16
  - name: Institute for Astrophysics, University of Göttingen
+   index: 13
+ - name: Indian Institute of Astrophysics, Bengaluru-560034, India
+   index: 14
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+   index: 15
+ - name: Norwegian University of Science and Technology
+   index: 16
+ - name: Avignon Université, France
    index: 17
  - name: Currently The Last One
    index: 18
