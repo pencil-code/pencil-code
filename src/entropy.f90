@@ -545,7 +545,7 @@ module Energy
         if (iss_flucz==0) then
           call farray_register_auxiliary('ss_flucz',iss_flucz)
         else
-          if (lroot) print*, 'register_energy: iss_run_aver = ', iss_flucz
+          if (lroot) print*, 'register_energy: iss_flucz = ', iss_flucz
           call farray_index_append('iss_flucz',iss_flucz)
         endif
         if (lroot) write(15,*) 'ss_flucz = fltarr(mx,my,mz)*one'
