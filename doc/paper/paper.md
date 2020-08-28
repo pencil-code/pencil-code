@@ -61,6 +61,10 @@ authors:
    affiliation: "9, 16"
  - name: Add Yourself
    affiliation: 18
+ - name: Simon Candelaresi
+   affiliation: 19
+   orcid: 0000-0002-7666-8504
+
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
    index: 1
@@ -98,6 +102,8 @@ affiliations:
    index: 17
  - name: Currently The Last One
    index: 18
+ - name: School of Mathematics and Statistics, University of Glasgow, Glasgow G12 8QQ, United Kingdom
+   index: 19
 
 date: 20 August 2020
 bibliography: paper.bib
@@ -160,7 +166,7 @@ Below a list of method papers that describe the various applications and tests:
 The code provides an easily adaptable tool for solving both standard
 MHD equations as well as others, such as the test-field equations.
 Significant amounts of runtime diagnostics 
-as well as python and IDL libraries for post-processing are available.
+as well as Python and IDL libraries for post-processing are available.
 
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
