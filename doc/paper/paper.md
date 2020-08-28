@@ -226,7 +226,7 @@ evidenced by the aforementioned document listing all those papers
 * Cloud microphysics [@2017JAMES.9.1116L],
 * Planet and planetesimal formation [@2007Natur.448.1022J; @2007ApJ.670.805O; @2009A&A.497.869L],
 * Global simulations of debris disks [@2013Natur.499.184L],
-* Stratified shearing box simulations [@2011ApJ.740.18O; @2018ApJ.868.27Y].
+* Stratified shearing box simulations, also with dust [@2011ApJ.740.18O; @2018ApJ.861.47S; @2018ApJ.868.27Y].
 * Supernova-driven turbulence [@2013MNRAS.432.1396G],
 * Solar dynamo and sunspots [@2005ApJ.625.539B; @2007ApJ.669.1390H],
 * Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C],
