@@ -57,7 +57,7 @@ authors:
  - name: Raphaël Plasson
    affiliation: 17
    orcid: 0000-0003-2319-1463
- -name: Jonas Kr\"uger
+ - name: Jonas Krüger
    affiliation: "9, 16"
  - name: Add Yourself
    affiliation: 18
