@@ -28,7 +28,7 @@ authors:
  - name: Matthias Rheinhardt
    affiliation: 8
  - name: Nils Erland L. Haugen
-   affiliation: "9, 15, 1"
+   affiliation: "9, 16, 1"
    orcid: 0000-0002-9184-8722
  - name: Frederick Gent
    affiliation: "8, 10"
