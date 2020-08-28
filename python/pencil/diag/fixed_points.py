@@ -197,8 +197,7 @@ class FixedPoint(object):
 #                self.fixed_tracers = []
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
-            print(fixed_tracers)
-            self.fixed_tracers.append(np.array(fixed_tracers))
+            self.fixed_tracers.append(fixed_tracers)
 
         # Compute the traced quantities along the fixed point streamlines.
         if (self.params.int_q == 'curly_A') or (self.params.int_q == 'ee'):
@@ -546,6 +545,11 @@ class FixedPoint(object):
                                                                  self.fixed_sign[t_idx].shape,
                                                                  dtype=self.fixed_sign[t_idx].dtype)
                 set_fixed_sign[...] = self.fixed_sign[t_idx]
+                for fixed_idx in range(len(self.fixed_tracers[t_idx])):
+                    set_fixed_tracers = fixed_groups[-1].create_dataset("fixed_tracers_{0}".format(fixed_idx),
+                                                                        self.fixed_tracers[t_idx][fixed_idx].shape,
+                                                                        dtype=self.fixed_tracers[t_idx][fixed_idx].dtype)
+                    set_fixed_tracers[...] = self.fixed_tracers[t_idx][fixed_idx]
                 if (self.params.int_q == 'curly_A'):
                     set_curly_A = fixed_groups[-1].create_dataset("curly_A",
                                                                   self.curly_A[t_idx].shape,
@@ -608,6 +612,7 @@ class FixedPoint(object):
         # Read the time series.
         self.fixed_points = []
         self.fixed_sign = []
+        self.fixed_tracers = []
         if (self.params.int_q == 'curly_A'):
             self.curly_A = []
         if (self.params.int_q == 'ee'):
@@ -616,6 +621,14 @@ class FixedPoint(object):
             group = f['{0}'.format(t_idx)]
             self.fixed_points.append(group['fixed_points'].value)
             self.fixed_sign.append(group['fixed_sign'].value)
+            self.fixed_tracers.append([])
+            fixed_idx = 0
+            while True:
+                try:
+                    self.fixed_tracers[-1].extend(group['fixed_tracer_{0}'.format(fixed_idx)].value)
+                    fixed_idx += 1
+                except:
+                    break
             if (self.params.int_q == 'curly_A'):
                 self.curly_A.append(group['curly_A'].value)
             if (self.params.int_q == 'ee'):
