@@ -88,6 +88,9 @@ module Particles_sink
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      if (.not. lparticles_density) &
+        call fatal_error("initialize_particles_sink", "particles_sink requires particles_density")
+!
       if (lsink_radius_dx_unit) then
         sink_radius=sink_birth_radius*dx
       else
