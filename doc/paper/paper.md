@@ -67,8 +67,11 @@ authors:
  - name: Luiz Felippe S Rodrigues
    affiliation: "10, 19"
    orcid: 0000-0002-3860-0525
- - name: Add Yourself
+ - name: Xiang-Yu Li
    affiliation: 20
+   orcid: 0000-0002-5722-0018 
+ - name: Add Yourself
+   affiliation: 21
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -109,8 +112,10 @@ affiliations:
    index: 18
  - name: Radboud University, Netherlands
    index: 19
- - name: Currently The Last One
+ - name: Pacific Northwest National Laboratory
    index: 20
+ - name: Currently The Last One
+   index: 21
 
 date: 20 August 2020
 bibliography: paper.bib
