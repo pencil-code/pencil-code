@@ -6,9 +6,9 @@
 104000  60000 - name: Matthias Rheinhardt
  56000  45000 -->  Sven Bingert <sven.bingert@gwdg.de>, 29 Aug
  78000  36000 - name: Nils Erland L. Haugen
- 86000  43000 -->  "Mee, Antony" <antony.mee@baml.com>, 29 Aug
+ 86000  43000 - name "Mee, Antony" <antony.mee@baml.com>, 29 Aug
 199000  32000 - name: Frederick Gent
- 43000  27000 --> Natalia Babkovskaia <nbabkovskaia@gmail.com>, Aug 20, 29
+ 43000  27000 - name: Natalia Babkovskaia <nbabkovskaia@gmail.com>, Aug 20, 29
  24000   9000 - name: Chao-Chin Yang
  39000  23000 --> Tobias Heinemann <tobias.heinemann@gmail.com>, Aug 29
  28000  19000 --> Boris Dintrans <boris.dintrans@irap.omp.eu>, Aug 20, 29
@@ -21,7 +21,7 @@
   6000   2600 --> Xiang-Yu
  27000  19000 - name: Jonas Krüger
  26000  13000 - name: Jørgen R. Aarnes
-  4700   1500 --> Sarsen
+  4700   1500 - name: Sarsen
   3000    300 --> Jeffrey Oishi <joishi@bates.edu>, Aug 22, 29
   2900   2300 - name: Jennifer Schober
  17000   4500 - name: Raphaël Plasson
