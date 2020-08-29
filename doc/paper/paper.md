@@ -64,8 +64,11 @@ authors:
  - name: Raphaël Plasson
    affiliation: 18
    orcid: 0000-0003-2319-1463
+ - name: Luiz Felippe S Rodrigues
+   affiliation: "10, 19"
+   orcid: 0000-0002-3860-0525
  - name: Add Yourself
-   affiliation: 19
+   affiliation: 20
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -104,8 +107,10 @@ affiliations:
    index: 17
  - name: Avignon Université, France
    index: 18
- - name: Currently The Last One
+ - name: Radboud University, Netherlands
    index: 19
+ - name: Currently The Last One
+   index: 20
 
 date: 20 August 2020
 bibliography: paper.bib
