@@ -1014,6 +1014,7 @@ module Io
 !
       use Mpicomm, only: mpireduce_sum_int
 !
+      integer :: mparray_tmp=1
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
       real, dimension (mv,mparray), intent(out) :: ap
@@ -1030,7 +1031,8 @@ module Io
         if (lread_oldsnap_nosink) then
           if (lroot) print*,'read old snapshot file (but without sink particles)'
           read (lun_input) ap(1:nv,1:mparray-1)
-          ap(1:nv,mparray)=0.0
+          mparray_tmp=mparray !(trick to prevent compiler problem for mparray=0)
+          ap(1:nv,mparray_tmp)=0.0
         else
           read (lun_input) ap(1:nv,:)
         endif
