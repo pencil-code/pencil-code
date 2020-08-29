@@ -18,8 +18,10 @@ authors:
    orcid: 0000-0002-7304-021X
  - name: Anders Johansen
    affiliation: 4
+   orcid: 0000-0002-5893-6165
  - name: Philippe A. Bourdin
    affiliation: 5
+   orcid: 0000-0002-6793-601X
  - name: Wolfgang Dobler
    affiliation: 6
  - name: Wladimir Lyra
@@ -36,34 +38,34 @@ authors:
  - name: Chao-Chin Yang
    affiliation: 11
    orcid: 0000-0003-2589-5034
- - name: Jörn Warnecke
+ - name: Simon Candelaresi
    affiliation: 12
+   orcid: 0000-0002-7666-8504
+ - name: Jörn Warnecke
+   affiliation: 13
    orcid: 0000-0002-9292-4600
  - name: Petri Käpylä
-   affiliation: 13
+   affiliation: 14
    orcid: 0000-0001-9619-0053
  - name: Piyali Chatterjee
-   affiliation: 14
+   affiliation: 15
    orcid: 0000-0002-0181-2495
  - name: Jennifer Schober
-   affiliation: 15
+   affiliation: 16
    orcid: 0000-0001-7888-6671
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
+ - name: Jonas Krüger
+   affiliation: "9, 17"
  - name: Jørgen R. Aarnes
-   affiliation: 16
+   affiliation: 17
    orcid: 0000-0002-5899-2597
  - name: Raphaël Plasson
-   affiliation: 17
-   orcid: 0000-0003-2319-1463
- - name: Jonas Krüger
-   affiliation: "9, 16"
- - name: Add Yourself
    affiliation: 18
- - name: Simon Candelaresi
+   orcid: 0000-0003-2319-1463
+ - name: Add Yourself
    affiliation: 19
-   orcid: 0000-0002-7666-8504
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -88,21 +90,21 @@ affiliations:
    index: 10
  - name: University of Nevada, Las Vegas
    index: 11
- - name: Max Planck Institute for Solar System Research 
+ - name: School of Mathematics and Statistics, University of Glasgow
    index: 12
- - name: Institute for Astrophysics, University of Göttingen
+ - name: Max Planck Institute for Solar System Research 
    index: 13
- - name: Indian Institute of Astrophysics, Bengaluru-560034, India
+ - name: Institute for Astrophysics, University of Göttingen
    index: 14
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+ - name: Indian Institute of Astrophysics, Bengaluru-560034, India
    index: 15
- - name: Norwegian University of Science and Technology
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 16
- - name: Avignon Université, France
+ - name: Norwegian University of Science and Technology
    index: 17
- - name: Currently The Last One
+ - name: Avignon Université, France
    index: 18
- - name: School of Mathematics and Statistics, University of Glasgow, Glasgow G12 8QQ, United Kingdom
+ - name: Currently The Last One
    index: 19
 
 date: 20 August 2020
