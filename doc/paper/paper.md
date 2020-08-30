@@ -81,8 +81,11 @@ authors:
  - name: Gustavo Guerrero
    affiliation: 24
    orcid: 0000-0002-2671-8796
- - name: Add Yourself
+ - name: Sven Bingert
    affiliation: 25
+   orcid: 0000-0001-9547-1582
+ - name: Add Yourself
+   affiliation: 26
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -133,8 +136,10 @@ affiliations:
    index: 23
  - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 24
- - name: Currently The Last One
+ - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen
    index: 25
+ - name: Currently The Last One
+   index: 26
 
 date: 20 August 2020
 bibliography: paper.bib
