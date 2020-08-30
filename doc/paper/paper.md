@@ -29,33 +29,36 @@ authors:
    orcid: 0000-0002-3768-7542
  - name: Matthias Rheinhardt
    affiliation: 8
+ - name: Sven Bingert
+   affiliation: 9
+   orcid: 0000-0001-9547-1582
  - name: Nils Erland L. Haugen
-   affiliation: "9, 10, 1"
+   affiliation: "10, 11, 1"
    orcid: 0000-0002-9184-8722
  - name: Antony Mee
-   affiliation: 11
+   affiliation: 12
  - name: Frederick Gent
-   affiliation: "8, 12"
+   affiliation: "8, 13"
    orcid: 0000-0002-1331-2260
  - name: Natalia Babkovskaia
-   affiliation: 13
- - name: Chao-Chin Yang
    affiliation: 14
+ - name: Chao-Chin Yang
+   affiliation: 15
    orcid: 0000-0003-2589-5034
  - name: Simon Candelaresi
-   affiliation: 15
+   affiliation: 16
    orcid: 0000-0002-7666-8504
  - name: Jörn Warnecke
-   affiliation: 16
+   affiliation: 17
    orcid: 0000-0002-9292-4600
  - name: Petri Käpylä
-   affiliation: 17
+   affiliation: 18
    orcid: 0000-0001-9619-0053
  - name: Piyali Chatterjee
-   affiliation: 18
+   affiliation: 19
    orcid: 0000-0002-0181-2495
  - name: Xiang-Yu Li
-   affiliation: 19
+   affiliation: 20
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
    affiliation: "9, 10"
@@ -63,9 +66,9 @@ authors:
    affiliation: 10
    orcid: 0000-0002-5899-2597
  - name: Graeme R. Sarson
-   affiliation: 12
+   affiliation: 13
  - name: Jennifer Schober
-   affiliation: 20
+   affiliation: 21
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
    affiliation: 21
@@ -74,16 +77,13 @@ authors:
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Luiz Felippe S Rodrigues
-   affiliation: "12, 22"
+   affiliation: "13, 23"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 23
- - name: Gustavo Guerrero
    affiliation: 24
-   orcid: 0000-0002-2671-8796
- - name: Sven Bingert
+ - name: Gustavo Guerrero
    affiliation: 25
-   orcid: 0000-0001-9547-1582
+   orcid: 0000-0002-2671-8796
  - name: Add Yourself
    affiliation: 26
 
@@ -104,39 +104,39 @@ affiliations:
    index: 7
  - name: Astroinformatics, Department of Computer Science, Aalto University
    index: 8
- - name: SINTEF Energy Research, Trondheim, Norway
-   index: 9
- - name: Norwegian University of Science and Technology
-   index: 10
- - name: Barclays, London
-   index: 11
- - name: School of Mathematics, Statistics and Physics, Newcastle University 
-   index: 12
- - name: No current affiliation
-   index: 13
- - name: University of Nevada, Las Vegas
-   index: 14
- - name: School of Mathematics and Statistics, University of Glasgow
-   index: 15
- - name: Max Planck Institute for Solar System Research 
-   index: 16
- - name: Institute for Astrophysics, University of Göttingen
-   index: 17
- - name: Indian Institute of Astrophysics, Bengaluru-560034, India
-   index: 18
- - name: Pacific Northwest National Laboratory
-   index: 19
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
-   index: 20
- - name: Avignon Université, France
-   index: 21
- - name: Radboud University, Netherlands
-   index: 22
- - name: Department of Astrophysics, American Museum of Natural History
-   index: 23
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
-   index: 24
  - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen
+   index: 9
+ - name: SINTEF Energy Research, Trondheim, Norway
+   index: 10
+ - name: Norwegian University of Science and Technology
+   index: 11
+ - name: Barclays, London
+   index: 12
+ - name: School of Mathematics, Statistics and Physics, Newcastle University 
+   index: 13
+ - name: No current affiliation
+   index: 14
+ - name: University of Nevada, Las Vegas
+   index: 15
+ - name: School of Mathematics and Statistics, University of Glasgow
+   index: 16
+ - name: Max Planck Institute for Solar System Research 
+   index: 17
+ - name: Institute for Astrophysics, University of Göttingen
+   index: 18
+ - name: Indian Institute of Astrophysics, Bengaluru-560034, India
+   index: 19
+ - name: Pacific Northwest National Laboratory
+   index: 20
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+   index: 21
+ - name: Avignon Université, France
+   index: 22
+ - name: Radboud University, Netherlands
+   index: 23
+ - name: Department of Astrophysics, American Museum of Natural History
+   index: 24
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 25
  - name: Currently The Last One
    index: 26
