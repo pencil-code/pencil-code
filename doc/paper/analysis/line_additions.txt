@@ -27,10 +27,10 @@
  17000   4500 - name: Raphaël Plasson
   2500    800 - name: Christer Sandin
   4400   1000 --> Hubbard, Aug 29
- 15000  11000 Mewek (via Nils, Aug 29)
+ 15000  11000 --> Mewek (via Nils, Aug 29)
    700    500 - name: Luiz Felippe S Rodrigues
   1400    300 --> gustavo guerrero <tavo.buk@gmail.com>, Aug 29
-  1200    400 Snodin, Aug 30
+  1200    400 --> Snodin, Aug 30
   2900   1700 --> Thomas Gastine <thomas.gastine@gmail.com>, Aug 29
   1400    20  Lambrecht
    280   170  Hyder

@@ -76,8 +76,11 @@ authors:
  - name: Luiz Felippe S Rodrigues
    affiliation: "12, 22"
    orcid: 0000-0002-3860-0525
- - name: Add Yourself
+ - name: Gustavo Guerrero
    affiliation: 23
+   orcid: 0000-0002-2671-8796
+ - name: Add Yourself
+   affiliation: 24
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -124,8 +127,10 @@ affiliations:
    index: 21
  - name: Radboud University, Netherlands
    index: 22
- - name: Currently The Last One
+ - name: Universidade Federal de Minas Gerais: Belo Horizonte
    index: 23
+ - name: Currently The Last One
+   index: 24
 
 date: 20 August 2020
 bibliography: paper.bib
