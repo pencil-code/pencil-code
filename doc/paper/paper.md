@@ -76,11 +76,13 @@ authors:
  - name: Luiz Felippe S Rodrigues
    affiliation: "12, 22"
    orcid: 0000-0002-3860-0525
- - name: Gustavo Guerrero
+ - name: Alexander Hubbard
    affiliation: 23
+ - name: Gustavo Guerrero
+   affiliation: 24
    orcid: 0000-0002-2671-8796
  - name: Add Yourself
-   affiliation: 24
+   affiliation: 25
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -127,10 +129,12 @@ affiliations:
    index: 21
  - name: Radboud University, Netherlands
    index: 22
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
+ - name: Department of Astrophysics, American Museum of Natural History
    index: 23
- - name: Currently The Last One
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 24
+ - name: Currently The Last One
+   index: 25
 
 date: 20 August 2020
 bibliography: paper.bib

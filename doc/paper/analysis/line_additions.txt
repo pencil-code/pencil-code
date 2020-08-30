@@ -26,7 +26,7 @@
   2900   2300 - name: Jennifer Schober
  17000   4500 - name: Raphaël Plasson
   2500    800 - name: Christer Sandin
-  4400   1000 --> Hubbard, Aug 29
+  4400   1000 - name: Alexander Hubbard <alex.i.hubbard@gmail.com>
  15000  11000 --> Mewek (via Nils, Aug 29)
    700    500 - name: Luiz Felippe S Rodrigues
   1400    300 --> gustavo guerrero <tavo.buk@gmail.com>, Aug 29
