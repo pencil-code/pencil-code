@@ -104,7 +104,7 @@ affiliations:
    index: 11
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
    index: 12
- - name: No affiliation
+ - name: No current affiliation
    index: 13
  - name: University of Nevada, Las Vegas
    index: 14
@@ -193,6 +193,8 @@ as well as Python and IDL libraries for post-processing are available.
 Among the currently 83 developers with check-in permission, there are
 currently 16 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
+There are others with fewer commits who have contributed with more than
+5000 lines to the code and also contributed significantly to the code.
 Users have access to the latest development version and can ask to
 join the circle of developers by contacting one of the owners.
 

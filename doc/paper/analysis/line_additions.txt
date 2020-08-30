@@ -12,13 +12,13 @@
  24000   9000 - name: Chao-Chin Yang
  39000  23000 --> Tobias Heinemann <tobias.heinemann@gmail.com>, Aug 29
  28000  19000 --> Boris Dintrans <boris.dintrans@irap.omp.eu>, Aug 20, 29
- 40000  12000 --> Dhruba
+ 40000  12000 --> Dhruba, Aug 29
 700000 680000 - name: Simon Candelaresi
   9000   4000 - name: Jörn Warnecke
  10000   1900 - name: Petri Käpylä
-105000  25000 --> Schreiber
+105000  25000 --> Andreas Schreiber <andreasschreiber88@googlemail.com>, Aug 28, 30
  17000   9000 - name: Piyali Chatterjee
-  6000   2600 --> Xiang-Yu
+  6000   2600 - name: Xiang-Yu
  27000  19000 - name: Jonas Krüger
  26000  13000 - name: Jørgen R. Aarnes
   4700   1500 - name: Sarsen
@@ -26,17 +26,17 @@
   2900   2300 - name: Jennifer Schober
  17000   4500 - name: Raphaël Plasson
   2500    800 - name: Christer Sandin
-  4400   1000 --> Hubbard
- 15000  11000 Mewek
+  4400   1000 --> Hubbard, Aug 29
+ 15000  11000 Mewek (via Nils, Aug 29)
    700    500 - name: Luiz Felippe S Rodrigues
-  1400    300 --> gustavo guerrero <tavo.buk@gmail.com>
-  1200    400 Snodin
+  1400    300 --> gustavo guerrero <tavo.buk@gmail.com>, Aug 29
+  1200    400 Snodin, Aug 30
   2900   1700 --> Thomas Gastine <thomas.gastine@gmail.com>, Aug 29
   1400    20  Lambrecht
    280   170  Hyder
- 38000   300  Illa
+ 38000   300  Illa*
   1500   250  Collin
    320   140  Nishant
-  9800  2300  Pekkila
-  8500   300  Qian
+  9800  2300  Pekkila*
+  8500   300  Qian*
   1400   600  Vincent
