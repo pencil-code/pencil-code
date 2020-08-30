@@ -127,7 +127,7 @@ affiliations:
    index: 21
  - name: Radboud University, Netherlands
    index: 22
- - name: Universidade Federal de Minas Gerais: Belo Horizonte
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 23
  - name: Currently The Last One
    index: 24
