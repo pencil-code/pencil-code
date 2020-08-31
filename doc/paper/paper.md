@@ -45,20 +45,23 @@ authors:
  - name: Chao-Chin Yang
    affiliation: 15
    orcid: 0000-0003-2589-5034
- - name: Simon Candelaresi
+ - name: Tobias Heinemann
    affiliation: 16
+   orcid: 0000-0002-2476-9733
+ - name: Simon Candelaresi
+   affiliation: 17
    orcid: 0000-0002-7666-8504
  - name: Jörn Warnecke
-   affiliation: 17
+   affiliation: 18
    orcid: 0000-0002-9292-4600
  - name: Petri Käpylä
-   affiliation: 18
+   affiliation: 19
    orcid: 0000-0001-9619-0053
  - name: Piyali Chatterjee
-   affiliation: 19
+   affiliation: 20
    orcid: 0000-0002-0181-2495
  - name: Xiang-Yu Li
-   affiliation: 20
+   affiliation: 21
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
    affiliation: "9, 10"
@@ -68,31 +71,28 @@ authors:
  - name: Graeme R. Sarson
    affiliation: 13
  - name: Jeffrey S. Oishi
-   affiliation: 21
+   affiliation: 22
    orcid: 0000-0001-8531-6570
  - name: Jennifer Schober
-   affiliation: 22
+   affiliation: 23
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
-   affiliation: 23
+   affiliation: 24
    orcid: 0000-0003-2319-1463
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Luiz Felippe S Rodrigues
-   affiliation: "13, 24"
+   affiliation: "13, 25"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 25
- - name: Gustavo Guerrero
    affiliation: 26
+ - name: Gustavo Guerrero
+   affiliation: 27
    orcid: 0000-0002-2671-8796
  - name: Ewa Karchniwy
-   affiliation: "11, 27"
+   affiliation: "11, 28"
    orcid: 0000-0001-6709-1160
- - name: Tobias Heinemann
-   affiliation: 28
-   orcid: 0000-0002-2476-9733
  - name: Add Yourself
    affiliation: 29
 
@@ -127,31 +127,31 @@ affiliations:
    index: 14
  - name: University of Nevada, Las Vegas
    index: 15
- - name: School of Mathematics and Statistics, University of Glasgow
-   index: 16
- - name: Max Planck Institute for Solar System Research 
-   index: 17
- - name: Institute for Astrophysics, University of Göttingen
-   index: 18
- - name: Indian Institute of Astrophysics, Bengaluru, India
-   index: 19
- - name: Pacific Northwest National Laboratory
-   index: 20
- - name: Department of Physics & Astronomy, Bates College
-   index: 21
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
-   index: 22
- - name: Avignon Université, France
-   index: 23
- - name: Radboud University, Netherlands
-   index: 24
- - name: Department of Astrophysics, American Museum of Natural History
-   index: 25
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
-   index: 26
- - name: Institute of Thermal Technology, Silesian University of Technology
-   index: 27
  - name: Niels Bohr International Academy
+   index: 16
+ - name: School of Mathematics and Statistics, University of Glasgow
+   index: 17
+ - name: Max Planck Institute for Solar System Research 
+   index: 18
+ - name: Institute for Astrophysics, University of Göttingen
+   index: 19
+ - name: Indian Institute of Astrophysics, Bengaluru, India
+   index: 20
+ - name: Pacific Northwest National Laboratory
+   index: 21
+ - name: Department of Physics & Astronomy, Bates College
+   index: 22
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+   index: 23
+ - name: Avignon Université, France
+   index: 24
+ - name: Radboud University, Netherlands
+   index: 25
+ - name: Department of Astrophysics, American Museum of Natural History
+   index: 26
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
+   index: 27
+ - name: Institute of Thermal Technology, Silesian University of Technology
    index: 28
  - name: Currently The Last One
    index: 29
