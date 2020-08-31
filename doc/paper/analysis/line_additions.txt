@@ -4,7 +4,7 @@
 158000  76000 - name: Wolfgang Dobler
 194000 127000 - name: Wladimir Lyra
 104000  60000 - name: Matthias Rheinhardt
- 56000  45000 -->  Sven Bingert <sven.bingert@gwdg.de>, 29 Aug
+ 56000  45000 - name: Sven Bingert <sven.bingert@gwdg.de>
  78000  36000 - name: Nils Erland L. Haugen
  86000  43000 - name "Mee, Antony" <antony.mee@baml.com>, 29 Aug
 199000  32000 - name: Frederick Gent

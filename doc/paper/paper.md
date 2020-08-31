@@ -67,28 +67,31 @@ authors:
    orcid: 0000-0002-5899-2597
  - name: Graeme R. Sarson
    affiliation: 13
- - name: Jennifer Schober
+ - name: Jeffrey S. Oishi
    affiliation: 21
+   orcid: 0000-0001-8531-6570
+ - name: Jennifer Schober
+   affiliation: 22
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
-   affiliation: 21
+   affiliation: 23
    orcid: 0000-0003-2319-1463
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Luiz Felippe S Rodrigues
-   affiliation: "13, 23"
+   affiliation: "13, 24"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 24
- - name: Gustavo Guerrero
    affiliation: 25
+ - name: Gustavo Guerrero
+   affiliation: 26
    orcid: 0000-0002-2671-8796
  - name: Ewa Karchniwy
-   affiliation: "11, 26"
+   affiliation: "11, 27"
    orcid: 0000-0001-6709-1160
  - name: Add Yourself
-   affiliation: 27
+   affiliation: 28
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -127,26 +130,28 @@ affiliations:
    index: 17
  - name: Institute for Astrophysics, University of Göttingen
    index: 18
- - name: Indian Institute of Astrophysics, Bengaluru-560034, India
+ - name: Indian Institute of Astrophysics, Bengaluru, India
    index: 19
  - name: Pacific Northwest National Laboratory
    index: 20
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+ - name: Department of Physics & Astronomy, Bates College
    index: 21
- - name: Avignon Université, France
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 22
- - name: Radboud University, Netherlands
+ - name: Avignon Université, France
    index: 23
- - name: Department of Astrophysics, American Museum of Natural History
+ - name: Radboud University, Netherlands
    index: 24
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
+ - name: Department of Astrophysics, American Museum of Natural History
    index: 25
- - name: Institute of Thermal Technology, Silesian University of Technology
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 26
- - name: Currently The Last One
+ - name: Institute of Thermal Technology, Silesian University of Technology
    index: 27
+ - name: Currently The Last One
+   index: 28
 
-date: 20 August 2020
+date: 10 September 2020
 bibliography: paper.bib
 ---
 
