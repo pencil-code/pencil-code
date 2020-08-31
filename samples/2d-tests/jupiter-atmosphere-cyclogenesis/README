@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/jupiter-atmosphere-cyclogenesis
+SVN Id:
+    $Id$
+Maintainer:
+    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+    Ali Hyder <alihyder727/gmail[dot]com>
+Added:
+    2020-aug-12
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    
+Comments:
+    2D shallow water model of Jupiter's polar atmosphere following
+    Showman (2007) and Brueshaber et al. (2019).
+
