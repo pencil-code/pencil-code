@@ -22,12 +22,14 @@ module InitialCondition
 !
   real :: eta0=0.0, k_eta, x0_drop, y0_drop
   real :: Omega_SB=1.0,gamma_parameter=1.0
+  real :: v_jet_peak,sigma_jet,r_jet_cent
 !
   character (len=labellen), dimension(ninit) :: init_shallow_density='nothing'
   character (len=labellen), dimension(ninit) :: init_shallow_hydro='nothing'
 !
   namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB, &
-       init_shallow_density,init_shallow_hydro,gamma_parameter
+       init_shallow_density,init_shallow_hydro,gamma_parameter,v_jet_peak, &
+       sigma_jet,r_jet_cent
 !
   real :: planetary_radius=impossible ! derives from gamma_parameter and Omega
 !
@@ -114,6 +116,7 @@ module InitialCondition
 !  Initial condition given by 
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx) :: rr
       integer :: j
 !
       do j=1,ninit
@@ -125,6 +128,24 @@ module InitialCondition
             do m=m1,m2
               f(l1:l2,m,n,iux) = -Omega_SB * y(  m  )
               f(l1:l2,m,n,iuy) =  Omega_SB * x(l1:l2)
+            enddo
+          enddo
+!
+! Add Gaussian jet at the polar region (Gaussian in radius)
+! v_phi = v_jet_peak * exp( - (rr(i)/ sigma_jet)**2),
+! where v_jet_peak is the peak azimuthal velocity, rr is the distance
+! from the jet center to the grid point, and sigma_jet is the jet width.
+!
+        case('zonal-jet')
+          do n=n1,n2
+            do m=m1,m2
+              rr = sqrt(x(l1:l2)**2 + y(m)**2)
+              f(l1:l2,m,n,iux) = -v_jet_peak * &
+                                exp(- (((rr - r_jet_cent) / sigma_jet)**2)) * &
+                                y(m) / rr
+                f(l1:l2,m,n,iuy) = v_jet_peak * &
+                                exp(- (((rr - r_jet_cent) / sigma_jet)**2)) * &
+                                x(l1:l2) / rr
             enddo
           enddo
         endselect
