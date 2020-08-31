@@ -72,17 +72,23 @@ module Special
 !
 ! Parameters for the storm model
 !
-  real :: tmass_relaxation=176.0,tmass_relaxation1
-  real :: tduration=17.0,rsize_storm=0.03
-  real :: interval_between_storms=17.0 
+  real :: tmass_relaxation=112.0,tmass_relaxation1
+  real :: tduration=12.0,rsize_storm=0.03
+  real :: interval_between_storms=12.0 
   real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
-
+! 
+! Parameters for the jet model
+! 
+  real :: v_jet_peak=0.005
+  real :: sigma_jet=0.03
+  real :: tau_jet=3.0,tau_jet1
+  real :: r_jet_center=0.2
 !
 ! Mass relaxation
 !
   real, dimension (nx) :: advec_cg2=0.0
   real, dimension (mx,my) :: h0
-  real, dimension (nx,ny,2) :: gradh0
+  real, dimension (nx,ny,2) :: gradh0,ujet
   real, dimension (nx,ny) :: gamma_rr2,eta_relaxation,storm_function_grid,subsidence_grid
   logical :: ladvection_base_height=.true.,lcompression_base_height=.true.
   logical :: lcoriolis_force=.true.
@@ -92,23 +98,26 @@ module Special
   logical :: lupdate_as_var=.true.
   real :: storm_strength=impossible
   logical :: lsubsidence=.true.
+  logical :: ljet_reinforcement=.false.
 !
   namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
-       lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor
+       lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor,&
+       ljet_reinforcement,v_jet_peak,sigma_jet,tau_jet,r_jet_center
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
+     real, dimension(nx,2) :: uu_jet
   endtype InternalPencils
 !
   type (InternalPencils) :: q
 !
 ! Diagnostics
 !
-  integer :: idiag_dtgh=0 
+  integer :: idiag_dtgh=0
 !
   contains
 !
@@ -139,7 +148,7 @@ module Special
       !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: r2
+      real, dimension (nx) :: r2,rr,uphi_jet
 !
       do m=1,my
         h0(:,m) = c0 &
@@ -183,6 +192,17 @@ module Special
         do m=m1,m2
           r2 = x(l1:l2)**2 + y(m)**2
           eta_relaxation(:,m-m1+1) = eta0
+        enddo
+      endif
+!
+      tau_jet1 = 1./tau_jet
+      if (ljet_reinforcement) then
+        do m=m1,m2
+          rr = sqrt(x(l1:l2)**2 + y(m)**2)
+          uphi_jet = v_jet_peak * exp(-((rr-r_jet_center)/sigma_jet)**2)
+!
+          ujet(:,m-m1+1,1) = - uphi_jet * y(  m  ) / rr
+          ujet(:,m-m1+1,2) =   uphi_jet * x(l1:l2) / rr
         enddo
       endif
 !
@@ -253,6 +273,10 @@ module Special
       if (lcalc_storm) then
                             q%storm_function = storm_function_grid(:,m-m1+1)
          if (lsubsidence)   q%subsidence     = subsidence_grid    (:,m-m1+1)
+      endif
+      if (ljet_reinforcement) then
+        q%uu_jet(:,1) = ujet(:,m-m1+1,1)
+        q%uu_jet(:,2) = ujet(:,m-m1+1,2)
       endif
 !
     call keep_compiler_quiet(f)
@@ -373,7 +397,6 @@ module Special
 !
 !  Compensate the mass added by the storms (subsidence)
 !
-
         if (lsubsidence) df(l1:l2,m,n,irho) =  df(l1:l2,m,n,irho) + q%subsidence
 !
       endif
@@ -403,6 +426,8 @@ module Special
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     integer :: i,ju
     type (pencil_case), intent(in) :: p
+!     
+    real, dimension(nx) :: rr, rr1,uu_jet
 !
 !  Momentum equation; rho = g*eta  
 !
@@ -422,7 +447,12 @@ module Special
       df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) - q%gr2*p%uu(:,2)
       df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) + q%gr2*p%uu(:,1)
     endif
-    
+!
+    if (ljet_reinforcement) then
+      df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) - (p%uu(:,1) - q%uu_jet(:,1))*tau_jet1
+      df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - (p%uu(:,2) - q%uu_jet(:,2))*tau_jet1       
+    endif
+!    
     if (lfirst.and.ldt) then
       advec_cg2 = (p%rho + h0(l1:l2,m))**2 * dxyz_2
 !       
