@@ -21,6 +21,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
 ! ampl = amplitude of the magnetic fie
+! Omega = background rotation
 ! width_tube = width of the flux tube
 ! braid_margin = margin of outer most strands to the borders
 ! braid_shift_x = right shift of the braiding configuration in x-direction
@@ -39,14 +40,14 @@ module InitialCondition
 !
 ! inFile = Initial condition file from externally created field.
 !
-  real :: ampl = 1.0, B0 = 0.0
+  real :: ampl = 1.0, B0 = 0.0, Omega_bkg = 0.0
   integer :: n_blobs = 0
   real, dimension (9) :: xc, yc, zc, kappa, l_blob, a_blob
   integer :: configuration = 0
   character (len=50) :: inFilePrefix='out'
 !
   namelist /initial_condition_pars/ &
-    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,B0
+    ampl,Omega_bkg,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,B0
 !
   contains
 !***********************************************************************
@@ -98,6 +99,13 @@ module InitialCondition
     enddo
 
     f(:,:,:,iux:iuz) = ampl*uu
+
+!   Add a background velocity field.
+    do m=m1,m2
+        do n=n1,n2
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*Omega_bkg
+        enddo
+    enddo
 !
   endsubroutine initial_condition_uu
 !***********************************************************************
