@@ -61,6 +61,11 @@
    !logical :: lcalc_storm=.true.
 !   
    !storm_strength=1.13445643e-05 ! 1 m^2/s^3 in these units
+
+   tmass_relaxation=176.0
+   tduration=17.0
+   interval_between_storms=17.0 
+
 /
 &shock_run_pars
 /

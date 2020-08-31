@@ -72,9 +72,9 @@ module Special
 !
 ! Parameters for the storm model
 !
-  real :: tmass_relaxation=112.0,tmass_relaxation1
-  real :: tduration=12.0,rsize_storm=0.03
-  real :: interval_between_storms=12.0 
+  real :: tmass_relaxation=176.0,tmass_relaxation1
+  real :: tduration=17.0,rsize_storm=0.03
+  real :: interval_between_storms=17.0 
   real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
 ! 
 ! Parameters for the jet model
@@ -106,7 +106,8 @@ module Special
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
        lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor,&
-       ljet_reinforcement,v_jet_peak,sigma_jet,tau_jet,r_jet_center
+       ljet_reinforcement,v_jet_peak,sigma_jet,tau_jet,r_jet_center,&
+       tduration,interval_between_storms
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
