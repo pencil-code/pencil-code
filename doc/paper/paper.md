@@ -84,8 +84,11 @@ authors:
  - name: Gustavo Guerrero
    affiliation: 25
    orcid: 0000-0002-2671-8796
+ - name: Ewa Karchniwy
+   affiliation: "11, 26"
+   orcid: 0000-0001-6709-1160
  - name: Add Yourself
-   affiliation: 26
+   affiliation: 27
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -138,8 +141,10 @@ affiliations:
    index: 24
  - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 25
- - name: Currently The Last One
+ - name: Institute of Thermal Technology, Silesian University of Technology
    index: 26
+ - name: Currently The Last One
+   index: 27
 
 date: 20 August 2020
 bibliography: paper.bib
