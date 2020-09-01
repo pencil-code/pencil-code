@@ -84,17 +84,17 @@ authors:
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
+ - name: Ewa Karchniwy
+   affiliation: "11, 25"
+   orcid: 0000-0001-6709-1160
  - name: Luiz Felippe S Rodrigues
-   affiliation: "13, 25"
+   affiliation: "13, 26"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 26
- - name: Gustavo Guerrero
    affiliation: 27
+ - name: Gustavo Guerrero
+   affiliation: 28
    orcid: 0000-0002-2671-8796
- - name: Ewa Karchniwy
-   affiliation: "11, 28"
-   orcid: 0000-0001-6709-1160
  - name: Add Yourself
    affiliation: 29
 
@@ -147,13 +147,13 @@ affiliations:
    index: 23
  - name: Avignon Université, France
    index: 24
- - name: Radboud University, Netherlands
-   index: 25
- - name: Department of Astrophysics, American Museum of Natural History
-   index: 26
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
-   index: 27
  - name: Institute of Thermal Technology, Silesian University of Technology
+   index: 25
+ - name: Radboud University, Netherlands
+   index: 26
+ - name: Department of Astrophysics, American Museum of Natural History
+   index: 27
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 28
  - name: Currently The Last One
    index: 29
