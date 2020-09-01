@@ -65,6 +65,7 @@ authors:
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
    affiliation: "9, 10"
+   orcid: 0000-0001-8036-0695
  - name: Jørgen R. Aarnes
    affiliation: 10
    orcid: 0000-0002-5899-2597
