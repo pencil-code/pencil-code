@@ -95,14 +95,14 @@ authors:
  - name: Gustavo Guerrero
    affiliation: 28
    orcid: 0000-0002-2671-8796
+ - name: Illa R. Losada
+   affiliation: 1
+   orcid: 0000-0002-0416-7516
  - name: Chengeng Qian
    affiliation: 29
    orcid: 0000-0002-5560-5475
  - name: Add Yourself
    affiliation: 30
- - name: Illa R. Losada
-   affiliation: 1
-   orcid: 0000-0002-0416-7516
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
