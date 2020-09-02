@@ -873,7 +873,11 @@ module NSCBC
           call rdim(file,&
               mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,prec_in,&
               nghost_in,ipx_in, ipy_in, ipz_in)
-          nv_in=mvar_in+maux_in+mglobal_in
+          ! NILS: We should never have to read auxiliary variables from
+          ! NILS: the f-array of the turbulent box. After all; we only need
+          ! NILS: the velocity.
+          !nv_in=mvar_in+maux_in+mglobal_in
+          nv_in=mvar_in
         else
           print*,'file=',file
           call stop_it('read_NSCBC_run_pars: Could not find file!')
