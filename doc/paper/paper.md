@@ -129,7 +129,7 @@ affiliations:
    index: 10
  - name: Norwegian University of Science and Technology
    index: 11
- - name: Barclays, London
+ - name: Bank of America Merrill Lynch, London
    index: 12
  - name: School of Mathematics, Statistics and Physics, Newcastle University 
    index: 13

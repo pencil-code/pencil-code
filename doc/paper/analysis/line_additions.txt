@@ -30,7 +30,7 @@
  15000  11000 - name: Mewek (via Nils, Aug 29)
    700    500 - name: Luiz Felippe S Rodrigues
   1400    300 - name: gustavo guerrero <tavo.buk@gmail.com>, Aug 29
-  1200    400 --> Snodin, Aug 30
+  1200    400 - name: Snodin, Aug 30
   2900   1700 --> Thomas Gastine <thomas.gastine@gmail.com>, Aug 29
   1400    20  Lambrecht
    280   170  Hyder
