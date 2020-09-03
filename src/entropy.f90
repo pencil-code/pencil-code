@@ -288,7 +288,9 @@ module Energy
   integer :: idiag_ss2mphi=0    ! PHIAVG_DOC: $\left<s^2\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
   integer :: idiag_TTmphi=0     ! PHIAVG_DOC: $\left<T\right>_\varphi$
-  integer :: idiag_dcoolmphi=0  ! PHIAVG_DOC: surface cooling flux
+  integer :: idiag_dcoolmphi=0  ! PHIAVG_DOC: divergence of combined heating and cooling fluxes
+  integer :: idiag_divcoolmphi=0 ! PHIAVG_DOC: divergence of cooling flux
+  integer :: idiag_divheatmphi=0 ! PHIAVG_DOC: divergence of heating flux
   integer :: idiag_fradrsphmphi_kramers=0 ! PHIAVG_DOC: $F_{\rm rad}$ ($\varphi$-averaged,
                                           ! PHIAVG_DOC: from Kramers' opacity)
   integer :: idiag_fconvrsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_r T \right>_\varphi$
@@ -6176,7 +6178,7 @@ module Energy
       use Diagnostics, only: phisum_mn_name_rz
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat,prof,theta_profile
+      real, dimension (nx) :: heat, prof, theta_profile, div_heat, div_cool
 !      real :: zbot,ztop
       intent(in) :: p
 !
@@ -6186,6 +6188,7 @@ module Energy
         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
       endif
       heat = luminosity*prof
+      div_heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
            call output_pencil('heat.dat',heat,1)
 !
@@ -6206,11 +6209,14 @@ module Energy
       select case (cooltype)
       case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+        div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool
       case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
         ! in a more time-step neutral manner
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
+        div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
       case ('entropy')        ! cooling to reference entropy (currently =0)
         heat = heat - cool*prof*(p%ss-0.)
+        div_cool = - cool*prof*(p%ss-0.)
       case ('shell')          !  heating/cooling at shell boundaries
 !
 !  Possibility of a latitudinal heating profile.
@@ -6224,13 +6230,17 @@ module Energy
           theta_profile=(onethird-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-          prof = 1. - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
+          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+          prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
+          div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
         else
-          prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
+          prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+          div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int
         endif
 !
       case default
@@ -6239,7 +6249,11 @@ module Energy
         call fatal_error('calc_heat_cool',errormsg)
       endselect
 !
-      if (l2davgfirst) call phisum_mn_name_rz(heat,idiag_dcoolmphi)
+      if (l2davgfirst) then
+         if (idiag_dcoolmphi/=0) call phisum_mn_name_rz(heat,idiag_dcoolmphi)
+         if (idiag_divcoolmphi/=0) call phisum_mn_name_rz(div_cool,idiag_divcoolmphi)
+         if (idiag_divheatmphi/=0) call phisum_mn_name_rz(div_heat,idiag_divheatmphi)
+      endif
 !
     endsubroutine get_heat_cool_gravr
 !***********************************************************************
@@ -6724,7 +6738,8 @@ module Energy
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
-        idiag_dcoolmphi=0; idiag_fradrsphmphi_kramers=0
+        idiag_dcoolmphi=0; idiag_divcoolmphi=0; idiag_divheatmphi=0
+        idiag_fradrsphmphi_kramers=0
         idiag_fconvrsphmphi=0; idiag_fconvthsphmphi=0; idiag_fconvpsphmphi=0
         idiag_ufpresm=0; idiag_fradz_constchi=0; idiag_ursphTTmphi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
@@ -6914,6 +6929,8 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'TTmphi',idiag_TTmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'dcoolmphi',idiag_dcoolmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'divcoolmphi',idiag_divcoolmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'divheatmphi',idiag_divheatmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fradrsphmphi_kramers',idiag_fradrsphmphi_kramers)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvrsphmphi',idiag_fconvrsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvthsphmphi',idiag_fconvthsphmphi)
