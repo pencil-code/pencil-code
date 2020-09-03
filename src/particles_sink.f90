@@ -43,7 +43,7 @@ module Particles_sink
   logical :: laccrete_sink_sink=.true.
   character (len=labellen), dimension(ninit) :: initaps='nothing'
 !
-  integer :: idiag_nparsink=0
+  integer :: idiag_nparsink=0,idiag_rhopinterp=0
 !
   namelist /particles_sink_init_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
@@ -309,6 +309,7 @@ module Particles_sink
                 else
                   rhop_interp=fb(ix0,iy0,iz0,irhop:irhop,iblock)
                 endif
+                if (ldiagnos.and.idiag_rhopinterp/=0) call max_name(rhop_interp(1),idiag_rhopinterp)
                 if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
                 creatb: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
@@ -332,10 +333,10 @@ module Particles_sink
 !
 !  Normal or no domain decomposition.
 !
-        do imn=1,ny*nz
-          if (npar_imn(imn)/=0) then
-            do k=k1_imn(imn),k2_imn(imn)
-              if (fp(k,iaps)==0.0) then
+        grid: do imn=1,ny*nz
+          pencil_has_particles: if (npar_imn(imn)/=0) then
+            particles: do k=k1_imn(imn),k2_imn(imn)
+              ifsink: if (fp(k,iaps)==0.0) then
                 ix0=ineargrid(k,1)
                 iy0=ineargrid(k,2)
                 iz0=ineargrid(k,3)
@@ -353,6 +354,7 @@ module Particles_sink
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
                 endif
+                if (ldiagnos.and.idiag_rhopinterp/=0) call max_name(rhop_interp(1),idiag_rhopinterp)
                 if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
                 creat: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
@@ -367,10 +369,10 @@ module Particles_sink
                     srhop(ix0,iy0,iz0) = rhop_interp(1)
                   endif record
                 endif creat
-              endif
-            enddo
-          endif
-        enddo
+              endif ifsink
+            enddo particles
+          endif pencil_has_particles
+        enddo grid
       endif
 !
 !  Sink particle diagnostics.
@@ -1579,6 +1581,8 @@ module Particles_sink
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparsink', &
             idiag_nparsink)
+        call parse_name(iname,cname(iname),cform(iname),'rhopinterp', &
+            idiag_rhopinterp)
       enddo
 !
     endsubroutine rprint_particles_sink
