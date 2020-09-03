@@ -52,7 +52,7 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
 
-  real, dimension (mz,3) :: uumz, ruumz
+  real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
   real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (:,:,:), allocatable :: uumxy, ruumxy
@@ -7170,18 +7170,17 @@ module Hydro
 !***********************************************************************
     subroutine read_uumz_profile(uumz_prof)
 !
-!  Read radial profiles of horizontally averaged flows from file.
+!  Read vertical profiles of horizontally averaged flows from file.
 !
 !  23-oct-18/pjk: added
 !
       real, dimension(nz,3), intent(out) :: uumz_prof
-      integer, parameter :: nztotal=nz*nprocz
-      real, dimension(nz*nprocz) :: tmp1z,tmp2z,tmp3z
+      real, dimension(nzgrid) :: tmp1z, tmp2z, tmp3z
       real :: var1,var2,var3
       logical :: exist
       integer :: stat
 !
-!  Read hcond and glhc and write into an array.
+!  Read mean velocity (uumz) and write into an array.
 !  If file is not found in run directory, search under trim(directory).
 !
       inquire(file='uumz.dat',exist=exist)
@@ -7201,7 +7200,7 @@ module Hydro
 !  Gravity in the z-direction
 !
       if (lgravz) then
-        do n=1,nztotal
+        do n=1,nzgrid
           read(31,*,iostat=stat) var1,var2,var3
           if (stat<0) exit
           if (ip<5) print*,'uxmz, uymz, uzmz: ',var1,var2,var3
