@@ -24,7 +24,7 @@
   cstress_prefactor='16pi'
   nscale_factor_conformal=.0
   !ldebug_print=F, lkinGW=T
-  diffhh=0e-12
+  !diffhh=0e-12
 /
 &forcing_run_pars
 /
