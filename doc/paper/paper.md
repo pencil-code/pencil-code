@@ -106,8 +106,6 @@ authors:
  - name: Chengeng Qian
    affiliation: 29
    orcid: 0000-0002-5560-5475
- - name: Add Yourself
-   affiliation: 30
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
@@ -168,8 +166,6 @@ affiliations:
    index: 28
  - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology
    index: 29
- - name: Currently The Last One
-   index: 30
 
 date: 10 September 2020
 bibliography: paper.bib
