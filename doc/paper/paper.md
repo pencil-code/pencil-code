@@ -48,6 +48,8 @@ authors:
  - name: Tobias Heinemann
    affiliation: 16
    orcid: 0000-0002-2476-9733
+ - name: Dhrubaditya Mitra
+   affiliation: 1
  - name: Simon Candelaresi
    affiliation: 17
    orcid: 0000-0002-7666-8504
@@ -232,7 +234,7 @@ Significant amounts of runtime diagnostics
 as well as Python and IDL libraries for post-processing are available.
 
 Among the currently 83 developers with check-in permission, there are
-currently 16 owners who can give others check-in permission.
+currently 18 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
 There are others with fewer commits who have contributed with more than
 5000 lines to the code and also contributed significantly to the code.
