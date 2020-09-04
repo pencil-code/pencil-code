@@ -57,12 +57,15 @@ authors:
  - name: Jörn Warnecke
    affiliation: 18
    orcid: 0000-0002-9292-4600
- - name: Petri Käpylä
+ - name: Petri J. Käpylä
    affiliation: 19
    orcid: 0000-0001-9619-0053
  - name: Piyali Chatterjee
    affiliation: 20
    orcid: 0000-0002-0181-2495
+ - name: Maarit J. Käpylä
+   affiliation: "8, 18"
+   orcid: 0000-0002-9614-2200
  - name: Xiang-Yu Li
    affiliation: 21
    orcid: 0000-0002-5722-0018 
@@ -213,8 +216,8 @@ Below a list of method papers that describe the various applications and tests:
 * Primordial gravitational waves [@2020GApFD.114.130R]
 * Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B]
 * Modeling of patterned photochemical systems [@2012ChemEurJ]
-* Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb]
-* Burning particles, resolved or unresolved [@2020GApFD.114.58Q; @2017CNF.185a160]
+* Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2017CNF.185a160]
+* Burning particles, resolved or unresolved [@2020GApFD.114.58Q]
 * Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
 * Mean-field MHD [@2013SoPh.287.293K; @2013A&A.556A.106J]
@@ -318,8 +321,10 @@ the National Science Foundation under the grant AAG-1615100,
 the FRINATEK grant 231444 under the Research Council of Norway, SeRC,
 the grant "Bottlenecks for particle growth in turbulent aerosols"
 from the Knut and Alice Wallenberg Foundation, Dnr.\ KAW 2014.0048,
-and the University of Colorado through its support of the
-George Ellery Hale visiting faculty appointment,
+the ReSoLVE Centre of Excellence (grant number 307411), and
+the European Research Council (ERC) under the European Union's
+Horizon 2020 research and innovation programme (Project UniSDyn,
+grant agreement n:o 818665).
 
 # References
 
