@@ -271,6 +271,8 @@ module Hydro
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_fkinzm=0     ! DIAG_DOC: $\left<{1\over2} \varrho\uv^2 u_z\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
+  integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \uv^2 dV$,
+                                ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_um2=0        ! DIAG_DOC:
   integer :: idiag_uxpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
   integer :: idiag_uypt=0       ! DIAG_DOC: $u_y(x_1,y_1,z_1,t)$
@@ -427,6 +429,8 @@ module Hydro
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
+  integer :: idiag_o2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                                ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>^{1/2}$
   integer :: idiag_omax=0       ! DIAG_DOC: $\max(|\boldsymbol{\omega}|)$
   integer :: idiag_ox2m=0       ! DIAG_DOC: $\left<\omega_x^2\right>$
@@ -2339,7 +2343,7 @@ module Hydro
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
           idiag_pvzm /=0 .or. idiag_quxom/=0) &
           lpenc_diagnos(i_oo)=.true.
-      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
+      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. &
           idiag_qfm/=0 .or. idiag_qom/=0 .or. idiag_quxom/=0) &
@@ -2372,7 +2376,9 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
-          idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
+          idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0 .or. idiag_u2sphm/=0) &
+          lpenc_diagnos(i_u2)=.true.
+      if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
@@ -3368,6 +3374,7 @@ module Hydro
       real, dimension (nx,3) :: uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx) :: rmask
       real :: kx
       integer :: k
       logical, save :: lcorr_zero_dt=.false.
@@ -3430,7 +3437,15 @@ module Hydro
         if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
         call sum_mn_name(p%u2,idiag_u2m)
-        call max_mn_name(p%u2,idiag_um2)
+        if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) then
+          where (p%r_mn <= 1.)
+            rmask = 1.
+          elsewhere
+            rmask = 0.
+          endwhere
+          call integrate_mn_name(rmask*p%u2,idiag_u2sphm)
+          call integrate_mn_name(rmask*p%o2,idiag_o2sphm)
+        endif
         call sum_mn_name(p%divu,idiag_divum)
         if (idiag_rdivum/=0)  call sum_mn_name(p%rho*p%divu,idiag_rdivum)
         if (idiag_divu2m/=0)  call sum_mn_name(p%divu**2,idiag_divu2m)
@@ -5088,6 +5103,7 @@ module Hydro
         idiag_outm=0
         idiag_fkinzm=0
         idiag_u2m=0
+        idiag_u2sphm=0
         idiag_um2=0
         idiag_uxpt=0
         idiag_uypt=0
@@ -5338,6 +5354,7 @@ module Hydro
         idiag_fum=0
         idiag_odel2um=0
         idiag_o2m=0
+        idiag_o2sphm=0
         idiag_orms=0
         idiag_omax=0
         idiag_ox2m=0
@@ -5462,9 +5479,11 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
         call parse_name(iname,cname(iname),cform(iname),'fkinzm',idiag_fkinzm)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
+        call parse_name(iname,cname(iname),cform(iname),'u2sphm',idiag_u2sphm)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'odel2um',idiag_odel2um)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
+        call parse_name(iname,cname(iname),cform(iname),'o2sphm',idiag_o2sphm)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
         call parse_name(iname,cname(iname),cform(iname),'ou_int',idiag_ou_int)
         call parse_name(iname,cname(iname),cform(iname),'fum',idiag_fum)
