@@ -99,6 +99,7 @@ module Special
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
+  logical :: GWs_spec_complex=.true. !(AXEL)
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -152,6 +153,7 @@ module Special
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel
     real, dimension(nk) :: SCL, VCT, Tpq
+    complex, dimension(nx) :: complex_Str_T, complex_Str_X
   endtype GWspectra
 
   type(GWspectra) :: spectra
@@ -769,6 +771,18 @@ module Special
                    *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
               endif
 !
+              if (GWs_spec_complex) then
+                if (k2==0. .and. k3==0.) then
+                  spectra%complex_Str_T(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
+                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim))
+                  spectra%complex_Str_X(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
+                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+                else
+                  spectra%complex_Str_T(ikx)=0.
+                  spectra%complex_Str_X(ikx)=0.
+                endif
+              endif
+!
 !  Gravitational wave strain spectrum computed from h
 !
               if (GWh_spec) then
@@ -859,7 +873,7 @@ module Special
 !  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nk) :: spectrum,spectrum_hel
+      real, dimension (:) :: spectrum,spectrum_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
 
@@ -876,6 +890,10 @@ module Special
       case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('StT'); spectrum=real(spectra%complex_Str_T)
+                    spectrum_hel=imag(spectra%complex_Str_T)
+      case ('StX'); spectrum=real(spectra%complex_Str_X)
+                    spectrum_hel=imag(spectra%complex_Str_X)
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
