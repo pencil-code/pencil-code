@@ -12,7 +12,7 @@
  24000   9000 - name: Chao-Chin Yang
  39000  23000 - name: Tobias Heinemann <tobias.heinemann@gmail.com>, Aug 29
  28000  19000 --> Boris Dintrans <boris.dintrans@irap.omp.eu>, Aug 20, 29
- 40000  12000 --> Dhruba, Aug 29
+ 40000  12000 - name: Dhruba, Aug 29
 700000 680000 - name: Simon Candelaresi
   9000   4000 - name: Jörn Warnecke
  10000   1900 - name: Petri Käpylä

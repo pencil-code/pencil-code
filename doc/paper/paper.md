@@ -48,8 +48,9 @@ authors:
  - name: Tobias Heinemann
    affiliation: 16
    orcid: 0000-0002-2476-9733
- - name: Dhrubaditya Mitra
+-  name: Dhrubaditya Mitra
    affiliation: 1
+   orcid: 0000-0003-4861-8152    
  - name: Simon Candelaresi
    affiliation: 17
    orcid: 0000-0002-7666-8504
@@ -105,9 +106,6 @@ authors:
  - name: Chengeng Qian
    affiliation: 29
    orcid: 0000-0002-5560-5475
--  name: Dhrubaditya Mitra
-   affiliation : 1
-   orcid: 0000-0003-4861-8152    
  - name: Add Yourself
    affiliation: 30
 
