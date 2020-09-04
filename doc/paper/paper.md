@@ -221,6 +221,7 @@ Below a list of method papers that describe the various applications and tests:
 * Burning particles, resolved or unresolved [@2020GApFD.114.58Q; @2017CNF.185a160]
 * Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
 * Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
+* Mean-field MHD [@2013SoPh.287.293K; @2013A&A.556A.106J]
 * Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
 * Boris correction for coronal physics [@2020GApFD.114.213C]
 * Thermal instability and mixing [@2012ApJ.758.48Y]
