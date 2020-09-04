@@ -48,9 +48,9 @@ authors:
  - name: Tobias Heinemann
    affiliation: 16
    orcid: 0000-0002-2476-9733
--  name: Dhrubaditya Mitra
+ - name: Dhrubaditya Mitra
    affiliation: 1
-   orcid: 0000-0003-4861-8152    
+   orcid: 0000-0003-4861-8152
  - name: Simon Candelaresi
    affiliation: 17
    orcid: 0000-0002-7666-8504
