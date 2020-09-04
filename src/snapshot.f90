@@ -563,6 +563,8 @@ module Snapshot
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
         lfirstcall=.true.
+        if (StT_spec) call powerGWs(f,'StT',lfirstcall)
+        if (StX_spec) call powerGWs(f,'StX',lfirstcall)
         if (GWs_spec) call powerGWs(f,'GWs',lfirstcall)
         if (GWh_spec) call powerGWs(f,'GWh',lfirstcall)
         if (GWm_spec) call powerGWs(f,'GWm',lfirstcall)

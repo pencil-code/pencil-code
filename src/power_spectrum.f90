@@ -2265,7 +2265,7 @@ module power_spectrum
 !  22-jan-13/axel: corrected for x parallelization
 !
     use Fourier, only: fft_xyz_parallel, fourier_transform
-    use Mpicomm, only: mpireduce_sum
+    use Mpicomm, only: mpireduce_sum, mpigather_and_out_cmplx
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
     use Special, only: special_calc_spectra
@@ -2283,8 +2283,9 @@ module power_spectrum
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, allocatable, dimension(:) :: spectrum,spectrumhel
+  real, dimension(nk) :: spectrum_sum,spectrumhel_sum
+  complex, dimension(nx,1,1,1) :: spectrum_cmplx
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -2298,8 +2299,15 @@ module power_spectrum
 ! Select cases where spectra are precomputed
 !
   if (iggXim>0.or.iggTim>0) then
-      call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
+    if (sp=='StT'.or.sp=='StX') then
+print*,'AXEL1'
+      allocate(spectrum(nx),spectrumhel(nx))
+    else
+      allocate(spectrum(nk),spectrumhel(nk))
+    endif
+    call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
+    allocate(spectrum(nk),spectrumhel(nk))
 !
 !  Initialize power spectrum to zero. The following lines only apply to
 !  the case where special/gravitational_waves_hij6.f90 is used.
@@ -2431,6 +2439,22 @@ module power_spectrum
 !  end from communicated versus computed spectra
 !
   endif
+!
+!  open
+!
+  open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+!
+!  XX
+!
+  if (sp=='StT'.or.sp=='StX') then
+!
+!  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
+!  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
+!
+print*,'AXEL2'
+    spectrum_cmplx(:,1,1,1)=cmplx(spectrum,spectrumhel)
+    call mpigather_and_out_cmplx(spectrum_cmplx,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+  else
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -2465,7 +2489,6 @@ module power_spectrum
       spectrumhel=.5*spectrumhel
     endif
     !
-    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     if (lformat) then
       do k = 1, nk
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
@@ -2496,6 +2519,7 @@ module power_spectrum
       close(1)
       lwrite_krms_GWs=.false.
     endif
+  endif
   endif
   !
   endsubroutine powerGWs

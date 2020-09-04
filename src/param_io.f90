@@ -128,6 +128,7 @@ module Param_IO
       bb2_spec, jj2_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, &
       SCL_spec, VCT_spec, Tpq_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
+      StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       nd_spec, ud_spec, &
