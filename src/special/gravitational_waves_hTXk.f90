@@ -99,7 +99,7 @@ module Special
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
-  logical :: GWs_spec_complex=.true. !(AXEL)
+  logical :: GWs_spec_complex=.true. !(fixed for now)
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -891,9 +891,9 @@ module Special
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
       case ('StT'); spectrum=real(spectra%complex_Str_T)
-                    spectrum_hel=imag(spectra%complex_Str_T)
+                    spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
-                    spectrum_hel=imag(spectra%complex_Str_X)
+                    spectrum_hel=aimag(spectra%complex_Str_X)
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
