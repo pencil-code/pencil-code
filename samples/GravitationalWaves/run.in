@@ -4,13 +4,11 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.14 2018/06/09 23:39:28 brandenb Exp $',
-  lpoint=14, mpoint=4, npoint=4, lpoint2=4, mpoint2=4, npoint2=4
   nt=10, it1=1, isave=1000, itorder=3
   dsnap=.01, dvid=.01, ialive=10
-  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T, GWd_spec=F
+  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T
   !cdt=.7
-  !cdt=.2
-  dt=.02  !(cCFL=0.05)
+  !dt=.02  !(cCFL=0.05)
   lpencil_check=F
   lpencil_check_small=T
 /
@@ -21,18 +19,18 @@
 &density_run_pars
 /
 &special_run_pars
-  cstress_prefactor='16pi'
-  nscale_factor_conformal=.0
+  !cstress_prefactor='16pi'
+  !nscale_factor_conformal=.0
   !ldebug_print=F, lkinGW=T
   !diffhh=0e-12
 /
 &forcing_run_pars
 /
 &magnetic_run_pars
-  eta=0e-1
+  eta=1e-3
 /
 &viscosity_run_pars
-  nu=0e-1
+  nu=1e-3
 /
 &power_spectrum_run_pars
 /

@@ -4,9 +4,10 @@
 !
 &init_pars
   cvsid='$Id: start.in,v 1.12 2018/06/09 23:39:28 brandenb Exp $',
+  wav1=100.
   lwrite_aux=T
   lwrite_ic=T
-  tstart=0.
+  tstart=1.
 /
 &eos_init_pars
   gamma=1., cs0=.57735027
@@ -17,7 +18,7 @@
   lrelativistic_eos=T
 /
 &magnetic_init_pars
-  initaa='Beltrami-x', relhel_aa=1.
+  initaa='Beltrami-x', relhel_aa=1e-1
   kx_aa=1., amplaa=1.0
 /
 &special_init_pars
