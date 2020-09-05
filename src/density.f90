@@ -490,6 +490,8 @@ module Density
                 f(:,:,n,ilnrho)=f(:,:,n,ilnrho)+&
                                   log(rescale_rho*tmpz(n-nghost+nz*ipz))
               enddo
+            case ('particle_profile')
+              if (iapn(1)/=0) f(:,:,:,ilnrho)=alog(f(:,:,:,iapn(1)))
             endselect
           endif
         enddo
