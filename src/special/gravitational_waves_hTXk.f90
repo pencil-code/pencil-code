@@ -950,10 +950,10 @@ module Special
       real, dimension (3) :: e1, e2, kvec
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact
-      real :: ksqr, one_over_k2, one_over_k4, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: cosot, sinot, om12, om1, om, omt1
+      real :: cosot, sinot, om12, om, om1
       intent(inout) :: f
       character (len=2) :: label
 !
@@ -1028,9 +1028,14 @@ module Special
               Pij(4)=0.
               Pij(5)=0.
               Pij(6)=0.
-              one_over_k2=0.
+              om=0.
             else
+!
+!  compute omega (but assume c=1), omega*t, etc.
+!
               one_over_k2=1./ksqr
+              om=sqrt(ksqr)
+
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
@@ -1057,7 +1062,6 @@ module Special
               Pij(5)=-k2*k3*one_over_k2
               Pij(6)=-k3*k1*one_over_k2
             endif
-            one_over_k4=one_over_k2**2
 !
 !  compute e_T and e_X
 !
@@ -1133,59 +1137,60 @@ module Special
             ggTim=f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
             ggXim=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
 !
-!  compute omega (but assume c=1), omega*t, etc.
-!
-            om12=one_over_k2
-            om1=sqrt(om12)
-            om=1./om1
-            omt1=1./(om*t)
-!
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
-            cosot=cos(om*dt)
-            sinot=sin(om*dt)
+            if (om/=0.) then
+
+              om1=1./om
+              om12=om1**2
+              cosot=cos(om*dt)
+              sinot=sin(om*dt)
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-            coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
-            coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
-            coefBre=ggTre*om1
-            coefBim=ggTim*om1
-            f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
-            f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
-            f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om-coefAre*om*sinot
-            f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om-coefAim*om*sinot
+              coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
+              coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
+              coefBre=ggTre*om1
+              coefBim=ggTim*om1
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om-coefAre*om*sinot
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om-coefAim*om*sinot
 !
 !  Debug output
 !
-            if (ldebug_print) then
-              if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
-                print*,'AXEL0: ',coefAre,coefBre,hhTre,ggTre
+              if (ldebug_print) then
+                if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
+                  print*,'AXEL0: ',coefAre,coefBre,hhTre,ggTre
+                endif
               endif
-            endif
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-            coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
-            coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
-            coefBre=ggXre*om1
-            coefBim=ggXim*om1
-            f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
-            f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
-            f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om-coefAre*om*sinot
-            f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om-coefAim*om*sinot
+              coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
+              coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
+              coefBre=ggXre*om1
+              coefBim=ggXim*om1
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om-coefAre*om*sinot
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om-coefAim*om*sinot
+
+            else
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
-            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
 !
-            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
-            if (lroot) f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
+
+            endif
 !
 !  Set stress components in f-array.
 !
