@@ -308,7 +308,7 @@ evidenced by the aforementioned document listing all those papers
 * Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C],
 * Fully convective star in a box [@2006ApJ.638.336D],
 * Dynamo wave in spherical shell convection [@2012ApJ.755L.22K; @2014ApJ.796L.12W],
-* Convection with Kramers opacity law [@2017ApJ...845L..23K; @2019A&A...631A.122K; @2020GApFD.114.8K],
+* Convection with Kramers opacity law [@2017ApJ.845.23K; @2019A&A.631.122K; @2020GApFD.114.8K],
 * MHD turbulence and cascades [@2004PhRvE.70a6308H],
 * Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K],
 
