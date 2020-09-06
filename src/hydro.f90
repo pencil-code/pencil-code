@@ -3436,9 +3436,7 @@ module Hydro
         call sum_mn_name(p%ugu2,idiag_ugu2m)
         if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
-!AB: restored from before r79137 | petri.k.pyl. | 2020-09-04 14:06:38 +0200
         call max_mn_name(p%u2,idiag_um2)
-!AB.
         call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) then
           where (p%r_mn <= 1.)
