@@ -106,12 +106,12 @@ authors:
  - name: Illa R. Losada
    affiliation: 1
    orcid: 0000-0002-0416-7516
- - name: Chengeng Qian
-   affiliation: 29
-   orcid: 0000-0002-5560-5475
  - name: Johannes Pekkilä
    affiliation: 8
    orcid: 0000-0002-1974-7150
+ - name: Chengeng Qian
+   affiliation: 29
+   orcid: 0000-0002-5560-5475
 
 affiliations:
  - name: Nordita, KTH Royal Institute of Technology and Stockholm University
