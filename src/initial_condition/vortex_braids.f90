@@ -31,6 +31,8 @@ module InitialCondition
 ! B_bkg = strength of the background field in z-direction
 ! word = sequence of the braid group
 ! prof = the amplitude profile across the tube
+! rho0 = rho_0 from the density distribution to compensate the centrifugal force via a pressure gradient
+! grad_p = boolean to activate pressure gradient to compensate for cetrifugal force in a fixed frame
 !
 ! n_blobs = number of blobs for the blob configuration
 ! xc, yc, zc = position of the blobs
@@ -45,9 +47,11 @@ module InitialCondition
   real, dimension (9) :: xc, yc, zc, kappa, l_blob, a_blob
   integer :: configuration = 0
   character (len=50) :: inFilePrefix='out'
+  logical :: grad_p=.false.
+  real :: rho0
 !
   namelist /initial_condition_pars/ &
-    ampl,Omega_bkg,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,B0
+    ampl,Omega_bkg,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix,B0,rho0,grad_p
 !
   contains
 !***********************************************************************
@@ -115,9 +119,20 @@ module InitialCondition
 !  will take care of converting it to linear
 !  density if you use ldensity_nolog
 !
-!  07-may-09/wlad: coded
+!  07-sep-20/iomsn: coded
+!
+    use Mpicomm, only: stop_it
+    use Poisson
+    use Sub
+    use EquationOfState, only: cs0
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+    do m=m1,m2
+        do n=n1,n2
+            f(l1:l2,m,n,ilnrho) = log(rho0) + 0.5*Omega_bkg**2/cs0**2 * (x(l1:l2)**2 - x0**2)
+        enddo
+    enddo
 !
     call keep_compiler_quiet(f)
 !
