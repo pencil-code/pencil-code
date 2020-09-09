@@ -191,7 +191,8 @@ def src2dst_remesh(src, dst,
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
                    rename_submit_script=False, MBmin=5.0, ncpus=[1,1,1],
                    start_optionals=False, hostfile=None, submit_new=False,
-                   chunksize = 1000.0
+                   chunksize=1000.0, lfs=False, MB=1, count=1, 
+                   size=1, rank=0, comm=None
                   ):
     """
     Call signature:
@@ -284,6 +285,24 @@ def src2dst_remesh(src, dst,
     *chunksize*:
       Size in megabytes of snapshot variable before chunked remesh is used.
 
+    *lfs*:
+      Flag to set the striping for large file sizes to imporve IO efficiency.
+
+    *MB*:
+      Size of data to write contiguously before moving to new OST on lustre.
+
+    *count*:
+      Number of OSTs across which the data will be shared for IO operations.
+
+    *comm*:
+      MPI library calls
+
+    *rank*:
+      Integer ID of processor
+
+    *size*:
+      Number of MPI processes
+
     """
     import h5py
     from .. import read
@@ -323,8 +342,8 @@ def src2dst_remesh(src, dst,
                              OVERWRITE=OVERWRITE, optionals=optionals,
                              start_optionals=start_optionals,
                              rename_submit_script=rename_submit_script)
-    with open_h5(join(srcsim.path,srcdatadir,h5in),mode='r') as srch5:
-        with open_h5(join(dstsim.path,dstdatadir,h5out), mode='w') as dsth5:
+    with open_h5(join(srcsim.path,srcdatadir,h5in),mode='r',rank=rank,comm=comm) as srch5:
+        with open_h5(join(dstsim.path,dstdatadir,h5out),mode='w',lfs=lfs,MB=MB,count=count,rank=rank,comm=comm) as dsth5:
             #apply settings and grid to dst h5 files
             get_dstgrid(srch5, srcsim.param, dsth5, ncpus=ncpus,
                         multxyz=multxyz, fracxyz=fracxyz, srcghost=srcghost,
