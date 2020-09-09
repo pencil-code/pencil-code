@@ -59,7 +59,7 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[],
     # for mpi split chunks across processes
     if size > 1:
         allchunks = np.arange(nchunks[0]*nchunks[1]*nchunks[2])
-        locchunks = np.array_split(allchunks)
+        locchunks = np.array_split(allchunks,size)
         ichunks = locchunks[rank]
     else:
         ichunks = np.arange(nchunks[0]*nchunks[1]*nchunks[2])
@@ -78,14 +78,14 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[],
     else:
         magic = [magic]
     # initialise group 
-    group = group_h5(dst, 'data', mode='a', overwrite=overwrite)
+    group = group_h5(dst, 'data', status='a', overwrite=overwrite)
     for key in magic:
         if is_vector(key):
-            dset = dataset_h5(group, key, mode=dst.mode, shape=[3,mz,my,mx],
+            dset = dataset_h5(group, key, status=dst.mode, shape=[3,mz,my,mx],
                           overwrite=True, dtype=dtype)
             print('writing '+key+' shape {}'.format([3,mz,my,mx]))
         else:
-            dset = dataset_h5(group, key, mode=dst.mode, shape=[mz,my,mx],
+            dset = dataset_h5(group, key, status=dst.mode, shape=[mz,my,mx],
                           overwrite=True, dtype=dtype)
             print('writing '+key+' shape {}'.format([mz,my,mx]))
         for iz in np.mod(ichunks,nchunks[2]):
