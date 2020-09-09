@@ -20,7 +20,7 @@ import subprocess as sub
 
 #==============================================================================
 def open_h5(filename, status, driver=None, comm=None, overwrite=False,
-            size=1, rank=0):
+            size=1, rank=0, lfs=False, MB=1, count=1):
     """This function opens hdf5 file in serial or parallel.
 
     Keyword arguments:
@@ -42,7 +42,7 @@ def open_h5(filename, status, driver=None, comm=None, overwrite=False,
             print('Relabelling h5 '+fname+' to '+
                    str.strip(fname,'.dat')+'.h5 on path '+path)
         fname = str.strip(fname,'.dat')+'.h5'
-    mkdir(path, rank=rank)
+    mkdir(path, rank=rank, lfs=lfs, MB=MB, count=count)
     if exists(join(path,fname)):
         if status == 'w' and not overwrite:
             if exists(join(path,'movefnametobak')):
