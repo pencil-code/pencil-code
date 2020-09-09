@@ -311,6 +311,8 @@ class Param(object):
         # Contain the nested parameters to be retained
         # Contain the nest names for each parameter set
         for rawline in open(file_name):
+            if ',' in rawline[1]:
+                rawline = lastrawline+rawline
             if ' ' in rawline[1]:
                 rawline = lastrawline+rawline
             if "'" in rawline[1]:
