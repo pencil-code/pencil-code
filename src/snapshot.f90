@@ -247,6 +247,7 @@ module Snapshot
       logical, intent(in), optional :: enum, noghost
 !
       real, save :: tsnap
+      real :: time1
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
       logical :: enum_
@@ -285,7 +286,6 @@ module Snapshot
           call output_snap(a,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
           call output_snap_finalize
-          if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
         endif
@@ -337,6 +337,7 @@ module Snapshot
 !
       integer :: ivar
       real, dimension(:,:), pointer :: reference_state
+      real :: time1
 !
       if (ip<=6.and.lroot) print*,'reading var files'
 !

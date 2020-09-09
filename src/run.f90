@@ -104,7 +104,7 @@ program run
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
   type (pencil_case) :: p
-  double precision :: time1, time2
+  double precision :: time1, time2, tvar1
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
   integer :: icount, i, mvar_in, isave_shift=0
@@ -406,7 +406,10 @@ program run
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
+  if (ip<=12.and.lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
+  if (ip<=12.and.lroot) print*,'rsnap: read snapshot var.dat in ',&
+                               mpiwtime()-tvar1,' seconds'
 !
 !  If we decided to use a new grid, we need to overwrite the data
 !  that we just read in from var.dat. (Note that grid information
@@ -868,7 +871,10 @@ program run
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
         lsave = .false.
+        if (ip<=12.and.lroot) tvar1=mpiwtime()
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
+        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ',&
+                                     mpiwtime()-tvar1,' seconds'
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
             call write_snapshot_particles(f,ENUM=.false.)

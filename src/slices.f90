@@ -93,6 +93,7 @@ contains
       use Testfield,       only: get_slices_testfield
       use Testflow,        only: get_slices_testflow
       use Testscalar,      only: get_slices_testscalar
+      use Mpicomm,         only: mpiwtime
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 !
@@ -101,12 +102,14 @@ contains
 !
       type (slice_data) :: slices
       character (LEN=labellen) :: sname
+      real :: time1
 !
       slices%index=0
 !
 !  Loop over slices.
 !
       inamev=1
+      if (ip<=12.and.lroot) time1=mpiwtime()
       do while (inamev <= nnamev)
 !
         if (trim(cformv(inamev))=='') then
@@ -175,6 +178,8 @@ contains
           inamev=inamev+1
         endif
       enddo
+      if (ip<=12.and.lroot) print*,'wvid: written slices in ',&
+                                   mpiwtime()-time1,' seconds'
 !
     endsubroutine wvid
 !***********************************************************************

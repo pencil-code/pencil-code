@@ -989,18 +989,39 @@ module Diagnostics
 !  24-Nov-2018/PABourdin: redesigned
 !
       use HDF5_IO, only: output_average
+      use Mpicomm,         only: mpiwtime
 !
       logical, save :: lfirst_call = .true.
+      real :: taver
 !
+      if (nnamez > 0.and.ip<=12.and.lroot) taver=mpiwtime()
       if (nnamez > 0) call output_average (datadir, 'xy', nnamez, cnamez, fnamez, nzgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamez > 0.and.ip<=12.and.lroot) print*,&
+          'write_1daverages: write xy in ',&
+                               mpiwtime()-taver,' seconds'
+      if (nnamey > 0.and.ip<=12.and.lroot) taver=mpiwtime()
       if (nnamey > 0) call output_average (datadir, 'xz', nnamey, cnamey, fnamey, nygrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamey > 0.and.ip<=12.and.lroot) print*,&
+          'write_1daverages: write xz in ',&
+                               mpiwtime()-taver,' seconds'
+      if (nnamex > 0.and.ip<=12.and.lroot) taver=mpiwtime()
       if (nnamex > 0) call output_average (datadir, 'yz', nnamex, cnamex, fnamex, nxgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamex > 0.and.ip<=12.and.lroot) print*,&
+          'write_1daverages: write yz in ',&
+                               mpiwtime()-taver,' seconds'
+      if (nnamer > 0.and.ip<=12.and.lroot) taver=mpiwtime()
       if (nnamer > 0) then
         if (lfirst_call) then
           call output_average (datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
+          if (nnamer > 0.and.ip<=12.and.lroot) print*,&
+              'write_1daverages: write phi_z in ',&
+                      mpiwtime()-taver,' seconds'
           lfirst_call = .false.
         else
           call output_average (datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
+          if (nnamer > 0.and.ip<=12.and.lroot) print*,&
+              'write_1daverages: write phi_z in ',&
+                      mpiwtime()-taver,' seconds'
         endif
       endif
 !
@@ -1079,23 +1100,41 @@ module Diagnostics
 !  24-Nov-2018/PABourdin: redesigned
 !
       use HDF5_IO, only: output_average
+      use Mpicomm,         only: mpiwtime
 !
+      real :: taver
+!
+      if (lwrite_yaverages.and.ip<=12.and.lroot) taver=mpiwtime()
       if (lwrite_yaverages) &
           call output_average (directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
+      if (lwrite_yaverages.and.ip<=12.and.lroot) print*,&
+          'write_2daverages: write y averages in ',&
+                       mpiwtime()-taver,' seconds'
 !
+      if (lwrite_zaverages.and.ip<=12.and.lroot) taver=mpiwtime()
       if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
         if (lcaproot) then
           ! cap root (Yang)
           call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, .true., lfirst_proc_z)
+          if (ip<=12.and.lroot) print*,&
+              'write_2daverages: write z averages in ',&
+                           mpiwtime()-taver,' seconds'
         else
           ! z-beam root (Yin)
           call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+          if (ip<=12.and.lroot) print*,&
+              'write_2daverages: write z averages in ',&
+                           mpiwtime()-taver,' seconds'
         endif
       endif
 !
+      if (lwrite_phiaverages.and.ip<=12.and.lroot) taver=mpiwtime()
       if (lwrite_phiaverages) then
         ! normalization is already done in phiaverages_rz
         call output_average (datadir, ch2davg, nrcyl, nnamerz, cnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
+        if (ip<=12.and.lroot) print*,&
+            'write_2daverages: write phi averages in ',&
+                           mpiwtime()-taver,' seconds'
       endif
 !
       if (lroot .and. (ip<=10)) write(*,*) 'write_2daverages: wrote averages (xy,xz,phi#'//trim (ch2davg)//')'
