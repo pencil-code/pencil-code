@@ -2284,8 +2284,7 @@ module power_spectrum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, allocatable, dimension(:) :: spectrum,spectrumhel
-  real, dimension(nk) :: spectrum_sum,spectrumhel_sum
-  complex, dimension(nx,1,1,1) :: spectrum_cmplx
+  real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -2301,9 +2300,11 @@ module power_spectrum
   if (iggXim>0.or.iggTim>0) then
     if (sp=='StT'.or.sp=='StX') then
 print*,'AXEL1'
-      allocate(spectrum(nx),spectrumhel(nx))
+      allocate(spectrum(nxgrid),spectrumhel(nxgrid))
+      allocate(spectrum_sum(nxgrid),spectrumhel_sum(nxgrid))
     else
       allocate(spectrum(nk),spectrumhel(nk))
+      allocate(spectrum_sum(nk),spectrumhel_sum(nk))
     endif
     call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
@@ -2452,15 +2453,16 @@ print*,'AXEL1'
 !  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
 !
 print*,'AXEL2'
-    spectrum_cmplx(:,1,1,1)=cmplx(spectrum,spectrumhel)
-    call mpigather_and_out_cmplx(spectrum_cmplx,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
+    call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
   else
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+    !
+    !  Summing up the results from the different processors
+    !  The result is available only on root
+    !
+    call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  endif
 !
 !  compute krms only once
 !
@@ -2519,7 +2521,6 @@ print*,'AXEL2'
       close(1)
       lwrite_krms_GWs=.false.
     endif
-  endif
   endif
   !
   endsubroutine powerGWs
