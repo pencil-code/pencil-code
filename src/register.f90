@@ -1251,6 +1251,10 @@ module Register
 !
 !   2-apr-18/axel: coded.
 !
+!  Various variables at one point can be printed on the command line.
+!  This is often important when you want to check for oscillations where
+!  the sign changes. You would not see it in the rms or max values.
+!
 !  Note: this would need to be reworked if one later makes
 !  the output positions processor-dependent. At the moment,
 !  those positions are in that part of the mesh that is on
