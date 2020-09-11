@@ -7614,6 +7614,24 @@ of the magnetic and velocity fields. New such averages can be added to
 the code by using the existing averaging procedures \code{calc\_bmz()}
 or \code{calc\_jmz()} as examples.
 
+\subsection{Output at one point in space}
+\index{single point output}
+\index{pt output
+
+Various variables at one point can be printed on the command line.
+This is often important when you want to check for oscillations where
+the sign changes. You would not see it in the rms or max values.
+The extensions pt and p2 refer to variables that are taken from
+two particular points in space.
+
+Note: this would need to be reworked if one later makes
+the output positions processor-dependent. At the moment,
+those positions are in that part of the mesh that is on
+the root processor.
+
+The file \file{pt_positions.dat} lists the coordinate positions
+where the data is taken from.
+
 \subsection{The f-array}
 \label{f-array}
 \index{f-array}
