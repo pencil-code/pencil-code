@@ -217,22 +217,22 @@ Those are low resolution versions related to applications published in the liter
 Some of the run directories of actual production runs are published through Zenodo.
 Below a list of method papers that describe the various applications and tests:
 
-* Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L]
-* Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B]
-* Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S]
-* Primordial gravitational waves [@2020GApFD.114.130R]
-* Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B]
-* Modeling of patterned photochemical systems [@2012ChemEurJ]
-* Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2017CNF.185a160]
-* Burning particles, resolved or unresolved [@2020GApFD.114.58Q]
-* Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239]
-* Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W]
-* Mean-field MHD [@2013SoPh.287.293K; @2013A&A.556A.106J]
-* Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K]
-* Boris correction for coronal physics [@2020GApFD.114.213C]
-* Thermal instability and mixing [@2012ApJ.758.48Y]
-* Implicit solver for temperature [@2008A&A.484.29G]
-* Dust-gas dynamics with mutual drag interaction [@2007ApJ.662.613Y; @2016ApJS.224.39Y]
+* Coagulation and condensation in turbulence [@2008A&A.486.597J; @2017JAMES.9.1116L],
+* Radiative transfer [@2006A&A.448.731H; @2014A&A.571A.68B; @2020GApFD.114.162B],
+* Chiral magnetic effect in relativistic plasmas [@2018ApJ.858.124S],
+* Primordial gravitational waves [@2020GApFD.114.130R],
+* Modeling homochirality at the origin of life [@2004IJAsB.3.209B; @2019OLEB.49.49B],
+* Modeling of patterned photochemical systems [@2012ChemEurJ],
+* Gaseous combustion and detonation [@2011JCoPh.230.1B; @Zhang_etal_2020comb; @2017CNF.185a160],
+* Burning particles, resolved or unresolved [@2020GApFD.114.58Q],
+* Flows around immersed solid objects [@2019IJCFD.33.43A; @2020GApFD.114.35A; @2010JFM.661a239],
+* Test-field method for turbulent MHD transport [@2010A&A.520A.28R; @2010PhST.142a4028B; @2018A&A.609A.51W],
+* Mean-field MHD [@2013SoPh.287.293K; @2013A&A.556A.106J],
+* Spherical shell dynamos and convection [@2009ApJ.697.923M; @2020GApFD.114.8K],
+* Boris correction for coronal physics [@2020GApFD.114.213C],
+* Thermal instability and mixing [@2012ApJ.758.48Y],
+* Implicit solver for temperature [@2008A&A.484.29G],
+* Dust-gas dynamics with mutual drag interaction [@2007ApJ.662.613Y; @2016ApJS.224.39Y].
 
 # Statement of need and purpose of software
 
@@ -304,12 +304,12 @@ Some recent research areas that made use of the Pencil Code, as
 evidenced by the aforementioned document listing all those papers
 [@zenodo.3466444], include:
 
-* Flows around immersed solid objects [@2010JFM.661a239]
+* Flows around immersed solid objects [@2010JFM.661a239],
 * Particle clustering in supersonic and subsonic turbulence [@2019MNRAS.483.5623M; @Karchniwy_etal_2019],
 * Cloud microphysics [@2017JAMES.9.1116L],
 * Planet and planetesimal formation [@2007Natur.448.1022J; @2007ApJ.670.805O; @2009A&A.497.869L],
 * Global simulations of debris disks [@2013Natur.499.184L],
-* Stratified shearing box simulations, also with dust [@2011ApJ.740.18O; @2018ApJ.861.47S; @2018ApJ.868.27Y].
+* Stratified shearing box simulations, also with dust [@2011ApJ.740.18O; @2018ApJ.861.47S; @2018ApJ.868.27Y],
 * Supernova-driven turbulence [@2013MNRAS.432.1396G],
 * Solar dynamo and sunspots [@2005ApJ.625.539B; @2007ApJ.669.1390H],
 * Solar corona above active regions [@2011A&A.530A.112B; @2013A&A.555A.123B; @2016PhRvL.116j1101C],
@@ -317,7 +317,7 @@ evidenced by the aforementioned document listing all those papers
 * Dynamo wave in spherical shell convection [@2012ApJ.755L.22K; @2014ApJ.796L.12W],
 * Convection with Kramers opacity law [@2017ApJ.845.23K; @2019A&A.631.122K; @2020GApFD.114.8K],
 * MHD turbulence and cascades [@2004PhRvE.70a6308H],
-* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K],
+* Turbulent diffusivity quenching with test fields [@2008ApJ.676.740B; @2014ApJ.795.16K].
 
 # Acknowledgements
 
