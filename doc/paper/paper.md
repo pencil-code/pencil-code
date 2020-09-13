@@ -50,7 +50,6 @@ authors:
    orcid: 0000-0002-2476-9733
  - name: Boris Dintrans
    affiliation: 17
-   orcid: 
  - name: Dhrubaditya Mitra
    affiliation: 1
    orcid: 0000-0003-4861-8152
