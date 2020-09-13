@@ -48,29 +48,32 @@ authors:
  - name: Tobias Heinemann
    affiliation: 16
    orcid: 0000-0002-2476-9733
+ - name: Boris Dintrans
+   affiliation: 17
+   orcid: 
  - name: Dhrubaditya Mitra
    affiliation: 1
    orcid: 0000-0003-4861-8152
  - name: Simon Candelaresi
-   affiliation: 17
+   affiliation: 18
    orcid: 0000-0002-7666-8504
  - name: Jörn Warnecke
-   affiliation: 18
+   affiliation: 19
    orcid: 0000-0002-9292-4600
  - name: Petri J. Käpylä
-   affiliation: 19
+   affiliation: 20
    orcid: 0000-0001-9619-0053
  - name: Piyali Chatterjee
-   affiliation: 20
+   affiliation: 21
    orcid: 0000-0002-0181-2495
  - name: Maarit J. Käpylä
-   affiliation: "8, 18"
+   affiliation: "8, 19"
    orcid: 0000-0002-9614-2200
  - name: Xiang-Yu Li
-   affiliation: 21
+   affiliation: 22
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
-   affiliation: "9, 10"
+   affiliation: "10, 11"
    orcid: 0000-0001-8036-0695
  - name: Jørgen R. Aarnes
    affiliation: 10
@@ -79,27 +82,27 @@ authors:
    affiliation: 13
    orcid: 0000-0001-6774-9372
  - name: Jeffrey S. Oishi
-   affiliation: 22
+   affiliation: 23
    orcid: 0000-0001-8531-6570
  - name: Jennifer Schober
-   affiliation: 23
+   affiliation: 24
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
-   affiliation: 24
+   affiliation: 25
    orcid: 0000-0003-2319-1463
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Ewa Karchniwy
-   affiliation: "11, 25"
+   affiliation: "11, 26"
    orcid: 0000-0001-6709-1160
  - name: Luiz Felippe S Rodrigues
-   affiliation: "13, 26"
+   affiliation: "13, 27"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 27
- - name: Gustavo Guerrero
    affiliation: 28
+ - name: Gustavo Guerrero
+   affiliation: 29
    orcid: 0000-0002-2671-8796
  - name: Andrew Snodin
    affiliation: 13
@@ -110,7 +113,7 @@ authors:
    affiliation: 8
    orcid: 0000-0002-1974-7150
  - name: Chengeng Qian
-   affiliation: 29
+   affiliation: 30
    orcid: 0000-0002-5560-5475
 
 affiliations:
@@ -146,32 +149,34 @@ affiliations:
    index: 15
  - name: Niels Bohr International Academy
    index: 16
- - name: School of Mathematics and Statistics, University of Glasgow
+ - name: CINES
    index: 17
- - name: Max Planck Institute for Solar System Research 
+ - name: School of Mathematics and Statistics, University of Glasgow
    index: 18
- - name: Institute for Astrophysics, University of Göttingen
+ - name: Max Planck Institute for Solar System Research 
    index: 19
- - name: Indian Institute of Astrophysics, Bengaluru, India
+ - name: Institute for Astrophysics, University of Göttingen
    index: 20
- - name: Pacific Northwest National Laboratory
+ - name: Indian Institute of Astrophysics, Bengaluru, India
    index: 21
- - name: Department of Physics & Astronomy, Bates College
+ - name: Pacific Northwest National Laboratory
    index: 22
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+ - name: Department of Physics & Astronomy, Bates College
    index: 23
- - name: Avignon Université, France
+ - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
    index: 24
- - name: Institute of Thermal Technology, Silesian University of Technology
+ - name: Avignon Université, France
    index: 25
- - name: Radboud University, Netherlands
+ - name: Institute of Thermal Technology, Silesian University of Technology
    index: 26
- - name: Department of Astrophysics, American Museum of Natural History
+ - name: Radboud University, Netherlands
    index: 27
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
+ - name: Department of Astrophysics, American Museum of Natural History
    index: 28
- - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte
    index: 29
+ - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology
+   index: 30
 
 date: 10 September 2020
 bibliography: paper.bib
