@@ -116,65 +116,65 @@ authors:
    orcid: 0000-0002-5560-5475
 
 affiliations:
- - name: Nordita, KTH Royal Institute of Technology and Stockholm University
+ - name: Nordita, KTH Royal Institute of Technology and Stockholm University, Sweden
    index: 1
- - name: Department of Astronomy, Stockholm University
+ - name: Department of Astronomy, Stockholm University, Sweden
    index: 2
- - name: McWilliams Center for Cosmology & Department of Physics, Carnegie Mellon University
+ - name: McWilliams Center for Cosmology & Department of Physics, Carnegie Mellon University, PA, USA
    index: 3
- - name: GLOBE Institute, University of Copenhagen
+ - name: GLOBE Institute, University of Copenhagen, Denmark
    index: 4
- - name: Space Research Institute, Graz
+ - name: Space Research Institute, Graz, Austria
    index: 5
- - name: Bruker, Potsdam
+ - name: Bruker, Potsdam, Germany
    index: 6
- - name: New Mexico State University, Department of Astronomy, PO Box 30001, MSC 4500 Las Cruces, NM 88001
+ - name: New Mexico State University, Department of Astronomy, Las Cruces, NM, USA
    index: 7
- - name: Astroinformatics, Department of Computer Science, Aalto University
+ - name: Astroinformatics, Department of Computer Science, Aalto University, Finland
    index: 8
- - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen
+ - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen, Germany
    index: 9
  - name: SINTEF Energy Research, Trondheim, Norway
    index: 10
- - name: Norwegian University of Science and Technology
+ - name: Norwegian University of Science and Technology, Norway
    index: 11
- - name: Bank of America Merrill Lynch, London
+ - name: Bank of America Merrill Lynch, London, UK
    index: 12
- - name: School of Mathematics, Statistics and Physics, Newcastle University 
+ - name: School of Mathematics, Statistics and Physics, Newcastle University, UK
    index: 13
  - name: No current affiliation
    index: 14
- - name: University of Nevada, Las Vegas
+ - name: University of Nevada, Las Vegas, USA
    index: 15
- - name: Niels Bohr International Academy
+ - name: Niels Bohr International Academy, Denmark
    index: 16
- - name: CINES
+ - name: CINES, Montpellier, France
    index: 17
- - name: School of Mathematics and Statistics, University of Glasgow
+ - name: School of Mathematics and Statistics, University of Glasgow, UK
    index: 18
- - name: Max Planck Institute for Solar System Research 
+ - name: Max Planck Institute for Solar System Research, Germany
    index: 19
- - name: Institute for Astrophysics, University of Göttingen
+ - name: Institute for Astrophysics, University of Göttinge, Germany
    index: 20
  - name: Indian Institute of Astrophysics, Bengaluru, India
    index: 21
- - name: Pacific Northwest National Laboratory
+ - name: Pacific Northwest National Laboratory, Richland, WA, USA
    index: 22
- - name: Department of Physics & Astronomy, Bates College
+ - name: Department of Physics & Astronomy, Bates College, ME, USA
    index: 23
- - name: Laboratoire d'Astrophysique, EPFL, CH-1290 Sauverny, Switzerland
+ - name: Laboratoire d'Astrophysique, EPFL, Sauverny, Switzerland
    index: 24
  - name: Avignon Université, France
    index: 25
- - name: Institute of Thermal Technology, Silesian University of Technology
+ - name: Institute of Thermal Technology, Silesian University of Technology, Poland
    index: 26
  - name: Radboud University, Netherlands
    index: 27
- - name: Department of Astrophysics, American Museum of Natural History
+ - name: Department of Astrophysics, American Museum of Natural History, NY, USA
    index: 28
- - name: Universidade Federal de Minas Gerais, Belo Horizonte
+ - name: Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
    index: 29
- - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology
+ - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
    index: 30
 
 date: 10 September 2020
