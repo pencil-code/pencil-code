@@ -174,7 +174,7 @@ affiliations:
    index: 27
  - name: Department of Astrophysics, American Museum of Natural History, NY, USA
    index: 28
- - name: Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
+ - name: Physics Department, Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
    index: 29
  - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
    index: 30
