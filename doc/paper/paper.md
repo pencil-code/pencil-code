@@ -77,7 +77,7 @@ authors:
    affiliation: "10, 11"
    orcid: 0000-0001-8036-0695
  - name: Jørgen R. Aarnes
-   affiliation: 10
+   affiliation: 11
    orcid: 0000-0002-5899-2597
  - name: Graeme R. Sarson
    affiliation: 13
@@ -331,7 +331,9 @@ the National Science Foundation under the grant AAG-1615100,
 the FRINATEK grant 231444 under the Research Council of Norway, SeRC,
 the grant "Bottlenecks for particle growth in turbulent aerosols"
 from the Knut and Alice Wallenberg Foundation, Dnr.\ KAW 2014.0048,
-the ReSoLVE Centre of Excellence (grant number 307411), and
+the ReSoLVE Centre of Excellence (grant number 307411),
+the research project ‘Gaspro’, financed by the Research Council of
+Norway (267916), and
 the European Research Council (ERC) under the European Union's
 Horizon 2020 research and innovation programme (Project UniSDyn,
 grant agreement n:o 818665).
