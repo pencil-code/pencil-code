@@ -1022,7 +1022,7 @@ module power_spectrum
         if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
       endif
 !
-!  magnetic power spectra (spectra of |J|^2 and J.B)
+!  magnetic power spectra (spectra of |J|^2 and J.B) !!! should be J.A
 !
     elseif (sp=='j.a') then
       if (iaa==0) call fatal_error('powerhel','iaa=0')
@@ -1036,6 +1036,27 @@ module power_spectrum
           enddo
         enddo
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
+!
+!  current helicity spectrum (J.B)
+!
+    elseif (sp=='j.b') then
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+          call curli(f,iaa,bbi,ivec)
+          call del2vi_etc(f,iaa,ivec,curlcurl=jji)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corresponds to the magnetic field)
+          b_re(:,im,in)=jji  !(this corresponds to the current density)
+          enddo
+        enddo
         a_im=0.
         b_im=0.
       else
