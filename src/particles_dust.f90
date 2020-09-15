@@ -464,6 +464,7 @@ module Particles
       use Particles_caustics, only: initialize_particles_caustics
       use Particles_tetrad, only: initialize_particles_tetrad
       use Particles_potential, only: initialize_particles_potential
+      use General, only: random_gen
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
@@ -483,6 +484,25 @@ module Particles
           print*, '                      with particle block domain decomposition'
         endif
         call fatal_error('initialize_particles','')
+      endif
+!
+!  Due to an un-resolved problems with the seeds, the default random number
+!  generator can not be used if linsert_particles_continuously=T and nproc>1.
+!  I have not understood exactly what causes the problem, but it is
+!  related to a change in seed on the processor(s) where the particles
+!  are being inserted continously. Such a change in seed, triggers the
+!  code to save the new seed (I think) on this/these processors.
+!  This results in var.dat files that do not have the same size for all
+!  processors, and hence an error occures when we try to read these files.
+!
+      if (linsert_particles_continuously .and. (ncpus .gt. 1)) then
+        if (random_gen .eq. "min_std") then
+          if (lroot) then
+            print*,'You can not set random_gen="min_std" when'
+            print*,'linsert_particles_continuously=T.....EXITING!'
+          endif
+          call fatal_error('initialize_particles','')
+        endif
       endif
 !
 ! Mark particles in a pencil
