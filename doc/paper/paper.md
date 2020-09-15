@@ -71,7 +71,7 @@ authors:
    affiliation: "8, 19"
    orcid: 0000-0002-9614-2200
  - name: Xiang-Yu Li
-   affiliation: 22
+   affiliation: 1
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
    affiliation: "10, 11"
@@ -83,27 +83,27 @@ authors:
    affiliation: 13
    orcid: 0000-0001-6774-9372
  - name: Jeffrey S. Oishi
-   affiliation: 23
+   affiliation: 22
    orcid: 0000-0001-8531-6570
  - name: Jennifer Schober
-   affiliation: 24
+   affiliation: 23
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
-   affiliation: 25
+   affiliation: 24
    orcid: 0000-0003-2319-1463
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Ewa Karchniwy
-   affiliation: "11, 26"
+   affiliation: "11, 25"
    orcid: 0000-0001-6709-1160
  - name: Luiz Felippe S Rodrigues
-   affiliation: "13, 27"
+   affiliation: "13, 26"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 28
+   affiliation: 27
  - name: Gustavo Guerrero
-   affiliation: 29
+   affiliation: 28
    orcid: 0000-0002-2671-8796
  - name: Andrew Snodin
    affiliation: 13
@@ -114,7 +114,7 @@ authors:
    affiliation: 8
    orcid: 0000-0002-1974-7150
  - name: Chengeng Qian
-   affiliation: 30
+   affiliation: 29
    orcid: 0000-0002-5560-5475
 
 affiliations:
@@ -160,24 +160,22 @@ affiliations:
    index: 20
  - name: Indian Institute of Astrophysics, Bengaluru, India
    index: 21
- - name: Pacific Northwest National Laboratory, Richland, WA, USA
-   index: 22
  - name: Department of Physics & Astronomy, Bates College, ME, USA
-   index: 23
+   index: 22
  - name: Laboratoire d'Astrophysique, EPFL, Sauverny, Switzerland
-   index: 24
+   index: 23
  - name: Avignon Université, France
-   index: 25
+   index: 24
  - name: Institute of Thermal Technology, Silesian University of Technology, Poland
-   index: 26
+   index: 25
  - name: Radboud University, Netherlands
-   index: 27
+   index: 26
  - name: Department of Astrophysics, American Museum of Natural History, NY, USA
-   index: 28
+   index: 27
  - name: Physics Department, Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
-   index: 29
+   index: 28
  - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
-   index: 30
+   index: 29
 
 date: 10 September 2020
 bibliography: paper.bib
