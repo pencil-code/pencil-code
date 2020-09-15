@@ -1,5 +1,6 @@
 ---
 title: 'Pencil Code, a modular MPI code for partial differential equations: multipurpose and multiuser-maintained'
+
 #MR: Why not mentioning particles in the title?
 tags:
  - Fortran90
@@ -14,6 +15,7 @@ tags:
 authors:
  - name: The Pencil Code Collaboration
    affiliation: 1
+
 #MR: Is it correct to give the Collaboration an affiliation?
  - name: Axel Brandenburg
    affiliation: "1, 2, 3"
@@ -201,6 +203,7 @@ particles, their coagulation and condensation, as well as their
 interaction with the fluid.
 A related module has also been adapted to perform ray tracing
 to solve the eikonal equation.
+
 #MR: to solve -> by solving ?
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
@@ -240,6 +243,7 @@ Below a list of method papers that describe the various applications and tests:
 # Statement of need and purpose of software
 
 The code provides an easily adaptable tool for solving both standard
+
 #MR: provides -> represents?
 MHD equations as well as others, such as the test-field equations.
 Significant amounts of runtime diagnostics 
@@ -250,6 +254,7 @@ currently 18 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
 There are others with fewer commits who have contributed with more than
 5000 lines to the code and also contributed significantly to the code.
+
 #MR: reform? "There are others with fewer commits who have nevertheless contributed significantly to the code. "
 #    the line number count in these cases perhaps not relevant for the reader
 Users have access to the latest development version and can ask to
@@ -272,6 +277,7 @@ community.
 
 Current research topics with the code includes
 interstellar and intercluster medium as well as early Universe;
+
 #MR: "interstellar and intercluster medium ... early Universe" are not really topics
 #    instead "Current research includes topics from stellar physics, interstellar and intercluster medium as well as the early universe:"
 small-scale dynamos and reconnection;
@@ -286,10 +292,13 @@ strongly stratified MHD turbulence and negative effective magnetic pressure inst
 convection in Cartesian domains;
 global convection and dynamo simulations;
 turbulent transport and test-field methods;
+
 #MR:shorter
+
 #hydrodynamic and MHD instabilities;
 hydrodynamic and MHD instabilities and turbulence;
 chiral MHD;
+
 #hydrodynamic and MHD turbulence;
 turbulent gaseous and solid combustion, particle clustering and deposition on solid walls,
 front propagation, radiation & ionization.
@@ -305,13 +314,16 @@ the high level of flexibility and modularity, and the way it is organized
 Other software addressing related needs include: 
 Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, and several other LES codes.
 There are also several other engineering DNS codes such as
-#MR: refomed
+
+#MR: reformed
 #the Sandia-3-Dimensional (S3D) high-order compressible
 Sandia-3-Dimensional (S3D), a high-order compressible code,
 optimized for combustion, which is not open source, however.
 In addition, there is the Dedalus code, which allows one to
 program the equations in symbolic form.
+
 #MR: One should perhaps also mention Cactus (http://cactuscode.org/)
+
 #    Do we need the link for Dedalus (http://dedalus-project.org/)?
 
 Some recent research areas that made use of the Pencil Code, as
@@ -349,6 +361,7 @@ Norway (267916), and
 the European Research Council (ERC) under the European Union's
 Horizon 2020 research and innovation programme (Project UniSDyn,
 grant agreement n:o 818665).
+
 #MR: What about Axel's ERC Grant 2009-2014?
 
 # References
