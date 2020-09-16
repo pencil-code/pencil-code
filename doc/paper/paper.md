@@ -267,7 +267,7 @@ community.
 # Ongoing research using the Pencil Code
 
 Current research includes topics from stellar physics, interstellar and intercluster medium, the early universe,
-as well as from meteorology and engineering applications:
+as well as from meteorology and engineering:
 small-scale dynamos and reconnection;
 primordial magnetic fields and decaying turbulence;
 gravitational waves from turbulent sources;
