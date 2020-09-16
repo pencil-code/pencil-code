@@ -195,7 +195,7 @@ Nevertheless, the framework is general and can also be applied to
 situations not related to hydrodynamics or even PDEs, for example when
 just the message passing interface or input/output strategies of the
 code are to be used.
-The code can also solve for Lagrangian (inertial and noninertial)
+The code can also evolve Lagrangian (inertial and noninertial)
 particles, their coagulation and condensation, as well as their
 interaction with the fluid.
 A related module has also been adapted to perform ray tracing
@@ -267,7 +267,7 @@ community.
 # Ongoing research using the Pencil Code
 
 Current research includes topics from stellar physics, interstellar and intercluster medium, the early universe,
-as well as topics in meteorology and engineering applications:
+as well as from meteorology and engineering applications:
 small-scale dynamos and reconnection;
 primordial magnetic fields and decaying turbulence;
 gravitational waves from turbulent sources;
@@ -298,10 +298,8 @@ Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, and several other LES code
 There are also several other engineering DNS codes such as
 Sandia-3-Dimensional (S3D), a high-order compressible code,
 optimized for combustion, which is not open source, however.
-In addition, there is the Dedalus code, which allows one to
-program the equations in symbolic form.
-There is also Cactus, a modular code framework used especially
-by the general relativity community.
+In addition, there are frameworks like Dedalus or Cactus,
+which allow one to program the equations in symbolic form.
 
 Some recent research areas that made use of the Pencil Code, as
 evidenced by the aforementioned document listing all those papers
