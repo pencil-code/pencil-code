@@ -1,7 +1,8 @@
 ---
-title: 'Pencil Code, a modular MPI code for partial differential equations: multipurpose and multiuser-maintained'
+title: 'The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained'
 
 #MR: Why not mentioning particles in the title?
+#AB: done
 tags:
  - Fortran90
  - fluid dynamics
@@ -15,8 +16,9 @@ tags:
 authors:
  - name: The Pencil Code Collaboration
    affiliation: 1
-
 #MR: Is it correct to give the Collaboration an affiliation?
+#MR: Every item must have an affiliation. They will tell us if not ok.
+#MR: Gus said there are no well-defined rules for that. Every case is unique.
  - name: Axel Brandenburg
    affiliation: "1, 2, 3"
    orcid: 0000-0002-7304-021X
@@ -202,8 +204,9 @@ The code can also solve for Lagrangian (inertial and noninertial)
 particles, their coagulation and condensation, as well as their
 interaction with the fluid.
 A related module has also been adapted to perform ray tracing
-to solve the eikonal equation.
+and to solve the eikonal equation.
 <!-- MR: to solve -> by solving ? -->
+<!-- AB: no, if anything, we really solve the eikonal eqn *by* ray tracing; now write "and" -->
 
 The code is being used for Cartesian, cylindrical, and spherical geometries,
 but further extensions are possible.
@@ -241,8 +244,9 @@ Below a list of method papers that describe the various applications and tests:
 
 # Statement of need and purpose of software
 
-The code provides an easily adaptable tool for solving both standard
+The code is an easily adaptable tool for solving both standard
 <!-- MR: provides -> represents? -->
+<!-- AB: use now "is" -->
 MHD equations as well as others, such as the test-field equations.
 Significant amounts of runtime diagnostics 
 as well as Python and IDL libraries for post-processing are available.
@@ -250,10 +254,14 @@ as well as Python and IDL libraries for post-processing are available.
 Among the currently 83 developers with check-in permission, there are
 currently 18 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
-There are others with fewer commits who have contributed with more than
-5000 lines to the code and also contributed significantly to the code.
+<!-- There are others with fewer commits who have contributed with more than -->
+<!-- 5000 lines to the code and also contributed significantly to the code. -->
 <!-- MR: reform? "There are others with fewer commits who have nevertheless contributed significantly to the code. " -->
 <!--     the line number count in these cases perhaps not relevant for the reader -->
+<!-- AB: modified now like so -->
+There are others either with fewer but more substantial commits
+or who have directed actively the development and thereby
+contributed significantly to the code.
 Users have access to the latest development version and can ask to
 join the circle of developers by contacting one of the owners.
 
@@ -272,10 +280,12 @@ community.
 
 # Ongoing research using the Pencil Code
 
-Current research topics with the code includes
-interstellar and intercluster medium as well as early Universe;
+<!--     Current research topics with the code include interstellar and intercluster medium as well as early Universe; -->
 <!-- MR: "interstellar and intercluster medium ... early Universe" are not really topics -->
 <!--     instead "Current research includes topics from stellar physics, interstellar and intercluster medium as well as the early universe:" -->
+<!-- AB: done, but included also "topics in meteorology and engineering combustion" -->
+Current research includes topics from stellar physics, interstellar and intercluster medium, the early universe,
+as well as topics in meteorology and engineering combustion:
 small-scale dynamos and reconnection;
 primordial magnetic fields and decaying turbulence;
 gravitational waves from turbulent sources;
@@ -288,11 +298,8 @@ strongly stratified MHD turbulence and negative effective magnetic pressure inst
 convection in Cartesian domains;
 global convection and dynamo simulations;
 turbulent transport and test-field methods;
-<!-- MR: shorter -->
-<!-- hydrodynamic and MHD instabilities; -->
 hydrodynamic and MHD instabilities and turbulence;
 chiral MHD;
-<!-- hydrodynamic and MHD turbulence; -->
 turbulent gaseous and solid combustion, particle clustering and deposition on solid walls,
 front propagation, radiation & ionization.
 As of July 2020, 564 papers have been published that acknowledge use of
@@ -307,14 +314,15 @@ the high level of flexibility and modularity, and the way it is organized
 Other software addressing related needs include: 
 Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, and several other LES codes.
 There are also several other engineering DNS codes such as
-<!-- MR: reformed -->
-<!-- the Sandia-3-Dimensional (S3D) high-order compressible -->
 Sandia-3-Dimensional (S3D), a high-order compressible code,
 optimized for combustion, which is not open source, however.
 In addition, there is the Dedalus code, which allows one to
 program the equations in symbolic form.
 <!-- MR: One should perhaps also mention Cactus (http://cactuscode.org/) -->
 <!--     Do we need the link for Dedalus (http://dedalus-project.org/)? -->
+<!-- We don't give links for other codes either, but added Cactus like so: -->
+There is also Cactus, a modular code framework used especially
+by the general relativity community.
 
 Some recent research areas that made use of the Pencil Code, as
 evidenced by the aforementioned document listing all those papers
@@ -339,7 +347,8 @@ evidenced by the aforementioned document listing all those papers
 
 We acknowledge contributions from all submitters and their supporting
 funding agencies.
-In particular, we mention the Swedish Research Council,
+In particular, we mention the ERC Advanced Grant on Astrophysical Dynamos
+(No 227952), the Swedish Research Council,
 grants 2012-5797, 2013-03992, 2017-03865, and 2019-04234,
 the National Science Foundation under the grant AAG-1615100,
 the FRINATEK grant 231444 under the Research Council of Norway, SeRC,
@@ -352,6 +361,7 @@ the European Research Council (ERC) under the European Union's
 Horizon 2020 research and innovation programme (Project UniSDyn,
 grant agreement n:o 818665).
 <!-- MR: What about Axel's ERC Grant 2009-2014? -->
+<!-- thanks, now added -->
 
 # References
 
