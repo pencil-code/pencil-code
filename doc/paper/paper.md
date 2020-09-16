@@ -356,10 +356,11 @@ the grant "Bottlenecks for particle growth in turbulent aerosols"
 from the Knut and Alice Wallenberg Foundation, Dnr.\ KAW 2014.0048,
 the ReSoLVE Centre of Excellence (grant number 307411),
 the research project ‘Gaspro’, financed by the Research Council of
-Norway (267916), and
+Norway (267916),
 the European Research Council (ERC) under the European Union's
 Horizon 2020 research and innovation programme (Project UniSDyn,
-grant agreement n:o 818665).
+grant agreement n:o 818665), and the Deutsche Forschungsgemeinschaft
+(DFG) Heisenberg programme grant KA 4825/2-1.
 <!-- MR: What about Axel's ERC Grant 2009-2014? -->
 <!-- thanks, now added -->
 
