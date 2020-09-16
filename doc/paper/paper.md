@@ -285,7 +285,7 @@ community.
 <!--     instead "Current research includes topics from stellar physics, interstellar and intercluster medium as well as the early universe:" -->
 <!-- AB: done, but included also "topics in meteorology and engineering combustion" -->
 Current research includes topics from stellar physics, interstellar and intercluster medium, the early universe,
-as well as topics in meteorology and engineering combustion:
+as well as topics in meteorology and engineering applications:
 small-scale dynamos and reconnection;
 primordial magnetic fields and decaying turbulence;
 gravitational waves from turbulent sources;
