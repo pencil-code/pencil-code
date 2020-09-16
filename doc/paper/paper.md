@@ -103,7 +103,7 @@ authors:
  - name: Ewa Karchniwy
    affiliation: "11, 25"
    orcid: 0000-0001-6709-1160
- - name: Luiz Felippe S Rodrigues
+ - name: Luiz Felippe S. Rodrigues
    affiliation: "13, 26"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
