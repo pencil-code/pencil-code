@@ -260,8 +260,8 @@ Of the developers, 34 have done more than 34 commits.
 <!--     the line number count in these cases perhaps not relevant for the reader -->
 <!-- AB: modified now like so -->
 There are others either with fewer but more substantial commits
-or who have directed actively the development and thereby
-contributed significantly to the code.
+or who have directed actively the code development and thereby
+contributed significantly.
 Users have access to the latest development version and can ask to
 join the circle of developers by contacting one of the owners.
 
