@@ -208,4 +208,12 @@ module power_spectrum
 !
   endsubroutine power_vec
 !***********************************************************************
+  subroutine anisoq_diag(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+  endsubroutine anisoq_diag
+!***********************************************************************
 endmodule power_spectrum
