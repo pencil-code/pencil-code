@@ -172,7 +172,7 @@ module Param_IO
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &
-      it_timing, har_spec, hav_spec, j_spec, jb_spec, ja_spec, &
+      it_timing, har_spec, hav_spec, j_spec, jb_spec, ja_spec, ani_spec, &
       lread_less, lread_nogrid, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &

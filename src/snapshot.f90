@@ -558,8 +558,9 @@ module Snapshot
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
         if (j_spec)   call power_vec(f,'j')
-        if (jb_spec)  call powerhel(f,'j.b') !(not ready yet)
-        if (ja_spec)  call powerhel(f,'j.a') !(for now, use this instead)
+        if (jb_spec)  call powerhel(f,'j.b') !(not ready yet) ! ready now
+        if (ja_spec)  call powerhel(f,'j.a') !(for now, use this instead) ! now do j.b spectra
+        if (ani_spec) call anisoq_diag(f)
         if (Lor_spec) call powerLor(f,'Lor')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')

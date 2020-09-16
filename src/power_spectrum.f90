@@ -3488,4 +3488,229 @@ endsubroutine pdf
   !
   endsubroutine power_vec
 !***********************************************************************
+! hongzhe developing
+  subroutine anisoq_diag(f)
+!
+!  Anisotropic alpha2 dynamo diagostics.
+!  Calculate azimuthally averaged spectra of
+!  fluid (v.u), kinetic (u.o), magnetic (a.b), and current (b.j) helicities.
+!  Here v is the vector potential of u if u is incompressible.
+!
+!  16-sep-20/hongzhe: added this subroutine, modified from powerhel subroutine
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+  real :: k2, ktot2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: u_re, u_im, o_re, o_im
+  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, jj
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk,nzgrid) :: vu_spec, vu_spec_sum
+  real, dimension(nk,nzgrid) :: uo_spec, uo_spec_sum
+  real, dimension(nk,nzgrid) :: ab_spec, ab_spec_sum
+  real, dimension(nk,nzgrid) :: bj_spec, bj_spec_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+!
+!  passive scalar contributions (hardwired for now)
+!
+  real, dimension(nx,3) :: gtmp1,gtmp2
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  vu_spec=0.
+  vu_spec_sum=0.
+  uo_spec=0.
+  uo_spec_sum=0.
+  ab_spec=0.
+  ab_spec_sum=0.
+  bj_spec=0.
+  bj_spec_sum=0.
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    !
+    ! calculate u and o
+    !
+    if (iuu==0) call fatal_error('powerhel','iuu=0')
+    do n=n1,n2
+      do m=m1,m2
+        call curli(f,iuu,bbi,ivec)
+        im=m-nghost
+        in=n-nghost
+        o_re(:,im,in)=bbi  !(this corresponds to vorticity)
+      enddo
+    enddo
+    u_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+    o_im=0.
+    u_im=0.
+    !
+    ! calculate a, b, and j
+    !
+    if (iaa==0) call fatal_error('powerhel','iaa=0')
+    if (lmagnetic) then
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+        enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+      a_im=0.
+      b_im=0.
+    else
+      if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(u_re,u_im)
+    call fft_xyz_parallel(o_re,o_im)
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  calculate cylindrical helicity spectra
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          ktot2=k2+kz(ikz+ipz*nz)**2
+          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1) .and. ktot2>0.) then
+            uo_spec(k+1,jkz)=uo_spec(k+1,jkz) &
+              +u_re(ikx,iky,ikz)*o_re(ikx,iky,ikz) &
+              +u_im(ikx,iky,ikz)*o_im(ikx,iky,ikz)
+            ab_spec(k+1,jkz)=ab_spec(k+1,jkz) &
+              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            vu_spec(k+1,jkz)=uo_spec(k+1,jkz)/ktot2    ! fluid helicity is calculated by u.o/k^2, only work for low Mach numbers
+            bj_spec(k+1,jkz)=ab_spec(k+1,jkz)*ktot2    ! current helicity is a.b*k^2
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(vu_spec,vu_spec_sum,(/nk,nzgrid/))
+  call mpireduce_sum(uo_spec,uo_spec_sum,(/nk,nzgrid/))
+  call mpireduce_sum(ab_spec,ab_spec_sum,(/nk,nzgrid/))
+  call mpireduce_sum(bj_spec,bj_spec_sum,(/nk,nzgrid/))
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  no multiplication by 1/2
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing cylindrical power spectrum to'  &
+        ,trim(datadir)//'/powerhel_fg.dat files'
+    !
+    open(1,file=trim(datadir)//'/powerhel_vu.dat',position='append')
+    if (lformat) then
+      do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, vu_spec_sum(k,jkz)
+        enddo
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vu_spec_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_uo.dat',position='append')
+    if (lformat) then
+      do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, uo_spec_sum(k,jkz)
+        enddo
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') uo_spec_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_ab.dat',position='append')
+    if (lformat) then
+      do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, ab_spec_sum(k,jkz)
+        enddo
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') ab_spec_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_bj.dat',position='append')
+    if (lformat) then
+      do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, bj_spec_sum(k,jkz)
+        enddo
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') bj_spec_sum
+    endif
+    close(1)
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine anisoq_diag
+!***********************************************************************
 endmodule power_spectrum
