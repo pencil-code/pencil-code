@@ -313,7 +313,7 @@ module Magnetic
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
-  logical :: lremove_meanaz=.false., lremove_meanax=.false., &
+  logical :: lremove_meanaz=.false., lremove_meanax=.false., lremove_meanay=.false., &
              lremove_meanaxy=.false.,lremove_meanaxz=.false.
   logical :: ladd_efield=.false.
   logical :: lsld_bb=.false.
@@ -377,7 +377,7 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanaxy, lremove_meanaxz, &
+      lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanay, lremove_meanaxy, lremove_meanaxz, &
       eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, lsld_bb, eta_cspeed, &
@@ -4927,13 +4927,12 @@ module Magnetic
         if (headtt) print*,'daa_dt: hall_term=',hall_term_
         dAdt=dAdt-hall_term_*p%jxb
         if (lfirst.and.ldt) then
-          advec_hall=abs(p%uu(:,1)-hall_term_*p%jj(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2)-hall_term_*p%jj(:,2))*dy_1(  m  )+ &
-                     abs(p%uu(:,3)-hall_term_*p%jj(:,3))*dz_1(  n  )
+          advec_hall=abs(p%uu(:,1)-hall_term_*p%jj(:,1))*dline_1(:,1)+ &
+                     abs(p%uu(:,2)-hall_term_*p%jj(:,2))*dline_1(:,2)+ &
+                     abs(p%uu(:,3)-hall_term_*p%jj(:,3))*dline_1(:,3)
           if (notanumber(advec_hall)) print*, 'advec_hall =',advec_hall
           advec2=advec2+advec_hall**2
-          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
-                                        maxval(advec_hall)
+          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =', maxval(advec_hall)
         endif
       endif
 !
@@ -5060,12 +5059,12 @@ module Magnetic
                 nphi = 1
               endif
               advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
-                       (p%bb(:,3)*dz_1(  n  )/nphi*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
+                         (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
+                         (p%bb(:,3)*dz_1(  n  )/nphi*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
             else
               advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
-                       (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
+                         (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
+                         (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
             endif
           elseif (lcylindrical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
@@ -5076,6 +5075,7 @@ module Magnetic
                        (p%bb(:,2)*dy_1(  m  ))**2+ &
                        (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
           endif
+          !!!advec_va2=(p%bb*dline_1**2)*mu01*rho1_jxb
         endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
@@ -5097,21 +5097,18 @@ module Magnetic
 !  This is not used in EMHD simulations.
 !
         if (lhydro.and.hall_term/=0.0) then
-          if (lcartesian_coords) then
-            advec_va2 = ( &
-                  (p%bb(:,1)*dx_1(l1:l2)*( &
-                    hall_term*pi*dx_1(l1:l2)*mu01 &
-                    +sqrt(mu01*p%rho1 + (hall_term*pi*dx_1(l1:l2)*mu01)**2 ) ) )**2 &
-                 +(p%bb(:,2)*dy_1(  m  )*( &
-                    hall_term*pi*dy_1(  m  )*mu01 &
-                    +sqrt(mu01*p%rho1 + (hall_term*pi*dy_1(  m  )*mu01)**2 ) ) )**2 &
-                 +(p%bb(:,3)*dz_1(  n  )*( &
-                    hall_term*pi*dz_1(  n  )*mu01 &
-                    +sqrt(mu01*p%rho1 + (hall_term*pi*dz_1(  n  )*mu01)**2 ) ) )**2 &
-                        )
-          else
-            call fatal_error('daa_dt', 'Timestep advec_va2 with hall_term is not implemented in these coordinates.')
-          endif
+          advec_va2 = ( &
+                        (p%bb(:,1)*dline_1(:,1)*( &
+                        hall_term*pi*dline_1(:,1)*mu01 &
+                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,1)*mu01)**2 ) ))**2 &
+                       +(p%bb(:,2)*dline_1(:,2)*( &
+                        hall_term*pi*dline_1(:,2)*mu01 &
+                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,2)*mu01)**2 ) ))**2 &
+                       +(p%bb(:,3)*dline_1(:,3)*( &
+                        hall_term*pi*dline_1(:,3)*mu01 &
+                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
+                      )
+
         endif
         if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
         advec2=advec2+advec_va2
@@ -5119,6 +5116,7 @@ module Magnetic
           call dot2(p%vmagfric,tmp1)
           advec2=advec2 + tmp1
         endif
+!
       endif
 !
 !  Apply border profiles.
@@ -6312,6 +6310,7 @@ module Magnetic
       real, dimension(:,:,:), allocatable :: buffer
       real, dimension(nx) :: tmp
       real, dimension(mx,3) :: aamx
+      real, dimension(my,3) :: aamy
       real, dimension(mx,mz) :: aamxz
       type(pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc=.false.
@@ -6333,6 +6332,24 @@ module Magnetic
           do j=1,3
             do l=1,mx
               f(l,:,:,iax+j-1) = f(l,:,:,iax+j-1)-aamx(l,j)
+            enddo
+          enddo
+
+        endif
+!
+        if (lremove_meanay) then
+
+          fact=1./nxzgrid
+          do j=1,3
+            do m=1,my
+              aamy(m,j)=fact*sum(f(l1:l2,m,n1:n2,iax+j-1))
+            enddo
+          enddo
+          call finalize_aver(nprocxz,13,aamy)
+!
+          do j=1,3
+            do m=1,my
+              f(:,m,:,iax+j-1) = f(:,m,:,iax+j-1)-aamy(m,j)
             enddo
           enddo
 
