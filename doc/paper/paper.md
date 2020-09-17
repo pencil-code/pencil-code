@@ -245,9 +245,6 @@ as well as Python and IDL libraries for post-processing are available.
 Among the currently 83 developers with check-in permission, there are
 currently 18 owners who can give others check-in permission.
 Of the developers, 34 have done more than 34 commits.
-There are others either with fewer but more substantial commits
-or who have directed actively the code development and thereby
-contributed significantly.
 Users have access to the latest development version and can ask to
 join the circle of developers by contacting one of the owners.
 
