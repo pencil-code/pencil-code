@@ -1,6 +1,9 @@
 ---
 title: 'The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained'
 
+# The Pencil Code is used and developed by the 37 authors, who define the Pencil Code Collaboration.
+# About half of the currently 560 papers that acknowledge the code are by others who picked up the code, which has been public since 2001.
+
 tags:
  - Fortran90
  - fluid dynamics
@@ -178,7 +181,7 @@ affiliations:
  - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
    index: 29
 
-date: 10 September 2020
+date: 17 September 2020
 bibliography: paper.bib
 ---
 
