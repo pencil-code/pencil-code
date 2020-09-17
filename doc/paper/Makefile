@@ -1,5 +1,4 @@
 all:
-	wget -N https://raw.githubusercontent.com/openjournals/whedon/master/resources/joss-logo.png
 	wget -N https://raw.githubusercontent.com/openjournals/whedon/master/resources/latex.template
 	pandoc \
     -V repository="https://github.com/pencil-code/pencil-code" \
@@ -17,7 +16,6 @@ all:
     paper.md --template latex.template --filter pandoc-citeproc --bibliography paper.bib -o paper.pdf -V geometry:margin=1in
 
 tex:
-	wget -N https://raw.githubusercontent.com/openjournals/whedon/master/resources/joss-logo.png
 	wget -N https://raw.githubusercontent.com/openjournals/whedon/master/resources/latex.template
 	pandoc \
     -V repository="https://github.com/pencil-code/pencil-code" \
