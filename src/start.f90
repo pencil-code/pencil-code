@@ -603,7 +603,7 @@ program start
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
 !
-    call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
+    call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list',noghost=.true.)
     call pointmasses_write_snapshot('QVAR0',ENUM=.false.,FLIST='qvarN.list')
   endif
 !
@@ -617,7 +617,7 @@ program start
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.false.)
     call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
-    call wsnap('var.dat',f,mvar_io,ENUM=.false.)
+    call wsnap('var.dat',f,mvar_io,ENUM=.false.,noghost=.true.)
   elseif (lmodify) then
     call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
   endif
