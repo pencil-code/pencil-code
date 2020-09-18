@@ -2400,19 +2400,7 @@ endif
 !
       if (kinflow/='') then
         if (lfirst.and.ldt) then
-          if (lspherical_coords) then
-            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-                     abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-          elseif (lcylindrical_coords) then
-            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                     abs(p%uu(:,3))*dz_1(  n  )
-          else
-            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2))*dy_1(  m  )+ &
-                     abs(p%uu(:,3))*dz_1(  n  )
-          endif
+          advec_uu=sum(abs(p%uu)*dline_1,2)
           maxadvec=maxadvec+advec_uu
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
