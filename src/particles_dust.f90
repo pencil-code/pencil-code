@@ -486,20 +486,21 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
-!  Due to an un-resolved problems with the seeds, the default random number
-!  generator can not be used if linsert_particles_continuously=T and nproc>1.
+!  Due to an un-resolved problems with persistent and seeds, the default random 
+!  number generator can not be used if linsert_particles_continuously=T
+!  together with lpersist=T and nproc>1.
 !  I have not understood exactly what causes the problem, but it is
 !  related to a change in seed on the processor(s) where the particles
 !  are being inserted continously. Such a change in seed, triggers the
-!  code to save the new seed (I think) on this/these processors.
+!  code to save the new seed if lpersist=T (I think) on this/these processors.
 !  This results in var.dat files that do not have the same size for all
 !  processors, and hence an error occures when we try to read these files.
 !
-      if (linsert_particles_continuously .and. (ncpus .gt. 1)) then
+      if (lpersist .and. linsert_particles_continuously .and. (ncpus .gt. 1)) then
         if (random_gen .eq. "min_std") then
           if (lroot) then
             print*,'You can not set random_gen="min_std" when'
-            print*,'linsert_particles_continuously=T.....EXITING!'
+            print*,'linsert_particles_continuously=T and lpersist=T.....EXITING!'
           endif
           call fatal_error('initialize_particles','')
         endif
