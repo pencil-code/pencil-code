@@ -2690,19 +2690,18 @@ module Density
       endif
 !
       if (ldiff_hyper3_aniso) then
-            call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
-            fdiff = fdiff + tmp
-            if (lsubtract_init_stratification) then
-              call del6fj(f,diffrho_hyper3_aniso,iglobal_lnrho0,tmp)
-              fdiff = fdiff - tmp
-            endif
+        call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
+        fdiff = fdiff + tmp
+        if (lsubtract_init_stratification) then
+          call del6fj(f,diffrho_hyper3_aniso,iglobal_lnrho0,tmp)
+          fdiff = fdiff - tmp
+        endif
 !  Must divide by dxyz_6 here, because it is multiplied on later.
-            if (ldt_up) diffus_diffrho3=diffus_diffrho3+ &
+        if (ldt_up) diffus_diffrho3=diffus_diffrho3+ &
                  (diffrho_hyper3_aniso(1)*dline_1(:,1)**6 + &
                   diffrho_hyper3_aniso(2)*dline_1(:,2)**6 + &
                   diffrho_hyper3_aniso(3)*dline_1(:,3)**6)/dxyz_6
-            if (headtt) &
-                 print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
+        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
       endif
 !
       if (ldiff_hyper3lnrho) then
@@ -2718,7 +2717,7 @@ module Density
       if (ldt_up) then
         diffus_diffrho = diffus_diffrho*dxyz_2
         if (ldynamical_diffusion .and. ldiff_hyper3_mesh) then
-          diffus_diffrho3 = diffus_diffrho3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+          diffus_diffrho3 = diffus_diffrho3 * sum(abs(dline_1),2)
         else
           diffus_diffrho3 = diffus_diffrho3*dxyz_6
         endif

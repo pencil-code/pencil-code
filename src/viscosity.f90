@@ -227,7 +227,7 @@ module Viscosity
 !
       if (any(ivisc=='nu-slope-limited')) then
         lslope_limit_diff = .true.
-        if (dimensionality<3)lisotropic_advection=.true.
+        if (dimensionality<3) lisotropic_advection=.true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
@@ -1725,7 +1725,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper2_simplified')
+                         'is not implemented for lvisc_hyper2_simplified')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total2=p%diffus_total2+nu_hyper2
@@ -1738,7 +1738,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_simplified')
+                         'is not implemented for lvisc_hyper3_simplified')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
@@ -1752,13 +1752,13 @@ module Viscosity
           do i=1,3
             call der6(f,ju,tmp3,i,IGNOREDX=.true.)
             p%fvisc(:,j) = p%fvisc(:,j) + &
-                nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
+                           nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
           enddo
         enddo
         if (lpencil(i_visc_heat)) then
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '//&
-                 'is not implemented for lvisc_hyper3_polar')
+                         'is not implemented for lvisc_hyper3_polar')
           endif
         endif
         if (lfirst .and. ldt) &
@@ -1776,7 +1776,7 @@ module Viscosity
               p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * tmp3 * dline_1(:,i)
             else
               p%fvisc(:,j) = p%fvisc(:,j) + &
-                   nu_hyper3_mesh*pi5_1/60.* tmp3 *dline_1(:,i)
+                             nu_hyper3_mesh*pi5_1/60.* tmp3 *dline_1(:,i)
             endif
           enddo
         enddo
@@ -1801,14 +1801,12 @@ module Viscosity
       if (lvisc_hyper3_mesh_residual) then
         do j=1,3
           ju=j+iuu-1
-          do i=1,3
-            if (ldynamical_diffusion) then
-              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * p%der6u_res(:,i,j) * dline_1(:,i)
-            else
-              p%fvisc(:,j) = p%fvisc(:,j) + &
-                   nu_hyper3_mesh*pi5_1/60.*p%der6u_res(:,i,j)*dline_1(:,i)
-            endif
-          enddo
+          if (ldynamical_diffusion) then
+            p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * sum(p%der6u_res(:,:,j) * dline_1,2)
+          else
+            p%fvisc(:,j) = p%fvisc(:,j) + &
+                           nu_hyper3_mesh*pi5_1/60.*sum(p%der6u_res(:,:,j)*dline_1,2)
+          endif
         enddo
         if (lpencil(i_visc_heat)) then
           if (headtt) &
@@ -1866,7 +1864,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_rho_nu_const')
+                         'is not implemented for lvisc_hyper3_rho_nu_const')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+murho1
@@ -1886,7 +1884,7 @@ module Viscosity
 !  Dissipation is *not* positive definite.
 !
             p%visc_heat=p%visc_heat + &
-                0.5*nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
+                        0.5*nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
           enddo; enddo
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+murho1
@@ -1904,7 +1902,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_mu_const_strict')
+                         'is not implemented for lvisc_hyper3_mu_const_strict')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
@@ -1920,7 +1918,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_mu_const_strict_otf')
+                         'is not implemented for lvisc_hyper3_mu_const_strict_otf')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
@@ -1938,7 +1936,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_nu_const_strict')
+                         'is not implemented for lvisc_hyper3_nu_const_strict')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
@@ -1956,7 +1954,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-                 'is not implemented for lvisc_hyper3_rho_nu_const_aniso')
+                         'is not implemented for lvisc_hyper3_rho_nu_const_aniso')
           endif
         endif
 !
@@ -1985,7 +1983,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-                 'is not implemented for lvisc_hyper3_nu_const_aniso')
+                         'is not implemented for lvisc_hyper3_nu_const_aniso')
           endif
         endif
 !
@@ -2008,7 +2006,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
+                         'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+murho1
@@ -2021,7 +2019,7 @@ module Viscosity
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_hyper3_nu_const')
+                         'is not implemented for lvisc_hyper3_nu_const')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
@@ -2072,7 +2070,7 @@ module Viscosity
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
+                                   "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
 !
@@ -2101,7 +2099,7 @@ module Viscosity
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
+                                   "ldensity better be .true. for ivisc='smagorinsky'"
 !AB: not yet programmed
         endif
       endif
@@ -2121,13 +2119,13 @@ module Viscosity
           if (lpencil(i_visc_heat)) then  ! Heating term not implemented
             if (headtt) then
               call warning('calc_pencils_viscosity','viscous heating term '//&
-                'is not implemented for lvisc_smag_cross_simplified')
+                           'is not implemented for lvisc_smag_cross_simplified')
             endif
           endif
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
+                                   "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
 !
@@ -2527,7 +2525,7 @@ module Viscosity
         diffus_nu =p%diffus_total *dxyz_2
         diffus_nu2=p%diffus_total2*dxyz_4
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
-          diffus_nu3 = p%diffus_total3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))    !!! out
+          diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
         else
           diffus_nu3=p%diffus_total3*dxyz_6
         endif
