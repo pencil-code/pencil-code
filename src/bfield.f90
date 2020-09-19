@@ -1309,7 +1309,7 @@ module Magnetic
 !MR: this to be moved to dbb_dt!
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
-          maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * sum(dline_1,2)
+          maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * sum(dline_1,2))
         endif timestep
       enddo getd4jj
 !
