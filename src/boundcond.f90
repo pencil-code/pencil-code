@@ -671,7 +671,7 @@ module Boundcond
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
-      if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
+      if (ldebug) print*, 'boundconds_x: ENTER'
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -835,11 +835,9 @@ module Boundcond
                   ! BCX_DOC:
                   call bc_db_x(f,topbot,j)
                 case ('f')
-                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
-                  !  value at boundary
+                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
                   call bc_freeze_var_x(topbot,j)
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
-                  ! antisymm wrt boundary
                 case ('fg')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary, also mantaining the
@@ -1029,7 +1027,7 @@ module Boundcond
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
-      if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
+      if (ldebug) print*,'boundconds_y: ENTER'
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -1298,7 +1296,7 @@ module Boundcond
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
-      if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
+      if (ldebug) print*,'boundconds_z: ENTER'
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt

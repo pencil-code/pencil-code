@@ -619,7 +619,7 @@ program start
     call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.,noghost=.true.)
   elseif (lmodify) then
-    call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
+    call wsnap(modify_filename,f,mvar_io,ENUM=.false.,noghost=.true.)
   endif
   call wdim('dim.dat')
   if (lroot) then
