@@ -988,7 +988,7 @@ module Magnetic
 !
       if (any(iresistivity=='eta-slope-limited')) then
         lslope_limit_diff = .true.
-        if (dimensionality<3)lisotropic_advection=.true.
+        if (dimensionality<3) lisotropic_advection=.true.
         lbb_as_comaux=lsld_bb
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
@@ -4219,7 +4219,7 @@ module Magnetic
             if (ldynamical_diffusion) then
               fres(:,j) = fres(:,j) + eta_hyper3_mesh * tmp1 * dline_1(:,i)
             else
-              fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,i)
+              fres(:,j) = fres(:,j)+eta_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,i)
             endif
           enddo
         enddo
@@ -4927,9 +4927,7 @@ module Magnetic
         if (headtt) print*,'daa_dt: hall_term=',hall_term_
         dAdt=dAdt-hall_term_*p%jxb
         if (lfirst.and.ldt) then
-          advec_hall=abs(p%uu(:,1)-hall_term_*p%jj(:,1))*dline_1(:,1)+ &
-                     abs(p%uu(:,2)-hall_term_*p%jj(:,2))*dline_1(:,2)+ &
-                     abs(p%uu(:,3)-hall_term_*p%jj(:,3))*dline_1(:,3)
+          advec_hall=sum(abs(p%uu-hall_term_*p%jj)*dline_1,2)
           if (notanumber(advec_hall)) print*, 'advec_hall =',advec_hall
           advec2=advec2+advec_hall**2
           if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =', maxval(advec_hall)
@@ -5045,37 +5043,10 @@ module Magnetic
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
           endif
-          if (lboris_correction .and. cmin>0) then
-            rho1_jxb = rho1_jxb &
-                     * (1+(p%va2/p%clight2)**2.)**(-1.0/2.0)
-          endif
-          if (lspherical_coords) then
-            if (lpole(2) .and. lcoarse) then
-              if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-              elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-              else
-                nphi = 1
-              endif
-              advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                         (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
-                         (p%bb(:,3)*dz_1(  n  )/nphi*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
-            else
-              advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                         (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
-                         (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
-            endif
-          elseif (lcylindrical_coords) then
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  )*rcyl_mn1)**2+ &
-                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-          else
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  ))**2+ &
-                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-          endif
-          !!!advec_va2=(p%bb*dline_1**2)*mu01*rho1_jxb
+          if (lboris_correction .and. cmin>0) &
+            rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
+          
+          advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
         endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
@@ -5085,10 +5056,7 @@ module Magnetic
 !    Please check
 !
         if (lisotropic_advection) then
-          if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-!            advec_va2=sqrt(p%va2*dxyz_2)
-            advec_va2=p%va2*dxyz_2
-!JW: no sqrt needed, advec_va2 is quadratic
+          if (dimensionality<3) advec_va2=p%va2*dxyz_2
         endif
 !
 !mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
@@ -5181,7 +5149,7 @@ module Magnetic
           diffus_eta2=diffus_eta2*dxyz_4/nphi**4
 !
           if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-            diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)/nphi))
+            diffus_eta3 = diffus_eta3 * sum(dline_1,2)
           else
             diffus_eta3 = diffus_eta3*dxyz_6/nphi**6
           endif
@@ -5191,7 +5159,7 @@ module Magnetic
           diffus_eta2=diffus_eta2*dxyz_4
 !
           if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-            diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+            diffus_eta3 = diffus_eta3 * sum(dline_1,2)
           else
             diffus_eta3 = diffus_eta3*dxyz_6
           endif
