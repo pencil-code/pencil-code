@@ -561,9 +561,7 @@ module NeutralVelocity
 !
 !  ``uun/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
-                                    abs(p%uun(:,2))*dy_1(  m  )+ &
-                                    abs(p%uun(:,3))*dz_1(  n  )
+      if (lfirst.and.ldt) advec_uu=sum(abs(p%uun)*dline_1,2)
       if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
 !
 !  Apply border profiles

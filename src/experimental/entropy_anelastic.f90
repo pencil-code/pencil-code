@@ -1988,9 +1988,9 @@ module Energy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
-           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
-            chi_hyper3_aniso(2)*dy_1(  m  )**6 + &
-            chi_hyper3_aniso(3)*dz_1(  n  )**6)
+                                      (chi_hyper3_aniso(1)*dline_1(:,1)**6 + &
+                                       chi_hyper3_aniso(2)*dline_1(:,2)**6 + &
+                                       chi_hyper3_aniso(3)*dline_1(:,3)**6)
 !
     endsubroutine calc_heatcond_hyper3_aniso
 !***********************************************************************

@@ -358,10 +358,7 @@ module Hydro
 !
 !  ``(uu+c)/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                                   abs(uu(:,2))*dy_1(  m  )+ &
-                                   abs(uu(:,3))*dz_1(  n  )+ &
-                                   sqrt(c2*dxyz_2)
+      if (lfirst.and.ldt) advec_uu=sum(abs(uu)*dline_1,2)+sqrt(c2*dxyz_2)
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  Calculate maxima and rms values for diagnostic purposes

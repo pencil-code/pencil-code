@@ -3591,7 +3591,7 @@ module Magnetic
         diffus_eta =diffus_eta *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
         else
           diffus_eta3=diffus_eta3*dxyz_6
         endif
@@ -3749,9 +3749,7 @@ module Magnetic
         if (headtt) print*,'daa_dt: hall_term=',hall_term
         dAdt=dAdt-hall_term*p%jxb
         if (lfirst.and.ldt) then
-          advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
-                     abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
-                     abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
+          advec_hall=sum(abs(p%uu-hall_term*p%jj*dline_1),2)
           advec2=advec2+advec_hall**2
           if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
                                         maxval(advec_hall)
@@ -3838,19 +3836,7 @@ module Magnetic
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
-          if (lspherical_coords) then
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
-                       (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
-          elseif (lcylindrical_coords) then
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  )*rcyl_mn1)**2+ &
-                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-          else
-            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                       (p%bb(:,2)*dy_1(  m  ))**2+ &
-                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-          endif
+          advec_va2=sum((p%bb*dline_1)**2,2)*(mu01*rho1_jxb)
         endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
