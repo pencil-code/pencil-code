@@ -994,9 +994,7 @@ module Special
            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + q%qtidal
 !
       if (lfirst.and.ldt) then 
-        advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
-                      abs(q%uu(:,2))*dy_1(  m  )+ &
-                      abs(q%uu(:,3))*dz_1(  n  )       
+        advec_special=sum(abs(q%uu)*dline_1,2)
         maxadvec=maxadvec+advec_special
 !
         diffus_special = kappa*dxyz_2

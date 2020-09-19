@@ -955,9 +955,7 @@ module Special
            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + q%qtidal
 !
       if (lfirst.and.ldt) then 
-        advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
-                      abs(q%uu(:,2))*dy_1(  m  )+ &
-                      abs(q%uu(:,3))*dz_1(  n  )       
+        advec_special=sum(abs(q%uu)*dline_1,2)
         maxadvec=maxadvec+advec_special
 !
         diffus_special=dxyz_2
@@ -971,24 +969,24 @@ module Special
 !
       if (ldiagnos) then 
          if (idiag_uqxmin/=0) call max_mn_name(-q%uu(:,1)   ,idiag_uqxmin,lneg=.true.)
-         if (idiag_uqxmax/=0) call max_mn_name( q%uu(:,1)   ,idiag_uqxmax)
-         if (idiag_uqxm/=0)   call sum_mn_name( q%uu(:,1)   ,idiag_uqxm)
+         call max_mn_name( q%uu(:,1)   ,idiag_uqxmax)
+         call sum_mn_name( q%uu(:,1)   ,idiag_uqxm)
          if (idiag_uqx2m/=0)  call sum_mn_name( q%uu(:,1)**2,idiag_uqx2m)              
          if (idiag_uqxrms/=0) call sum_mn_name( q%uu(:,1)**2,idiag_uqxrms,lsqrt=.true.)
 !
          if (idiag_uqzmin/=0) call max_mn_name(-q%uu(:,3)   ,idiag_uqzmin,lneg=.true.)
-         if (idiag_uqzmax/=0) call max_mn_name( q%uu(:,3)   ,idiag_uqzmax)
-         if (idiag_uqzm/=0)   call sum_mn_name( q%uu(:,3)   ,idiag_uqzm)
+         call max_mn_name( q%uu(:,3)   ,idiag_uqzmax)
+         call sum_mn_name( q%uu(:,3)   ,idiag_uqzm)
          if (idiag_uqz2m/=0)  call sum_mn_name( q%uu(:,3)**2,idiag_uqz2m)
          if (idiag_uqzrms/=0) call sum_mn_name( q%uu(:,3)**2,idiag_uqzrms,lsqrt=.true.)
 !
-         if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
-         if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uqrms,lsqrt=.true.)
-         if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
+         call sum_mn_name(q%u2,idiag_uq2m)
+         call sum_mn_name(q%u2,idiag_uqrms,lsqrt=.true.)
+         call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
 !
          if (idiag_qtidalmin/=0) call max_mn_name(-q%qtidal,idiag_qtidalmin,lneg=.true.)
-         if (idiag_qtidalmax/=0) call max_mn_name( q%qtidal,idiag_qtidalmax)
-         if (idiag_qtidalm/=0)   call sum_mn_name( q%qtidal,idiag_qtidalm)
+         call max_mn_name( q%qtidal,idiag_qtidalmax)
+         call sum_mn_name( q%qtidal,idiag_qtidalm)
          if (idiag_icount/=0)    call max_mn_name(0*x(l1:l2)+icount_save,idiag_icount)
          if (idiag_residual/=0)  call max_mn_name(0*x(l1:l2)+residual_save,idiag_residual)
 !

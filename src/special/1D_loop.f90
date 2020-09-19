@@ -697,10 +697,9 @@ module Special
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
-        u_spitzer = 7./2.*gamma*chi*( &
-            abs(p%glnTT(:,1))*dx_1(l1:l2) + &
-            abs(p%glnTT(:,2))*dy_1(m)     + &
-            abs(p%glnTT(:,3))*dz_1(n))
+        u_spitzer = 7./2.*gamma*chi*sum(abs(p%glnTT)*dline_1,2)
+!
+! MR: dt1_max should not be used directly here
 !
         dt1_max=max(dt1_max,u_spitzer/cdt)
 !
