@@ -926,12 +926,8 @@ module Testfield
 !
 ! advective and Alfven timestep
 !
-          advec_uu=max(advec_uu,abs(uutest(:,1))*dline_1(:,1)+&
-                                abs(uutest(:,1))*dline_1(:,2)+&
-                                abs(uutest(:,2))*dline_1(:,3))
-          advec_va2=max(advec_va2,((bbtest(:,1)*dx_1(l1:l2))**2+ &
-                                   (bbtest(:,2)*dy_1(  m  ))**2+ &
-                                   (bbtest(:,3)*dz_1(  n  ))**2)*mu01/rho0)
+          advec_uu=max(advec_uu,sum(abs(uutest)*dline_1,2))
+          advec_va2=max(advec_va2,sum((bbtest*dline_1)**2,2)*mu01/rho0)
         endif
       enddo !jtest-loop
 !

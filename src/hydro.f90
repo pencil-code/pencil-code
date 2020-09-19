@@ -3224,32 +3224,12 @@ module Hydro
                        abs(p%uu(:,2))*dline_1(:,2),&
                        abs(p%uu(:,3))*dline_1(:,3))
         else
-          if (.not.lfargo_advection) then
-            advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
-                         abs(p%uu(:,2))*dline_1(:,2)+&
-                         abs(p%uu(:,3))*dline_1(:,3)
+          if (lfargo_advection) then
+            advec_uu=sum(abs(p%uu_advec)*dline_1,2)
           else
-            advec_uu=    abs(p%uu_advec(:,1))*dline_1(:,1)+&
-                         abs(p%uu_advec(:,2))*dline_1(:,2)+&
-                         abs(p%uu_advec(:,3))*dline_1(:,3)
+            advec_uu=sum(abs(p%uu)*dline_1,2)
           endif
         endif
-!        if (lspherical_coords) then
-!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-!        elseif (lcylindrical_coords) then
-!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-!                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-!                   abs(p%uu(:,3))*dz_1(  n  )
-!        else
-!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-!                   abs(p%uu(:,2))*dy_1(  m  )+ &
-!                   abs(p%uu(:,3))*dz_1(  n  )
-!        endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.

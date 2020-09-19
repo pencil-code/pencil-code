@@ -459,7 +459,7 @@ module Density
           fdiff = fdiff + diffrho_hyper3_mesh * penc * dline_1(:,j)
         enddo dir
         if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 &
-                                              + diffrho_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+                                              + diffrho_hyper3_mesh * sum(dline_1,2)
       endif hyper3
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff

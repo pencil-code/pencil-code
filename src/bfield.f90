@@ -1183,19 +1183,7 @@ module Magnetic
       type(pencil_case), intent(in) :: p
       real, dimension(nx) :: advec_va2
 !
-      if (lspherical_coords) then
-        advec_va2 = ((p%bb(:,1) * dx_1(l1:l2))**2 + &
-                     (p%bb(:,2) * dy_1(m) * r1_mn)**2 + &
-                     (p%bb(:,3) * dz_1(n) * r1_mn * sin1th(m))**2) * mu01 * p%rho1
-      elseif (lcylindrical_coords) then
-        advec_va2 = ((p%bb(:,1) * dx_1(l1:l2))**2 + &
-                     (p%bb(:,2) * dy_1(m) * rcyl_mn1)**2 + &
-                     (p%bb(:,3) * dz_1(n))**2) * mu01 * p%rho1
-      else
-        advec_va2 = ((p%bb(:,1) * dx_1(l1:l2))**2 + &
-                     (p%bb(:,2) * dy_1(m))**2 + &
-                     (p%bb(:,3) * dz_1(n))**2) * mu01 * p%rho1
-      endif
+      advec_va2 = sum((p%bb*dline_1)**2,2)  * mu01 * p%rho1
       advec2=advec2+advec_va2
 !
     endsubroutine set_advec_va2
@@ -1318,9 +1306,10 @@ module Magnetic
         enddo comp
         f(l1:l2,m,n,ieex:ieez) = pv
 !       Time-step constraint
+!MR: this to be moved to dbb_dt!
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
-          maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
+          maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * sum(dline_1,2)
         endif timestep
       enddo getd4jj
 !

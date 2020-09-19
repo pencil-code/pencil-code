@@ -921,9 +921,7 @@ module Testflow
 !  check for testflow timestep
 !
           if (lfirst.and.ldt) &
-            advec_uu=max(advec_uu,abs(uutest(:,1))*dline_1(:,1)+ &
-                                  abs(uutest(:,2))*dline_1(:,2)+ &
-                                  abs(uutest(:,3))*dline_1(:,3))
+            advec_uu=max(advec_uu,sum(abs(uutest)*dline_1,2))
         endif
 
         iuxtest=iuxtest+4
