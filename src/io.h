@@ -1,6 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 
   private
+  character(LEN=fnlen) :: snaplink=''
 
   public :: lun_input, lun_output, lcollective_IO, IO_strategy
   public :: register_io, finalize_io

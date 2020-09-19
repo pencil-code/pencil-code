@@ -514,6 +514,7 @@ module Io
 !  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: backskip_to_time
+      use Syscalls, only: islink
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -537,6 +538,8 @@ module Io
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
+!
+      if (islink(varfile_name)) snaplink=varfile_name
 !
       ! open existing HDF5 file and read data
       call file_open_hdf5 (varfile_name, read_only=.true.)
@@ -566,6 +569,7 @@ module Io
 !  12-Oct-2019/PABourdin: moved code from 'input_snap'
 !
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Syscalls, only: system_cmd
 !
       real :: time
       real, dimension (:), allocatable :: gx, gy, gz
@@ -611,6 +615,11 @@ module Io
         call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         call file_close_hdf5
+        if (snaplink/='') then
+          call system_cmd('rm -f '//snaplink)
+          snaplink=''
+        endif
+!
         deallocate (gx, gy, gz)
 !
         call mpibcast_real (time, comm=MPI_COMM_WORLD)

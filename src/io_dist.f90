@@ -48,7 +48,6 @@ module Io
 !
   ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
   integer, parameter :: MINT=1, MAXT=2
-  logical :: snap_is_link=.false.
 !
 ! Indicates if IO is done distributed (each proc writes into a procdir)
 ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
@@ -569,7 +568,8 @@ module Io
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
-      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
+      if (islink(trim(directory_snap)//'/'//trim(file))) &
+        snaplink=trim(directory_snap)//'/'//trim(file)
 !      if (ip<=8) print *, 'read_snap_single: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
 !
@@ -797,7 +797,8 @@ module Io
       if (lserial_io) call start_serialize
 
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
-      snap_is_link = islink(trim(directory_snap)//'/'//trim(file))
+      if (islink(trim(directory_snap)//'/'//trim(file))) &
+        snaplink=trim(directory_snap)//'/'//trim(file)
 !      if (ip<=8) print *, 'read_snap_double: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -995,11 +996,12 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
       use Mpicomm, only: end_serialize
+      use Syscalls, only: system_cmd
 !
-      if (snap_is_link) then
-        close (lun_input, status='DELETE')
-      else
-        close (lun_input)
+      close (lun_input)
+      if (snaplink/='') then
+        call system_cmd('rm -f '//snaplink)
+        snaplink=''
       endif
 
       if (lserial_io) call end_serialize
