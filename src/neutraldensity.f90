@@ -701,9 +701,9 @@ module NeutralDensity
           call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
           fdiff = fdiff + tmp
           if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+ &
-               diffrhon_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
-               diffrhon_hyper3_aniso(2)*dy_1(m)**6 + &
-               diffrhon_hyper3_aniso(3)*dz_1(n)**6
+               diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
+               diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
+               diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
           if (headtt) &
                print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',&
                diffrhon_hyper3_aniso
@@ -772,7 +772,7 @@ module NeutralDensity
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        if (idiag_rhonmxy/=0)    call zsum_mn_name_xy(p%rhon,idiag_rhonmxy)
+        call zsum_mn_name_xy(p%rhon,idiag_rhonmxy)
         call phisum_mn_name_rz(p%lnrhon,idiag_lnrhonmphi)
         call phisum_mn_name_rz(p%rhon,idiag_rhonmphi)
       endif
@@ -780,7 +780,7 @@ module NeutralDensity
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-         if (idiag_rhonmr/=0)    call phizsum_mn_name_r(p%rhon,idiag_rhonmr)
+         call phizsum_mn_name_r(p%rhon,idiag_rhonmr)
          call xysum_mn_name_z(p%rhon,idiag_rhonmz)
          call yzsum_mn_name_x(p%rhon,idiag_rhonmx)
          call xzsum_mn_name_y(p%rhon,idiag_rhonmy)
@@ -789,14 +789,14 @@ module NeutralDensity
 !  Calculate density diagnostics
 !
       if (ldiagnos) then
-        if (idiag_rhonm/=0)     call sum_mn_name(p%rhon,idiag_rhonm)
-        if (idiag_neutralmass/=0)  call sum_lim_mn_name(p%rhon,idiag_neutralmass,p)
+        call sum_mn_name(p%rhon,idiag_rhonm)
+        call sum_lim_mn_name(p%rhon,idiag_neutralmass,p)
         if (idiag_rhonmin/=0) &
             call max_mn_name(-p%rhon,idiag_rhonmin,lneg=.true.)
-        if (idiag_rhonmax/=0)   call max_mn_name(p%rhon,idiag_rhonmax)
+        call max_mn_name(p%rhon,idiag_rhonmax)
         if (idiag_rhon2m/=0)    call sum_mn_name(p%rhon**2,idiag_rhon2m)
         if (idiag_lnrhon2m/=0)  call sum_mn_name(p%lnrhon**2,idiag_lnrhon2m)
-        if (idiag_unglnrhonm/=0) call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
+        call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
         if (idiag_dtnd/=0) &
             call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
       endif

@@ -1308,9 +1308,7 @@ module Dustvelocity
 !  ``uud/dx'' for timestep
 !
           if (lfirst .and. ldt) then
-            advec_uud=abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
-                      abs(p%uud(:,2,k))*dy_1(  m  )+ &
-                      abs(p%uud(:,3,k))*dz_1(  n  )
+            advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
             maxadvec=maxadvec+advec_uud
             if (idiag_dtud(k)/=0) &
                 call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
@@ -1340,26 +1338,22 @@ module Dustvelocity
         do k=1,ndustspec
           if ((headtt.or.ldebug) .and. (ip<6)) &
               print*, 'duud_dt: Calculate diagnostic values...'
-          if (idiag_udrms(k)/=0) &
-              call sum_mn_name(p%ud2(:,k),idiag_udrms(k),lsqrt=.true.)
-          if (idiag_udmax(k)/=0) &
-              call max_mn_name(p%ud2(:,k),idiag_udmax(k),lsqrt=.true.)
-          if (idiag_rdudmax(k)/=0) &
-              call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
-              lsqrt=.true.)
-          if (idiag_ud2m(k)/=0) call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
-          if (idiag_ekintot_dust/=0) &
-             call integrate_mn_name(p%ud2,idiag_ekintot_dust)
-          if (idiag_udxm(k)/=0) call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
-          if (idiag_udym(k)/=0) call sum_mn_name(p%uud(:,2,k),idiag_udym(k))
-          if (idiag_udzm(k)/=0) call sum_mn_name(p%uud(:,3,k),idiag_udzm(k))
+          call sum_mn_name(p%ud2(:,k),idiag_udrms(k),lsqrt=.true.)
+          call max_mn_name(p%ud2(:,k),idiag_udmax(k),lsqrt=.true.)
+          call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
+                           lsqrt=.true.)
+          call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
+          call integrate_mn_name(p%ud2,idiag_ekintot_dust)
+          call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
+          call sum_mn_name(p%uud(:,2,k),idiag_udym(k))
+          call sum_mn_name(p%uud(:,3,k),idiag_udzm(k))
           if (idiag_udx2m(k)/=0) &
               call sum_mn_name(p%uud(:,1,k)**2,idiag_udx2m(k))
           if (idiag_udy2m(k)/=0) &
               call sum_mn_name(p%uud(:,2,k)**2,idiag_udy2m(k))
           if (idiag_udz2m(k)/=0) &
               call sum_mn_name(p%uud(:,3,k)**2,idiag_udz2m(k))
-          if (idiag_udm2(k)/=0) call max_mn_name(p%ud2(:,k),idiag_udm2(k))
+          call max_mn_name(p%ud2(:,k),idiag_udm2(k))
           if (idiag_divud2m(k)/=0) &
               call sum_mn_name(p%divud(:,k)**2,idiag_divud2m(k))
           if (idiag_rdudxm(k)/=0) &
@@ -1369,13 +1363,11 @@ module Dustvelocity
           if (idiag_rdudzm(k)/=0) &
               call sum_mn_name(p%rhod(:,k)*p%uud(:,3,k),idiag_rdudzm(k))
           if (idiag_rdudx2m(k)/=0) &
-              call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
-          if (idiag_odrms(k)/=0) &
-              call sum_mn_name(p%od2(:,1),idiag_odrms(k),lsqrt=.true.)
-          if (idiag_odmax(k)/=0) &
-              call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
-          if (idiag_od2m(k)/=0) call sum_mn_name(p%od2(:,1),idiag_od2m(k))
-          if (idiag_oudm(k)/=0) call sum_mn_name(p%oud(:,1),idiag_oudm(k))
+          call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
+          call sum_mn_name(p%od2(:,1),idiag_odrms(k),lsqrt=.true.)
+          call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
+          call sum_mn_name(p%od2(:,1),idiag_od2m(k))
+          call sum_mn_name(p%oud(:,1),idiag_oudm(k))
         enddo
       endif
 !
@@ -1383,12 +1375,9 @@ module Dustvelocity
 !
       if (l1davgfirst) then
         do k=1,ndustspec
-          if (idiag_udxmz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
-          if (idiag_udymz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
-          if (idiag_udzmz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
+          call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
+          call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
+          call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
           if (idiag_udx2mz(k)/=0) &
               call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
           if (idiag_udy2mz(k)/=0) &
@@ -1402,12 +1391,9 @@ module Dustvelocity
 !
       if (l2davgfirst) then
         do k=1,ndustspec
-          if (idiag_udxmxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
-          if (idiag_udymxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,:,k),idiag_udymxy(k),(/0,1,0/))
-          if (idiag_udzmxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,:,k),idiag_udzmxy(k),(/0,0,1/))
+          call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
+          call zsum_mn_name_xy(p%uud(:,:,k),idiag_udymxy(k),(/0,1,0/))
+          call zsum_mn_name_xy(p%uud(:,:,k),idiag_udzmxy(k),(/0,0,1/))
         enddo
       endif
 !

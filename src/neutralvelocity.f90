@@ -557,8 +557,7 @@ module NeutralVelocity
       if (lpressuregradient) then
          do j=1,3
             jn=j+iuun-1
-            df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) &
-                 -csn20*p%glnrhon(:,j)
+            df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn)-csn20*p%glnrhon(:,j)
          enddo
 !
 ! csn2/dx^2 for timestep
@@ -574,9 +573,7 @@ module NeutralVelocity
 !
 !  ``uun/dx'' for timestep
 !
-        advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
-                  abs(p%uun(:,2))*dy_1(  m  )+ &
-                  abs(p%uun(:,3))*dz_1(  n  )
+        advec_uun=sum(abs(p%uun)*dline_1,2)
         if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
         maxadvec=maxadvec+advec_uun
         if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
@@ -592,21 +589,21 @@ module NeutralVelocity
         if (headtt.or.ldebug) print*,'duun_dt: Calculate maxima and rms values...'
         if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
         if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
-        if (idiag_unrms/=0)   call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
-        if (idiag_unmax/=0)   call max_mn_name(p%un2,idiag_unmax,lsqrt=.true.)
+        call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
+        call max_mn_name(p%un2,idiag_unmax,lsqrt=.true.)
         if (idiag_unzrms/=0) &
             call sum_mn_name(p%uun(:,3)**2,idiag_unzrms,lsqrt=.true.)
         if (idiag_unzrmaxs/=0) &
             call max_mn_name(p%uun(:,3)**2,idiag_unzrmaxs,lsqrt=.true.)
-        if (idiag_unxmax/=0) call max_mn_name(p%uun(:,1),idiag_unxmax)
-        if (idiag_unymax/=0) call max_mn_name(p%uun(:,2),idiag_unymax)
-        if (idiag_unzmax/=0) call max_mn_name(p%uun(:,3),idiag_unzmax)
-        if (idiag_un2m/=0)     call sum_mn_name(p%un2,idiag_un2m)
-        if (idiag_divunm/=0)    call sum_mn_name(p%divun,idiag_divunm)
-        if (idiag_unm2/=0)     call max_mn_name(p%un2,idiag_unm2)
-        if (idiag_unxm/=0)     call sum_mn_name(p%uun(:,1),idiag_unxm)
-        if (idiag_unym/=0)     call sum_mn_name(p%uun(:,2),idiag_unym)
-        if (idiag_unzm/=0)     call sum_mn_name(p%uun(:,3),idiag_unzm)
+        call max_mn_name(p%uun(:,1),idiag_unxmax)
+        call max_mn_name(p%uun(:,2),idiag_unymax)
+        call max_mn_name(p%uun(:,3),idiag_unzmax)
+        call sum_mn_name(p%un2,idiag_un2m)
+        call sum_mn_name(p%divun,idiag_divunm)
+        call max_mn_name(p%un2,idiag_unm2)
+        call sum_mn_name(p%uun(:,1),idiag_unxm)
+        call sum_mn_name(p%uun(:,2),idiag_unym)
+        call sum_mn_name(p%uun(:,3),idiag_unzm)
         if (idiag_unx2m/=0)    call sum_mn_name(p%uun(:,1)**2,idiag_unx2m)
         if (idiag_uny2m/=0)    call sum_mn_name(p%uun(:,2)**2,idiag_uny2m)
         if (idiag_unz2m/=0)    call sum_mn_name(p%uun(:,3)**2,idiag_unz2m)
@@ -623,9 +620,9 @@ module NeutralVelocity
 !  kinetic field components at one point (=pt)
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_unxpt/=0) call save_name(p%uun(lpoint-nghost,1),idiag_unxpt)
-          if (idiag_unypt/=0) call save_name(p%uun(lpoint-nghost,2),idiag_unypt)
-          if (idiag_unzpt/=0) call save_name(p%uun(lpoint-nghost,3),idiag_unzpt)
+          call save_name(p%uun(lpoint-nghost,1),idiag_unxpt)
+          call save_name(p%uun(lpoint-nghost,2),idiag_unypt)
+          call save_name(p%uun(lpoint-nghost,3),idiag_unzpt)
         endif
 !
 !  this doesn't need to be as frequent (check later)
@@ -644,47 +641,46 @@ module NeutralVelocity
         call yzsum_mn_name_x(p%uun(:,1),idiag_unxmx)
         call yzsum_mn_name_x(p%uun(:,2),idiag_unymx)
         call yzsum_mn_name_x(p%uun(:,3),idiag_unzmx)
-        call xysum_mn_name_z(p%uun(:,1)**2,idiag_unx2mz)
-        call xysum_mn_name_z(p%uun(:,2)**2,idiag_uny2mz)
-        call xysum_mn_name_z(p%uun(:,3)**2,idiag_unz2mz)
-        call xzsum_mn_name_y(p%uun(:,1)**2,idiag_unx2my)
-        call xzsum_mn_name_y(p%uun(:,2)**2,idiag_uny2my)
-        call xzsum_mn_name_y(p%uun(:,3)**2,idiag_unz2my)
-        call yzsum_mn_name_x(p%uun(:,1)**2,idiag_unx2mx)
-        call yzsum_mn_name_x(p%uun(:,2)**2,idiag_uny2mx)
-        call yzsum_mn_name_x(p%uun(:,3)**2,idiag_unz2mx)
-        call xysum_mn_name_z(p%uun(:,1)*p%uun(:,2),idiag_unxunymz)
-        call xysum_mn_name_z(p%uun(:,1)*p%uun(:,3),idiag_unxunzmz)
-        call xysum_mn_name_z(p%uun(:,2)*p%uun(:,3),idiag_unyunzmz)
-        call xysum_mn_name_z(p%rhon*p%uun(:,1)*p%uun(:,2),idiag_rnunxunymz)
-        call xzsum_mn_name_y(p%uun(:,1)*p%uun(:,2),idiag_unxunymy)
-        call xzsum_mn_name_y(p%uun(:,1)*p%uun(:,3),idiag_unxunzmy)
-        call xzsum_mn_name_y(p%uun(:,2)*p%uun(:,3),idiag_unyunzmy)
-        call yzsum_mn_name_x(p%uun(:,1)*p%uun(:,2),idiag_unxunymx)
-        call yzsum_mn_name_x(p%uun(:,1)*p%uun(:,3),idiag_unxunzmx)
-        call yzsum_mn_name_x(p%uun(:,2)*p%uun(:,3),idiag_unyunzmx)
+        if (idiag_unx2mz) call xysum_mn_name_z(p%uun(:,1)**2,idiag_unx2mz)
+        if (idiag_uny2mz) call xysum_mn_name_z(p%uun(:,2)**2,idiag_uny2mz)
+        if (idiag_unz2mz) call xysum_mn_name_z(p%uun(:,3)**2,idiag_unz2mz)
+        if (idiag_unx2my) call xzsum_mn_name_y(p%uun(:,1)**2,idiag_unx2my)
+        if (idiag_uny2my) call xzsum_mn_name_y(p%uun(:,2)**2,idiag_uny2my)
+        if (idiag_unz2my) call xzsum_mn_name_y(p%uun(:,3)**2,idiag_unz2my)
+        if (idiag_unx2mx) call yzsum_mn_name_x(p%uun(:,1)**2,idiag_unx2mx)
+        if (idiag_uny2mx) call yzsum_mn_name_x(p%uun(:,2)**2,idiag_uny2mx)
+        if (idiag_unz2mx) call yzsum_mn_name_x(p%uun(:,3)**2,idiag_unz2mx)
+        if (idiag_unxunymz) call xysum_mn_name_z(p%uun(:,1)*p%uun(:,2),idiag_unxunymz)
+        if (idiag_unxunzmz) call xysum_mn_name_z(p%uun(:,1)*p%uun(:,3),idiag_unxunzmz)
+        if (idiag_unyunzmz) call xysum_mn_name_z(p%uun(:,2)*p%uun(:,3),idiag_unyunzmz)
+        if (idiag_rnunxunymz) call xysum_mn_name_z(p%rhon*p%uun(:,1)*p%uun(:,2),idiag_rnunxunymz)
+        if (idiag_unxunymy) call xzsum_mn_name_y(p%uun(:,1)*p%uun(:,2),idiag_unxunymy)
+        if (idiag_unxunzmy) call xzsum_mn_name_y(p%uun(:,1)*p%uun(:,3),idiag_unxunzmy)
+        if (idiag_unyunzmy) call xzsum_mn_name_y(p%uun(:,2)*p%uun(:,3),idiag_unyunzmy)
+        if (idiag_unxunymx) call yzsum_mn_name_x(p%uun(:,1)*p%uun(:,2),idiag_unxunymx)
+        if (idiag_unxunzmx) call yzsum_mn_name_x(p%uun(:,1)*p%uun(:,3),idiag_unxunzmx)
+        if (idiag_unyunzmx) call yzsum_mn_name_x(p%uun(:,2)*p%uun(:,3),idiag_unyunzmx)
 !  phi-z averages
-        if (idiag_un2mr/=0)   call phizsum_mn_name_r(p%un2,idiag_un2mr)
+        call phizsum_mn_name_r(p%un2,idiag_un2mr)
         if (idiag_unrmr/=0) &
              call phizsum_mn_name_r(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmr)
         if (idiag_unpmr/=0) &
              call phizsum_mn_name_r(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmr)
-        if (idiag_unzmr/=0) &
-             call phizsum_mn_name_r(p%uun(:,3),idiag_unzmr)
+        call phizsum_mn_name_r(p%uun(:,3),idiag_unzmr)
       endif
 !
 !  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmphi)
-        call phisum_mn_name_rz(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmphi)
-        call phisum_mn_name_rz(p%uun(:,3),idiag_unzmphi)
+        if (idiag_unrmphi) call phisum_mn_name_rz(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmphi)
+        if (idiag_unpmphi) call phisum_mn_name_rz(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmphi)
+        if (idiag_unzmphi) call phisum_mn_name_rz(p%uun(:,3),idiag_unzmphi)
         call phisum_mn_name_rz(p%un2,idiag_un2mphi)
-        if (idiag_unxmxy/=0) call zsum_mn_name_xy(p%uun(:,1),idiag_unxmxy)
-        if (idiag_unymxy/=0) call zsum_mn_name_xy(p%uun(:,2),idiag_unymxy)
-        if (idiag_unzmxy/=0) call zsum_mn_name_xy(p%uun(:,3),idiag_unzmxy)
-        if (idiag_un2mz/=0)  call zsum_mn_name_xy(p%un2,idiag_un2mz)
+        call zsum_mn_name_xy(p%uun(:,1),idiag_unxmxy)
+        call zsum_mn_name_xy(p%uun(:,2),idiag_unymxy)
+        call zsum_mn_name_xy(p%uun(:,3),idiag_unzmxy)
+        call zsum_mn_name_xy(p%un2,idiag_un2mz)
       endif
 !
     endsubroutine duun_dt
