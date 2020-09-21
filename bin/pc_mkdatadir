@@ -229,6 +229,8 @@ else if (($hn =~ hydra*) && ($USER =~ joernw))then # joern on hydra
   set str='s/u\//ptmp\//g'
 else if (($hn =~ cobra*) && ($USER =~ joernw))then # joern on cobra
   set str='s/u\//ptmp\//g'
+else if (($hn =~ raven*) && ($USER =~ joernw))then # joern on raven
+  set str='s/u\//ptmp\//g'
 else if (($hn =~ draco*) && ($USER =~ joernw))then # joern on draco
   set str='s/u\//ptmp\//g'
 else if (($hn =~ gwdu*) && ($USER =~ jwarnec))then # joern on gwdg
