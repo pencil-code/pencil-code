@@ -2437,25 +2437,25 @@ module Grid
 !      else obsolete
 !
       integer :: nphi
+      real :: tmp
 !
         dline: if (lspherical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = r1_mn * dy_1(m)
+          tmp = sin1th(m) * dz_1(n)
 !
           if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+ncoarse .and. m>=m1) then
-              nphi = mod(int(ncoarse/(m-m1+1)),ncoarse+1)
+            if (lfirst_proc_y .and. m<m1+ncoarse-1 .and. m>=m1) then
+              nphi = int(ncoarse/(m-m1+1))
+              tmp = tmp/nphi
 !if (n==n1) print*, 'first:m,nphi=',m,nphi 
-            elseif (llast_proc_y .and. m>m2-ncoarse .and. m<=m2) then
-              nphi = mod(int(ncoarse/(m2-m+1)),ncoarse+1)
+            elseif (llast_proc_y .and. m>m2-ncoarse+1 .and. m<=m2) then
+              nphi = int(ncoarse/(m2-m+1))
+              tmp = tmp/nphi
 !if (n==n1) print*, 'last:m,nphi=',m,nphi 
-            else
-              nphi = 1
             endif
-            dline_1(:,3) = r1_mn * sin1th(m) * dz_1(n)/nphi
-          else
-            dline_1(:,3) = r1_mn * sin1th(m) * dz_1(n)
           endif
+          dline_1(:,3) = r1_mn * tmp
 !
         else if (lcylindrical_coords) then dline
           dline_1(:,1) = dx_1(l1:l2)
