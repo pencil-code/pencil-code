@@ -26,7 +26,7 @@ module solid_cells_ogrid_cdata
 !  Boundary condition
   logical :: SBP=.true.
   logical :: BDRY5=.false.
-  logical :: SBP_optimized=.false.
+  logical :: SBP_optimized=.false., SBP_reduced_to2=.false.
 !  Filtering
   logical :: lfilter_solution=.false.
   logical :: lfilter_rhoonly=.false.

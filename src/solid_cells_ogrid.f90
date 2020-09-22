@@ -45,7 +45,7 @@ module Solid_Cells
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
-      interpolation_method, lock_dt, lexpl_rho, &
+      interpolation_method, lock_dt, lexpl_rho, SBP_reduced_to2, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, interp_shift, llin_BC, lnonegative_Yk, &
       particle_interpolate, lparticle_uradonly, lsinus_spec_distr, &
@@ -57,7 +57,7 @@ module Solid_Cells
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
-      SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
+      SBP, BDRY5, lrk_tvd, SBP_optimized, SBP_reduced_to2, lexpl_rho, &
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
       solid_reactions_intro_time, &
@@ -310,8 +310,8 @@ module Solid_Cells
         if(lroot) print*, 'Cylinder boundary condition: Fifth order boundary closures'
         SBP=.false.
       elseif(SBP) then
-        if(lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
-        if(.not. SBP_optimized) then
+        if(.not. SBP_optimized .and. .not. SBP_reduced_to2) then
+          if(lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
           D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
                          -33311./27298.  , 16863./27298.   , -15025./163788. , &
                          0.              , 0.              , 0.              /)
@@ -348,6 +348,44 @@ module Solid_Cells
           D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
                          -54899./131403. ,  820271./525612., -117600./43801. , &
                          64800./43801.   , -6480./43801.   , 480./43801.     /)
+	elseif(SBP_reduced_to2) then
+          if(lroot) print*, 'Cylinder boundary condition: Second order SBP boundary closures'
+          D1_SBP(1,:)=(/-24./17.         , 59./34.         , -4./17.      , &
+                        -3./34.          , 0.              , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D1_SBP(2,:)=(/-1./2.           , 0.              , 1./2.        , &
+                         0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D1_SBP(3,:)=(/ 4./43.          , -59./86.        , 0.           , &
+                         59./86.         , -4./43.         , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D1_SBP(4,:)=(/ 3./98.          , 0.              , -59./98.     , &
+                         0.              , 32./49.         , -4./49.      , &
+                         0.              , 0.              , 0.              /)
+          D1_SBP(5,:)=(/ 0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D1_SBP(6,:)=(/ 0.              , 0. 		   , 0.           , &
+                         0. 		 , 0.		   , 0.           , &
+                         0.   		 , 0.		   , 0.		     /)
+          D2_SBP(1,:)=(/ 2.  		 ,-5.		   , 4. 	  , &
+                         -1. 		 , 0.   	   , 0.  	  , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(2,:)=(/ 1.     	 ,-2.	           , 1.   	  , &
+                         0.      	 , 0.    	   , 0. 	  , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(3,:)=(/ -4./43.         , 59./43.	   , -110./43.	  , &
+                         59./43.         ,-4./43.	   , 0.   	  , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(4,:)=(/-1./49.          , 0.		   , 59./49.	  , &
+                         -118./49.  	 , 64./49.	   , -4./49.	  , &
+                         0.	         , 0.              , 0.              /)
+          D2_SBP(5,:)=(/ 0.              , 0. 		   , 0.           , &
+                         0. 		 , 0.		   , 0.           , &
+                         0.   		 , 0.		   , 0.		     /)
+          D2_SBP(6,:)=(/ 0.              , 0. 		   , 0.           , &
+                         0. 		 , 0.		   , 0.           , &
+                         0.   		 , 0.		   , 0.		     /)
         else
           D1_SBP(1,1) = -21600./13649.; D1_SBP(1,2) = 81763./40947.;  D1_SBP(1,3) = 131./27298. 
           D1_SBP(1,4) = -9143./13649.;  D1_SBP(1,5) = 20539./81894.;  D1_SBP(1,6) = 0. 
@@ -434,11 +472,8 @@ module Solid_Cells
       if(lroot) then
         if(interpolation_method==1) then
           print*, 'interpolation_method==1: Linear interpolation used'
-        elseif(interpolation_method==2) then
-          print*, 'interpolation_method==2: Quadratic spline interpolation used'
         elseif(interpolation_method==3) then
           print*, 'interpolation_method==3: Quadratic spline interpolation for velocities, T and species'
-          print*, '                       : Linear interpolation for density'
         elseif(interpolation_method==5) then
           print*, 'interpolation_method==5: Polynomial interpolation'
           print*, 'WARNING                : ONLY SERIAL AT THE MOMENT!!'
@@ -719,8 +754,8 @@ module Solid_Cells
                     f_ogrid(i,j,:,ichemspec(2))=f_ogrid(i,j,:,ichemspec(2))-f_ogrid(i,j,:,ichemspec(5))
                   endif
                 endif
-                ! Do not set dp/dr = 0 at the cylinder surface when heter. reactions
-                if (lreac_heter) lexpl_rho = .false.
+                ! Never compute explicit BC for density with chemistry
+                lexpl_rho = .false.
            !   endif
             endif
           endif
@@ -942,10 +977,8 @@ module Solid_Cells
 !
       if(interpolation_method==1) then
         inter_len=2    
-      elseif(interpolation_method==2 .or. interpolation_method==3) then
+      elseif(interpolation_method==3) then
         inter_len=3
-   !   elseif(interpolation_method==4) then
-   !     inter_len=5
       elseif(interpolation_method==5) then
         inter_len=interpol_order_poly
       elseif(mod(interpolation_method,2)==0) then
@@ -1791,7 +1824,7 @@ module Solid_Cells
     if(interpolation_method==1) then
       nbuf_farr(1:3)=2
       ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
-    elseif(interpolation_method==2 .or. interpolation_method==3) then
+    elseif(interpolation_method==3) then
       nbuf_farr(1:3)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
     elseif(interpolation_method==5) then
@@ -1938,7 +1971,7 @@ module Solid_Cells
     if(interpolation_method==1) then
       nbuf_farr(1:3)=2
       ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
-    elseif(interpolation_method==2 .or. interpolation_method==3) then
+    elseif(interpolation_method==3) then
       nbuf_farr(1:3)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
     elseif(interpolation_method==5) then
@@ -2135,8 +2168,6 @@ module Solid_Cells
       if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
-    elseif(interpolation_method==2) then
-      call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     elseif(mod(interpolation_method,2)==0) then
       if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange','interpolation from cartesian to curvilinear')
@@ -2221,8 +2252,6 @@ module Solid_Cells
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
-    elseif(interpolation_method==2) then
-      call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     elseif(mod(interpolation_method,2)==0) then
       if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange','interpolation from curvilinear to cartesian')
@@ -2335,7 +2364,7 @@ module Solid_Cells
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
-    elseif(interpolation_method==2) then
+    elseif(interpolation_method==3) then
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     elseif(mod(interpolation_method,2)==0) then
       if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
@@ -4571,18 +4600,18 @@ module Solid_Cells
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
-          if (lfilter_TT) then
+          if (iTT .ne. 0) then
              call set_ghosts_onesided_ogrid(iTT)
           endif
           call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
-          if (lchemistry) then
-            do k = 1,nchemspec
-              call set_ghosts_onesided_ogrid(ichemspec(k))
-            enddo
-          endif
-          if (lchemistry) call fatal_error('boundconds_x_ogrid', &
-          'chemistry BCs set correctly only when SBP=T')
+	  if (lchemistry) then
+	    do k = 1,nchemspec
+		call set_ghosts_onesided_ogrid(ichemspec(k))
+	    enddo
+	  endif
+      !    if (lreac_heter) call fatal_error('boundconds_x_ogrid', &
+      !    'chemistry BCs set correctly only when SBP=T')
         endif
         !if(lupw_lnrho) then
         !  if(lexpl_rho) call bval_from_neumann_upw_ogrid
@@ -7688,8 +7717,7 @@ module Solid_Cells
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
           if(interpolation_method==1) then
             r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interp_shift
-          elseif (interpolation_method==2 .or. interpolation_method==3 &
-                 .or. interpolation_method==5) then
+          elseif (interpolation_method==3 .or. interpolation_method==5) then
             r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interp_shift
             if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
@@ -7701,13 +7729,6 @@ module Solid_Cells
             if(interpolation_method==5) then
               print*, 'WARNING: Polynomal interpolation used, you better know what you are doing!'
             endif
- !         elseif (interpolation_method==4) then
- !           r_int_outer=r_ogrid-dx_outer*1.51-dx_outer*interp_shift
- !           if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
- !             print*, 'WARNING: An error occured when setting interpolation zone.'
- !             print*, '         Zone adjusted.'
- !             r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interp_shift
- !           endif
           elseif (mod(interpolation_method,2)==0) then
             r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)
           !  r_int_outer=min(r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01),&

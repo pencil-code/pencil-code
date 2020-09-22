@@ -555,7 +555,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if(lfirst_proc_x) then
             if(SBP) then
               call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
-              i=6
+              if (.not. SBP_reduced_to2) then
+		i=6
+	      else
+		i=4
+	      endif
             elseif(BDRY5) then
               call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df(1:3))
               i=3
@@ -632,7 +636,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if(lfirst_proc_x) then
             if(SBP) then
               call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid),df(1:6))
-              i=6
+	      if (.not. SBP_reduced_to2) then
+		i=6
+	      else
+		i=4
+	      endif
             elseif(BDRY5) then
               call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid),df(1:3))
               i=3
@@ -703,7 +711,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if(lfirst_proc_x) then
             if(SBP) then
               call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
-              i=6
+	      if (.not. SBP_reduced_to2) then
+		i=6
+	      else
+		i=4
+	      endif
             elseif(BDRY5) then
               call der2_ogrid_bdry5(f(l1_ogrid:l1_ogrid+6,m_ogrid,n_ogrid,k),df2(1:3))
               !call der2_ogrid_bdry5_alt(f,df2(1:3),k)
@@ -839,7 +851,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
             if(lfirst_proc_x) then
               if(SBP) then
-                ii=6
+	        if (.not. SBP_reduced_to2) then
+		  ii=6
+	        else
+		  ii=4
+	        endif
                 call der_ijm_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
@@ -906,7 +922,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
             if(lfirst_proc_x) then
               if(SBP) then
-                ii=6
+	        if (.not. SBP_reduced_to2) then
+		  ii=6
+	        else
+		  ii=4
+	        endif
                 call der_ijn_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
@@ -1004,7 +1024,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
         if(lfirst_proc_x) then
           if(SBP) then
-            df(1:6)=0.
+	    if (.not. SBP_reduced_to2) then
+              df(1:6)=0.
+	    else
+              df(1:4)=0.
+	    endif
           elseif(BDRY5) then
             df(1:3)=0.
           endif
@@ -1143,6 +1167,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                           +21*f_ogrid(k+5,:,:,ivar) &
                            -7*f_ogrid(k+6,:,:,ivar) &
                              +f_ogrid(k+7,:,:,ivar)
+
       enddo
     endsubroutine set_ghosts_onesided_ogrid
 !***********************************************************************
@@ -1155,6 +1180,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  jan-19/Eva: added BC for chemistry
 !
       real :: val=0.
+      real, dimension (my_ogrid, mz_ogrid) :: mdot_c,diff_coeff
       integer :: k,j
 
       k=l1_ogrid
@@ -1167,15 +1193,34 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                                                  -  10.*f_ogrid(k+6,:,:,irho) )/147.
       endif
       if (lchemistry) then
-        do j = 1,nchemspec
-          f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
-                                               - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
-                                               + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
-                                               - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
-                                               +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
-                                               -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
-        enddo
+	if (.not. lreac_heter) then
+          do j = 1,nchemspec
+            f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+						 	     - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+							     + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+							     - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+							     +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+							     -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
+          enddo
+        else
+
+! if heterogeneous reactions grad(Y_k) = (-mdot_c*Y_k-m_k)/(rho*D_k)
+!
+          mdot_c = heter_reaction_rate(:,:,nchemspec+1)
+          do j = 1,nchemspec
+            diff_coeff = f_ogrid(k,:,:,iviscosity)*Pr_number1*Lewis_coef1(j)
+	    f_ogrid(k,:,:,ichemspec(j)) = (heter_reaction_rate(:,:,j)*60.*dx_ogrid/(f_ogrid(k,:,:,irho)*diff_coeff) &
+					+ 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+					- 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+					+ 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+					- 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+					+  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+					-  10.*f_ogrid(k+6,:,:,ichemspec(j))) &
+					/147./(1.-mdot_c*60.*dx_ogrid/(147.*f_ogrid(k,:,:,irho)*diff_coeff))
+          enddo
+        endif
       endif
+!
 
     endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
@@ -1193,7 +1238,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
       integer :: k, j, i, l
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      real, dimension (my_ogrid, mz_ogrid) :: df_surf, grad_lnR, dR, diff_coeff, mdot_c
+      real, dimension (my_ogrid, mz_ogrid) :: df_surf, dR, diff_coeff, mdot_c
       real, dimension (my_ogrid, mz_ogrid) :: first_term
 !
       k=l1_ogrid
@@ -1210,14 +1255,6 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
         else if (iTT>0) then
           call der_ogrid_SBP_surf(f_og,df_surf,iTT)
-          if (lchemistry) then
-            call der_ogrid_SBP_surf(f_og,dR,iRR)
-            grad_lnR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid) &
-                = dR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid)&
-                /f_og(k,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iRR)
-          else
-            grad_lnR = 0   
-          endif
           f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
               D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
               D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
@@ -1226,7 +1263,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
               D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/ &
-              (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT) + grad_lnR)
+              (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT))
         else
           call fatal_error('solid_cells_ogrid','temperature SBP index not found')
         endif
@@ -1299,7 +1336,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           endif
         ! The below is the proper expression for the line above if gradM is accounted for in equations
         ! (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c - diff_coeff*f_og(k,:,:,irho)*grad_lnR)
-        ! If this is used remember to take grad_lnR outside lexpl_rho condition
+        ! If this is used remember to compute grad_lnR :
+	!        call der_ogrid_SBP_surf(f_og,dR,iRR)
+	!        grad_lnR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid) &
+	!            = dR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid)&
+	!            /f_og(k,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iRR)
         enddo
       endif
 !
