@@ -57,21 +57,15 @@ def common_factors(nx, ny, nz, nmin=8):
     return xdivisors, ydivisors, zdivisors
 
 def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
-                quiet=True):
+                quiet=True,size=1):
     xdiv, ydiv, zdiv = common_factors(nx,ny,nz,nmin=nmin)
     
-    #fft_xyz_parallel removes need for x constraint
-    #lpower = False
-    #if len(par) > 0:
-    #    if par['lpower_spectrum']:
-    #        lpower = True
-    #if lpower:
-    #    xdiv = [1]
     nvar=mvar+maux
     #size of farray in MB
     nsize=8*nvar*nx*ny*nz/1024**2
     ncpu_max = int(nsize/MBmin)+1
-    nprocyz_max = int(nsize/MBmin)+1
+    if size > 1:
+        ncpu_max = min(size,ncpu_max)
     print('ncpu_max',ncpu_max)
     cpu_list=list()
     for div in (xdiv,ydiv,zdiv):
@@ -81,6 +75,7 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
                 tmp.append(nt)
         cpu_list.append(tmp)
     xdiv, ydiv, zdiv = cpu_list
+    print('cpu_list',cpu_list)
     ncpu_list=list()
     int_ncpu_max = 1
     ncpu_list.append(1)
@@ -88,10 +83,10 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
         for div in div_list:
             if not quiet:
                 print(div, ncpu_list[-1])
-            if div*int_ncpu_max < ncpu_max:
+            if div*int_ncpu_max <= ncpu_max:
                 int_ncpu_max = max(int_ncpu_max,div*int_ncpu_max)
             for cpu in ncpu_list:
-                if div*cpu < ncpu_max:
+                if div*cpu <= ncpu_max:
                     int_ncpu_max = max(int_ncpu_max, div*cpu)
             ncpu_list.append(int_ncpu_max)
             if not quiet:
@@ -102,30 +97,31 @@ def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
     #    nprocyz_max = min(ncpu_max,max(ny,nz))
     #    ncpu_max = min(ncpu_max,max(ny,nz))
     print('ncpu_max divisible',ncpu_max)
-    nprocx = max(xdiv)
-    nprocy = max(ydiv)
+    nprocx = 1
+    nprocy = 1
     nprocz = 1
-    nprocz_last = 1
+    nprocx_last = 1
     nprocy_last = 1
+    nprocz_last = 1
     for iprocx in xdiv:
         for iprocy in ydiv:
             for iprocz in zdiv:
-                if np.mod(ncpu_max,iprocz*nprocy*nprocx) == 0:
-                    nprocz = min(nz/iprocz,ncpu_max/nprocy/nprocx,nprocyz_max/nprocy)
-                    if nprocz_last > nprocz:
-                        nprocz = nprocz_last
-                    nprocz_last = nprocz
-                if not quiet:
-                    print('nprocx {}, nprocy {}, nprocz {}, iprocz {}'.format(nprocx,nprocy,nprocz,iprocz))
-            if np.mod(ncpu_max,nprocz*iprocy*nprocx) == 0:
-                nprocy = min(ny/iprocy,ncpu_max/nprocz/nprocx)
-                if nprocy_last > nprocy:
-                    nprocy = nprocy_last
-                nprocy_last = nprocy
-            if not quiet:
-                print('nprocx {}, nprocy {}, nprocz {}, iprocy {}'.format(nprocx,nprocy,nprocz,iprocy))
-        if np.mod(ncpu_max,nprocz*nprocy*iprocx) == 0:
-            nprocx = min(nx/iprocx,ncpu_max/nprocz/nprocy/iprocx,iprocx)
-        if not quiet:
-            print('nprocx {}, nprocy {}, nprocz {}, iprocx {}'.format(nprocx,nprocy,nprocz,iprocx))
+                if np.mod(ncpu_max,nprocx_last*nprocy_last*iprocz) == 0:
+                    nprocz = min(nz/iprocz,ncpu_max/nprocx_last/nprocy_last)
+                    if iprocz*iprocy*iprocx <= ncpu_max:
+                        nprocz_last = nprocz
+                    if not quiet:
+                        print('iprocz {}, iprocy {}, iprocx {}, nprocz_last {}, nprocy_last {}, nprocx_last {}'.format(
+                           iprocz,iprocy,iprocx,nprocz_last,nprocy_last,nprocx_last))
+            if np.mod(ncpu_max,nprocx_last*iprocy*iprocz) == 0:
+                nprocy = min(ny/iprocy,ncpu_max/iprocz/nprocx_last)
+                if iprocz*iprocy*iprocx <= ncpu_max:
+                    nprocy_last = nprocy
+        if np.mod(ncpu_max,iprocx*iprocy*iprocz) == 0:
+            nprocx = min(nx/iprocx,ncpu_max/iprocz/iprocy)
+            if iprocz*iprocy*iprocx <= ncpu_max:
+                nprocx_last = nprocx
+    nprocx = nprocx_last
+    nprocy = nprocy_last
+    nprocz = nprocz_last
     return [xdiv, ydiv, zdiv], [int(nprocx), int(nprocy), int(nprocz)]
