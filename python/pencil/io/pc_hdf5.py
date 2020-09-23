@@ -16,6 +16,7 @@ import h5py
 import numpy as np
 from . import mkdir
 from os.path import exists, join
+from os import remove
 import subprocess as sub
 
 #==============================================================================
@@ -43,21 +44,16 @@ def open_h5(filename, status, driver=None, comm=None, overwrite=False,
                    str.strip(fname,'.dat')+'.h5 on path '+path)
         fname = str.strip(fname,'.dat')+'.h5'
     mkdir(path, rank=rank, lfs=lfs, MB=MB, count=count)
-    if exists(join(path,fname)):
-        if status == 'w' and not overwrite:
-            if exists(join(path,'movefnametobak')):
-                while exists(join(path,'movefnametobak')):
+    if status == 'w' and exists(join(path,fname)):
+        if not overwrite:
+            try:
+                cmd = 'mv '+join(path,fname)+' '+join(path,fname+'.bak')
+                process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                output, error = process.communicate()
+                print(cmd,output,error)
+            except:
+                while exists(join(path,fname)):
                     pass
-            else:
-                try:
-                    open(join(path,'movefnametobak','a')).close()
-                    cmd = 'mv '+join(path,fname)+' '+join(path,fname+'.bak')
-                    process = sub.Popen(cmd.split(),stdout=sub.PIPE)
-                    output, error = process.communicate()
-                    print(cmd,output,error)
-                except:
-                    while not exists(join(path,fname)):
-                        pass
     if comm:
         if not driver:
             driver = 'mpio'
@@ -96,7 +92,8 @@ def group_h5(h5obj, groupname, status='r', delete=False, overwrite=False,
             try:
                 h5obj.__delitem__(groupname)
             except:
-                pass
+                while h5obj.__contains__(groupname):
+                    pass
             if np.mod(rank,size) == 0:
                  print('group_h5: '+groupname+' deleted from '+h5obj.filename)
             if not delete:
@@ -160,7 +157,8 @@ def dataset_h5(h5obj, dataname, status='r', data=None, shape=None, dtype=None,
             try:
                 h5obj.__delitem__(dataname)
             except:
-                pass
+                while h5obj.__contains__(dataname):
+                    pass
             if np.mod(rank,size) == 0:
                 print('dataset_h5: '+dataname+' deleted from '+h5obj.name)
             if not delete:
