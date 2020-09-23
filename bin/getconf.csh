@@ -789,7 +789,8 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set local_binary = 0
 #--------------------------------------------------
 #else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
-else if (($hn =~ r*c*)) then
+#else if (($hn =~ r*c*)) then
+else if (($hn =~ r*c*.puhti.csc.fi)) then
   echo "Puhti - CSC, Kajaani, Finland"
   set mpirun = 'srun'
   set npops = "-n $ncpus"
