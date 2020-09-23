@@ -14,7 +14,7 @@ from ..math.derivatives import div, curl, curl2, grad, del2, del6
 import numpy as np
 
 def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
-                   lmix=True):
+                   lmix=True, quiet=True):
     """
     Computes the fluid Reynolds number from the advective and effective
     viscous expressions in the momentum equation.
@@ -215,7 +215,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
     return Re
 
 def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
-                      nghost=3, lmix=True):
+                      nghost=3, lmix=True, quiet=True):
     """
     Computes the magnetic Reynolds number from the advective and effective
     resistive expressions in the induction equation.
