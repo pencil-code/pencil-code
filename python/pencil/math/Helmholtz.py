@@ -12,7 +12,8 @@ from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, grad
 
 def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
-                  lno_mean=False, nonperi_bc=None, field_scalar=[], s=None):
+                  lno_mean=False, nonperi_bc=None, field_scalar=[], s=None,
+                  quiet=True):
     """
     Creates the decomposition vector pair for the supplied vector field.
 
@@ -142,17 +143,24 @@ def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
         if rot:
             rot2 *= field_scalar[nghost:-nghost,nghost:-nghost,nghost:-nghost]
     if rot and not pot:
-        print('mean total field energy {} mean rotational energy {}'.format(
-              np.mean(field2), np.mean(rot2)))
+        if not quiet:
+            print(
+            'mean total field energy {} mean rotational energy {}'.format(
+            np.mean(field2), np.mean(rot2)))
     elif pot and not rot:
-        print('mean total field energy {} mean irrotational energy {}'.format(
-              np.mean(field2), np.mean(pot2)))
+        if not quiet:
+            print(
+            'mean total field energy {} mean irrotational energy {}'.format(
+            np.mean(field2), np.mean(pot2)))
     elif rot and pot: 
-        print('mean total field energy {} mean summed component energy {}'.format(
-              np.mean(field2), np.mean(rot2+pot2)))
+        if not quiet:
+            print(
+            'mean total field energy {} mean summed component energy {}'.format(
+            np.mean(field2), np.mean(rot2+pot2)))
     #check div and curl approximate/equal zero
     if pot:
-        print('Max {} and mean {} of abs(curl(pot field))'.format(
+        if not quiet:
+            print('Max {} and mean {} of abs(curl(pot field))'.format(
               max(grid.dx, grid.dy, grid.dz)*amp_field_1*
               np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
                  )[nghost:-nghost,nghost:-nghost,nghost:-nghost].max(),
@@ -160,7 +168,8 @@ def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
               np.sqrt(dot2(curl(pot_field, grid.dx, grid.dy, grid.dz))
                  )[nghost:-nghost,nghost:-nghost,nghost:-nghost].mean()))
     if rot:
-        print('Max {} and mean {} of abs(div(rot field))'.format(
+        if not quiet:
+            print('Max {} and mean {} of abs(div(rot field))'.format(
               max(grid.dx, grid.dy, grid.dz)*amp_field_1*
               np.abs(div(rot_field, grid.dx, grid.dy, grid.dz)
              )[nghost:-nghost,nghost:-nghost,nghost:-nghost].max(),
