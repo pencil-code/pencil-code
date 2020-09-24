@@ -23,6 +23,7 @@ from fileinput import input
 from sys import stdout
 import subprocess as sub
 from .. import read 
+import os
 
 def is_vector(key):
     """Check if the variable denoted by the label key is a vector.
@@ -96,18 +97,16 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
     else:
         nchunks = [1,1,1]
     print('nchunks {}'.format(nchunks)) 
-    allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # for mpi split chunks across processes
     if size > 1:
-        #allchunks = np.arange(nchunks[0]*nchunks[1]*nchunks[2])
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
-        #ichunks = np.array_split(allchunks,size)
         indx = [locindx[np.mod(rank+int(rank/nchunks[2])
                                    +int(rank/nchunks[1]),nchunks[0])]]
         indy = [locindy[np.mod(rank+int(rank/nchunks[2]),nchunks[1])]]
         indz = [locindz[np.mod(rank,nchunks[2])]]
+        allchunks = 1
     else:
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
@@ -115,6 +114,7 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
         indx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         indy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
         indz = np.array_split(np.arange(nz)+nghost,nchunks[2])
+        allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # save time
     dataset_h5(dst, 'time', status=status, data=src['time'][()],
                           comm=comm, size=size, rank=rank,
@@ -138,69 +138,72 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
                           comm=comm, size=size, rank=rank,
                           overwrite=overwrite, dtype=dtype)
             print('writing '+key+' shape {}'.format([mz,my,mx]))
-        for iz in indz:
-            n1, n2 = iz[ 0]-nghost,\
-                     iz[-1]+nghost+1
-            n1out = n1+nghost
-            n2out = n2-nghost
-            varn1 =  nghost
-            varn2 = -nghost
-            if iz[0] == locindz[0][0]:
-                n1out = 0
-                varn1 = 0
-            if iz[-1] == locindz[-1][-1]:
-                n2out = n2
-                varn2 = n2
-            for iy in indy:
-                m1, m2 = iy[ 0]-nghost,\
-                         iy[-1]+nghost+1
-                m1out = m1+nghost
-                m2out = m2-nghost
-                varm1 =  nghost
-                varm2 = -nghost
-                if iy[0] == locindy[0][0]:
-                    m1out = 0
-                    varm1 = 0
-                if iy[-1] == locindy[-1][-1]:
-                    m2out = m2
-                    varm2 = m2
-                for ix in indx:
-                    l1, l2 = ix[ 0]-nghost,\
-                             ix[-1]+nghost+1
-                    l1out = l1+nghost
-                    l2out = l2-nghost
-                    varl1 =  nghost
-                    varl2 = -nghost
-                    if ix[0] == locindx[0][0]:
-                        l1out = 0
-                        varl1 = 0
-                    if ix[-1] == locindx[-1][-1]:
-                        l2out = l2
-                        varl2 = l2
-                    if not quiet:
-                        print('remeshing '+key+' chunk {}'.format(
-                               [iz,iy,ix]))
-                    var = calc_derived_data(src['data'], dst['data'],
-                          key, par, gd, l1, l2, m1, m2, n1, n2, nghost=nghost)
-                    #print('var shape {}'.format(var.shape))
-                    #if not quiet:
-                    #    print('writing '+key+
-                    #                   ' shape {} chunk {}'.format(
-                    #                         var.shape, [iz,iy,ix]))
-                    if is_vector(key):
-                         dst['data'][key][:,n1out:n2out,
-                                            m1out:m2out,
-                                            l1out:l2out] = dtype(var[:,
-                                                     varn1:varn2,
-                                                     varm1:varm2,
-                                                     varl1:varl2])
-                    else:
-                        dst['data'][key][n1out:n2out,
-                                         m1out:m2out,
-                                         l1out:l2out] = dtype(var[
-                                                     varn1:varn2,
-                                                     varm1:varm2,
-                                                     varl1:varl2])
+        for ichunk in range(allchunks):
+            for iz in [indz[np.mod(ichunk,nchunks[2])]]:
+                n1, n2 = iz[ 0]-nghost,\
+                         iz[-1]+nghost+1
+                n1out = n1+nghost
+                n2out = n2-nghost
+                varn1 =  nghost
+                varn2 = -nghost
+                if iz[0] == locindz[0][0]:
+                    n1out = 0
+                    varn1 = 0
+                if iz[-1] == locindz[-1][-1]:
+                    n2out = n2
+                    varn2 = n2
+                for iy in [indy[np.mod(ichunk+
+                                   int(ichunk/nchunks[2]),nchunks[1])]]:
+                    m1, m2 = iy[ 0]-nghost,\
+                             iy[-1]+nghost+1
+                    m1out = m1+nghost
+                    m2out = m2-nghost
+                    varm1 =  nghost
+                    varm2 = -nghost
+                    if iy[0] == locindy[0][0]:
+                        m1out = 0
+                        varm1 = 0
+                    if iy[-1] == locindy[-1][-1]:
+                        m2out = m2
+                        varm2 = m2
+                    for ix in [indx[np.mod(ichunk+int(ichunk/nchunks[2])
+                                   +int(ichunk/nchunks[1]),nchunks[0])]]:
+                        l1, l2 = ix[ 0]-nghost,\
+                                 ix[-1]+nghost+1
+                        l1out = l1+nghost
+                        l2out = l2-nghost
+                        varl1 =  nghost
+                        varl2 = -nghost
+                        if ix[0] == locindx[0][0]:
+                            l1out = 0
+                            varl1 = 0
+                        if ix[-1] == locindx[-1][-1]:
+                            l2out = l2
+                            varl2 = l2
+                        if not quiet:
+                            print('remeshing '+key+' chunk {}'.format(
+                                   [iz,iy,ix]))
+                        var = calc_derived_data(src['data'], dst['data'],
+                              key, par, gd, l1, l2, m1, m2, n1, n2, nghost=nghost)
+                        #print('var shape {}'.format(var.shape))
+                        #if not quiet:
+                        #    print('writing '+key+
+                        #                   ' shape {} chunk {}'.format(
+                        #                         var.shape, [iz,iy,ix]))
+                        if is_vector(key):
+                             dst['data'][key][:,n1out:n2out,
+                                                m1out:m2out,
+                                                l1out:l2out] = dtype(var[:,
+                                                         varn1:varn2,
+                                                         varm1:varm2,
+                                                         varl1:varl2])
+                        else:
+                            dst['data'][key][n1out:n2out,
+                                             m1out:m2out,
+                                             l1out:l2out] = dtype(var[
+                                                         varn1:varn2,
+                                                         varm1:varm2,
+                                                         varl1:varl2])
 #==============================================================================
 def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                       nghost=3):

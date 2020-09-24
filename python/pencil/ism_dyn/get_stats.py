@@ -55,23 +55,16 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
     else:
         nchunks = [1,1,1]
     print('nchunks {}'.format(nchunks)) 
-    allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # for mpi split chunks across processes
     if size > 1:
-        #allchunks = np.arange(nchunks[0]*nchunks[1]*nchunks[2])
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
-        #ichunks = np.array_split(allchunks,size)
-        indx = [locindx[np.mod(rank,nchunks[0])]]
-        indy = [locindy[np.mod(rank,nchunks[1])]]
+        indx = [locindx[np.mod(rank+int(rank/nchunks[2])
+                                   +int(rank/nchunks[1]),nchunks[0])]]
+        indy = [locindy[np.mod(rank+int(rank/nchunks[2]),nchunks[1])]]
         indz = [locindz[np.mod(rank,nchunks[2])]]
-        if rank >= nchunks[2]:
-            indy = [locindy[np.mod(rank+1,nchunks[1])]]
-        if rank >= nchunks[1]:
-            indx = [locindx[np.mod(rank+1,nchunks[0])]]
-            if rank >= nchunks[2]:
-                indx = [locindx[np.mod(rank+2,nchunks[0])]]
+        allchunks = 1
     else:
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
@@ -79,6 +72,7 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
         indx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
         indy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
         indz = np.array_split(np.arange(nz)+nghost,nchunks[2])
+        allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # ensure derived variables are in a list
     if isinstance(stat_keys, list):
         stat_keys = stat_keys
@@ -96,72 +90,75 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
         mean_nmsk = list()
         stdv_nmsk = list()
         nmask_nmk = list()
-        for iz in indz:
-            n1, n2 = iz[ 0],\
-                     iz[-1]+1
-            for iy in indy:
-                m1, m2 = iy[ 0],\
-                         iy[-1]+1
-                for ix in indx:
-                    l1, l2 = ix[ 0],\
-                             ix[-1]+1
-                    if key in src['data'].keys():
-                        var = src['data'][key][n1:n2,m1:m2,l1:l2]
-                    elif key == 'uu' or key == 'aa':
-                        tmp = np.array(
-                              [src['data'][key[0]+'x'][n1:n2,m1:m2,l1:l2],
-                               src['data'][key[0]+'y'][n1:n2,m1:m2,l1:l2],
-                               src['data'][key[0]+'z'][n1:n2,m1:m2,l1:l2]])
-                        var = np.sqrt(dot2(tmp))
-                    else:
-                        if key in dst['data'].keys():
-                            if is_vector(key):
-                                var = np.sqrt(dot2(
-                                    dst['data'][key][:,n1:n2,m1:m2,l1:l2]))
-                            else:
-                                var = dst['data'][key][n1:n2,m1:m2,l1:l2]
+        for ichunk in range(allchunks):
+            for iz in [indz[np.mod(ichunk,nchunks[2])]]:
+                n1, n2 = iz[ 0],\
+                         iz[-1]+1
+                for iy in [indy[np.mod(ichunk+
+                                   int(ichunk/nchunks[2]),nchunks[1])]]:
+                    m1, m2 = iy[ 0],\
+                             iy[-1]+1
+                    for ix in [indx[np.mod(ichunk+int(ichunk/nchunks[2])
+                                   +int(ichunk/nchunks[1]),nchunks[0])]]:
+                        l1, l2 = ix[ 0],\
+                                 ix[-1]+1
+                        if key in src['data'].keys():
+                            var = src['data'][key][n1:n2,m1:m2,l1:l2]
+                        elif key == 'uu' or key == 'aa':
+                            tmp = np.array(
+                                  [src['data'][key[0]+'x'][n1:n2,m1:m2,l1:l2],
+                                   src['data'][key[0]+'y'][n1:n2,m1:m2,l1:l2],
+                                   src['data'][key[0]+'z'][n1:n2,m1:m2,l1:l2]])
+                            var = np.sqrt(dot2(tmp))
                         else:
-                            print('stats: '+key+' does not exist in ',
-                                    src,'or',dst)
-                            continue
-                    if lmask:
-                        mask = dst['masks'][mask_key][0,n1:n2,m1:m2,l1:l2]
-                        Nmask = mask[mask==False].size
-                        if Nmask > 0:
-                            mean_mask.append(var[mask==False].mean()*Nmask) 
-                            stdv_mask.append(var[mask==False].std()*Nmask)
-                        else: 
-                            mean_mask.append(0) 
-                            stdv_mask.append(0)
-                        nmask_msk.append(Nmask)
-                        nmask = mask[mask==True].size
-                        if nmask > 0:
-                            mean_nmsk.append(var[mask==True].mean()*nmask)
-                            stdv_nmsk.append(var[mask==True].std()*nmask)
-                        else: 
-                            mean_nmsk.append(0)
-                            stdv_nmsk.append(0)
-                        nmask_nmk.append(nmask) 
-                    mean_stat.append(var.mean())
-                    stdv_stat.append(var.std())
+                            if key in dst['data'].keys():
+                                if is_vector(key):
+                                    var = np.sqrt(dot2(
+                                        dst['data'][key][:,n1:n2,m1:m2,l1:l2]))
+                                else:
+                                    var = dst['data'][key][n1:n2,m1:m2,l1:l2]
+                            else:
+                                print('stats: '+key+' does not exist in ',
+                                        src,'or',dst)
+                                continue
+                        if lmask:
+                            mask = dst['masks'][mask_key][0,n1:n2,m1:m2,l1:l2]
+                            Nmask = mask[mask==False].size
+                            if Nmask > 0:
+                                mean_mask.append(var[mask==False].mean()*Nmask) 
+                                stdv_mask.append(var[mask==False].std()*Nmask)
+                            else: 
+                                mean_mask.append(0) 
+                                stdv_mask.append(0)
+                            nmask_msk.append(Nmask)
+                            nmask = mask[mask==True].size
+                            if nmask > 0:
+                                mean_nmsk.append(var[mask==True].mean()*nmask)
+                                stdv_nmsk.append(var[mask==True].std()*nmask)
+                            else: 
+                                mean_nmsk.append(0)
+                                stdv_nmsk.append(0)
+                            nmask_nmk.append(nmask) 
+                        mean_stat.append(var.mean())
+                        stdv_stat.append(var.std())
         if comm:
             if lmask:
-                comm.gather(mean_mask, root=0)
-                comm.gather(stdv_mask, root=0)
-                comm.bcast(mean_mask, root=0)
-                comm.bcast(stdv_mask, root=0)
-                comm.gather(mean_nmsk, root=0)
-                comm.gather(stdv_nmsk, root=0)
-                comm.bcast(mean_nmsk, root=0)
-                comm.bcast(stdv_nmsk, root=0)
-                comm.gather(nmask_msk, root=0)
-                comm.gather(nmask_nmk, root=0)
-                comm.bcast(nmask_msk, root=0)
-                comm.bcast(nmask_nmk, root=0)
-            comm.gather(mean_stat, root=0)
-            comm.gather(stdv_stat, root=0)
-            comm.bcast(mean_stat, root=0)
-            comm.bcast(stdv_stat, root=0)
+                mean_mask = comm.gather(mean_mask, root=0)
+                stdv_mask = comm.gather(stdv_mask, root=0)
+                mean_mask = comm.bcast( mean_mask, root=0)
+                stdv_mask = comm.bcast( stdv_mask, root=0)
+                mean_nmsk = comm.gather(mean_nmsk, root=0)
+                stdv_nmsk = comm.gather(stdv_nmsk, root=0)
+                mean_nmsk = comm.bcast( mean_nmsk, root=0)
+                stdv_nmsk = comm.bcast( stdv_nmsk, root=0)
+                nmask_msk = comm.gather(nmask_msk, root=0)
+                nmask_nmk = comm.gather(nmask_nmk, root=0)
+                nmask_msk = comm.bcast( nmask_msk, root=0)
+                nmask_nmk = comm.bcast( nmask_nmk, root=0)
+            mean_stat = comm.gather(mean_stat, root=0)
+            stdv_stat = comm.gather(stdv_stat, root=0)
+            mean_stat = comm.bcast( mean_stat, root=0)
+            stdv_stat = comm.bcast( stdv_stat, root=0)
         if lmask:
             summk = np.sum(nmask_msk)
             if summk > 0: 
