@@ -32,7 +32,7 @@ module InitialCondition
   real :: star_luminosity=1.0, Rstar=1.0, Rtran=1.2, chit0=1e8
   real :: xi0=1.0, npoly1=1.5, npoly_jump=1.0, nad=1.5
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
-  real :: Fbottom, wtran=0.02,Tcor_jump=1.0
+  real :: Fbottom, wtran=0.02,Tcor_jump=1.0, kramers_hcond0=0.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
   logical :: lwrite_hcond_profile=.true.
   character (len=labellen) :: strat_type='polytropic'
@@ -357,6 +357,10 @@ module InitialCondition
       Omsim=fluxratio**(1./3.)*sqrt(gratio)*rratio**(1.5)*Omsun
       chiSGS_top=sqrt(gratio)*fluxratio**(1./3.)*chit0/sqrt(rratio)
 !
+!  Compute hcond0_kramers for runs with Kramers opacity
+!
+      kramers_hcond0=-Fbottom/(rho_global(1)**(-2)*TT_global(1)**6.5*dTdr_global(1))
+!
 !  Compute total mass.
 !
       total_mass=0.
@@ -390,6 +394,7 @@ module InitialCondition
          print*,'initial_condition: volume     =',volume
          print*,'initial_condition: total_mass =',total_mass
          print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
+         print*,'initial_condition: hcond0_kramers =',kramers_hcond0
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
