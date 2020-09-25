@@ -180,22 +180,22 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
                   'not-'+mask_key+'-'+key+'-std = {}'.format(stdvn))
             dataset_h5(group, mask_key+'-'+key+'-mean', status=status,
                        data=meanm, comm=comm, size=size, rank=rank,
-                       overwrite=overwrite)
+                       overwrite=True)
             dataset_h5(group, mask_key+'-'+key+'-std', status=status,
                        data=stdvm, comm=comm, size=size, rank=rank,
-                       overwrite=overwrite)
+                       overwrite=True)
             dataset_h5(group, 'not-'+mask_key+'-'+key+'-mean', status=status,
                        data=meann, comm=comm, size=size, rank=rank,
-                       overwrite=overwrite)
+                       overwrite=True)
             dataset_h5(group, 'not-'+mask_key+'-'+key+'-std', status=status,
                        data=stdvn, comm=comm, size=size, rank=rank,
-                       overwrite=overwrite)
+                       overwrite=True)
         mstat = np.mean(mean_stat)
         dstat = np.mean(stdv_stat)
         print(key+'-mean = {}, '.format(mstat)+key+'-std = {}'.format(dstat))
         dataset_h5(group, key+'-mean', status=status, data=mstat,
                    comm=comm, size=size, rank=rank,
-                   overwrite=overwrite)
+                   overwrite=True)
         dataset_h5(group, key+'-std', status=status, data=dstat,
                    comm=comm, size=size, rank=rank,
-                   overwrite=overwrite)
+                   overwrite=True)
