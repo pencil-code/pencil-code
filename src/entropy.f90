@@ -5569,13 +5569,14 @@ module Energy
 !   21-apr-17/pete: adapted from calc_heatcond_sfluct
 !
       use Sub, only: dot, grad, del2
+      use Deriv, only: der6
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gss0, gss1
-      real, dimension (nx) :: thdiff, g2, del2ss0, del2ss1
+      real, dimension (nx) :: thdiff, thdiff1, g2, del2ss0, del2ss1
       real, dimension (nx,3) :: gradchit_prof, gradchit_prof_fluct
       real, dimension (nx) :: chit_prof, chit_prof_fluct
       integer :: j
@@ -5678,9 +5679,21 @@ module Energy
           endif
         endif
 !
-! chi_t1 acting on deviations from a running 3D mean of entropy   
+!  chi_t1 acting on deviations from a running 3D mean of entropy
 !
         if (lss_running_aver) then
+!
+!  Apply hyperdiffusion every it_rmv to the running average of ss to avoid
+!  accumulating wiggles (experimental!)
+!
+          if (lrmv) then
+            do j=1,3
+              call der6(f,iss_run_aver,g2,j,IGNOREDX=.true.)
+              thdiff1 = chi_hyper3_mesh*pi5_1/60.*g2*dline_1(:,j)
+            enddo
+            df(l1:l2,m,n,iss_run_aver) = df(l1:l2,m,n,iss_run_aver) + thdiff1
+          endif
+!
           call grad(f(:,:,:,iss_run_aver),gss1)
           do j=1,3
             gss0(:,j)=p%gss(:,j)-gss1(:,j)
