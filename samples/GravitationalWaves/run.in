@@ -17,6 +17,7 @@
 &hydro_run_pars
 /
 &density_run_pars
+  lcalc_lnrhomean=T
 /
 &special_run_pars
   !cstress_prefactor='16pi'
