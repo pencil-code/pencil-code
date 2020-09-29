@@ -703,6 +703,7 @@ module Magnetic
   integer :: idiag_etajrhomax=0 ! DIAG_DOC: Max of artificial resistivity
                                 ! DIAG_DOC: $\eta\sim J / \rho$
   integer :: idiag_etaaniso=0   ! DIAG_DOC: $\eta_1$
+  integer :: idiag_etaanisoBB=0 ! DIAG_DOC: $\eta_{BB}$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
   integer :: idiag_coshjbm=0    ! DIAG_DOC:
   integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component
@@ -1555,7 +1556,10 @@ module Magnetic
 !  Quenching of \eta by rms of magnetic vector potential?
 !
       lquench_eta_aniso=(quench_aniso/=impossible)
-      if (.not.lquench_eta_aniso) idiag_etaaniso=0
+      if (.not.lquench_eta_aniso) then
+        idiag_etaaniso=0
+        idiag_etaanisoBB=0
+      endif
 !
 !  precalculating fixed (on timescales larger than tau) vectorpotential
 !
@@ -1746,7 +1750,7 @@ module Magnetic
           call fatal_error('initialize_magnetic','Removal of z average not implmented for Yin-Yang')
           call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(aamxy(mx,myl))
+        if (.not.allocated(aamxy)) allocate(aamxy(mx,myl))
       endif
 !
       llorentz_rhoref = llorentzforce .and. rhoref/=impossible .and. rhoref>0.
@@ -4609,6 +4613,7 @@ module Magnetic
         elsewhere
           tmp1=eta_aniso_BB/p%b2
         endwhere
+        if (lquench_eta_aniso) tmp1=tmp1/(1.+quench_aniso*Arms)
         do j=1,3
           ju=j-1+iaa
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
@@ -5585,6 +5590,7 @@ module Magnetic
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         call max_mn_name(eta_smag,idiag_etasmagmax)
         call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
+        call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
       endif
       call max_mn_name(p%etava,idiag_etavamax)
       call max_mn_name(p%etaj,idiag_etajmax)
@@ -9180,7 +9186,7 @@ module Magnetic
         idiag_brmsx=0; idiag_brmsz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
-        idiag_etasmagm=0; idiag_etaaniso=0
+        idiag_etasmagm=0; idiag_etaaniso=0; idiag_etaanisoBB=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
         idiag_hjparallelm=0;idiag_hjperpm=0
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
@@ -9439,6 +9445,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'etaj2max',idiag_etaj2max)
         call parse_name(iname,cname(iname),cform(iname),'etajrhomax',idiag_etajrhomax)
         call parse_name(iname,cname(iname),cform(iname),'etaaniso',idiag_etaaniso)
+        call parse_name(iname,cname(iname),cform(iname),'etaanisoBB',idiag_etaanisoBB)
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
         call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
         call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)
