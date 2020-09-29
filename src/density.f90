@@ -194,8 +194,8 @@ module Density
   integer :: idiag_rhomax=0     ! DIAG_DOC: $\max(\rho)$
   integer :: idiag_lnrhomin=0   ! DIAG_DOC: $\min(\log\rho)$
   integer :: idiag_lnrhomax=0   ! DIAG_DOC: $\max(\log\rho)$
-  integer :: idiag_rhorms=0     ! DIAG_DOC:
-  integer :: idiag_lnrhorms=0   ! DIAG_DOC:
+  integer :: idiag_rhorms=0     ! DIAG_DOC: $\sqrt{<\varrho^2>}$
+  integer :: idiag_lnrhorms=0   ! DIAG_DOC: $\sqrt{<(\ln\varrho)^2>}$
   integer :: idiag_ugrhom=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\varrho\right>$
   integer :: idiag_uglnrhom=0   ! DIAG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>$
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
@@ -2053,7 +2053,7 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
-           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. idiag_lnrhorms/=0 .or. &
+           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. idiag_inertiazz_car/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0 .or. &
@@ -2061,6 +2061,7 @@ module Density
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0) &
            lpenc_diagnos(i_rho)=.true.
+           if ( idiag_lnrhorms/=0 ) lpenc_diagnos(i_lnrho)=.true.
 !AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
 !PJK: The up/down averages should actually appear above as well and they
 !PJK: need the velocity too. idiag_rhof2mz does not, however.
