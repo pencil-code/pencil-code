@@ -23,13 +23,16 @@ module InitialCondition
   real :: eta0=0.0, k_eta, x0_drop, y0_drop
   real :: Omega_SB=1.0,gamma_parameter=1.0
   real :: v_jet_peak,sigma_jet,r_jet_cent
+  real :: Omega_vortex=1.
+! Vortex parameters: 
+  real :: xv0,yv0, bv,rm,vm  
 !
   character (len=labellen), dimension(ninit) :: init_shallow_density='nothing'
   character (len=labellen), dimension(ninit) :: init_shallow_hydro='nothing'
 !
   namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB, &
        init_shallow_density,init_shallow_hydro,gamma_parameter,v_jet_peak, &
-       sigma_jet,r_jet_cent
+       sigma_jet,r_jet_cent, Omega_vortex, xv0,yv0, bv,rm,vm
 !
   real :: planetary_radius=impossible ! derives from gamma_parameter and Omega
 !
@@ -72,6 +75,11 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: eta,r2
       integer :: j
+
+      real, dimension(nx) :: rr,xx,ww
+      real :: xs,ys,yy
+      real :: b,rm,Ro,Bu
+
 !
       do j=1,ninit
 !
@@ -105,7 +113,8 @@ module InitialCondition
               f(l1:l2,m,n,ilnrho) = log(eta)
             enddo
           enddo
-        endselect
+!
+       endselect
 !
       enddo
 !
@@ -116,8 +125,9 @@ module InitialCondition
 !  Initial condition given by 
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx) :: rr
+      real, dimension(nx) :: rr,xx,vr
       integer :: j
+      real :: yy
 !
       do j=1,ninit
 
@@ -148,6 +158,32 @@ module InitialCondition
                                 x(l1:l2) / rr
             enddo
           enddo
+!
+       case('vortex','point-vortex')
+          do n=n1,n2
+             do m=m1,m2
+               xx = x(l1:l2)-xv0
+               yy = y(  m  )-yv0
+               rr = sqrt(xx**2 + yy**2)
+               f(l1:l2,m,n,iux) = -Omega_vortex/(2*pi) * yy / rr**2
+               f(l1:l2,m,n,iuy) =  Omega_vortex/(2*pi) * xx / rr**2
+             enddo
+          enddo
+!
+        case('Li-Ingersoll')
+          do n=n1,n2
+             do m=m1,m2
+               xx = x(l1:l2)-xv0
+               yy = y(  m  )-yv0
+               rr = sqrt(xx**2 + yy**2)
+!
+               vr = vm * (rr/rm) * exp(1/bv * (1-(rr/rm)**bv))
+!
+               f(l1:l2,m,n,iux) = - vr * yy/rr
+               f(l1:l2,m,n,iuy) =   vr * xx/rr 
+             enddo
+          enddo
+!
         endselect
       enddo
 !
@@ -170,7 +206,7 @@ module InitialCondition
       write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
-!***********************************************************************
+!***********************************************************************    
 !
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
