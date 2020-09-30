@@ -4605,11 +4605,6 @@ module Solid_Cells
           endif
           call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
-	  if (lchemistry) then
-	    do k = 1,nchemspec
-		call set_ghosts_onesided_ogrid(ichemspec(k))
-	    enddo
-	  endif
       !    if (lreac_heter) call fatal_error('boundconds_x_ogrid', &
       !    'chemistry BCs set correctly only when SBP=T')
         endif

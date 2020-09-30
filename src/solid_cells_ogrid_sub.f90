@@ -1169,6 +1169,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                              +f_ogrid(k+7,:,:,ivar)
 
       enddo
+
     endsubroutine set_ghosts_onesided_ogrid
 !***********************************************************************
     subroutine bval_from_neumann_arr_ogrid
@@ -1186,7 +1187,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       k=l1_ogrid
       if (lexpl_rho) then
         f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
-                                                 - 450.*f_ogrid(k+2,:,:,irho) &
+						 - 450.*f_ogrid(k+2,:,:,irho) &
                                                  + 400.*f_ogrid(k+3,:,:,irho) &
                                                  - 225.*f_ogrid(k+4,:,:,irho) &
                                                  +  72.*f_ogrid(k+5,:,:,irho) &
@@ -1195,13 +1196,33 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       if (lchemistry) then
 	if (.not. lreac_heter) then
           do j = 1,nchemspec
-            f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
-						 	     - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
-							     + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
-							     - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
-							     +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
-							     -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
-          enddo
+              f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+							       - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+							       + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+							       - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+							       +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+							       -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
+! Set-up ghost points based on non-symmetric stencils
+              f_ogrid(k-1,:,:,ichemspec(j)) = (-val*60.*dx_ogrid -  77.*f_ogrid(k  ,:,:,ichemspec(j)) &
+							         + 150.*f_ogrid(k+1,:,:,ichemspec(j)) &
+							         - 100.*f_ogrid(k+2,:,:,ichemspec(j)) &
+								 +  50.*f_ogrid(k+3,:,:,ichemspec(j)) &
+							         -  15.*f_ogrid(k+4,:,:,ichemspec(j)) &
+							         +   2.*f_ogrid(k+5,:,:,ichemspec(j)) )/10.
+
+              f_ogrid(k-2,:,:,ichemspec(j)) = (-val*60.*dx_ogrid -  24.*f_ogrid(k-1,:,:,ichemspec(j)) &
+								 -  35.*f_ogrid(k  ,:,:,ichemspec(j)) &
+								 +  80.*f_ogrid(k+1,:,:,ichemspec(j)) &
+								 -  30.*f_ogrid(k+2,:,:,ichemspec(j)) &
+							         +   8.*f_ogrid(k+3,:,:,ichemspec(j)) &
+							         -   1.*f_ogrid(k+4,:,:,ichemspec(j)) )/(-2.)
+
+              f_ogrid(k-3,:,:,ichemspec(j)) = (-val*60.*dx_ogrid +   9.*f_ogrid(k-2,:,:,ichemspec(j)) &
+								 -  45.*f_ogrid(k-1,:,:,ichemspec(j)) &
+								 +  45.*f_ogrid(k+1,:,:,ichemspec(j)) &
+								 -   9.*f_ogrid(k+2,:,:,ichemspec(j)) &
+							         +   1.*f_ogrid(k+3,:,:,ichemspec(j)) )
+	  enddo
         else
 
 ! if heterogeneous reactions grad(Y_k) = (-mdot_c*Y_k-m_k)/(rho*D_k)
