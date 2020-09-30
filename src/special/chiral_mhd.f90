@@ -97,6 +97,7 @@ module Special
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
+   real :: initpower_muS=0., cutoff_muS=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -118,7 +119,8 @@ module Special
       lmuS, lCVE, lmu5adv, lmuSadv, muS_const, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
-      coef_muS, coef_mu5, initpower_mu5, cutoff_mu5
+      coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
+      initpower_muS, cutoff_muS
 !
   namelist /special_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
@@ -266,6 +268,9 @@ module Special
 !
         case ('power_randomphase')
           call power_randomphase(amplmu5,initpower_mu5,cutoff_mu5,f,imu5,imu5,lscale_tobox=.false.)
+          if (lmuS) then
+            call power_randomphase(amplmuS,initpower_muS,cutoff_muS,f,imuS,imuS,lscale_tobox=.false.)
+          endif
 !
         case default
           call fatal_error("init_special: No such value for initspecial:" &
