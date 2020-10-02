@@ -326,7 +326,7 @@ module Magnetic
   logical :: lrhs_max=.false.
   real :: h_sld_magn=2.0,nlf_sld_magn=1.0,fac_sld_magn=1.0
   real :: ampl_efield=0.
-  real :: w_sldchar_mag=1.
+  real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
   real :: rhoref=impossible, rhoref1
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
@@ -378,7 +378,7 @@ module Magnetic
       lax_ext_global,lay_ext_global,laz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanay, lremove_meanaxy, lremove_meanaxz, &
-      eta_jump_shock, eta_zshock, &
+      eta_jump_shock, eta_zshock, tau_remove_meanaxy, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, lsld_bb, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
@@ -6424,7 +6424,7 @@ module Magnetic
             call finalize_aver(nprocz,3,aamxy)
 !
             do n=1,mz
-              f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-aamxy
+              f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-tau_remove_meanaxy*aamxy
             enddo
           enddo
 
