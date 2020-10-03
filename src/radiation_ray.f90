@@ -54,7 +54,7 @@ module Radiation
   integer, parameter :: mnu=2
   integer, parameter :: maxdir=26
 !
-  real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
+  real, dimension (mx,my,mz) :: Srad, tau=0, Qrad=0, Qrad0=0
   real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy
@@ -949,16 +949,17 @@ module Radiation
 !  until both boundaries are entirely set with the correct values.
 !
 !  30-jul-05/tobi: coded
+!   3-oct-20/axel: initializing Qrecv, Qrad, and Qsend to zero
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
 !
-      real, dimension (my,mz) :: emtau_yz,Qrad_yz
-      real, dimension (mx,mz) :: emtau_zx,Qrad_zx
-      real, dimension (mx,my) :: emtau_xy,Qrad_xy
-      real, dimension (my,mz) :: Qrecv_yz,Qsend_yz
-      real, dimension (mx,mz) :: Qrecv_zx,Qsend_zx
-      real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
+      real, dimension (my,mz) :: emtau_yz=0, Qrad_yz=0
+      real, dimension (mx,mz) :: emtau_zx=0, Qrad_zx=0
+      real, dimension (mx,my) :: emtau_xy=0, Qrad_xy=0
+      real, dimension (my,mz) :: Qrecv_yz=0, Qsend_yz=0
+      real, dimension (mx,mz) :: Qrecv_zx=0, Qsend_zx=0
+      real, dimension (mx,my) :: Qrecv_xy=0, Qsend_xy=0
       logical :: all_yz,all_zx
 !
 !  Initially no boundaries are set.
@@ -1800,7 +1801,7 @@ module Radiation
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
+      real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile=0
       real, dimension(mx) :: kappa1,kappa2,kappae
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
