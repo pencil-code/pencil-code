@@ -361,6 +361,7 @@ module Viscosity
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
 !          if (meanfield_nuB/=0.) lpenc_requested(i_b2)=.true.
+          lpenc_requested(i_glnrho)=.true.
           lvisc_nu_const=.true.
         case ('nu-tdep')
           if (lroot) print*,'time-dependent nu*(del2u+graddivu/3+2S.glnrho)'
