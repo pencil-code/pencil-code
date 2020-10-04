@@ -2562,7 +2562,7 @@ print*,'AXEL2'
   logical, intent(in), optional :: lsqrt
   integer, intent(in), optional :: iapn_index
   integer, pointer :: inp,irhop,iapn(:)
-  integer, parameter :: nk=nx/2
+  integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
