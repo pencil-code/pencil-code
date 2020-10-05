@@ -157,12 +157,12 @@ void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
  char *name;
 
  //dlerror();
- //pointer = dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); //RTLD_LAZY); 
+ //pointer = dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); //RTLD_LAZY); 
 
  if (*flag==ALLNOW)
-   return dlopen(filename, RTLD_GLOBAL||RTLD_NOW); 
+   return dlopen(filename, RTLD_GLOBAL|RTLD_NOW); 
  else
-   return dlopen(filename, RTLD_GLOBAL||RTLD_LAZY); 
+   return dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); 
  return NULL;
 }
 /* ---------------------------------------------------------------------- */
