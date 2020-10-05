@@ -11,11 +11,6 @@
 ! CPARAM logical, parameter :: linitial_condition = .true.
 !
 !***************************************************************
-!
-!
-!!!!!!!
-!! NB: This is a very early stage of the initial condition. DO NOT USE IT!!!
-!!!!!!!
 
 module InitialCondition
 !
