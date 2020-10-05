@@ -4301,7 +4301,37 @@ module Sub
       ij=ii*(ii-1)/2 + jj
     endsubroutine lower_triangular_index
 !***********************************************************************
-    recursive function ylm(ell,emm,der) result (sph_har)
+    function ylm_other(theta,phi,ell,emm,der) result (sph_har)
+!
+!  Spherical harmonic
+!
+!   6-oct-20/MR: envelope for ylm_core for general use.
+!
+      real :: sph_har
+      real :: theta,phi
+      integer :: ell,emm
+      real, optional :: der
+
+      sph_har = ylm_core(cos(theta),sin(theta),cos(phi),sin(phi),ell,emm,der)
+
+    end function ylm_other
+!***********************************************************************
+    function ylm(ell,emm,der) result (sph_har)
+!
+!  Spherical harmonic
+!
+!   6-oct-20/MR: envelope for ylm_core for use in mn-loop.
+!
+      real :: sph_har
+      integer :: ell,emm
+      real, optional :: der
+
+      sph_har = ylm_core(costh(m),sinth(m),cosph(n),sinph(n),ell,emm,der)
+
+    end function ylm
+!***********************************************************************
+      
+    recursive function ylm_core(cost,sint,cosp,sinp,ell,emm,der) result (sph_har)
 !
 !  Spherical harmonic
 !
@@ -4309,26 +4339,16 @@ module Sub
 !   15-jun-17/MR: corrected  derivative
 !
       real :: sph_har
-      real :: theta,phi
+      real :: cost,sint,cosp,sinp
       integer :: ell,emm
       real, optional :: der
 !
-      real :: cos2p,cost,sint,cosp,sinp
       integer :: aemm
-      logical :: lother
+      real :: cos2p
 !
 ! the one over pi, cosines and sines below may be pre-calculated
 !
-      lother=.false.
-      cost=costh(m); sint=sinth(m); cosp=cosph(n); sinp=sinph(n)
-      goto 1
-
-      entry ylm_other(theta,phi,ell,emm,der) result (sph_har)
-
-      lother=.true.
-      cost=cos(theta); sint=sin(theta); cosp=cos(phi); sinp=sin(phi)
-      
- 1    aemm=iabs(emm)
+      aemm=iabs(emm)
 
       select case (ell)
         case (0)
@@ -4378,17 +4398,12 @@ module Sub
       if (present(der)) then
         der = ell*cost*sph_har/sint
         if (emm<ell) then
-          if (lother) then
-            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                    ylm_other(theta,phi,ell-1,emm)/sint
-          else
-            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                    ylm(ell-1,emm)/sint
-          endif
+          der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                ylm_core(cost,sint,cosp,sinp,ell-1,emm)/sint
         endif
       endif
 !
-    endfunction ylm
+    endfunction ylm_core
 !***********************************************************************
     function step_scalar(x,x0,width)
 !
