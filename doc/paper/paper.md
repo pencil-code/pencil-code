@@ -24,101 +24,101 @@ authors:
    affiliation: 4
    orcid: 0000-0002-5893-6165
  - name: Philippe A. Bourdin
-   affiliation: 5
+   affiliation: "5, 6"
    orcid: 0000-0002-6793-601X
  - name: Wolfgang Dobler
-   affiliation: 6
- - name: Wladimir Lyra
    affiliation: 7
+ - name: Wladimir Lyra
+   affiliation: 8
    orcid: 0000-0002-3768-7542
  - name: Matthias Rheinhardt
-   affiliation: 8
- - name: Sven Bingert
    affiliation: 9
+ - name: Sven Bingert
+   affiliation: 10
    orcid: 0000-0001-9547-1582
  - name: Nils Erland L. Haugen
-   affiliation: "10, 11, 1"
+   affiliation: "11, 12, 1"
    orcid: 0000-0002-9184-8722
  - name: Antony Mee
-   affiliation: 12
+   affiliation: 13
  - name: Frederick Gent
-   affiliation: "8, 13"
+   affiliation: "9, 14"
    orcid: 0000-0002-1331-2260
  - name: Natalia Babkovskaia
-   affiliation: 14
- - name: Chao-Chin Yang
    affiliation: 15
+ - name: Chao-Chin Yang
+   affiliation: 16
    orcid: 0000-0003-2589-5034
  - name: Tobias Heinemann
-   affiliation: 16
+   affiliation: 17
    orcid: 0000-0002-2476-9733
  - name: Boris Dintrans
-   affiliation: 17
+   affiliation: 18
  - name: Dhrubaditya Mitra
    affiliation: 1
    orcid: 0000-0003-4861-8152
  - name: Simon Candelaresi
-   affiliation: 18
+   affiliation: 19
    orcid: 0000-0002-7666-8504
  - name: Jörn Warnecke
-   affiliation: 19
+   affiliation: 20
    orcid: 0000-0002-9292-4600
  - name: Petri J. Käpylä
-   affiliation: 20
+   affiliation: 21
    orcid: 0000-0001-9619-0053
  - name: Andreas Schreiber
-   affiliation: 14
+   affiliation: 15
  - name: Piyali Chatterjee
-   affiliation: 21
+   affiliation: 22
    orcid: 0000-0002-0181-2495
  - name: Maarit J. Käpylä
-   affiliation: "8, 19"
+   affiliation: "9, 20"
    orcid: 0000-0002-9614-2200
  - name: Xiang-Yu Li
    affiliation: 1
    orcid: 0000-0002-5722-0018 
  - name: Jonas Krüger
-   affiliation: "10, 11"
+   affiliation: "11, 12"
    orcid: 0000-0001-8036-0695
  - name: Jørgen R. Aarnes
-   affiliation: 11
+   affiliation: 12
    orcid: 0000-0002-5899-2597
  - name: Graeme R. Sarson
-   affiliation: 13
+   affiliation: 14
    orcid: 0000-0001-6774-9372
  - name: Jeffrey S. Oishi
-   affiliation: 22
+   affiliation: 23
    orcid: 0000-0001-8531-6570
  - name: Jennifer Schober
-   affiliation: 23
+   affiliation: 24
    orcid: 0000-0001-7888-6671
  - name: Raphaël Plasson
-   affiliation: 24
+   affiliation: 25
    orcid: 0000-0003-2319-1463
  - name: Christer Sandin
    affiliation: 1
    orcid: 0000-0002-6370-5505
  - name: Ewa Karchniwy
-   affiliation: "11, 25"
+   affiliation: "12, 26"
    orcid: 0000-0001-6709-1160
  - name: Luiz Felippe S. Rodrigues
-   affiliation: "13, 26"
+   affiliation: "14, 27"
    orcid: 0000-0002-3860-0525
  - name: Alexander Hubbard
-   affiliation: 27
- - name: Gustavo Guerrero
    affiliation: 28
+ - name: Gustavo Guerrero
+   affiliation: 29
    orcid: 0000-0002-2671-8796
  - name: Andrew Snodin
-   affiliation: 13
+   affiliation: 14
  - name: Illa R. Losada
    affiliation: 1
    orcid: 0000-0002-0416-7516
  - name: Johannes Pekkilä
-   affiliation: 8
+   affiliation: 9
    orcid: 0000-0002-1974-7150
  - name: Chengeng Qian
-   affiliation: 29
+   affiliation: 30
    orcid: 0000-0002-5560-5475
 
 affiliations:
@@ -132,56 +132,58 @@ affiliations:
    index: 4
  - name: Space Research Institute, Graz, Austria
    index: 5
- - name: Bruker, Potsdam, Germany
+ - name: Institute of Physics, University of Graz, Graz, Austria
    index: 6
- - name: New Mexico State University, Department of Astronomy, Las Cruces, NM, USA
+ - name: Bruker, Potsdam, Germany
    index: 7
- - name: Astroinformatics, Department of Computer Science, Aalto University, Finland
+ - name: New Mexico State University, Department of Astronomy, Las Cruces, NM, USA
    index: 8
- - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen, Germany
+ - name: Astroinformatics, Department of Computer Science, Aalto University, Finland
    index: 9
- - name: SINTEF Energy Research, Trondheim, Norway
+ - name: Gesellschaft für wissenschaftliche Datenverarbeitung mbH Göttingen, Germany
    index: 10
- - name: Norwegian University of Science and Technology, Norway
+ - name: SINTEF Energy Research, Trondheim, Norway
    index: 11
- - name: Bank of America Merrill Lynch, London, UK
+ - name: Norwegian University of Science and Technology, Norway
    index: 12
- - name: School of Mathematics, Statistics and Physics, Newcastle University, UK
+ - name: Bank of America Merrill Lynch, London, UK
    index: 13
- - name: No current affiliation
+ - name: School of Mathematics, Statistics and Physics, Newcastle University, UK
    index: 14
- - name: University of Nevada, Las Vegas, USA
+ - name: No current affiliation
    index: 15
- - name: Niels Bohr International Academy, Denmark
+ - name: University of Nevada, Las Vegas, USA
    index: 16
- - name: CINES, Montpellier, France
+ - name: Niels Bohr International Academy, Denmark
    index: 17
- - name: School of Mathematics and Statistics, University of Glasgow, UK
+ - name: CINES, Montpellier, France
    index: 18
- - name: Max Planck Institute for Solar System Research, Germany
+ - name: School of Mathematics and Statistics, University of Glasgow, UK
    index: 19
- - name: Institute for Astrophysics, University of Göttinge, Germany
+ - name: Max Planck Institute for Solar System Research, Germany
    index: 20
- - name: Indian Institute of Astrophysics, Bengaluru, India
+ - name: Institute for Astrophysics, University of Göttinge, Germany
    index: 21
- - name: Department of Physics & Astronomy, Bates College, ME, USA
+ - name: Indian Institute of Astrophysics, Bengaluru, India
    index: 22
- - name: Laboratoire d'Astrophysique, EPFL, Sauverny, Switzerland
+ - name: Department of Physics & Astronomy, Bates College, ME, USA
    index: 23
- - name: Avignon Université, France
+ - name: Laboratoire d'Astrophysique, EPFL, Sauverny, Switzerland
    index: 24
- - name: Institute of Thermal Technology, Silesian University of Technology, Poland
+ - name: Avignon Université, France
    index: 25
- - name: Radboud University, Netherlands
+ - name: Institute of Thermal Technology, Silesian University of Technology, Poland
    index: 26
- - name: Department of Astrophysics, American Museum of Natural History, NY, USA
+ - name: Radboud University, Netherlands
    index: 27
- - name: Physics Department, Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
+ - name: Department of Astrophysics, American Museum of Natural History, NY, USA
    index: 28
- - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
+ - name: Physics Department, Universidade Federal de Minas Gerais, Belo Horizonte, Brazil
    index: 29
+ - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
+   index: 30
 
-date: 17 September 2020
+date: 6 October 2020
 bibliography: paper.bib
 ---
 
@@ -236,7 +238,8 @@ Below a list of method papers that describe the various applications and tests:
 * Boris correction for coronal physics [@2020GApFD.114.213C],
 * Thermal instability and mixing [@2012ApJ.758.48Y],
 * Implicit solver for temperature [@2008A&A.484.29G],
-* Dust-gas dynamics with mutual drag interaction [@2007ApJ.662.613Y; @2016ApJS.224.39Y].
+* Dust-gas dynamics with mutual drag interaction [@2007ApJ.662.613Y; @2016ApJS.224.39Y],
+* Boundary conditions for the solar atmosphere and HDF5 format [@2020GApFD.114.235B].
 
 # Statement of need and purpose of software
 
