@@ -235,6 +235,8 @@ else if (($hn =~ draco*) && ($USER =~ joernw))then # joern on draco
   set str='s/u\//ptmp\//g'
 else if (($hn =~ gwdu*) && ($USER =~ jwarnec))then # joern on gwdg
   set str='s/usr\/users\/jwarnec\/pencil-code/scratch\/jwarnec\/pencil-data/g'
+else if (($hn =~ blogin*) && ($USER =~ hhpfehnn))then # felipe on Lise
+  set str='s/home/scratch\/usr/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
