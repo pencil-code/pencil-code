@@ -183,7 +183,7 @@ affiliations:
  - name: State Key Laboratory of Explosion Science and Technology, Beijing Institute of Technology, China
    index: 30
 
-date: 6 October 2020
+date: 17 September 2020
 bibliography: paper.bib
 ---
 
