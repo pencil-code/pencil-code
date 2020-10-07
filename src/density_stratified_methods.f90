@@ -252,17 +252,6 @@ module DensityMethods
 !
     endsubroutine putrho
 !***********************************************************************
-    subroutine putlnrho(f,lnrho)
-
-      real, dimension(mx), intent(out):: f
-      real, dimension(nx), intent(in) :: lnrho
-
-      call fatal_error('putlnrho', 'not implemented.')
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lnrho)
-!
-    endsubroutine putlnrho
-!***********************************************************************
    subroutine putlnrho_v(f,lnrho)
 
       real, dimension(mx), intent(out):: f
