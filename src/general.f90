@@ -5115,115 +5115,106 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !
     endsubroutine transpose_mn
 !***********************************************************************
-    function notanumber_0(f)
+    elemental logical function isnan(x)
+!
+!  Check if x is Inf or NaN.
+!
+!  07-oct-20/ccyang: coded
+!
+      real, intent(in) :: x
+!
+      isnan = x > huge_real .or. x /= x
+!
+    endfunction isnan
+!***********************************************************************
+    pure logical function notanumber_0(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for scalars
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_0
-      real :: f
+      real, intent(in) :: f
 !
-      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge_real))
+      notanumber_0 = isnan(f)
 !
     endfunction notanumber_0
 !***********************************************************************
-   function notanumber_0d(f)
+    pure logical function notanumber_0d(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for scalars
 !
 !  27-Jul-15/MR: adapted
+!  07-oct-20/ccyang: revised
 !
-     logical :: notanumber_0d
-     double precision :: f
+     double precision, intent(in) :: f
 !
-     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge_double))
+     notanumber_0d = f > huge_double .or. f /= f
 !
     endfunction notanumber_0d
 !***********************************************************************
-    function notanumber_1(f)
+    pure logical function notanumber_1(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 1-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_1
-      real, dimension(:) :: f
+      real, dimension(:), intent(in) :: f
 !
-      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
+      notanumber_1 = any(isnan(f))
 !
     endfunction notanumber_1
 !***********************************************************************
-    function notanumber_2(f)
+    pure logical function notanumber_2(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 2-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_2
-      real, dimension(:,:) :: f
+      real, dimension(:,:), intent(in) :: f
 !
-      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
+      notanumber_2 = any(isnan(f))
 !
     endfunction notanumber_2
 !***********************************************************************
-    function notanumber_3(f)
+    pure logical function notanumber_3(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 3-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_3
-      real, dimension(:,:,:) :: f
+      real, dimension(:,:,:), intent(in) :: f
 !
-      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
+      notanumber_3 = any(isnan(f))
 !
     endfunction notanumber_3
 !***********************************************************************
-    function notanumber_4(f)
+    pure logical function notanumber_4(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 4-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_4
-      real, dimension(:,:,:,:) :: f
+      real, dimension(:,:,:,:), intent(in) :: f
 !
-      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
+      notanumber_4 = any(isnan(f))
 !
     endfunction notanumber_4
 !***********************************************************************
-    function notanumber_5(f)
+    pure logical function notanumber_5(f)
 !
 !  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 4-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
+!  07-oct-20/ccyang: revised
 !
-      logical :: notanumber_5
-      real, dimension(:,:,:,:,:) :: f
+      real, dimension(:,:,:,:,:), intent(in) :: f
 !
-      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
+      notanumber_5 = any(isnan(f))
 !
     endfunction notanumber_5
 !***********************************************************************
