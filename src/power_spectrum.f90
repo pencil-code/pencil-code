@@ -2320,7 +2320,6 @@ module power_spectrum
 !
   if (iggXim>0.or.iggTim>0) then
     if (sp=='StT'.or.sp=='StX') then
-print*,'AXEL1'
       allocate(spectrum(nxgrid),spectrumhel(nxgrid))
       allocate(spectrum_sum(nxgrid),spectrumhel_sum(nxgrid))
     else
@@ -2473,7 +2472,6 @@ print*,'AXEL1'
 !  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
 !  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
 !
-print*,'AXEL2'
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
     call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
   else
