@@ -37,7 +37,7 @@ module Special
    integer, target :: ispecial=0
 !
   ! input parameters
-  real :: gam_lucky=fourthird
+  real :: gam_lucky=fourthird, efficiency_exponent=0., efficiency_prefactor=1., tstar=0.
   character(len=50) :: init_qq='zero'
   namelist /special_init_pars/ &
     gam_lucky
@@ -45,7 +45,7 @@ module Special
   ! run parameters
   logical :: lMFT=.false., lrA=.false., lrB=.false.
   namelist /special_run_pars/ &
-    gam_lucky, lMFT, lrA, lrB
+    gam_lucky, lMFT, lrA, lrB, efficiency_exponent, efficiency_prefactor, tstar
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -205,6 +205,7 @@ module Special
       endif
 !
 !  Selection of different combinations of rA and rB
+!  Black line in paper corresponds to: lrA=T, lrB=T
 !
       if (lrA.and.lrB) then
         lamk=(t**onethird+1.)**2*(t**twothird-1.)
@@ -215,6 +216,16 @@ module Special
       else
         lamk=t**gam_lucky
       endif
+!
+!  Efficiency prescription: include a powerlaw prescription
+!  for t>tstar with exponent efficiency_exponent.
+!  Allow also efficiency_prefactor, just to demonstrate that
+!  it has no effect on the final P(T) curve, as expected.
+!
+      if (efficiency_exponent/=0. .and. t>tstar) then
+        lamk=lamk*(t/tstar)**efficiency_exponent
+      endif
+      lamk=lamk*efficiency_prefactor
 !
 !  Produce exponentially distributed random numbers,
 !  but can also do mean-field theory as a test.
