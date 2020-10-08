@@ -7,13 +7,17 @@ Maintainer:
 Added:
     05.31.2012
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    succeeds since added
 Recommended resolution:
     32x32x32
 Comments:
-    This sample is only for testing purposes.  It uses the resistivity term in
-    module Magnetic as ordinary diffusion equations.  A delta function is put
-    in the center of the grid initially, where its diffusion is analytically
-    known.
+    This sample is only for testing purposes.  It uses the resistivity
+    term in module Magnetic as ordinary diffusion equations.  A delta
+    function is put in the center of the grid initially, where its
+    diffusion is analytically known.
+    The algorithm is described in and has been applied to the work
+    listed in References.
 References:
-    N/A
+    Yang, C.-C., Mac Low, M.-M., & Johansen, A. 2018, ApJ, 868, 27
+    "Diffusion and Concentration of Solids in the Dead Zone of a
+     Protoplanetary Disk"
