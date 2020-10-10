@@ -2993,6 +2993,7 @@ module power_spectrum
 !    2-dec-03/axel: coded
 !
       use Sub, only: grad, dot2_mn
+      use Mpicomm, only: mpireduce_sum_int
       use SharedVariables, only: get_shared_variable
 !
   integer :: l,i_pdf
@@ -3000,7 +3001,7 @@ module power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,3) :: gcc
   real, dimension (nx) :: pdf_var,gcc2
-  integer, dimension (n_pdf) :: pdf_yy
+  integer, dimension (n_pdf) :: pdf_yy, pdf_yy_sum
   real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
   character (len=120) :: pdf_file=''
   character (len=*) :: variabl
@@ -3010,6 +3011,7 @@ module power_spectrum
 !  initialize counter and set scaling factor
 !
    pdf_yy=0
+   pdf_yy_sum=0
    pdf_scl=1./pdf_rms
 !
 !  m-n loop
@@ -3070,7 +3072,7 @@ module power_spectrum
    enddo
    enddo
 !
-!  write file
+!  Write file (here per processor).
 !
    pdf_file=trim(directory)//'/pdf_'//trim(variabl)//'.dat'
    open(1,file=trim(pdf_file),position='append')
@@ -3081,6 +3083,21 @@ module power_spectrum
    endif
    write(1,11) pdf_yy
    close(1)
+!
+!  Communicate and append from root processor.
+!
+  call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf)
+  if (lroot) then
+     pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
+     open(1,file=trim(pdf_file),position='append')
+     if (logscale) then
+       write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
+     else
+       write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
+     endif
+     write(1,11) pdf_yy_sum
+     close(1)
+  endif
 !
 10 format(1p,e12.5,0p,i6,1p,5e12.4)
 11 format(8i10)
