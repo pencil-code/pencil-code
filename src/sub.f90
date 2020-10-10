@@ -7412,7 +7412,12 @@ nameloop: do
             else
               rfac(ix)=(fimm12_r(ix)-fimm12_l(ix))/(fim1(ix)-fimm1(ix))
             endif
-            q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            if (nlf==-1.) then
+! using Matthias Rempel expression
+              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+            else
+              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            endif
           enddo
           flux_imm12(:,k)=0.5*cmax_imm12*q1*(fimm12_r-fimm12_l)
 !
@@ -7424,7 +7429,12 @@ nameloop: do
             else
               rfac(ix)=(fipp12_r(ix)-fipp12_l(ix))/(fipp1(ix)-fip1(ix))
             endif
-            q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            if (nlf==-1.) then
+! using Matthias Rempel expression
+              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+            else
+              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            endif
           enddo
           flux_ipp12(:,k)=0.5*cmax_ipp12*q1*(fipp12_r-fipp12_l)
         endif
@@ -7445,7 +7455,12 @@ nameloop: do
               rfac(ix)=(fim12_r(ix)-fim12_l(ix))/(f(ix+nghost,m,n,j)-fim1(ix))
             endif
           endif
-          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            if (nlf==-1.) then
+! using Matthias Rempel expression
+              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+            else
+              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            endif
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
 !
@@ -7466,7 +7481,12 @@ nameloop: do
                      f(ix+nghost,m,n,j))+tini)
             endif
           endif
-          q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            if (nlf==-1.) then
+! using Matthias Rempel expression
+              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+            else
+              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+            endif
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
 !
