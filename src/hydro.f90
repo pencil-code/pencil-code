@@ -424,6 +424,8 @@ module Hydro
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC:   \cdot\uv\right>$
+  integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}
+                                ! DIAG_DOC:   \cdot\uv^2\right>^{1/2}$
   integer :: idiag_ou_int=0     ! DIAG_DOC: $\int_V\boldsymbol{\omega}\cdot\uv\,dV$
   integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
@@ -2355,8 +2357,8 @@ module Hydro
       if (idiag_ruxupmxy/=0 .or. idiag_ruxdownmxy/=0) &
           lpenc_diagnos2d(i_rho)=.true.
       if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
-      if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
-           idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumx/=0 .or. idiag_oumy/=0 .or. &
+           idiag_oumz/=0 .or. idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
       if (idiag_divrhourms/=0.or.idiag_divrhoumax/=0) then
         lpenc_diagnos(i_ugrho)=.true.
         lpenc_diagnos(i_divu)=.true.
@@ -3556,10 +3558,14 @@ module Hydro
   !       call sum_mn_name(ampl_fcont_uu*fu,idiag_rufm)
   !     endif
 !
+!  Things related to kinetic helicity.
+!
+        if (idiag_ou_int/=0) call integrate_mn_name(p%ou,idiag_ou_int)
+        if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
+        if (idiag_ourms/=0) call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
+!
 !  Things related to vorticity.
 !
-        call integrate_mn_name(p%ou,idiag_ou_int)
-        call sum_mn_name(p%ou,idiag_oum)
         if (idiag_oumh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%ou,idiag_oumh)
           if (lequatorz) call sum_mn_name_halfz(p%ou,idiag_oumh)
@@ -5331,6 +5337,7 @@ module Hydro
         idiag_rumax=0
         idiag_dtu=0
         idiag_oum=0
+        idiag_ourms=0
         idiag_ou_int=0
         idiag_fum=0
         idiag_odel2um=0
@@ -5466,6 +5473,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'o2sphm',idiag_o2sphm)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'ourms',idiag_ourms)
         call parse_name(iname,cname(iname),cform(iname),'ou_int',idiag_ou_int)
         call parse_name(iname,cname(iname),cform(iname),'fum',idiag_fum)
         call parse_name(iname,cname(iname),cform(iname),'oumn',idiag_oumn)
