@@ -4,6 +4,8 @@
 !
 module Syscalls
 !
+  use Cparam, only: ikind8
+
   implicit none
 !
   external is_nan_c
