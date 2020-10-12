@@ -3876,20 +3876,21 @@ module Density
 !***********************************************************************
     subroutine pushdiags2c(p_diag)
 
+    use Syscalls, only: copy_addr
     use Diagnostics, only: set_type
 
     integer, parameter :: n_diags=5
     integer(KIND=ikind8), dimension(n_diags) :: p_diag
 
-    call copy_addr_c(idiag_rhom,p_diag(1))
+    call copy_addr(idiag_rhom,p_diag(1))
     call set_type(idiag_rhom,lsum=.true.)
-    call copy_addr_c(idiag_rhomin,p_diag(2))
+    call copy_addr(idiag_rhomin,p_diag(2))
     call set_type(idiag_rhomin,lmin=.true.)
-    call copy_addr_c(idiag_rhomax,p_diag(3))
+    call copy_addr(idiag_rhomax,p_diag(3))
     call set_type(idiag_rhomax,lmax=.true.)
-    call copy_addr_c(idiag_mass,p_diag(4))
+    call copy_addr(idiag_mass,p_diag(4))
     call set_type(idiag_mass,lint=.true.)
-    call copy_addr_c(idiag_rhorms,p_diag(5))
+    call copy_addr(idiag_rhorms,p_diag(5))
     call set_type(idiag_rhorms,lsqrt=.true.)
 
     endsubroutine pushdiags2c

@@ -10112,35 +10112,38 @@ module Magnetic
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
+    use Syscalls, only: copy_addr
+
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr_c(eta,p_par(1))
+    call copy_addr(eta,p_par(1))
 
     endsubroutine pushpars2c
 !***********************************************************************
     subroutine pushdiags2c(p_diag)
 
+    use Syscalls, only: copy_addr
     use Diagnostics, only: set_type
 
     integer, parameter :: n_diags=8
     integer(KIND=ikind8), dimension(n_diags) :: p_diag
 
-    call copy_addr_c(idiag_brms,p_diag(1))
+    call copy_addr(idiag_brms,p_diag(1))
     call set_type(idiag_brms,lsqrt=.true.)
-    call copy_addr_c(idiag_bmax,p_diag(2))
+    call copy_addr(idiag_bmax,p_diag(2))
     call set_type(idiag_bmax,lmax=.true.)
-    call copy_addr_c(idiag_bxmin,p_diag(3))
+    call copy_addr(idiag_bxmin,p_diag(3))
     call set_type(idiag_bxmin,lmin=.true.)
-    call copy_addr_c(idiag_bymin,p_diag(4))
+    call copy_addr(idiag_bymin,p_diag(4))
     call set_type(idiag_bymin,lmin=.true.)
-    call copy_addr_c(idiag_bzmin,p_diag(5))
+    call copy_addr(idiag_bzmin,p_diag(5))
     call set_type(idiag_bzmin,lmin=.true.)
-    call copy_addr_c(idiag_bxmax,p_diag(6))
+    call copy_addr(idiag_bxmax,p_diag(6))
     call set_type(idiag_bxmax,lmax=.true.)
-    call copy_addr_c(idiag_bymax,p_diag(7))
+    call copy_addr(idiag_bymax,p_diag(7))
     call set_type(idiag_bymax,lmax=.true.)
-    call copy_addr_c(idiag_bzmax,p_diag(8))
+    call copy_addr(idiag_bzmax,p_diag(8))
     call set_type(idiag_bzmax,lmax=.true.)
 
     endsubroutine pushdiags2c

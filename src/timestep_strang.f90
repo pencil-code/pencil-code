@@ -220,11 +220,13 @@ module Timestep
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
+    use Syscalls, only: copy_addr
+
     integer, parameter :: n_pars=2
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr_c(alpha_ts,p_par(1))  ! (3)
-    call copy_addr_c(beta_ts ,p_par(2))  ! (3)
+    call copy_addr(alpha_ts,p_par(1))  ! (3)
+    call copy_addr(beta_ts ,p_par(2))  ! (3)
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -6007,18 +6007,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
+    use Syscalls, only: copy_addr
+
     integer, parameter :: n_pars=9
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr_c(k1_ff,p_par(1))
-    call copy_addr_c(tforce_stop,p_par(2))
-    call copy_addr_c(iforcing_zsym,p_par(3))
-    call copy_addr_c(profx_ampl,p_par(4))  ! (nx)
-    call copy_addr_c(profy_ampl,p_par(5))  ! (my)
-    call copy_addr_c(profz_ampl,p_par(6))  ! (mz)
-    call copy_addr_c(profx_hel,p_par(7))   ! (nx)
-    call copy_addr_c(profy_hel,p_par(8))   ! (my)
-    call copy_addr_c(profz_hel,p_par(9))   ! (mz)
+    call copy_addr(k1_ff,p_par(1))
+    call copy_addr(tforce_stop,p_par(2))
+    call copy_addr(iforcing_zsym,p_par(3))
+    call copy_addr(profx_ampl,p_par(4))  ! (nx)
+    call copy_addr(profy_ampl,p_par(5))  ! (my)
+    call copy_addr(profz_ampl,p_par(6))  ! (mz)
+    call copy_addr(profx_hel,p_par(7))   ! (nx)
+    call copy_addr(profy_hel,p_par(8))   ! (my)
+    call copy_addr(profz_hel,p_par(9))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************
