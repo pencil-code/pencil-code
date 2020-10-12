@@ -37,7 +37,8 @@ module Special
    integer, target :: ispecial=0
 !
   ! input parameters
-  real :: gam_lucky=fourthird, efficiency_exponent=0., efficiency_prefactor=1., tstar=0.
+  real :: gam_lucky=fourthird, efficiency_exponent=0., efficiency_prefactor=1.
+  real :: rcrit=0., lambda_star1=1, runit=1.
   character(len=50) :: init_qq='zero'
   namelist /special_init_pars/ &
     gam_lucky
@@ -45,10 +46,13 @@ module Special
   ! run parameters
   logical :: lMFT=.false., lrA=.false., lrB=.false.
   namelist /special_run_pars/ &
-    gam_lucky, lMFT, lrA, lrB, efficiency_exponent, efficiency_prefactor, tstar
+    gam_lucky, lMFT, lrA, lrB, efficiency_exponent, efficiency_prefactor, &
+    rcrit, lambda_star1, runit
 !
 ! other variables (needs to be consistent with reset list below)
 !
+  integer :: idiag_rad =0 ! DIAG_DOC: $r/r_\ast$
+  integer :: idiag_tauk=0 ! DIAG_DOC: $\tau_k$
   integer :: idiag_tt1m=0 ! DIAG_DOC: $\langle T \rangle$
   integer :: idiag_qq1m=0 ! DIAG_DOC: $\langle \ln T \rangle$
   integer :: idiag_qq2m=0 ! DIAG_DOC: $\langle \ln T^2 \rangle$
@@ -182,7 +186,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rrr, tauk, lamk
-      real, dimension (nx) :: tt, qq
+      real, dimension (nx) :: tt, qq, rad, ttauk
+      real :: r, r2, rrunit
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -204,15 +209,20 @@ module Special
         qq=alog(tt)
       endif
 !
+!  particle radius, and radius squared
+!
+      r=t**onethird
+      r2=r**2
+!
 !  Selection of different combinations of rA and rB
 !  Black line in paper corresponds to: lrA=T, lrB=T
 !
       if (lrA.and.lrB) then
-        lamk=(t**onethird+1.)**2*(t**twothird-1.)
+        lamk=(r+1.)**2*(r2-1.)
       elseif (lrA.and..not.lrB) then
-        lamk=(t**onethird+1.)**2*t**twothird
+        lamk=(r+1.)**2* r2
       elseif (.not.lrA.and.lrB) then
-        lamk=t**twothird*(t**twothird-1.)
+        lamk= r2      *(r2-1.)
       else
         lamk=t**gam_lucky
       endif
@@ -221,11 +231,14 @@ module Special
 !  for t>tstar with exponent efficiency_exponent.
 !  Allow also efficiency_prefactor, just to demonstrate that
 !  it has no effect on the final P(T) curve, as expected.
+!  Entering the inverse, lambda_star1, is also useful and more
+!  intuitive (lambda_star1=1123.18s for standard parameters)
 !
-      if (efficiency_exponent/=0. .and. t>tstar) then
-        lamk=lamk*(t/tstar)**efficiency_exponent
+      rrunit=r*runit
+      if (efficiency_exponent/=0. .and. rrunit>rcrit) then
+        lamk=lamk*(rrunit/rcrit)**efficiency_exponent
       endif
-      lamk=lamk*efficiency_prefactor
+      lamk=lamk*efficiency_prefactor/lambda_star1
 !
 !  Produce exponentially distributed random numbers,
 !  but can also do mean-field theory as a test.
@@ -241,6 +254,10 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
+        rad=rrunit
+        ttauk=tauk
+        if (idiag_rad /=0) call sum_mn_name(rad  ,idiag_rad)
+        if (idiag_tauk/=0) call sum_mn_name(tauk ,idiag_tauk)
         if (idiag_tt1m/=0) call sum_mn_name(tt   ,idiag_tt1m)
         if (idiag_qq1m/=0) call sum_mn_name(qq   ,idiag_qq1m)
         if (idiag_qq2m/=0) call sum_mn_name(qq**2,idiag_qq2m)
@@ -309,10 +326,13 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_tt1m=0; idiag_qq1m=0; idiag_qq2m=0; idiag_qq3m=0; idiag_qq4m=0
+        idiag_rad=0; idiag_tauk=0; idiag_tt1m=0
+        idiag_qq1m=0; idiag_qq2m=0; idiag_qq3m=0; idiag_qq4m=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rad' ,idiag_rad)
+        call parse_name(iname,cname(iname),cform(iname),'tauk',idiag_tauk)
         call parse_name(iname,cname(iname),cform(iname),'tt1m',idiag_tt1m)
         call parse_name(iname,cname(iname),cform(iname),'qq1m',idiag_qq1m)
         call parse_name(iname,cname(iname),cform(iname),'qq2m',idiag_qq2m)
