@@ -298,7 +298,7 @@ module Syscalls
 
     call copy_addr_c(var,caddr)
 
-    endsubroutine copy_addr_int
+    endsubroutine copy_addr_log
 !***********************************************************************
     subroutine copy_addr_real_1D(var, caddr)
 
