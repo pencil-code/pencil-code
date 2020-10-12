@@ -9,6 +9,7 @@ module Syscalls
   external is_nan_c
   external system_c
   external sizeof_real_c
+  external copy_addr_c
 !
   interface is_nan
     module procedure is_nan_0D
@@ -16,6 +17,12 @@ module Syscalls
     module procedure is_nan_2D
     module procedure is_nan_3D
     module procedure is_nan_4D
+  endinterface
+!
+  interface copy_addr
+    module procedure copy_addr_int
+    module procedure copy_addr_real
+    module procedure copy_addr_real_1D
   endinterface
 !
   contains
@@ -271,5 +278,32 @@ module Syscalls
       islink = islink_c(trim(filename)//char(0))==1
 
     endfunction islink
+!***********************************************************************
+    subroutine copy_addr_int(var, caddr)
+
+    integer, intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_int
+!***********************************************************************
+    subroutine copy_addr_real_1D(var, caddr)
+
+    real, dimension(:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_real_1D
+!***********************************************************************
+    subroutine copy_addr_real(var, caddr)
+
+    real, intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_real
 !***********************************************************************
 endmodule Syscalls
