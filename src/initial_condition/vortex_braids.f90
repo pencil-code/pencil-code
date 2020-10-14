@@ -107,7 +107,7 @@ module InitialCondition
 !   Add a background velocity field.
     do m=m1,m2
         do n=n1,n2
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*Omega_bkg
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*Omega_bkg/2
         enddo
     enddo
 !
