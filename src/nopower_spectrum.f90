@@ -216,4 +216,12 @@ module power_spectrum
 !
   endsubroutine anisoq_diag
 !***********************************************************************
+  subroutine corrfunc_3d(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+  endsubroutine corrfunc_3d
+!***********************************************************************
 endmodule power_spectrum

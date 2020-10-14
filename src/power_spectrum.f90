@@ -3728,4 +3728,196 @@ endsubroutine pdf
   !
   endsubroutine anisoq_diag
 !***********************************************************************
+  subroutine corrfunc_3d(f)
+!
+!  Calculate correlation functions <u_i^* u_j>, for i,j=1,2,3
+!  as functions of the vector k.
+!  I call the symmetric, real part of it vij,
+!  and (the antisymmetric, imaginary part / i) = wij.
+!  For the moment only u=velocity field
+!
+!  2020-Oct-14 added this subroutine
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, k, ikx, iky, ikz, jkx,jky,jkz, im, in, ivec, ivec_jj
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: ux_re, ux_im
+  real, dimension(nx,ny,nz) :: uy_re, uy_im
+  real, dimension(nx,ny,nz) :: uz_re, uz_im
+  real, dimension(nxgrid,nygrid,nzgrid) :: vxx, vxy, vyy, vxz, vyz, vzz
+  real, dimension(nxgrid,nygrid,nzgrid) :: wxy, wyz, wzx
+  real, dimension(nxgrid,nygrid,nzgrid) :: vxx_sum, vxy_sum, vyy_sum
+  real, dimension(nxgrid,nygrid,nzgrid) :: vxz_sum, vyz_sum, vzz_sum
+  real, dimension(nxgrid,nygrid,nzgrid) :: wxy_sum, wyz_sum, wzx_sum
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+!
+!  passive scalar contributions (hardwired for now)
+!
+  real, dimension(nx,3) :: gtmp1,gtmp2
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  vxx=0.
+  vxx_sum=0.
+  vxy=0.
+  vxy_sum=0.
+  vyy=0.
+  vyy_sum=0.
+  vxz=0.
+  vxz_sum=0.
+  vyz=0.
+  vyz_sum=0.
+  vzz=0.
+  vzz_sum=0.
+  wxy=0.
+  wxy_sum=0.
+  wyz=0.
+  wyz_sum=0.
+  wzx=0.
+  wzx_sum=0.
+  !
+  !  calculate each components
+  !
+  if (iuu==0) call fatal_error('powerhel','iuu=0')
+  ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1)
+  uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1)
+  uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1)
+  ux_im=0.
+  uy_im=0.
+  uz_im=0.
+  !
+  !  Doing the Fourier transform
+  !
+  call fft_xyz_parallel(ux_re,ux_im)
+  call fft_xyz_parallel(uy_re,uy_im)
+  call fft_xyz_parallel(uz_re,uz_im)
+  !
+  !  calculate correlation functions
+  !
+  if (lroot .AND. ip<10) print*,'fft done; now computing correlation functions...'
+  do ikz=1,nz
+    do iky=1,ny
+      do ikx=1,nx
+        jkx=nint(kx(ikx+ipx*nx))+nxgrid/2+1 ! runs from 1 to nxgrid
+        jky=nint(ky(iky+ipy*ny))+nygrid/2+1
+        jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+        vxx(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
+          +ux_im(ikx,iky,ikz)*ux_im(ikx,iky,ikz)
+        vxy(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+          +ux_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
+        vxz(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+          +ux_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+        vyy(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+          +uy_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
+        vyz(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+          +uy_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+        vzz(jkx,jky,jkz)=uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+          +uz_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+        wxy(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+          -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
+        wzx(jkx,jky,jkz)=uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
+          -uz_im(ikx,iky,ikz)*ux_re(ikx,iky,ikz)
+        wyz(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
+          -uy_im(ikx,iky,ikz)*uz_re(ikx,iky,ikz)
+!
+!  end of loop through all points
+!
+      enddo
+    enddo
+  enddo
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(vxx,vxx_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(vxy,vxy_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(vxz,vxz_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(vyy,vyy_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(vyz,vyz_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(vzz,vzz_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(wxy,wxy_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(wzx,wzx_sum,(/nxgrid,nygrid,nzgrid/))
+  call mpireduce_sum(wyz,wyz_sum,(/nxgrid,nygrid,nzgrid/))
+  !
+  !  on root processor, write global result to file
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing two point correlations to'  &
+        ,trim(datadir)//'/cor2_.dat files'
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vxx.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vxx_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vxy.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vxy_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vxz.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vxz_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vyy.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vyy_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vyz.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vyz_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_vzz.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') vzz_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_wxy.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') wxy_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_wyz.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') wyz_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/cor2_kin_wzx.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') wzx_sum
+    close(1)
+    !
+  endif
+    
+  endsubroutine corrfunc_3d
+!***********************************************************************
 endmodule power_spectrum
