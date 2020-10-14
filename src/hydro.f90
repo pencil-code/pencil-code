@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3); curlo(3)
+! PENCILS PROVIDED divu; oo(3); o2; ou; oxu2; oxu(3); u2; uij(3,3); uu(3); curlo(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
 ! PENCILS PROVIDED d2uidxj(3,3), uijk(3,3,3); ogu(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
@@ -422,15 +422,16 @@ module Hydro
                                 ! DIAG_DOC:  \quad(time step relative to
                                 ! DIAG_DOC:   advective time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC:   \cdot\uv\right>$
-  integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}
-                                ! DIAG_DOC:   \cdot\uv^2\right>^{1/2}$
+  integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}\cdot\uv\right>$
+  integer :: idiag_oxum=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}\times\uv\right>$
+  integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
+  integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_ou_int=0     ! DIAG_DOC: $\int_V\boldsymbol{\omega}\cdot\uv\,dV$
   integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
+  integer :: idiag_o2u2m=0      ! DIAG_DOC: $\left<\uv^2\boldsymbol{\omega}^2\right>$
   integer :: idiag_o2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
                                 ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>^{1/2}$
@@ -1503,9 +1504,9 @@ module Hydro
         case ('xjump')
           call jump(f,iux,uu_left,uu_right,widthuu,'x')
           call jump(f,iuy,uy_left,uy_right,widthuu,'x')
-        case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
-        case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
-        case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+        case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu,sigma=relhel_uu)
+        case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu,sigma=relhel_uu)
+        case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu,sigma=relhel_uu)
         case ('Straining'); call straining(ampluu(j),f,iuu,kx_uu,ky_uu,kz_uu,dimensionality)
         case ('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
         case ('trilinear-x'); call trilinear(f,iux,ampl_ux(j),ampl_uy(j),ampl_uz(j))
@@ -2345,7 +2346,7 @@ module Hydro
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
           idiag_pvzm /=0 .or. idiag_quxom/=0) &
           lpenc_diagnos(i_oo)=.true.
-      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2sphm/=0 .or. &
+      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. &
           idiag_qfm/=0 .or. idiag_qom/=0 .or. idiag_quxom/=0) &
@@ -2359,6 +2360,8 @@ module Hydro
       if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
       if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumx/=0 .or. idiag_oumy/=0 .or. &
            idiag_oumz/=0 .or. idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oxum/=0) lpenc_diagnos(i_oxu)=.true.
+      if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
       if (idiag_divrhourms/=0.or.idiag_divrhoumax/=0) then
         lpenc_diagnos(i_ugrho)=.true.
         lpenc_diagnos(i_divu)=.true.
@@ -2515,7 +2518,8 @@ module Hydro
       endif
       if (lpencil_in(i_oo) .and. ioo == 0) lpencil_in(i_uij) = .true.
       if (lpencil_in(i_o2)) lpencil_in(i_oo)=.true.
-      if (lpencil_in(i_ou)) then
+      if (lpencil_in(i_oxu2)) lpencil_in(i_oxu)=.true.
+      if (lpencil_in(i_ou) .or. lpencil_in(i_oxu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
       endif
@@ -2658,10 +2662,12 @@ module Hydro
           call curl_mn(p%uij,p%oo,p%uu)
         endif
       endif
-! o2
+! o2 and oxu2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
-! ou
+! ou and oxu
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+      if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
+      if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
 ! Useful to debug forcing - Dhruba
       if (loutest.and.lpenc_loc(i_ou))then
 !      write(*,*) lpenc_loc(i_ou)
@@ -2889,9 +2895,11 @@ module Hydro
         call curl_mn(p%uij,p%oo,p%uu)
       endif
 ! o2
-      if (lpenc_loc(i_o2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 pencil')
+      if (lpenc_loc(i_o2) .or. lpenc_loc(i_oxu2)) &
+        call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 or oxu2 pencils')
 ! ou
-      if (lpenc_loc(i_ou)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou pencil')
+      if (lpenc_loc(i_ou) .or. lpenc_loc(i_oxu)) &
+        call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou or oxu pencils')
 ! ugu
       if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
@@ -3562,7 +3570,9 @@ module Hydro
 !
         if (idiag_ou_int/=0) call integrate_mn_name(p%ou,idiag_ou_int)
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
+        if (idiag_oxum/=0) call sum_mn_name(p%oxu(:,1),idiag_oxum)
         if (idiag_ourms/=0) call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
+        if (idiag_oxurms/=0) call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
 !
 !  Things related to vorticity.
 !
@@ -3593,8 +3603,9 @@ module Hydro
 !
 !  various vorticity diagnostics
 !
-        call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
-        call sum_mn_name(p%o2,idiag_o2m)
+        if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
+        if (idiag_o2m/=0)  call sum_mn_name(p%o2,idiag_o2m)
+        if (idiag_o2u2m/=0)call sum_mn_name(p%o2*p%u2,idiag_o2u2m)
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
         if (idiag_oy2m/=0) call sum_mn_name(p%oo(:,2)**2,idiag_oy2m)
         if (idiag_oz2m/=0) call sum_mn_name(p%oo(:,3)**2,idiag_oz2m)
@@ -5337,11 +5348,14 @@ module Hydro
         idiag_rumax=0
         idiag_dtu=0
         idiag_oum=0
+        idiag_oxum=0
         idiag_ourms=0
+        idiag_oxurms=0
         idiag_ou_int=0
         idiag_fum=0
         idiag_odel2um=0
         idiag_o2m=0
+        idiag_o2u2m=0
         idiag_o2sphm=0
         idiag_orms=0
         idiag_omax=0
@@ -5471,9 +5485,12 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'odel2um',idiag_odel2um)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
+        call parse_name(iname,cname(iname),cform(iname),'o2u2m',idiag_o2u2m)
         call parse_name(iname,cname(iname),cform(iname),'o2sphm',idiag_o2sphm)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'oxum',idiag_oxum)
         call parse_name(iname,cname(iname),cform(iname),'ourms',idiag_ourms)
+        call parse_name(iname,cname(iname),cform(iname),'oxurms',idiag_oxurms)
         call parse_name(iname,cname(iname),cform(iname),'ou_int',idiag_ou_int)
         call parse_name(iname,cname(iname),cform(iname),'fum',idiag_fum)
         call parse_name(iname,cname(iname),cform(iname),'oumn',idiag_oumn)
