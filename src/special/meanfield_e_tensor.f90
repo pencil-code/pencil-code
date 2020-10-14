@@ -193,6 +193,8 @@ module Special
 !
   integer :: idiag_emfxmxy=0, idiag_emfymxy=0, idiag_emfzmxy=0
   integer :: idiag_emfcoefxmxy=0, idiag_emfcoefymxy=0, idiag_emfcoefzmxy=0
+  integer :: idiag_alphaxxmxy=0, idiag_alphayymxy=0, idiag_alphazzmxy=0
+  integer :: idiag_umeanxmxy=0, idiag_umeanymxy=0, idiag_umeanzmxy=0
 !
   ! Interpolation parameters
   character (len=fnlen) :: interpname
@@ -1441,6 +1443,12 @@ endif
         call zsum_mn_name_xy(emftmp(:,1),idiag_emfcoefxmxy)
         call zsum_mn_name_xy(emftmp(:,2),idiag_emfcoefymxy)
         call zsum_mn_name_xy(emftmp(:,3),idiag_emfcoefzmxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,1,1),idiag_alphaxxmxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,2,2),idiag_alphayymxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,3,3),idiag_alphazzmxy)
+        call zsum_mn_name_xy(p%umean_coefs(:,1),idiag_umeanxmxy)
+        call zsum_mn_name_xy(p%umean_coefs(:,2),idiag_umeanymxy)
+        call zsum_mn_name_xy(p%umean_coefs(:,3),idiag_umeanzmxy)
       endif
 
       call keep_compiler_quiet(f,df)
@@ -1562,6 +1570,8 @@ endif
 !    2D diagnostics
         idiag_emfxmxy=0; idiag_emfymxy=0; idiag_emfzmxy=0
         idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
+        idiag_alphaxxmxy=0; idiag_alphayymxy=0; idiag_alphazzmxy=0;
+        idiag_umeanxmxy=0; idiag_umeanymxy=0; idiag_umeanzmxy=0;
       endif
 !
       do iname=1,nname
@@ -1624,6 +1634,12 @@ endif
         call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefxmxy',idiag_emfcoefxmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefymxy',idiag_emfcoefymxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefzmxy',idiag_emfcoefzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphaxxmxy',idiag_alphaxxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphayymxy',idiag_alphayymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphazzmxy',idiag_alphazzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanxmxy',idiag_umeanxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanymxy',idiag_umeanymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanzmxy',idiag_umeanzmxy)
       enddo
  
     endsubroutine rprint_special
