@@ -3754,6 +3754,10 @@ endsubroutine pdf
   real, dimension(nxgrid,nygrid,nzgrid) :: vxx_sum, vxy_sum, vyy_sum
   real, dimension(nxgrid,nygrid,nzgrid) :: vxz_sum, vyz_sum, vzz_sum
   real, dimension(nxgrid,nygrid,nzgrid) :: wxy_sum, wyz_sum, wzx_sum
+  real :: k2
+  real, dimension(nk,nzgrid) :: cyl_vxx, cyl_vxx_sum
+  real, dimension(nk,nzgrid) :: cyl_vzz, cyl_vzz_sum
+  real, dimension(nk,nzgrid) :: cyl_wxy, cyl_wxy_sum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nxgrid) :: kx
@@ -3782,24 +3786,33 @@ endsubroutine pdf
   !
   k2m=0.
   nks=0.
-  vxx=0.
-  vxx_sum=0.
-  vxy=0.
-  vxy_sum=0.
-  vyy=0.
-  vyy_sum=0.
-  vxz=0.
-  vxz_sum=0.
-  vyz=0.
-  vyz_sum=0.
-  vzz=0.
-  vzz_sum=0.
-  wxy=0.
-  wxy_sum=0.
-  wyz=0.
-  wyz_sum=0.
-  wzx=0.
-  wzx_sum=0.
+  if (lcylindrical_spectra) then
+    cyl_vxx=0.
+    cyl_vxx_sum=0.
+    cyl_vzz=0.
+    cyl_vzz_sum=0.
+    cyl_wxy=0.
+    cyl_wxy_sum=0.
+  else
+    vxx=0.
+    vxx_sum=0.
+    vxy=0.
+    vxy_sum=0.
+    vyy=0.
+    vyy_sum=0.
+    vxz=0.
+    vxz_sum=0.
+    vyz=0.
+    vyz_sum=0.
+    vzz=0.
+    vzz_sum=0.
+    wxy=0.
+    wxy_sum=0.
+    wyz=0.
+    wyz_sum=0.
+    wzx=0.
+    wzx_sum=0.
+  endif
   !
   !  calculate each components
   !
@@ -3819,59 +3832,91 @@ endsubroutine pdf
   !
   !  calculate correlation functions
   !
-  if (lroot .AND. ip<10) print*,'fft done; now computing correlation functions...'
-  do ikz=1,nz
-    do iky=1,ny
-      do ikx=1,nx
-        jkx=nint(kx(ikx+ipx*nx))+nxgrid/2+1 ! runs from 1 to nxgrid
-        jky=nint(ky(iky+ipy*ny))+nygrid/2+1
-        jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-        vxx(jkx,jky,jkz)=vxx(jkx,jky,jkz)+ &
-          ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
-          +ux_im(ikx,iky,ikz)*ux_im(ikx,iky,ikz)
-        vxy(jkx,jky,jkz)=vxy(jkx,jky,jkz)+ &
-          ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
-          +ux_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-        vxz(jkx,jky,jkz)=vxz(jkx,jky,jkz)+ &
-          ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-          +ux_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        vyy(jkx,jky,jkz)=vyy(jkx,jky,jkz)+ &
-          uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
-          +uy_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-        vyz(jkx,jky,jkz)=vyz(jkx,jky,jkz)+ &
-          uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-          +uy_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        vzz(jkx,jky,jkz)=vzz(jkx,jky,jkz)+ &
-          uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-          +uz_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        wxy(jkx,jky,jkz)=wxy(jkx,jky,jkz)+ &
-          ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-          -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
-        wzx(jkx,jky,jkz)=wzx(jkx,jky,jkz)+ &
-          uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
-          -uz_im(ikx,iky,ikz)*ux_re(ikx,iky,ikz)
-        wyz(jkx,jky,jkz)=wyz(jkx,jky,jkz)+ &
-          uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
-          -uy_im(ikx,iky,ikz)*uz_re(ikx,iky,ikz)
+  if (lcylindrical_spectra) then
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    do ikz=1,nz
+      do iky=1,ny
+       do ikx=1, nx
+         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+         jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+         k=nint(sqrt(k2))
+         if (k>=0 .and. k<=(nk-1)) then
+           cyl_vxx(k,jkz)=cyl_vxx(k,jkz) &
+             +ux_re(ikx,iky,ikz)**2/2 &
+             +ux_im(ikx,iky,ikz)**2/2 &
+             +uy_re(ikx,iky,ikz)**2/2 &
+             +uy_im(ikx,iky,ikz)**2/2
+           cyl_vzz(k,jkz)=cyl_vzz(k,jkz) &
+             +uz_re(ikx,iky,ikz)**2/2 &
+             +uz_im(ikx,iky,ikz)**2/2
+           cyl_wxy(k,jkz)=cyl_wxy(k,jkz) &
+             +ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+             -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
+          endif
+        enddo
+      enddo
+    enddo
+  else
+    if (lroot .AND. ip<10) print*,'fft done; now computing correlation functions...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          jkx=nint(kx(ikx+ipx*nx))+nxgrid/2+1 ! runs from 1 to nxgrid
+          jky=nint(ky(iky+ipy*ny))+nygrid/2+1
+          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+          vxx(jkx,jky,jkz)=vxx(jkx,jky,jkz)+ &
+            ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
+            +ux_im(ikx,iky,ikz)*ux_im(ikx,iky,ikz)
+          vxy(jkx,jky,jkz)=vxy(jkx,jky,jkz)+ &
+            ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+            +ux_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
+          vxz(jkx,jky,jkz)=vxz(jkx,jky,jkz)+ &
+            ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+            +ux_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+          vyy(jkx,jky,jkz)=vyy(jkx,jky,jkz)+ &
+            uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+            +uy_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
+          vyz(jkx,jky,jkz)=vyz(jkx,jky,jkz)+ &
+            uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+            +uy_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+          vzz(jkx,jky,jkz)=vzz(jkx,jky,jkz)+ &
+            uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+            +uz_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
+          wxy(jkx,jky,jkz)=wxy(jkx,jky,jkz)+ &
+            ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+            -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
+          wzx(jkx,jky,jkz)=wzx(jkx,jky,jkz)+ &
+            uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
+            -uz_im(ikx,iky,ikz)*ux_re(ikx,iky,ikz)
+          wyz(jkx,jky,jkz)=wyz(jkx,jky,jkz)+ &
+            uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
+            -uy_im(ikx,iky,ikz)*uz_re(ikx,iky,ikz)
 !
 !  end of loop through all points
 !
+        enddo
       enddo
     enddo
-  enddo
+  endif
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  call mpireduce_sum(vxx,vxx_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(vxy,vxy_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(vxz,vxz_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(vyy,vyy_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(vyz,vyz_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(vzz,vzz_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(wxy,wxy_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(wzx,wzx_sum,(/nxgrid,nygrid,nzgrid/))
-  call mpireduce_sum(wyz,wyz_sum,(/nxgrid,nygrid,nzgrid/))
+  if(lcylindrical_spectra) then
+    call mpireduce_sum(cyl_vxx,cyl_vxx_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_vzz,cyl_vzz_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_wxy,cyl_wxy_sum,(/nk,nzgrid/))
+  else
+    call mpireduce_sum(vxx,vxx_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(vxy,vxy_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(vxz,vxz_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(vyy,vyy_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(vyz,vyz_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(vzz,vzz_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(wxy,wxy_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(wzx,wzx_sum,(/nxgrid,nygrid,nzgrid/))
+    call mpireduce_sum(wyz,wyz_sum,(/nxgrid,nygrid,nzgrid/))
+  endif
   !
   !  on root processor, write global result to file
   !
@@ -3881,51 +3926,69 @@ endsubroutine pdf
     if (ip<10) print*,'Writing two point correlations to'  &
         ,trim(datadir)//'/cor2_.dat files'
     !
-    open(1,file=trim(datadir)//'/cor2_kin_vxx.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vxx_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_vxy.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vxy_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_vxz.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vxz_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_vyy.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vyy_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_vyz.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vyz_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_vzz.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') vzz_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_wxy.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') wxy_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_wyz.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') wyz_sum
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/cor2_kin_wzx.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') wzx_sum
-    close(1)
-    !
+    if (lcylindrical_spectra) then
+      open(1,file=trim(datadir)//'/cor2_kin_vxx_cyl.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') cyl_vxx_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vzz_cyl.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') cyl_vzz_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_wxy_cyl.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') cyl_wxy_sum
+      close(1)
+      !
+    else
+      open(1,file=trim(datadir)//'/cor2_kin_vxx.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vxx_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vxy.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vxy_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vxz.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vxz_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vyy.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vyy_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vyz.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vyz_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_vzz.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') vzz_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_wxy.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') wxy_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_wyz.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') wyz_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cor2_kin_wzx.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') wzx_sum
+      close(1)
+      !
+    endif
   endif
     
   endsubroutine corrfunc_3d
