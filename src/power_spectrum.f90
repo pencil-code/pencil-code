@@ -3734,9 +3734,10 @@ endsubroutine pdf
 !  as functions of the vector k.
 !  I call the symmetric, real part of it vij,
 !  and (the antisymmetric, imaginary part / i) = wij.
-!  For the moment only u=velocity field
+!  For the moment only u=velocity field,
+!  but possible to extend using 'sp'
 !
-!  2020-Oct-14 added this subroutine
+!  2020-Oct-14 Hongzhe added this subroutine
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
@@ -3825,23 +3826,32 @@ endsubroutine pdf
         jkx=nint(kx(ikx+ipx*nx))+nxgrid/2+1 ! runs from 1 to nxgrid
         jky=nint(ky(iky+ipy*ny))+nygrid/2+1
         jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-        vxx(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
+        vxx(jkx,jky,jkz)=vxx(jkx,jky,jkz)+ &
+          ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
           +ux_im(ikx,iky,ikz)*ux_im(ikx,iky,ikz)
-        vxy(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+        vxy(jkx,jky,jkz)=vxy(jkx,jky,jkz)+ &
+          ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
           +ux_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-        vxz(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+        vxz(jkx,jky,jkz)=vxz(jkx,jky,jkz)+ &
+          ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
           +ux_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        vyy(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
+        vyy(jkx,jky,jkz)=vyy(jkx,jky,jkz)+ &
+          uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
           +uy_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-        vyz(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+        vyz(jkx,jky,jkz)=vyz(jkx,jky,jkz)+ &
+          uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
           +uy_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        vzz(jkx,jky,jkz)=uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
+        vzz(jkx,jky,jkz)=vzz(jkx,jky,jkz)+ &
+          uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
           +uz_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-        wxy(jkx,jky,jkz)=ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+        wxy(jkx,jky,jkz)=wxy(jkx,jky,jkz)+ &
+          ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
           -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
-        wzx(jkx,jky,jkz)=uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
+        wzx(jkx,jky,jkz)=wzx(jkx,jky,jkz)+ &
+          uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
           -uz_im(ikx,iky,ikz)*ux_re(ikx,iky,ikz)
-        wyz(jkx,jky,jkz)=uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
+        wyz(jkx,jky,jkz)=wyz(jkx,jky,jkz)+ &
+          uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
           -uy_im(ikx,iky,ikz)*uz_re(ikx,iky,ikz)
 !
 !  end of loop through all points
