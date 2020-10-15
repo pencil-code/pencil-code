@@ -3841,15 +3841,15 @@ endsubroutine pdf
          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
          k=nint(sqrt(k2))
          if (k>=0 .and. k<=(nk-1)) then
-           cyl_vxx(k,jkz)=cyl_vxx(k,jkz) &
+           cyl_vxx(k+1,jkz)=cyl_vxx(k+1,jkz) &
              +ux_re(ikx,iky,ikz)**2/2 &
              +ux_im(ikx,iky,ikz)**2/2 &
              +uy_re(ikx,iky,ikz)**2/2 &
              +uy_im(ikx,iky,ikz)**2/2
-           cyl_vzz(k,jkz)=cyl_vzz(k,jkz) &
-             +uz_re(ikx,iky,ikz)**2/2 &
-             +uz_im(ikx,iky,ikz)**2/2
-           cyl_wxy(k,jkz)=cyl_wxy(k,jkz) &
+           cyl_vzz(k+1,jkz)=cyl_vzz(k+1,jkz) &
+             +uz_re(ikx,iky,ikz)**2 &
+             +uz_im(ikx,iky,ikz)**2
+           cyl_wxy(k+1,jkz)=cyl_wxy(k+1,jkz) &
              +ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
              -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
           endif
