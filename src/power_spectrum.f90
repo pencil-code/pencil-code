@@ -3072,18 +3072,6 @@ module power_spectrum
    enddo
    enddo
 !
-!  Write file (here per processor).
-!
-   pdf_file=trim(directory)//'/pdf_'//trim(variabl)//'.dat'
-   open(1,file=trim(pdf_file),position='append')
-   if (logscale) then
-     write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
-   else
-     write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
-   endif
-   write(1,11) pdf_yy
-   close(1)
-!
 !  Communicate and append from root processor.
 !
   call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf)
