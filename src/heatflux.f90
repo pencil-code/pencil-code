@@ -396,17 +396,17 @@ contains
       call parse_name(iname,cnamev(iname),cformv(iname),'divq',ivid_divq)
     enddo
 
-    if (lwr) then
-      call farray_index_append('iqq',iqq)
-      call farray_index_append('iqx',iqx)
-      call farray_index_append('iqy',iqy)
-      call farray_index_append('iqz',iqz)
-      call farray_index_append('i_dtspitzer',idiag_dtspitzer)
-      call farray_index_append('i_dtq',idiag_dtq)
-      call farray_index_append('i_dtq2',idiag_dtq2)
-      call farray_index_append('i_qsatmin',idiag_qsatmin)
-      call farray_index_append('i_qsatrms',idiag_qsatrms)
-    endif
+!    if (lwr) then
+!      call farray_index_append('iqq',iqq)
+!      call farray_index_append('iqx',iqx)
+!      call farray_index_append('iqy',iqy)
+!      call farray_index_append('iqz',iqz)
+!      call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+!      call farray_index_append('i_dtq',idiag_dtq)
+!      call farray_index_append('i_dtq2',idiag_dtq2)
+!      call farray_index_append('i_qsatmin',idiag_qsatmin)
+!      call farray_index_append('i_qsatrms',idiag_qsatrms)
+!    endif
 !
   endsubroutine rprint_heatflux
 !***********************************************************************

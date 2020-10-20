@@ -182,7 +182,8 @@ indices_shortcut = [ $
   { name:'iuu', replace:'iu' }, $
   { name:'iaa', replace:'ia' }, $
   { name:'ibb', replace:'ib' }, $
-  { name:'ijj', replace:'ij' } $
+  { name:'ijj', replace:'ij' }, $
+  { name:'iqq', replace:'iq' } $
   ; don't forget to add a comma above when extending
 ]
 
