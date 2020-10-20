@@ -538,7 +538,12 @@ sub get_mpiexec_opts {
     } elsif ($mpiexec =~ /srun/) {
         push @np_opts, '-n', $ncpus;
     } elsif ($mpiexec =~ /ibrun/) {
-        # No option is needed.
+        my $ntasks = get_ntasks();
+        if ($ntasks != $ncpus) {
+            warn "Warning: a total of $ntasks tasks allocated but ncpus = $ncpus; explicitly pushing options\n";
+            push @np_opts, '-n', $ncpus;
+            push @np_opts, '-o', '0';
+        }
     } else {
         warn "pc_run: No clue how to tell $mpiexec to use $ncpus nodes\n";
     }
@@ -930,6 +935,25 @@ sub subdir_list {
         }
     }
     return @subdirs;
+}
+# ---------------------------------------------------------------------- #
+sub get_ntasks {
+# Return the number of tasks allocated by the machine.
+    for my $ntasks (
+                 $ENV{SLURM_NTASKS},  # SLURM
+                 $ENV{PBS_TASKNUM},   # PBS
+                ) {
+        if (defined $ntasks) {
+            return $ntasks;
+        }
+    }
+    my $os = `uname -s`;
+    if ( $os =~ /Linux/ ) {
+        return `lscpu --extended=cpu | wc -l` - 1;
+    } elsif ( $os =~ /Darwin/ ) {
+        return `sysctl -n machdep.cpu.thread_count`;
+    }
+    die "Error: unable to determine number of tasks allocated by the machine.\n";
 }
 # ---------------------------------------------------------------------- #
 sub get_node_list {
