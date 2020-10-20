@@ -2484,6 +2484,25 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ### End machine dependent
 
 #
+#  Temporary workaround for GCC version >= 10 for subroutine calls with type mismatch.
+#  Offending files: mpicomm.f90 particles_mpicomm.f90 Syscalls.f90 fftpack.f90
+#
+# Determine the Fortran compiler.
+COMPILER = $(notdir $(firstword $(FC)))
+ifneq (,$(filter mpif%,$(COMPILER)))
+  COMPILER = $(notdir $(firstword $(shell $(FC) --show)))
+  $(info Compiler: $(COMPILER))
+endif
+# If the compiler is from GCC, determine its version.
+ifneq (,$(filter gfortran%,$(COMPILER)))
+  GCC_VERSION = $(shell $(FC) -dumpversion)
+  $(info GCC version: $(GCC_VERSION))
+  ifneq (,$(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true))
+    $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
+    ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
+  endif
+endif
+#
 #  Default linker to compiler settings, if unset.
 #
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
@@ -2927,14 +2946,16 @@ linkonly:
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
+$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ) Makefile.src
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o $(SYSCALLS_OBJ) -c $(SYSCALLS_SRC)
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) cdata.o
-	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM).o -c $(MPICOMM).f90
+	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
 $(STRUCT_FUNC_OBJ): $(STRUCT_FUNC_SRC) 
 	$(FC) $(ALL_COMP_FLAGS) -o $(STRUCT_FUNC_OBJ) -c $(STRUCT_FUNC_SRC)
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC) $(PARTICLES_OBJ)
-	$(FC) $(ALL_COMP_FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-	$(FC) $(ALL_COMP_FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
+	$(FC) $(ALL_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
 	$(FC) $(ALL_COMP_FLAGS) -o param_io.o -c param_io.f90
 diagnostics_outlog.o: diagnostics_outlog.f90
