@@ -3166,7 +3166,7 @@ module Magnetic
 !
       real, dimension(nx,3,3) :: aij, bij
       real, dimension(nx,3) :: bb, jj
-      real, dimension(nx) :: rho1, b2, tmp
+      real, dimension(nx) :: rho1, b2, tmp, tmp2
       real, dimension(3) :: b_ext
       integer :: j
 !
@@ -3227,7 +3227,12 @@ module Magnetic
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
-              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              if (lboris_correction .and. va2max_boris>0) then
+                tmp2=tmp*((1+(tmp/va2max_boris)**2.)**(-1.0/2.0))
+                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp2)
+              else
+                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
+              endif
            endif
           endif
         enddo mn_loop
