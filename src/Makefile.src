@@ -2490,14 +2490,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # Determine the Fortran compiler.
 COMPILER = $(notdir $(firstword $(FC)))
 ifneq (,$(filter mpif%,$(COMPILER)))
-  COMPILER = $(notdir $(firstword $(shell $(FC) --show)))
+  COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
   $(info Compiler: $(COMPILER))
 endif
 # If the compiler is from GCC, determine its version.
 ifneq (,$(filter gfortran%,$(COMPILER)))
   GCC_VERSION = $(shell $(FC) -dumpversion)
   $(info GCC version: $(GCC_VERSION))
-  ifneq (,$(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true))
+  ifeq ($(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true),true)
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
   endif
