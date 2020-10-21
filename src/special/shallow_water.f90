@@ -100,6 +100,10 @@ module Special
   logical :: lsubsidence=.true.
   logical :: ljet_reinforcement=.false.
 !
+! Height floor
+!
+  real :: height_floor=-1.0
+!
   namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
@@ -107,7 +111,7 @@ module Special
        gamma_parameter,tmass_relaxation,lgamma_plane,lcalc_storm,&
        lmass_relaxation,Omega_SB,eta0,lsubsidence,storm_truncation_factor,&
        ljet_reinforcement,v_jet_peak,sigma_jet,tau_jet,r_jet_center,&
-       tduration,interval_between_storms
+       tduration,interval_between_storms,height_floor
 !
   type InternalPencils
      real, dimension(nx) :: gr2,eta_init,storm_function,subsidence
@@ -775,6 +779,15 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_
+!
+!  Impose height floor. The fluid height is h=h0+eta, 
+!  where eta is f(:,:,:,irho). Prevent the fluid height
+!  from going below a height_floor. 
+!
+      if (height_floor >= 0) then 
+         where (f(:,:,npoint,irho) < height_floor - h0) &
+                f(:,:,npoint,irho) = height_floor - h0
+      endif
 !
       if (lupdate_as_var.and.lroot) call wsnap_storms
 !
