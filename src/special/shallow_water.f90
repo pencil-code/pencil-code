@@ -123,6 +123,8 @@ module Special
 ! Diagnostics
 !
   integer :: idiag_dtgh=0
+  integer :: idiag_totKE=0
+  integer :: idiag_totAPE=0
 !
   contains
 !
@@ -258,6 +260,7 @@ module Special
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_divu)=.true.
 !
+      if (idiag_totKE/=0) lpenc_diagnos(i_u2)=.true.
       !if (lentropy.or.&
       !    (ltemperature.and.(.not.ltemperature_nolog))) &
       !    lpenc_requested(i_TT1)=.true.
@@ -309,6 +312,13 @@ module Special
       if (ldiagnos) then
         if (idiag_dtgh/=0) &
              call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
+!  
+! Added a KE energy diagnostic for domain-summed values following Brueshaber et al., 2019 
+!  
+        if (idiag_totKE/=0) &
+             call integrate_mn_name(0.5 * (c0 + p%rho) * p%u2 , idiag_totKE)
+        if (idiag_totAPE/=0) &
+             call integrate_mn_name(0.5 * (p%rho**2 + 2*p%rho*c0) , idiag_totAPE)
         !if (idiag_pstratm/=0) &
         !     call sum_mn_name(strat,idiag_pstratm)
         !if (idiag_pstratmax/=0) &
@@ -818,11 +828,15 @@ module Special
 !
       if (lreset) then
         idiag_dtgh=0
+        idiag_totKE=0
+        idiag_totAPE=0
         !idiag_pstratm=0;idiag_pstratmax=0;idiag_pstratmin=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtgh',idiag_dtgh)
+        call parse_name(iname,cname(iname),cform(iname),'totKE',idiag_totKE)
+        call parse_name(iname,cname(iname),cform(iname),'totAPE',idiag_totAPE)
         !call parse_name(iname,cname(iname),cform(iname),'pstratm',idiag_pstratm)
         !call parse_name(iname,cname(iname),cform(iname),'pstratmax',idiag_pstratmax)
         !call parse_name(iname,cname(iname),cform(iname),'pstratmin',idiag_pstratmin)
