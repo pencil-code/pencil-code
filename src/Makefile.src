@@ -2491,8 +2491,8 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 COMPILER = $(notdir $(firstword $(FC)))
 ifneq (,$(filter mpif%,$(COMPILER)))
   COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
-  $(info Compiler: $(COMPILER))
 endif
+$(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
 ifneq (,$(filter gfortran%,$(COMPILER)))
   GCC_VERSION = $(shell $(FC) -dumpversion)
