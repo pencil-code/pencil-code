@@ -545,218 +545,30 @@ module Io
 !                                > 0, tstart specified: use this value
 !  13-feb-20/MR: added possibility to omit a range of variables when reading the snapshot,
 !                range is defined as [ivar_omi1,ivar_omi2]
+!  22-oct-20/MR: outsourced code shared with read_snap_double into io_dist.h
+!                Added "rescue mechanism": if snapshot is not properly readable,
+!                reding is tried from the (min. 11, max. 26) neighboring
+!                processors' snaphots.
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
       use Syscalls, only: islink
+      use General, only: itoa, find_proc
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real(KIND=rkind4), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=rkind4) :: t_sp, t_sgl
+      real(KIND=rkind4) :: t_sp, t_red
 
       real(KIND=rkind4),                 intent(out) :: dx, dy, dz, deltay
       real(KIND=rkind4), dimension (mx), intent(out) :: x
       real(KIND=rkind4), dimension (my), intent(out) :: y
       real(KIND=rkind4), dimension (mz), intent(out) :: z
 
-      real :: t_test   ! t in single precision for backwards compatibility
-      logical :: ltest
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp
-      integer :: len1d
 !
-      if (lserial_io) call start_serialize
-      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
-      if (islink(trim(directory_snap)//'/'//trim(file))) &
-        snaplink=trim(directory_snap)//'/'//trim(file)
-!      if (ip<=8) print *, 'read_snap_single: open, mx,my,mz,nv=', mx, my, mz, nv
-      if (lwrite_2d) then
-!
-        if (nx == 1) then
-          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(nghost+1,:,:,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
-          else
-            read (lun_input) a(nghost+1,:,:,:)
-          endif
-        elseif (ny == 1) then
-          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(:,nghost+1,:,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
-          else
-            read (lun_input) a(:,nghost+1,:,:)
-          endif
-        elseif (nz == 1) then
-          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(:,:,nghost+1,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
-          else
-            read (lun_input) a(:,:,nghost+1,:)
-          endif
-        else
-          call fatal_error ('read_snap_single', 'lwrite_2d used for 3-D simulation!')
-        endif
-      else
-!
-        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
-!
-!  Possibility of reading data with different numbers of ghost zones.
-!  In that case, one must regenerate the mesh with luse_oldgrid=T.
-!
-        if (nghost_read_fewer==0) then
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
-          else
-            read (lun_input) a
-          endif
-        elseif (nghost_read_fewer>0) then
-          if (ivar_omit1==1) then
-            read (lun_input) tmp, &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
-          elseif (ivar_omit1>1) then
-            read (lun_input) &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
-          else
-            read (lun_input) &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
-          endif
-!
-!  The following 3 possibilities allow us to replicate 1-D data input
-!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
-!
-        else
-          len1d=2*nghost+1
-          if (nghost_read_fewer==-1) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(:,1:len1d,1:len1d,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
-                               a(:,1:len1d,1:len1d, ivar_omit1:)
-            else
-              read (lun_input) a(:,1:len1d,1:len1d,:)
-            endif
-            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-          elseif (nghost_read_fewer==-2) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(1:len1d,:,1:len1d,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
-                               a(1:len1d,:,1:len1d, ivar_omit1:)
-            else
-              read (lun_input) a(1:len1d,:,1:len1d,:)
-            endif
-            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-          elseif (nghost_read_fewer==-3) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(1:len1d,1:len1d,:,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
-                               a(1:len1d,1:len1d,:, ivar_omit1:)
-            else
-              read (lun_input) a(1:len1d,1:len1d,:,:)
-            endif
-            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
-          else
-            call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
-          endif
-        endif
-      endif
-      if (ivar_omit1>0) deallocate(tmp)
-
-      if (ip <= 8) print *, 'read_snap_single: read ', file
-      if (mode == 1) then
-!
-!  Check whether we want to read deltay from snapshot.
-!
-        if (lshear.and..not.lread_oldsnap_noshear) then
-          read (lun_input) t_sp, x, y, z, dx, dy, dz, deltay
-        else
-          if (nghost_read_fewer==0) then
-            read (lun_input) t_sp, x, y, z, dx, dy, dz
-          elseif (nghost_read_fewer>0) then
-            read (lun_input) t_sp
-          endif
-        endif
-!
-!  Verify the read values for x, y, z.
-!
-        if (ip <= 3) print *, 'read_snap_single: x=', x
-        if (ip <= 3) print *, 'read_snap_single: y=', y
-        if (ip <= 3) print *, 'read_snap_single: z=', z
-      else
-        read (lun_input) t_sp
-      endif
-!
-!  Verify consistency of the snapshots regarding their timestamp,
-!  unless ireset_tstart=T, in which case we reset all times to tstart.
-!
-      if ((ireset_tstart == 0) .or. (tstart == impossible)) then
-!
-        t_test = t_sp
-        call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
-        call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                              .or. (abs(t_test-t_sp) > 1.e-6),ltest,MPI_COMM_WORLD)
-!
-!  If timestamps deviate at any processor
-!
-        if (ltest) then
-          if (ireset_tstart > 0) then
-!
-!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
-!
-            if (ireset_tstart == MINT) then
-              call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
-                                     ' Using (min) t=', t_sgl,'with ireset_tstart=', MINT,'.'
-            elseif (ireset_tstart >= MAXT) then
-              call mpiallreduce_max(t_sp,t_sgl,MPI_COMM_WORLD)
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
-                                     ' Using (max) t=', t_sgl,'with ireset_tstart=', MAXT,'.'
-            endif
-            tstart = t_sgl
-          else
-            write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
-                        ' IS INCONSISTENT: t=', t_sp
-            call stop_it('read_snap_single')
-          endif
-        else
-          tstart = t_sp
-        endif
-!
-      endif
-!
-!  Set time or overwrite it by a given value.
-!
-      if (ireset_tstart > 0) then
-        t = tstart
-      else
-        t = t_sp
-      endif
-!
-!  Verify the read value of t.
-!
-      if (ip <= 3) print *, 'read_snap_single: t=', t
+      include 'io_dist.h'
 !
     endsubroutine read_snap_single
 !***********************************************************************
@@ -777,214 +589,22 @@ module Io
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
       use Syscalls, only: islink
+      use General, only: itoa, find_proc
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real(KIND=rkind8), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=rkind8) :: t_sp, t_dbl
+      real(KIND=rkind8) :: t_sp, t_red
 
       real(KIND=rkind8), intent(out) :: dx, dy, dz, deltay
       real(KIND=rkind8), dimension (mx), intent(out) :: x
       real(KIND=rkind8), dimension (my), intent(out) :: y
       real(KIND=rkind8), dimension (mz), intent(out) :: z
 
-      real :: t_test   ! t in single precision for backwards compatibility
-      logical :: ltest
-      integer :: len1d
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp
-!
-      if (lserial_io) call start_serialize
 
-      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
-      if (islink(trim(directory_snap)//'/'//trim(file))) &
-        snaplink=trim(directory_snap)//'/'//trim(file)
-!      if (ip<=8) print *, 'read_snap_double: open, mx,my,mz,nv=', mx, my, mz, nv
-      if (lwrite_2d) then
-        if (nx == 1) then
-          if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(nghost+1,:,:,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
-          else
-            read (lun_input) a(nghost+1,:,:,:)
-          endif
-        elseif (ny == 1) then
-          if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(:,nghost+1,:,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
-          else
-            read (lun_input) a(:,nghost+1,:,:)
-          endif
-        elseif (nz == 1) then
-          if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a(:,:,nghost+1,:)
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
-          else
-            read (lun_input) a(:,:,nghost+1,:)
-          endif
-        else
-          call fatal_error ('read_snap_double', 'lwrite_2d used for 3-D simulation!')
-        endif
-      else
-!
-        if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
-!
-!  Possibility of reading data with different numbers of ghost zones.
-!  In that case, one must regenerate the mesh with luse_oldgrid=T.
-!
-        if (nghost_read_fewer==0) then
-          if (ivar_omit1==1) then
-            read (lun_input) tmp,a
-          elseif (ivar_omit1>1) then
-            read (lun_input) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
-          else
-            read (lun_input) a
-          endif
-        elseif (nghost_read_fewer>0) then
-          if (ivar_omit1==1) then
-            read (lun_input) tmp, &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer, :)
-          elseif (ivar_omit1>1) then
-            read (lun_input) &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
-          else
-            read (lun_input) &
-                 a(1+nghost_read_fewer:mx-nghost_read_fewer, &
-                   1+nghost_read_fewer:my-nghost_read_fewer, &
-                   1+nghost_read_fewer:mz-nghost_read_fewer,:)
-          endif
-!
-!  The following 3 possibilities allow us to replicate 1-D data input
-!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
-!
-        else
-          len1d=2*nghost+1
-          if (nghost_read_fewer==-1) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(:,1:len1d,1:len1d,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
-                               a(:,1:len1d,1:len1d, ivar_omit1:)
-            else
-              read (lun_input) a(:,1:len1d,1:len1d,:)
-            endif
-            a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
-          elseif (nghost_read_fewer==-2) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(1:len1d,:,1:len1d,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
-                               a(1:len1d,:,1:len1d, ivar_omit1:)
-            else
-              read (lun_input) a(1:len1d,:,1:len1d,:)
-            endif
-            a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
-          elseif (nghost_read_fewer==-3) then
-            if (ivar_omit1==1) then
-              read (lun_input) tmp, &
-                               a(1:len1d,1:len1d,:,:)
-            elseif (ivar_omit1>1) then
-              read (lun_input) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
-                               a(1:len1d,1:len1d,:, ivar_omit1:)
-            else
-              read (lun_input) a(1:len1d,1:len1d,:,:)
-            endif
-            a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
-          else
-            call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
-          endif
-        endif
-      endif
-
-      if (ip <= 8) print *, 'read_snap: read ', file
-      if (mode == 1) then
-!
-!  Check whether we want to read deltay from snapshot.
-!
-        if (lshear.and..not.lread_oldsnap_noshear) then
-          read (lun_input) t_sp, x, y, z, dx, dy, dz, deltay
-        else
-          if (nghost_read_fewer==0) then
-            read (lun_input) t_sp, x, y, z, dx, dy, dz
-          elseif (nghost_read_fewer>0) then
-            read (lun_input) t_sp
-          endif
-        endif
-!
-!  Verify the read values for x, y and z.
-!
-        if (ip <= 3) print *, 'read_snap_double: x=', x
-        if (ip <= 3) print *, 'read_snap_double: y=', y
-        if (ip <= 3) print *, 'read_snap_double: z=', z
-      else
-        read (lun_input) t_sp
-      endif
-!
-!  Verify consistency of the snapshots regarding their timestamp,
-!  unless ireset_tstart=T, in which case we reset all times to tstart.
-!
-      if ((ireset_tstart == 0) .or. (tstart == impossible)) then
-!
-        t_test = t_sp
-        call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
-        call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                             .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_WORLD)
-!
-!  If timestamp deviates at any processor
-!
-        if (ltest) then
-          if (ireset_tstart > 0) then
-!
-!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
-!
-            if (ireset_tstart == MINT) then
-              call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
-                                     ' Using (min) t=', t_dbl,'with ireset_tstart=', MINT,'.'
-            elseif (ireset_tstart >= MAXT) then
-              call mpiallreduce_max(t_sp,t_dbl,MPI_COMM_WORLD)
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
-                                     ' Using (max) t=', t_dbl,'with ireset_tstart=', MAXT,'.'
-            endif
-            tstart = t_dbl
-            if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
-          else
-            write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
-                        ' IS INCONSISTENT: t=', t_sp
-            call stop_it('read_snap_double')
-          endif
-        else
-          tstart = t_sp
-        endif
-!
-      endif
-!
-!  Set time or overwrite it by a given value.
-!
-      if (ireset_tstart > 0) then
-        t = tstart
-      else
-        t = t_sp
-      endif
-!
-!  Verify the read value for t.
-!
-      if (ip <= 3) print *, 'read_snap_double: t=', t
+      include 'io_dist.h'
 !
     endsubroutine read_snap_double
 !***********************************************************************
