@@ -34,7 +34,7 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
             if (ios==0) then
 
               if (islink(trim(readdir)//'/'//trim(file))) &
-                  snap_is_link = islink(trim(readdir)//'/'//trim(file))
+                 snaplink=trim(readdir)//'/'//trim(file)
 !      if (ip<=8) print *, 'read_snap: open, mx,my,mz,nv=', mx, my, mz, nv
               if (lwrite_2d) then
                 if (nx == 1) then
