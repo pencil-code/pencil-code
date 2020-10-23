@@ -1,0 +1,8 @@
+A large array of idl scripts have been developed over the years, and
+many of them served their purpose at the time, but there are many others
+of general purpose. Below is a small selection of examples of idl call
+along with their python counterparts.
+
+           IDL                  <--->        Python
+pc_read_var,obj=var,/trimall             
+help,var
