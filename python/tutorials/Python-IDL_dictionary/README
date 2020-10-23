@@ -4,5 +4,6 @@ of general purpose. Below is a small selection of examples of idl call
 sequences along with their python counterparts.
 
            IDL                  <--->        Python
-pc_read_var,obj=var,/trimall             
-help,var
+pc_read_var,obj=var,/trimall             var = pc.read.var(var_file = 'var.dat', trimall = True, sim = SIM)
+help,var                                 SIM = pc.get_sim('path_to_simulation') 
+                                         help(var)
