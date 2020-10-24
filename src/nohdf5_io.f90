@@ -702,9 +702,11 @@ module HDF5_IO
             write (lun_output,*) trim(varname)//trim(itoa(pos))//'y='//trim(itoa(ivar+(pos-1)*vector+1))
             write (lun_output,*) trim(varname)//trim(itoa(pos))//'z='//trim(itoa(ivar+(pos-1)*vector+2))
           enddo
-        elseif (array > 0) then
+        elseif ((vector > 0) .and. (array < 0)) then
+          write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(-array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))            
+        elseif (array /= 0) then
           ! backwards compatibility: ind => indgen(array)+ivar
-          write (lun_output,*) trim (varname)//'=indgen('//trim (itoa (array))//')+'//trim (itoa (ivar))
+          write (lun_output,*) trim (varname)//'=indgen('//trim(itoa(abs(array)))//')+'//trim (itoa (ivar))
           ! expand array: ind => [ind1,ind2,...]
           do pos = 1, array
             write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+(pos-1)))
@@ -732,7 +734,7 @@ module HDF5_IO
             write (lun_output,*) trim(varname)//'_yy='//trim (itoa(ivar+3))
             write (lun_output,*) trim(varname)//'_yz='//trim (itoa(ivar+4))
             write (lun_output,*) trim(varname)//'_zz='//trim (itoa(ivar+5))
-          else
+          elseif (vector==9) then
             ! expand asymmetric 3x3 tensor (9 different components)
             write (lun_output,*) trim(varname)//'_xx='//trim (itoa(ivar))
             write (lun_output,*) trim(varname)//'_xy='//trim (itoa(ivar+1))
@@ -743,6 +745,8 @@ module HDF5_IO
             write (lun_output,*) trim(varname)//'_zx='//trim (itoa(ivar+6))
             write (lun_output,*) trim(varname)//'_zy='//trim (itoa(ivar+7))
             write (lun_output,*) trim(varname)//'_zz='//trim (itoa(ivar+8))
+          else
+            call fatal_error('index_append','unknown tensor type')
           endif
         else
           ! scalar: ilnrho => ivar

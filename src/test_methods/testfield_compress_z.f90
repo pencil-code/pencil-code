@@ -266,11 +266,11 @@ module Testfield
       ntestfield = 3*njtest
       ntestflow = 3*njtest
       ntestlnrho = njtest
-      call farray_register_pde('aatest',iaatest,vector=3,array=njtest)
+      call farray_register_pde('aatest',iaatest,vector=3,array=-njtest)
       call farray_index_append('ntestfield',ntestfield)
-      call farray_register_pde('uutest',iuutest,vector=3,array=njtest)
+      call farray_register_pde('uutest',iuutest,vector=3,array=-njtest)
       call farray_index_append('ntestflow',ntestflow)
-      call farray_register_pde('lnrhotest',ihhtest,array=njtest)
+      call farray_register_pde('lnrhotest',ihhtest,array=-njtest)
       call farray_index_append('ntestlnrho',njtest)
 !
 !  Set first and last index of text field
@@ -1861,7 +1861,7 @@ mn:   do n=n1,n2
               enddo
             else
               call fatal_error('rescaling_testfield', &
-                               'reinitialize_from_mainrun needs lcalc_aameanz.and.lcalc_uumeanz.and.lcalc_lnrhomean')
+                               'reinitialize_from_mainrun needs lcalc_aameanz and lcalc_uumeanz and lcalc_lnrhomean')
             endif
           endif
 !

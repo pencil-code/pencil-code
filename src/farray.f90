@@ -177,7 +177,11 @@ module FArrayManager
 !
       if (present(ierr)) ierr=0
       ncomponents=ioptest(vector,1)
-      narray=ioptest(array,1)
+      if (present(array)) then
+        narray=abs(array)
+      else
+        narray=1
+      endif
       nvars=ncomponents*narray
 !
       item => find_by_name(varname)
