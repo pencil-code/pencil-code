@@ -358,7 +358,7 @@ for tag = 1, num_tags do begin
     if (num ne vector * array) then begin
       message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
     end
-  end else begin
+  endif else begin
     array = 0
     ; Translate shortcuts (e.g. iuu => iu[x,y,z])
     search = original
@@ -376,11 +376,15 @@ for tag = 1, num_tags do begin
       if (num ne vector) then begin
         message, 'Dimensions of "'+original+'" do not fit to number of entries in "index.pro"!'
       end
-    end else begin
+    endif else begin
+      matches = stregex (index_pro, '^ *'+original+'( *)= *(indgen.*)$', /extract, /sub)
+      lines = where (matches[0,*] ne '', num)
+      if (num lt 1) then begin
       ; Quantity not contained in this run
-      continue
-    end
-  end
+        continue
+      endif
+    endelse
+  endelse
 
   if (pos le 0) then continue
 
