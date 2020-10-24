@@ -744,6 +744,8 @@ module HDF5_IO
             write (lun_output,*) trim(varname)//'_zy='//trim (itoa(ivar+7))
             write (lun_output,*) trim(varname)//'_zz='//trim (itoa(ivar+8))
           endif
+        elseif (present(array)) then
+          write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')+'//trim(itoa(ivar))
         else
           ! scalar: ilnrho => ivar
           write (lun_output,*) trim(varname)//'='//trim(itoa(ivar))
