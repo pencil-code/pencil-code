@@ -1,0 +1,18 @@
+#/usr/bin/env bash
+#
+#  $Id$
+#
+# Defines completion for Pencil-specific editor (user aliased to pc_edit).
+# At the moment only for subdir src and no subdir name to src provided, only file name.
+# This file has to be sourced in .bashrc and after that
+# complete -F _pc_complete <user-defined alias> is needed.
+#
+pc_complete() 
+{
+    local cur
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    COMPREPLY=( $(compgen -W "$(cd $PENCIL_HOME/src; ls * */* */*/*)" -- ${cur}) )
+    return 0
+}

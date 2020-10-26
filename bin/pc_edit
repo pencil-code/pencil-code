@@ -3,7 +3,8 @@
 #  $Id$
 #
 #  This script is a wrapper for an arbitrary editor $1 working on a file identified by path $2.
-#  It checks whether $2 exists in $PENCIL_HOME, and if so, opens the editor with file $PENCIL_HOME/$2.
+#  It checks whether $2 exists in $PENCIL_HOME or any subdirectory down to the 3rd level, and if so, 
+#  opens the editor with file $PENCIL_HOME/.../$2.
 #  For convenience, one would individually define a shell alias like 
 #    alias <short name>='pc_edit <preferred editor>' and then use <short name> <path>.
 # 
@@ -14,6 +15,12 @@ if [ "$2" == "" ]; then
   $1 
 elif [ -e $PENCIL_HOME/$2 ]; then
   $1 $PENCIL_HOME/$2
+elif [ -e $PENCIL_HOME/*/$2 ]; then
+  $1 $PENCIL_HOME/*/$2
+elif [ -e $PENCIL_HOME/*/*/$2 ]; then
+  $1 $PENCIL_HOME/*/*/$2
+elif [ -e $PENCIL_HOME/*/*/*/$2 ]; then
+  $1 $PENCIL_HOME/*/*/*/$2
 else
   $1 $2
 fi
