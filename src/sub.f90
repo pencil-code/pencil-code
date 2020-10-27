@@ -7331,12 +7331,13 @@ nameloop: do
       real, dimension (nx) :: fim12_l,fim12_r,fimm12_l,fimm12_r,fim1,fimm1
       real, dimension (nx) :: fip12_l,fip12_r,fipp12_l,fipp12_r,fip1,fipp1
       real, dimension (nx) :: cmax_im12,cmax_ip12,cmax_imm12,cmax_ipp12
+      real :: fdif, fadd
       character(LEN=*) :: div_type
 !
       real, dimension (nx), optional, intent(out) :: heat,flux1, flux2, flux3
       character(LEN=*), optional, intent(in) :: heat_type
 !
-      real :: nlf, h_slope_limited, one_16
+      real :: nlf, h_slope_limited, one_16, fdif_limit
       type (pencil_case), intent(in) :: p
       integer :: j,k
       logical :: ldiv_4th
@@ -7345,6 +7346,7 @@ nameloop: do
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
         one_16=1./16.
+        fdif_limit=60. ! empirical value
         if(present(heat)) heat=0.0
         if(present(flux1)) flux1=0.0
         if(present(flux2)) flux2=0.0
@@ -7443,24 +7445,33 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            if ((fim12_r(ix)-fim12_l(ix))*(exp(f(ix+nghost,m,n,j))-fim1(ix)) .le. 0.0) then
-              rfac(ix) = 0.0
-            else
-              rfac(ix)=(fim12_r(ix)-fim12_l(ix))/(exp(f(ix+nghost,m,n,j))-fim1(ix))
-            endif
+            fdif = exp(f(ix+nghost,m,n,j))-fim1(ix)
+            fadd = exp(f(ix+nghost,m,n,j))+fim1(ix)
           else
-            if ((fim12_r(ix)-fim12_l(ix))*(f(ix+nghost,m,n,j)-fim1(ix)) .le. 0.0) then
-              rfac(ix) = 0.0
-            else
-              rfac(ix)=(fim12_r(ix)-fim12_l(ix))/(f(ix+nghost,m,n,j)-fim1(ix))
-            endif
+            fdif = f(ix+nghost,m,n,j)-fim1(ix)
+            fadd = f(ix+nghost,m,n,j)+fim1(ix)
           endif
-            if (nlf==-1.) then
+!
+! avoid that the product is 0 or negativ
+!
+          if ((fim12_r(ix)-fim12_l(ix))*fdif .le. 0.0) then
+            rfac(ix) = 0.0
+          else
+!
+! avoid large rfac values, if fdif is small
+!
+            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+!
+            rfac(ix)=(fim12_r(ix)-fim12_l(ix))/fdif
+          endif
+!
 ! using Matthias Rempel expression
-              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
-            else
-              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
-            endif
+!
+          if (nlf==-1.) then
+            q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+          else
+            q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+          endif
         enddo
         flux_im12(:,k)=0.5*cmax_im12*q1*(fim12_r-fim12_l)
 !
@@ -7468,25 +7479,33 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            if ((fip12_r(ix)-fip12_l(ix))*(fip1(ix)-exp(f(ix+nghost,m,n,j))) .le. 0.0) then
-              rfac(ix) = 0.0
-            else
-              rfac(ix)=(fip12_r(ix)-fip12_l(ix))/(fip1(ix)-exp(f(ix+nghost,m,n,j)))
-            endif
+            fdif = fip1(ix)-exp(f(ix+nghost,m,n,j))
+            fadd = fip1(ix)+exp(f(ix+nghost,m,n,j))
           else
-            if ((fip12_r(ix)-fip12_l(ix))*(fip1(ix)-f(ix+nghost,m,n,j)) .le. 0.0) then
-              rfac(ix) = 0.0
-            else
-             rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
-                     f(ix+nghost,m,n,j))+tini)
-            endif
+            fdif = fip1(ix)-f(ix+nghost,m,n,j)
+            fadd = fip1(ix)+f(ix+nghost,m,n,j)
           endif
-            if (nlf==-1.) then
+!
+! avoid that the product is 0 or negativ
+!
+          if ((fip12_r(ix)-fip12_l(ix))*fdif .le. 0.0) then
+            rfac(ix) = 0.0
+          else
+!
+! avoid large rfac values, if fdif is small
+!
+            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+!
+            rfac(ix)=(fip12_r(ix)-fip12_l(ix))/fdif
+          endif
+!
 ! using Matthias Rempel expression
-              q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
-            else
-              q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
-            endif
+!
+          if (nlf==-1.) then
+            q1(ix)=max(0.0,1.0+h_slope_limited*(rfac(ix)-1.0))
+          else
+            q1(ix)=(min(1.0,h_slope_limited*rfac(ix)))**nlf
+          endif
         enddo
         flux_ip12(:,k)=0.5*cmax_ip12*q1*(fip12_r-fip12_l)
 !
