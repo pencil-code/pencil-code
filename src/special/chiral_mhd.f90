@@ -110,6 +110,7 @@ module Special
    logical :: lmuS=.false., lCVE=.false.
    logical :: ldiffmu5_hyper2_simplified=.false.
    logical :: ldiffmuS_hyper2_simplified=.false.
+   logical :: lremove_mean_mu5=.false.
    logical :: lmu5adv=.true., lmuSadv=.true.
 !
   character (len=labellen) :: initspecial='nothing'
@@ -120,7 +121,7 @@ module Special
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
-      initpower_muS, cutoff_muS
+      initpower_muS, cutoff_muS, lremove_mean_mu5
 !
   namelist /special_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
@@ -194,7 +195,6 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only : get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr
 !
@@ -214,6 +214,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Initcond
+      use Sub, only: remove_mean_value, remove_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
 !
@@ -268,10 +269,10 @@ module Special
 !
         case ('power_randomphase')
           call power_randomphase(amplmu5,initpower_mu5,cutoff_mu5,f,imu5,imu5,lscale_tobox=.false.)
+          if(lremove_mean_mu5) call remove_mean(f,imu5)
           if (lmuS) then
             call power_randomphase(amplmuS,initpower_muS,cutoff_muS,f,imuS,imuS,lscale_tobox=.false.)
           endif
-!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -719,7 +720,6 @@ module Special
 !
 ! number of grid points
       nw1=1./(nxgrid*nygrid*nzgrid)
-!
       meanmu5=nw1*meanmu5_tmp
 !      meanB2=nw1*meanB2_tmp
 !      flucmu5=p%mu5-meanmu5
