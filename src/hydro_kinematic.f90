@@ -1119,6 +1119,24 @@ endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Sound wave
+!
+      case ('SoundWave')
+        if (headtt) print*,'Sound wave;',&
+            'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        fac=ampl_kinflow
+        ky_uukin=1.
+        kx_uukin=ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5)
+        if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
+        eps1=cos(omega_kinflow*t)
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=fac*cos(kx_uukin*(x(l1:l2)-c*t)*(1.+cos(1.+cos))
+          p%uu(:,2)=0.
+          p%uu(:,3)=0.
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Another planar flow (from XXX 2015)
 !
       case ('Another-Planar')
