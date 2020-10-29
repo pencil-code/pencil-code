@@ -379,10 +379,13 @@ for tag = 1, num_tags do begin
     endif else begin
       matches = stregex (index_pro, '^ *'+original+'( *)= *(indgen.*)$', /extract, /sub)
       lines = where (matches[0,*] ne '', num)
-      if (num lt 1) then begin
+      if (num lt 1) then  $
       ; Quantity not contained in this run
-        continue
-      endif
+        continue $
+      else begin
+        ret=execute('indspos='+matches[2,lines[0]])
+        pos = min(indspos)
+      endelse
     endelse
   endelse
 
