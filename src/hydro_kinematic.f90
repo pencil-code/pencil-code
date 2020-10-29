@@ -1131,7 +1131,7 @@ endif
         eps1=cos(omega_kinflow*t)
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=fac*cos(kx_uukin*(x(l1:l2)-c*t)*(1.+cos(1.+cos))
+!         p%uu(:,1)=fac*cos(kx_uukin*(x(l1:l2)-c*t)*(1.+cos(1.+cos))
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
