@@ -693,6 +693,7 @@ module Hydro
       endif
       if (loot_as_aux) then
         call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
+        call register_report_aux('oost', ioost, ioxst, ioyst, iozst)
         ltime_integrals=.true.
       endif
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
@@ -2341,7 +2342,8 @@ module Hydro
       fact_sin=sin(omega_fourier*t)
       if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu*fact_cos
       if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
-      if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo
+      if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo*fact_cos
+      if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************

@@ -4003,8 +4003,6 @@ endsubroutine pdf
   real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   real, dimension(nxgrid) :: kx
@@ -4033,10 +4031,6 @@ endsubroutine pdf
   !
   k2m=0.
   nks=0.
-  spectrum=0.
-  spectrum_sum=0.
-  spectrumhel=0.
-  spectrumhel_sum=0.
   !
   if (lcylindrical_spectra) then
     cyl_spectrum=0.
@@ -4054,18 +4048,15 @@ endsubroutine pdf
     !  For "mag", calculate spectra of <bk^2> and <ak.bk>
     !
     if (sp=='kin') then
-      if (iuu==0) call fatal_error('powerhel','iuu=0')
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iuu,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
-        enddo
-      enddo
-      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+      if (iuu==0) call fatal_error('k_omega_spectra','iuu=0')
+      if (iuut==0) call fatal_error('k_omega_spectra','iuut=0')
+      if (iuust==0) call fatal_error('k_omega_spectra','iuust=0')
+      if (ioot==0) call fatal_error('k_omega_spectra','ioot=0')
+      if (ioost==0) call fatal_error('k_omega_spectra','ioost=0')
+      b_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)    ! the real part of u(\vec x,\omega)
+      b_im=f(l1:l2,m1:m2,n1:n2,iuust+ivec-1)   ! the imaginary part of u(\vec x,\omega)
+      a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)    ! the real part of omega(\vec x,\omega)
+      a_im=f(l1:l2,m1:m2,n1:n2,ioost+ivec-1)   ! the imaginary part of omega(\vec x,\omega)
     endif
 !
 !  Doing the Fourier transform
@@ -4073,40 +4064,7 @@ endsubroutine pdf
     call fft_xyz_parallel(a_re,a_im)
     call fft_xyz_parallel(b_re,b_im)
 !
-!  integration over shells
-!
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-    do ikz=1,nz
-      do iky=1,ny
-        do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) then
-!
-!  sum energy and helicity spectra
-!
-            spectrum(k+1)=spectrum(k+1) &
-               +b_re(ikx,iky,ikz)**2 &
-               +b_im(ikx,iky,ikz)**2
-            spectrumhel(k+1)=spectrumhel(k+1) &
-               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-!
-!  compute krms only once
-!
-            if (lwrite_krms) then
-              k2m(k+1)=k2m(k+1)+k2
-              nks(k+1)=nks(k+1)+1.
-            endif
-!
-!  end of loop through all points
-!
-          endif
-        enddo
-      enddo
-    enddo
-!
-!  allow for possibility of cylindrical spectral
+!  Compute cylindrical spectrum
 !
     if (lcylindrical_spectra) then
       if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
@@ -4140,9 +4098,6 @@ endsubroutine pdf
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-  !
   if (lcylindrical_spectra) then
     call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
     call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
@@ -4157,47 +4112,14 @@ endsubroutine pdf
   endif
   !
   !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
   !
   !  append to diagnostics file
   !
   if (lroot) then
-    if (ip<10) print*,'Writing power spectrum ',sp &
-         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-    !
-    spectrum_sum=.5*spectrum_sum
-    open(1,file=trim(datadir)//'/test.dat',position='append')
-    write(1,*) t
-    close(1)
-    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
-    endif
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
-    endif
-    close(1)
-    !
     if (lcylindrical_spectra) then
       if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
-           ,' to ',trim(datadir)//'/cyl_power_'//trim(sp)//'.dat'
-    !
-      cyl_spectrum_sum=.5*cyl_spectrum_sum
-      open(1,file=trim(datadir)//'/cyl_power_'//trim(sp)//'.dat',position='append')
+           ,' to ',trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat'
+      open(1,file=trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat',position='append')
       if (lformat) then
         do jkz = 1, nzgrid
         do k = 1, nk
@@ -4210,7 +4132,7 @@ endsubroutine pdf
       endif
       close(1)
       !
-      open(1,file=trim(datadir)//'/cyl_powerhel_'//trim(sp)//'.dat',position='append')
+      open(1,file=trim(datadir)//'/cyl_omega_powerhel_'//trim(sp)//'.dat',position='append')
       if (lformat) then
         do jkz = 1, nzgrid
         do k = 1, nk
