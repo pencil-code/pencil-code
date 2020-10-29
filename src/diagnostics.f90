@@ -793,11 +793,13 @@ module Diagnostics
 !  Initialize time_integrals for full chunks.
 !
 !  28-jun-07/axel+mreinhard: coded
+!  29-oct-20/hongzhe: added iuxst, iuyst, iuzst
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
       if (iuut/=0) f(:,:,:,iuxt:iuzt)=0.0
+      if (iuust/=0) f(:,:,:,iuxst:iuzst)=0.0
       if (ioot/=0) f(:,:,:,ioxt:iozt)=0.0
       if (ibbt/=0) f(:,:,:,ibxt:ibzt)=0.0
       if (ijjt/=0) f(:,:,:,ijxt:ijzt)=0.0

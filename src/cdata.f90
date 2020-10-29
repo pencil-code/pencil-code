@@ -315,6 +315,7 @@ module Cdata
   integer :: igradu31=0,igradu32=0,igradu33=0
   integer :: ispecialvar=0, ispecialvar2=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
+  integer :: iuust=0,iuxst=0,iuyst=0,iuzst=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
              ijxb=0, ijxbx=0, ijxby=0, ijxbz=0
   integer :: ibxf=0,ibyf=0,ibzf=0,ibbf=0
@@ -564,6 +565,7 @@ module Cdata
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
+  logical :: ou_omega=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.

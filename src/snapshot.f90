@@ -560,8 +560,6 @@ module Snapshot
         if (j_spec)   call power_vec(f,'j')
         if (jb_spec)  call powerhel(f,'j.b') !(not ready yet) ! ready now
         if (ja_spec)  call powerhel(f,'j.a') !(for now, use this instead) ! now does j.b spectra
-        if (ani_spec) call anisoq_diag(f)
-        if (corr_3d)  call corrfunc_3d(f)
         if (Lor_spec) call powerLor(f,'Lor')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
@@ -713,6 +711,15 @@ module Snapshot
         if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf) call pdf(f,'special',0.,1.)
+!
+!  2d and 3d spectra
+!
+        if (ani_spec) call anisoq_diag(f)
+        if (corr_3d)  call corrfunc_3d(f)
+!
+!  Spectra with both space and time Fourier transformed
+!
+        if (ou_omega) call k_omega_spectra(f,'kin')
 !
         lspec=.false.
       endif

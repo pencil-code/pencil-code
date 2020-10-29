@@ -224,4 +224,14 @@ module power_spectrum
 !
   endsubroutine corrfunc_3d
 !***********************************************************************
+  subroutine k_omega_spectra(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine k_omega_spectra
+!***********************************************************************
 endmodule power_spectrum

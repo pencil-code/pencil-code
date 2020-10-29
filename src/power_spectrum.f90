@@ -3491,7 +3491,6 @@ endsubroutine pdf
   !
   endsubroutine power_vec
 !***********************************************************************
-! hongzhe developing
   subroutine anisoq_diag(f)
 !
 !  Anisotropic alpha2 dynamo diagostics.
@@ -3725,7 +3724,7 @@ endsubroutine pdf
 !  For the moment only u=velocity field,
 !  but possible to extend using 'sp'
 !
-!  2020-Oct-14 Hongzhe added this subroutine
+!  2020-Oct-14/hongzhe added this subroutine
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
@@ -3980,5 +3979,260 @@ endsubroutine pdf
   endif
     
   endsubroutine corrfunc_3d
+!***********************************************************************
+  subroutine k_omega_spectra(f,sp)
+!
+!  Calculate spectra with both (x,y,z) and t Fourier-transformed
+!  For the moment only works with kinetic helicity
+!  Use luut_as_aux=T and specify omega_fourier
+!  in run.in under &hydro_run_pars
+!
+!  29-oct-20/hongzhe: added this subroutine and coding
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, jj
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+!
+!  passive scalar contributions (hardwired for now)
+!
+  real, dimension(nx,3) :: gtmp1,gtmp2
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  if (lcylindrical_spectra) then
+    cyl_spectrum=0.
+    cyl_spectrum_sum=0.
+    cyl_spectrumhel=0.
+    cyl_spectrumhel_sum=0.
+  endif
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    !
+    !  In fft, real and imaginary parts are handled separately.
+    !  For "kin", calculate spectra of <uk^2> and <ok.uk>
+    !  For "mag", calculate spectra of <bk^2> and <ak.bk>
+    !
+    if (sp=='kin') then
+      if (iuu==0) call fatal_error('powerhel','iuu=0')
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+        enddo
+      enddo
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+      a_im=0.
+      b_im=0.
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +b_re(ikx,iky,ikz)**2 &
+               +b_im(ikx,iky,ikz)**2
+            spectrumhel(k+1)=spectrumhel(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+!
+!  allow for possibility of cylindrical spectral
+!
+    if (lcylindrical_spectra) then
+      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+            jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+            k=nint(sqrt(k2))
+            if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+              cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+                 +b_re(ikx,iky,ikz)**2 &
+                 +b_im(ikx,iky,ikz)**2
+              cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  end of loop through all points
+!
+            endif
+          enddo
+        enddo
+      enddo
+    endif
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !
+  if (lcylindrical_spectra) then
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+  endif
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/test.dat',position='append')
+    write(1,*) t
+    close(1)
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lcylindrical_spectra) then
+      if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
+           ,' to ',trim(datadir)//'/cyl_power_'//trim(sp)//'.dat'
+    !
+      cyl_spectrum_sum=.5*cyl_spectrum_sum
+      open(1,file=trim(datadir)//'/cyl_power_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrum_sum
+      endif
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cyl_powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrumhel_sum(k,jkz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
+      endif
+      close(1)
+    endif
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine k_omega_spectra
 !***********************************************************************
 endmodule power_spectrum

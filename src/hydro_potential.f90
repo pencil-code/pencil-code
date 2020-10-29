@@ -688,6 +688,7 @@ module Hydro
 !
       if (luut_as_aux) then
         call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
+        call register_report_aux('uust', iuust, iuxst, iuyst, iuzst)
         ltime_integrals=.true.
       endif
       if (loot_as_aux) then
@@ -2325,6 +2326,7 @@ module Hydro
 !  28-jun-07/axel+mreinhard: coded
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to hydro
+!  29-oct-20/hongzhe: coding for computing frequency-fft'ed u(x,y,z,omega_fourier)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2332,7 +2334,13 @@ module Hydro
       intent(inout) :: f
       intent(in) :: p
 !
-      if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu
+      real :: fact_cos
+      real :: fact_sin
+!
+      fact_cos=cos(omega_fourier*t)
+      fact_sin=sin(omega_fourier*t)
+      if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu*fact_cos
+      if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
       if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo
 !
     endsubroutine time_integrals_hydro
