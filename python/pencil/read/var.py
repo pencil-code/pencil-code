@@ -8,6 +8,7 @@
 # J. Oishi (joishi@amnh.org)
 # T. Gastine (tgastine@ast.obs-mip.fr)
 # S. Candelaresi (iomsn1@gmail.com).
+# 20.10.30 IL modified: added comments in the definition
 """
 Contains the read class for the VAR file reading,
 some simulation attributes and the data cube.
@@ -43,6 +44,13 @@ def var(*args, **kwargs):
         sim:        Simulation sim object.
         precision:  Float (f) or double (d).
         lpersist:   Read the persistent variables if they exist
+    
+    The default var file is var.dat (which is the latests snapshot of the fields)
+    
+    Return:
+    Instance of the pencil.read.var.DataCube class.
+    All of the computed fields are imported as class members.
+
     """
 
     from ..sim import __Simulation__

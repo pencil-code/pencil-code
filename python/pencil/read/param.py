@@ -52,6 +52,11 @@ def param(*args, **kwargs):
 
     *append_units*
       Derives dimensional units from standard code units.
+    
+    Return:
+    Instance of the pencil.read.param.Param class.
+    All of the selected parameters are imported as class members.
+
     """
 
     param_tmp = Param()
@@ -231,7 +236,9 @@ class Param(object):
             if hasattr(param, 'mu0'):
                 setattr(self, 'unit_current',
                         self.unit_magnetic*self.unit_length/self.mu0)
+        #IL: updating the list of keys as a list
 
+        self.keys = list(self.__dict__.keys())
         return 0
 
 
@@ -334,7 +341,8 @@ class Param(object):
                     parts = r.findall(value)
                     value = []
                     for i in range(len(parts)):
-                        if "*" in parts[i]:
+                        #IL: changed to allow for * in strings
+                        if "'" not in parts[i] and "*" in parts[i]:
                             s = parts[i].split("*")
                             for j in range(int(s[0])):
                                 value += [self.__tuple_catch(s[1])]
