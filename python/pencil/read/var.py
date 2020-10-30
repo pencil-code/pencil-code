@@ -613,8 +613,8 @@ class DataCube(object):
                 if hasattr(self, 'ss'):
                     setattr(self, 'pp', np.exp(gamma*(self.ss+lnrho)))
                 elif hasattr(self, 'lntt'):
-                    setattr(self, 'pp', (cp-cv)*np.exp(self.lntt+lnrho))
+                    setattr(self, 'pp', (cp-cv)*np.exp(self.lnTT+lnrho))
                 elif hasattr(self, 'tt'):
-                    setattr(self, 'pp', (cp-cv)*self.tt*np.exp(lnrho))
+                    setattr(self, 'pp', (cp-cv)*self.TT*np.exp(lnrho))
                 else:
                     sys.exit("Problem in magic: missing ss or lntt or tt")
