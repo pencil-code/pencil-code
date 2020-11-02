@@ -241,53 +241,63 @@ module Testfield_general
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: j, indx, jtest, istart,ios
+      integer :: j, indx, jtest, istart, iend, ios
+      character(LEN=labellen) :: init_type
 !
       do j=1,ninit
 
-      indx = index(initaatest(j),'-',BACK=.true.)+1
-      if (indx>1 .and. indx<=len(trim(initaatest(j)))) then
+        indx = index(initaatest(j),'-',BACK=.true.)+1
+        if (indx>1 .and. indx<=len(trim(initaatest(j)))) then
 !
-        read(initaatest(j)(indx:),'(i3)',IOSTAT=ios) jtest
+          read(initaatest(j)(indx:),'(i3)',IOSTAT=ios) jtest
 !
-        if (ios/=0) then
-          print*, 'init_aatest: Error when reading testfield index from initial condition ', j, '. Ignored.'
-          cycle
-        endif
+          if (ios/=0) then
+            print*, 'init_aatest: Error when reading testfield index from initial condition ', j, '. Ignored.'
+            cycle
+          endif
 
-        if (jtest>0 .and. jtest<=njtest) then
-          istart = iaxtest+3*(jtest-1)
+          if (jtest==0) then
+            jtest=njtest
+          elseif (jtest<=njtest) then
+            istart = iaxtest+3*(jtest-1)
+          else
+            print*, 'init_aatest: Invalid testfield index employed in initial condition ', j, '. Ignored.'
+            cycle
+          endif
+
+          init_type=initaatest(j)(1:indx-1)          
         else
-          print*, 'init_aatest: Invalid testfield index employed in initial condition ', j, '. Ignored.'
-          cycle
+!
+!  All test solutions set with same IC.
+!
+          istart=0; init_type=initaatest(j)
         endif
 
-      else
-        istart=0
-      endif
+        if (istart==0) then
+          istart = iaatest; iend=iaatest+3*njtest-1
+        else
+          iend=istart+2
+        endif
+        
+        select case (init_type)
 
-      if (jtest>0 .and. jtest<=njtest) then
-
-        istart = iaxtest+3*(jtest-1)
-        select case (initaatest(j))
-
-        case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
-        case ('gaussian-noise'); call gaunoise(amplaatest(j),f,istart,iaztest+3*(jtest-1))
+        case ('zero'); f(:,:,:,istart:iend)=0.
+        case ('gaussian-noise'); call gaunoise(amplaatest(j),f,istart,iend)
         case ('sinwave-x'); if (istart>0) call sinwave(amplaatest(j),f,istart+1,kx=kx_aatest(j))   ! sets y-component!!
-!        case ('sinwave-x-1'); if (istart>0) call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))        
+!      case ('sinwave-x-1'); if (istart>0) call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))        
         case ('Beltrami-x'); if (istart>0) call beltrami(amplaatest(j),f,istart,kx=-kx_aatest(j),phase=phasex_aatest(j))
         case ('Beltrami-z'); if (istart>0) call beltrami(amplaatest(j),f,istart,kz=-kz_aatest(j),phase=phasez_aatest(j))
         case ('nothing'); !(do nothing)
 
         case default
-        !
-        !  Catch unknown values
-        !
+!
+!  Catch unknown values.
+!
           if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
           call stop_it("")
 
         endselect
-      endif
+
       enddo
 !
 !  Interface for user's own subroutine
@@ -374,7 +384,7 @@ module Testfield_general
 !  Register test field.
 !
       ntestfield = 3*njtest
-      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_register_pde('aatest',iaatest,vector=3,array=-njtest)
       call farray_index_append('ntestfield',ntestfield)
 !
 !  Set first and last index of test field

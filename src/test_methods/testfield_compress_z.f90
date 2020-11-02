@@ -69,6 +69,7 @@ module Testfield
   logical :: lugutest=.true., lfprestest=.true., lSghtest=.true.
   logical :: lphase_adjust=.false.
   logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
+  logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -111,7 +112,8 @@ module Testfield
        daainit,linit_aatest,bamp, &
        rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
        lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega, &
-       lugutest, lfprestest, lSghtest
+       lugutest, lfprestest, lSghtest, &
+       lremove_meanaa0x_test, lremove_meanaa0y_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -1532,7 +1534,9 @@ module Testfield
       real, dimension (nx,3) :: uufluct,ghhfluct,bbfluct,jjfluct
       real, dimension (nx,3,3) :: sijfluct, sij0ref
       real, dimension (nx) :: divutest,ughtest
-      integer :: jtest,j,juxb,jjxb,jugu,jugh,jSgh,nl
+      real, dimension (mx,3) :: aatestmx
+      real, dimension (my,3) :: aatestmy
+      integer :: jtest,j,juxb,jjxb,jugu,jugh,jSgh,nl,lll,mmm
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
 !
@@ -1562,7 +1566,6 @@ module Testfield
         lpenc_loc = .false.
         lpenc_loc((/i_uu,i_uij,i_divu,i_sij,i_bbb,i_bb,i_bij,i_jj,i_lnrho,i_glnrho/))=.true.
       endif
-!
 !
 !  Start mn loop
 !
@@ -1761,6 +1764,44 @@ mn:   do n=n1,n2
       call finalize_aver(nprocxy,12,ugutestmz)
       call finalize_aver(nprocxy,12,ughtestmz)
       call finalize_aver(nprocxy,12,Sghtestmz)
+
+      iaxtest=iaatest+3*(iE0-1)
+
+      if (lremove_meanaa0x_test) then
+
+        fac=1./nyzgrid
+        do j=1,3
+          do lll=1,mx
+            aatestmx(lll,j)=fac*sum(f(lll,m1:m2,n1:n2,iaxtest+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocyz,23,aatestmx)
+!
+        do j=1,3
+          do lll=1,mx
+            f(lll,:,:,iaxtest+j-1) = f(lll,:,:,iaxtest+j-1)-aatestmx(lll,j)
+          enddo
+        enddo
+
+      endif
+      
+      if (lremove_meanaa0y_test) then
+
+        fac=1./nxzgrid
+        do j=1,3
+          do mmm=1,my
+            aatestmy(mmm,j)=fac*sum(f(l1:l2,mmm,n1:n2,iaxtest+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocxz,23,aatestmy)
+!
+        do j=1,3
+          do mmm=1,my
+            f(:,mmm,:,iaxtest+j-1) = f(:,mmm,:,iaxtest+j-1)-aatestmy(mmm,j)
+          enddo
+        enddo
+
+      endif
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field

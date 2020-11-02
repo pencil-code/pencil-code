@@ -12,7 +12,7 @@
 !  ! MVAR CONTRIBUTION 12
 !  ! MAUX CONTRIBUTION 12
 !  integer, parameter :: njtest=4
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -373,7 +373,7 @@ module Testfield
 !
       if (luxb_as_aux) then
         if (iuxbtest==0) then
-          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtestl)
+          call farray_register_auxiliary('uxbtest',iuxbtest,vector=3,array=-njtestl)
         else
           if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
           call farray_index_append('iuxbtest',iuxbtest)
@@ -385,7 +385,7 @@ module Testfield
 !
       if (ljxb_as_aux) then
         if (ijxbtest==0) then
-          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtestl)
+          call farray_register_auxiliary('jxbtest',ijxbtest,vector=3,array=-njtestl)
         else
           if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
           call farray_index_append('ijxbtest',ijxbtest)

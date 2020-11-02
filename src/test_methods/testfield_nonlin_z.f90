@@ -173,7 +173,9 @@ module Testfield
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
   integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
-  integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
+  integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<j_0\cdot b_0\right>$
+  integer :: idiag_ub0m=0       ! DIAG_DOC: $\left<u_0\cdot b_0\right>$
+  integer :: idiag_uj0m=0       ! DIAG_DOC: $\left<u_0\cdot j_0\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
@@ -725,7 +727,7 @@ module Testfield
           endif
         endif
 !
-!  do diffusion terms (Weyl gauge causes instability!), 
+!  do diffusion terms (diffusive gauge; Weyl gauge causes instability!), 
 !  restricted to etatest=const.
 !
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest
@@ -848,8 +850,10 @@ module Testfield
 !
           select case (itestfield)
           case ('B11-B22')
-            call set_bbtest_B11_B22(B0test,jtest)
+            call set_B0test_B11_B22(B0test,jtest)
             call set_J0test_B11_B22(J0test,jtest)
+          case ('B11-B22-lin')
+            call set_B0test_B11_B22_lin(B0test,J0test,jtest)
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
@@ -901,7 +905,7 @@ module Testfield
         endif
         bpq(:,:,jtest)=bbtest
         upq(:,:,jtest)=uutest
-        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) jpq(:,:,jtest)=jjtest
+        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_uj0m/=0.or.idiag_j11rms/=0)) jpq(:,:,jtest)=jjtest
 !
 !  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
 !  computation for comparison. Do the same for jxb and ugradu.
@@ -1133,6 +1137,16 @@ module Testfield
         if (idiag_jb0m/=0) then
           call dot(jpq(:,:,iE0),bpq(:,:,iE0),jbpq)
           call sum_mn_name(jbpq,idiag_jb0m)
+        endif
+!
+        if (idiag_ub0m/=0) then
+          call dot(upq(:,:,iE0),bpq(:,:,iE0),jbpq)
+          call sum_mn_name(jbpq,idiag_ub0m)
+        endif
+!
+        if (idiag_uj0m/=0) then
+          call dot(upq(:,:,iE0),jpq(:,:,iE0),jbpq)
+          call sum_mn_name(jbpq,idiag_uj0m)
         endif
 !
         if (idiag_ux0m/=0) call sum_mn_name(upq(:,1,iE0),idiag_ux0m)
@@ -1672,7 +1686,7 @@ mn:   do n=n1,n2
 !
     endsubroutine rescaling_testfield
 !***********************************************************************
-    subroutine set_bbtest_Beltrami(B0test,jtest)
+    subroutine set_B0test_Beltrami(B0test,jtest)
 !
 !  set testfield
 !
@@ -1691,9 +1705,9 @@ mn:   do n=n1,n2
       case default; B0test(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_Beltrami
+    endsubroutine set_B0test_Beltrami
 !***********************************************************************
-    subroutine set_bbtest_B11_B21(B0test,jtest)
+    subroutine set_B0test_B11_B21(B0test,jtest)
 !
 !  set testfield
 !
@@ -1714,7 +1728,7 @@ mn:   do n=n1,n2
       case default; B0test(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_B11_B21
+    endsubroutine set_B0test_B11_B21
 !***********************************************************************
     subroutine set_J0test_B11_B21(J0test,jtest)
 !
@@ -1750,7 +1764,7 @@ mn:   do n=n1,n2
       intent(in)  :: jtest
       intent(out) :: J0test
 !
-!  set J0test for each of the 9 cases
+!  set J0test for each of the 4 cases
 !
       select case (jtest)
       case (1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
@@ -1762,7 +1776,7 @@ mn:   do n=n1,n2
 !
     endsubroutine set_J0test_B11_B22
 !***********************************************************************
-    subroutine set_bbtest_B11_B22 (B0test,jtest)
+    subroutine set_B0test_B11_B22 (B0test,jtest)
 !
 !  set testfield
 !
@@ -1774,7 +1788,7 @@ mn:   do n=n1,n2
       intent(in)  :: jtest
       intent(out) :: B0test
 !
-!  set B0test for each of the 9 cases
+!  set B0test for each of the 4 cases
 !
       select case (jtest)
       case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
@@ -1784,31 +1798,32 @@ mn:   do n=n1,n2
       case default; B0test(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_B11_B22
+    endsubroutine set_B0test_B11_B22
 !***********************************************************************
-    subroutine set_bbtest_B11_B22_lin (B0test,jtest)
+    subroutine set_B0test_B11_B22_lin (B0test,J0test,jtest)
 !
 !  set testfield
 !
-!  25-Mar-09/axel: adapted from set_bbtest_B11_B22
+!  25-Mar-09/axel: adapted from set_B0test_B11_B22
 !
-      real, dimension (nx,3) :: B0test
+      real, dimension (nx,3) :: B0test,J0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: B0test
+      intent(out) :: B0test,J0test
 !
-!  set B0test for each of the 9 cases
+!  set B0test for each of the 4 cases
 !
+      J0test=0.
       select case (jtest)
       case (1); B0test(:,1)=bamp     ; B0test(:,2)=0.; B0test(:,3)=0.
-      case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.; J0test(:,2)=bamp
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
-      case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
+      case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.; J0test(:,1)=-bamp
       case default; B0test(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_B11_B22_lin
+    endsubroutine set_B0test_B11_B22_lin
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !
@@ -1848,7 +1863,7 @@ mn:   do n=n1,n2
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0
+        idiag_jb0m=0; idiag_ub0m=0; idiag_uj0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
@@ -1936,6 +1951,8 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'jb0m',idiag_jb0m)
+        call parse_name(iname,cname(iname),cform(iname),'ub0m',idiag_ub0m)
+        call parse_name(iname,cname(iname),cform(iname),'uj0m',idiag_uj0m)
         call parse_name(iname,cname(iname),cform(iname),'bamp',idiag_bamp)
         call parse_name(iname,cname(iname),cform(iname),'ux0m',idiag_ux0m)
         call parse_name(iname,cname(iname),cform(iname),'uy0m',idiag_uy0m)
