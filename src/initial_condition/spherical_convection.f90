@@ -338,12 +338,12 @@ module InitialCondition
       L00=star_luminosity*rho0*gravx**1.5*sqrt(Rstar)
       Fbottom=L00/(4.*pi*x0**2)
       sigma=(L00/(4.*pi*Rsurf**2))/Tsurf**4
-      cs2_bot=T00*cv*gamma*(gamma-1.)
-      cs2_top=Tsurf*cv*gamma*(gamma-1.)
+      cs2_bot=cs20*T00*cv*gamma*(gamma-1.)
+      cs2_top=cs20*Tsurf*cv*gamma*(gamma-1.)
       if (lcorona) then
-        cs2_top=TT_global(nxgrid)*cv*gamma*(gamma-1.)
-        cs2_surf=Tsurf*cv*gamma*(gamma-1.)
-        cs2_cor=Tcor*cv*gamma*(gamma-1.)
+        cs2_top=cs20*TT_global(nxgrid)*cv*gamma*(gamma-1.)
+        cs2_surf=cs20*Tsurf*cv*gamma*(gamma-1.)
+        cs2_cor=cs20*Tcor*cv*gamma*(gamma-1.)
       endif
 
 !
