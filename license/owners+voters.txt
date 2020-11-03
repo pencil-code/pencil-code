@@ -3,7 +3,7 @@ As of 7 Dec 2019: 16 owners:
         Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,
         Axel Brandenburg <brandenb@nordita.org>,
         Piyali Chatterjee <mppiyali@gmail.com>,
-        Boris Dintrans <dintrans@cines.fr>,
+        Boris Dintrans <boris.dintrans@gmail.com>,
         Wolfgang Dobler <wdobler@gmail.com>,
         Nils E Haugen <Nils.E.Haugen@sintef.no>,
         Tobias Heinemann <tobias.heinemann@gmail.com>,
