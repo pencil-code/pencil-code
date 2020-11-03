@@ -10,6 +10,7 @@ module Cparam
   integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte real kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
   integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
+  integer, parameter :: rkind16 = selected_real_kind(33, 4931) ! 16-byte real kind
 !
   include 'cparam.local'
 !
@@ -153,18 +154,18 @@ module Cparam
 !
 !  pi and its derivatives.
 !
-  real, parameter :: pi=3.14159265358979323846264338327950
+  real, parameter :: pi=3.14159265358979323846264338327950d0
   real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
-  real, parameter :: sqrtpi=1.77245385090551602729816748334115
-  real, parameter :: sqrt2=1.41421356237309504880168872420970
+  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
+  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
   real, parameter :: four_pi_over_three=4.0/3.0*pi
   real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3.
-  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958
-  real, parameter :: twopi = 6.2831853071795864769252867665590
-  real, parameter :: dtor = pi/180.
+  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
+  real, parameter :: twopi = 6.2831853071795864769252867665590d0
+  real, parameter :: dtor = pi/180.d0
 !
-  real, parameter :: lntwo=0.69314718055995
+  real, parameter :: lntwo=0.69314718055995d0
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0

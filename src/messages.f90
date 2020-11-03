@@ -351,8 +351,13 @@ module Messages
 !  Write string to screen and to 'svnid.dat' file.
 !
       if (lfirstcall) then
-        if (.not. directory_exists (datadir)) call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
-        open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
+        if (.not. directory_exists (datadir)) &
+          call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
+        if (lstart) then
+          open(unit, file=trim(datadir)//'/svnid.dat', status='new')
+        else
+          open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
+        endif
         lfirstcall = .false.
       else
         open(unit, file=trim(datadir)//'/svnid.dat', status='old', position='append')
