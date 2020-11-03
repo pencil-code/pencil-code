@@ -141,9 +141,9 @@ if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
-if ($?SLURM_JOBID) then
-  #echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
-  echo $SLURM_JOBID "  RUN STARTED on " `date` \
+if ($?SLURM_JOB_ID) then
+  #echo $SLURM_JOB_ID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+  echo $SLURM_JOB_ID "  RUN STARTED on " `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
@@ -166,10 +166,19 @@ echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
 if ( $#argv >= 1 ) then
   if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' ) then
-# launch a second executable simultaneously with PC
-    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
-    echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
-    time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
+    if ( $#argv == 1 ) then
+# launch a second executable simultaneously with PC with same number of procs
+
+      echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
+      echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
+      time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
+    else
+# launch a second executable simultaneously with PC; number of procs to be specified in arguments to run.csh, e.g. '-np <number> <second executable>'
+
+      echo "$mpirun $mpirunops $npops $run_x $x_ops : $*" 
+      echo "$mpirun $mpirunops $npops $run_x $x_ops : $*" >> pc_commands.log
+      time $mpirun $mpirunops $npops $run_x $x_ops : $*
+    endif
   else
     echo Error: launching an additional executable requires mpirun or mpiexec instead of $mpirun !
     exit

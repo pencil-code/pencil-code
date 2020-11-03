@@ -744,11 +744,11 @@ else if ($hn =~ psi*) then
 #--------------------------------------------------
 else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
   echo "taito - CSC, Kajaani, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
@@ -759,11 +759,11 @@ else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ 
 #--------------------------------------------------
 else if ($hn =~ clogin*) then
   echo "sisu - CSC, Kajaani, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = "-j 1"
   set mpirun = 'aprun'
@@ -774,11 +774,11 @@ else if ($hn =~ clogin*) then
   set local_binary = 0
 else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
   echo "sisu - CSC, Kajaani, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = "-j 1"
   set mpirun = 'aprun'
@@ -822,11 +822,11 @@ else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
 #----------------------------------------------
 else if (($hn =~ s*) && ($USER =~ pr*)) then
   echo "MareNostrum - BSC, Barcelona, Spain"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = " "
   set mpirun = 'srun'
@@ -838,11 +838,11 @@ else if (($hn =~ s*) && ($USER =~ pr*)) then
 #----------------------------------------------
 else if ($hn =~ gwd*) then
   echo "GWDG Cluster - Göttingen, Germany"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = " "
   set mpirun = 'mpirun'
@@ -854,11 +854,11 @@ else if ($hn =~ gwd*) then
 #----------------------------------------------
 else if ($hn =~ daint*) then
   echo "Piz Daint - CSCS, Zurich, Switzerland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -870,11 +870,11 @@ else if ($hn =~ daint*) then
 #----------------------------------------------
 else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   echo "Triolith, Sweden"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   echo 'loading modules ..'
   module load intel/12.1.4
@@ -890,11 +890,11 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
 #----------------------------------------------
 else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma || $USER =~ mvaisala || $USER =~ cdstars1)) then
   echo "Taito - CSC, Kajaani, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'srun'
@@ -906,11 +906,11 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ 
 #----------------------------------------------
 else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
   echo "Triton - Aalto University, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   module load openmpi/1.6.5-gcc
   module list
@@ -925,11 +925,11 @@ else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
 #----------------------------------------------
 else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
   echo "Alcyone - University of Helsinki, Finland"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = '--resv-ports'
   set mpirun = 'srun'
@@ -1581,21 +1581,21 @@ else if ($hn =~ hy[0-9]*) then
 #---------------------------------------------------
 else if ($hn =~ dra[0-9]*) then
   echo "Draco system at Rechenzentrum Garching"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------
 else if ($hn =~ co[0-9]*) then
   echo "Cobra system at Rechenzentrum Garching"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------
@@ -1611,11 +1611,11 @@ else if ($hn =~ ravc[0-9]*) then
 #---------------------------------------------------  
 else if ($hn =~ *.sng.lrz.de) then
   echo "Supermuc-NG at Leibniz-Rechenzentrum"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------

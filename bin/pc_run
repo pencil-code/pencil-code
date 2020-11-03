@@ -974,7 +974,7 @@ sub get_node_list {
         'PBS_NODEFILE'         => 'PBS',
         'LSB_HOSTS'            => 'LSF',
         'LOADL_PROCESSOR_LIST' => 'LoadLeveler',
-        'SLURM_NODELIST'       => 'SLURM (Simple Linux Util. for Res. Mgmt.)',
+        'SLURM_JOB_NODELIST'       => 'SLURM (Simple Linux Util. for Res. Mgmt.)',
         'JOB_ID'               => \&job_id_handler,
         'OAR_FILE_NODES'       => 'OARSUB',
         'SP_HOSTFILE'          => 'EASY',
@@ -985,7 +985,7 @@ sub get_node_list {
                      PBS_NODEFILE
                      LSB_HOSTS
                      LOADL_PROCESSOR_LIST
-                     SLURM_NODELIST
+                     SLURM_JOB_NODELIST
                      JOB_ID
                      OAR_FILE_NODES
                      SP_HOSTFILE
@@ -1048,7 +1048,7 @@ sub job_id_handler {
 }
 # ---------------------------------------------------------------------- #
 sub slurm_expand {
-# Given the content of $ENV{SLURM_NODELIST}, expand a string like
+# Given the content of $ENV{SLURM_JOB_NODELIST}, expand a string like
 #   n[41,43-49,69-70,111-114]
 # into the space-separated explicit form
 #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
@@ -1349,7 +1349,7 @@ sub write_job_id {
     append_jobid_line(
         $jobid_file, $phase, $ENV{LOADL_STEP_ID}, $ENV{LOADL_STEP_CLASS});
     append_jobid_line(
-        $jobid_file, $phase, $ENV{SLURM_JOBID},   undef);
+        $jobid_file, $phase, $ENV{SLURM_JOB_ID},   undef);
     append_jobid_line(
         $jobid_file, $phase, $ENV{SP_JID},        undef);
 }

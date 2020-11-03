@@ -275,8 +275,8 @@ if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID "  # RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
-if ($?SLURM_JOBID) then
-  echo $SLURM_JOBID "  # RUN STARTED on "$SLURMD_NODENAME `date` \
+if ($?SLURM_JOB_ID) then
+  echo $SLURM_JOB_ID "  # RUN STARTED on "$SLURMD_NODENAME `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
@@ -309,8 +309,8 @@ pc_deprecated_slice_links
 #if ($?PBS_JOBID) then
 #  echo $PBS_JOBID " # RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 #endif
-if ($?SLURM_JOBID) then
-  echo $SLURM_JOBID " # RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
+if ($?SLURM_JOB_ID) then
+  echo $SLURM_JOB_ID " # RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then

@@ -724,8 +724,8 @@ if [ -f "$src/Makefile.local" ]; then
   if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
     make_cuda_dir
     make_astaroth_dir
-    if [ "$link_all" -eq 1]; then link_cuda_files; fi
-    if [ "$link_all" -eq 1]; then link_astaroth_files; fi
+    if [ "$link_all" -eq 1 ]; then link_cuda_files; fi
+    if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
   fi
 fi
 if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
