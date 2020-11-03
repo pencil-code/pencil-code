@@ -202,13 +202,17 @@ class Tensors(object):
                 # Sign difference with Schrinner + r correction
                 if iy.size>1:
                     tmp=aver.z.__getattribute__(index1)[:,:,iy]
-                    eta[0,j,i,:,:,:] = -tmp[imask]
+                    # eta[0,j,i,:,:,:] = -tmp[imask]  # JOERN, no sign correction
+                    eta[0,j,i,:,:,:] = tmp[imask]
                     tmp=aver.z.__getattribute__(index2)[:,:,iy]
-                    eta[1,j,i,:,:,:] = -tmp[imask]*r
+                    # eta[1,j,i,:,:,:] = -tmp[imask]*r # JOERN, no sign correction
+                    eta[1,j,i,:,:,:] = tmp[imask]*r
                     del(tmp)
                 else:
-                    eta[0,j,i,:,:,0] = -aver.z.__getattribute__(index1)[imask,:,iy]
-                    eta[1,j,i,:,:,0] = -aver.z.__getattribute__(index2)[imask,:,iy]*r[:,0]
+                    # eta[0,j,i,:,:,0] = -aver.z.__getattribute__(index1)[imask,:,iy] # JOERN, no sign correction
+                    # eta[1,j,i,:,:,0] = -aver.z.__getattribute__(index2)[imask,:,iy]*r[:,0] # JOERN, no sign correction
+                    eta[0,j,i,:,:,0] = aver.z.__getattribute__(index1)[imask,:,iy]  
+                    eta[1,j,i,:,:,0] = aver.z.__getattribute__(index2)[imask,:,iy]*r[:,0]
 
         # apply the specified averaging or smoothing: 'None' returns unprocessed arrays
         if callable(timereducer):
@@ -284,7 +288,7 @@ class Tensors(object):
         self.beta[iph,ith,:,:,:,0]   = self.beta[ith,iph,:,:,:,0]
         self.beta[iph,iph,:,:,:,0]   = 0.5*(eta[ith,irr,iph,:,:,:] - eta[irr,ith,iph,:,:,:])
         # Sign convention to match with meanfield_e_tensor
-        self.beta = -self.beta
+        # self.beta = -self.beta #JOERN, not needed
         self.beta=np.swapaxes(self.beta,-4,-1)
         self.beta=np.swapaxes(self.beta,-3,-2)
         # Delta vector
@@ -309,7 +313,7 @@ class Tensors(object):
             self.kappa[ith,iph,i,:,:,:,0]=     self.kappa[iph,ith,i,:,:,:,0]
             self.kappa[iph,iph,i,:,:,:,0]= 1e-91
         # Sign convention to match with meanfield_e_tensor
-        self.kappa = -self.kappa
+        # self.kappa = -self.kappa #JOERN, not needed
         self.kappa=np.swapaxes(self.kappa,-4,-1)
         self.kappa=np.swapaxes(self.kappa,-3,-2)
         setattr(self, 'imask', imask)
