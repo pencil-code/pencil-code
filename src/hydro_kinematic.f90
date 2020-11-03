@@ -650,6 +650,7 @@ endif
 !   06-dec-13/MR  : error message for eps_kinflow=0 in Roberts flow IV added
 !   15-sep-14/MR  : div for case 'roberts' corrected; div u, du_i/dx_j for case
 !                   'roberts_xz' added
+!   02-nov-20/IL  : added Sound wave
       use Diagnostics
       use General
       use Sub
@@ -1119,19 +1120,21 @@ endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
-!  Sound wave
+!  Sound wave: 1D velocity field, superposition of waves traveling in positive and 
+!  negative x directions, modulated by a slow spatial variability with wavenumber K0
+!  u = cos[k1x-w1ct](1+cosK0x) + cos[k1x-w1ct](1-cosK0x)
+!  kx_uukin = k1 ; phasex_uukin = w1 ; eps_kinflow = K0
 !
       case ('SoundWave')
         if (headtt) print*,'Sound wave;',&
-            'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+            'k1, omega1, K0=',kx_uukin,phasex_uukin, eps_kinflow
         fac=ampl_kinflow
-        ky_uukin=1.
-        kx_uukin=ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5)
         if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         eps1=cos(omega_kinflow*t)
 ! uu
         if (lpenc_loc(i_uu)) then
-!         p%uu(:,1)=fac*cos(kx_uukin*(x(l1:l2)-c*t)*(1.+cos(1.+cos))
+          p%uu(:,1)=fac*cos(kx_uukin*x(l1:l2)-phasex_uukin*t)*(1.+cos(eps_kinflow*x(l1:l2))) + &
+                    fac*cos(kx_uukin*x(l1:l2)+phasex_uukin*t)*(1.-cos(eps_kinflow*x(l1:l2)))
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
