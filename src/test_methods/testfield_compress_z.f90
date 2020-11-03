@@ -1793,7 +1793,7 @@ mn:   do n=n1,n2
             aatestmy(mmm,j)=fac*sum(f(l1:l2,mmm,n1:n2,iaxtest+j-1))
           enddo
         enddo
-        call finalize_aver(nprocxz,23,aatestmy)
+        call finalize_aver(nprocxz,13,aatestmy)
 !
         do j=1,3
           do mmm=1,my
