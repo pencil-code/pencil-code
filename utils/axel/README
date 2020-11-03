@@ -1,0 +1,58 @@
+Here some helper scripts for Axel. They are usually not well documented,
+because I'm usually the only one interested in those. Let me know if
+you need details for something.
+
+copy-proc-to-proc
+  script to do copy a bunch of files from one directory to the other.
+
+copy-VARN-to-var
+  same as above, but for restarting from some VAR file
+
+copy-var-to-var
+copy-var-to-VAR0
+
+doN
+  useful for all kind of operations where a number as argument
+  increases by one.
+
+mkdatadir_scratch
+
+move_to_local_scratch.csh
+
+move-VAR-to-data1
+
+move_VAR_to_local_scratch.csh
+
+pc_copy_VAR_procN_shift
+
+pc_current
+
+pc_cvsci_scan
+
+pc_fixparam2
+
+pc_mkprocsubtree
+
+pc_newscan
+
+pc_recent_alive_files
+
+pc_remove_dot
+
+pc_rundir
+
+pc_scp_subtree
+
+pc_timings
+
+rmVAR1to9
+  script to delete VAR files from 1 to 9, keeping zero.
+
+run_background.csh
+  runs something in the background
+
+tsnap-all
+  list the times of all snapshots (single precision)
+
+tsnap-alld
+  same, but in double precision

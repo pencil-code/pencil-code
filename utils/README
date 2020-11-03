@@ -1,0 +1,20 @@
+                                     Tue Nov  3 09:19:24 CET 2020
+Dear all,
+I have always been submitting the old-fashioned start_run.csh
+scripts on any supercomputer, and then I call it usually with
+something like
+
+  (echo "";echo $cwd; date) >> $PENCIL_HOME/.run_directories.log; (echo "";date) >> data/jobid.dat; sbatch -A 2019-2-22 -N 32 -n 1024 -t 0:59:00 -J start_run start_run.csh >>data/jobid.dat
+
+where all the extra things help me find afterwards which id corresponds
+to which run, even when it is not running yet. I thought the same would
+also work with pc_run.
+
+I now hear that many other people use an extra start script, and even
+Nils does it. This makes everything very complicated, but he says
+he has some tricks to make it simple (some modified pc_newrun script
+perhaps?). With this email, I just want to ask the others what they do.
+It is not good if everybody has their own private scripts. Such things
+could well be made available on pencil-code/utils and explained in
+some README file.
+Axel
