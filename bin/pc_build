@@ -258,6 +258,10 @@ if ($serial) {
 
 if ($target eq "ALL") { $target = 'fast'; }
 
+if ($debug) {
+    push @make_args, "--debug";
+}
+
 my $make_cmd_line = "'".join("' '", @make_args, $target)."'";
 print STDERR "Running make ", $make_cmd_line, "\n" unless ($quiet);
 write_log_line('# make '.$make_cmd_line);
