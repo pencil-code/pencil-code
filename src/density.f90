@@ -2862,7 +2862,7 @@ module Density
         call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_inertiaxx/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*cos(z(n))**2,idiag_inertiaxx)
         if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
-        if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(z(n))**2,idiag_inertiazz)
+        if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(y(m))**2,idiag_inertiazz)
         if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
             idiag_inertiazz_car/=0) then
           where (p%r_mn <= 1.)
