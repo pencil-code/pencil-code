@@ -646,10 +646,13 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
         varfile
             Name of the snapshot file.
     """
-    # Chao-Chin Yang, 2015-04-20
+    # Author: Chao-Chin Yang
+    # Created: 2014-12-03
+    # Last Modified: 2015-04-20
     from collections import namedtuple
     import numpy as np
     from struct import unpack
+
     # Check the dimensions and precision.
     if dim is None:
         dim = proc_dim(datadir=datadir, proc=proc)
@@ -660,10 +663,12 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
         adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar + dim.maux))
     else:
         adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar))
+
     # Read the snapshot.
-    f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
+    f = open(datadir.strip()+'/proc'+str(proc)+'/'+varfile.strip(), 'rb')
     f.read(hsize)
-    a = np.frombuffer(f.read(nb*adim.prod()), dtype=dtype).reshape(adim, order='F')
+    a = np.frombuffer(f.read(nb*adim.prod()), dtype=dtype)
+    a = a.reshape(adim, order='F')
     f.read(2*hsize)
     t = unpack(fmt, f.read(nb))[0]
     x = np.frombuffer(f.read(nb*dim.mx), dtype=dtype)
@@ -676,9 +681,10 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
         deltay = None
     f.read(hsize)
     f.close()
+
     # Define and return a named tuple.
-    Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
-    return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+    var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+    return namedtuple('Var', var.keys())(**var)
 #=======================================================================
 def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     """Returns particles in one snapshot.
