@@ -154,7 +154,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Identify youngest of snapshot files.
 ;
-  varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5,datadir=datadir)
+  varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5,datadir=datadir,proc=proc)
 ;
 ; Load HDF5 varfile if requested or available.
 ;
