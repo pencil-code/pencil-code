@@ -746,7 +746,9 @@ else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ 
   echo "taito - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -761,7 +763,9 @@ else if ($hn =~ clogin*) then
   echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -776,7 +780,9 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -794,7 +800,9 @@ else if (($hn =~ r*c*.bullx)) then
   echo "Puhti - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -811,7 +819,9 @@ else if (($hn =~ c*.mahti.csc.fi)) then
   echo "Mahti - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -838,7 +848,9 @@ else if (($hn =~ s*) && ($USER =~ pr*)) then
   echo "MareNostrum - BSC, Barcelona, Spain"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -854,7 +866,9 @@ else if ($hn =~ gwd*) then
   echo "GWDG Cluster - Göttingen, Germany"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -870,7 +884,9 @@ else if ($hn =~ daint*) then
   echo "Piz Daint - CSCS, Zurich, Switzerland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -886,7 +902,9 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   echo "Triolith, Sweden"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -906,7 +924,9 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ 
   echo "Taito - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -922,7 +942,9 @@ else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
   echo "Triton - Aalto University, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -941,7 +963,9 @@ else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
   echo "Alcyone - University of Helsinki, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -1597,7 +1621,9 @@ else if ($hn =~ dra[0-9]*) then
   echo "Draco system at Rechenzentrum Garching"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -1607,7 +1633,9 @@ else if ($hn =~ co[0-9]*) then
   echo "Cobra system at Rechenzentrum Garching"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -1617,7 +1645,9 @@ else if ($hn =~ ravc[0-9]*) then
   echo "Raven system at Rechenzentrum Garching"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
@@ -1627,7 +1657,9 @@ else if ($hn =~ *.sng.lrz.de) then
   echo "Supermuc-NG at Leibniz-Rechenzentrum"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
-    setenv SLURM_SUBMIT_DIR `pwd`
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif

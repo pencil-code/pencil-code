@@ -134,20 +134,20 @@ endif
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
 # (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  RUN STARTED on "$PBS_O_QUEUE `date` \
+  echo $PBS_JOBID " RUN STARTED on "$PBS_O_QUEUE `date` \
     >> $datadir/jobid.dat
 endif
 if ($?LOADL_STEP_ID) then
-  echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
+  echo $LOADL_STEP_ID " RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
 if ($?SLURM_JOB_ID) then
-  echo $SLURM_JOB_ID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+  echo $SLURM_JOB_ID " RUN STARTED on "$SLURMD_NODENAME `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
-  echo $SP_JID "  RUN STARTED on " `date` >> $datadir/jobid.dat
+  echo $SP_JID " RUN STARTED on " `date` >> $datadir/jobid.dat
 endif
 
 # Write time and current working directory into log file
@@ -188,7 +188,6 @@ else
   time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time $mpirun -x LD_LIBRARY_PATH -x PATH $mpirunops $npops $mpirunops2 $run_x $x_ops
-  #time srun -n 1 $run_x $x_ops
 endif
 set run_status=$status          # save for exit
 date
@@ -202,10 +201,9 @@ endif
 if ($?PBS_JOBID) then
   echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
-
+#
 if ($?SLURM_JOB_ID) then
-  echo $SLURM_JOB_ID "  RUN FINISHED on "$SLURMD_NODENAME `date` \
-    >> $datadir/jobid.dat
+  echo $SLURM_JOB_ID " RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
 endif
 
 # look for RERUN file
