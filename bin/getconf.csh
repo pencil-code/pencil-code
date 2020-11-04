@@ -792,6 +792,12 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
 #else if (($hn =~ r*c*)) then
 else if (($hn =~ r*c*.bullx)) then
   echo "Puhti - CSC, Kajaani, Finland"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
   set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
@@ -801,6 +807,12 @@ else if (($hn =~ r*c*.bullx)) then
 #--------------------------------------------------
 else if (($hn =~ c*.mahti.csc.fi)) then
   echo "Mahti - CSC, Kajaani, Finland"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
@@ -1601,11 +1613,11 @@ else if ($hn =~ co[0-9]*) then
 #---------------------------------------------------
 else if ($hn =~ ravc[0-9]*) then
   echo "Raven system at Rechenzentrum Garching"
-  if ($?SLURM_JOBID) then
-    echo "Running job: $SLURM_JOBID"
-    setenv SLURM_WORKDIR `pwd`
-    touch $SLURM_WORKDIR/data/jobid.dat
-    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    setenv SLURM_SUBMIT_DIR `pwd`
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------  

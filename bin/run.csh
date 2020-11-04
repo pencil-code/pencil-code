@@ -142,8 +142,7 @@ if ($?LOADL_STEP_ID) then
     >> $datadir/jobid.dat
 endif
 if ($?SLURM_JOB_ID) then
-  #echo $SLURM_JOB_ID "  RUN STARTED on "$SLURMD_NODENAME `date` \
-  echo $SLURM_JOB_ID "  RUN STARTED on " `date` \
+  echo $SLURM_JOB_ID "  RUN STARTED on "$SLURMD_NODENAME `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
@@ -202,6 +201,11 @@ endif
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
   echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
+endif
+
+if ($?SLURM_JOB_ID) then
+  echo $SLURM_JOB_ID "  RUN FINISHED on "$SLURMD_NODENAME `date` \
+    >> $datadir/jobid.dat
 endif
 
 # look for RERUN file

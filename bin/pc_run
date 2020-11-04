@@ -1349,7 +1349,7 @@ sub write_job_id {
     append_jobid_line(
         $jobid_file, $phase, $ENV{LOADL_STEP_ID}, $ENV{LOADL_STEP_CLASS});
     append_jobid_line(
-        $jobid_file, $phase, $ENV{SLURM_JOB_ID},   undef);
+        $jobid_file, $phase, $ENV{SLURM_JOB_ID},  $ENV{SLURM_JOB_PARTITION});
     append_jobid_line(
         $jobid_file, $phase, $ENV{SP_JID},        undef);
 }
@@ -1363,7 +1363,7 @@ sub append_jobid_line {
         $filename,
         "$job_id  RUN $phase on "
         . (defined $queue ? "$queue " : '')
-        . timestr()
+        . strftime("%a %Y-%m-%d %H:%M:%S", localtime())
     );
 }
 # ---------------------------------------------------------------------- #
