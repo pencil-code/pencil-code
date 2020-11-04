@@ -9,6 +9,64 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
+def allprocs_var(datadir='./data', dim=None, par=None, varfile='var.dat'):
+    """Returns one snapshot under allprocs/.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        dim
+            Dimensions supplied by dimensions().  If None, the
+            dimensions will be read in at runtime.
+        par
+            Parameters supplied by parameters().  If None, the
+            parameters will be read in at runtime.
+        varfile
+            Name of the snapshot file.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2020-11-03
+    # Last Modified: 2020-11-03
+    from collections import namedtuple
+    import numpy as np
+    from struct import unpack
+
+    # Get the dimensions and precision.
+    if dim is None:
+        dim = dimensions(datadir=datadir)
+    fmt, dtype, nb = _get_precision(dim)
+
+    # Get the total number of variables.
+    nvar = dim.mvar
+    if par is None:
+        par = parameters(datadir=datadir)
+    if par.lwrite_aux:
+        nvar += dim.maux
+
+    # Allocate memory space.
+    adim = np.array((dim.mxgrid, dim.mygrid, dim.mzgrid, nvar))
+
+    # Read the snapshot.
+    f = open(datadir.strip() + '/allprocs/' + varfile.strip(), 'rb')
+    a = np.frombuffer(f.read(nb*adim.prod()), dtype=dtype)
+    a = a.reshape(adim, order='F')
+    f.read(hsize)
+    t = unpack(fmt, f.read(nb))[0]
+    x = np.frombuffer(f.read(nb*dim.mxgrid), dtype=dtype)
+    y = np.frombuffer(f.read(nb*dim.mygrid), dtype=dtype)
+    z = np.frombuffer(f.read(nb*dim.mzgrid), dtype=dtype)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    if par.lshear:
+        deltay = unpack(fmt, f.read(nb))[0]
+    else:
+        deltay = None
+    f.read(hsize)
+    f.close()
+
+    # Define and return a named tuple.
+    var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+    return namedtuple('Var', var.keys())(**var)
+#=======================================================================
 def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
           verbose=True):
     """Returns the time series of 1D averages.
