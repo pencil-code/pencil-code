@@ -58,9 +58,9 @@ end
 #  Need at least three fields of mandatory input.
 #
 if ( $narg < 2 ) then
-  echo "Usage: pc_copyvar var1 var2 source dest [-e | -execute=1]"
-  echo "       pc_copyvar var1 var2 dest [-e | -execute=1]"
-  echo "       pc_copyvar var1 var2 [-e | -execute=1]"
+  echo "Usage: pc_copyvar var1 var2 source dest [-e | -execute=1] [-s]"
+  echo "       pc_copyvar var1 var2 dest [-e | -execute=1] [-s]"
+  echo "       pc_copyvar var1 var2 [-e | -execute=1] [-s]"
   exit
 endif
 if ($e != 0) then

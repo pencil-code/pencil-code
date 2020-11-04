@@ -799,6 +799,8 @@ else if (($hn =~ r*c*.bullx)) then
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'mpirun'
+  #set mpirun = 'srun'
+  #set npops = "-np $ncpus"
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
