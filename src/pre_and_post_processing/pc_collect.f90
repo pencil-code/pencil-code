@@ -12,6 +12,7 @@ program pc_collect
   use IO
   use Messages
   use Param_IO
+  use Particles_main, only: particles_register_modules
   use Register
   use Snapshot
 !
@@ -83,6 +84,7 @@ program pc_collect
 !  Register physics modules.
 !
   call register_modules
+  if (lparticles) call particles_register_modules()
 !
 !  Define the lenergy logical
 !
