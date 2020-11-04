@@ -278,7 +278,8 @@ if err ne 0 then return, 0
         endfor
 
     endif
- 
+
+    ncomp=1 
     pos=0L
     point_lun, 2, pos        ; set file position to top of file (i.e., at first time stamp)
     
@@ -517,7 +518,7 @@ if keyword_set(noplot) then iplot=0 else iplot=1
   Ly=param.Lxyz[1]
   Lz=param.Lxyz[2]
 
-  pc_read_dim,o=param,/quiet
+  pc_read_dim,obj=param,/quiet
   nx=param.nx
   ny=param.ny
   nz=param.nz
@@ -540,6 +541,7 @@ nk=nk0
 ;  end
 ;end
 
+lcomplex=0
 nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1, zpos=zpos1 )
 
 if nt1 eq 0 then begin
