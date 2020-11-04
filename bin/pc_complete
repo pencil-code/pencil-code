@@ -7,12 +7,24 @@
 # This file has to be sourced in .bashrc and after that
 # complete -F _pc_complete <user-defined alias> is needed.
 #
-pc_complete() 
+_pc_complete() 
 {
     local cur
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
 
-    COMPREPLY=( $(compgen -W "$(cd $PENCIL_HOME/src; ls * */* */*/*)" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "$(cd $PENCIL_HOME; ls * bin/* \
+                                                      config/* config/*/* config/*/*/* \
+                                                      doc/* \
+                                                      dx/* \
+                                                      idl/* idl/*/* idl/*/*/* \
+                                                      julia/* \
+                                                      lib/* \
+                                                      license/* \
+                                                      misc/* \
+                                                      python/* python/*/* python/*/*/* \
+                                                      remesh/* remesh/*/* \
+                                                      src/* src/*/* \
+                                                      utils/*)" -- ${cur}) )
     return 0
 }
