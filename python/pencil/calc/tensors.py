@@ -297,7 +297,7 @@ class Tensors(object):
         self.delta[ith,:,:,:,0]    = 0.25*(eta[ith,irr,irr,:,:,:] - eta[irr,ith,irr,:,:,:] + eta[ith,iph,iph,:,:,:])
         self.delta[iph,:,:,:,0]    = -0.25*(eta[irr,iph,irr,:,:,:] + eta[ith,iph,ith,:,:,:])
         # Sign convention to match with meanfield_e_tensor
-        self.delta = -self.delta
+        # self.delta = -self.delta #JOERN, not needed
         self.delta=np.swapaxes(self.delta,-4,-1)
         self.delta=np.swapaxes(self.delta,-3,-2)
         # Kappa tensor
