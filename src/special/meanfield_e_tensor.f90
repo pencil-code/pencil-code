@@ -194,6 +194,11 @@ module Special
   integer :: idiag_emfxmxy=0, idiag_emfymxy=0, idiag_emfzmxy=0
   integer :: idiag_emfcoefxmxy=0, idiag_emfcoefymxy=0, idiag_emfcoefzmxy=0
   integer :: idiag_alphaxxmxy=0, idiag_alphayymxy=0, idiag_alphazzmxy=0
+  integer :: idiag_alphaxymxy=0, idiag_alphaxzmxy=0, idiag_alphayzmxy=0
+  integer :: idiag_betaxxmxy=0, idiag_betayymxy=0, idiag_betazzmxy=0
+  integer :: idiag_betaxymxy=0, idiag_betaxzmxy=0, idiag_betayzmxy=0
+  integer :: idiag_gammaxmxy=0, idiag_gammaymxy=0, idiag_gammazmxy=0
+  integer :: idiag_deltaxmxy=0, idiag_deltaymxy=0, idiag_deltazmxy=0
   integer :: idiag_umeanxmxy=0, idiag_umeanymxy=0, idiag_umeanzmxy=0
 !
   ! Interpolation parameters
@@ -851,21 +856,21 @@ module Special
           if (lreconstruct_tensors.and.lacoef.and.lbcoef) then                 ! beta, delta, kappa supposed to be correct
             if (lroot) print*, 'Reconstruct alpha and gamma from raw tensors.'
             do mm=1,ny
-              alpha_data(1,:,mm,1,1,1)=     acoef_data(1,:,mm,1,1,1)+bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
-              alpha_data(1,:,mm,1,1,2)=0.5*(acoef_data(1,:,mm,1,1,2)-bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
-                                           +acoef_data(1,:,mm,1,2,1)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
-              alpha_data(1,:,mm,1,2,2)=     acoef_data(1,:,mm,1,2,2)-bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,1)=     acoef_data(1,:,mm,1,1,1)-bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,2)=0.5*(acoef_data(1,:,mm,1,1,2)+bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
+                                           +acoef_data(1,:,mm,1,2,1)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+              alpha_data(1,:,mm,1,2,2)=     acoef_data(1,:,mm,1,2,2)+bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
               alpha_data(1,:,mm,1,1,3)=0.5*(acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
-                                           +bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
+                                           -bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
               alpha_data(1,:,mm,1,2,3)=0.5*(acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
-                                           -bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
+                                           +bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
             
               gamma_data(1,:,mm,1,1)=0.5*(acoef_data(1,:,mm,1,3,2)-acoef_data(1,:,mm,1,2,3) &
-                                         -bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
+                                         +bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
               gamma_data(1,:,mm,1,2)=0.5*(acoef_data(1,:,mm,1,1,3)-acoef_data(1,:,mm,1,3,1) &
-                                         -bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
+                                         +bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
               gamma_data(1,:,mm,1,3)=0.5*(acoef_data(1,:,mm,1,2,1)-acoef_data(1,:,mm,1,1,2) &
-                                         +bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+                                         -bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
             enddo
             
             alpha_data(:,:,:,:,2,1)=alpha_data(:,:,:,:,1,2)
@@ -880,50 +885,50 @@ module Special
             if (lroot) print*, 'Construct alternative decomposition from raw tensors.'
             do mm=1,ny
 
-              alpha_data(1,:,mm,1,1,1)=      acoef_data(1,:,mm,1,1,1)+bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
-              alpha_data(1,:,mm,1,1,2)=0.5*( acoef_data(1,:,mm,1,1,2)-bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
-                                            +acoef_data(1,:,mm,1,2,1)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
-              alpha_data(1,:,mm,1,2,2)=      acoef_data(1,:,mm,1,2,2)-bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,1)=      acoef_data(1,:,mm,1,1,1)-bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,2)=0.5*( acoef_data(1,:,mm,1,1,2)+bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
+                                            +acoef_data(1,:,mm,1,2,1)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+              alpha_data(1,:,mm,1,2,2)=      acoef_data(1,:,mm,1,2,2)+bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
 
               alpha_data(1,:,mm,1,1,3)=0.5*( acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
-                                            +(                  bcoef_data(1,:,mm,1,3,2,2) &
+                                            -(                  bcoef_data(1,:,mm,1,3,2,2) &
                                               +                 bcoef_data(1,:,mm,1,1,3,1) &
                                               +cotth(mm+nghost)*bcoef_data(1,:,mm,1,1,3,2))/x(l1:l2))
 
               alpha_data(1,:,mm,1,2,3)=0.5*( acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
-                                            +(                  bcoef_data(1,:,mm,1,2,3,1) &  
+                                            -(                  bcoef_data(1,:,mm,1,2,3,1) &  
                                               -                 bcoef_data(1,:,mm,1,3,1,2) &
                                               +cotth(mm+nghost)*bcoef_data(1,:,mm,1,2,3,2))/x(l1:l2))
 
-              alpha_data(1,:,mm,1,3,3)= acoef_data(1,:,mm,1,3,3) + (                  bcoef_data(1,:,mm,1,3,3,1) &
+              alpha_data(1,:,mm,1,3,3)= acoef_data(1,:,mm,1,3,3) - (                  bcoef_data(1,:,mm,1,3,3,1) &
                                                                     +cotth(mm+nghost)*bcoef_data(1,:,mm,1,3,3,2))/x(l1:l2)
 
               gamma_data(1,:,mm,1,1)=0.5*( acoef_data(1,:,mm,1,3,2)-acoef_data(1,:,mm,1,2,3) &
-                                          -(                  bcoef_data(1,:,mm,1,2,3,1) &
+                                          +(                  bcoef_data(1,:,mm,1,2,3,1) &
                                             +                 bcoef_data(1,:,mm,1,3,1,2) &
                                             +cotth(mm+nghost)*bcoef_data(1,:,mm,1,2,3,2))/x(l1:l2))
 
               gamma_data(1,:,mm,1,2)=0.5*( acoef_data(1,:,mm,1,1,3)-acoef_data(1,:,mm,1,3,1) &
-                                          +(                  bcoef_data(1,:,mm,1,1,3,1) &
+                                          -(                  bcoef_data(1,:,mm,1,1,3,1) &
                                             -                 bcoef_data(1,:,mm,1,3,2,2) &
                                             +cotth(mm+nghost)*bcoef_data(1,:,mm,1,1,3,2))/x(l1:l2))
 
               gamma_data(1,:,mm,1,3)=0.5*( acoef_data(1,:,mm,1,2,1)-acoef_data(1,:,mm,1,1,2) &
-                                         +(bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,2,2,2))/x(l1:l2))
+                                         -(bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,2,2,2))/x(l1:l2))
 
-              delta_data(1,:,mm,1,1)=0.25*(bcoef_data(1,:,mm,1,2,1,2)-bcoef_data(1,:,mm,1,2,2,1)-2.*bcoef_data(1,:,mm,1,3,3,1))
+              delta_data(1,:,mm,1,1)=0.25*(bcoef_data(1,:,mm,1,2,2,1)-bcoef_data(1,:,mm,1,2,1,2)+2.*bcoef_data(1,:,mm,1,3,3,1))
                             
-              delta_data(1,:,mm,1,2)=0.25*(bcoef_data(1,:,mm,1,1,2,1)-bcoef_data(1,:,mm,1,1,1,2)-2.*bcoef_data(1,:,mm,1,3,3,2))
+              delta_data(1,:,mm,1,2)=0.25*(bcoef_data(1,:,mm,1,1,1,2)-bcoef_data(1,:,mm,1,1,2,1)+2.*bcoef_data(1,:,mm,1,3,3,2))
                             
-              delta_data(1,:,mm,1,3)=0.5*(bcoef_data(1,:,mm,1,1,3,1)+bcoef_data(1,:,mm,1,2,3,2))
+              delta_data(1,:,mm,1,3)=-0.5*(bcoef_data(1,:,mm,1,1,3,1)+bcoef_data(1,:,mm,1,2,3,2))
 
-              beta_data(1,:,mm,1,1,1)= bcoef_data(1,:,mm,1,1,3,2)
-              beta_data(1,:,mm,1,2,2)=-bcoef_data(1,:,mm,1,2,3,1)
-              beta_data(1,:,mm,1,3,3)=0.5*(bcoef_data(1,:,mm,1,3,2,1)-bcoef_data(1,:,mm,1,3,1,2))
+              beta_data(1,:,mm,1,1,1)=-bcoef_data(1,:,mm,1,1,3,2)
+              beta_data(1,:,mm,1,2,2)= bcoef_data(1,:,mm,1,2,3,1)
+              beta_data(1,:,mm,1,3,3)=0.5*(-bcoef_data(1,:,mm,1,3,2,1)+bcoef_data(1,:,mm,1,3,1,2))
 
-              beta_data(1,:,mm,1,1,2)=0.5*(bcoef_data(1,:,mm,1,2,3,2)-bcoef_data(1,:,mm,1,1,3,1))
-              beta_data(1,:,mm,1,1,3)=0.25*( 2.*bcoef_data(1,:,mm,1,3,3,2)-bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,1,2,1))
-              beta_data(1,:,mm,1,2,3)=0.25*(-2.*bcoef_data(1,:,mm,1,3,3,1)-bcoef_data(1,:,mm,1,2,1,2)+bcoef_data(1,:,mm,1,2,2,1))
+              beta_data(1,:,mm,1,1,2)=0.5*(-bcoef_data(1,:,mm,1,2,3,2)+bcoef_data(1,:,mm,1,1,3,1))
+              beta_data(1,:,mm,1,1,3)=0.25*( -2.*bcoef_data(1,:,mm,1,3,3,2)+bcoef_data(1,:,mm,1,1,1,2)-bcoef_data(1,:,mm,1,1,2,1))
+              beta_data(1,:,mm,1,2,3)=0.25*(2.*bcoef_data(1,:,mm,1,3,3,1)+bcoef_data(1,:,mm,1,2,1,2)-bcoef_data(1,:,mm,1,2,2,1))
  
               do ik=1,3
                 kappa_data(1,:,mm,1,ik,:,3)=0.; kappa_data(1,:,mm,1,ik,3,:)=0.
@@ -1192,7 +1197,7 @@ enddo; enddo
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) then
-            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+            p%bcoef_coefs(:,i,j,k)=-1*emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
           else
             p%bcoef_coefs(:,i,j,k)=0
           end if
@@ -1444,8 +1449,23 @@ endif
         call zsum_mn_name_xy(emftmp(:,2),idiag_emfcoefymxy)
         call zsum_mn_name_xy(emftmp(:,3),idiag_emfcoefzmxy)
         call zsum_mn_name_xy(p%alpha_coefs(:,1,1),idiag_alphaxxmxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,1,2),idiag_alphaxymxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,1,3),idiag_alphaxzmxy)
         call zsum_mn_name_xy(p%alpha_coefs(:,2,2),idiag_alphayymxy)
+        call zsum_mn_name_xy(p%alpha_coefs(:,2,3),idiag_alphayzmxy)
         call zsum_mn_name_xy(p%alpha_coefs(:,3,3),idiag_alphazzmxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,1,1),idiag_betaxxmxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,1,2),idiag_betaxymxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,1,3),idiag_betaxzmxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,2,2),idiag_betayymxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,2,3),idiag_betayzmxy)
+        call zsum_mn_name_xy(p%beta_coefs(:,3,3),idiag_betazzmxy)
+        call zsum_mn_name_xy(p%gamma_coefs(:,1),idiag_gammaxmxy)
+        call zsum_mn_name_xy(p%gamma_coefs(:,2),idiag_gammaymxy)
+        call zsum_mn_name_xy(p%gamma_coefs(:,3),idiag_gammazmxy)
+        call zsum_mn_name_xy(p%delta_coefs(:,1),idiag_deltaxmxy)
+        call zsum_mn_name_xy(p%delta_coefs(:,2),idiag_deltaymxy)
+        call zsum_mn_name_xy(p%delta_coefs(:,3),idiag_deltazmxy)
         call zsum_mn_name_xy(p%umean_coefs(:,1),idiag_umeanxmxy)
         call zsum_mn_name_xy(p%umean_coefs(:,2),idiag_umeanymxy)
         call zsum_mn_name_xy(p%umean_coefs(:,3),idiag_umeanzmxy)
@@ -1571,6 +1591,11 @@ endif
         idiag_emfxmxy=0; idiag_emfymxy=0; idiag_emfzmxy=0
         idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
         idiag_alphaxxmxy=0; idiag_alphayymxy=0; idiag_alphazzmxy=0;
+        idiag_alphaxymxy=0; idiag_alphaxzmxy=0; idiag_alphayzmxy=0;
+        idiag_betaxxmxy=0; idiag_betayymxy=0; idiag_betazzmxy=0;
+        idiag_betaxymxy=0; idiag_betaxzmxy=0; idiag_betayzmxy=0;
+        idiag_gammaxmxy=0; idiag_gammaymxy=0; idiag_gammazmxy=0;
+        idiag_deltaxmxy=0; idiag_deltaymxy=0; idiag_deltazmxy=0;
         idiag_umeanxmxy=0; idiag_umeanymxy=0; idiag_umeanzmxy=0;
       endif
 !
@@ -1637,9 +1662,24 @@ endif
         call parse_name(iname,cnamexy(iname),cformxy(iname),'alphaxxmxy',idiag_alphaxxmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'alphayymxy',idiag_alphayymxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'alphazzmxy',idiag_alphazzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphaxymxy',idiag_alphaxymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphaxzmxy',idiag_alphaxzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'alphayzmxy',idiag_alphayzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betaxxmxy',idiag_betaxxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betayymxy',idiag_betayymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betazzmxy',idiag_betazzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betaxymxy',idiag_betaxymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betaxzmxy',idiag_betaxzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'betayzmxy',idiag_betayzmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanxmxy',idiag_umeanxmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanymxy',idiag_umeanymxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'umeanzmxy',idiag_umeanzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'deltaxmxy',idiag_deltaxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'deltaymxy',idiag_deltaymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'deltazmxy',idiag_deltazmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'gammaxmxy',idiag_gammaxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'gammaymxy',idiag_gammaymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'gammazmxy',idiag_gammazmxy)
       enddo
  
     endsubroutine rprint_special
