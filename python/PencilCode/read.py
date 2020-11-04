@@ -940,11 +940,13 @@ def time_series(datadir='./data', unique=False):
 
     return ts
 #=======================================================================
-def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
-        varfile='var.dat', verbose=True):
+def var(allprocs=False, compact=True, datadir='./data', ivar=None, par=None,
+        trim=True, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
+        allprocs
+            If True, the snapshot is read under allprocs/.
         compact
             If True, dimensions of one are removed.
         datadir
@@ -964,7 +966,7 @@ def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
     """
     # Author: Chao-Chin Yang
     # Created: 2014-12-03
-    # Last Modified: 2017-08-24
+    # Last Modified: 2020-11-03
     from collections import namedtuple
     import numpy as np
 
@@ -1011,44 +1013,55 @@ def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
             print("Warning: inconsistent ", label, " for process", proc)
         return new
 
-    # Loop over each process.
-    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
-        # Read data.
-        if verbose:
-            print("Reading", datadir + "/proc" + str(proc) + "/" + varfile,
-                  "...")
-        dim1 = proc_dim(datadir=datadir, proc=proc)
-        snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
-
-        # Assign the data to the corresponding block.
-        l1 = dim1.iprocx * dim1.nx
-        l2 = l1 + dim1.mx
-        m1 = dim1.iprocy * dim1.ny
-        m2 = m1 + dim1.my
-        n1 = dim1.iprocz * dim1.nz
-        n2 = n1 + dim1.mz
-        dl1 = 0 if dim1.iprocx == 0 else dim.nghost
-        dl2 = 0 if dim1.iprocx == dim.nprocx - 1 else -dim.nghost
-        dm1 = 0 if dim1.iprocy == 0 else dim.nghost
-        dm2 = 0 if dim1.iprocy == dim.nprocy - 1 else -dim.nghost
-        dn1 = 0 if dim1.iprocz == 0 else dim.nghost
-        dn2 = 0 if dim1.iprocz == dim.nprocz - 1 else -dim.nghost
-        f[l1+dl1:l2+dl2,
-          m1+dm1:m2+dm2,
-          n1+dn1:n2+dn2,:] = snap1.f[dl1:dim1.mx+dl2,
-                                     dm1:dim1.my+dm2,
-                                     dn1:dim1.mz+dn2,:]
-
-        # Assign the coordinates and other scalars.
-        t = assign1(t, snap1.t, 't', proc)
-        x = assign(l1, l2, x, snap1.x, 'x', proc)
-        y = assign(m1, m2, y, snap1.y, 'y', proc)
-        z = assign(n1, n2, z, snap1.z, 'z', proc)
-        dx = assign1(dx, snap1.dx, 'dx', proc)
-        dy = assign1(dy, snap1.dy, 'dy', proc)
-        dz = assign1(dz, snap1.dz, 'dz', proc)
+    if allprocs:
+        # Read data under allprocs/.
+        data = allprocs_var(datadir=datadir, dim=dim, par=par, varfile=varfile)
+        f, t = data.f, data.t
+        x, y, z = data.x, data.y, data.z
+        dx, dy, dz = data.dx, data.dy, data.dz
         if par.lshear:
-            deltay = assign1(deltay, snap1.deltay, 'deltay', proc)
+            deltay = data.deltay
+
+    else:
+        # Loop over each process.
+        for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+            # Read data.
+            if verbose:
+                print("Reading", datadir + "/proc" + str(proc) + "/" + varfile,
+                      "...")
+            dim1 = proc_dim(datadir=datadir, proc=proc)
+            snap1 = proc_var(datadir=datadir, par=par, proc=proc,
+                             varfile=varfile) 
+
+            # Assign the data to the corresponding block.
+            l1 = dim1.iprocx * dim1.nx
+            l2 = l1 + dim1.mx
+            m1 = dim1.iprocy * dim1.ny
+            m2 = m1 + dim1.my
+            n1 = dim1.iprocz * dim1.nz
+            n2 = n1 + dim1.mz
+            dl1 = 0 if dim1.iprocx == 0 else dim.nghost
+            dl2 = 0 if dim1.iprocx == dim.nprocx - 1 else -dim.nghost
+            dm1 = 0 if dim1.iprocy == 0 else dim.nghost
+            dm2 = 0 if dim1.iprocy == dim.nprocy - 1 else -dim.nghost
+            dn1 = 0 if dim1.iprocz == 0 else dim.nghost
+            dn2 = 0 if dim1.iprocz == dim.nprocz - 1 else -dim.nghost
+            f[l1+dl1:l2+dl2,
+              m1+dm1:m2+dm2,
+              n1+dn1:n2+dn2,:] = snap1.f[dl1:dim1.mx+dl2,
+                                         dm1:dim1.my+dm2,
+                                         dn1:dim1.mz+dn2,:]
+
+            # Assign the coordinates and other scalars.
+            t = assign1(t, snap1.t, 't', proc)
+            x = assign(l1, l2, x, snap1.x, 'x', proc)
+            y = assign(m1, m2, y, snap1.y, 'y', proc)
+            z = assign(n1, n2, z, snap1.z, 'z', proc)
+            dx = assign1(dx, snap1.dx, 'dx', proc)
+            dy = assign1(dy, snap1.dy, 'dy', proc)
+            dz = assign1(dz, snap1.dz, 'dz', proc)
+            if par.lshear:
+                deltay = assign1(deltay, snap1.deltay, 'deltay', proc)
 
     # Trim the ghost cells if requested.
     if trim:
@@ -1067,12 +1080,10 @@ def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
             fdim.remove(1)
 
     # Define and return a named tuple.
-    keys = ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'] + var
-    values = [t, x, y, z, dx, dy, dz, deltay]
-    for i in range(len(var)):
-        values.append(f[:,:,:,i].ravel().reshape(fdim))
-    Var = namedtuple('Var', keys)
-    return Var(**dict(zip(keys, values)))
+    data = dict(t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+    for i, v in enumerate(var):
+        data[v] = f[:,:,:,i].ravel().reshape(fdim)
+    return namedtuple('Var', data.keys())(**data)
 #=======================================================================
 def varname(datadir='./data', filename='varname.dat'):
     """Returns the names of variables.
