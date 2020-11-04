@@ -172,6 +172,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
   logical :: lonly_farray
 
   integer :: mvar
+  integer :: l1, l2, m1, m2, n1, n2
   real, dimension(:,:,:,:), allocatable :: gf
 
   mvar=size(f,4)
@@ -186,7 +187,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 ! Loop over processors
 !
   write (*,*) 'Collecting "'//trim(filename)//'", IPZ-layer:'
-  do ipz = 0, nprocz-1
+  zloop: do ipz = 0, nprocz-1
 !
     write (*,*) ipz+1, " of ", nprocz
 !
@@ -258,8 +259,43 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
       cycle
     endif
 !
-    do ipy = 0, nprocy-1
-      do ipx = 0, nprocx-1
+!  Find the local z-domain.
+!
+    lfirst_proc_z = (ipz == 0)
+    llast_proc_z = (ipz == nprocz-1)
+!
+    if (lfirst_proc_z) then
+      n1 = 1
+    else
+      n1 = nghost + 1
+    endif
+!
+    if (llast_proc_z) then
+      n2 = mz
+    else
+      n2 = mz - nghost
+    endif
+!
+    yloop: do ipy = 0, nprocy-1
+!
+!  Find the local y-domain.
+!
+      lfirst_proc_y = (ipy == 0)
+      llast_proc_y = (ipy == nprocy-1)
+!
+      if (lfirst_proc_y) then
+        m1 = 1
+      else
+        m1 = nghost + 1
+      endif
+!
+      if (llast_proc_y) then
+        m2 = my
+      else
+        m2 = my - nghost
+      endif
+!
+      xloop: do ipx = 0, nprocx-1
 !
         iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
         lroot = (iproc_world==root)
@@ -267,8 +303,6 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !  Set up flags for leading processors in each possible direction and plane
 !
         lfirst_proc_x = (ipx == 0)
-        lfirst_proc_y = (ipy == 0)
-        lfirst_proc_z = (ipz == 0)
         lfirst_proc_xy = lfirst_proc_x .and. lfirst_proc_y
         lfirst_proc_yz = lfirst_proc_y .and. lfirst_proc_z
         lfirst_proc_xz = lfirst_proc_x .and. lfirst_proc_z
@@ -277,12 +311,24 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !  Set up flags for trailing processors in each possible direction and plane
 !
         llast_proc_x = (ipx == nprocx-1)
-        llast_proc_y = (ipy == nprocy-1)
-        llast_proc_z = (ipz == nprocz-1)
         llast_proc_xy = llast_proc_x .and. llast_proc_y
         llast_proc_yz = llast_proc_y .and. llast_proc_z
         llast_proc_xz = llast_proc_x .and. llast_proc_z
         llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
+!
+!  Find the local x-domain.
+!
+        if (lfirst_proc_x) then
+          l1 = 1
+        else
+          l1 = nghost + 1
+        endif
+!
+        if (llast_proc_x) then
+          l2 = mx
+        else
+          l2 = mx - nghost
+        endif
 !
 !  Set up directory names `directory' and `directory_snap'.
 !
@@ -361,10 +407,10 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
         endif
 !
         ! collect f in gf:
-        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar)
+        gf(l1+ipx*nx:l2+ipx*nx,m1+ipy*ny:m2+ipy*ny,n1:n2,:) = f(l1:l2,m1:m2,n1:n2,1:mvar)
 !
-      enddo
-    enddo
+      enddo xloop
+    enddo yloop
 !
     if (.not.lonly_farray) then
     ! collect z coordinates:
@@ -383,7 +429,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
         write (lun_output, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
       enddo
     enddo
-  enddo
+  enddo zloop
 !
   if (.not.lonly_farray) then
     ! write additional data:
