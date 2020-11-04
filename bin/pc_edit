@@ -21,6 +21,8 @@ elif [ -e $PENCIL_HOME/*/*/$2 ]; then
   $1 $PENCIL_HOME/*/*/$2
 elif [ -e $PENCIL_HOME/*/*/*/$2 ]; then
   $1 $PENCIL_HOME/*/*/*/$2
+elif [ -e $PENCIL_HOME/*/*/*/*/$2 ]; then
+  $1 $PENCIL_HOME/*/*/*/*/$2
 else
   $1 $2
 fi
