@@ -166,13 +166,20 @@ if [ $same_source ]; then
   pwd
 
   if [ -h $olddir/src/run.x ]; then
-    ln -s `readlink $olddir/src/combine_videofiles.x` .
-    ln -s `readlink $olddir/src/read_vectorfiles.x` .
-    ln -s `readlink $olddir/src/read_videofiles.x` .
-    ln -s `readlink $olddir/src/read_all_videofiles.x` .
+    lnk=`readlink $olddir/src/combine_videofiles.x`
+    if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+    lnk=`readlink $olddir/src/read_vectorfiles.x` 
+    if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+    lnk=`readlink $olddir/src/read_videofiles.x` 
+    if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+    lnk=`readlink $olddir/src/read_all_videofiles.x`
+    if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+
     ln -s `readlink $olddir/src/start.x` .
     ln -s `readlink $olddir/src/run.x` .
-    ln -s `readlink $olddir/src/special.so` .
+
+    lnk=`readlink $olddir/src/special.so`
+    if [ "$lnk" != "" ]; then ln -s $lnk .; fi
   else
     if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
     if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi

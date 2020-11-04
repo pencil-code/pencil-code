@@ -14,6 +14,13 @@ else
   set dirlist=$cwd
 endif
 
+if ($0=='tar_run') then
+  set add_cmd="tar --append"
+  tar cf $cwd.a
+else
+  set add_cmd="cvs add"
+endif
+
 foreach pdir ($dirlist)
   cd $pdir
 #
@@ -25,26 +32,26 @@ foreach pdir ($dirlist)
 #  go one up add add our run directory to cvs
 #
   cd ..
-  cvs add $dir
+  add_cmd $dir
   cd $dir
 #
 #  add directories and files to cvs
 #  also get a copy of their time stamps before checking in
 #
   ls -l *.in *.dat *.pro src/*.local > .log
-  cvs add *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log data
+  add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log data
 #
   if (-e data) then
       cd data
-      cvs add index.pro legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat pt_positions.dat tstalk.dat particles_stalker_header.dat
+      add_cmd index.pro legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat pt_positions.dat tstalk.dat particles_stalker_header.dat
       if ( -e dim.dat ) then
-          cvs add dim.dat
+          add_cmd dim.dat
       endif
       if ( -e time_series.dat ) then
-          cvs add time_series.dat
+          add_cmd time_series.dat
       endif
       if ( -e time_series.h5 ) then
-          cvs add -kb time_series.h5
+          add_cmd -kb time_series.h5
       endif
       if ( -e grid.h5 ) then
           cvs add -kb grid.h5
@@ -57,7 +64,7 @@ foreach pdir ($dirlist)
 #
   \ls | egrep 'alpeta.sav' >/dev/null
   if ( ! $status ) then
-    cvs add alpeta.sav
+    add_cmd alpeta.sav
   endif
 #
 #  add power spectra, if they exist
@@ -65,7 +72,7 @@ foreach pdir ($dirlist)
 #
   \ls | egrep '*power.*\.dat' >/dev/null
   if ( ! $status ) then
-    cvs add *power*.dat
+    add_cmd *power*.dat
   endif
 #
 #  add structure functions, if they exist
@@ -73,28 +80,28 @@ foreach pdir ($dirlist)
 #
   \ls | egrep 'sf.*\.dat' >/dev/null
   if ( ! $status ) then
-    cvs add sf*.dat
+    add_cmd sf*.dat
   endif
 #
 #  add testfield_info.dat file if it exists
 #
   \ls | egrep 'testfield_info\.dat' >/dev/null
   if ( ! $status ) then
-    cvs add testfield_info.dat
+    add_cmd testfield_info.dat
   endif
 #
 #  add info about directory history
 #
   if (-e new_from.dir) then
-      cvs add new_from.dir
+      add_cmd new_from.dir
   endif
 #
   if (-e new_to.dir) then
-      cvs add new_to.dir
+      add_cmd new_to.dir
   endif
 #
   if (-e remeshed_from.dir) then
-      cvs add remeshed_from.dir
+      add_cmd remeshed_from.dir
   endif
 #
 #  check in everything
@@ -109,9 +116,9 @@ foreach pdir ($dirlist)
 #
   test -h src
   if ( $status ) then
-    cvs add src
+    add_cmd src
     cd src
-    cvs add *.local .build-history
+    add_cmd *.local .build-history
     cd ..
     cvs ci -m "added new run: `uname -n -s`" src
   endif
