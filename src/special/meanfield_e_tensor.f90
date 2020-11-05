@@ -1197,7 +1197,7 @@ enddo; enddo
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) then
-            p%bcoef_coefs(:,i,j,k)=-1*emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
           else
             p%bcoef_coefs(:,i,j,k)=0
           end if
@@ -1707,7 +1707,7 @@ endif
       if (lusecoefs) then
         emftmp=0
         if (lacoef) emftmp = emftmp + p%acoef_emf
-        if (lbcoef) emftmp = emftmp - p%bcoef_emf
+        if (lbcoef) emftmp = emftmp + p%bcoef_emf
         if (lumean) emftmp = emftmp + p%umean_emf
       else
         emftmp = p%emf

@@ -14,7 +14,10 @@
 #where:
 #
 # for 10 time steps between reseting, and do cut 30% first and 40% at the end (like idl routine)
-# choose: rmfzeros=3, rmbzeros=6
+# choose: rmfzeros=3, rmbzeros=4
+#
+# for 50 time steps between reseting, and do cut 30% first and 40% at the end (like idl routine)
+# choose: rmfzeros=15, rmbzeros=20
 #
 #  zav2h5:   function included in aver2h5.py
 #  folder:   location of the data you want to store
