@@ -377,7 +377,6 @@ module Messages
            // ', " v. ", A, T' // trim(adjustl(tmp3)) &
            // ', " (", A, T' // trim(adjustl(tmp4)) &
            // ', ") ", A)'
-return
       if ((svnid(1:1) == "$") .and. (svnid(2:4) == "Id:")) then
       ! starts with `$...' --> SVN Id: line
 !
