@@ -141,7 +141,8 @@ contains
         if (lenergy)       call get_slices_energy      (f,slices)
         if (leos)          call get_slices_eos         (f,slices)
         if (lheatflux)     call get_slices_heatflux    (f,slices)
-        if (lhydro)        call get_slices_hydro       (f,slices)
+        if (lhydro.or.lhydro_kinematic) &
+                           call get_slices_hydro       (f,slices)
         if (linterstellar) call get_slices_interstellar(f,slices)
         if (lmagnetic)     call get_slices_magnetic    (f,slices)
         if (lparticles)    call get_slices_particles   (f,slices)

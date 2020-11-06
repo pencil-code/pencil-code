@@ -3271,7 +3271,7 @@ endif
 !
 !  26-jun-06/tony: dummy
 !
-      use Slices_methods, only: assign_slices_scal, assign_slices_vec
+      use Slices_methods, only: assign_slices_vec
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
