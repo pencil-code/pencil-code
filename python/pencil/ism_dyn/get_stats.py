@@ -20,7 +20,7 @@ from scipy.interpolate import interp1d
 from ..math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
 from ..math.derivatives import curl, div, curl2, grad
 from ..calc import fluid_reynolds, magnetic_reynolds
-from ..io import open_h5, group_h5, dataset_h5
+from ..io import open_h5, group_h5, dataset_h5, mkdir
 from fileinput import input
 from sys import stdout
 import subprocess as sub
@@ -199,3 +199,53 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
         dataset_h5(group, key+'-std', status=status, data=dstat,
                    comm=comm, size=size, rank=rank,
                    overwrite=True)
+#==============================================================================
+def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None, 
+                xbins=100, ybins=100,
+                figsize=[3.5*1.61803,3.5],
+                xlabel=r'$x$', ylabel=r'$y$',
+                clabel=r'${\cal P}\,(\log\,x,\log\,y)$',
+                norm=None, cmap=None,
+                density=True,
+                fontsize=14,
+               ):
+    """
+    xvar:     array 1D.ravel() format of variable 
+    yvar:     array length and format matching xvar of complementary variable
+    par:      Param object containing simulation parameters
+    xlim:     tuple with min & max bin values for xvar
+    ylim:     tuple with min & max bin values for yvar
+    xbins:    number of bins for xvar histogram
+    ybins:    number of bins for yvar histogram
+    figsize:  list of length 2 floats with width and height of figure
+    ylabel:   plot y-axis label string
+    xlabel:   plot x-axis label string
+    clabel:   plot colorbar label string
+    norm:     color table normalization from colors
+    cmap:     color table
+    density:  normalize histogram integral to 1 for PDF
+    fontsize: size of plot fonts
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib import colors
+    from matplotlib import cm
+
+    if not xlim:
+        xlim = (xvar.min(),xvar.max())
+    if not ylim:
+        ylim = (yvar.min(),yvar.max())
+    xedges = np.linspace(xlim[0],xlim[1],xbins)
+    yedges = np.linspace(ylim[0],ylim[1],ybins)
+    if not cmap:
+        cmap=cm.viridis
+    if not norm:
+        norm=colors.LogNorm()
+    plt.figure(figsize=figsize)
+    plt.hist2d(xvar, yvar, cmap=cmap, bins=[xedges,yedges], density=density,
+               norm=norm)
+    
+    cbar=plt.colorbar()
+    cbar.ax.set_ylabel(clabel,fontsize=fontsize)
+    plt.ylabel(ylabel,fontsize=fontsize)
+    plt.xlabel(xlabel,fontsize=fontsize)
+    return plt, xedges, yedges
