@@ -94,6 +94,7 @@ module Hydro
   real :: rp=0, gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
+  real :: sigma_uukin=1., tau_uukin=1., time_uukin=1.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -117,7 +118,8 @@ module Hydro
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
-      ll_sh, mm_sh, n_xprof, lrandom_ampl
+      ll_sh, mm_sh, n_xprof, lrandom_ampl, &
+      sigma_uukin, tau_uukin, time_uukin
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -1160,6 +1162,50 @@ endif
           p%uu(:,3)=0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Time-dependent velocity field
+!
+      case ('t-dep_flow')
+        if (headtt) print*,'t-dep_flow;',&
+            'k1, omega1, K0=',kx_uukin,phasex_uukin, eps_kinflow
+        fac=ampl_kinflow*exp(-(.5*(t-time_uukin)/tau_uukin)**2)*cos(omega_kinflow*t)
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac2=.5/sigma_uukin**2
+          tmp_mn=fac*fac2*exp(-fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))
+          p%uu(:,1)=-2.*y(m    )*tmp_mn
+          p%uu(:,2)=+2.*x(l1:l2)*tmp_mn
+          p%uu(:,3)=0.
+! oo
+          if (lpenc_loc(i_oo)) then
+            p%oo(:,1)=0.
+            p%oo(:,2)=0.
+            p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+y(m)**2))*tmp_mn
+          endif
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Time-dependent velocity field (ii)
+!
+      case ('t-dep_flow2')
+        if (headtt) print*,'t-dep_flow2;',&
+            'k1, omega1, K0=',kx_uukin,phasex_uukin, eps_kinflow
+        fac=ampl_kinflow*exp(-(.5*(t-time_uukin)/tau_uukin)**2)*cos(omega_kinflow*t)
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac2=.5/sigma_uukin**2
+          tmp_mn=fac*fac2*exp(-fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))
+          p%uu(:,1)=-2.*x(l1:l2)*tmp_mn
+          p%uu(:,2)=-2.*y(m    )*tmp_mn
+          p%uu(:,3)=-2.*z(n    )*tmp_mn
+! oo
+          if (lpenc_loc(i_oo)) then
+            p%oo(:,1)=0.
+            p%oo(:,2)=0.
+            p%oo(:,3)=0.
+          endif
+        endif
+        if (lpenc_loc(i_divu)) p%divu=-(6.-4.*fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))*tmp_mn
 !
 !  Another planar flow (from XXX 2015)
 !
