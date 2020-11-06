@@ -446,3 +446,48 @@ def del6(f, dx, dy, dz):
     from .der import xder6, yder6, zder6
 
     return xder6(f, dx) + yder6(f, dy) + zder6(f, dz)
+
+def gij(f, dx, dy, dz, nder=6):
+    """
+    Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+    than del2^3) of a scalar f for hyperdiffusion.
+    """
+
+    if (f.ndim != 4 or f.shape[0] != 3):
+        print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
+        raise ValueError
+    gij = np.array(f,f,f)
+    for i in range(3):
+        if nder == 1
+            from .der import xder, yder, zder
+            gij[i,0] = xder(f[j], dx, dy, dz)
+            gij[i,1] = yder(f[j], dx, dy, dz)
+            gij[i,2] = zder(f[j], dx, dy, dz)
+        elif nder == 2:
+            from .der import xder2, yder2, zder2
+            gij[i,0] = xder2(f[j], dx, dy, dz)
+            gij[i,1] = yder2(f[j], dx, dy, dz)
+            gij[i,2] = zder2(f[j], dx, dy, dz)
+        elif nder == 3:
+            from .der import xder3, yder3, zder3
+            gij[i,0] = xder3(f[j], dx, dy, dz)
+            gij[i,1] = yder3(f[j], dx, dy, dz)
+            gij[i,2] = zder3(f[j], dx, dy, dz)
+        elif nder == 4:
+            from .der import xder4, yder4, zder4
+            gij[i,0] = xder4(f[j], dx, dy, dz)
+            gij[i,1] = yder4(f[j], dx, dy, dz)
+            gij[i,2] = zder4(f[j], dx, dy, dz)
+        elif nder == 5:
+            from .der import xder5, yder5, zder5
+            gij[i,0] = xder5(f[j], dx, dy, dz)
+            gij[i,1] = yder5(f[j], dx, dy, dz)
+            gij[i,2] = zder5(f[j], dx, dy, dz)
+        elif nder == 6:
+            from .der import xder6, yder6, zder6
+            gij[i,0] = xder6(f[j], dx, dy, dz)
+            gij[i,1] = yder6(f[j], dx, dy, dz)
+            gij[i,2] = zder6(f[j], dx, dy, dz)
+
+    return gij
+
