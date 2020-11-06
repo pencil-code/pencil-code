@@ -219,16 +219,22 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
         else: 
             print('no density used setting rho=1 in pressure calculation')
             rho = 1
+        if not par.gamma == 1:
+            lnTT0 = np.log(par.cs0**2/(par.cp*(par.gamma-1)))
+            cv = par.cp/par.gamma
+        else:
+            lnTT0 = np.log(par.cs0**2/par.cp)
+            cv = 1
+        lnrho0 = np.log(par.rho0)
+        cv1 = 1./cv
+        gamma_m1 = par.gamma-1. 
 
         if 'ss' in src.keys():
             ss = src['ss'][n1:n2,m1:m2,l1:l2]
-            var = np.exp(par.gamma*(ss + np.log(rho)))
+            var = (par.cp - cv)*np.exp(cv1*ss +
+                   par.gamma*np.log(rho)-gamma_m1*lnrho0)
         elif 'tt' in dst.keys():
             tt = dst['tt'][n1:n2,m1:m2,l1:l2]
-            if not par.gamma == 1:
-                cv = par.cp/par.gamma
-            else:
-                cv = 1
             var = (par.cp - cv)*tt*rho
         else:
             if 'rho' is src.keys() or 'lnrho' in src.keys():
