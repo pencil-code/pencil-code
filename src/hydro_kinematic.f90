@@ -44,6 +44,10 @@ module Hydro
   real, dimension (mx,my,3) :: uumxy=0.
   real, dimension (mx,mz,3) :: uumxz=0.
 !
+!  Slice precalculation buffers.
+!
+  real, target, dimension (:,:,:), allocatable :: uu_xy,uu_xy2,uu_xy3,uu_xy4,uu_xz,uu_yz,uu_xz2
+!
   real, dimension(nx) :: profx_kinflow1=1., profx_kinflow2=1., profx_kinflow3=1.
   real, dimension(my) :: profy_kinflow1=1., profy_kinflow2=1., profy_kinflow3=1.
   real, dimension(mz) :: profz_kinflow1=1., profz_kinflow2=1., profz_kinflow3=1.
@@ -129,6 +133,10 @@ module Hydro
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
+!
+!  Video data.
+!
+  integer :: ivid_uu=0
 !
   logical :: lupdate_aux=.false.
 !
@@ -327,6 +335,19 @@ module Hydro
         endif
       endif
 !
+      if (ivid_uu/=0) then
+        if (.not.lkinflow_as_aux) then
+          !call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
+          if (lwrite_slice_xy .and..not.allocated(uu_xy) ) allocate(uu_xy(nx,ny,3))
+          if (lwrite_slice_xz .and..not.allocated(uu_xz) ) allocate(uu_xz(nx,nz,3))
+          if (lwrite_slice_yz .and..not.allocated(uu_yz) ) allocate(uu_yz(ny,nz,3))
+          if (lwrite_slice_xy2.and..not.allocated(uu_xy2)) allocate(uu_xy2(nx,ny,3))
+          if (lwrite_slice_xy3.and..not.allocated(uu_xy3)) allocate(uu_xy3(nx,ny,3))
+          if (lwrite_slice_xy4.and..not.allocated(uu_xy4)) allocate(uu_xy4(nx,ny,3))
+          if (lwrite_slice_xz2.and..not.allocated(uu_xz2)) allocate(uu_xz2(nx,nz,3))
+        endif
+      endif
+
       if (lforeign.and.kinematic_flow=='from-foreign-snap') then
    
         root_foreign=ncpus
@@ -2407,6 +2428,7 @@ endif
 !
       use Diagnostics
       use FArrayManager
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2448,6 +2470,12 @@ endif
           if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
           if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
         endif
+      endif
+!  store slices for output in wvid in run.f90
+!  This must be done outside the diagnostics loop (accessed at different times).
+!
+      if (lvideo.and.lfirst) then
+        if (ivid_uu/=0.and..not.lkinflow_as_aux) call store_slices(p%uu,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
       endif
 !
       call keep_compiler_quiet(df)
@@ -3105,7 +3133,7 @@ endif
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
+      integer :: iname,inamev
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -3129,6 +3157,7 @@ endif
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
+        ivid_uu=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3173,6 +3202,12 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do inamev=1,nnamev
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu',ivid_uu)
+      enddo
+!
 !  Write column where which variable is stored.
 !
       if (lwr) then
@@ -3190,11 +3225,21 @@ endif
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal, assign_slices_vec
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!  Loop over slices
+!
+      select case (trim(slices%name))
+        case ('uu')
+          if (lkinflow_as_aux) then
+            call assign_slices_vec(slices,f,iuu)
+          else
+            call assign_slices_vec(slices,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
+          endif
+      endselect
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
