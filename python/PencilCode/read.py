@@ -846,7 +846,22 @@ def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
 
     if allprocs:
         # Read data under allprocs/.
-        pass
+        pvar = allprocs_pvar(datadir=datadir, pdim=pdim, pvarfile=varfile)
+        t = pvar.t
+
+        # Check numbers of particles.
+        if pvar.npar != pdim.npar:
+            print("pvar.npar, pdim.npar = {}, {}".format(pvar.npar, pdim.npar))
+            raise RuntimeError("Inconsistent numbers of particles. ")
+
+        # Check the integrity of the particle IDs.
+        if len(np.unique(pvar.ipar)) != len(pvar.ipar):
+            raise RuntimeError("Duplicate particles IDs. ")
+        ipar = pvar.ipar - 1
+
+        # Unpack the data.
+        fp[ipar,:] = pvar.fp
+        exist[ipar] = True
 
     else:
         # Loop over each process.
