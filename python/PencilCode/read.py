@@ -691,10 +691,9 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
     f.close()
 
     # Define and return a named tuple.
-    PVar = namedtuple('PVar',
-            ['npar_loc', 'fp', 'ipar', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz'])
-    return PVar(npar_loc=npar_loc, fp=fp, ipar=ipar,
+    pvar = dict(npar_loc=npar_loc, fp=fp, ipar=ipar,
                 t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz)
+    return namedtuple("PVar", pvar.keys())(**pvar)
 #=======================================================================
 def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     """Returns the patch of one snapshot saved by one process.
