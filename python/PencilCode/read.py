@@ -690,8 +690,8 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
         datadir
             Name of the data directory.
         pdim
-            Particle dimensions returned by pardim().  If None, pardim()
-            will be called.
+            Particle dimensions returned by pardim().  If None, they
+            will be read in at runtime.
         proc
             Process ID.
         varfile
@@ -712,10 +712,11 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
         pdim = pardim(datadir=datadir)
     mparray = pdim.mpvar + pdim.mpaux
 
-    # Read the number of particles.
+    # Read number of particles.
     f = open(datadir.strip()+'/proc'+str(proc)+'/'+varfile.strip(), 'rb')
     f.read(hsize)
     npar_loc = unpack(fmti, f.read(nbi))[0]
+
     # Read particle data.
     if npar_loc > 0:
         fpdim = np.array((npar_loc, mparray))
@@ -728,7 +729,7 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
         fp = None
         ipar = None
 
-    # Read the time and grid.
+    # Read time and grid.
     f.read(2*hsize)
     t = unpack(fmt, f.read(nb))[0]
     x = np.frombuffer(f.read(nb*dim.mx), dtype=dtype)
