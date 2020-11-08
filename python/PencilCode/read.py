@@ -801,10 +801,13 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
     return namedtuple('Var', var.keys())(**var)
 #=======================================================================
-def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
+def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
+         verbose=True):
     """Returns particles in one snapshot.
 
     Keyword Arguments:
+        allprocs
+            If True, the snapshot is read under allprocs/.
         datadir
             Name of the data directory.
         ivar
@@ -817,7 +820,7 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2015-07-12
-    # Last Modified: 2017-02-14
+    # Last Modified: 2020-11-08
     from collections import namedtuple
     import numpy as np
 
@@ -839,41 +842,52 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     # Allocate arrays.
     fp = np.zeros((pdim.npar, nvar), dtype=dtype)
     exist = np.full((pdim.npar,), False)
-    t = np.inf
+    t = None
 
-    # Loop over each process.
-    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+    if allprocs:
+        # Read data under allprocs/.
+        pass
 
-        # Read data.
-        if verbose:
-            print("Reading", datadir.strip() + "/proc" + str(proc) + "/" +
-                             varfile.strip(), "...")
-        p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc, varfile=varfile) 
-        if p.npar_loc <= 0: continue
-        ipar = p.ipar - 1
+    else:
+        # Loop over each process.
+        for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
 
-        # Check the integrity of the time and particle IDs.
-        if any(exist[ipar]):
-            raise RuntimeError("Duplicate particles in multiple processes. ")
-        if t == np.inf:
-            t = p.t
-        elif p.t != t:
-            raise RuntimeError(
-                      "Inconsistent time stamps in multiple processes. ")
+            # Read data.
+            if verbose:
+                print("Reading", datadir.strip() + "/proc" + str(proc) + "/" +
+                                 varfile.strip(), "...")
+            p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc,
+                          varfile=varfile) 
 
-        # Assign the particle data.
-        fp[ipar,:] = p.fp
-        exist[ipar] = True
+            # Check the consistency of time.
+            if t is None:
+                t = p.t
+            elif p.t != t:
+                raise RuntimeError(
+                        "Inconsistent time stamps in multiple processes. ")
+
+            # Return if no particles exist.
+            if p.npar_loc <= 0: continue
+            ipar = p.ipar - 1
+
+            # Check the integrity of the particle IDs.
+            if any(exist[ipar]):
+                raise RuntimeError(
+                        "Duplicate particles in multiple processes. ")
+
+            # Assign the particle data.
+            fp[ipar,:] = p.fp
+            exist[ipar] = True
 
     # Final integrity check.
     if not all(exist):
         raise RuntimeError("Missing some particles. ")
 
     # Make and return a named tuple.
-    keys = ["t"] + [v.lstrip('i') for v in var]
-    values = [t] + [fp[:,i] for i in range(nvar)]
-    Var = namedtuple('Var', keys)
-    return Var(**dict(zip(keys, values)))
+    pvar = dict(npar=pdim.npar, t=t)
+    for i, v in enumerate(var):
+        pvar[v.lstrip('i')] = fp[:,i]
+    return namedtuple('PVar', pvar.keys())(**pvar)
 #=======================================================================
 def slices(field, datadir='./data'):
     """Reads the video slices.
