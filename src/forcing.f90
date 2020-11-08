@@ -59,7 +59,7 @@ module Forcing
   logical :: lhydro_forcing=.true., lneutral_forcing=.false., lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lxxcorr_forcing=.false., lxycorr_forcing=.false.
-  logical :: lhelical_test=.false., lrandom_location=.true.
+  logical :: lhelical_test=.false., lrandom_location=.true., lrandom_time=.false.
   logical :: lwrite_psi=.false., lforce_ramp_down=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lwrite_gausspot_to_file_always=.false.
@@ -158,7 +158,8 @@ module Forcing
        lavoid_xymean,lavoid_ymean,lavoid_zmean, ldiscrete_phases, &
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
-       n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex
+       n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
+       lrandom_time
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -961,6 +962,7 @@ module Forcing
         case ('2drxy_simple');    call forcing_2drandom_xy_simple(f)
         case ('ABC');             call forcing_ABC(f)
         case ('blobs');           call forcing_blobs(f)
+        case ('blobHS_random');   call forcing_blobHS_random(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
         case ('cktest');          call forcing_cktest(f)
         case ('diffrot');         call forcing_diffrot(f,force)
@@ -4609,6 +4611,65 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       endif
 !
     endsubroutine forcing_blobs
+!***********************************************************************
+    subroutine forcing_blobHS_random(f)
+!
+!  add blobs in HS in entropy and density
+!  location & time can be random
+!
+!  08-nov-20/boris: coded
+!
+      use Sub
+      use General, only: random_number_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, save :: t_next_blob=1.
+      logical, save :: lfirst_call=.true.
+      integer, save :: t_interval_blobs=50.
+      logical :: lforce
+      character (len=intlen) :: ch
+      character (len=fnlen) :: file
+      real, dimension (3) :: fran
+      real :: scaled_interval
+!
+!  identifier
+!
+      if (headt) print*,'forcing_blobs_random: ENTER'
+!
+      if (lfirst_call) then
+        t_next_blob=t+1.
+        lfirst_call=.false.
+      endif
+!
+!  Check whether we want to do forcing at this time.
+!
+      if (t>=t_next_blob) then
+        if (lrandom_location) then
+          call random_number_wrapper(fran,CHANNEL=channel_force)
+          location=fran*Lxyz+xyz0
+        else
+          location=location_fixed
+        endif
+        open (111,file=trim(datadir)//'/tblobs.dat',position="append")
+        write (111,'(f12.3,3f8.4)') t_next_blob, location
+        close (111)
+!
+!  Add a blob in HS equilibrium (entropy & density at the same time)
+!
+        call blob(force,f,iss,radius_ff,location(1),location(2),location(3))
+        call blob(-force,f,ilnrho,radius_ff,location(1),location(2),location(3))
+!
+        if (lrandom_time) then
+          call random_number_wrapper(fran)
+          scaled_interval=-log(fran(1))*t_interval_blobs
+          t_next_blob=t+scaled_interval
+        else
+          t_next_blob=t+dtforce
+        endif
+        print*,'t_next_blob=', t_next_blob
+      endif
+!
+    endsubroutine forcing_blobHS_random
 !***********************************************************************
     subroutine forcing_hel_smooth(f)
 !
