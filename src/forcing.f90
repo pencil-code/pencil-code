@@ -4634,7 +4634,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
 !  identifier
 !
-      if (headt) print*,'forcing_blobs_random: ENTER'
+      if (headt) print*,'forcing_blobHS_random: ENTER'
 !
       if (lfirst_call) then
         t_next_blob=t+1.
