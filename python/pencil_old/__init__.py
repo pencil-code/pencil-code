@@ -11,6 +11,7 @@ from .files.ts import *
 from .files.sn import *
 from .files.dim import *
 from .files.pdim import *
+from .files.read_pstalk import *
 from .files.qdim import *
 from .files.param import *
 from .files.grid import read_grid
