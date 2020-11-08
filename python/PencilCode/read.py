@@ -9,6 +9,54 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
+def allprocs_pvar(datadir='./data', pdim=None, pvarfile='pvar.dat'):
+    """Returns the particles in one snapshot under allprocs/.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        pdim
+            Particle dimensions returned by pardim().  If None, they
+            will be read in at runtime.
+        pvarfile
+            Name of the snapshot file.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2020-11-08
+    # Last Modified: 2020-11-08
+    from collections import namedtuple
+    import numpy as np
+    from struct import calcsize, unpack
+
+    # Check the dimensions and precision.
+    fmt, dtype, nb = _get_precision(dimensions(datadir=datadir))
+    fmti, nbi = 'i', calcsize('i')
+    if pdim is None:
+        pdim = pardim(datadir=datadir)
+    mparray = pdim.mpvar + pdim.mpaux
+
+    # Read number of particles.
+    f = open(datadir.strip() + "/allprocs/" + pvarfile.strip(), 'rb')
+    npar = unpack(fmti, f.read(nbi))[0]
+
+    # Read particle data.
+    if npar > 0:
+        fpdim = np.array((npar, mparray))
+        ipar = np.frombuffer(f.read(nbi*npar), dtype='i4')
+        fp = np.frombuffer(f.read(nb*fpdim.prod()),
+                           dtype=dtype).reshape(fpdim, order='F')
+    else:
+        fp = None
+        ipar = None
+
+    # Read time.
+    t = unpack(fmt, f.read(nb))[0]
+    f.close()
+
+    # Define and return a named tuple.
+    pvar = dict(npar=npar, fp=fp, ipar=ipar, t=t)
+    return namedtuple("PVar", pvar.keys())(**pvar)
+#=======================================================================
 def allprocs_var(datadir='./data', dim=None, par=None, varfile='var.dat'):
     """Returns one snapshot under allprocs/.
 
