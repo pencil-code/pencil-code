@@ -683,7 +683,7 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
-def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
+def proc_pvar(datadir='./data', pdim=None, proc=0, pvarfile='pvar.dat'):
     """Returns the particles in one snapshot held by one process.
 
     Keyword Arguments:
@@ -694,7 +694,7 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
             will be read in at runtime.
         proc
             Process ID.
-        varfile
+        pvarfile
             Name of the snapshot file.
     """
     # Author: Chao-Chin Yang
@@ -713,7 +713,7 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
     mparray = pdim.mpvar + pdim.mpaux
 
     # Read number of particles.
-    f = open(datadir.strip()+'/proc'+str(proc)+'/'+varfile.strip(), 'rb')
+    f = open(datadir.strip()+'/proc'+str(proc)+'/'+pvarfile.strip(), 'rb')
     f.read(hsize)
     npar_loc = unpack(fmti, f.read(nbi))[0]
 
@@ -801,7 +801,7 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
     return namedtuple('Var', var.keys())(**var)
 #=======================================================================
-def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
+def pvar(allprocs=False, datadir='./data', ivar=None, pvarfile='pvar.dat',
          verbose=True):
     """Returns particles in one snapshot.
 
@@ -812,8 +812,8 @@ def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
             Name of the data directory.
         ivar
             If not None, an integer specifying the snapshot number and
-            the argument varfile takes no effect.
-        varfile
+            the argument pvarfile takes no effect.
+        pvarfile
             Name of the snapshot file.
         verbose
             Verbose output or not.
@@ -837,7 +837,7 @@ def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
 
     # Get the file name of the snapshot.
     if ivar is not None:
-        varfile = "PVAR{}".format(ivar)
+        pvarfile = "PVAR{}".format(ivar)
 
     # Allocate arrays.
     fp = np.zeros((pdim.npar, nvar), dtype=dtype)
@@ -846,7 +846,7 @@ def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
 
     if allprocs:
         # Read data under allprocs/.
-        pvar = allprocs_pvar(datadir=datadir, pdim=pdim, pvarfile=varfile)
+        pvar = allprocs_pvar(datadir=datadir, pdim=pdim, pvarfile=pvarfile)
         t = pvar.t
 
         # Check numbers of particles.
@@ -870,9 +870,9 @@ def pvar(allprocs=False, datadir='./data', ivar=None, varfile='pvar.dat',
             # Read data.
             if verbose:
                 print("Reading", datadir.strip() + "/proc" + str(proc) + "/" +
-                                 varfile.strip(), "...")
+                                 pvarfile.strip(), "...")
             p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc,
-                          varfile=varfile) 
+                          pvarfile=pvarfile) 
 
             # Check the consistency of time.
             if t is None:
