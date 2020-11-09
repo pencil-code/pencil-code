@@ -234,4 +234,14 @@ module power_spectrum
 !
   endsubroutine k_omega_spectra
 !***********************************************************************
+  subroutine power1d_plane(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power1d_plane
+!***********************************************************************
 endmodule power_spectrum

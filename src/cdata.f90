@@ -565,7 +565,7 @@ module Cdata
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
-  logical :: ou_omega=.false.
+  logical :: ou_omega=.false.,ab_kzspec=.false.,ou_kzspec=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.

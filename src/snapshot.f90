@@ -720,6 +720,8 @@ module Snapshot
 !  Spectra with both space and time Fourier transformed
 !
         if (ou_omega) call k_omega_spectra(f,'kin')
+        if (ou_kzspec) call power1d_plane(f,'kin')
+        if (ab_kzspec) call power1d_plane(f,'mag')
 !
         lspec=.false.
       endif

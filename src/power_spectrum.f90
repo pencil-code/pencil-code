@@ -3987,7 +3987,7 @@ endsubroutine pdf
 !  Use luut_as_aux=T and specify omega_fourier
 !  in run.in under &hydro_run_pars
 !
-!  29-oct-20/hongzhe: added this subroutine and coding
+!  29-oct-20/hongzhe: added this subroutine
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
@@ -4157,4 +4157,166 @@ endsubroutine pdf
   !
   endsubroutine k_omega_spectra
 !***********************************************************************
+  subroutine power1d_plane(f,sp)
+!
+!  Calculate power and helicity spectra of planar-averaged 
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   9-nov-20/hongzhe: if this coincides with power_1d I will remove it
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, ikx, iky, ikz, jkz, im, in, ivec
+  integer :: k3, k
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx) :: bbi
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+!
+!  passive scalar contributions (hardwired for now)
+!
+  real, dimension(nx,3) :: gtmp1,gtmp2
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    !
+    !  In fft, real and imaginary parts are handled separately.
+    !  For "kin", calculate spectra of <uk^2> and <ok.uk>
+    !  For "mag", calculate spectra of <bk^2> and <ak.bk>
+    !
+    if (sp=='kin') then
+      if (iuu==0) call fatal_error('powerhel','iuu=0')
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+        enddo
+      enddo
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+      a_im=0.
+      b_im=0.
+!
+!  magnetic power spectra (spectra of |B|^2 and A.B)
+!
+    elseif (sp=='mag') then
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iaa,bbi,ivec)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          enddo
+        enddo
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over the xy plane...'
+    do ikz=1,nz
+      k3=nint(kz(ikz+ipz*nz))
+      if (k3>=0) then
+       do iky=1,ny
+          do ikx=1,nx
+            spectrum(k3)=spectrum(k3) &
+             +2*b_re(ikx,iky,ikz)**2 &
+              +2*b_im(ikx,iky,ikz)**2
+            spectrumhel(k3)=spectrumhel(k3) &
+              +2*a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+              +2*a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          enddo
+        enddo
+      endif
+    enddo
+    spectrum(0)=spectrum(0)/2
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/powerkz_'//trim(sp)//'.dat'
+    !
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/powerkz_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhelkz_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+  endif
+  !
+  endsubroutine power1d_plane
 endmodule power_spectrum
