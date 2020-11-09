@@ -2696,6 +2696,10 @@ pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(p
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
 	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(PARTICLES_MAIN_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
 #
+pre_and_post_processing/pc_collect_pvar.o: pre_and_post_processing/pc_collect_pvar.f90 Makefile.local
+pre_and_post_processing/pc_collect_pvar.x: pre_and_post_processing/pc_collect_pvar.o $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o
+	$(LD) $^ $(LDFLAGS) $(LDFLAGS_HELPER) -o $@
+#
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
 	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x
@@ -2858,7 +2862,7 @@ ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 MAIN_EXECUTABLES=start.x run.x
 HELPER_EXECUTABLES= \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
-	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
+	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_collect_pvar.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
 ALL_EXECUTABLES=$(MAIN_EXECUTABLES) $(HELPER_EXECUTABLES)
 EXECUTABLES=$(MAIN_EXECUTABLES)
 #

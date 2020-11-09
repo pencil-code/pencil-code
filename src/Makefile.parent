@@ -81,7 +81,7 @@ semiauto-conf:
 tools: default
 # MR: which is the target "default"?
 
-pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid: Makefile_inc
+pc_collect pc_collect_pvar pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest pc_tecplot pc_tecplot_solid: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/$@.x )
 pc_meanfield_collect pc_h5collect: Makefile_inc
