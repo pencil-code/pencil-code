@@ -131,7 +131,7 @@ module InitialCondition
             p_ex = B0**2 * exp(-r**2/d**2)*((alpha*d)**2 - 2 - 2*(alpha*r)**2)/4
             ! 0.4 = (cv - cp); gamma = cp/cv; cv = 1
             p_b = 0.4*exp(f(l,m,n,ilnrho) + f(l,m,n,ilnTT))
-            f(l,m,n,ilnrho) = log(exp(f(l,m,n,ilnrho)) - p_ex/p_b*exp(-y(m)**2/lam**2))
+            f(l,m,n,ilnrho) = log(exp(f(l,m,n,ilnrho)) + p_ex/p_b*exp(-y(m)**2/lam**2))
           end if
         enddo
       enddo
