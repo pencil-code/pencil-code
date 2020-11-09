@@ -3619,12 +3619,13 @@ module Sub
 !  Now tout and nout refer to the next snapshopt to be written.
 !  For dtout<0, use multiplicative output times;
 !  abs(dtout) is then the first output time.
+!  Replaced t0 = max(t - dt, 0.0D0) -> t0 = t, in case t < 0.
 !
           settout: if (dtout < 0.0) then
             tout = abs(dtout)+toutoff
-          elseif (dtout /= 0.0) then settout
+          elseif (dtout > 0.0) then settout
             !  make sure the tout is a good time
-            t0 = max(t - dt, 0.0D0)
+            t0 = t
             tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
           else settout
             call warning("read_snaptime", "Writing snapshot every time step. ")

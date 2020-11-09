@@ -48,6 +48,7 @@ module Hydro
 !
   real, target, dimension (:,:,:), allocatable :: uu_xy,uu_xy2,uu_xy3,uu_xy4,uu_xz,uu_yz,uu_xz2
 !
+  real, dimension(nx) :: coskx=1., sinkx=0.
   real, dimension(nx) :: profx_kinflow1=1., profx_kinflow2=1., profx_kinflow3=1.
   real, dimension(my) :: profy_kinflow1=1., profy_kinflow2=1., profy_kinflow3=1.
   real, dimension(mz) :: profz_kinflow1=1., profz_kinflow2=1., profz_kinflow3=1.
@@ -242,6 +243,9 @@ module Hydro
         !call random_isotropic_KS_setup_test !Test KS model code with 3 specific modes.
       case ('ck')
         call init_ck
+      case ('t-dep_flow')
+        coskx=cos(kx_uukin*x(l1:l2))
+        sinkx=sin(kx_uukin*x(l1:l2))
       case default;
         if (lroot .and. (ip < 14)) call information('initialize_hydro','no preparatory profile needed')
       end select
@@ -1169,18 +1173,22 @@ endif
         if (headtt) print*,'t-dep_flow;',&
             'k1, omega1, K0=',kx_uukin,phasex_uukin, eps_kinflow
         fac=ampl_kinflow*exp(-(.5*(t-time_uukin)/tau_uukin)**2)*cos(omega_kinflow*t)
+!
 ! uu
+!
         if (lpenc_loc(i_uu)) then
           fac2=.5/sigma_uukin**2
-          tmp_mn=fac*fac2*exp(-fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))
-          p%uu(:,1)=-2.*y(m    )*tmp_mn
-          p%uu(:,2)=+2.*x(l1:l2)*tmp_mn
+          tmp_mn=fac*exp(-fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))
+          p%uu(:,1)=- 2.*y(m    )*fac2*coskx                *tmp_mn
+          p%uu(:,2)=+(2.*x(l1:l2)*fac2*coskx+kx_uukin*sinkx)*tmp_mn
           p%uu(:,3)=0.
-! oo
+!
+! oo (currently only for kx_uukin=0)
+!
           if (lpenc_loc(i_oo)) then
             p%oo(:,1)=0.
             p%oo(:,2)=0.
-            p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+y(m)**2))*tmp_mn
+            p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+y(m)**2))*fac2*tmp_mn
           endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
