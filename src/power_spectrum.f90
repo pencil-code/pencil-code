@@ -4261,20 +4261,20 @@ endsubroutine pdf
     if (lroot .AND. ip<10) print*,'fft done; now integrate over the xy plane...'
     do ikz=1,nz
       k3=nint(kz(ikz+ipz*nz))
-      if (k3>=0) then
+      if (k3>=0 .and. k3<=nk-1) then
        do iky=1,ny
           do ikx=1,nx
-            spectrum(k3)=spectrum(k3) &
+            spectrum(k3+1)=spectrum(k3+1) &
              +2*b_re(ikx,iky,ikz)**2 &
               +2*b_im(ikx,iky,ikz)**2
-            spectrumhel(k3)=spectrumhel(k3) &
+            spectrumhel(k3+1)=spectrumhel(k3+1) &
               +2*a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
               +2*a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
           enddo
         enddo
       endif
     enddo
-    spectrum(0)=spectrum(0)/2
+    spectrum(1)=spectrum(1)/2
     !
   enddo !(from loop over ivec)
   !
