@@ -381,7 +381,11 @@ module Io
         if (lroot) then
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = real (t)
-          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          if (lshear) then
+            write (lun_output) t_sp, gx, gy, gz, dx, dy, dz, deltay
+          else
+            write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          endif
         endif
       endif
 !
