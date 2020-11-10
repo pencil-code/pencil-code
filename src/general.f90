@@ -85,6 +85,7 @@ module General
     module procedure keep_compiler_quiet_l
     module procedure keep_compiler_quiet_l1d
     module procedure keep_compiler_quiet_c
+    module procedure keep_compiler_quiet_c1d
   endinterface
 !
   interface safe_character_append
@@ -1068,6 +1069,27 @@ module General
       endif
 !
     endsubroutine keep_compiler_quiet_c
+!***********************************************************************
+    subroutine keep_compiler_quiet_c1d(v1, v2, v3, v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  10-nov-20/ccyang: coded
+!
+      character(len=*), dimension(:), intent(in) :: v1
+      character(len=*), dimension(:), intent(in), optional :: v2, v3, v4
+!
+      if (ALWAYS_FALSE) then
+        write(0,*) 'keep_compiler_quiet_c1d: Never got here...'
+        print *, v1
+        if (present(v2)) print *, v2
+        if (present(v3)) print *, v3
+        if (present(v4)) print *, v4
+        STOP 1
+      endif
+!
+    endsubroutine keep_compiler_quiet_c1d
 !***********************************************************************
     integer function count_bits(n)
 !
