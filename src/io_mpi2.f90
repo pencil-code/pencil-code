@@ -311,6 +311,7 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
+      integer(kind=MPI_OFFSET_KIND) total_size
       integer :: handle, alloc_err, na, ne, nv
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -343,6 +344,12 @@ module Io
 !
       call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
       call check_success ('output', 'open', trim (directory_snap)//'/'//file)
+!
+! Truncate the file to fit the global data.
+!
+      total_size = int(product(global_size), KIND=MPI_OFFSET_KIND)
+      call MPI_FILE_SET_SIZE(handle, total_size, mpi_err)
+      call check_success ("output", "set size of", file)
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
