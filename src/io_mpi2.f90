@@ -417,6 +417,8 @@ module Io
 !
 !  23-Oct-2018/PABourdin: adapted from output_snap
 !
+      use General, only: keep_compiler_quiet
+!
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
       real, dimension (mv,mparray), intent(in) :: a
@@ -425,6 +427,12 @@ module Io
       logical, optional, intent(in) :: ltruncate
 !
       call fatal_error ('output_part_snap', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(mv, nv)
+      call keep_compiler_quiet(file)
+      if (present(label)) call warning("output_part_snap", "The argument label has no effects. ")
+      if (present(ltruncate)) call warning("output_part_snap", "The argument ltruncate has no effects. ")
 !
     endsubroutine output_part_snap
 !***********************************************************************
@@ -434,10 +442,14 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
+!
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 !
       call fatal_error ('output_stalker_init', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(num, nv, snap)
+      call keep_compiler_quiet(ID)
 !
     endsubroutine output_stalker_init
 !***********************************************************************
@@ -447,6 +459,8 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
+!
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
@@ -454,6 +468,11 @@ module Io
       integer, intent(in), optional :: nvar
 !
       call fatal_error ('output_stalker', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(mv, nv)
+      if (present(lfinalize)) call warning("output_stalker", "The argument lfinalize has no effects. ")
+      if (present(nvar)) call warning("output_stalker", "The argument nvar has no effects. ")
 !
     endsubroutine output_stalker
 !***********************************************************************
@@ -473,12 +492,18 @@ module Io
 !
 !  26-Oct-2018/PABourdin: adapted from output_snap
 !
+      use General, only: keep_compiler_quiet
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (mqarray), intent(in) :: labels
       real, dimension (mv,mparray), intent(in) :: fq
 !
       call fatal_error ('output_pointmass', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(labels)
+      call keep_compiler_quiet(fq)
+      call keep_compiler_quiet(mv, nc)
 !
     endsubroutine output_pointmass
 !***********************************************************************
@@ -585,6 +610,8 @@ module Io
 !
 !  24-Oct-2018/PABourdin: apadpted and moved to IO module
 !
+      use General, only: keep_compiler_quiet
+!
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
       real, dimension (mv,mparray), intent(out) :: ap
@@ -593,6 +620,11 @@ module Io
       character (len=*), optional, intent(in) :: label
 !
       call fatal_error ('input_part_snap', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(ap)
+      call keep_compiler_quiet(mv, nv, npar_total)
+      call keep_compiler_quiet(file)
+      if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
 !
     endsubroutine input_part_snap
 !***********************************************************************
@@ -602,12 +634,18 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(out) :: fq
 !
       call fatal_error ('input_pointmass', 'not implemented for "io_mpi2"', .true.)
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(labels(1))
+      call keep_compiler_quiet(fq)
+      call keep_compiler_quiet(mv, nc)
 !
     endsubroutine input_pointmass
 !***********************************************************************
@@ -999,7 +1037,9 @@ module Io
 !
 !  12-Oct-2019/PABourdin: coded
 !
-      character (len=*), intent(in) :: label
+      character (len=*), intent(in), optional :: label
+!
+      if (present(label)) call warning("persist_exists", "The argument label has no effects. ")
 !
       persist_exists = .false.
 !
@@ -1308,7 +1348,9 @@ module Io
 
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
-      type(torus_rect), intent(in) :: value
+      type(torus_rect), intent(in), optional :: value
+!
+      if (present(value)) call warning("write_persist_torus_rect", "The argument value has no effects. ")
 !
       write_persist_torus_rect = .true.
       if (write_persist_id (label, id)) return
@@ -1326,8 +1368,11 @@ module Io
 !
       use Geometrical_types
 
-      character (len=*), intent(in) :: label
-      type(torus_rect), intent(out) :: value
+      character (len=*), intent(in), optional :: label
+      type(torus_rect), intent(out), optional :: value
+!
+      if (present(label)) call warning("read_persist_torus_rect", "The argument label has no effects. ")
+      if (present(value)) call warning("read_persist_torus_rect", "The argument value has no effects. ")
 !
       !read (lun_input) value
       read_persist_torus_rect = .false.
@@ -1344,6 +1389,8 @@ module Io
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
+!
+      if (present(label)) call warning("output_globals", "The argument label has no effects. ")
 !
       call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
@@ -1413,6 +1460,10 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
+!
+      if (present(mxout)) call warning("wgrid", "The argument mxout has no effects. ")
+      if (present(myout)) call warning("wgrid", "The argument myout has no effects. ")
+      if (present(mzout)) call warning("wgrid", "The argument mzout has no effects. ")
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
