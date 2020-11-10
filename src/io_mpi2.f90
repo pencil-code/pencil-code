@@ -771,7 +771,7 @@ module Io
       integer :: px, py, pz, partner, nv, alloc_err
       integer, parameter :: tag_log_1D = 701
       logical, dimension (:,:,:,:), allocatable :: global
-      logical, dimension (:), allocatable :: buffer
+      logical, dimension(size(value)) :: buffer
 !
       write_persist_logical_1D = .true.
       if (write_persist_id (label, id)) return
@@ -779,9 +779,9 @@ module Io
       nv = size (value)
 !
       if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_logical_1D', &
-            'Could not allocate memory for global buffer', .true.)
+            'Could not allocate memory for global', .true.)
 !
         global(ipx+1,ipy+1,ipz+1,:) = value
         do px = 0, nprocx-1
@@ -797,7 +797,7 @@ module Io
         if (ip <= 9) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
-        deallocate (global, buffer)
+        deallocate (global)
       else
         call mpisend_logical (value, nv, 0, tag_log_1D)
       endif
@@ -869,7 +869,7 @@ module Io
       integer :: px, py, pz, partner, nv, alloc_err
       integer, parameter :: tag_int_1D = 703
       integer, dimension (:,:,:,:), allocatable :: global
-      integer, dimension (:), allocatable :: buffer
+      integer, dimension(size(value)) :: buffer
 !
       write_persist_int_1D = .true.
       if (write_persist_id (label, id)) return
@@ -877,9 +877,9 @@ module Io
       nv = size (value)
 !
       if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_int_1D', &
-            'Could not allocate memory for global buffer', .true.)
+            'Could not allocate memory for global', .true.)
 !
         global(ipx+1,ipy+1,ipz+1,:) = value
         do px = 0, nprocx-1
@@ -895,7 +895,7 @@ module Io
         if (ip <= 9) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
-        deallocate (global, buffer)
+        deallocate (global)
       else
         call mpisend_int (value, nv, 0, tag_int_1D)
       endif
@@ -967,7 +967,7 @@ module Io
       integer :: px, py, pz, partner, nv, alloc_err
       integer, parameter :: tag_real_1D = 705
       real, dimension (:,:,:,:), allocatable :: global
-      real, dimension (:), allocatable :: buffer
+      real, dimension(size(value)) :: buffer
 !
       write_persist_real_1D = .true.
       if (write_persist_id (label, id)) return
@@ -975,9 +975,9 @@ module Io
       nv = size (value)
 !
       if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_real_1D', &
-            'Could not allocate memory for global buffer', .true.)
+            'Could not allocate memory for global', .true.)
 !
         global(ipx+1,ipy+1,ipz+1,:) = value
         do px = 0, nprocx-1
@@ -993,7 +993,7 @@ module Io
         if (ip <= 9) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
-        deallocate (global, buffer)
+        deallocate (global)
       else
         call mpisend_real (value, nv, 0, tag_real_1D)
       endif
