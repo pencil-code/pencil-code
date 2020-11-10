@@ -594,6 +594,8 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
+      use Messages, only: not_implemented
+!
       if (persist_initialized) then
         if (ldistribute_persist .or. lroot) close (lun_input)
         persist_initialized = .false.
@@ -601,6 +603,8 @@ module Io
       elseif (lread_add .and. lroot) then
         close (lun_input)
       endif
+!
+      if (snaplink /= "") call not_implemented("input_snap_finalize", "module variable snaplink")
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
