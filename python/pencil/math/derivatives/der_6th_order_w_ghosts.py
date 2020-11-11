@@ -6,6 +6,10 @@
 # Author: J. Oishi (joishi@amnh.org). based on A. Brandenburg's IDL routines
 """
 6th Order derivatives. Currently only equidistant grids are supported.
+
+FAG: added 5th derivative and filled derivative ghosts (except corners) 
+     with periodic boundary values. TODO: include proper boundary conditions
+     for non-internal ghosts. Add separate get_ghosts routine to handle this.
 """
 
 
@@ -219,6 +223,99 @@ def zder2_6th(f, dz):
 
     return dfdz
 
+
+def xder5_6th(f, dx):
+    """
+    Compute the 5th order derivative in x.
+
+    call signature:
+
+    xder5_6th(f, dx)
+    """
+
+    import numpy as np
+
+    if (f.ndim != 3 and f.ndim != 4):
+        print("{0} dimension arrays not handled.".format(str(f.ndim)))
+        raise ValueError
+
+    fac = 1/dx**5
+    d5fdx = np.zeros_like(f)
+    l1 = 3
+    l2 = f.shape[-1] - 3
+
+    if (l2 > l1):
+        d5fdx[..., l1:l2] = fac*(+2.5*(f[..., l1+1:l2+1] + f[..., l1-1:l2-1])
+                                 -2.0*(f[..., l1+2:l2+2] + f[..., l1-2:l2-2])
+                                 +0.5*(f[..., l1+3:l2+3] + f[..., l1-3:l2-3]))
+        d5fdx[...,:l1] = d5fdx[...,l2-3:l2]
+        d5fdx[...,l2:] = d5fdx[...,l1:l1+3]
+
+    return d5fdx
+
+
+def yder5_6th(f, dy):
+    """
+    Compute the 5th order derivative in y.
+
+    call signature:
+
+    yder5_5th(f, dy)
+    """
+
+    import numpy as np
+
+    if (f.ndim != 3 and f.ndim != 4):
+        print("{0} dimension arrays not handled.".format(str(f.ndim)))
+        raise ValueError
+
+    fac = 1/dy**5
+    m1 = 3
+    m2 = f.shape[-2] - 3
+    d5fdy = np.zeros_like(f)
+
+    if (m2 > m1):
+        d5fdy[..., m1:m2, :] = fac*(+2.5*(f[..., m1+1:m2+1, :] + f[..., m1-1:m2-1, :])
+                                    -2.0*(f[..., m1+2:m2+2, :] + f[..., m1-2:m2-2, :])
+                                    +0.5*(f[..., m1+3:m2+3, :] + f[..., m1-3:m2-3, :]))
+        d5fdy[..., :m1, :] = d5fdy[..., m2-3:m2, :]
+        d5fdy[..., m2:, :] = d5fdy[..., m1:m1+3, :]
+
+    return d5fdy
+
+
+def zder5_6th(f, dz):
+    """
+    Compute the 5th order derivative in z.
+
+    call signature:
+
+    zder5_6th(f, dz)
+    """
+
+    import numpy as np
+
+    if (f.ndim != 3 and f.ndim != 4):
+        print("{0} dimension arrays not handled.".format(str(f.ndim)))
+        raise ValueError
+
+    fac = 1/dz**5
+    n1 = 3
+    n2 = f.shape[-3] - 3
+    d5fdz = np.zeros_like(f)
+
+    if (n2 > n1):
+        d5fdz[..., n1:n2, :, :] = fac*(+2.5*(f[..., n1+1:n2+1, :, :]
+                                              +f[..., n1-1:n2-1, :, :])
+                                       -2.0*(f[..., n1+2:n2+2, :, :]
+                                             +f[..., n1-2:n2-2, :, :])
+                                       +0.5*(f[..., n1+3:n2+3, :, :]
+                                         +f[..., n1-3:n2-3, :, :]))
+
+        d5fdz[..., :n1, :, :] = d5fdz[..., n2-3:n2, :, :]
+        d5fdz[..., n2:, :, :] = d5fdz[..., n1:n1+3, :, :]
+
+    return d5fdz
 
 def xder6_6th(f, dx):
     """

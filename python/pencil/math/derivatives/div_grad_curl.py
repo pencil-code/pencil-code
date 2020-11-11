@@ -452,13 +452,14 @@ def gij(f, dx, dy, dz, nder=6):
     Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
     than del2^3) of a scalar f for hyperdiffusion.
     """
+    import numpy as np
 
     if (f.ndim != 4 or f.shape[0] != 3):
         print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
         raise ValueError
     gij = np.array(f,f,f)
     for i in range(3):
-        if nder == 1
+        if nder == 1:
             from .der import xder, yder, zder
             gij[i,0] = xder(f[j], dx, dy, dz)
             gij[i,1] = yder(f[j], dx, dy, dz)
@@ -491,3 +492,66 @@ def gij(f, dx, dy, dz, nder=6):
 
     return gij
 
+def traceless_strain(f, dx, dy, dz, x=None, y=None, z=None, 
+                     coordinate_system='cartesian'):
+
+    if (f.ndim != 4 or f.shape[0] != 3):
+        print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
+        raise ValueError
+
+    uij = gij(f, dx, dy, dz, nder=1)
+    divu = div(f, dx, dy, dz, x=x, y=y, coordinate_system=coordinate_system)
+    sij = uij.copy()
+    for j in range(3):
+        sij[j,j]=uij[j,j]-(1./3.)*divu
+        for i in range(j+1,3):
+            sij[i,j]=.5*(uij[i,j]+uij[j,i])
+            sij[j,i]=sij[i,j]
+
+    if coordinate_system == 'cylindrical':
+        if x is None:
+            print('ERROR: need to specify x (radius) for cylindrical coordinates.')
+            raise ValueError
+        # Make sure x has compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        sij[1,2]=sij[1,2]-.5*f[2]/x
+        sij[2,2]=sij[2,2]+.5*f[1]/x
+        sij[2,1]=sij[1,2]
+
+    if coordinate_system == 'spherical':
+        if (x is None) or (y is None):
+            print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
+            raise ValueError
+        # Make sure x and y have compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
+        # sij[1,1] remains unchanged in spherical coordinates
+        sij[1,2]=sij[1,2]-.5/x*f[2]
+        sij[1,3]=sij[1,3]-.5/x*f[3]
+        sij[2,1]=sij[1,2]
+        sij[2,2]=sij[2,2]+f[1]/x
+        #sij[2,3]=sij[2,3]-.5/x*cotth(m)*f[3]
+        sij[3,1]=sij[1,3]
+        sij[3,2]=sij[2,3]
+        #sij[3,3]=sij[3,3]+f[1]/x+cotth(m)/x*f[2]
+        #if (lshear_ROS) then
+        #  sij(:,1,2)=sij(:,1,2)+Sshear
+        #  sij(:,2,1)=sij(:,2,1)+Sshear
+    return sij
+
+#def sij2(f, dx, dy, dz, x=None, y=None, z=None, 
+#                     coordinate_system='cartesian'):
+#
+#    if (f.ndim != 4 or f.shape[0] != 3):
+#        print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
+#        raise ValueError
+#):
+#    uij = gij(f, dx, dy, dz, nder=1)
+#! divu -> uij2
+#      call div_mn(uij,sij2,uu)
+#    sij = traceless_strain(f, dx, dy, dz, x=x, y=y, z=z, 
+#                     coordinate_system=coordinate_system)
+#      call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
+#! sij^2
+#      call multm2_sym_mn(sij,sij2)
+#
