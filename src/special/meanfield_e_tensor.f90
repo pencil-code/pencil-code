@@ -200,6 +200,12 @@ module Special
   integer :: idiag_gammaxmxy=0, idiag_gammaymxy=0, idiag_gammazmxy=0
   integer :: idiag_deltaxmxy=0, idiag_deltaymxy=0, idiag_deltazmxy=0
   integer :: idiag_umeanxmxy=0, idiag_umeanymxy=0, idiag_umeanzmxy=0
+  integer :: idiag_kappaxxxmxy=0, idiag_kappayxxmxy=0, idiag_kappazxxmxy=0
+  integer :: idiag_kappaxxymxy=0, idiag_kappayxymxy=0, idiag_kappazxymxy=0
+  integer :: idiag_kappaxxzmxy=0, idiag_kappayxzmxy=0, idiag_kappazxzmxy=0
+  integer :: idiag_kappaxyymxy=0, idiag_kappayyymxy=0, idiag_kappazyymxy=0
+  integer :: idiag_kappaxyzmxy=0, idiag_kappayyzmxy=0, idiag_kappazyzmxy=0
+
 !
   ! Interpolation parameters
   character (len=fnlen) :: interpname
@@ -1469,6 +1475,21 @@ endif
         call zsum_mn_name_xy(p%umean_coefs(:,1),idiag_umeanxmxy)
         call zsum_mn_name_xy(p%umean_coefs(:,2),idiag_umeanymxy)
         call zsum_mn_name_xy(p%umean_coefs(:,3),idiag_umeanzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,1,1,1),idiag_kappaxxxmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,2,1,1),idiag_kappayxxmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,3,1,1),idiag_kappazxxmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,1,1,2),idiag_kappaxxymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,2,1,2),idiag_kappayxymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,3,1,2),idiag_kappazxymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,1,1,3),idiag_kappaxxzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,2,1,3),idiag_kappayxzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,3,1,3),idiag_kappazxzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,1,2,2),idiag_kappaxyymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,2,2,2),idiag_kappayyymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,3,2,2),idiag_kappazyymxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,1,2,3),idiag_kappaxyzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,2,2,3),idiag_kappayyzmxy)
+        call zsum_mn_name_xy(p%kappa_coefs(:,3,2,3),idiag_kappazyzmxy)
       endif
 
       call keep_compiler_quiet(f,df)
@@ -1597,6 +1618,11 @@ endif
         idiag_gammaxmxy=0; idiag_gammaymxy=0; idiag_gammazmxy=0;
         idiag_deltaxmxy=0; idiag_deltaymxy=0; idiag_deltazmxy=0;
         idiag_umeanxmxy=0; idiag_umeanymxy=0; idiag_umeanzmxy=0;
+        idiag_kappaxxxmxy=0; idiag_kappayxxmxy=0; idiag_kappazxxmxy=0;
+        idiag_kappaxxymxy=0; idiag_kappayxymxy=0; idiag_kappazxymxy=0;
+        idiag_kappaxxzmxy=0; idiag_kappayxzmxy=0; idiag_kappazxzmxy=0;
+        idiag_kappaxyymxy=0; idiag_kappayyymxy=0; idiag_kappazyymxy=0;
+        idiag_kappaxyzmxy=0; idiag_kappayyzmxy=0; idiag_kappazyzmxy=0;
       endif
 !
       do iname=1,nname
@@ -1680,6 +1706,21 @@ endif
         call parse_name(iname,cnamexy(iname),cformxy(iname),'gammaxmxy',idiag_gammaxmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'gammaymxy',idiag_gammaymxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'gammazmxy',idiag_gammazmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappaxxxmxy',idiag_kappaxxxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayxxmxy',idiag_kappayxxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazxxmxy',idiag_kappazxxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappaxxymxy',idiag_kappaxxymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayxymxy',idiag_kappayxymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazxymxy',idiag_kappazxymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappaxxzmxy',idiag_kappaxxzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayxzmxy',idiag_kappayxzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazxzmxy',idiag_kappazxzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappaxyymxy',idiag_kappaxyymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayyymxy',idiag_kappayyymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazyymxy',idiag_kappazyymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappaxyzmxy',idiag_kappaxyzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayyzmxy',idiag_kappayyzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazyzmxy',idiag_kappazyzmxy)
       enddo
  
     endsubroutine rprint_special
