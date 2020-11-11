@@ -206,7 +206,7 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
                 xlabel=r'$x$', ylabel=r'$y$',
                 clabel=r'${\cal P}\,(\log\,x,\log\,y)$',
                 norm=None, cmap=None,
-                density=True,
+                density=True, pad=0.02,
                 fontsize=14,
                ):
     """
@@ -244,8 +244,9 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
     plt.hist2d(xvar, yvar, cmap=cmap, bins=[xedges,yedges], density=density,
                norm=norm)
     
-    cbar=plt.colorbar()
+    cbar=plt.colorbar(pad=pad)
     cbar.ax.set_ylabel(clabel,fontsize=fontsize)
+    plt.tick_params(which='both',direction='in',top=True,right=True)
     plt.ylabel(ylabel,fontsize=fontsize)
     plt.xlabel(xlabel,fontsize=fontsize)
     return plt, xedges, yedges
