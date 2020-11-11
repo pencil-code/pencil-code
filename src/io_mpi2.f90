@@ -26,12 +26,12 @@ module Io
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: file_exists
   use Messages, only: fatal_error, svn_id, warning
+  use mpi
 !
   implicit none
 !
   include 'io.h'
   include 'record_types.h'
-  include 'mpif.h'
 !
 ! Indicates if IO is done distributed (each proc writes into a procdir)
 ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
@@ -295,6 +295,20 @@ module Io
 !
     endsubroutine check_success
 !***********************************************************************
+    subroutine check_success_local(routine, message)
+!
+!  Check success locally of MPI2 file access and issue error if necessary.
+!
+!  11-nov-20/ccyang: coded
+!
+      use Messages, only: fatal_error_local
+!
+      character(len=*), intent(in) :: routine, message
+!
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local(routine // "_snap", "could not " // message)
+!
+    endsubroutine check_success_local
+!***********************************************************************
     subroutine output_snap(a, nv1, nv2, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
@@ -413,26 +427,118 @@ module Io
 !***********************************************************************
     subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
 !
-!  Write particle snapshot file, always write mesh and time.
+!  Write particle snapshot file.
 !
-!  23-Oct-2018/PABourdin: adapted from output_snap
+!  23-Oct-2018/PABourdin: stub
+!  11-nov-2020/ccyang: coded
 !
       use General, only: keep_compiler_quiet
+      use Mpicomm, only: mpi_precision, mpiallreduce_sum_int
 !
       integer, intent(in) :: mv, nv
-      integer, dimension (mv), intent(in) :: ipar
-      real, dimension (mv,mparray), intent(in) :: a
-      character (len=*), intent(in) :: file
-      character (len=*), optional, intent(in) :: label
-      logical, optional, intent(in) :: ltruncate
+      integer, dimension(mv), intent(in) :: ipar
+      real, dimension(mv,mparray), intent(in) :: a
+      character(len=*), intent(in) :: file
+      character(len=*), intent(in), optional :: label
+      logical, intent(in), optional :: ltruncate
 !
-      call fatal_error ('output_part_snap', 'not implemented for "io_mpi2"', .true.)
-      call keep_compiler_quiet(ipar)
-      call keep_compiler_quiet(a)
-      call keep_compiler_quiet(mv, nv)
-      call keep_compiler_quiet(file)
+      integer, dimension(ncpus) :: npar_proc
+      character(len=fnlen) :: fpath
+      integer :: handle, ftype, npar_tot, ip0
+      integer(KIND=MPI_OFFSET_KIND) :: offset, disp
+!
       if (present(label)) call warning("output_part_snap", "The argument label has no effects. ")
       if (present(ltruncate)) call warning("output_part_snap", "The argument ltruncate has no effects. ")
+!
+!  Broadcast number of particles from each process.
+!
+      npar_proc = 0
+      npar_proc(iproc+1) = nv
+      call mpiallreduce_sum_int(npar_proc, ncpus)
+      npar_tot = sum(npar_proc)
+!
+!  Open snapshot file for write.
+!
+      fpath = trim(directory_snap) // '/' // file
+      call MPI_FILE_OPEN(mpi_comm, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      call check_success("output_part", "open", fpath)
+!
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_INT, MPI_INT, "native", io_info, mpi_err)
+      call check_success("output_part", "set view of", fpath)
+!
+!  Write total number of particles.
+!
+      wnpar: if (lroot) then
+        call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INT, status, mpi_err)
+        call check_success_local("output_part", "write number of particles")
+      endif wnpar
+!
+      wpar: if (nv > 0) then
+!
+!  Write particle IDs.
+!
+        ip0 = sum(npar_proc(:iproc))
+        offset = int(1 + ip0, KIND=MPI_OFFSET_KIND)
+        call MPI_FILE_WRITE_AT(handle, offset, ipar, nv, MPI_INT, status, mpi_err)
+        call check_success_local("output_part", "write particle IDs")
+!
+!  Get offset to the beginning of real data.
+!
+        offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
+        call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
+        call check_success_local("output_part", "move file pointer")
+!
+        call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
+        call check_success_local("output_part", "get file position")
+!
+        call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
+        call check_success_local("output_part", "get byte offset")
+!
+!  Create subarray type for local view.
+!
+        call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
+                                      MPI_ORDER_FORTRAN, mpi_precision, ftype, mpi_err)
+        call check_success_local("output_part", "create subarray type")
+!
+        call MPI_TYPE_COMMIT(ftype, mpi_err)
+        call check_success_local("output_part", "commit subarray type")
+!
+!  Set local view of the data.
+!
+        call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, ftype, "native", io_info, mpi_err)
+        call check_success("output_part", "set global view of", fpath)
+!
+!  Write real data.
+!
+        call MPI_FILE_WRITE_ALL(handle, a(1:nv,:), nv * mparray, mpi_precision, status, mpi_err)
+        call check_success("output_part", "write particle data at", fpath)
+!
+!  Free subarray type.
+!
+        call MPI_TYPE_FREE(ftype, mpi_err)
+        call check_success_local("output_part", "free subarray type")
+!
+      endif wpar
+!
+!  Set global view of the file.
+!
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_BYTE, MPI_BYTE, "native", io_info, mpi_err)
+      call check_success("output_part", "set global view of", fpath)
+!
+!  Write additional data.
+!
+      wadd: if (lroot) then
+        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
+        call check_success_local("output_part", "move file pointer")
+!
+        call MPI_FILE_WRITE(handle, real(t), 1, mpi_precision, status, mpi_err)
+        call check_success_local("output_part", "write additional data")
+      endif wadd
+!
+!  Close snapshot file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      call check_success("output_part", "close", fpath)
 !
     endsubroutine output_part_snap
 !***********************************************************************
