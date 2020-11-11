@@ -181,6 +181,7 @@ module Mpicomm
   interface mpiallreduce_sum_int
     module procedure mpiallreduce_sum_int_scl
     module procedure mpiallreduce_sum_int_arr
+    module procedure mpiallreduce_sum_int_arr_inplace
   endinterface
 !
   interface mpiallreduce_max
@@ -4329,6 +4330,21 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_arr_inplace(fsum, n)
+!
+!  Calculate total sum for each array element and return to all
+!  processors in place.
+!
+!  10-nov-20/ccyang: coded
+!
+      integer, intent(in) :: n
+      integer, dimension(n), intent(inout) :: fsum
+!
+      if (n <= 0) return
+      call MPI_ALLREDUCE(MPI_IN_PLACE, fsum, n, MPI_INTEGER, MPI_SUM, MPI_COMM_GRID, mpierr)
+!
+    endsubroutine mpiallreduce_sum_int_arr_inplace
 !***********************************************************************
     subroutine mpiallreduce_max_scl_sgl(fmax_tmp,fmax,comm)
 !
