@@ -432,7 +432,6 @@ module Io
 !  23-Oct-2018/PABourdin: stub
 !  11-nov-2020/ccyang: coded
 !
-      use General, only: keep_compiler_quiet
       use Mpicomm, only: mpi_precision, mpiallreduce_sum_int
 !
       integer, intent(in) :: mv, nv
@@ -472,7 +471,6 @@ module Io
         call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INT, status, mpi_err)
         call check_success_local("output_part", "write number of particles")
       endif wnpar
-!
 !
 !  Write particle IDs.
 !
