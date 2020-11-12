@@ -473,52 +473,53 @@ module Io
         call check_success_local("output_part", "write number of particles")
       endif wnpar
 !
-      wpar: if (nv > 0) then
 !
 !  Write particle IDs.
 !
-        ip0 = sum(npar_proc(:iproc))
+      ip0 = sum(npar_proc(:iproc))
+      wpi: if (nv > 0) then
         offset = int(1 + ip0, KIND=MPI_OFFSET_KIND)
         call MPI_FILE_WRITE_AT(handle, offset, ipar, nv, MPI_INT, status, mpi_err)
         call check_success_local("output_part", "write particle IDs")
+      endif wpi
 !
 !  Get offset to the beginning of real data.
 !
-        offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
-        call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
-        call check_success_local("output_part", "move file pointer")
+      offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
+      call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
+      call check_success_local("output_part", "move file pointer")
 !
-        call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
-        call check_success_local("output_part", "get file position")
+      call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
+      call check_success_local("output_part", "get file position")
 !
-        call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
-        call check_success_local("output_part", "get byte offset")
+      call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
+      call check_success_local("output_part", "get byte offset")
 !
 !  Create subarray type for local view.
 !
-        call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
-                                      MPI_ORDER_FORTRAN, mpi_precision, ftype, mpi_err)
-        call check_success_local("output_part", "create subarray type")
+      call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
+                                    MPI_ORDER_FORTRAN, mpi_precision, ftype, mpi_err)
+      call check_success_local("output_part", "create subarray type")
 !
-        call MPI_TYPE_COMMIT(ftype, mpi_err)
-        call check_success_local("output_part", "commit subarray type")
+      call MPI_TYPE_COMMIT(ftype, mpi_err)
+      call check_success_local("output_part", "commit subarray type")
 !
 !  Set local view of the data.
 !
-        call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, ftype, "native", io_info, mpi_err)
-        call check_success("output_part", "set global view of", fpath)
+      call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, ftype, "native", io_info, mpi_err)
+      call check_success("output_part", "set global view of", fpath)
 !
 !  Write real data.
 !
-        call MPI_FILE_WRITE_ALL(handle, a(1:nv,:), nv * mparray, mpi_precision, status, mpi_err)
+      wpr: if (nv > 0) then
+        call MPI_FILE_WRITE(handle, a(1:nv,:), nv * mparray, mpi_precision, status, mpi_err)
         call check_success("output_part", "write particle data at", fpath)
+      endif wpr
 !
 !  Free subarray type.
 !
-        call MPI_TYPE_FREE(ftype, mpi_err)
-        call check_success_local("output_part", "free subarray type")
-!
-      endif wpar
+      call MPI_TYPE_FREE(ftype, mpi_err)
+      call check_success_local("output_part", "free subarray type")
 !
 !  Set global view of the file.
 !
