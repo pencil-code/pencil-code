@@ -291,7 +291,7 @@ module Io
 !
       character (len=*), intent(in) :: routine, message, file
 !
-      if (mpi_err /= MPI_SUCCESS) call fatal_error (routine//'_snap', 'Could not '//message//' "'//file//'"')
+      if (mpi_err /= MPI_SUCCESS) call fatal_error (trim(routine)//'_snap', 'Could not '//trim(message)//' "'//file//'"')
 !
     endsubroutine check_success
 !***********************************************************************
@@ -305,9 +305,37 @@ module Io
 !
       character(len=*), intent(in) :: routine, message
 !
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local(routine // "_snap", "could not " // message)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local(trim(routine) // "_snap", "could not " // trim(message))
 !
     endsubroutine check_success_local
+!***********************************************************************
+    subroutine get_disp_to_par_real(npar_tot, handle, io, disp)
+!
+!  Gets the displacement in bytes to the beginning of particle real
+!  data.
+!
+!  11-nov-20/ccyang: coded
+!
+      character(len=*), intent(in) :: io
+      integer, intent(in) :: npar_tot, handle
+      integer(KIND=MPI_OFFSET_KIND), intent(out) :: disp
+!
+      character(len=11) :: routine
+      integer(KIND=MPI_OFFSET_KIND) :: offset
+!
+      routine = trim(io) // "_part"
+!
+      offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
+      call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
+      call check_success_local(routine, "move file pointer")
+!
+      call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
+      call check_success_local(routine, "get file position")
+!
+      call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
+      call check_success_local(routine, "get byte offset")
+!
+    endsubroutine get_disp_to_par_real
 !***********************************************************************
     subroutine output_snap(a, nv1, nv2, file, mode)
 !
@@ -481,18 +509,6 @@ module Io
         call check_success_local("output_part", "write particle IDs")
       endif wpi
 !
-!  Get offset to the beginning of real data.
-!
-      offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
-      call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
-      call check_success_local("output_part", "move file pointer")
-!
-      call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
-      call check_success_local("output_part", "get file position")
-!
-      call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
-      call check_success_local("output_part", "get byte offset")
-!
 !  Create subarray type for local view.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
@@ -502,8 +518,9 @@ module Io
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit subarray type")
 !
-!  Set local view of the data.
+!  Set local view of the real data.
 !
+      call get_disp_to_par_real(npar_tot, handle, "output", disp)
       call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
 !
