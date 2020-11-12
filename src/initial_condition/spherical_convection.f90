@@ -223,6 +223,8 @@ module InitialCondition
           lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
         enddo
         lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
+      else
+        dlnrhodr_global=0.
       endif
 !
 !  Renormalize entropy with rho0 and cs20
@@ -274,13 +276,17 @@ module InitialCondition
 !
       coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
 !
+!
+      npoly2=0.
+      gnpoly2=0.
+!
       do n=1,nxgrid
         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-       if ((xglobal(nghost+n)>=Rstar) .and. & 
-            ((npoly2(n)+1)/exp(lnrho_global(n))>2*(npoly2(1)+1)/exp(lnrho_global(1)))) then
-          npoly2(n)=2*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1
-          gnpoly2(n)=2*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
+        if ((xglobal(nghost+n)>=Rstar) .and. &
+            ((npoly2(n)+1.)/exp(lnrho_global(n))>2.*(npoly2(1)+1.)/exp(lnrho_global(1)))) then
+          npoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1.
+          gnpoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
         endif
       enddo
 !
