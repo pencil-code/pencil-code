@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Provides workaround for missing --follow-symlinks option of sed.
+# Requires that the file to be edited (typically in-place) is the last argument.
+# 
+# 13-nov-20/MR: coded
+#
+
+args=("$@")
+lastarg=${args[$#-1]}
+
+if [ -h $lastarg ]; then
+
+  olddir=`pwd`
+  lnkpath="$(dirname `readlink $lastarg`)"
+  cd $lnkpath
+  sed $@
+  cd $olddir
+  
+else
+
+  sed $@
+
+fi
+
