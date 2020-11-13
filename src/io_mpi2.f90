@@ -307,31 +307,23 @@ module Io
 !
     endsubroutine check_success_local
 !***********************************************************************
-    subroutine get_disp_to_par_real(npar_tot, handle, io, disp)
+    subroutine get_disp_to_par_real(npar_tot, disp)
 !
 !  Gets the displacement in bytes to the beginning of particle real
 !  data.
 !
-!  11-nov-20/ccyang: coded
+!  12-nov-20/ccyang: coded
 !
-      character(len=*), intent(in) :: io
-      integer, intent(in) :: npar_tot, handle
+      integer, intent(in) :: npar_tot
       integer(KIND=MPI_OFFSET_KIND), intent(out) :: disp
 !
-      character(len=11) :: routine
-      integer(KIND=MPI_OFFSET_KIND) :: offset
+      integer(KIND=MPI_OFFSET_KIND) :: intsize
+      integer :: ierr
 !
-      routine = trim(io) // "_part"
+      call MPI_TYPE_SIZE_X(MPI_INT, intsize, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("get_disp_to_par_real", "could not find MPI_INT size")
 !
-      offset = int(1 + npar_tot, KIND=MPI_OFFSET_KIND)
-      call MPI_FILE_SEEK(handle, offset, MPI_SEEK_SET, mpi_err)
-      call check_success_local(routine, "move file pointer")
-!
-      call MPI_FILE_GET_POSITION(handle, offset, mpi_err)
-      call check_success_local(routine, "get file position")
-!
-      call MPI_FILE_GET_BYTE_OFFSET(handle, offset, disp, mpi_err)
-      call check_success_local(routine, "get byte offset")
+      disp = int(1 + npar_tot, KIND=MPI_OFFSET_KIND) * intsize
 !
     endsubroutine get_disp_to_par_real
 !***********************************************************************
@@ -518,7 +510,7 @@ module Io
 !
 !  Set local view of the real data.
 !
-      call get_disp_to_par_real(npar_tot, handle, "output", disp)
+      call get_disp_to_par_real(npar_tot, disp)
       call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
 !
@@ -777,7 +769,7 @@ module Io
 !
 !  Identify local particles.
 !
-      call get_disp_to_par_real(npar_tot, handle, "input", offset)
+      call get_disp_to_par_real(npar_tot, offset)
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
