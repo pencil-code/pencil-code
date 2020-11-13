@@ -25,7 +25,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: file_exists
-  use Messages, only: fatal_error, svn_id, warning
+  use Messages, only: fatal_error, fatal_error_local, svn_id, warning
   use mpi
 !
   implicit none
@@ -300,8 +300,6 @@ module Io
 !  Check success locally of MPI2 file access and issue error if necessary.
 !
 !  11-nov-20/ccyang: coded
-!
-      use Messages, only: fatal_error_local
 !
       character(len=*), intent(in) :: routine, message
 !
@@ -730,27 +728,140 @@ module Io
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
-    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_tot, file, label)
 !
-!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!  Read particle snapshot file.
 !
-!  24-Oct-2018/PABourdin: apadpted and moved to IO module
+!  24-Oct-2018/PABourdin: stub
+!  12-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
+      use Mpicomm, only: mpi_precision
+      use Particles_cdata, only: ixp, iyp, izp
 !
       integer, intent(in) :: mv
-      integer, dimension (mv), intent(out) :: ipar
-      real, dimension (mv,mparray), intent(out) :: ap
-      integer, intent(out) :: nv, npar_total
-      character (len=*), intent(in) :: file
-      character (len=*), optional, intent(in) :: label
+      integer, dimension(mv), intent(out) :: ipar
+      real, dimension(mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_tot
+      character(len=*), intent(in) :: file
+      character(len=*), intent(in), optional :: label
 !
-      call fatal_error ('input_part_snap', 'not implemented for "io_mpi2"', .true.)
-      call keep_compiler_quiet(ipar)
-      call keep_compiler_quiet(ap)
-      call keep_compiler_quiet(mv, nv, npar_total)
-      call keep_compiler_quiet(file)
+      logical, allocatable, dimension(:) :: lpar_loc
+      integer, allocatable, dimension(:) :: indices
+!
+      real, dimension(mv*ncpus) :: rbuf
+      character(len=fnlen) :: fpath
+      integer(KIND=MPI_OFFSET_KIND) :: offset, esize
+      integer :: handle, ftype, ftype1, i
+!
       if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
+!
+!  Open snapshot file for read.
+!
+      fpath = trim(directory_snap) // '/' // file
+      call MPI_FILE_OPEN(mpi_comm, fpath, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call check_success("input_part", "open", fpath)
+!
+!  Read total number of particles.
+!
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_INT, MPI_INT, "native", io_info, mpi_err)
+      call check_success("input_part", "set view of", fpath)
+!
+      call MPI_FILE_READ_ALL(handle, npar_tot, 1, MPI_INT, status, mpi_err)
+      call check_success("input_part", "read total number of particles", fpath)
+!
+      cknp: if (npar_tot > mv * ncpus) then
+        if (lroot) print *, "input_part_snap: npar_tot, mv = ", npar_tot, mv
+        call fatal_error("input_part_snap", "too many particles")
+      endif cknp
+!
+!  Identify local particles.
+!
+      call get_disp_to_par_real(npar_tot, handle, "input", offset)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      call check_success("input_part", "set view of", fpath)
+!
+      allocate(lpar_loc(npar_tot), stat=mpi_err)
+      call check_success_local("input_part", "allocate lpar_loc")
+!
+      call MPI_FILE_READ_AT_ALL(handle, int((ixp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                rbuf, npar_tot, mpi_precision, status, mpi_err)
+      call check_success("input_part", "read xp of", fpath)
+      lpar_loc = procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
+!
+      call MPI_FILE_READ_AT_ALL(handle, int((iyp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                rbuf, npar_tot, mpi_precision, status, mpi_err)
+      call check_success("input_part", "read yp of", fpath)
+      lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
+!
+      call MPI_FILE_READ_AT_ALL(handle, int((izp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                rbuf, npar_tot, mpi_precision, status, mpi_err)
+      call check_success("input_part", "read zp of", fpath)
+      lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
+!
+!  Count local particles.
+!
+      nv = count(lpar_loc)
+      cknv: if (nv > mv) then
+        print *, "input_part_snap: iproc, nv, mv = ", iproc, nv, mv
+        call fatal_error_local("input_part_snap", "too many local particles")
+      endif cknv
+!
+      allocate(indices(nv), stat=mpi_err)
+      call check_success_local("input_part", "allocate indices")
+      indices = pack((/ (i, i = 1, npar_tot) /), lpar_loc) - 1
+!
+!  Decompose the integer data domain and read.
+!
+      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_INT, ftype, mpi_err)
+      call check_success_local("input_part", "create MPI data type")
+!
+      call MPI_TYPE_COMMIT(ftype, mpi_err)
+      call check_success_local("input_part", "commit MPI data type")
+!
+      call MPI_TYPE_SIZE_X(MPI_INT, esize, mpi_err)
+      call check_success_local("input_part", "query MPI_INT size")
+!
+      call MPI_FILE_SET_VIEW(handle, esize, MPI_INT, ftype, "native", io_info, mpi_err)
+      call check_success("input_part", "set view of", fpath)
+!
+      call MPI_FILE_READ_ALL(handle, ipar, nv, MPI_INT, status, mpi_err)
+      call check_success("input_part", "read particle IDs", fpath)
+!
+      call MPI_TYPE_FREE(ftype, mpi_err)
+      call check_success_local("input_part", "free MPI data type")
+!
+!  Decompose the real data domain and read.
+!
+      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype1, mpi_err)
+      call check_success_local("input_part", "create MPI data type")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, esize, mpi_err)
+      call check_success_local("input_part", "query MPI real size")
+!
+      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * esize, ftype, mpi_err)
+      call check_success_local("input_part", "create MPI data type")
+!
+      call MPI_TYPE_COMMIT(ftype, mpi_err)
+      call check_success_local("input_part", "commit MPI data type")
+!
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
+      call check_success("input_part", "set view of", fpath)
+!
+      rd: do i = 1, mparray
+        call MPI_FILE_READ_ALL(handle, ap(:,i), nv, mpi_precision, status, mpi_err)
+        call check_success("input_part", "read particle data", fpath)
+      enddo rd
+!
+      call MPI_TYPE_FREE(ftype, mpi_err)
+      call check_success_local("input_part", "free MPI data type")
+!
+      deallocate(lpar_loc, indices)
+!
+!  Close snapshot file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      call check_success("input_part", "close", fpath)
 !
     endsubroutine input_part_snap
 !***********************************************************************
