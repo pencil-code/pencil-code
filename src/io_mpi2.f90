@@ -26,6 +26,7 @@ module Io
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: file_exists
   use Messages, only: fatal_error, fatal_error_local, svn_id, warning
+  use Mpicomm, only: mpi_precision
   use mpi
 !
   implicit none
@@ -49,7 +50,8 @@ module Io
   integer, parameter :: order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
 !  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
   integer, dimension (:), allocatable :: local_size, local_start, global_size, global_start, subsize
-
+!
+  integer(kind=MPI_OFFSET_KIND) :: intsize = 0, realsize = 0
 !
   contains
 !***********************************************************************
@@ -168,7 +170,15 @@ module Io
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
-
+!
+!  Remeber the sizes of some MPI elementary types.
+!
+      call MPI_TYPE_SIZE_X(MPI_INT, intsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI_INT size")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, realsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI real size")
+!
     endsubroutine register_io
 !***********************************************************************
     subroutine finalize_io
@@ -307,7 +317,7 @@ module Io
 !
     endsubroutine check_success_local
 !***********************************************************************
-    subroutine get_disp_to_par_real(npar_tot, disp)
+    pure integer(KIND=MPI_OFFSET_KIND) function get_disp_to_par_real(npar_tot) result(disp)
 !
 !  Gets the displacement in bytes to the beginning of particle real
 !  data.
@@ -315,17 +325,10 @@ module Io
 !  12-nov-20/ccyang: coded
 !
       integer, intent(in) :: npar_tot
-      integer(KIND=MPI_OFFSET_KIND), intent(out) :: disp
-!
-      integer(KIND=MPI_OFFSET_KIND) :: intsize
-      integer :: ierr
-!
-      call MPI_TYPE_SIZE_X(MPI_INT, intsize, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("get_disp_to_par_real", "could not find MPI_INT size")
 !
       disp = int(1 + npar_tot, KIND=MPI_OFFSET_KIND) * intsize
 !
-    endsubroutine get_disp_to_par_real
+    endfunction get_disp_to_par_real
 !***********************************************************************
     subroutine output_snap(a, nv1, nv2, file, mode)
 !
@@ -335,7 +338,7 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use General, only: ioptest
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision
+      use Mpicomm, only: globalize_xy, collect_grid
 !
       integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
@@ -450,7 +453,7 @@ module Io
 !  23-Oct-2018/PABourdin: stub
 !  11-nov-2020/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision, mpiallreduce_sum_int
+      use Mpicomm, only: mpiallreduce_sum_int
 !
       integer, intent(in) :: mv, nv
       integer, dimension(mv), intent(in) :: ipar
@@ -490,16 +493,13 @@ module Io
 !  Write particle IDs.
 !
       ip0 = sum(npar_proc(:iproc))
-      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv /), (/ ip0 /), MPI_ORDER_FORTRAN, MPI_INT, ftype, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv /), (/ ip0 /), order, MPI_INT, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
 !
-      call MPI_TYPE_SIZE_X(MPI_INT, offset, mpi_err)
-      call check_success_local("output_part", "query MPI_INT size")
-!
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_INT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INT, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set view of", fpath)
 !
       call MPI_FILE_WRITE_ALL(handle, ipar, nv, MPI_INT, status, mpi_err)
@@ -511,13 +511,13 @@ module Io
 !  Write particle data.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
-                                    MPI_ORDER_FORTRAN, mpi_precision, ftype, mpi_err)
+                                    order, mpi_precision, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
 !
-      call get_disp_to_par_real(npar_tot, offset)
+      offset = get_disp_to_par_real(npar_tot)
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
 !
@@ -627,7 +627,7 @@ module Io
 !  10-mar-2015/MR: avoided use of fseek
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
+      use Mpicomm, only: localize_xy, mpibcast_real
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -729,7 +729,6 @@ module Io
 !  12-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Mpicomm, only: mpi_precision
       use Particles_cdata, only: ixp, iyp, izp
 !
       integer, intent(in) :: mv
@@ -744,7 +743,7 @@ module Io
 !
       real, dimension(mv*ncpus) :: rbuf
       character(len=fnlen) :: fpath
-      integer(KIND=MPI_OFFSET_KIND) :: offset, esize
+      integer(KIND=MPI_OFFSET_KIND) :: offset
       integer :: handle, ftype, ftype1, i
 !
       if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
@@ -770,7 +769,7 @@ module Io
 !
 !  Identify local particles.
 !
-      call get_disp_to_par_real(npar_tot, offset)
+      offset = get_disp_to_par_real(npar_tot)
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
@@ -812,10 +811,7 @@ module Io
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
 !
-      call MPI_TYPE_SIZE_X(MPI_INT, esize, mpi_err)
-      call check_success_local("input_part", "query MPI_INT size")
-!
-      call MPI_FILE_SET_VIEW(handle, esize, MPI_INT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INT, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
       call MPI_FILE_READ_ALL(handle, ipar, nv, MPI_INT, status, mpi_err)
@@ -829,10 +825,7 @@ module Io
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype1, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
-      call MPI_TYPE_SIZE_X(mpi_precision, esize, mpi_err)
-      call check_success_local("input_part", "query MPI real size")
-!
-      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * esize, ftype, mpi_err)
+      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * realsize, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
