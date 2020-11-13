@@ -399,11 +399,9 @@ module Particles_main
 !
     endsubroutine write_snapshot_particles
 !***********************************************************************
-    subroutine read_snapshot_particles(snap_directory)
+    subroutine read_snapshot_particles()
 !
-      character (len=*) :: snap_directory
-!
-     call keep_compiler_quiet(snap_directory)
+! dummy subroutine
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************

@@ -428,7 +428,7 @@ program run
   rpar: if (lparticles) then
     if (ip <= 6 .and. lroot) print *, "reading processor boundaries and particle snapshot"
     call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
-    call read_snapshot_particles("")
+    call read_snapshot_particles()
   endif rpar
 !
 !  Read point masses.

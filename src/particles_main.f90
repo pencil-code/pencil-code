@@ -296,14 +296,12 @@ module Particles_main
 !
     endsubroutine particles_finalize
 !***********************************************************************
-    subroutine read_snapshot_particles(snap_directory)
+    subroutine read_snapshot_particles()
 !
-      character (len=*) :: snap_directory
-!
-      call particles_read_snapshot('pvar.dat')
-      if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
-      if (lparticles_caustics)      call reinitialize_caustics(fp)
-      if (lparticles_tetrad)        call reinitialize_tetrad(fp)
+      call particles_read_snapshot("pvar.dat")
+      if (lparticles_lyapunov) call init_particles_lyapunov(fp)
+      if (lparticles_caustics) call reinitialize_caustics(fp)
+      if (lparticles_tetrad)   call reinitialize_tetrad(fp)
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
