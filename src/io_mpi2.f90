@@ -451,7 +451,7 @@ module Io
 !  Write particle snapshot file.
 !
 !  23-Oct-2018/PABourdin: stub
-!  11-nov-2020/ccyang: coded
+!  12-nov-2020/ccyang: coded
 !
       use Mpicomm, only: mpiallreduce_sum_int
 !
@@ -532,12 +532,17 @@ module Io
       call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_BYTE, MPI_BYTE, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
 !
+!  Set the size of the file.
+!
+      offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * realsize
+      call MPI_FILE_SET_SIZE(handle, offset, mpi_err)
+      call check_success("output_part", "set size of", fpath)
+!
 !  Write additional data.
 !
       wadd: if (lroot) then
         call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
-        call check_success_local("output_part", "move file pointer")
-!
+        call check_success_local("output_part", "seek the end of the file")
         call MPI_FILE_WRITE(handle, real(t), 1, mpi_precision, status, mpi_err)
         call check_success_local("output_part", "write additional data")
       endif wadd
