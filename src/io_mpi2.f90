@@ -780,21 +780,28 @@ module Io
 !
       allocate(lpar_loc(npar_tot), stat=mpi_err)
       call check_success_local("input_part", "allocate lpar_loc")
+      lpar_loc = .true.
 !
-      call MPI_FILE_READ_AT_ALL(handle, int((ixp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
-                                rbuf, npar_tot, mpi_precision, status, mpi_err)
-      call check_success("input_part", "read xp of", fpath)
-      lpar_loc = procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
+      inx: if (lactive_dimension(1)) then
+        call MPI_FILE_READ_AT_ALL(handle, int((ixp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
+        call check_success("input_part", "read xp of", fpath)
+        lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
+      endif inx
 !
-      call MPI_FILE_READ_AT_ALL(handle, int((iyp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
-                                rbuf, npar_tot, mpi_precision, status, mpi_err)
-      call check_success("input_part", "read yp of", fpath)
-      lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
+      iny: if (lactive_dimension(2)) then
+        call MPI_FILE_READ_AT_ALL(handle, int((iyp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
+        call check_success("input_part", "read yp of", fpath)
+        lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
+      endif iny
 !
-      call MPI_FILE_READ_AT_ALL(handle, int((izp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
-                                rbuf, npar_tot, mpi_precision, status, mpi_err)
-      call check_success("input_part", "read zp of", fpath)
-      lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
+      inz: if (lactive_dimension(3)) then
+        call MPI_FILE_READ_AT_ALL(handle, int((izp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
+        call check_success("input_part", "read zp of", fpath)
+        lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
+      endif inz
 !
 !  Count local particles.
 !
