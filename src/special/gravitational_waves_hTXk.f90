@@ -124,6 +124,10 @@ module Special
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
+  integer :: idiag_STrept=0      ! DIAG_DOC: $Re S_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_STimpt=0      ! DIAG_DOC: $Im S_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_hTrept=0      ! DIAG_DOC: $Re h_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_hTimpt=0      ! DIAG_DOC: $Im h_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
   integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
@@ -524,6 +528,10 @@ module Special
          endif
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
+           if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
+           if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
+           if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
+           if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
            if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
            if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
@@ -1228,6 +1236,8 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
+        idiag_STrept=0; idiag_STimpt=0; 
+        idiag_hTrept=0; idiag_hTimpt=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
@@ -1239,6 +1249,10 @@ module Special
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'STrept',idiag_STrept)
+        call parse_name(iname,cname(iname),cform(iname),'STimpt',idiag_STimpt)
+        call parse_name(iname,cname(iname),cform(iname),'hTrept',idiag_hTrept)
+        call parse_name(iname,cname(iname),cform(iname),'hTimpt',idiag_hTimpt)
         call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
         call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)
