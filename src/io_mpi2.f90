@@ -1786,45 +1786,78 @@ module Io
 !***********************************************************************
     subroutine wproc_bounds(file)
 !
-!   Export processor boundaries to file.
+! Export processor boundaries to file.
 !
-!   22-Feb-2012/PABourdin: adapted from io_dist
+! 12-nov-20/ccyang: coded
 !
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: mpi_precision
 !
-      character (len=*) :: file
+      character(len=*), intent(in) :: file
 !
-      integer :: ierr
+      integer :: handle
 !
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
-      if (ierr /= 0) call stop_it ( &
-          'Cannot open "' // trim(file) // '" (or similar) for reading' // &
-          ' -- is "data/" visible from all nodes?')
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
+! Open file.
+!
+      call MPI_FILE_OPEN(mpi_comm, trim(file), ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not open file " // trim(file))
+!
+! Write proc[xyz]_bounds.
+!
+      wproc: if (lroot) then
+!
+        call MPI_FILE_WRITE(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procx_bounds")
+!
+        call MPI_FILE_WRITE(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procy_bounds")
+!
+        call MPI_FILE_WRITE(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procz_bounds")
+!
+      endif wproc
+!
+! Close file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not close file " // trim(file))
 !
     endsubroutine wproc_bounds
 !***********************************************************************
     subroutine rproc_bounds(file)
 !
-!   Import processor boundaries from file.
+! Import processor boundaries from file.
 !
-!   22-Feb-2012/PABourdin: adapted from io_dist
+! 12-nov-20/ccyang: coded
 !
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: mpi_precision
 !
-      character (len=*) :: file
+      character(len=*), intent(in) :: file
 !
-      integer :: ierr
+      integer :: handle
 !
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
-      if (ierr /= 0) call stop_it ( &
-          'Cannot open "' // trim(file) // '" (or similar) for reading' // &
-          ' -- is "data/" visible from all nodes?')
-      read (lun_input) procy_bounds
-      read (lun_input) procz_bounds
-      close (lun_input)
+! Open file.
+!
+      call MPI_FILE_OPEN(mpi_comm, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not open file " // trim(file))
+!
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not set view")
+!
+! Read proc[xyz]_bounds.
+!
+      call MPI_FILE_READ_ALL(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procx_bounds")
+!
+      call MPI_FILE_READ_ALL(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procy_bounds")
+!
+      call MPI_FILE_READ_ALL(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procz_bounds")
+!
+! Close file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not close file " // trim(file))
 !
     endsubroutine rproc_bounds
 !***********************************************************************

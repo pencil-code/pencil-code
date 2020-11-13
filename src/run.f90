@@ -423,7 +423,16 @@ program run
   if (lparticles) call particles_rprint_list(.false.)
   call report_undefined_diagnostics
 !
-  if (lparticles) call read_snapshot_particles(directory_dist)
+!  Read particle snapshot.
+!
+  rpar: if (lparticles) then
+    if (ip <= 6 .and. lroot) print *, "reading processor boundaries and particle snapshot"
+    call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
+    call read_snapshot_particles("")
+  endif rpar
+!
+!  Read point masses.
+!
   if (lpointmasses) call pointmasses_read_snapshot('qvar.dat')
 !
 !  Set initial time to zero if requested. This is dangerous, however!
@@ -451,13 +460,6 @@ program run
       ! output initial values
       lout_sound=.true.
     endif
-  endif
-!
-!  Read processor boundaries.
-!
-  if (lparticles) then
-    if (ip<=6.and.lroot) print*, 'reading processor boundaries'
-    call rproc_bounds(trim(directory)//'/proc_bounds.dat')
   endif
 !
 !  The following is here to avoid division in sub.f90 for diagnostic
