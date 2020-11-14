@@ -634,6 +634,41 @@ module Io
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
+    subroutine input_slice_real_arr(file, time, pos, data)
+!
+!  Read a slice file.
+!
+!  13-nov-20/ccyang: wrapper
+!
+      use HDF5_IO, only: hdf5_input_slice
+!
+      character(len=*), intent(in) :: file
+      real, intent(out):: time, pos
+      real, dimension(:,:,:), intent(out):: data
+!
+      call hdf5_input_slice(file, time, pos, data)
+!
+    endsubroutine input_slice_real_arr
+!***********************************************************************
+    subroutine input_slice_scat_arr(file, pos, data, ivar, nt)
+!
+!  Read a slice file.
+!
+!  13-nov-20/ccyang: wrapper
+!
+      use General, only: scattered_array
+      use HDF5_IO, only: hdf5_input_slice
+!
+      character(len=*), intent(in) :: file
+      real, intent(out):: pos
+      type(scattered_array), pointer :: data   !intent(inout)
+      integer, intent(in) :: ivar
+      integer, intent(out):: nt
+!
+      call hdf5_input_slice(file, pos, data, ivar, nt)
+!
+    endsubroutine input_slice_scat_arr
+!***********************************************************************
     subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
 !
 !  Read particle snapshot file, mesh and time are read in 'input_snap'.

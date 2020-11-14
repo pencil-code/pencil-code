@@ -38,11 +38,6 @@ module HDF5_IO
     module procedure output_hdf5_4D
   endinterface
 !
-  interface input_slice
-    module procedure input_slice_real_arr
-    module procedure input_slice_scat_arr
-  endinterface
-!
   interface output_hdf5_double
     module procedure output_hdf5_double_0D
     module procedure output_hdf5_double_1D

@@ -9,6 +9,7 @@
   public :: output_stalker_init, output_stalker, output_part_finalize
   public :: input_snap, input_snap_finalize, input_part_snap, input_pointmass
   public :: output_globals, input_globals
+  public :: input_slice
   public :: init_write_persist, write_persist, write_persist_id, &
             write_persist_logical_0D, write_persist_logical_1D, write_persist_int_0D, &
             write_persist_int_1D, write_persist_real_0D, write_persist_real_1D, &
@@ -26,7 +27,12 @@
   integer, parameter :: lun_output=91
 
   logical :: persist_initialized = .false.
-
+!
+  interface input_slice
+    module procedure input_slice_real_arr
+    module procedure input_slice_scat_arr
+  endinterface
+!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D

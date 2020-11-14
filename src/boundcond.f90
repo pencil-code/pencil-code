@@ -421,7 +421,7 @@ module Boundcond
 !
       use General, only: itoa
       use File_io, only: file_exists
-      use HDF5_IO, only: input_slice
+      use IO, only: input_slice
 
       real, intent(IN) :: pos
       integer, intent(IN) :: iproc_slc

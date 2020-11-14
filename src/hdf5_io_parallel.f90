@@ -44,11 +44,6 @@ module HDF5_IO
     module procedure output_hdf5_torus_rect
   endinterface
 !
-  interface input_slice
-    module procedure input_slice_arr 
-    module procedure input_slice_scat 
-  endinterface
-
   interface output_hdf5_double
     module procedure output_hdf5_double_0D
     module procedure output_hdf5_double_1D
