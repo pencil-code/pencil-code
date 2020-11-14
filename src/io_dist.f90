@@ -181,6 +181,25 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+!
+!  Append to a slice file
+!
+!  13-nov-20/ccyang: wrapper
+!
+      use HDF5_IO, only: hdf5_output_slice
+!
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character(len=*), intent(in) :: label, suffix
+      real, intent(in) :: pos
+      integer, intent(in) :: grid_pos
+      real, dimension(:,:), pointer :: data
+!
+      call hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+!
+    endsubroutine output_slice
+!***********************************************************************
     subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
 !
 !  Write particle snapshot file, always write mesh and time.

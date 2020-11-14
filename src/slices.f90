@@ -71,7 +71,7 @@ contains
 !  28-oct-18/PABourdin: moved output to IO modules 'output_slice'
 !
       use General,         only: itoa
-      use HDF5_IO,         only: output_slice
+      use IO,              only: output_slice
       use Slices_methods,  only: assign_slices_scal
       use Chemistry,       only: get_slices_chemistry
       use Chiral,          only: get_slices_chiral

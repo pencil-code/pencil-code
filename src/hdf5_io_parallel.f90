@@ -2362,7 +2362,7 @@ module HDF5_IO
 !
     endsubroutine input_slice_arr
 !***********************************************************************
-    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+    subroutine hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  append to a slice file
 !
@@ -2443,7 +2443,7 @@ module HDF5_IO
 
       call file_close_hdf5
 !
-    endsubroutine output_slice
+    endsubroutine hdf5_output_slice
 !***********************************************************************
     subroutine output_profile(name, coord, a, type, lsave_name, lhas_ghost)
 !

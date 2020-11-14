@@ -647,7 +647,7 @@ module HDF5_IO
 !
     endsubroutine output_slice_position
 !***********************************************************************
-    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+    subroutine hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  append to a slice file
 !
@@ -672,7 +672,7 @@ module HDF5_IO
       write (lun_output) data, time, pos
       close (lun_output)
 !
-    endsubroutine output_slice
+    endsubroutine hdf5_output_slice
 !***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
