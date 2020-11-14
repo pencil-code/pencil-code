@@ -12,6 +12,11 @@ module HDF5_IO
 !
   implicit none
 !
+  interface hdf5_input_slice
+    module procedure input_slice_real_arr
+    module procedure input_slice_scat_arr
+  endinterface
+!
   interface input_hdf5
     module procedure input_hdf5_int_0D
     module procedure input_hdf5_int_1D

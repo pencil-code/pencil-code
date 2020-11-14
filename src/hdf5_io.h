@@ -6,11 +6,6 @@
   public :: output_timeseries
   public :: output_average, trim_average
 !
-  interface hdf5_input_slice
-    module procedure input_slice_real_arr
-    module procedure input_slice_scat_arr
-  endinterface
-!
   interface output_average
     module procedure output_average_1D
     module procedure output_average_2D
