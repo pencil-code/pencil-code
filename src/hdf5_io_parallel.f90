@@ -2270,11 +2270,11 @@ module HDF5_IO
 !
     endsubroutine output_timeseries
 !***********************************************************************
-    subroutine output_slice_position
+    subroutine hdf5_output_slice_position
 !
 !  27-Oct-2018/PABourdin: no action required for HDF5 output
 !
-    endsubroutine output_slice_position
+    endsubroutine hdf5_output_slice_position
 !***********************************************************************
     subroutine input_slice_scat(file,pos,data,ind,nt)
 !       

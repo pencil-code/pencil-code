@@ -198,7 +198,7 @@ contains
 !
       !use Slices_methods, only: alloc_slice_buffers
       use General, only: itoa
-      use HDF5_IO, only: output_slice_position
+      use IO, only: output_slice_position
     
       character(LEN=80) :: text, data
 

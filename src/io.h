@@ -9,7 +9,7 @@
   public :: output_stalker_init, output_stalker, output_part_finalize
   public :: input_snap, input_snap_finalize, input_part_snap, input_pointmass
   public :: output_globals, input_globals
-  public :: input_slice, output_slice
+  public :: input_slice, output_slice, output_slice_position
   public :: init_write_persist, write_persist, write_persist_id, &
             write_persist_logical_0D, write_persist_logical_1D, write_persist_int_0D, &
             write_persist_int_1D, write_persist_real_0D, write_persist_real_1D, &

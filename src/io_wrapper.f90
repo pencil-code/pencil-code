@@ -337,6 +337,18 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_slice_position()
+!
+!  Record slice positions.
+!
+!  13-nov-20/ccyang: wrapper
+!
+      use HDF5_IO, only: hdf5_output_slice_position
+!
+      call hdf5_output_slice_position()
+!
+    endsubroutine output_slice_position
+!***********************************************************************
     subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  Append to a slice file

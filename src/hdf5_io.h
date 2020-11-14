@@ -2,7 +2,7 @@
   public :: exists_in_hdf5, input_hdf5, output_hdf5, output_hdf5_double, wdim, input_dim
   public :: index_append, particle_index_append, pointmass_index_append, index_get, index_reset
   public :: input_profile, output_profile
-  public :: hdf5_input_slice, hdf5_output_slice, output_slice_position
+  public :: hdf5_input_slice, hdf5_output_slice, hdf5_output_slice_position
   public :: output_timeseries
   public :: output_average, trim_average
 !

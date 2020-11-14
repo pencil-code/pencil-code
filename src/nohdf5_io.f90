@@ -628,7 +628,7 @@ module HDF5_IO
 !
     endsubroutine input_slice_scat_arr
 !***********************************************************************
-    subroutine output_slice_position
+    subroutine hdf5_output_slice_position
 !
 !  'data/procN/slice_position.dat' is distributed, but may not be synchronized
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
@@ -645,7 +645,7 @@ module HDF5_IO
       write (lun_output, '(l5,i5," YZ")') lwrite_slice_yz, ix_loc
       close (lun_output)
 !
-    endsubroutine output_slice_position
+    endsubroutine hdf5_output_slice_position
 !***********************************************************************
     subroutine hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
