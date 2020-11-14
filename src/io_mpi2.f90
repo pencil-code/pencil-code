@@ -447,13 +447,9 @@ module Io
 !***********************************************************************
     subroutine output_slice_position()
 !
-!  Record slice positions.
+!  Dummy subroutine; no need to record slice positions.
 !
-!  14-nov-20/ccyang: stub
-!
-      use Messages, only: not_implemented
-!
-      call not_implemented("output_slice_position")
+!  14-nov-20/ccyang: dummy
 !
     endsubroutine output_slice_position
 !***********************************************************************
