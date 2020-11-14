@@ -14,11 +14,6 @@ module HDF5_IO
 !
   implicit none
 !
-  interface hdf5_input_slice
-    module procedure input_slice_arr
-    module procedure input_slice_scat
-  endinterface
-!
   interface input_hdf5
     module procedure input_hdf5_string
     module procedure input_hdf5_int_0D
@@ -47,6 +42,12 @@ module HDF5_IO
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
     module procedure output_hdf5_torus_rect
+  endinterface
+!
+  interface hdf5_input_slice
+    module procedure input_slice_arr
+    module procedure input_slice_scat
+    module procedure input_slice_real_arr
   endinterface
 !
   interface output_hdf5_double
@@ -2366,6 +2367,35 @@ module HDF5_IO
       call file_close_hdf5
 !
     endsubroutine input_slice_arr
+!***********************************************************************
+    subroutine input_slice_real_arr(file, time, pos, data)
+!
+!  read a slice file
+!
+!  24-may-19/MR: coded
+!
+      use File_io, only: file_exists
+
+      character (len=*),   intent(in) :: file
+      real,                intent(out):: time
+      real,                intent(out):: pos
+      real, dimension(:,:,:),intent(out):: data
+!
+      integer, parameter :: lun_output = 92
+      integer :: nt, ios
+!
+      if (.not.file_exists(file)) &
+        call fatal_error('input_slice', 'no slices file '//trim(file))
+      open(lun_output, file=file, form='unformatted')
+      nt=0; ios=0
+      do while(ios==0)
+        read(lun_output,iostat=ios) data(:,:,nt+1), time, pos
+        if (ios/=0) exit
+        nt=nt+1
+      enddo
+      close(lun_output)
+!
+    endsubroutine input_slice_real_arr
 !***********************************************************************
     subroutine hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
