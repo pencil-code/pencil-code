@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# lmod: lists the modules a source code depends on.
+#
+# Author: Chao-Chin Yang
+# Created: 2020-11-13
+#
+
+if [ $# -eq 0 ]; then
+	echo usage: $(basename $0) FILE...
+	echo lists the modules a source code depends on.
+	exit 1
+fi
+
+for src in $*; do
+	dep=$(grep "^ *use" $src | sed "s/^ *use *//" | sed "s/, *only.*:.*//" | sort | uniq | tr '\n' ' ')
+	echo $src: $dep
+done
