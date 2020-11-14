@@ -23,8 +23,7 @@
 module Io
 !
   use Cdata
-  use Cparam, only: intlen, fnlen, max_int
-  use File_io, only: file_exists
+  use Cparam, only: fnlen, max_int
   use Messages, only: fatal_error, fatal_error_local, svn_id, warning
   use Mpicomm, only: mpi_precision
   use mpi
@@ -450,30 +449,35 @@ module Io
 !
 !  Record slice positions.
 !
-!  13-nov-20/ccyang: wrapper
+!  14-nov-20/ccyang: stub
 !
-      use HDF5_IO, only: hdf5_output_slice_position
+      use Messages, only: not_implemented
 !
-      call hdf5_output_slice_position()
+      call not_implemented("output_slice_position")
 !
     endsubroutine output_slice_position
 !***********************************************************************
     subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
-!  Append to a slice file
+!  Append to a slice file.
 !
-!  13-nov-20/ccyang: wrapper
+!  14-nov-20/ccyang: stub
 !
-      use HDF5_IO, only: hdf5_output_slice
+      use General, only: keep_compiler_quiet
+      use Messages, only: not_implemented
 !
-      logical, intent(in) :: lwrite
-      real, intent(in) :: time
-      character(len=*), intent(in) :: label, suffix
-      real, intent(in) :: pos
-      integer, intent(in) :: grid_pos
       real, dimension(:,:), pointer :: data
+      character(len=*), intent(in) :: label, suffix
+      logical, intent(in) :: lwrite
+      integer, intent(in) :: grid_pos
+      real, intent(in) :: time, pos
 !
-      call hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
+      call not_implemented("output_slice")
+      call keep_compiler_quiet(data(1,1))
+      call keep_compiler_quiet(label, suffix)
+      call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(grid_pos)
+      call keep_compiler_quiet(time, pos)
 !
     endsubroutine output_slice
 !***********************************************************************
@@ -761,15 +765,19 @@ module Io
 !
 !  Read a slice file.
 !
-!  13-nov-20/ccyang: wrapper
+!  14-nov-20/ccyang: stub
 !
-      use HDF5_IO, only: hdf5_input_slice
+      use General, only: keep_compiler_quiet
+      use Messages, only: not_implemented
 !
+      real, dimension(:,:,:), intent(out):: data
       character(len=*), intent(in) :: file
       real, intent(out):: time, pos
-      real, dimension(:,:,:), intent(out):: data
 !
-      call hdf5_input_slice(file, time, pos, data)
+      call not_implemented("output_slice_position")
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(time, pos)
 !
     endsubroutine input_slice_real_arr
 !***********************************************************************
@@ -777,18 +785,22 @@ module Io
 !
 !  Read a slice file.
 !
-!  13-nov-20/ccyang: wrapper
+!  14-nov-20/ccyang: stub
 !
-      use General, only: scattered_array
-      use HDF5_IO, only: hdf5_input_slice
+      use General, only: keep_compiler_quiet, scattered_array
+      use Messages, only: not_implemented
 !
-      character(len=*), intent(in) :: file
-      real, intent(out):: pos
       type(scattered_array), pointer :: data   !intent(inout)
+      character(len=*), intent(in) :: file
       integer, intent(in) :: ivar
       integer, intent(out):: nt
+      real, intent(out):: pos
 !
-      call hdf5_input_slice(file, pos, data, ivar, nt)
+      call not_implemented("output_slice_position")
+      call keep_compiler_quiet(data%dim1)
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(ivar, nt)
+      call keep_compiler_quiet(pos)
 !
     endsubroutine input_slice_scat_arr
 !***********************************************************************
