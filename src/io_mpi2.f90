@@ -924,10 +924,8 @@ module Io
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
-      rd: do i = 1, mparray
-        call MPI_FILE_READ_ALL(handle, ap(:,i), nv, mpi_precision, status, mpi_err)
-        call check_success("input_part", "read particle data", fpath)
-      enddo rd
+      call MPI_FILE_READ_ALL(handle, ap(1:nv,1:mparray), nv * mparray, mpi_precision, status, mpi_err)
+      call check_success("input_part", "read particle data", fpath)
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
