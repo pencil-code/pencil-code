@@ -16,9 +16,11 @@ endif
 
 if ($0=='tar_run') then
   set add_cmd="tar --append"
+  set add_cmd_bin=$add_cmd
   tar cf $cwd.a
 else
   set add_cmd="cvs add"
+  set add_cmd_bin="$add_cmd -kb"
 endif
 
 foreach pdir ($dirlist)
@@ -29,32 +31,32 @@ foreach pdir ($dirlist)
   set CWD=$cwd
   set dir=$cwd:t
 #
-#  go one up add add our run directory to cvs
+#  go one up and add our run directory to cvs
 #
   cd ..
-  add_cmd $dir
+  $add_cmd $dir
   cd $dir
 #
 #  add directories and files to cvs
 #  also get a copy of their time stamps before checking in
 #
   ls -l *.in *.dat *.pro src/*.local > .log
-  add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log data
+  $add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log data
 #
   if (-e data) then
       cd data
-      add_cmd index.pro legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat pt_positions.dat tstalk.dat particles_stalker_header.dat
+      $add_cmd index.pro legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat pt_positions.dat tstalk.dat particles_stalker_header.dat
       if ( -e dim.dat ) then
-          add_cmd dim.dat
+          $add_cmd dim.dat
       endif
       if ( -e time_series.dat ) then
-          add_cmd time_series.dat
+          $add_cmd time_series.dat
       endif
       if ( -e time_series.h5 ) then
-          add_cmd -kb time_series.h5
+          $add_cmd_bin time_series.h5
       endif
       if ( -e grid.h5 ) then
-          cvs add -kb grid.h5
+          $add_cmd_bin grid.h5
       endif
   else
       echo "no data directory found"
@@ -64,7 +66,7 @@ foreach pdir ($dirlist)
 #
   \ls | egrep 'alpeta.sav' >/dev/null
   if ( ! $status ) then
-    add_cmd alpeta.sav
+    $add_cmd alpeta.sav
   endif
 #
 #  add power spectra, if they exist
@@ -72,7 +74,7 @@ foreach pdir ($dirlist)
 #
   \ls | egrep '*power.*\.dat' >/dev/null
   if ( ! $status ) then
-    add_cmd *power*.dat
+    $add_cmd *power*.dat
   endif
 #
 #  add structure functions, if they exist
@@ -80,28 +82,28 @@ foreach pdir ($dirlist)
 #
   \ls | egrep 'sf.*\.dat' >/dev/null
   if ( ! $status ) then
-    add_cmd sf*.dat
+    $add_cmd sf*.dat
   endif
 #
 #  add testfield_info.dat file if it exists
 #
   \ls | egrep 'testfield_info\.dat' >/dev/null
   if ( ! $status ) then
-    add_cmd testfield_info.dat
+    $add_cmd testfield_info.dat
   endif
 #
 #  add info about directory history
 #
   if (-e new_from.dir) then
-      add_cmd new_from.dir
+      $add_cmd new_from.dir
   endif
 #
   if (-e new_to.dir) then
-      add_cmd new_to.dir
+      $add_cmd new_to.dir
   endif
 #
   if (-e remeshed_from.dir) then
-      add_cmd remeshed_from.dir
+      $add_cmd remeshed_from.dir
   endif
 #
 #  check in everything
@@ -109,19 +111,24 @@ foreach pdir ($dirlist)
 #  which may only be a link.
 #
   cd $CWD
-  cvs ci -l -m "added new run: `uname -n -s`" . data
+  
+  if ($0=='cvsci_run') then
+    cvs ci -l -m "added new run: `uname -n -s`" . data
+  endif
 #
 #  add src stuff only if it is not a link
 #  Do this at the very end, in case this step fails.
 #
-  test -h src
-  if ( $status ) then
-    add_cmd src
-    cd src
-    add_cmd *.local .build-history
-    cd ..
-    cvs ci -m "added new run: `uname -n -s`" src
-  endif
+    test -h src
+    if ( $status ) then
+      $add_cmd src
+      cd src
+      $add_cmd *.local .build-history
+      cd ..
+      if ($0=='cvsci_run') then
+        cvs ci -m "added new run: `uname -n -s`" src
+      endif
+    endif
 
   cd ..
 end
