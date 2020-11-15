@@ -355,13 +355,10 @@ def dimensions(datadir='./data'):
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 #=======================================================================
-def grid(allprocs=False, datadir='./data', interface=False, par=None,
-         trim=True):
+def grid(datadir='./data', interface=False, par=None, trim=True):
     """Returns the coordinates and their derivatives of the grid.
 
     Keyword Arguments:
-        allprocs
-            If True, the grid is read under allprocs/.
         datadir
             Name of the data directory.
         interface
@@ -381,8 +378,10 @@ def grid(allprocs=False, datadir='./data', interface=False, par=None,
     from collections import namedtuple
     import numpy as np
 
-    # Get the dimensions.
+    # Get the dimensions and parameters.
     dim = dimensions(datadir=datadir)
+    if par is None: par = parameters(datadir=datadir)
+    allprocs = par.io_strategy = "MPI-IO"
 
     if allprocs:
         # Read grid from under allprocs/ and unpack.
@@ -473,7 +472,6 @@ def grid(allprocs=False, datadir='./data', interface=False, par=None,
                         (dx_1[:-1] + dx_1[1:]),
                     (x1,)))
                 if len(x) > 1 else x)
-        if par is None: par = parameters(datadir=datadir)
         x = f(x, dx_1, par.xyz0[0], par.xyz1[0])
         y = f(y, dy_1, par.xyz0[1], par.xyz1[1])
         z = f(z, dz_1, par.xyz0[2], par.xyz1[2])
