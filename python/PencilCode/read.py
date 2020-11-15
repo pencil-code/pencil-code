@@ -647,14 +647,18 @@ def proc_grid(datadir='./data', dim=None, proc=0):
         proc
             Process ID.
     """
-    # Chao-Chin Yang, 2015-04-20
+    # Author: Chao-Chin Yang
+    # Created: 2014-10-29
+    # Last Modified: 2015-04-20
     from collections import namedtuple
     import numpy as np
     from struct import unpack, calcsize
+
     # Check the dimensions and precision.
     if dim is None:
         dim = proc_dim(datadir=datadir, proc=proc)
     fmt, dtype, nb = _get_precision(dim)
+
     # Read grid.dat.
     f = open(datadir.strip() + '/proc' + str(proc) + '/grid.dat', 'rb')
     f.read(hsize)
@@ -677,11 +681,12 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     dz_tilde = np.frombuffer(f.read(nb*dim.mz), dtype=dtype)
     f.read(hsize)
     f.close()
+
     # Define and return a named tuple.
-    Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
-                               'dx_tilde', 'dy_tilde', 'dz_tilde'])
-    return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
+    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+                dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
+    return namedtuple("Grid", grid.keys())(**grid)
 #=======================================================================
 def proc_pvar(datadir='./data', pdim=None, proc=0, pvarfile='pvar.dat'):
     """Returns the particles in one snapshot held by one process.
