@@ -176,6 +176,7 @@ module Mpicomm
     module procedure mpiallreduce_sum_arr3
     module procedure mpiallreduce_sum_arr4
     module procedure mpiallreduce_sum_arr5
+    module procedure mpiallreduce_sum_arr_inplace
   endinterface
 !
   interface mpiallreduce_sum_int
@@ -199,6 +200,7 @@ module Mpicomm
 !
   interface mpiallreduce_or
     module procedure mpiallreduce_or_scl
+    module procedure mpiallreduce_or_arr_inplace
   endinterface
 !
   interface mpireduce_max
@@ -4278,6 +4280,21 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
     endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
+    subroutine mpiallreduce_sum_arr_inplace(fsum, n)
+!
+!  Calculate total sum for each array element and return to all
+!  processors in place.
+!
+!  14-nov-20/ccyang: coded
+!
+      real, dimension(:), intent(inout) :: fsum
+      integer, intent(in) :: n
+!
+      if (n <= 0) return
+      call MPI_ALLREDUCE(MPI_IN_PLACE, fsum, n, mpi_precision, MPI_SUM, MPI_COMM_GRID, mpierr)
+!
+    endsubroutine mpiallreduce_sum_arr_inplace
+!***********************************************************************
     subroutine mpiscan_int(num,offset,comm)
 !
 !  Calculate for each processor offset of local array within a global array.
@@ -4336,10 +4353,10 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !  Calculate total sum for each array element and return to all
 !  processors in place.
 !
-!  10-nov-20/ccyang: coded
+!  14-nov-20/ccyang: coded
 !
+      integer, dimension(:), intent(inout) :: fsum
       integer, intent(in) :: n
-      integer, dimension(n), intent(inout) :: fsum
 !
       if (n <= 0) return
       call MPI_ALLREDUCE(MPI_IN_PLACE, fsum, n, MPI_INTEGER, MPI_SUM, MPI_COMM_GRID, mpierr)
@@ -4466,6 +4483,24 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       endif
 !
     endsubroutine mpiallreduce_or_scl
+!***********************************************************************
+    subroutine mpiallreduce_or_arr_inplace(lor, n, comm)
+!
+!  Calculate logical or over all procs and return to all processors in
+!  place.
+!
+!  14-nov-20/ccyang: coded
+!
+      use General, only: ioptest
+!
+      logical, dimension(:), intent(inout) :: lor
+      integer, intent(in) :: n
+      integer, intent(in), optional :: comm
+!
+      if (n <= 0) return
+      call MPI_ALLREDUCE(MPI_IN_PLACE, lor, n, MPI_LOGICAL, MPI_LOR, ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpiallreduce_or_arr_inplace
 !***********************************************************************
     subroutine mpireduce_max_scl(fmax_tmp,fmax,comm)
 !
