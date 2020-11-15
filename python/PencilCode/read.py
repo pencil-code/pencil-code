@@ -919,11 +919,14 @@ def slices(field, datadir='./data'):
         datadir
             Name of the data directory.
     """
-    # Chao-Chin Yang, 2015-04-23
+    # Author: Chao-Chin Yang
+    # Created: 2015-04-21
+    # Last Modified: 2020-11-14
     from glob import glob
     import numpy as np
     import os
     from struct import unpack
+
     # Find the slice planes.
     datadir = datadir.strip()
     field = field.strip()
@@ -932,9 +935,11 @@ def slices(field, datadir='./data'):
         planes.append(os.path.basename(path).rsplit('.')[1])
     if len(planes) == 0:
         raise IOError("Found no slices. ")
+
     # Get the dimensions and check the data precision.
     dim = dimensions(datadir=datadir)
     fmt, dtype0, nb = _get_precision(dim)
+
     # Function to return the slice dimensions.
     def slice_dim(plane):
         if plane[0:2] == 'xy':
@@ -946,6 +951,7 @@ def slices(field, datadir='./data'):
         else:
             raise ValueError("Unknown plane type " + plane)
         return sdim
+
     # Get the time points.
     p = planes[0]
     nbs = nb * np.array(slice_dim(p)).prod()
@@ -961,11 +967,13 @@ def slices(field, datadir='./data'):
         nt += 1
     f.close()
     t = np.array(t, dtype=dtype0)
+
     # Construct structured data type.
     dtype = []
     for p in planes:
         dtype.append((p, dtype0, slice_dim(p)))
     s = np.rec.array(np.zeros(nt, dtype=dtype))
+
     # Read the slices
     for p in planes:
         basename = "slice_" + field + '.' + p
@@ -978,7 +986,8 @@ def slices(field, datadir='./data'):
         w = np.empty((nt,) + sdim, dtype=dtype0)
         for i in range(nt):
             f.read(hsize)
-            w[i,:,:] = np.frombuffer(f.read(nbs), dtype=dtype0).reshape(sdim, order='F')
+            w[i,:,:] = np.frombuffer(f.read(nbs),
+                                     dtype=dtype0).reshape(sdim, order='F')
             t1.append(unpack(fmt, f.read(nb))[0])
             a = f.read(nb)  # Discard slice position for the moment.
             if len(f.read(hsize)) != hsize:
@@ -989,6 +998,7 @@ def slices(field, datadir='./data'):
             raise RuntimeError("Inconsistent time points. ")
         f.close()
         s[p] = w
+
     return t, s
 #=======================================================================
 def time_series(datadir='./data', unique=False):
