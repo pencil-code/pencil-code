@@ -904,12 +904,13 @@ def pvar(allprocs=False, datadir='./data', ivar=None, pvarfile='pvar.dat',
         pvar[v.lstrip('i')] = fp[:,i]
     return namedtuple('PVar', pvar.keys())(**pvar)
 #=======================================================================
-def slices(field, datadir='./data'):
+def slices(field, datadir='./data', return_pos=False):
     """Reads the video slices.
 
     Returned Values:
         1. Array of time points.
         2. Record array of slice planes of field at each time.
+        3. (optional) slice positions of each plane
 
     Positional Argument:
         field
@@ -918,10 +919,12 @@ def slices(field, datadir='./data'):
     Keyword Argument:
         datadir
             Name of the data directory.
+        return_pos
+            Also return slice positions if True.
     """
     # Author: Chao-Chin Yang
     # Created: 2015-04-21
-    # Last Modified: 2020-11-14
+    # Last Modified: 2020-11-15
     from glob import glob
     import numpy as np
     import os
@@ -938,7 +941,7 @@ def slices(field, datadir='./data'):
 
     # Get the dimensions and check the data precision.
     dim = dimensions(datadir=datadir)
-    fmt, dtype0, nb = _get_precision(dim)
+    fmt, dtype, nb = _get_precision(dim)
 
     # Function to return the slice dimensions.
     def slice_dim(plane):
@@ -952,54 +955,42 @@ def slices(field, datadir='./data'):
             raise ValueError("Unknown plane type " + plane)
         return sdim
 
-    # Get the time points.
-    p = planes[0]
-    nbs = nb * np.array(slice_dim(p)).prod()
-    f = open(datadir + "/slice_" + field + '.' + p, 'rb')
-    nt = 0
-    t = []
-    while len(f.read(hsize)) > 0:
-        a = f.read(nbs)
-        t.append(unpack(fmt, f.read(nb))[0])
-        a = f.read(nb)
-        if len(f.read(hsize)) != hsize:
-            raise EOFError("Incompatible slice file. ")
-        nt += 1
-    f.close()
-    t = np.array(t, dtype=dtype0)
-
-    # Construct structured data type.
-    dtype = []
-    for p in planes:
-        dtype.append((p, dtype0, slice_dim(p)))
-    s = np.rec.array(np.zeros(nt, dtype=dtype))
-
-    # Read the slices
+    # Process each plane.
+    s, t, pos = [], None, []
     for p in planes:
         basename = "slice_" + field + '.' + p
         path = datadir + '/' + basename
         print("Reading " + path + "...")
+
+        # read slice data.
         f = open(path, 'rb')
-        t1 = []
+        s1, t1, pos1 = [], [], []
         sdim = slice_dim(p)
         nbs = nb * np.array(sdim).prod()
-        w = np.empty((nt,) + sdim, dtype=dtype0)
-        for i in range(nt):
-            f.read(hsize)
-            w[i,:,:] = np.frombuffer(f.read(nbs),
-                                     dtype=dtype0).reshape(sdim, order='F')
+        while True:
+            if len(f.read(hsize)) != hsize: break
+            s1.append(np.frombuffer(f.read(nbs),
+                    dtype=dtype).reshape(sdim, order='F'))
             t1.append(unpack(fmt, f.read(nb))[0])
-            a = f.read(nb)  # Discard slice position for the moment.
+            pos1.append(unpack(fmt, f.read(nb))[0])
             if len(f.read(hsize)) != hsize:
                 raise EOFError("Incompatible slice file. ")
-        if len(f.read(1)) == 1:
-            raise IOError("Incompatible slice file. ")
-        if np.any(np.array(t1, dtype=dtype0) != t):
-            raise RuntimeError("Inconsistent time points. ")
         f.close()
-        s[p] = w
 
-    return t, s
+        # Check time stamps.
+        if t is None:
+            t = np.array(t1, dtype=dtype)
+        elif np.any(np.array(t1, dtype=dtype) != t):
+            raise RuntimeError("Inconsistent time points. ")
+
+        # Record the slice data.
+        s.append(s1)
+        pos.append(pos1)
+
+    # Convert the data to numpy record arrays.
+    s = np.rec.fromarrays(s, names=planes)
+    pos = np.rec.fromarrays(pos, names=planes)
+    return (t, s, pos) if return_pos else (t, s)
 #=======================================================================
 def time_series(datadir='./data', unique=False):
     """Returns a NumPy recarray from the time series.
