@@ -292,6 +292,53 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
+    subroutine check_consistency(x, mask)
+!
+!  Check if a scalar value is consistent between active processes.
+!
+!  15-nov-20/ccyang: coded
+!
+!  Input Arguments
+!      xlocal
+!          Local value.
+!  Optional Input Arguments
+!      mask
+!          If present, processes to be included in the check.
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, intent(in) :: x
+      logical, dimension(ncpus), intent(in), optional :: mask
+!
+      real, dimension(ncpus) :: buf
+      real :: xmin, xmax
+!
+!  Collect the local values.
+!
+      buf = 0.0
+      buf(iproc+1) = x
+      call mpiallreduce_sum(buf, ncpus)
+!
+!  Find the range of the values.
+!
+      val: if (present(mask)) then
+        if (.not. any(mask)) return
+        xmin = minval(buf, mask=mask)
+        xmax = maxval(buf, mask=mask)
+      else val
+        xmin = minval(buf)
+        xmax = maxval(buf)
+      endif val
+!
+!  Determine if the local values are consistent.
+!
+      cons: if (xmin /= xmax) then
+        print *, "check_consistency: xmin, xmax = ", xmin, xmax
+        call fatal_error("check_consistency", "local values are not consistent")
+      endif cons
+!
+    endsubroutine check_consistency
+!***********************************************************************
     subroutine check_success(routine, message, file)
 !
 !  Check success of MPI2 file access and issue error if necessary.
@@ -315,6 +362,37 @@ module Io
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local(trim(routine) // "_snap", "could not " // trim(message))
 !
     endsubroutine check_success_local
+!***********************************************************************
+    subroutine get_dimensions(dir, nxyzgrid, nxyz, ipxyz)
+!
+!  Get n[xyz]grid, n[xyz], and ip[xyz] according to dir.
+!
+!  14-nov-20/ccyang: coded
+!
+      character, intent(in) :: dir
+      integer, intent(out) :: nxyzgrid, nxyz, ipxyz
+!
+      chdir: if (dir == 'x') then
+        nxyzgrid = nxgrid
+        nxyz = nx
+        ipxyz = ipx
+!
+      elseif (dir == 'y') then chdir
+        nxyzgrid = nygrid
+        nxyz = ny
+        ipxyz = ipy
+!
+      elseif (dir == 'z') then chdir
+        nxyzgrid = nzgrid
+        nxyz = nz
+        ipxyz = ipz
+!
+      else chdir
+        call fatal_error("get_dimensions", "unknown direction " // dir)
+!
+      endif chdir
+!
+    endsubroutine get_dimensions
 !***********************************************************************
     pure integer(KIND=MPI_OFFSET_KIND) function get_disp_to_par_real(npar_tot) result(disp)
 !
@@ -457,10 +535,10 @@ module Io
 !
 !  Append to a slice file.
 !
-!  14-nov-20/ccyang: stub
+!  15-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Messages, only: not_implemented
+      use Mpicomm, only: mpiallreduce_or
 !
       real, dimension(:,:), pointer :: data
       character(len=*), intent(in) :: label, suffix
@@ -468,12 +546,116 @@ module Io
       integer, intent(in) :: grid_pos
       real, intent(in) :: time, pos
 !
-      call not_implemented("output_slice")
-      call keep_compiler_quiet(data(1,1))
-      call keep_compiler_quiet(label, suffix)
-      call keep_compiler_quiet(lwrite)
+      integer, parameter :: nadd = 2  ! number of additional real data
+!
+      logical, dimension(ncpus) :: lwrite_proc
+      integer, dimension(2) :: sizes, subsizes, starts
+      character(len=fnlen) :: fpath
+      integer(KIND=MPI_OFFSET_KIND) :: dsize, fsize, offset
+      integer :: handle, dtype, k
+      real :: tprev
+!
       call keep_compiler_quiet(grid_pos)
-      call keep_compiler_quiet(time, pos)
+!
+!  Communicate the lwrite status.
+!
+      lwrite_proc = .false.
+      lwrite_proc(iproc+1) = lwrite
+      call mpiallreduce_or(lwrite_proc, ncpus)
+      if (.not. any(lwrite_proc)) return
+!
+!  Check the consistency of time and position.
+!
+      call check_consistency(time, mask=lwrite_proc)
+      call check_consistency(pos, mask=lwrite_proc)
+!
+!  Define the data structure.
+!
+      do k = 1, 2
+        call get_dimensions(suffix(k:k), sizes(k), subsizes(k), starts(k))
+      enddo
+      starts = starts * subsizes
+!
+      call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
+!
+      dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * realsize
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
+      dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * realsize
+!
+!  Open the slice file for write.
+!
+      fpath = trim(directory_snap) // "/slice_" // trim(label) // '.' // trim(suffix)
+      call MPI_FILE_OPEN(mpi_comm, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot open file '" // trim(fpath) // "'")
+!
+!  Check the file size.
+!
+      call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot get file size")
+!
+      ckfsize: if (mod(fsize, dsize) /= 0) then
+        if (lroot) print *, "output_slice: fsize, dsize = ", fsize, dsize
+        call fatal_error("output_slice", "The file size is not a multiple of the data size. ")
+      endif ckfsize
+!
+!  Back scan the existing slices.
+!
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set global view")
+!
+      dsize = dsize / realsize
+      offset = fsize / realsize
+      bscan: do while (offset > 0_MPI_OFFSET_KIND)
+        call MPI_FILE_READ_AT_ALL(handle, offset - int(nadd, KIND=MPI_OFFSET_KIND), tprev, 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot read time")
+        if (tprev < time) exit
+        offset = offset - dsize
+      enddo bscan
+!
+!  Truncate the slices with later times.
+!
+      offset = offset * realsize
+      trunc: if (fsize > offset) then
+        k = int((fsize - offset) / realsize)
+        fsize = offset
+        call MPI_FILE_SET_SIZE(handle, fsize, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set file size")
+        if (lroot) print *, "output_slice: truncated from ", trim(fpath), k, " slices with t >= ", time
+      endif trunc
+!
+!  Write the slice.
+!
+      call MPI_TYPE_COMMIT(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot commit data type")
+!
+      call MPI_FILE_SET_VIEW(handle, fsize, mpi_precision, dtype, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set local view")
+!
+      if (lwrite) then
+        call MPI_FILE_WRITE_ALL(handle, data, product(subsizes), mpi_precision, status, mpi_err)
+      else
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
+      endif
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot write data")
+!
+      call MPI_TYPE_FREE(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot free MPI data type")
+!
+!  Write time and slice position.
+!
+      if (lwrite) then
+        call MPI_FILE_WRITE_ALL(handle, (/ time, pos /), nadd, mpi_precision, status, mpi_err)
+      else
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
+      endif
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot write additional data")
+!
+!  Close the file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot close file '" // trim(fpath) // "'")
 !
     endsubroutine output_slice
 !***********************************************************************
