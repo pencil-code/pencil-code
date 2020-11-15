@@ -9,6 +9,56 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
+def allprocs_grid(datadir='./data', dim=None):
+    """Returns the grid under allprocs/.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        dim
+            Dimensions supplied by dimensions().  If None, they will be
+            read in at runtime.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2020-11-15
+    # Last Modified: 2020-11-15
+    from collections import namedtuple
+    import numpy as np
+    from struct import unpack, calcsize
+
+    # Check the dimensions and precision.
+    if dim is None: dim = dimensions(datadir=datadir)
+    fmt, dtype, nb = _get_precision(dim)
+
+    # Read grid.dat.
+    f = open(datadir.strip() + "/allprocs/grid.dat", "rb")
+    f.read(hsize)
+    t = unpack(fmt, f.read(nb))[0]
+    x = np.frombuffer(f.read(nb*dim.mxgrid), dtype=dtype)
+    y = np.frombuffer(f.read(nb*dim.mygrid), dtype=dtype)
+    z = np.frombuffer(f.read(nb*dim.mzgrid), dtype=dtype)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    Lx, Ly, Lz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    dx_1 = np.frombuffer(f.read(nb*dim.mxgrid), dtype=dtype)
+    dy_1 = np.frombuffer(f.read(nb*dim.mygrid), dtype=dtype)
+    dz_1 = np.frombuffer(f.read(nb*dim.mzgrid), dtype=dtype)
+    f.read(2*hsize)
+    dx_tilde = np.frombuffer(f.read(nb*dim.mxgrid), dtype=dtype)
+    dy_tilde = np.frombuffer(f.read(nb*dim.mygrid), dtype=dtype)
+    dz_tilde = np.frombuffer(f.read(nb*dim.mzgrid), dtype=dtype)
+    f.read(hsize)
+    f.close()
+
+    # Define and return a named tuple.
+    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+                dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
+                dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
+    return namedtuple("Grid", grid.keys())(**grid)
+#=======================================================================
 def allprocs_pvar(datadir='./data', pdim=None, pvarfile='pvar.dat'):
     """Returns the particles in one snapshot under allprocs/.
 
