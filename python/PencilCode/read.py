@@ -904,7 +904,7 @@ def pvar(allprocs=False, datadir='./data', ivar=None, pvarfile='pvar.dat',
         pvar[v.lstrip('i')] = fp[:,i]
     return namedtuple('PVar', pvar.keys())(**pvar)
 #=======================================================================
-def slices(field, datadir='./data', return_pos=False):
+def slices(field, datadir="./data", return_pos=False):
     """Reads the video slices.
 
     Returned Values:
@@ -930,11 +930,19 @@ def slices(field, datadir='./data', return_pos=False):
     import os
     from struct import unpack
 
+    # Determine where the slice files should be searched.
+    par = parameters(datadir=datadir, warning=False)
+    allprocs = par.io_strategy == "MPI-IO"
+    if allprocs:
+        prefix = datadir + "/allprocs/slice_" + field
+    else:
+        prefix = datadir + "/slice_" + field
+
     # Find the slice planes.
     datadir = datadir.strip()
     field = field.strip()
     planes = []
-    for path in glob(datadir + "/slice_" + field + ".*"):
+    for path in glob(prefix + ".*"):
         planes.append(os.path.basename(path).rsplit('.')[1])
     if len(planes) == 0:
         raise IOError("Found no slices. ")
@@ -955,26 +963,31 @@ def slices(field, datadir='./data', return_pos=False):
             raise ValueError("Unknown plane type " + plane)
         return sdim
 
+    # Define function to read file and check size.
+    def readf(f, size):
+        d = f.read(size)
+        if len(d) != size:
+            raise EOFError("Incompatible slice file. ")
+        return d
+
     # Process each plane.
     s, t, pos = [], None, []
     for p in planes:
-        basename = "slice_" + field + '.' + p
-        path = datadir + '/' + basename
-        print("Reading " + path + "...")
+        path = prefix + '.' + p
+        print("Reading " + path + "......")
 
         # read slice data.
         f = open(path, 'rb')
         s1, t1, pos1 = [], [], []
         sdim = slice_dim(p)
         nbs = nb * np.array(sdim).prod()
-        while True:
-            if len(f.read(hsize)) != hsize: break
-            s1.append(np.frombuffer(f.read(nbs),
+        while len(f.peek(1)) > 0:
+            if not allprocs: readf(f, hsize)
+            s1.append(np.frombuffer(readf(f, nbs),
                     dtype=dtype).reshape(sdim, order='F'))
-            t1.append(unpack(fmt, f.read(nb))[0])
-            pos1.append(unpack(fmt, f.read(nb))[0])
-            if len(f.read(hsize)) != hsize:
-                raise EOFError("Incompatible slice file. ")
+            t1.append(unpack(fmt, readf(f, nb))[0])
+            pos1.append(unpack(fmt, readf(f, nb))[0])
+            if not allprocs: readf(f, hsize)
         f.close()
 
         # Check time stamps.
