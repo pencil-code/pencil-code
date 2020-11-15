@@ -909,8 +909,8 @@ def slices(field, datadir="./data", return_pos=False):
 
     Returned Values:
         1. Array of time points.
-        2. Record array of slice planes of field at each time.
-        3. (optional) slice positions of each plane
+        2. Slice planes of field at each time.
+        3. (optional) Slice positions of each plane at each time.
 
     Positional Argument:
         field
@@ -925,6 +925,7 @@ def slices(field, datadir="./data", return_pos=False):
     # Author: Chao-Chin Yang
     # Created: 2015-04-21
     # Last Modified: 2020-11-15
+    from collections import namedtuple
     from glob import glob
     import numpy as np
     import os
@@ -1000,9 +1001,9 @@ def slices(field, datadir="./data", return_pos=False):
         s.append(s1)
         pos.append(pos1)
 
-    # Convert the data to numpy record arrays.
-    s = np.rec.fromarrays(s, names=planes)
-    pos = np.rec.fromarrays(pos, names=planes)
+    # Convert the data to named tuples.
+    s = namedtuple("Slice", planes)(*s)
+    pos = namedtuple("SlicePosition", planes)(*pos)
     return (t, s, pos) if return_pos else (t, s)
 #=======================================================================
 def time_series(datadir='./data', unique=False):
