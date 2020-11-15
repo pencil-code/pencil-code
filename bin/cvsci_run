@@ -8,13 +8,13 @@
 #  if this procedure is called with an argument,
 #  then first go into this directory and continue from there
 #
-if ($#argv >= 1) then
+if ( $#argv >= 1 ) then
   set dirlist=($argv)
 else
   set dirlist=$cwd
 endif
 
-if ($0=='tar_run') then
+if ( $0:t == 'tar_run' ) then
   set add_cmd="tar --append"
   set add_cmd_bin=$add_cmd
   tar cf $cwd.a
@@ -112,7 +112,7 @@ foreach pdir ($dirlist)
 #
   cd $CWD
   
-  if ($0=='cvsci_run') then
+  if ( $0:t == 'cvsci_run' ) then
     cvs ci -l -m "added new run: `uname -n -s`" . data
   endif
 #
@@ -125,7 +125,7 @@ foreach pdir ($dirlist)
       cd src
       $add_cmd *.local .build-history
       cd ..
-      if ($0=='cvsci_run') then
+      if ( $0:t == 'cvsci_run' ) then
         cvs ci -m "added new run: `uname -n -s`" src
       endif
     endif
