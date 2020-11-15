@@ -355,10 +355,13 @@ def dimensions(datadir='./data'):
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 #=======================================================================
-def grid(datadir='./data', interface=False, par=None, trim=True):
+def grid(allprocs=False, datadir='./data', interface=False, par=None,
+         trim=True):
     """Returns the coordinates and their derivatives of the grid.
 
     Keyword Arguments:
+        allprocs
+            If True, the grid is read under allprocs/.
         datadir
             Name of the data directory.
         interface
@@ -374,68 +377,80 @@ def grid(datadir='./data', interface=False, par=None, trim=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-11-02
-    # Last Modified: 2017-07-03
+    # Last Modified: 2020-11-15
     from collections import namedtuple
     import numpy as np
 
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
 
-    # Allocate arrays.
-    x = np.zeros(dim.mxgrid,)
-    y = np.zeros(dim.mygrid,)
-    z = np.zeros(dim.mzgrid,)
-    dx, dy, dz, Lx, Ly, Lz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-    dx_1 = np.zeros(dim.mxgrid,)
-    dy_1 = np.zeros(dim.mygrid,)
-    dz_1 = np.zeros(dim.mzgrid,)
-    dx_tilde = np.zeros(dim.mxgrid,)
-    dy_tilde = np.zeros(dim.mygrid,)
-    dz_tilde = np.zeros(dim.mzgrid,)
+    if allprocs:
+        # Read grid from under allprocs/ and unpack.
+        grid = allprocs_grid(datadir=datadir, dim=dim)
+        x, y, z = grid.x, grid.y, grid.z
+        dx, dy, dz = grid.dx, grid.dy, grid.dz
+        Lx, Ly, Lz = grid.Lx, grid.Ly, grid.Lz
+        dx_1, dy_1, dz_1 = grid.dx_1, grid.dy_1, grid.dz_1
+        dx_tilde = grid.dx_tilde
+        dy_tilde = grid.dy_tilde
+        dz_tilde = grid.dz_tilde
 
-    # Define functions for assigning local coordinates to global.
-    def assign(l1, l2, xg, xl, label, proc):
-        indices = xg[l1:l2] != 0.0
-        if any(xg[l1:l2][indices] != xl[indices]):
-            print("Warning: inconsistent ", label, " for process", proc)
-        xg[l1:l2][~indices] = xl[~indices]
-        return xg
-    def assign1(old, new, label, proc):
-        if old != 0.0 and old != new:
-            print("Warning: inconsistent ", label, " for process", proc)
-        return new
+    else:
+        # Allocate arrays.
+        x = np.zeros(dim.mxgrid,)
+        y = np.zeros(dim.mygrid,)
+        z = np.zeros(dim.mzgrid,)
+        dx, dy, dz, Lx, Ly, Lz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        dx_1 = np.zeros(dim.mxgrid,)
+        dy_1 = np.zeros(dim.mygrid,)
+        dz_1 = np.zeros(dim.mzgrid,)
+        dx_tilde = np.zeros(dim.mxgrid,)
+        dy_tilde = np.zeros(dim.mygrid,)
+        dz_tilde = np.zeros(dim.mzgrid,)
 
-    # Read the grid from each process and construct the whole grid.
-    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
-        dim1 = proc_dim(datadir=datadir, proc=proc)
-        grid = proc_grid(datadir=datadir, dim=dim1, proc=proc)
+        # Define functions for assigning local coordinates to global.
+        def assign(l1, l2, xg, xl, label, proc):
+            indices = xg[l1:l2] != 0.0
+            if any(xg[l1:l2][indices] != xl[indices]):
+                print("Warning: inconsistent ", label, " for process", proc)
+            xg[l1:l2][~indices] = xl[~indices]
+            return xg
+        def assign1(old, new, label, proc):
+            if old != 0.0 and old != new:
+                print("Warning: inconsistent ", label, " for process", proc)
+            return new
 
-        # x direction
-        l1 = dim1.iprocx * dim1.nx
-        l2 = l1 + dim1.mx
-        x = assign(l1, l2, x, grid.x, 'x', proc)
-        dx = assign1(dx, grid.dx, 'dx', proc)
-        Lx = assign1(Lx, grid.Lx, 'Lx', proc)
-        dx_1 = assign(l1, l2, dx_1, grid.dx_1, 'dx_1', proc)
-        dx_tilde = assign(l1, l2, dx_tilde, grid.dx_tilde, 'dx_tilde', proc)
+        # Read the grid from each process and construct the whole grid.
+        for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+            dim1 = proc_dim(datadir=datadir, proc=proc)
+            grid = proc_grid(datadir=datadir, dim=dim1, proc=proc)
 
-        # y direction
-        m1 = dim1.iprocy * dim1.ny
-        m2 = m1 + dim1.my
-        y = assign(m1, m2, y, grid.y, 'y', proc)
-        dy = assign1(dy, grid.dy, 'dy', proc)
-        Ly = assign1(Ly, grid.Ly, 'Ly', proc)
-        dy_1 = assign(m1, m2, dy_1, grid.dy_1, 'dy_1', proc)
-        dy_tilde = assign(m1, m2, dy_tilde, grid.dy_tilde, 'dy_tilde', proc)
+            # x direction
+            l1 = dim1.iprocx * dim1.nx
+            l2 = l1 + dim1.mx
+            x = assign(l1, l2, x, grid.x, 'x', proc)
+            dx = assign1(dx, grid.dx, 'dx', proc)
+            Lx = assign1(Lx, grid.Lx, 'Lx', proc)
+            dx_1 = assign(l1, l2, dx_1, grid.dx_1, 'dx_1', proc)
+            dx_tilde = assign(l1, l2, dx_tilde, grid.dx_tilde, 'dx_tilde', proc)
 
-        # z direction
-        n1 = dim1.iprocz * dim1.nz
-        n2 = n1 + dim1.mz
-        z = assign(n1, n2, z, grid.z, 'z', proc)
-        dz = assign1(dz, grid.dz, 'dz', proc)
-        Lz = assign1(Lz, grid.Lz, 'Lz', proc)
-        dz_1 = assign(n1, n2, dz_1, grid.dz_1, 'dz_1', proc)
-        dz_tilde = assign(n1, n2, dz_tilde, grid.dz_tilde, 'dz_tilde', proc)
+            # y direction
+            m1 = dim1.iprocy * dim1.ny
+            m2 = m1 + dim1.my
+            y = assign(m1, m2, y, grid.y, 'y', proc)
+            dy = assign1(dy, grid.dy, 'dy', proc)
+            Ly = assign1(Ly, grid.Ly, 'Ly', proc)
+            dy_1 = assign(m1, m2, dy_1, grid.dy_1, 'dy_1', proc)
+            dy_tilde = assign(m1, m2, dy_tilde, grid.dy_tilde, 'dy_tilde', proc)
+
+            # z direction
+            n1 = dim1.iprocz * dim1.nz
+            n2 = n1 + dim1.mz
+            z = assign(n1, n2, z, grid.z, 'z', proc)
+            dz = assign1(dz, grid.dz, 'dz', proc)
+            Lz = assign1(Lz, grid.Lz, 'Lz', proc)
+            dz_1 = assign(n1, n2, dz_1, grid.dz_1, 'dz_1', proc)
+            dz_tilde = assign(n1, n2, dz_tilde, grid.dz_tilde, 'dz_tilde', proc)
 
     # Trim the ghost cells if requested.
     if interface or trim:
@@ -458,19 +473,16 @@ def grid(datadir='./data', interface=False, par=None, trim=True):
                         (dx_1[:-1] + dx_1[1:]),
                     (x1,)))
                 if len(x) > 1 else x)
-        if par is None:
-            par = parameters(datadir=datadir)
+        if par is None: par = parameters(datadir=datadir)
         x = f(x, dx_1, par.xyz0[0], par.xyz1[0])
         y = f(y, dy_1, par.xyz0[1], par.xyz1[1])
         z = f(z, dz_1, par.xyz0[2], par.xyz1[2])
 
     # Define and return a named tuple.
-    Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz',
-                               'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
-                               'dx_tilde', 'dy_tilde', 'dz_tilde'])
-    return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz,
-                Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
+    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+                dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
+    return namedtuple("Grid", grid.keys())(**grid)
 #=======================================================================
 def parameters(datadir='./data', par2=False, warning=True):
     """Returns runtime parameters.
