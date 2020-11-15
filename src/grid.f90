@@ -1374,15 +1374,14 @@ module Grid
 !
 !  Print the value for which output is being produced.
 !  (Have so far only bothered about single processor output.)
+!  This is now done on all the processors.
 !
-      if (lroot) then
-        lpoint=min(max(l1,lpoint),l2)
-        mpoint=min(max(m1,mpoint),m2)
-        npoint=min(max(n1,npoint),n2)
-        lpoint2=min(max(l1,lpoint2),l2)
-        mpoint2=min(max(m1,mpoint2),m2)
-        npoint2=min(max(n1,npoint2),n2)
-      endif
+      lpoint=min(max(l1,lpoint),l2)
+      mpoint=min(max(m1,mpoint),m2)
+      npoint=min(max(n1,npoint),n2)
+      lpoint2=min(max(l1,lpoint2),l2)
+      mpoint2=min(max(m1,mpoint2),m2)
+      npoint2=min(max(n1,npoint2),n2)
 !
 !  Clean up profile files.
 !

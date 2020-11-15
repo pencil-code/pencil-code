@@ -138,6 +138,10 @@ module Special
   integer :: idiag_hhXpt=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_STrep2=0      ! DIAG_DOC: $Re S_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_STimp2=0      ! DIAG_DOC: $Im S_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_hTrep2=0      ! DIAG_DOC: $Re h_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_hTimp2=0      ! DIAG_DOC: $Im h_{T}(k_2,k_2,k_2,t)$
   integer :: idiag_hhTp2=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_hhXp2=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTp2=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
@@ -527,7 +531,7 @@ module Special
                                                 )*nwgrid*sign_switch,idiag_hhTXm)
          endif
 !
-         if (lroot.and.m==mpoint.and.n==npoint) then
+         if (lproc_pt.and.m==mpoint.and.n==npoint) then
            if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
            if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
            if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
@@ -548,7 +552,11 @@ module Special
            endif
          endif
 !
-         if (lroot.and.m==mpoint2.and.n==npoint2) then
+         if (lproc_p2.and.m==mpoint2.and.n==npoint2) then
+           if (idiag_STrep2/=0) call save_name(f(lpoint2,m,n,iStressT  ),idiag_STrep2)
+           if (idiag_STimp2/=0) call save_name(f(lpoint2,m,n,iStressTim),idiag_STimp2)
+           if (idiag_hTrep2/=0) call save_name(f(lpoint2,m,n,ihhT  ),idiag_hTrep2)
+           if (idiag_hTimp2/=0) call save_name(f(lpoint2,m,n,ihhTim),idiag_hTimp2)
            if (lhhTX_as_aux) then
              if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
              if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
@@ -1241,6 +1249,8 @@ module Special
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_STrep2=0; idiag_STimp2=0; 
+        idiag_hTrep2=0; idiag_hTimp2=0; 
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
@@ -1259,6 +1269,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g12pt',idiag_g12pt)
         call parse_name(iname,cname(iname),cform(iname),'g23pt',idiag_g23pt)
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
+        call parse_name(iname,cname(iname),cform(iname),'STrep2',idiag_STrep2)
+        call parse_name(iname,cname(iname),cform(iname),'STimp2',idiag_STimp2)
+        call parse_name(iname,cname(iname),cform(iname),'hTrep2',idiag_hTrep2)
+        call parse_name(iname,cname(iname),cform(iname),'hTimp2',idiag_hTimp2)
         if (lhhTX_as_aux) then
           call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
           call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)

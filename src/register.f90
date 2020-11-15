@@ -1261,24 +1261,42 @@ module Register
 !  the root processor.
 !
       integer, parameter :: unit = 3
+      integer :: ikx, iky, ikz
 !
-      root: if (lroot) then
+      ikx=lpoint-nghost
+      iky=mpoint-nghost
+      ikz=npoint-nghost
+      pt: if (iproc==iproc_pt) then
+        lproc_pt=.true.
         open(unit, file=trim(datadir)//'/pt_positions.dat', status='replace')
-        10 format (3g13.5,2x,3i6)
-        11 format (a)
         write(unit,11)'Positions where pt and p2 variables are written:'
         write(unit,11)''
         write(unit,11)'x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint='
         write(unit,10) x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint
         write(unit,11)''
+        write(unit,11)'kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)='
+        write(unit,10) kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)
+        close(unit)
+      endif pt
+!
+      ikx=lpoint2-nghost
+      iky=mpoint2-nghost
+      ikz=npoint2-nghost
+      p2: if (iproc==iproc_p2) then
+        lproc_p2=.true.
+        open(unit, file=trim(datadir)//'/p2_positions.dat', status='replace')
+        write(unit,11)'Positions where p2 variables are written:'
+        write(unit,11)''
         write(unit,11)'x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2='
         write(unit,10) x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2
         write(unit,11)''
-        write(unit,11)'x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)='
-        write(unit,10) x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)
+        write(unit,11)'kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)='
+        write(unit,10) kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)
         close(unit)
-      endif root
+      endif p2
 !
+      10 format (3g13.5,2x,3i6)
+      11 format (a)
     endsubroutine write_pt_positions
 !***********************************************************************
 endmodule Register

@@ -726,6 +726,9 @@ module Diagnostics
               itype = mod(itype,ilabel_complex)
               isum_count=isum_count+1
 !
+              if (itype==ilabel_save)            &
+                  vname(iname)=fsum(isum_count)
+!
               if (itype==ilabel_sum)            &
                   vname(iname)=fsum(isum_count)*dVol_rel1
 !
@@ -760,7 +763,7 @@ module Diagnostics
                  vol=1.
                  if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
                  if (nzgrid/=1)           vol=vol*Lz
-                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
+                 if (lsphere_in_a_box)    vol=four_pi_over_three*(r_ext**3-r_int**3)
                  vname(iname)=fsum(isum_count)/vol
               endif
 !

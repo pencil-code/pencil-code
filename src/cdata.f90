@@ -265,6 +265,7 @@ module Cdata
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lmodify=.false.
   logical :: lroot=.true.,lcaproot=.false.,ldebug=.false.,lfft=.true.
+  logical :: lproc_pt=.false., lproc_p2=.false.
   logical :: lfirst_proc_x=.true.,lfirst_proc_y=.true.,lfirst_proc_z=.true.
   logical :: lfirst_proc_xy=.true.,lfirst_proc_yz=.true.,lfirst_proc_xz=.true.
   logical :: lfirst_proc_xyz=.true.
@@ -486,6 +487,7 @@ module Cdata
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
   integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4
+  integer :: iproc_pt=0, iproc_p2=0
 !
 !  Diagnostic variables (needs to be consistent with reset list in register.90).
 !

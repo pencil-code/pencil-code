@@ -163,6 +163,7 @@ module Param_IO
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
+      iproc_pt, iproc_p2, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
