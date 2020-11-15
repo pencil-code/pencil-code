@@ -1063,8 +1063,8 @@ def slices(field, datadir="./data", return_pos=False):
             raise RuntimeError("Inconsistent time points. ")
 
         # Record the slice data.
-        s.append(s1)
-        pos.append(pos1)
+        s.append(np.array(s1))
+        pos.append(np.array(pos1))
 
     # Convert the data to named tuples.
     s = namedtuple("Slice", planes)(*s)
