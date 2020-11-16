@@ -584,7 +584,11 @@ module Special
           nu=pmdot*one_over_three_pi/psigma
           call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
         endif
-        if (idiag_tmyr/=0)     call save_name(tdiagnos/myr,idiag_tmyr)
+!
+!  save tdiagnos/myr, but do it only on root processor.
+!
+        if (lroot.and.idiag_tmyr/=1) call save_name(tdiagnos/myr,idiag_tmyr)
+!
         if (idiag_sigmam/=0)   call sum_mn_name(psigma,idiag_sigmam)
         if (idiag_sigmamax/=0) call max_mn_name(psigma,idiag_sigmamax)
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
