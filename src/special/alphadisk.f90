@@ -733,7 +733,7 @@ module Special
 !
       endselect
 !
-      if (ldiagnos.and.(idiag_tmyr/=0)) call save_name(tdiagnos/myr,idiag_tmyr)
+      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
