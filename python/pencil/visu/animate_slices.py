@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+
+import os 
+from .. import read
+import numpy as np
+import pylab as plt
+from .. io import npfile
+
 def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='native',
                 tmin=0.,tmax=1.e38,wait=0.,amin=0.,amax=1.,transform='',oldfile=False):
     """
@@ -25,9 +33,11 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
         filename = datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 
     # global dim
-    param = read_param(datadir)
+    #param = read_param(datadir)
+    param = read.param(datadir)
 
-    dim = read_dim(datadir,proc) 
+    #dim = read_dim(datadir,proc) 
+    dim = read.dim(datadir,proc) 
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -43,19 +53,19 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
     if (extension == 'yz'):
         hsize = dim.ny
         vsize = dim.nz
-    plane = N.zeros((vsize,hsize),dtype=precision)
+    plane = np.zeros((vsize,hsize),dtype=precision)
 
     infile = npfile(filename,endian=format)
 
-    ax = P.axes()
+    ax = plt.axes()
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_ylim
 
-    image = P.imshow(plane,vmin=amin,vmax=amax)
+    image = plt.imshow(plane,vmin=amin,vmax=amax)
 
     # for real-time image display
-    manager = P.get_current_fig_manager()
+    manager = plt.get_current_fig_manager()
     manager.show()
 
     ifirst = True
