@@ -1347,6 +1347,10 @@ endif
 !  Beltrami-x flow
 !
       case ('Beltrami-x')
+!        call legendre_pl(xi,3,.1)
+!print*,'call legendre_pl(xi,3,.1)',xi
+!        call legendre_pl(xi,3,cos(.1))
+!print*,'call legendre_pl(xi,3,cos(.1))',xi
         if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
