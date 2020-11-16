@@ -26,10 +26,11 @@ module Io
   use Cparam, only: fnlen, max_int
   use Messages, only: fatal_error, fatal_error_local, svn_id, warning
   use Mpicomm, only: mpi_precision
-  use mpi
+!  use MPI
 !
   implicit none
 !
+  include "mpif.h"
   include 'io.h'
   include 'record_types.h'
 !
