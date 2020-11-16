@@ -874,7 +874,7 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
     return namedtuple('Var', var.keys())(**var)
 #=======================================================================
-def pvar(allprocs=False, datadir='./data', ivar=None, pvarfile='pvar.dat',
+def pvar(allprocs=True, datadir='./data', ivar=None, pvarfile='pvar.dat',
          verbose=True):
     """Returns particles in one snapshot.
 
@@ -1114,7 +1114,7 @@ def time_series(datadir='./data', unique=False):
 
     return ts
 #=======================================================================
-def var(allprocs=False, compact=True, datadir='./data', ivar=None, par=None,
+def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
         trim=True, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
