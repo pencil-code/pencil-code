@@ -535,8 +535,7 @@ module Special
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name, save_name, &
-          yzsum_mn_name_x 
+      use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x 
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -584,11 +583,6 @@ module Special
           nu=pmdot*one_over_three_pi/psigma
           call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
         endif
-!
-!  save tdiagnos/myr, but do it only on root processor.
-!
-        if (lroot.and.idiag_tmyr/=1) call save_name(tdiagnos/myr,idiag_tmyr)
-!
         if (idiag_sigmam/=0)   call sum_mn_name(psigma,idiag_sigmam)
         if (idiag_sigmamax/=0) call max_mn_name(psigma,idiag_sigmamax)
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
@@ -708,6 +702,8 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
+      use Diagnostics, only: save_name
+!
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -736,6 +732,8 @@ module Special
         enddo; enddo
 !
       endselect
+!
+      if (ldiagnos.and.(idiag_tmyr/=0)) call save_name(tdiagnos/myr,idiag_tmyr)
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
