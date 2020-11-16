@@ -322,24 +322,30 @@ def avg2d(datadir='./data', direction='z'):
     # Return the time and the averages.
     return t, avg
 #=======================================================================
-def dimensions(datadir='./data'):
+def dimensions(datadir="./data"):
     """Returns the dimensions of the Pencil Code data from datadir.
 
     Keyword Arguments:
         datadir
-            Name of the data directory
+            Name of the data directory.
     """
-    # Chao-Chin Yang, 2013-10-23
+    # Author: Chao-Chin Yang
+    # Created: 2013-10-23
+    # Last Modified: 2020-11-15
     from collections import namedtuple
+
     # Read dim.dat.
-    f = open(datadir.strip() + '/dim.dat')
+    f = open(datadir.strip() + "/dim.dat")
     a = f.read().rsplit()
     f.close()
+
     # Sanity check
     if a[6] == '?':
-        print('Warning: unknown data precision. ')
+        print("Warning: unknown data precision. ")
     if not a[7] == a[8] == a[9]:
-        raise Exception('unequal number of ghost zones in different directions. ')
+        raise Exception(
+                "unequal number of ghost zones in different directions. ")
+
     # Extract the dimensions.
     mxgrid, mygrid, mzgrid, mvar, maux, mglobal = (int(b) for b in a[0:6])
     double_precision = a[6] == 'D'
@@ -347,13 +353,15 @@ def dimensions(datadir='./data'):
     nxgrid, nygrid, nzgrid = (int(b) - 2 * nghost for b in a[0:3])
     nprocx, nprocy, nprocz = (int(b) for b in a[10:13])
     procz_last = int(a[13]) == 1
+
     # Define and return a named tuple.
-    Dimensions = namedtuple('Dimensions', ['nxgrid', 'nygrid', 'nzgrid', 'nghost', 'mxgrid', 'mygrid', 'mzgrid',
-                                           'mvar', 'maux', 'mglobal', 'double_precision',
-                                           'nprocx', 'nprocy', 'nprocz', 'procz_last'])
-    return Dimensions(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost, mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,
-                      mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
-                      nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
+    dim = dict(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost,
+               mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,
+               mvar=mvar, maux=maux, mglobal=mglobal,
+               double_precision=double_precision,
+               nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,
+               procz_last=procz_last)
+    return namedtuple("Dimensions", dim.keys())(**dim)
 #=======================================================================
 def grid(datadir='./data', interface=False, par=None, trim=True):
     """Returns the coordinates and their derivatives of the grid.
