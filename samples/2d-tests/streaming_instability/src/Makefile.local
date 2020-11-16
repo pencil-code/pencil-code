@@ -4,6 +4,7 @@
 ###
 
 MPICOMM =   mpicomm
+IO      =   io_mpi2
 
 HYDRO   =   hydro
 DENSITY =   density

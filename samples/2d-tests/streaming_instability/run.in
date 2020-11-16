@@ -4,7 +4,7 @@
 !
 &run_pars
     nt = 1000, it1 = 100
-    tmax = 0.01, dsnap = 0.02
+    tmax = 0.01, dsnap = 0.02, dvid = 0.001
 /
 &eos_run_pars
 /
