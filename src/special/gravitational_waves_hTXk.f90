@@ -128,6 +128,10 @@ module Special
   integer :: idiag_STimpt=0      ! DIAG_DOC: $Im S_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_hTrept=0      ! DIAG_DOC: $Re h_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_hTimpt=0      ! DIAG_DOC: $Im h_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_SXrept=0      ! DIAG_DOC: $Re S_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_SXimpt=0      ! DIAG_DOC: $Im S_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_hXrept=0      ! DIAG_DOC: $Re h_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_hXimpt=0      ! DIAG_DOC: $Im h_{X}(k_1,k_1,k_1,t)$
   integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
   integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
@@ -536,6 +540,10 @@ module Special
            if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
            if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
            if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
+           if (idiag_SXrept/=0) call save_name(f(lpoint,m,n,iStressX  ),idiag_SXrept)
+           if (idiag_SXimpt/=0) call save_name(f(lpoint,m,n,iStressXim),idiag_SXimpt)
+           if (idiag_hXrept/=0) call save_name(f(lpoint,m,n,ihhX  ),idiag_hXrept)
+           if (idiag_hXimpt/=0) call save_name(f(lpoint,m,n,ihhXim),idiag_hXimpt)
            if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
            if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
@@ -1246,6 +1254,8 @@ module Special
       if (lreset) then
         idiag_STrept=0; idiag_STimpt=0; 
         idiag_hTrept=0; idiag_hTimpt=0; 
+        idiag_SXrept=0; idiag_SXimpt=0;
+        idiag_hXrept=0; idiag_hXimpt=0;
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
@@ -1263,6 +1273,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'STimpt',idiag_STimpt)
         call parse_name(iname,cname(iname),cform(iname),'hTrept',idiag_hTrept)
         call parse_name(iname,cname(iname),cform(iname),'hTimpt',idiag_hTimpt)
+        call parse_name(iname,cname(iname),cform(iname),'SXrept',idiag_SXrept)
+        call parse_name(iname,cname(iname),cform(iname),'SXimpt',idiag_SXimpt)
+        call parse_name(iname,cname(iname),cform(iname),'hXrept',idiag_hXrept)
+        call parse_name(iname,cname(iname),cform(iname),'hXimpt',idiag_hXimpt)
         call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
         call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)
