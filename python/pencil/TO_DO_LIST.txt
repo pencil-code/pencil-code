@@ -9,7 +9,7 @@
 9. Derivatives on non-equidistant grids. (JA)
 10. Tutorials: wait until pencilnew is set up, then update tutorials and decide who is doing stuff.
     Have examples that are specific to simulations.
-11. Examples in all doc strings.
+11. Examples in all doc strings. Epydoc usage?
 
 
 Implement the following IDL routines:
@@ -38,6 +38,12 @@ Make more efficient:
 Do better visualizations:
 * interactive visualization
 * plot routines via typical style files (paper style, ApJ style, Simon style, ...)
+
+Check functions:
+*Remove temporarely the ones that are not working, maybe to a developers folder.
+*Every file should works independently, even if the environment is not loaded.
+*Check duplicate functions names: for instance, I think having "io/npfile.py" locally, whereas you als have scipy.io.npfile is not a good idea.
+
 
 ############### DONE #############
 Use simulation objects to:
