@@ -1,0 +1,20 @@
+Please, add topics you would like to discuss on the Nov 2020 pencil/python developers meeting.
+
+The following points are all about the new pencil3 version of the python commands.
+
+-Standard rules for Python coding:
+	*Proposal:
+		-Follow PEP 8 Style guide for python, which means, in this case, to import all neccesary modules in a given file.py before any funcion or classs definition
+		-Add the environment at the beggining: 
+		#!/usr/bin/env python3
+		-Add authors with name, email and date in the header
+		-Add modification with name, email and date in the header
+		-Standarize function description
+-Remove temporarely functions still not working and wait till they are full-proof before adding them, 
+maybe by creating a developers branch.
+-Check that every file works independently if you load the full pencil module or not.
+-Check duplicate function names: for instance, I think having "io/npfile.py" locally, whereas you als have scipy.io.npfile is not a good idea.
+-Check the manuals and wiki and update obsolete functions to the new version of the code.
+-Adding new functions available in IDL
+-More documentation in the wiki
+-Jupyter and plain text tutorials
