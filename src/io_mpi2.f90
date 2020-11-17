@@ -173,8 +173,8 @@ module Io
 !
 !  Remeber the sizes of some MPI elementary types.
 !
-      call MPI_TYPE_SIZE_X(MPI_INT, intsize, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI_INT size")
+      call MPI_TYPE_SIZE_X(MPI_INTEGER, intsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI_INTEGER size")
 !
       call MPI_TYPE_SIZE_X(mpi_precision, realsize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI real size")
@@ -700,23 +700,23 @@ module Io
 !  Write total number of particles.
 !
       wnpar: if (lroot) then
-        call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INT, status, mpi_err)
+        call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
         call check_success_local("output_part", "write number of particles")
       endif wnpar
 !
 !  Write particle IDs.
 !
       ip0 = sum(npar_proc(:iproc))
-      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv /), (/ ip0 /), order, MPI_INT, ftype, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv /), (/ ip0 /), order, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set view of", fpath)
 !
-      call MPI_FILE_WRITE_ALL(handle, ipar, nv, MPI_INT, status, mpi_err)
+      call MPI_FILE_WRITE_ALL(handle, ipar, nv, MPI_INTEGER, status, mpi_err)
       call check_success("output_part", "write particle IDs", fpath)
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
@@ -1018,10 +1018,10 @@ module Io
 !
 !  Read total number of particles.
 !
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_INT, MPI_INT, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_INTEGER, MPI_INTEGER, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
-      call MPI_FILE_READ_ALL(handle, npar_tot, 1, MPI_INT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
       call check_success("input_part", "read total number of particles", fpath)
 !
       cknp: if (npar_tot > mv * ncpus) then
@@ -1074,16 +1074,16 @@ module Io
 !
 !  Decompose the integer data domain and read.
 !
-      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_INT, ftype, mpi_err)
+      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
-      call MPI_FILE_READ_ALL(handle, ipar, nv, MPI_INT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, ipar, nv, MPI_INTEGER, status, mpi_err)
       call check_success("input_part", "read particle IDs", fpath)
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
