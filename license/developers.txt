@@ -16,7 +16,7 @@ Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 
 Iouri Belokopytov,    iourib@kth.se,                 ,                     +46 8 553 784 29   ,                         ,            Nordita
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
-Philippe Bourdin,     bourdin/mps.mpg.de,            PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, Austrian Academy of Sciences
+Philippe Bourdin,     pc/bourdin.ch,                 PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, University of Graz
 Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        axelbrandenburg, Nordita
 Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,                            iomsn1,      University of Glasgow
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
