@@ -382,14 +382,14 @@ def grid(datadir='./data', interface=False, par=None, trim=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-11-02
-    # Last Modified: 2020-11-15
+    # Last Modified: 2020-11-17
     from collections import namedtuple
     import numpy as np
 
     # Get the dimensions and parameters.
     dim = dimensions(datadir=datadir)
     if par is None: par = parameters(datadir=datadir)
-    allprocs = par.io_strategy = "MPI-IO"
+    allprocs = par.io_strategy == "MPI-IO"
 
     if allprocs:
         # Read grid from under allprocs/ and unpack.
