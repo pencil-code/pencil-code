@@ -2546,7 +2546,80 @@ module General
       ENDIF
       RETURN
     endfunction BESSJ1
+!***********************************************************************
+real function plegendre(ell, emm, costh)
 !
+! This function calcutates the normalized (associated) Legendre polynomials
+! P_l^m for the Spherical Harmonics decomposition
+!
+! 2019/MViviani: coded
+! 19-Nov-20/MR: adapted
+
+!use iso_fortran_env
+
+implicit none
+
+integer,            intent(in) :: ell, emm
+!real(KIND=rkind16), intent(in) :: costh
+real, intent(in) :: costh
+
+real(KIND=rkind16), parameter :: unity=1., PI=acos(-unity)
+integer :: i,il
+real(KIND=rkind16) :: xfact, oldfact, pll, pmm, pmmp1, omx2
+!
+! Check parameters
+!
+if ( (emm < 0) .or. (emm > ell) .or. (abs(costh) > 1) ) then
+  print*, ‘plegendre: Bad arguments!'
+  return
+endif
+!
+! Compute first P_m^m
+!
+pmm = 1.d0
+if (emm > 0) then
+  omx2 = (1.d0-costh) * (1.d0+costh)
+  fact = 1.d0
+  i=1
+  do
+    pmm = pmm * omx2 * fact / (fact+1.d0)
+    fact = fact + 2
+    if (i >= emm) exit
+    i=i+1
+  enddo
+endif
+pmm = sqrt((2*emm + 1) * pmm / (4.d0*PI))
+!
+! odd polynomials
+!
+if (mod(emm,2) /= 0) pmm = -pmm
+
+if (ell == emm) then
+  plegendre = pmm
+else
+!
+! Compute P_(m+1)^m
+!
+  pmmp1 = costh * sqrt(2.d0*emm + 3.d0) * pmm
+  if (ell == (emm + 1)) then
+    plegendre = pmmp1
+  else
+!
+! Compute P_l^m (l>m+1)
+!
+    oldfact = sqrt(2.d0*emm + 3.d0)
+    do il = emm+2, ell
+      fact = sqrt((4.d0*il*il - 1.d0) / (il*il - emm*emm))
+      pll = (costh*pmmp1 - pmm/oldfact) * fact
+      oldfact = fact
+      pmm = pmmp1
+      pmmp1 = pll
+    enddo
+    plegendre = pll
+  endif
+endif
+
+endfunction
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
