@@ -2570,7 +2570,7 @@ real(KIND=rkind16) :: fact, oldfact, pll, pmm, pmmp1, omx2
 ! Check parameters
 !
 if ( (emm < 0) .or. (emm > ell) .or. (abs(costh) > 1) ) then
-  print*, ‘plegendre: Bad arguments!'
+  print*, 'plegendre: Bad arguments!'
   return
 endif
 !
