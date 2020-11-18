@@ -2556,6 +2556,7 @@ real function plegendre(ell, emm, costh)
 ! 19-Nov-20/MR: adapted
 
 !use iso_fortran_env
+use Cparam, only: pi
 
 implicit none
 
@@ -2563,9 +2564,8 @@ integer,            intent(in) :: ell, emm
 !real(KIND=rkind16), intent(in) :: costh
 real, intent(in) :: costh
 
-real(KIND=rkind16), parameter :: unity=1., PI=acos(-unity)
 integer :: i,il
-real(KIND=rkind16) :: xfact, oldfact, pll, pmm, pmmp1, omx2
+real(KIND=rkind16) :: fact, oldfact, pll, pmm, pmmp1, omx2
 !
 ! Check parameters
 !
