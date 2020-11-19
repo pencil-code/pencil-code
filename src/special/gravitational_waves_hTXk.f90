@@ -31,7 +31,7 @@
 !  Special equation                                | dspecial_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -70,7 +70,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module gravitational_waves_hTXk
 !
   use Cparam
   use Cdata
@@ -108,13 +108,13 @@ module Special
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
 !
 ! input parameters
-  namelist /special_init_pars/ &
+  namelist /gravitational_waves_hTXk_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     lggTX_as_aux, lhhTX_as_aux
 !
 ! run parameters
-  namelist /special_run_pars/ &
+  namelist /gravitational_waves_hTXk_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, &
@@ -126,12 +126,28 @@ module Special
 !
   integer :: idiag_STrept=0      ! DIAG_DOC: $Re S_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_STimpt=0      ! DIAG_DOC: $Im S_{T}(k_1,k_1,k_1,t)$
-  integer :: idiag_hTrept=0      ! DIAG_DOC: $Re h_{T}(k_1,k_1,k_1,t)$
-  integer :: idiag_hTimpt=0      ! DIAG_DOC: $Im h_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_SXrept=0      ! DIAG_DOC: $Re S_{X}(k_1,k_1,k_1,t)$
   integer :: idiag_SXimpt=0      ! DIAG_DOC: $Im S_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_hTrept=0      ! DIAG_DOC: $Re h_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_hTimpt=0      ! DIAG_DOC: $Im h_{T}(k_1,k_1,k_1,t)$
   integer :: idiag_hXrept=0      ! DIAG_DOC: $Re h_{X}(k_1,k_1,k_1,t)$
   integer :: idiag_hXimpt=0      ! DIAG_DOC: $Im h_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_gTrept=0      ! DIAG_DOC: $Re h_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_gTimpt=0      ! DIAG_DOC: $Im h_{T}(k_1,k_1,k_1,t)$
+  integer :: idiag_gXrept=0      ! DIAG_DOC: $Re h_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_gXimpt=0      ! DIAG_DOC: $Im h_{X}(k_1,k_1,k_1,t)$
+  integer :: idiag_STrep2=0      ! DIAG_DOC: $Re S_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_STimp2=0      ! DIAG_DOC: $Im S_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_SXrep2=0      ! DIAG_DOC: $Re S_{X}(k_2,k_2,k_2,t)$
+  integer :: idiag_SXimp2=0      ! DIAG_DOC: $Im S_{X}(k_2,k_2,k_2,t)$
+  integer :: idiag_hTrep2=0      ! DIAG_DOC: $Re h_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_hTimp2=0      ! DIAG_DOC: $Im h_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_hXrep2=0      ! DIAG_DOC: $Re h_{X}(k_2,k_2,k_2,t)$
+  integer :: idiag_hXimp2=0      ! DIAG_DOC: $Im h_{X}(k_2,k_2,k_2,t)$
+  integer :: idiag_gTrep2=0      ! DIAG_DOC: $Re g_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_gTimp2=0      ! DIAG_DOC: $Im g_{T}(k_2,k_2,k_2,t)$
+  integer :: idiag_gXrep2=0      ! DIAG_DOC: $Re g_{X}(k_2,k_2,k_2,t)$
+  integer :: idiag_gXimp2=0      ! DIAG_DOC: $Im g_{X}(k_2,k_2,k_2,t)$
   integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
   integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
@@ -142,10 +158,6 @@ module Special
   integer :: idiag_hhXpt=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
-  integer :: idiag_STrep2=0      ! DIAG_DOC: $Re S_{T}(k_2,k_2,k_2,t)$
-  integer :: idiag_STimp2=0      ! DIAG_DOC: $Im S_{T}(k_2,k_2,k_2,t)$
-  integer :: idiag_hTrep2=0      ! DIAG_DOC: $Re h_{T}(k_2,k_2,k_2,t)$
-  integer :: idiag_hTimp2=0      ! DIAG_DOC: $Im h_{T}(k_2,k_2,k_2,t)$
   integer :: idiag_hhTp2=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_hhXp2=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTp2=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
@@ -538,12 +550,16 @@ module Special
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
            if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
            if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
-           if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
-           if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
            if (idiag_SXrept/=0) call save_name(f(lpoint,m,n,iStressX  ),idiag_SXrept)
            if (idiag_SXimpt/=0) call save_name(f(lpoint,m,n,iStressXim),idiag_SXimpt)
+           if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
+           if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
            if (idiag_hXrept/=0) call save_name(f(lpoint,m,n,ihhX  ),idiag_hXrept)
            if (idiag_hXimpt/=0) call save_name(f(lpoint,m,n,ihhXim),idiag_hXimpt)
+           if (idiag_gTrept/=0) call save_name(f(lpoint,m,n,iggT  ),idiag_gTrept)
+           if (idiag_gTimpt/=0) call save_name(f(lpoint,m,n,iggTim),idiag_gTimpt)
+           if (idiag_gXrept/=0) call save_name(f(lpoint,m,n,iggX  ),idiag_gXrept)
+           if (idiag_gXimpt/=0) call save_name(f(lpoint,m,n,iggXim),idiag_gXimpt)
            if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
            if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
@@ -563,8 +579,16 @@ module Special
          if (lproc_p2.and.m==mpoint2.and.n==npoint2) then
            if (idiag_STrep2/=0) call save_name(f(lpoint2,m,n,iStressT  ),idiag_STrep2)
            if (idiag_STimp2/=0) call save_name(f(lpoint2,m,n,iStressTim),idiag_STimp2)
+           if (idiag_SXrep2/=0) call save_name(f(lpoint2,m,n,iStressX  ),idiag_SXrep2)
+           if (idiag_SXimp2/=0) call save_name(f(lpoint2,m,n,iStressXim),idiag_SXimp2)
            if (idiag_hTrep2/=0) call save_name(f(lpoint2,m,n,ihhT  ),idiag_hTrep2)
            if (idiag_hTimp2/=0) call save_name(f(lpoint2,m,n,ihhTim),idiag_hTimp2)
+           if (idiag_hXrep2/=0) call save_name(f(lpoint2,m,n,ihhX  ),idiag_hXrep2)
+           if (idiag_hXimp2/=0) call save_name(f(lpoint2,m,n,ihhXim),idiag_hXimp2)
+           if (idiag_gTrep2/=0) call save_name(f(lpoint2,m,n,iggT  ),idiag_gTrep2)
+           if (idiag_gTimp2/=0) call save_name(f(lpoint2,m,n,iggTim),idiag_gTimp2)
+           if (idiag_gXrep2/=0) call save_name(f(lpoint2,m,n,iggX  ),idiag_gXrep2)
+           if (idiag_gXimp2/=0) call save_name(f(lpoint2,m,n,iggXim),idiag_gXimp2)
            if (lhhTX_as_aux) then
              if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
              if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
@@ -587,7 +611,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -595,7 +619,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=gravitational_waves_hTXk_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -605,7 +629,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -613,7 +637,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=gravitational_waves_hTXk_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1252,15 +1276,15 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_STrept=0; idiag_STimpt=0; 
-        idiag_hTrept=0; idiag_hTimpt=0; 
-        idiag_SXrept=0; idiag_SXimpt=0;
-        idiag_hXrept=0; idiag_hXimpt=0;
+        idiag_STrept=0; idiag_STimpt=0; idiag_SXrept=0; idiag_SXimpt=0
+        idiag_hTrept=0; idiag_hTimpt=0; idiag_hXrept=0; idiag_hXimpt=0
+        idiag_gTrept=0; idiag_gTimpt=0; idiag_gXrept=0; idiag_gXimpt=0
+        idiag_STrep2=0; idiag_STimp2=0; idiag_SXrep2=0; idiag_SXimp2=0
+        idiag_hTrep2=0; idiag_hTimp2=0; idiag_hXrep2=0; idiag_hXimp2=0
+        idiag_gTrep2=0; idiag_gTimp2=0; idiag_gXrep2=0; idiag_gXimp2=0
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
-        idiag_STrep2=0; idiag_STimp2=0; 
-        idiag_hTrep2=0; idiag_hTimp2=0; 
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
@@ -1271,12 +1295,16 @@ module Special
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'STrept',idiag_STrept)
         call parse_name(iname,cname(iname),cform(iname),'STimpt',idiag_STimpt)
-        call parse_name(iname,cname(iname),cform(iname),'hTrept',idiag_hTrept)
-        call parse_name(iname,cname(iname),cform(iname),'hTimpt',idiag_hTimpt)
         call parse_name(iname,cname(iname),cform(iname),'SXrept',idiag_SXrept)
         call parse_name(iname,cname(iname),cform(iname),'SXimpt',idiag_SXimpt)
+        call parse_name(iname,cname(iname),cform(iname),'hTrept',idiag_hTrept)
+        call parse_name(iname,cname(iname),cform(iname),'hTimpt',idiag_hTimpt)
         call parse_name(iname,cname(iname),cform(iname),'hXrept',idiag_hXrept)
         call parse_name(iname,cname(iname),cform(iname),'hXimpt',idiag_hXimpt)
+        call parse_name(iname,cname(iname),cform(iname),'gTrept',idiag_gTrept)
+        call parse_name(iname,cname(iname),cform(iname),'gTimpt',idiag_gTimpt)
+        call parse_name(iname,cname(iname),cform(iname),'gXrept',idiag_gXrept)
+        call parse_name(iname,cname(iname),cform(iname),'gXimpt',idiag_gXimpt)
         call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
         call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)
@@ -1285,8 +1313,16 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
         call parse_name(iname,cname(iname),cform(iname),'STrep2',idiag_STrep2)
         call parse_name(iname,cname(iname),cform(iname),'STimp2',idiag_STimp2)
+        call parse_name(iname,cname(iname),cform(iname),'SXrep2',idiag_SXrep2)
+        call parse_name(iname,cname(iname),cform(iname),'SXimp2',idiag_SXimp2)
         call parse_name(iname,cname(iname),cform(iname),'hTrep2',idiag_hTrep2)
         call parse_name(iname,cname(iname),cform(iname),'hTimp2',idiag_hTimp2)
+        call parse_name(iname,cname(iname),cform(iname),'hXrep2',idiag_hXrep2)
+        call parse_name(iname,cname(iname),cform(iname),'hXimp2',idiag_hXimp2)
+        call parse_name(iname,cname(iname),cform(iname),'gTrep2',idiag_gTrep2)
+        call parse_name(iname,cname(iname),cform(iname),'gTimp2',idiag_gTimp2)
+        call parse_name(iname,cname(iname),cform(iname),'gXrep2',idiag_gXrep2)
+        call parse_name(iname,cname(iname),cform(iname),'gXimp2',idiag_gXimp2)
         if (lhhTX_as_aux) then
           call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
           call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
@@ -1387,6 +1423,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../gravitational_waves_hTXk_dummies.inc'
 !********************************************************************
-endmodule Special
+endmodule gravitational_waves_hTXk
