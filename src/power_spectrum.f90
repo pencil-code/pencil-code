@@ -34,6 +34,8 @@ module power_spectrum
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
+  logical :: lcyl_polar_spectra=.false.
+  integer :: legendre_lmax=1.
   integer :: firstout = 0
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -45,7 +47,8 @@ module power_spectrum
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
-      pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale
+      pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
+      lcyl_polar_spectra, legendre_lmax
 !
   contains
 !***********************************************************************
@@ -3988,6 +3991,7 @@ endsubroutine pdf
 !  in run.in under &hydro_run_pars
 !
 !  29-oct-20/hongzhe: added this subroutine
+!  20-nov-20/hongzhe: can now also compute Legendre coefficients
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
@@ -3995,8 +3999,10 @@ endsubroutine pdf
     use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
-  real :: k2
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj, ikr, ikmu
+  integer, dimension(nk) :: nmu
+  real, allocatable, dimension(:,:) :: kmu
+  real :: k2,mu
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi, jji, b2, j2
@@ -4005,9 +4011,12 @@ endsubroutine pdf
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+  real, allocatable, dimension(:,:) :: cyl_polar_spec, cyl_polar_spec_sum
+  real, allocatable, dimension(:,:) :: cyl_polar_spechel, cyl_polar_spechel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
+  integer, dimension(1) :: temp
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
 !
@@ -4037,6 +4046,31 @@ endsubroutine pdf
     cyl_spectrum_sum=0.
     cyl_spectrumhel=0.
     cyl_spectrumhel_sum=0.
+  ! allow for polar representation
+    if (lcyl_polar_spectra) then
+      do ikr=1,nk
+        nmu(ikr)=2*FLOOR(0.84815*ikr/2)+1
+      enddo
+      !
+      allocate( kmu(nk,nmu(nk)) )
+      allocate( cyl_polar_spec(nk,nmu(nk)) )
+      allocate( cyl_polar_spec_sum(nk,nmu(nk)) )
+      allocate( cyl_polar_spechel(nk,nmu(nk)) )
+      allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
+      !
+      kmu=0.
+      do ikr=3,nk
+        do ikmu=1, nmu(ikr)
+          kmu(ikr,ikmu) = -1+2.*(ikmu-1)/(nmu(ikr)-1)
+        enddo
+      enddo
+      !
+      cyl_polar_spec=0.
+      cyl_polar_spec_sum=0.
+      cyl_polar_spechel=0.
+      cyl_polar_spechel_sum=0.
+      !
+    endif
   endif
   !
   !  loop over all the components
@@ -4084,13 +4118,33 @@ endsubroutine pdf
               cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            endif
 !
 !  end of loop through all points
 !
-            endif
           enddo
         enddo
       enddo
+!  convert spectrum in (k_\varpi,kz) to (kr,kmu)
+!  kr=sqrt( k_\varpi^2 + kz^2 )
+!  kmu=cos of angle between kz and k_\varpi
+      if (lcyl_polar_spectra) then
+        do jkz=1,nzgrid
+        do k=1,nk
+          k2=k**2+(jkz-nzgrid/2-1)**2
+          ikr=nint(sqrt(k2))
+          mu=cos(pi/2-atan2(real(jkz-nzgrid/2-1),real(k)))
+          if (ikr>=1 .and. ikr<=nk) then
+            temp=minloc(abs(kmu(ikr,:)-mu))
+            ikmu=temp(1)
+            cyl_polar_spec(ikr,ikmu)=cyl_polar_spec(ikr,ikmu) &
+              +cyl_spectrum(k,jkz)
+            cyl_polar_spechel(ikr,ikmu)=cyl_polar_spechel(ikr,ikmu) &
+              +cyl_spectrumhel(k,jkz)
+          endif
+        enddo
+        enddo
+      endif
     endif
     !
   enddo !(from loop over ivec)
@@ -4101,6 +4155,10 @@ endsubroutine pdf
   if (lcylindrical_spectra) then
     call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
     call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+    if (lcyl_polar_spectra) then
+      call mpireduce_sum(cyl_polar_spec,cyl_polar_spec_sum,(/nk,nmu(nk)/))
+      call mpireduce_sum(cyl_polar_spechel,cyl_polar_spechel_sum,(/nk,nmu(nk)/))
+    endif
   endif
 !
 !  compute krms only once
@@ -4116,6 +4174,37 @@ endsubroutine pdf
   !  append to diagnostics file
   !
   if (lroot) then
+    if (lcyl_polar_spectra) then
+      !open(1,file=trim(datadir)//'/test.dat',position='append')
+      !write(1,*) t
+      !write(1,*) shape(minloc(abs(kmu(ikr,:)-mu)))
+      !write(1,*) ikmu
+      !close(1)
+      open(1,file=trim(datadir)//'/cyl_omega_power_cyl_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
+        enddo
+      enddo
+      close(1)
+      open(1,file=trim(datadir)//'/cyl_omega_power_polar_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do ikr=1,nk
+        do ikmu=1,nmu(ikr)
+          write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr, kmu(ikr,ikmu), cyl_polar_spec_sum(ikr,ikmu)
+        enddo
+      enddo
+      close(1)
+      open(1,file=trim(datadir)//'/cyl_omega_powerhel_polar_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do ikr=1,nk
+        do ikmu=1,nmu(ikr)
+          write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr, kmu(ikr,ikmu), cyl_polar_spechel_sum(ikr,ikmu)
+        enddo
+      enddo
+      close(1)
+    endif
     if (lcylindrical_spectra) then
       if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
            ,' to ',trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat'
