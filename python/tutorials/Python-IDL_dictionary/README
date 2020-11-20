@@ -11,3 +11,6 @@ Here are the links to a few potentially useful sites:
 pc_read_var,obj=var,/trimall             var = pc.read.var(var_file = 'var.dat', trimall = True, sim = SIM)
 help,var                                 SIM = pc.get_sim('path_to_simulation') 
                                          help(var)
+
+power,'_GWs','hel_GWs',k=k,spec1=grav1,spec2=grav2,i=n,tt=t,/noplot,/lks
+
