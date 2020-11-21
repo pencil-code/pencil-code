@@ -129,17 +129,19 @@ module Deriv
       integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx
 !
-      real, parameter :: a = 1.0 / 60.0
+      real, parameter :: a = 1.0/60.0
       real, dimension(nx) :: fac
+      real :: facs
       logical :: withdx
-      integer :: nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
-!debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
+!debug                          der_call_count(k,icount_der,j,1)+1 !DERCOUNT
 !
       if (present(ignoredx)) then
         withdx = .not. ignoredx
-        if (ignoredx) fac = a
+        if (ignoredx) then
+          fac = a; facs = a
+        endif
       else
         withdx = .true.
       endif
@@ -156,49 +158,29 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          if (withdx) fac = a * dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (withdx .and. lspherical_coords  ) df = df * r1_mn
-          if (withdx .and. lcylindrical_coords) df = df * rcyl_mn1
+          if (withdx) facs = a * dy_1(m)
+          df=facs*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          if (withdx) then
+            if (lspherical_coords) then
+              df = df * r1_mn
+            elseif (lcylindrical_coords) then
+              df = df * rcyl_mn1
+            endif
+          endif
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-            else
-              nphi = 1
-            endif
-            fac = a * dz_1(n)/nphi * r1_mn * sin1th(m)
-            n1p = n+1*nphi
-            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
-            n2p = n+2*nphi
-            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
-            n3p = n+3*nphi
-            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n-1*nphi
-            if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n-2*nphi
-            if (n2n < 1) n2n = n2n + n2 + nghost
-            n3n = n-3*nphi
-            if (n3n < 1) n3n = n3n + n2 + nghost
-            df=fac*(+ 45.0*(f(l1:l2,m,n1p,k)-f(l1:l2,m,n1n,k)) &
-                    -  9.0*(f(l1:l2,m,n2p,k)-f(l1:l2,m,n2n,k)) &
-                    +      (f(l1:l2,m,n3p,k)-f(l1:l2,m,n3n,k)))
-          else 
-            if (withdx) fac = a * dz_1(n)
-            df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                    -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                    +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-            if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
-          endif
+!!          if (lpole(2) .and. lcoarse) then
+          if (withdx) facs = a * dz_1(n)
+          df=facs*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                   -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -264,9 +246,9 @@ module Deriv
       real, dimension (nz), intent(out) :: df
 !
       real, dimension (nz) :: fac
-      
 !
       if (nzgrid/=1) then
+!MR: coarse case/spherical missing!
         fac=(1./60)*dz_1(n1:n2)
         df=fac*(+ 45.0*(f(n1+1:n2+1)-f(n1-1:n2-1)) &
                 -  9.0*(f(n1+2:n2+2)-f(n1-2:n2-2)) &
@@ -290,6 +272,7 @@ module Deriv
       real, dimension (nz) :: fac
 !
       if (nzgrid/=1) then
+!MR: coarse case/spherical missing!
         fac=(1./180)*dz_1(n1:n2)**2
         df2=fac*(-490.0*f(n1:n2) &
                  +270.0*(f(n1+1:n2+1)+f(n1-1:n2-1)) &
@@ -323,7 +306,8 @@ module Deriv
       intent(out) :: df
 
       real, dimension (size(df)) :: fac
-      integer :: l1_,l2_,sdf,nphi,n1n,n1p,n2p,n2n,n3p,n3n
+      real :: facs
+      integer :: l1_,l2_,sdf
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -347,54 +331,24 @@ module Deriv
         endif
         if (j==2) then
           if (nygrid/=1) then
-            fac=(1./60)*dy_1(m)
-            df=fac*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
-                    -  9.0*(f(l1_:l2_,m+2,n)-f(l1_:l2_,m-2,n)) &
-                    +      (f(l1_:l2_,m+3,n)-f(l1_:l2_,m-3,n)))
-            if (lspherical_coords)     df=df*r1_mn
-            if (lcylindrical_coords)   df=df*rcyl_mn1
+            facs=(1./60.)*dy_1(m)
+            df=facs*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
+                     -  9.0*(f(l1_:l2_,m+2,n)-f(l1_:l2_,m-2,n)) &
+                     +      (f(l1_:l2_,m+3,n)-f(l1_:l2_,m-3,n)))
+            if (lspherical_coords)   df=df*r1_mn
+            if (lcylindrical_coords) df=df*rcyl_mn1
           else
             df=0.
             if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
           endif
         elseif (j==3) then
           if (nzgrid/=1) then
-            if (lpole(2) .and. lcoarse) then
-              if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-                nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-              elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-                nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-              else
-                nphi = 1
-              endif
-              n1p = n+1*nphi
-              if (n1p > n2+nghost) n1p = n1p - n2 - nghost
-              n2p = n+2*nphi
-              if (n2p > n2+nghost) n2p = n2p - n2 - nghost
-              n3p = n+3*nphi
-              if (n3p > n2+nghost) n3p = n3p - n2 - nghost
-              n1n = n-1*nphi
-              if (n1n < 1) n1n = n1n + n2 + nghost
-              n2n = n-2*nphi
-              if (n2n < 1) n2n = n2n + n2 + nghost
-              n3n = n-3*nphi
-              if (n3n < 1) n3n = n3n + n2 + nghost
-              fac = (1./60) * dz_1(n)/nphi * r1_mn * sin1th(m)
-              df=fac*(+ 45.0*(f(l1_:l2_,m,n1p)-f(l1_:l2_,m,n1n)) &
-                      -  9.0*(f(l1_:l2_,m,n2p)-f(l1_:l2_,m,n2n)) &
-                      +      (f(l1_:l2_,m,n3p)-f(l1_:l2_,m,n3n)))
-            else 
-              fac = (1./60) * dz_1(n)
-              df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                      -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                      +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-              if (lspherical_coords) df = df * r1_mn * sin1th(m)
-            endif
-            !fac=(1./60)*dz_1(n)
-            !df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-            !        -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-            !        +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            !if (lspherical_coords) df=df*r1_mn*sin1th(m)
+!!            if (lpole(2) .and. lcoarse) then
+            facs = (1./60.) * dz_1(n)
+            df=facs*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+                     -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+                     +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            if (lspherical_coords) df=df*r1_mn*sin1th(m)
           else
             df=0.
             if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
@@ -410,6 +364,8 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !
+      use General, only: itoa
+
       real, dimension (:) :: pencil,df
       integer :: j
 !
@@ -419,10 +375,9 @@ module Deriv
 !  x-derivative
 !
       if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
-          call fatal_error('der_pencil','')
-        endif
+        if (size(pencil)/=mx) &
+          call fatal_error('der_pencil', &
+                           'pencil must be of size mx for x derivative')
         df(l1:l2)=(1./60)*dx_1(l1:l2)*( &
             + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
             -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
@@ -431,10 +386,9 @@ module Deriv
 !  y-derivative
 !
       else if (j==2) then
-        if (size(pencil)/=my) then
-          if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
-          call fatal_error('der_pencil','')
-        endif
+        if (size(pencil)/=my) &
+          call fatal_error('der_pencil', &
+                           'pencil must be of size my for y derivative')
         df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
             + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
             -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
@@ -448,18 +402,17 @@ module Deriv
 !  z-derivative
 !
       else if (j==3) then
-        if (size(pencil)/=mz) then
-          if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
-          call fatal_error('der_pencil','')
-        endif
+        if (size(pencil)/=mz) &
+          call fatal_error('der_pencil', &
+                           'pencil must be of size mz for z derivative')
+!MR: coarse case missing!
         df(n1:n2)=(1./60)*dz_1(n1:n2)*( &
             + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
             -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
             +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
-        if (lspherical_coords) df(n1:n2)=df(n1:n2)*r1_mn(lglob)*sin1th(m)
+        if (lspherical_coords) df(n1:n2)=df(n1:n2)*(r1_mn(lglob)*sin1th(m))
       else
-        if (lroot) print*, 'der_pencil: no such direction j=', j
-        call fatal_error('der_pencil','')
+        call fatal_error('der_pencil','no such direction j='//trim(itoa(j)))
       endif
 !
     endsubroutine der_pencil
@@ -483,12 +436,12 @@ module Deriv
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
+      real :: facs
       integer :: j,k
       logical, optional :: lwo_line_elem
 !
       intent(in)  :: f,k,j,lwo_line_elem
       intent(out) :: df2
-      integer :: nphi,n1n,n1p,n2p,n2n,n3p,n3n
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
@@ -509,14 +462,17 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=dy_1(m)**2
-          df2=fac*(der2_coef0* f(l1:l2,m   ,n,k) &
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          facs=dy_1(m)**2
+          df2=facs*(der2_coef0* f(l1:l2,m  ,n,k) &
+                   +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                   +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                   +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (.not.loptest(lwo_line_elem)) then
-            if (lspherical_coords)   df2=df2*r2_mn
-            if (lcylindrical_coords) df2=df2*rcyl_mn2
+            if (lspherical_coords) then
+              df2=df2*r2_mn
+            elseif (lcylindrical_coords) then
+              df2=df2*rcyl_mn2
+            endif
           endif
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -527,44 +483,17 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-            else
-              nphi = 1
-            endif
-            n1p = n+1*nphi
-            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
-            n2p = n+2*nphi
-            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
-            n3p = n+3*nphi
-            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n-1*nphi
-            if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n-2*nphi
-            if (n2n < 1) n2n = n2n + n2 + nghost
-            n3n = n-3*nphi
-            if (n3n < 1) n3n = n3n + n2 + nghost
-            fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
-            df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
-                     +der2_coef1*(f(l1:l2,m,n1p,k)+f(l1:l2,m,n1n,k)) &
-                     +der2_coef2*(f(l1:l2,m,n2p,k)+f(l1:l2,m,n2n,k)) &
-                     +der2_coef3*(f(l1:l2,m,n3p,k)+f(l1:l2,m,n3n,k)) )
-          else
-            fac=dz_1(n)**2
-            df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
-                     +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                     +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                     +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
-            if (.not.loptest(lwo_line_elem)) then
-              if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-            endif
-            if (.not.lequidist(j)) then
-              call der(f,k,df,j)
-              df2=df2+dz_tilde(n)*df
-            endif
+!!          if (lpole(2) .and. lcoarse) then
+          facs=dz_1(n)**2
+          df2=facs*( der2_coef0* f(l1:l2,m,n  ,k) &
+                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                    +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
+          if (.not.loptest(lwo_line_elem).and.lspherical_coords) &
+            df2=df2*r2_mn*sin2th(m)
+          if (.not.lequidist(j)) then
+            call der(f,k,df,j)
+            df2=df2+dz_tilde(n)*df !MR: coarse!?
           endif
         else
           df2=0.
@@ -585,7 +514,8 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
-      integer :: j,nphi,n1n,n1p,n2p,n2n,n3p,n3n
+      real :: facs
+      integer :: j
 !
       intent(in)  :: f,j
       intent(out) :: df2
@@ -610,13 +540,16 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
-          if (lspherical_coords)     df2=df2*r2_mn
-          if (lcylindrical_coords)   df2=df2*rcyl_mn2
+          facs=(1./180)*dy_1(m)**2
+          df2=facs*(-490.0*f(l1:l2,m,n) &
+                    +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                    - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                    +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          if (lspherical_coords) then
+            df2=df2*r2_mn
+          elseif (lcylindrical_coords) then
+            df2=df2*rcyl_mn2
+          endif
           if (.not.lequidist(j)) then
             call der(f,df,j)
             df2=df2+dy_tilde(m)*df
@@ -626,42 +559,16 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-            else
-              nphi = 1
-            endif
-            n1p = n+1*nphi
-            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
-            n2p = n+2*nphi
-            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
-            n3p = n+3*nphi
-            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n-1*nphi
-            if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n-2*nphi
-            if (n2n < 1) n2n = n2n + n2 + nghost
-            n3n = n-3*nphi
-            if (n3n < 1) n3n = n3n + n2 + nghost
-            fac = (dz_1(n)/nphi)**2 * r2_mn * sin2th(m)
-            df2=fac*( der2_coef0* f(l1:l2,m,n) &
-                     +der2_coef1*(f(l1:l2,m,mod(n+1*nphi,n2))+f(l1:l2,m,mod(n-1*nphi,n2))) &
-                     +der2_coef2*(f(l1:l2,m,mod(n+2*nphi,n2))+f(l1:l2,m,mod(n-2*nphi,n2))) &
-                     +der2_coef3*(f(l1:l2,m,mod(n+3*nphi,n2))+f(l1:l2,m,mod(n-3*nphi,n2))) )
-          else
-            fac=(1./180)*dz_1(n)**2
-            df2=fac*(-490.0*f(l1:l2,m,n) &
-                     +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                     - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                     +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
-            if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-            if (.not.lequidist(j)) then
-              call der(f,df,j)
-              df2=df2+dz_tilde(n)*df
-            endif
+!          if (lpole(2) .and. lcoarse) then
+          facs=(1./180)*dz_1(n)**2
+          df2=facs*(-490.0*f(l1:l2,m,n) &
+                    +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                    - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                    +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+          if (.not.lequidist(j)) then
+            call der(f,df,j)
+            df2=df2+dz_tilde(n)*df  !MR: coarse?!
           endif
         else
           df2=0.
@@ -682,13 +589,12 @@ module Deriv
       intent(in)  :: j, pencil
       intent(out) :: df2
 !
+      if (j==1) then
+!
 !  x-derivative
 !
-      if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der2_pencil: pencil must be of size mx for x derivative'
-          call fatal_error('der2_pencil','')
-        endif
+        if (size(pencil)/=mx) &
+          call fatal_error('der2_pencil','pencil must be of size mx for x derivative')
         df2=(1./180)*dx_1(l1:l2)**2*(-490.0*pencil(l1:l2) &
                +270.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
                - 27.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
@@ -697,11 +603,9 @@ module Deriv
 !
 !  y-derivative
 !
-        if (size(pencil)/=my) then
-          if (lroot) &
-              print*, 'der2_pencil: pencil must be of size my for y derivative'
-          call fatal_error('der2_pencil','')
-        endif
+        if (size(pencil)/=my) &
+          call fatal_error('der2_pencil','pencil must be of size my for y derivative')
+!MR: spherical/cylindrical missing
         df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
                +270.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
                - 27.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
@@ -710,11 +614,9 @@ module Deriv
 !
 !  z-derivative
 !
-        if (size(pencil)/=mz) then
-          if (lroot) &
-              print*, 'der2_pencil: pencil must be of size mz for z derivative'
-          call fatal_error('der2_pencil','')
-        endif
+        if (size(pencil)/=mz) &
+          call fatal_error('der2_pencil','pencil must be of size mz for z derivative')
+!MR: spherical/coarse missing
         df2=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
                +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
                - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
@@ -780,6 +682,7 @@ module Deriv
                   +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords)   df=df*rcyl_mn1**3
+!MR: spherical missing
         else
           df=0.
         endif
@@ -793,6 +696,7 @@ module Deriv
           df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+!MR: spherical/coarse missing
         else
           df=0.
         endif
@@ -866,6 +770,7 @@ module Deriv
                   + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords)   df=df*rcyl_mn1**4
+!MR: spherical missing
         else
           df=0.
         endif
@@ -880,6 +785,7 @@ module Deriv
                   - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   + 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   -      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+!MR: spherical/coarse missing
         else
           df=0.
         endif
@@ -945,7 +851,8 @@ module Deriv
           df=fac*(+  2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +  0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**5
+          if (lcylindrical_coords) df=df*rcyl_mn1**5
+!MR: spherical missing
         else
           df=0.
         endif
@@ -959,6 +866,7 @@ module Deriv
           df=fac*(+  2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -  2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   +  0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+!MR: spherical/coarse missing
         else
           df=0.
         endif
@@ -968,22 +876,23 @@ module Deriv
 !***********************************************************************
     subroutine der6(f,k,df,j,ignoredx,upwind)
 !
-!  Calculate 6th derivative of a scalar, get scalar
-!    Used for hyperdiffusion that affects small wave numbers as little as
+!  Calculate 6th derivative of a scalar, get scalar.
+!  Used for hyperdiffusion that affects small wave numbers as little as
 !  possible (useful for density).
-!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  The optional flag IGNOREDX is useful for numerical purposes, where
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
-!    The optional flag UPWIND is a variant thereof, which calculates
+!  The optional flag UPWIND is a variant thereof, which calculates
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
-      integer :: j,k,nphi,n1n,n1p,n2p,n2n,n3p,n3n
+      integer :: j,k
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
+      real :: facs
 !
       intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
@@ -998,10 +907,9 @@ module Deriv
       endif
 !
       if (present(upwind)) then
-        if (.not. lequidist(j).and..not.lignore_nonequi) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) &
           call fatal_error('der6','upwind cannot be used with '//&
-              'non-equidistant grid.')
-        endif
+                           'non-equidistant grid.')
         upwnd = upwind
       else
         upwnd = .false.
@@ -1026,65 +934,39 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.
+            facs=1.
           else if (upwnd) then
-            fac=(1.0/60)*dy_1(m)
+            facs=(1.0/60)*dy_1(m)
           else
-            fac=dy_1(m)**6
+            facs=dy_1(m)**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
-                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=facs*(- 20.0* f(l1:l2,m  ,n,k) &
+                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if ((.not.igndx) .and. (.not.upwnd)) then
+            if (lspherical_coords) df = df * r1_mn**6 
+            if (lcylindrical_coords) df = df * rcyl_mn1**6 
+          endif
         else
           df=0.
         endif        
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-              nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-            elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-              nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-            else
-              nphi = 1
-            endif
-            n1p = n+1*nphi
-            if (n1p > n2+nghost) n1p = n1p - n2 - nghost
-            n2p = n+2*nphi
-            if (n2p > n2+nghost) n2p = n2p - n2 - nghost
-            n3p = n+3*nphi
-            if (n3p > n2+nghost) n3p = n3p - n2 - nghost
-            n1n = n-1*nphi
-            if (n1n < 1) n1n = n1n + n2 + nghost
-            n2n = n-2*nphi
-            if (n2n < 1) n2n = n2n + n2 + nghost
-            n3n = n-3*nphi
-            if (n3n < 1) n3n = n3n + n2 + nghost
-            if (upwnd) then
-              fac=(1.0/60)*dz_1(n)/nphi
-            else
-              fac = (dz_1(n)/nphi)**6 * (r1_mn * sin1th(m))**6
-            endif
-            df=fac*(- 20.0* f(l1:l2,m,    n           ,k) &
-                    + 15.0*(f(l1:l2,m,n1p,k)+f(l1:l2,m,n1n,k)) &
-                    +  6.0*(f(l1:l2,m,n2p,k)+f(l1:l2,m,n2n,k)) &
-                    +      (f(l1:l2,m,n3p,k)+f(l1:l2,m,n3n,k)) )
+!!          if (lpole(2) .and. lcoarse) then
+          if (igndx) then
+            facs=1.
+          else if (upwnd) then
+            facs=(1.0/60)*dz_1(n)
           else
-            if (igndx) then
-              fac=1.
-            else if (upwnd) then
-              fac=(1.0/60)*dz_1(n)
-            else
-              fac=dz_1(n)**6
-            endif
-            df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                    + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                    -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                    +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-            if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
-              df = df * (r1_mn * sin1th(m))**6
+            facs=dz_1(n)**6
           endif
+          df=facs*(- 20.0* f(l1:l2,m,n  ,k) &
+                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
+            df = df * (r1_mn * sin1th(m))**6
         else
           df=0.
         endif
@@ -1095,7 +977,7 @@ module Deriv
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
 ! Calculates gradient of a scalar along the direction j but
-! get for the derivatives at the point i-1,i,i+1
+! get the derivatives at the point i-1,i,i+1
 !
       intent(in) :: f,k,j
       intent(out) :: delfk,delfkp1,delfkm1
@@ -1133,8 +1015,11 @@ module Deriv
             enddo
           enddo
           fac = dy_1(m)
-          if (lspherical_coords) fac = fac*r1_mn
-          if (lcylindrical_coords) fac = fac*rcyl_mn1
+          if (lspherical_coords) then
+            fac = fac*r1_mn
+          elseif (lcylindrical_coords) then
+            fac = fac*rcyl_mn1
+          endif
 ! z-component
         case(3)
           do i=l1,l2
@@ -1147,13 +1032,14 @@ module Deriv
             enddo
           enddo
           fac = dz_1(n)
+!MR: coarse missing
           if (lspherical_coords) fac = fac*r1_mn*sin1th(m)
         case default
           call fatal_error('deriv:der2_minmod','wrong component')
         endselect
-        delfkm1(:) = delf(:,-1)*fac
-        delfk(:) = delf(:,0)*fac
-        delfkp1(:) = delf(:,1)*fac
+        delfkm1 = delf(:,-1)*fac
+        delfk   = delf(:, 0)*fac
+        delfkp1 = delf(:, 1)*fac
 !
     endsubroutine der2_minmod
 !***********************************************************************
@@ -1204,10 +1090,9 @@ module Deriv
         igndx = .false.
       endif
       if (present(upwind)) then
-        if (.not. lequidist(j).and..not.lignore_nonequi) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) &
           call fatal_error('der6_other','upwind cannot be used with '//&
               'non-equidistant grid.')
-        endif
         upwnd = upwind
       else
         upwnd = .false.
@@ -1242,6 +1127,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
                   -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+!MR: spherical/cylndrical missing
         else
           df=0.
         endif
@@ -1258,6 +1144,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
                   -  6.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
                   +      (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+!MR: spherical/coarse missing
         else
           df=0.
         endif
@@ -1302,10 +1189,8 @@ module Deriv
 !  x-derivative
 !
       if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der6_pencil: pencil must be of size mx for x derivative'
-          call fatal_error('der6_pencil','')
-        endif
+        if (size(pencil)/=mx) &
+          call fatal_error('der6_pencil','pencil must be of size mx for x derivative')
         if (igndx) then
           facx=1.
         elseif (upwnd) then
@@ -1321,11 +1206,8 @@ module Deriv
 !
 !  y-derivative
 !
-        if (size(pencil)/=my) then
-          if (lroot) &
-              print*, 'der6_pencil: pencil must be of size my for y derivative'
-          call fatal_error('der6_pencil','')
-        endif
+        if (size(pencil)/=my) &
+          call fatal_error('der6_pencil','pencil must be of size my for y derivative')
         if (igndx) then
           facy=1.
         else if (upwnd) then
@@ -1337,15 +1219,13 @@ module Deriv
                   + 15.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
                   -  6.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
                   +      (pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+!MR: no spherical/cylindrical
       else if (j==3) then
 !
 !  z-derivative
 !
-        if (size(pencil)/=mz) then
-          if (lroot) &
-              print*, 'der6_pencil: pencil must be of size mz for z derivative'
-          call fatal_error('der6_pencil','')
-        endif
+        if (size(pencil)/=mz) &
+          call fatal_error('der6_pencil','pencil must be of size mz for z derivative')
         if (igndx) then
           facz=1.
         else if (upwnd) then
@@ -1357,6 +1237,7 @@ module Deriv
                   + 15.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
                   -  6.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
                   +      (pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+!MR: no spherical/coarse
       else
         if (lroot) print*, 'der6_pencil: no such direction j=', j
         call fatal_error('der6_pencil','')
@@ -1410,7 +1291,6 @@ module Deriv
       intent(in) :: f,k,i,j
       intent(out) :: df
 !
-!
 ! crash if this is called with i=j
 !
 !      if (i.eq.j) call fatal_error('derij_main','i=j, no derivative calculated')
@@ -1418,14 +1298,14 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
-      if (lbidiagonal_derij) then
+      if (lbidiagonal_derij) then   !!.and..not.lcoarse) then
         !
         ! Use bidiagonal mixed-derivative operator, i.e.
         ! employ only the three neighbouring points on each of the four
         ! half-diagonals. This gives 6th-order mixed derivatives as the
         ! version below, but involves just 12 points instead of 36.
         !
-        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+        if (i+j==3) then
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
@@ -1440,7 +1320,7 @@ module Deriv
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
-        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+        elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./720.)*dy_1(m)*dz_1(n)
             df=fac*( &
@@ -1476,7 +1356,7 @@ module Deriv
         !
         ! This is the old, straight-forward scheme
         !
-        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+        if (i+j==3) then
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
@@ -1503,7 +1383,7 @@ module Deriv
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
-        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+        elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./60.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
@@ -1525,7 +1405,7 @@ module Deriv
                   -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
                     -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                        +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
-                   )
+                  ) 
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
@@ -1568,11 +1448,9 @@ module Deriv
 
       if (lspherical_coords) then
         if (i+j==3) df=df*r1_mn                     !(minus extra terms)
-        if (i+j==4) df=df*r1_mn*sin1th(m)           !(minus extra terms)
+        if (i==1.and.j==3 .or. i==3.and.j==1) df=df*r1_mn*sin1th(m) !(minus extra terms)
         if (i+j==5) df=df*r2_mn*sin1th(m)           !(minus extra terms)
-      endif
-!
-      if (lcylindrical_coords) then
+      elseif (lcylindrical_coords) then
         if ( i==2 .or. j==2 ) df=df*rcyl_mn1
       endif
 !
@@ -1594,6 +1472,10 @@ module Deriv
       intent(in)  :: f,i,j
       intent(out) :: df
 !
+! crash if this is called with i=j
+!
+!      if (i.eq.j) call fatal_error('derij_main','i=j, no derivative calculated')
+!
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
@@ -1604,7 +1486,7 @@ module Deriv
         ! half-diagonals. This gives 6th-order mixed derivatives as the
         ! version below, but involves just 12 points instead of 36.
         !
-        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+        if (i+j==3) then
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
@@ -1619,7 +1501,7 @@ module Deriv
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
-        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+        elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./720.)*dy_1(m)*dz_1(n)
             df=fac*( &
@@ -1655,7 +1537,7 @@ module Deriv
         !
         ! This is the old, straight-forward scheme
         !
-        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+        if (i+j==3) then
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
@@ -1682,7 +1564,7 @@ module Deriv
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
-        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+        elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./60.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
@@ -1744,15 +1626,10 @@ module Deriv
 !  presence of extra terms that are being evaluated later in gij_etc.
 !
       if (lspherical_coords) then
-        if ((i==1.and.j==2)) df=df*r1_mn
-        if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
-        if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
-        if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
-        if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
-        if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
-      endif
-!
-      if (lcylindrical_coords) then
+        if (i+j==3) df=df*r1_mn !(minus extra terms)
+        if ((i==1.and.j==3) .or. (i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)               
+        if (i+j==5) df=df*r2_mn*sin1th(m) !(minus extra terms)
+      elseif (lcylindrical_coords) then
         if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1
       endif
 !
@@ -1770,6 +1647,7 @@ module Deriv
 !
       intent(in) :: f,k,i,j
       intent(out) :: df
+!
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
@@ -1779,27 +1657,12 @@ module Deriv
              call warning('der5i1j','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
 !
-      df=0.0
-      if ((i==1.and.j==1)) then
-        if (nxgrid/=1) then
-          call der6(f,k,df,j)
-        else
+      if (i==j) then
+        if (i==1.and.nxgrid==1 .or. i==2.and.nygrid==1 .or. i==3.and.nzgrid==1) then    
           df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in x-direction'
-        endif
-      elseif ((i==2.and.j==2)) then
-        if (nygrid/=1) then
-          call der6(f,k,df,j)
+          if (ip<=5) print*, 'der5i1j: Degenerate case in '//coornames(i)//'-direction'
         else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in y-direction'
-        endif
-      elseif ((i==3.and.j==3)) then
-        if (nzgrid/=1) then
           call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in z-direction'
         endif
       elseif ((i==1.and.j==2)) then
         if (nxgrid/=1.and.nygrid/=1) then
@@ -1884,8 +1747,8 @@ module Deriv
           if (ip<=5) print*, 'der5i1j: Degenerate case in x- or z-direction'
         endif
       elseif ((i==3.and.j==1)) then
-        if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/60.0*dy_1(m)
+        if (nzgrid/=1.and.nxgrid/=1) then
+          fac=dz_1(n)**5*1/60.0*dx_1(l1:l2)
           df=fac*( &
             2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
@@ -1983,6 +1846,7 @@ module Deriv
 !
       intent(in) :: f,k,i,j
       intent(out) :: df
+
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
@@ -1992,27 +1856,12 @@ module Deriv
              call warning('der4i2j','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
 !
-      df=0.0
-      if ((i==1.and.j==1)) then
-        if (nxgrid/=1) then
-          call der6(f,k,df,j)
-        else
+      if (i==j) then
+        if (i==1.and.nxgrid==1 .or. i==2.and.nygrid==1 .or. i==3.and.nzgrid==1) then
           df=0.
-          if (ip<=5) print*, 'der4i2j: Degenerate case in x-direction'
-        endif
-      elseif ((i==2.and.j==2)) then
-        if (nygrid/=1) then
-          call der6(f,k,df,j)
+          if (ip<=5) print*, 'der4i2j: Degenerate case in '//coornames(i)//'-direction'
         else
-          df=0.
-          if (ip<=5) print*, 'der4i2j: Degenerate case in y-direction'
-        endif
-      elseif ((i==3.and.j==3)) then
-        if (nzgrid/=1) then
           call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der4i2j: Degenerate case in z-direction'
         endif
       elseif ((i==1.and.j==2)) then
         if (nxgrid/=1.and.nygrid/=1) then
@@ -2127,7 +1976,7 @@ module Deriv
           if (ip<=5) print*, 'der4i2j: Degenerate case in x- or z-direction'
         endif
       elseif ((i==3.and.j==1)) then
-        if (nzgrid/=1.and.nygrid/=1) then
+        if (nzgrid/=1.and.nxgrid/=1) then
           fac=(1./6.0*dz_1(n)**4) * (1./180.0*dx_1(l1:l2)**2)
           if (lspherical_coords) fac = fac*(r1_mn*sin1th(m))**4
           df=fac*( &
@@ -2261,6 +2110,8 @@ module Deriv
         if (lspherical_coords.or.lcylindrical_coords) &
              call warning('der2i2j2k','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
+!
+!  MR: cases i=j/=k etc. missing
 !
       if (nxgrid/=1.and.nzgrid/=1.and.nygrid/=1) then
         fac=1./180.0**3*(dx_1(l1:l2)*dy_1(m)*dz_1(n))**2
@@ -2626,156 +2477,141 @@ module Deriv
              call warning('der3i3j','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
 !
-      df=0.0
-      if ((i==1.and.j==1)) then
-        if (nxgrid/=1) then
-          call der6(f,k,df,j)
-        else
+      if (i==j) then
+        if (i==1.and.nxgrid==1 .or. i==2.and.nygrid==1 .or. i==3.and.nzgrid==1) then
           df=0.
-          if (ip<=5) print*, 'der3i3j: Degenerate case in x-direction'
-        endif
-      elseif ((i==2.and.j==2)) then
-        if (nygrid/=1) then
-          call der6(f,k,df,j)
+          if (ip<=5) print*, 'der3i3j: Degenerate case in '//coornames(i)//'-direction'
         else
-          df=0.
-          if (ip<=5) print*, 'der3i3j: Degenerate case in y-direction'
-        endif
-      elseif ((i==3.and.j==3)) then
-        if (nzgrid/=1) then
           call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der3i3j: Degenerate case in z-direction'
         endif
-      elseif ((i==1.and.j==2).or.(i==2.and.j==1)) then
+      elseif (i+j==3) then
         xy: if (nxgrid/=1.and.nygrid/=1) then
           fac= 1./8.0**2 * dx_1(l1:l2)**3 * dy_1(m)**3
           df = fac*(&
                ( 169.0 * f( l1-1:l2-1 , m - 1 , n , k ))+&
-               ( -104.0 * f( l1-2:l2-2 , m - 1 , n , k ))+&
+               (-104.0 * f( l1-2:l2-2 , m - 1 , n , k ))+&
                ( 13.0 * f( l1-3:l2-3 , m - 1 , n , k ))+&
-               ( -169.0 * f( l1+1:l2+1 , m - 1 , n , k ))+&
+               (-169.0 * f( l1+1:l2+1 , m - 1 , n , k ))+&
                ( 104.0 * f( l1+2:l2+2 , m - 1 , n , k ))+&
-               ( -13.0 * f( l1+3:l2+3 , m - 1 , n , k ))+&
-               ( -104.0 * f( l1-1:l2-1 , m - 2 , n , k ))+&
+               (-13.0 * f( l1+3:l2+3 , m - 1 , n , k ))+&
+               (-104.0 * f( l1-1:l2-1 , m - 2 , n , k ))+&
                ( 64.0 * f( l1-2:l2-2 , m - 2 , n , k ))+&
-               ( -8.0 * f( l1-3:l2-3 , m - 2 , n , k ))+&
+               (-8.0 * f( l1-3:l2-3 , m - 2 , n , k ))+&
                ( 104.0 * f( l1+1:l2+1 , m - 2 , n , k ))+&
-               ( -64.0 * f( l1+2:l2+2 , m - 2 , n , k ))+&
+               (-64.0 * f( l1+2:l2+2 , m - 2 , n , k ))+&
                ( 8.0 * f( l1+3:l2+3 , m - 2 , n , k ))+&
                ( 13.0 * f( l1-1:l2-1 , m - 3 , n , k ))+&
-               ( -8.0 * f( l1-2:l2-2 , m - 3 , n , k ))+&
+               (-8.0 * f( l1-2:l2-2 , m - 3 , n , k ))+&
                ( 1.0 * f( l1-3:l2-3 , m - 3 , n , k ))+&
-               ( -13.0 * f( l1+1:l2+1 , m - 3 , n , k ))+&
+               (-13.0 * f( l1+1:l2+1 , m - 3 , n , k ))+&
                ( 8.0 * f( l1+2:l2+2 , m - 3 , n , k ))+&
-               ( -1.0 * f( l1+3:l2+3 , m - 3 , n , k ))+&
-               ( -169.0 * f( l1-1:l2-1 , m + 1 , n , k ))+&
+               (-1.0 * f( l1+3:l2+3 , m - 3 , n , k ))+&
+               (-169.0 * f( l1-1:l2-1 , m + 1 , n , k ))+&
                ( 104.0 * f( l1-2:l2-2 , m + 1 , n , k ))+&
-               ( -13.0 * f( l1-3:l2-3 , m + 1 , n , k ))+&
+               (-13.0 * f( l1-3:l2-3 , m + 1 , n , k ))+&
                ( 169.0 * f( l1+1:l2+1 , m + 1 , n , k ))+&
-               ( -104.0 * f( l1+2:l2+2 , m + 1 , n , k ))+&
+               (-104.0 * f( l1+2:l2+2 , m + 1 , n , k ))+&
                ( 13.0 * f( l1+3:l2+3 , m + 1 , n , k ))+&
                ( 104.0 * f( l1-1:l2-1 , m + 2 , n , k ))+&
-               ( -64.0 * f( l1-2:l2-2 , m + 2 , n , k ))+&
+               (-64.0 * f( l1-2:l2-2 , m + 2 , n , k ))+&
                ( 8.0 * f( l1-3:l2-3 , m + 2 , n , k ))+&
-               ( -104.0 * f( l1+1:l2+1 , m + 2 , n , k ))+&
+               (-104.0 * f( l1+1:l2+1 , m + 2 , n , k ))+&
                ( 64.0 * f( l1+2:l2+2 , m + 2 , n , k ))+&
-               ( -8.0 * f( l1+3:l2+3 , m + 2 , n , k ))+&
-               ( -13.0 * f( l1-1:l2-1 , m + 3 , n , k ))+&
+               (-8.0 * f( l1+3:l2+3 , m + 2 , n , k ))+&
+               (-13.0 * f( l1-1:l2-1 , m + 3 , n , k ))+&
                ( 8.0 * f( l1-2:l2-2 , m + 3 , n , k ))+&
-               ( -1.0 * f( l1-3:l2-3 , m + 3 , n , k ))+&
+               (-1.0 * f( l1-3:l2-3 , m + 3 , n , k ))+&
                ( 13.0 * f( l1+1:l2+1 , m + 3 , n , k ))+&
-               ( -8.0 * f( l1+2:l2+2 , m + 3 , n , k ))+&
+               (-8.0 * f( l1+2:l2+2 , m + 3 , n , k ))+&
                ( 1.0 * f( l1+3:l2+3 , m + 3 , n , k ))&
                )
         else
           df=0.0
         endif xy
 !
-      elseif ((i==1.and.j==3).or.(i==3.and.j==1)) then
+      elseif (i+j==4) then
         xz: if (nxgrid/=1.and.nzgrid/=1) then
           fac= 1./8.0**2 * dx_1(l1:l2)**3 * dz_1(n)**3
           df = fac*(& 
                ( 169.0 * f( l1-1:l2-1 , m , n - 1 , k ))+&
-               ( -104.0 * f( l1-2:l2-2 , m , n - 1 , k ))+&
+               (-104.0 * f( l1-2:l2-2 , m , n - 1 , k ))+&
                ( 13.0 * f( l1-3:l2-3 , m , n - 1 , k ))+&
-               ( -169.0 * f( l1+1:l2+1 , m , n - 1 , k ))+&
+               (-169.0 * f( l1+1:l2+1 , m , n - 1 , k ))+&
                ( 104.0 * f( l1+2:l2+2 , m , n - 1 , k ))+&
-               ( -13.0 * f( l1+3:l2+3 , m , n - 1 , k ))+&
-               ( -104.0 * f( l1-1:l2-1 , m , n - 2 , k ))+&
+               (-13.0 * f( l1+3:l2+3 , m , n - 1 , k ))+&
+               (-104.0 * f( l1-1:l2-1 , m , n - 2 , k ))+&
                ( 64.0 * f( l1-2:l2-2 , m , n - 2 , k ))+&
-               ( -8.0 * f( l1-3:l2-3 , m , n - 2 , k ))+&
+               (-8.0 * f( l1-3:l2-3 , m , n - 2 , k ))+&
                ( 104.0 * f( l1+1:l2+1 , m , n - 2 , k ))+&
-               ( -64.0 * f( l1+2:l2+2 , m , n - 2 , k ))+&
+               (-64.0 * f( l1+2:l2+2 , m , n - 2 , k ))+&
                ( 8.0 * f( l1+3:l2+3 , m , n - 2 , k ))+&
                ( 13.0 * f( l1-1:l2-1 , m , n - 3 , k ))+&
-               ( -8.0 * f( l1-2:l2-2 , m , n - 3 , k ))+&
+               (-8.0 * f( l1-2:l2-2 , m , n - 3 , k ))+&
                ( 1.0 * f( l1-3:l2-3 , m , n - 3 , k ))+&
-               ( -13.0 * f( l1+1:l2+1 , m , n - 3 , k ))+&
+               (-13.0 * f( l1+1:l2+1 , m , n - 3 , k ))+&
                ( 8.0 * f( l1+2:l2+2 , m , n - 3 , k ))+&
-               ( -1.0 * f( l1+3:l2+3 , m , n - 3 , k ))+&
-               ( -169.0 * f( l1-1:l2-1 , m , n + 1 , k ))+&
+               (-1.0 * f( l1+3:l2+3 , m , n - 3 , k ))+&
+               (-169.0 * f( l1-1:l2-1 , m , n + 1 , k ))+&
                ( 104.0 * f( l1-2:l2-2 , m , n + 1 , k ))+&
-               ( -13.0 * f( l1-3:l2-3 , m , n + 1 , k ))+&
+               (-13.0 * f( l1-3:l2-3 , m , n + 1 , k ))+&
                ( 169.0 * f( l1+1:l2+1 , m , n + 1 , k ))+&
-               ( -104.0 * f( l1+2:l2+2 , m , n + 1 , k ))+&
+               (-104.0 * f( l1+2:l2+2 , m , n + 1 , k ))+&
                ( 13.0 * f( l1+3:l2+3 , m , n + 1 , k ))+&
                ( 104.0 * f( l1-1:l2-1 , m , n + 2 , k ))+&
-               ( -64.0 * f( l1-2:l2-2 , m , n + 2 , k ))+&
+               (-64.0 * f( l1-2:l2-2 , m , n + 2 , k ))+&
                ( 8.0 * f( l1-3:l2-3 , m , n + 2 , k ))+&
-               ( -104.0 * f( l1+1:l2+1 , m , n + 2 , k ))+&
+               (-104.0 * f( l1+1:l2+1 , m , n + 2 , k ))+&
                ( 64.0 * f( l1+2:l2+2 , m , n + 2 , k ))+&
-               ( -8.0 * f( l1+3:l2+3 , m , n + 2 , k ))+&
-               ( -13.0 * f( l1-1:l2-1 , m , n + 3 , k ))+&
+               (-8.0 * f( l1+3:l2+3 , m , n + 2 , k ))+&
+               (-13.0 * f( l1-1:l2-1 , m , n + 3 , k ))+&
                ( 8.0 * f( l1-2:l2-2 , m , n + 3 , k ))+&
-               ( -1.0 * f( l1-3:l2-3 , m , n + 3 , k ))+&
+               (-1.0 * f( l1-3:l2-3 , m , n + 3 , k ))+&
                ( 13.0 * f( l1+1:l2+1 , m , n + 3 , k ))+&
-               ( -8.0 * f( l1+2:l2+2 , m , n + 3 , k ))+&
+               (-8.0 * f( l1+2:l2+2 , m , n + 3 , k ))+&
                ( 1.0 * f( l1+3:l2+3 , m , n + 3 , k ))&
                )
         else
           df=0.0
         endif xz
-      elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
-        yz: if (nxgrid/=1.and.nzgrid/=1) then
+      elseif (i+j==5) then
+        yz: if (nygrid/=1.and.nzgrid/=1) then
           fac= 1./8.0**2 * dy_1(m)**3 * dz_1(n)**3
           df = fac*(& 
                ( 169.0 * f( l1:l2 , m - 1 , n - 1 , k ))+&
-               ( -104.0 * f( l1:l2 , m - 2 , n - 1 , k ))+&
+               (-104.0 * f( l1:l2 , m - 2 , n - 1 , k ))+&
                ( 13.0 * f( l1:l2 , m - 3 , n - 1 , k ))+&
-               ( -169.0 * f( l1:l2 , m + 1 , n - 1 , k ))+&
+               (-169.0 * f( l1:l2 , m + 1 , n - 1 , k ))+&
                ( 104.0 * f( l1:l2 , m + 2 , n - 1 , k ))+&
-               ( -13.0 * f( l1:l2 , m + 3 , n - 1 , k ))+&
-               ( -104.0 * f( l1:l2 , m - 1 , n - 2 , k ))+&
+               (-13.0 * f( l1:l2 , m + 3 , n - 1 , k ))+&
+               (-104.0 * f( l1:l2 , m - 1 , n - 2 , k ))+&
                ( 64.0 * f( l1:l2 , m - 2 , n - 2 , k ))+&
-               ( -8.0 * f( l1:l2 , m - 3 , n - 2 , k ))+&
+               (-8.0 * f( l1:l2 , m - 3 , n - 2 , k ))+&
                ( 104.0 * f( l1:l2 , m + 1 , n - 2 , k ))+&
-               ( -64.0 * f( l1:l2 , m + 2 , n - 2 , k ))+&
+               (-64.0 * f( l1:l2 , m + 2 , n - 2 , k ))+&
                ( 8.0 * f( l1:l2 , m + 3 , n - 2 , k ))+&
                ( 13.0 * f( l1:l2 , m - 1 , n - 3 , k ))+&
-               ( -8.0 * f( l1:l2 , m - 2 , n - 3 , k ))+&
+               (-8.0 * f( l1:l2 , m - 2 , n - 3 , k ))+&
                ( 1.0 * f( l1:l2 , m - 3 , n - 3 , k ))+&
-               ( -13.0 * f( l1:l2 , m + 1 , n - 3 , k ))+&
+               (-13.0 * f( l1:l2 , m + 1 , n - 3 , k ))+&
                ( 8.0 * f( l1:l2 , m + 2 , n - 3 , k ))+&
-               ( -1.0 * f( l1:l2 , m + 3 , n - 3 , k ))+&
-               ( -169.0 * f( l1:l2 , m - 1 , n + 1 , k ))+&
+               (-1.0 * f( l1:l2 , m + 3 , n - 3 , k ))+&
+               (-169.0 * f( l1:l2 , m - 1 , n + 1 , k ))+&
                ( 104.0 * f( l1:l2 , m - 2 , n + 1 , k ))+&
-               ( -13.0 * f( l1:l2 , m - 3 , n + 1 , k ))+&
+               (-13.0 * f( l1:l2 , m - 3 , n + 1 , k ))+&
                ( 169.0 * f( l1:l2 , m + 1 , n + 1 , k ))+&
-               ( -104.0 * f( l1:l2 , m + 2 , n + 1 , k ))+&
+               (-104.0 * f( l1:l2 , m + 2 , n + 1 , k ))+&
                ( 13.0 * f( l1:l2 , m + 3 , n + 1 , k ))+&
                ( 104.0 * f( l1:l2 , m - 1 , n + 2 , k ))+&
-               ( -64.0 * f( l1:l2 , m - 2 , n + 2 , k ))+&
+               (-64.0 * f( l1:l2 , m - 2 , n + 2 , k ))+&
                ( 8.0 * f( l1:l2 , m - 3 , n + 2 , k ))+&
-               ( -104.0 * f( l1:l2 , m + 1 , n + 2 , k ))+&
+               (-104.0 * f( l1:l2 , m + 1 , n + 2 , k ))+&
                ( 64.0 * f( l1:l2 , m + 2 , n + 2 , k ))+&
-               ( -8.0 * f( l1:l2 , m + 3 , n + 2 , k ))+&
-               ( -13.0 * f( l1:l2 , m - 1 , n + 3 , k ))+&
+               (-8.0 * f( l1:l2 , m + 3 , n + 2 , k ))+&
+               (-13.0 * f( l1:l2 , m - 1 , n + 3 , k ))+&
                ( 8.0 * f( l1:l2 , m - 2 , n + 3 , k ))+&
-               ( -1.0 * f( l1:l2 , m - 3 , n + 3 , k ))+&
+               (-1.0 * f( l1:l2 , m - 3 , n + 3 , k ))+&
                ( 13.0 * f( l1:l2 , m + 1 , n + 3 , k ))+&
-               ( -8.0 * f( l1:l2 , m + 2 , n + 3 , k ))+&
+               (-8.0 * f( l1:l2 , m + 2 , n + 3 , k ))+&
                ( 1.0 * f( l1:l2 , m + 3 , n + 3 , k ))&
                )
         else
@@ -2798,28 +2634,14 @@ module Deriv
              call warning('der3i2j1k','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
 !
-      df=0.0
-      if (i==1.and.j==1.and.k==1) then
-        if (nxgrid/=1) then
-          call der6(f,ik,df,j)
-        else
+      if (i==j.and.j==k) then
+        if (i==1.and.nxgrid==1 .or. i==2.and.nygrid==1 .or. i==3.and.nzgrid==1) then
           df=0.
-          if (ip<=5) print*, 'der3i2j1k: Degenerate case in x-direction'
-        endif
-      elseif (i==2.and.j==2.and.k==2) then
-        if (nygrid/=1) then
-          call der6(f,ik,df,j)
+          if (ip<=5) print*, 'der3i2j1k: Degenerate case in '//coornames(i)//'-direction'
         else
-          df=0.
-          if (ip<=5) print*, 'der3i2j1k: Degenerate case in y-direction'
-        endif
-      elseif (i==3.and.j==3.and.k==3) then
-        if (nzgrid/=1) then
           call der6(f,ik,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der3i2j1k: Degenerate case in z-direction'
         endif
+!  MR: cases i=j/=k etc. missing
       elseif (i==1.and.j==2.and.k==3) then
         xyz: if (nxgrid/=1.and.nygrid/=1.and.nzgrid/=1) then
           fac= (1./8.0*dx_1(l1:l2)**3) * (1./180.0*dy_1(m)**2) * (1/60.0*dz_1(n))
@@ -4402,28 +4224,14 @@ module Deriv
              call warning('der4i1j1k','MISSING CURVATURE TERMS for non-cartesian coordinates')
       endif
 !
-      df=0.0
-      if ((i==1.and.j==1.and.k==1)) then
-        if (nxgrid/=1) then
-          call der6(f,ik,df,j)
-        else
+      if (i==j.and.j==k) then
+        if (i==1.and.nxgrid==1 .or. i==2.and.nygrid==1 .or. i==3.and.nzgrid==1) then
           df=0.
-          if (ip<=5) print*, 'der4i1j1k: Degenerate case in x-direction'
-        endif
-      elseif ((i==2.and.j==2.and.k==2)) then
-        if (nygrid/=1) then
-          call der6(f,ik,df,j)
+          if (ip<=5) print*, 'der4i1j1k: Degenerate case in '//coornames(i)//'-direction'                             
         else
-          df=0.
-          if (ip<=5) print*, 'der4i1j1k: Degenerate case in y-direction'
-        endif
-      elseif ((i==3.and.j==3.and.k==3)) then
-        if (nzgrid/=1) then
           call der6(f,ik,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der4i1j1k: Degenerate case in z-direction'
         endif
+!  MR: cases i=j/=k etc. missing
       elseif ((i==1.and.j==2.and.k==3).or.(i==1.and.j==3.and.k==2)) then
         xyz: if (nxgrid/=1.and.nygrid/=1.and.nzgrid/=1) then
           fac= (1./6.0*dx_1(l1:l2)**4) * (1./60.0*dy_1(m)) * (1/60.0*dz_1(n))
@@ -5328,6 +5136,7 @@ module Deriv
                   -sgn*36*f(l1:l2,m1:m2,pos+sgn*2,k)&
                   +sgn*16*f(l1:l2,m1:m2,pos+sgn*3,k)&
                   -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4,k))
+!MR: coarse missing
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -5385,6 +5194,7 @@ module Deriv
                   -sgn*36*f(lll,mmm,pos+sgn*2,k)&
                   +sgn*16*f(lll,mmm,pos+sgn*3,k)&
                   -sgn*3 *f(lll,mmm,pos+sgn*4,k))
+!MR: coarse missing
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -5446,6 +5256,7 @@ module Deriv
                     -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
                     +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
                     -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
+!MR: coarse missing
 !
         else
           df=0.
@@ -5507,6 +5318,7 @@ module Deriv
                     +sgn*16*f(lll,mmm,pos+sgn*3)&
                     -sgn*3 *f(lll,mmm,pos+sgn*4))
 !
+!MR: coarse missing
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in z-direction'
@@ -5579,6 +5391,7 @@ module Deriv
 
       integer :: k
 
+!MR: coarse missing
       if (topbot=='bot') then
         if (idir==1) then
           k=l1
@@ -5649,6 +5462,7 @@ module Deriv
 
       integer :: k
 
+!MR: coarse missing
       if (topbot=='bot') then
         if (idir==1) then
           k=l1
@@ -5719,6 +5533,7 @@ module Deriv
 
       integer :: k
 
+!MR: coarse missing
       if (topbot=='bot') then
         if (idir==1) then
           k=l1
@@ -5865,6 +5680,7 @@ module Deriv
 
       integer :: k
 
+!MR: coarse missing
       if (topbot=='bot') then
         if (idir==1) then
           k=l1
@@ -5934,6 +5750,7 @@ module Deriv
       integer :: j,idir
       real, dimension(:,:) :: val
 !
+!MR: coarse missing
       integer :: k
 
       if (topbot=='bot') then
@@ -5999,6 +5816,7 @@ module Deriv
 !
 !  09-feb-17/Ivan: coded
 !
+!MR: coarse missing
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
