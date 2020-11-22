@@ -65,12 +65,12 @@ source $PENCIL_HOME/sourceme.csh
 
 ## Code of Conduct
 
-* The Pencil Code community adheres to the [conduct][Contributor Covenant Code of Conduct].
+* The Pencil Code community adheres to the [Contributor Covenant Code of Conduct][conduct].
   Please familiarize yourself with its details.
 
 ## License
 
-* The Pencil Code is under the [license][GNU public license agreement].
+* The Pencil Code is under the [GNU public license agreement][license].
 
 [travis]: https://www.travis-ci.com/github/pencil-code/pencil-code
 [hourly]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/gfortran_hourly.html
