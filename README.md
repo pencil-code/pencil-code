@@ -53,6 +53,15 @@ source $PENCIL_HOME/sourceme.csh
 
 * The [manual][manual] is the main source of information
 
+## List of Contributors
+
+* Around 100 people have contributed to various extent during the
+  nearly 20 years of Pencil Code history.
+* The current [list of contributors][contributors] shows the temporal
+  check-in activity of the those who stayed connected with the code
+  over the various host changes (Nordita 2001-2007, Google Code 2007-2015,
+  and Github since 2015).
+
 ## How to contribute to the Pencil Code
 
 * For all changes to the code, make sure the auto-test still runs
@@ -78,4 +87,5 @@ source $PENCIL_HOME/sourceme.csh
 [conduct]: https://github.com/pencil-code/pencil-code/blob/master/license/CODE_OF_CONDUCT.md
 [manual]: https://github.com/pencil-code/website/blob/master/doc/manual.pdf
 [license]: https://github.com/pencil-code/pencil-code/blob/master/license/GNU_public_license.txt
+[contributors]: https://github.com/pencil-code/pencil-code/graphs/contributors
 
