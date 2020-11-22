@@ -237,7 +237,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             tt = dst['tt'][n1:n2,m1:m2,l1:l2]
             var = (par.cp - cv)*tt*rho
         else:
-            if 'rho' is src.keys() or 'lnrho' in src.keys():
+            if 'rho' in src.keys() or 'lnrho' in src.keys():
                 print('no entropy or temperature using cs^2'+
                   ' in pressure calculation')
                 var = rho*par.cs0**2
