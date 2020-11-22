@@ -48,3 +48,34 @@ If you are using csh insert the following into your .cshrc:
 setenv PENCIL_HOME $HOME/pencil-code  [or wherever you have the code]
 source $PENCIL_HOME/sourceme.csh
 ```
+
+## Documentation
+
+* The [manual][manual] is the main source of information
+
+## How to contribute to the Pencil Code
+
+* For all changes to the code, make sure the auto-test still runs
+
+* If you have write access: check in your changes and make sure you can
+  fix possible problems emerging on [travis-ci.com][travis] as well as the
+  [hourly][hourly] and [daily][daily] auto-tests.
+
+* If you have only read access: fork this repository and use pull requests to contribute.
+
+## Code of Conduct
+
+* The Pencil Code community adheres to the [conduct][Contributor Covenant Code of Conduct].
+  Please familiarize yourself with its details.
+
+## License
+
+* The Pencil Code is under the [license][GNU public license agreement].
+
+[travis]: https://www.travis-ci.com/github/pencil-code/pencil-code
+[hourly]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/gfortran_hourly.html
+[daily]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/g95_debug.html
+[conduct]: https://github.com/pencil-code/pencil-code/blob/master/license/CODE_OF_CONDUCT.md
+[manual]: https://github.com/pencil-code/website/blob/master/doc/manual.pdf
+[license]: https://github.com/pencil-code/pencil-code/blob/master/license/GNU_public_license.txt
+
