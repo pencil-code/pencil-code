@@ -215,6 +215,20 @@ It is now time to run the code:
 \begin{verbatim}
   pc_run
 \end{verbatim}
+If everything worked well, your output should contain the lines
+\begin{verbatim}
+  start.x has completed successfully
+\end{verbatim}
+and
+\begin{verbatim}
+  Wall clock time/timestep/meshpoint [microsec] = ...
+\end{verbatim}
+If you work with one of the samples or an identical setup in a new working directory, you can verify the correctness of the results
+by checking against reference data, delivered with each sample:
+\begin{verbatim}
+  diff reference.out data/time_series.dat
+\end{verbatim}
+
 Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
