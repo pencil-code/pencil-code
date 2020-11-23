@@ -220,13 +220,14 @@ If everything worked well, your output should contain the lines
   start.x has completed successfully
 \end{verbatim}
 after initiallizing everything successfully, it would then start running,   
-printing on the prompt the quantities specified in \file{print.in}, for 
+printing in the console the quantities specified in \file{print.in}, for 
 instance,
 \begin{verbatim}
 ---it--------t-------dt------rhom------urms------uxpt-----uypt-----uzpt-----
        0      0.00 4.9E-03 1.000E+00  1.414E+00 2.00E+00 0.00E+00 0.00E+00
       10      0.05 4.9E-03 1.000E+00  1.401E+00 1.98E+00 0.00E+00 0.00E+00
       20      0.10 4.9E-03 1.000E+00  1.361E+00 1.88E+00 0.00E+00 0.00E+00 
+      .......
 \end{verbatim}
 ending with
 \begin{verbatim}
@@ -234,8 +235,8 @@ ending with
   .....
   Wall clock time/timestep/meshpoint [microsec] = ...
 \end{verbatim}
-The file \file{COMPLETED} will appear in your run directory once the run is 
-finished.
+An empty file called \file{COMPLETED} will appear in your run directory once 
+the run is finished.
 
 
 If you work with one of the samples or an identical setup in a new working directory, you can verify the correctness of the results
