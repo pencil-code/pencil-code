@@ -53,6 +53,8 @@ source $PENCIL_HOME/sourceme.csh
 
 * The [manual][manual] is the main source of information.
 * There is also a [quick start][quick_start] to help getting started.
+* Information about [PythonCodingStyle][PythonCodingStyle] and the
+  [PythonCodingStyle][PythonCodingStyle] can be found on the [wiki][wiki].
 
 ## List of Contributors
 
@@ -91,4 +93,7 @@ source $PENCIL_HOME/sourceme.csh
 [quick_start]: https://github.com/pencil-code/website/blob/master/doc/quick_start.pdf
 [license]: https://github.com/pencil-code/pencil-code/blob/master/license/GNU_public_license.txt
 [contributors]: https://github.com/pencil-code/pencil-code/graphs/contributors
+[wiki]: https://github.com/pencil-code/pencil-code/wiki
+[PythonCodingStyle]: https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
+[PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
 
