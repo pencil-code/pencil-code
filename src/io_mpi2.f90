@@ -554,7 +554,7 @@ module Io
       character(len=fnlen) :: fpath
       integer(KIND=MPI_OFFSET_KIND) :: dsize, fsize, offset
       integer :: handle, dtype, k
-      real :: tprev
+      real :: tprev, tcut
 !
       call keep_compiler_quiet(grid_pos)
 !
@@ -606,24 +606,26 @@ module Io
       call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set global view")
 !
+      tcut = dvid * real(nint(time / dvid))
       dsize = dsize / realsize
       offset = fsize / realsize
       bscan: do while (offset > 0_MPI_OFFSET_KIND)
         call MPI_FILE_READ_AT_ALL(handle, offset - int(nadd, KIND=MPI_OFFSET_KIND), tprev, 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot read time")
-        if (tprev < time) exit
+        if (tprev < tcut) exit
         offset = offset - dsize
       enddo bscan
 !
 !  Truncate the slices with later times.
 !
+      dsize = dsize * realsize
       offset = offset * realsize
       trunc: if (fsize > offset) then
-        k = int((fsize - offset) / realsize)
+        k = int((fsize - offset) / dsize)
         fsize = offset
         call MPI_FILE_SET_SIZE(handle, fsize, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set file size")
-        if (lroot) print *, "output_slice: truncated from ", trim(fpath), k, " slices with t >= ", time
+        if (lroot) print *, "output_slice: truncated from ", trim(fpath), k, " slices with t >= ", tcut
       endif trunc
 !
 !  Write the slice.
