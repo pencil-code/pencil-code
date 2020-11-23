@@ -219,7 +219,7 @@ If everything worked well, your output should contain the lines
 \begin{verbatim}
   start.x has completed successfully
 \end{verbatim}
-after initiallizing everything successfully, it would then start running,   
+after initializing everything successfully, it would then start running,   
 printing in the console the quantities specified in \file{print.in}, for 
 instance,
 \begin{verbatim}
@@ -256,7 +256,7 @@ If compiling fails, please try the following --- with or without the optional \c
 \end{verbatim}
 
 If some step still fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
-In your report, please state the exact point in this quick start quide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
+In your report, please state the exact point in this quick start guide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
 
 In addition to that, please report your operating system (if not \name{Linux}-based) and the shell you use (if not \command{bash}).
 Also please give the full output of these commands:
@@ -286,21 +286,21 @@ If you plan to use \name{MPI}, please also provide the full output of:
 % The goal of this section is to demonstrate the general work flow with a very simple example.
 
 \subsubsection{GUI-based visualization (recommended for quick inspection)}
-The most simple approach to visualize a cartesian grid setup is to run the Pencil Code GUI and to select the files and physical quantities you want to see:
+The most simple approach to visualize a Cartesian grid setup is to run the Pencil Code GUI and to select the files and physical quantities you want to see:
 \begin{verbatim}
 IDL> .r pc_gui
 \end{verbatim}
 If you miss some physical quantities, you might want to extend the two IDL routines \command{pc\_get\_quantity} and \command{pc\_check\_quantities}. Anything implemented there will be available in the GUI, too.
 
 \subsubsection{Command-line based processing of ``big data''}
-Plese check the documentation inside these files:
+Please check the documentation inside these files:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
   \file{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
   \file{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
   \file{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
   \file{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
-  \file{pencil-code/idl/pc\_check\_quantities.pro} & dependency ckecking of physical quantities\\\hline
+  \file{pencil-code/idl/pc\_check\_quantities.pro} & dependency checking of physical quantities\\\hline
 \end{tabular}
 \end{center}
 in order to read data efficiently and compute quantities in physical units.
@@ -382,7 +382,7 @@ Some useful functions:
 \end{center}
 
 
-% This is out of the scope of a "quick start" quide.
+% This is out of the scope of a "quick start" guide.
 % One might better implement this as an "highlight" on the website:
 % \section{Another example: helically forced turbulence}
 % \input{example2}
