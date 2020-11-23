@@ -51,7 +51,8 @@ source $PENCIL_HOME/sourceme.csh
 
 ## Documentation
 
-* The [manual][manual] is the main source of information
+* The [manual][manual] is the main source of information.
+* There is also a [quick start][quick_start] to help getting started.
 
 ## List of Contributors
 
@@ -61,6 +62,7 @@ source $PENCIL_HOME/sourceme.csh
   check-in activity of the those who stayed connected with the code
   over the various host changes (Nordita 2001-2007, Google Code 2007-2015,
   and Github since 2015).
+  Some additional contributors are also listed in the [manual][manual].
 
 ## How to contribute to the Pencil Code
 
@@ -86,6 +88,7 @@ source $PENCIL_HOME/sourceme.csh
 [daily]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/g95_debug.html
 [conduct]: https://github.com/pencil-code/pencil-code/blob/master/license/CODE_OF_CONDUCT.md
 [manual]: https://github.com/pencil-code/website/blob/master/doc/manual.pdf
+[quick_start]: https://github.com/pencil-code/website/blob/master/doc/quick_start.pdf
 [license]: https://github.com/pencil-code/pencil-code/blob/master/license/GNU_public_license.txt
 [contributors]: https://github.com/pencil-code/pencil-code/graphs/contributors
 
