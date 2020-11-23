@@ -3999,7 +3999,8 @@ endsubroutine pdf
     use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj, ikr, ikmu
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+  integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
   real, allocatable, dimension(:,:) :: kmu
   real :: k2,mu
@@ -4013,6 +4014,9 @@ endsubroutine pdf
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   real, allocatable, dimension(:,:) :: cyl_polar_spec, cyl_polar_spec_sum
   real, allocatable, dimension(:,:) :: cyl_polar_spechel, cyl_polar_spechel_sum
+  real, allocatable, dimension(:,:,:) :: legendre_p
+  real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
+  real, dimension(legendre_lmax+1,nk) :: legendre_alhel, legendre_alhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -4046,10 +4050,12 @@ endsubroutine pdf
     cyl_spectrum_sum=0.
     cyl_spectrumhel=0.
     cyl_spectrumhel_sum=0.
-  ! allow for polar representation
+!
+! allow for polar representation
+!
     if (lcyl_polar_spectra) then
       do ikr=1,nk
-        nmu(ikr)=2*FLOOR(0.84815*ikr/2)+1
+        nmu(ikr)=2*(ikr-1)+1
       enddo
       !
       allocate( kmu(nk,nmu(nk)) )
@@ -4059,17 +4065,37 @@ endsubroutine pdf
       allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
       !
       kmu=0.
-      do ikr=3,nk
+      do ikr=2,nk
         do ikmu=1, nmu(ikr)
           kmu(ikr,ikmu) = -1+2.*(ikmu-1)/(nmu(ikr)-1)
         enddo
       enddo
-      !
+      ! 
       cyl_polar_spec=0.
       cyl_polar_spec_sum=0.
       cyl_polar_spechel=0.
       cyl_polar_spechel_sum=0.
+      legendre_al=0.
+      legendre_al_sum=0.
+      legendre_alhel=0.
+      legendre_alhel_sum=0.
       !
+      allocate( legendre_p(legendre_lmax+1,nk,nmu(nk)) )
+      legendre_p=0.
+      do ikr=1,nk
+      do ikmu=1, nmu(ikr)
+        ! legendre_p(i,:,:) is the (i-1)th order
+        legendre_p(1,ikr,ikmu)=1
+        legendre_p(2,ikr,ikmu)=kmu(ikr,ikmu)
+        if (legendre_lmax>=2) then
+          do i=3,legendre_lmax+1
+            legendre_p(i,ikr,ikmu)=1./i*( &
+              (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
+              -(i-1)*legendre_p(i-2,ikr,ikmu) )
+          enddo
+        endif
+      enddo
+      enddo
     endif
   endif
   !
@@ -4103,48 +4129,56 @@ endsubroutine pdf
     if (lcylindrical_spectra) then
       if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
       do ikz=1,nz
-        do iky=1,ny
-          do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-            jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-            k=nint(sqrt(k2))
-            if (k>=0 .and. k<=(nk-1)) then
-!
-!  sum energy and helicity spectra
-!
-              cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-                 +b_re(ikx,iky,ikz)**2 &
-                 +b_im(ikx,iky,ikz)**2
-              cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-            endif
+      do iky=1,ny
+      do ikx=1,nx
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+        jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+        k=nint(sqrt(k2))
+        if (k>=0 .and. k<=(nk-1)) then
+          cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+            +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+          cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+            +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+            +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+        endif
+!  compute azimuthally averaged spectrum
+!  but as a function of kr=norm(kx,ky,kz) and kz/kr
+        if (lcyl_polar_spectra) then
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          ikr=nint(sqrt(k2))
+          mu=kz(ikz+ipz*nz)/sqrt(k2)
+          if (ikr>=0. .and. ikr<=(nk-1)) then
+            temp=minloc(abs(kmu(ikr+1,:)-mu))
+            ikmu=temp(1)
+            cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu) &
+              +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+            cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu) &
+              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          endif
+        endif
 !
 !  end of loop through all points
 !
-          enddo
-        enddo
       enddo
-!  convert spectrum in (k_\varpi,kz) to (kr,kmu)
-!  kr=sqrt( k_\varpi^2 + kz^2 )
-!  kmu=cos of angle between kz and k_\varpi
+      enddo
+      enddo
+!
+! compute legendre coefficients
+!
       if (lcyl_polar_spectra) then
-        do jkz=1,nzgrid
-        do k=1,nk
-          k2=k**2+(jkz-nzgrid/2-1)**2
-          ikr=nint(sqrt(k2))
-          mu=cos(pi/2-atan2(real(jkz-nzgrid/2-1),real(k)))
-          if (ikr>=1 .and. ikr<=nk) then
-            temp=minloc(abs(kmu(ikr,:)-mu))
-            ikmu=temp(1)
-            cyl_polar_spec(ikr,ikmu)=cyl_polar_spec(ikr,ikmu) &
-              +cyl_spectrum(k,jkz)
-            cyl_polar_spechel(ikr,ikmu)=cyl_polar_spechel(ikr,ikmu) &
-              +cyl_spectrumhel(k,jkz)
-          endif
-        enddo
-        enddo
+        do ikr=1,nk; do ikmu=1,nmu(ikr)
+          do i=1,legendre_lmax+1
+            legendre_al(i,ikr)=legendre_al(i,ikr)+ &
+              1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
+              legendre_p(i,ikr,ikmu)
+            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+              1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
+              legendre_p(i,ikr,ikmu)
+          enddo
+        enddo; enddo
       endif
+!
     endif
     !
   enddo !(from loop over ivec)
@@ -4158,6 +4192,8 @@ endsubroutine pdf
     if (lcyl_polar_spectra) then
       call mpireduce_sum(cyl_polar_spec,cyl_polar_spec_sum,(/nk,nmu(nk)/))
       call mpireduce_sum(cyl_polar_spechel,cyl_polar_spechel_sum,(/nk,nmu(nk)/))
+      call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
+      call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
     endif
   endif
 !
@@ -4175,34 +4211,39 @@ endsubroutine pdf
   !
   if (lroot) then
     if (lcyl_polar_spectra) then
-      !open(1,file=trim(datadir)//'/test.dat',position='append')
-      !write(1,*) t
-      !write(1,*) shape(minloc(abs(kmu(ikr,:)-mu)))
-      !write(1,*) ikmu
-      !close(1)
+      !  outputs for debug
+      !  legendre p
+      open(1,file=trim(datadir)//'/legendreP.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk; do ikmu=1,nmu(ikr)
+      write(1,'(2i4,1p,8e10.2,3p,8e10.2)') i-1,ikr-1,kmu(ikr,ikmu),legendre_p(i,ikr,ikmu)
+      enddo;enddo;enddo
+      close(1)
+      !  spectra for comparison
       open(1,file=trim(datadir)//'/cyl_omega_power_cyl_'//trim(sp)//'.dat',position='append')
       write(1,*) t
-      do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
-        enddo
-      enddo
+      do jkz=1, nzgrid; do k=1, nk
+        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrum_sum(k,jkz)
+      enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/cyl_omega_power_polar_'//trim(sp)//'.dat',position='append')
       write(1,*) t
-      do ikr=1,nk
-        do ikmu=1,nmu(ikr)
-          write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr, kmu(ikr,ikmu), cyl_polar_spec_sum(ikr,ikmu)
-        enddo
-      enddo
+      do ikr=1,nk; do ikmu=1,nmu(ikr)
+        write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1, kmu(ikr,ikmu), cyl_polar_spec_sum(ikr,ikmu)
+      enddo; enddo
       close(1)
-      open(1,file=trim(datadir)//'/cyl_omega_powerhel_polar_'//trim(sp)//'.dat',position='append')
+      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+      open(1,file=trim(datadir)//'/legendre_al_'//trim(sp)//'.dat',position='append')
       write(1,*) t
-      do ikr=1,nk
-        do ikmu=1,nmu(ikr)
-          write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr, kmu(ikr,ikmu), cyl_polar_spechel_sum(ikr,ikmu)
-        enddo
-      enddo
+      do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
+      enddo;enddo
+      close(1)
+      open(1,file=trim(datadir)//'/legendre_alhel_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
+      enddo;enddo
       close(1)
     endif
     if (lcylindrical_spectra) then
