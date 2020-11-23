@@ -417,7 +417,7 @@ program run
 !
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz) !MR: already called
 !
-!  Call rprint_list to initialize diagnostics and write indices to file.
+!  Initialize diagnostics and write indices to file.
 !
   call rprint_list(LRESET=.false.)
   if (lparticles) call particles_rprint_list(.false.)
@@ -425,11 +425,11 @@ program run
 !
 !  Read particle snapshot.
 !
-  rpar: if (lparticles) then
+  if (lparticles) then
     if (ip <= 6 .and. lroot) print *, "reading processor boundaries and particle snapshot"
     call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
     call read_snapshot_particles()
-  endif rpar
+  endif
 !
 !  Read point masses.
 !
@@ -667,14 +667,17 @@ program run
     if (lwrite_1daverages) then
       if (d1davg==impossible) then
         l1davg = (mod(it-1,it1d) == 0)
-        if (it_rmv==0) then
-          lrmv=.true.
-        else
-          lrmv = (mod(it-1,it_rmv) == 0)
-        endif
       else
         call write_1daverages_prepare(t == 0.0 .and. lwrite_ic)
       endif
+    endif
+!
+!  Average removal timestep control.
+!
+    if (it_rmv==0) then
+      lrmv=.true.
+    else
+      lrmv = (mod(it-1,it_rmv) == 0)
     endif
 !
 !  Remove wiggles in lnrho in sporadic time intervals.
@@ -711,14 +714,13 @@ program run
 !  Exit do loop if maximum simulation time is reached; allow one extra
 !  step if any diagnostic output needs to be produced.
 !
-    overtmax: if (t >= tmax) then
-      onemorestep: if (lonemorestep .or. &
-                       .not. (lout .or. lvideo .or. l2davg)) then
+    if (t >= tmax) then
+      if (lonemorestep .or. .not. (lout .or. lvideo .or. l2davg)) then
         if (lroot) print *, 'Maximum simulation time exceeded'
         exit Time_loop
-      endif onemorestep
+      endif
       lonemorestep = .true.
-    endif overtmax
+    endif
 !
 !   Prepare for the writing of the tracers and the fixed points.
 !
