@@ -101,7 +101,7 @@ module InitialCondition
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
-      real :: volume, total_mass, tmp
+      real :: volume, total_mass, tmp, tau_KH
       real, pointer :: gravx, cp, cv
       integer :: i, j, n, m, ix, ierr, nsurf, nsurf_global
       integer, parameter :: unit=1
@@ -386,6 +386,10 @@ module InitialCondition
 !
       volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
 !
+!  Compute Kelvin-Helmolz time scale: GM*M_domain/(2*DR_domain*Luminosity)
+!
+      tau_KH=gravx*total_mass/L00/(Rsurf-x0)/2.
+!
       if (lroot) then
          print*,''
          print*,'initial_condition: Fbottom    =',Fbottom
@@ -401,6 +405,7 @@ module InitialCondition
          print*,'initial_condition: total_mass =',total_mass
          print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
          print*,'initial_condition: hcond0_kramers =',kramers_hcond0
+         print*,'initial_condition: Kelvin-Helmholz time=', tau_KH
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
