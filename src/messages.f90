@@ -60,8 +60,22 @@ module Messages
 ! Set a flag if colored output has been requested.
 ! Also set a flag if fake_parallel_io is requested.
 !
+      use Syscalls, only: get_env_var
+
       inquire(FILE="COLOR", EXIST=ltermcap_color)
 !
+      if (lroot) then
+        if (mailaddress=='') &
+          call get_env_var('PENCIL_USER_ADDR',mailaddress)
+
+        if (mailaddress/='') then
+          if (index(trim(mailaddress),'@')==0 .or. index(trim(mailaddress),'.')==0) then
+            call warning('initialize_messages', 'invalid mail address')
+            mailaddress=''
+          endif
+        endif
+      endif
+
     endsubroutine initialize_messages
 !***********************************************************************
     subroutine set_caller(caller)
