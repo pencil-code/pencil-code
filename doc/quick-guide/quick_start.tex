@@ -358,9 +358,16 @@ IDL> print, mean(exp(ff.lnrho))
 
 \subsection{Python visualization (optional)}
 Be advised that the \name{Python} support is still not complete or as feature-rich as for \name{IDL}.
+Furthermore, we move to \name{Python3} in 2020, and not all the routines have 
+been updated yet.
 
 \subsubsection{Python module requirements}
-For this example we use the modules: \code{numpy} and \code{matplotlib}.
+ 
+
+In this example we use the modules: \code{numpy} and \code{matplotlib}.
+A complete list of requiered module is included in 
+\file{pencil-code/python/pencil/README}.
+
 
 \subsubsection{Using the 'pencil' module}
 After sourcing the \file{sourceme.sh} script (see above), you should be able to import the \code{pencil} module:
@@ -372,15 +379,23 @@ import pencil as pc
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-\file{pc.read\_ts} & read \file{time\_series.dat} file. Parameters are added as members of the class\\\hline
-\file{pc.read\_slices} & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
-\file{pc.animate\_interactive} & assemble a 2D animation from a 3D array\\\hline
+\file{pc.read.ts} & read \file{time\_series.dat} file. Parameters are added as 
+members of the class\\\hline
+\file{pc.read.slices} & read 2D slice files and return two arrays: 
+(nslices,vsize,hsize) and (time)\\\hline
+\file{pc.visu.animate\_interactive} & assemble a 2D animation from a 3D 
+array\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
 \end{tabular}
 \end{center}
 
+Some examples of postprocessing with \name{Python} can be found in the 
+\name{Pencil} wiki:
+
+
+\url{https://github.com/pencil-code/pencil-code/wiki/PythonForPencil}.
 
 % This is out of the scope of a "quick start" guide.
 % One might better implement this as an "highlight" on the website:

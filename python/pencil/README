@@ -14,6 +14,14 @@ Pencil will do all imports and diagnostics on your pencil code data in the best 
 Therefore, 'pc' will store all calcuated data in separate files and reload if necessary.
 
 #############################
+## REQUIREMENTS
+##
+This module requires the followint Python3 modules:
+numpy, scipy, matplotlib, h5py, copy, mpi4py, os, sys, math, importlib, dill, struct, subprocess, pickle,
+glob, time, re, copy, shutil, code, inspect, vtk, weakref, atexit, unittest, tempfile, errno, pexpect, doctest,
+distutils, Cython, random, fileinput, astropy
+
+#############################
 ## EASY START
 ##
 1. Add $PENCIL_HOME/python to your $PYTHONPATH or enshure this is already done by using 'echo $PYTHONPATH' in your bash shell.
