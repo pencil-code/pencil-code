@@ -1,1 +1,0 @@
-/home/yutong/pencilcode/pencil-code/src/Makefile.parent
