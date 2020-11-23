@@ -216,13 +216,15 @@ module power_spectrum
 !
   endsubroutine anisoq_diag
 !***********************************************************************
-  subroutine corfunc_cyl(f,sp)
+    subroutine corfunc_cyl(f, sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      character(len=*), intent(in) :: sp
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
 !
-  endsubroutine corfunc_cyl
+    endsubroutine corfunc_cyl
 !***********************************************************************
   subroutine k_omega_spectra(f,sp)
 !
