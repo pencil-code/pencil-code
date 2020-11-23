@@ -3718,36 +3718,40 @@ endsubroutine pdf
   !
   endsubroutine anisoq_diag
 !***********************************************************************
-  subroutine corrfunc_3d(f)
+  subroutine corfunc_cyl(f,sp)
 !
-!  Calculate correlation functions <u_i^* u_j>, for i,j=1,2,3
-!  as functions of the vector k.
-!  I call the symmetric, real part of it vij,
-!  and (the antisymmetric, imaginary part / i) = wij.
-!  For the moment only u=velocity field,
+!  Calculate azimuthally averaged correlation functions v11,v33,v12.
+!  Here v11=(w11+w22)/2, v33=w33, v12=w12/sqrt(-1),
+!  where wij=<u_i^* u_j>, for i,j=1,2,3.
+!  They are functions kr=norm(kx,ky,kz) and kz/kr.
+!  For the moment u=velocity field only,
 !  but possible to extend using 'sp'
 !
-!  2020-Oct-14/hongzhe added this subroutine
+!  2020-Oct-14/hongzhe:  added this subroutine
+!  2020-Nov-23/hongzhe:  removed 3d outputs
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkx,jky,jkz, im, in, ivec, ivec_jj
+  integer :: i, ikx, iky, ikz, ikr, ikmu
+  integer, dimension(1) :: temploc
+  integer, dimension(nk) :: nmu
   real, dimension (mx,my,mz,mfarray) :: f
+  real, allocatable, dimension(:,:) :: kmu
   real, dimension(nx,ny,nz) :: ux_re, ux_im
   real, dimension(nx,ny,nz) :: uy_re, uy_im
   real, dimension(nx,ny,nz) :: uz_re, uz_im
-  real, dimension(nxgrid,nygrid,nzgrid) :: vxx, vxy, vyy, vxz, vyz, vzz
-  real, dimension(nxgrid,nygrid,nzgrid) :: wxy, wyz, wzx
-  real, dimension(nxgrid,nygrid,nzgrid) :: vxx_sum, vxy_sum, vyy_sum
-  real, dimension(nxgrid,nygrid,nzgrid) :: vxz_sum, vyz_sum, vzz_sum
-  real, dimension(nxgrid,nygrid,nzgrid) :: wxy_sum, wyz_sum, wzx_sum
-  real :: k2
-  real, dimension(nk,nzgrid) :: cyl_vxx, cyl_vxx_sum
-  real, dimension(nk,nzgrid) :: cyl_vzz, cyl_vzz_sum
-  real, dimension(nk,nzgrid) :: cyl_wxy, cyl_wxy_sum
+  real, allocatable, dimension(:,:) :: vxx, vxy, vzz
+  real, allocatable, dimension(:,:) :: vxx_sum, vxy_sum, vzz_sum
+  real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
+  real, allocatable, dimension(:,:) :: coeff_a_sum, coeff_b_sum, coeff_c_sum
+  real, allocatable, dimension(:,:,:) :: legendre_p
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
+  real :: k2, mu, kmu2
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nxgrid) :: kx
@@ -3772,47 +3776,78 @@ endsubroutine pdf
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
-  !  initialize power spectrum to zero
+  !  initialize
   !
   k2m=0.
   nks=0.
-  if (lcylindrical_spectra) then
-    cyl_vxx=0.
-    cyl_vxx_sum=0.
-    cyl_vzz=0.
-    cyl_vzz_sum=0.
-    cyl_wxy=0.
-    cyl_wxy_sum=0.
-  else
-    vxx=0.
-    vxx_sum=0.
-    vxy=0.
-    vxy_sum=0.
-    vyy=0.
-    vyy_sum=0.
-    vxz=0.
-    vxz_sum=0.
-    vyz=0.
-    vyz_sum=0.
-    vzz=0.
-    vzz_sum=0.
-    wxy=0.
-    wxy_sum=0.
-    wyz=0.
-    wyz_sum=0.
-    wzx=0.
-    wzx_sum=0.
-  endif
+  do ikr=1,nk
+    nmu(ikr)=2*(ikr-1)+1
+  enddo
+  allocate( kmu(nk,nmu(nk)) )
+  kmu=0.
+  do ikr=2,nk
+    do ikmu=1, nmu(ikr)
+      kmu(ikr,ikmu)=-1+2.*(ikmu-1)/(nmu(ikr)-1)
+    enddo
+  enddo
+  allocate( vxx(nk,nmu(nk)) )
+  allocate( vxx_sum(nk,nmu(nk)) )
+  allocate( vzz(nk,nmu(nk)) )
+  allocate( vzz_sum(nk,nmu(nk)) )
+  allocate( vxy(nk,nmu(nk)) )
+  allocate( vxy_sum(nk,nmu(nk)) )
+  allocate( coeff_a(nk,nmu(nk)) )
+  allocate( coeff_a_sum(nk,nmu(nk)) )
+  allocate( coeff_b(nk,nmu(nk)) )
+  allocate( coeff_b_sum(nk,nmu(nk)) )
+  allocate( coeff_c(nk,nmu(nk)) )
+  allocate( coeff_c_sum(nk,nmu(nk)) )
+  vxx=0.
+  vxx_sum=0.
+  vxy=0.
+  vxy_sum=0.
+  vzz=0.
+  vzz_sum=0.
+  coeff_a=0.
+  coeff_a_sum=0.
+  coeff_b=0.
+  coeff_b_sum=0.
+  coeff_c=0.
+  coeff_c_sum=0.
+  legendre_al_a=0.
+  legendre_al_a_sum=0.
+  legendre_al_b=0.
+  legendre_al_b_sum=0.
+  legendre_al_c=0.
+  legendre_al_c_sum=0.
+  !
+  allocate( legendre_p(legendre_lmax+1,nk,nmu(nk)) )
+  legendre_p=0.
+  do ikr=1,nk
+    do ikmu=1, nmu(ikr)
+      legendre_p(1,ikr,ikmu)=1  ! legendre_p(i,:,:) is the (i-1)th order
+      legendre_p(2,ikr,ikmu)=kmu(ikr,ikmu)
+      if (legendre_lmax>=2) then
+        do i=3,legendre_lmax+1
+          legendre_p(i,ikr,ikmu)=1./i*( &
+              (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
+              -(i-1)*legendre_p(i-2,ikr,ikmu) )
+        enddo
+      endif
+    enddo
+  enddo
   !
   !  calculate each components
   !
-  if (iuu==0) call fatal_error('powerhel','iuu=0')
-  ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1)
-  uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1)
-  uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1)
-  ux_im=0.
-  uy_im=0.
-  uz_im=0.
+  if (sp=='kin') then
+    if (iuu==0) call fatal_error('powerhel','iuu=0')
+    ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1)
+    uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1)
+    uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1)
+    ux_im=0.
+    uy_im=0.
+    uz_im=0.
+  endif
   !
   !  Doing the Fourier transform
   !
@@ -3822,166 +3857,94 @@ endsubroutine pdf
   !
   !  calculate correlation functions
   !
-  if (lcylindrical_spectra) then
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
-    do ikz=1,nz
-      do iky=1,ny
-       do ikx=1, nx
-         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-         jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-         k=nint(sqrt(k2))
-         if (k>=0 .and. k<=(nk-1)) then
-           cyl_vxx(k+1,jkz)=cyl_vxx(k+1,jkz) &
-             +ux_re(ikx,iky,ikz)**2/2 &
-             +ux_im(ikx,iky,ikz)**2/2 &
-             +uy_re(ikx,iky,ikz)**2/2 &
-             +uy_im(ikx,iky,ikz)**2/2
-           cyl_vzz(k+1,jkz)=cyl_vzz(k+1,jkz) &
-             +uz_re(ikx,iky,ikz)**2 &
-             +uz_im(ikx,iky,ikz)**2
-           cyl_wxy(k+1,jkz)=cyl_wxy(k+1,jkz) &
-             +ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-             -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
-          endif
-        enddo
+  if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+  do ikz=1,nz
+    do iky=1,ny
+      do ikx=1, nx
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        ikr=nint(sqrt(k2))
+        mu=kz(ikz+ipz*nz)/sqrt(k2)
+        if (ikr>=0. .and. ikr<=(nk-1)) then
+          temploc=minloc(abs(kmu(ikr+1,:)-mu))
+          ikmu=temploc(1)
+          vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*( &
+              ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+              +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+          vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ &
+              uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2
+          vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ &
+              ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+              -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
+        endif
       enddo
     enddo
-  else
-    if (lroot .AND. ip<10) print*,'fft done; now computing correlation functions...'
-    do ikz=1,nz
-      do iky=1,ny
-        do ikx=1,nx
-          jkx=nint(kx(ikx+ipx*nx))+nxgrid/2+1 ! runs from 1 to nxgrid
-          jky=nint(ky(iky+ipy*ny))+nygrid/2+1
-          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-          vxx(jkx,jky,jkz)=vxx(jkx,jky,jkz)+ &
-            ux_re(ikx,iky,ikz)*ux_re(ikx,iky,ikz) &
-            +ux_im(ikx,iky,ikz)*ux_im(ikx,iky,ikz)
-          vxy(jkx,jky,jkz)=vxy(jkx,jky,jkz)+ &
-            ux_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
-            +ux_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-          vxz(jkx,jky,jkz)=vxz(jkx,jky,jkz)+ &
-            ux_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-            +ux_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-          vyy(jkx,jky,jkz)=vyy(jkx,jky,jkz)+ &
-            uy_re(ikx,iky,ikz)*uy_re(ikx,iky,ikz) &
-            +uy_im(ikx,iky,ikz)*uy_im(ikx,iky,ikz)
-          vyz(jkx,jky,jkz)=vyz(jkx,jky,jkz)+ &
-            uy_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-            +uy_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-          vzz(jkx,jky,jkz)=vzz(jkx,jky,jkz)+ &
-            uz_re(ikx,iky,ikz)*uz_re(ikx,iky,ikz) &
-            +uz_im(ikx,iky,ikz)*uz_im(ikx,iky,ikz)
-          wxy(jkx,jky,jkz)=wxy(jkx,jky,jkz)+ &
-            ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-            -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
-          wzx(jkx,jky,jkz)=wzx(jkx,jky,jkz)+ &
-            uz_re(ikx,iky,ikz)*ux_im(ikx,iky,ikz) &
-            -uz_im(ikx,iky,ikz)*ux_re(ikx,iky,ikz)
-          wyz(jkx,jky,jkz)=wyz(jkx,jky,jkz)+ &
-            uy_re(ikx,iky,ikz)*uz_im(ikx,iky,ikz) &
-            -uy_im(ikx,iky,ikz)*uz_re(ikx,iky,ikz)
-!
-!  end of loop through all points
-!
-        enddo
+  enddo
+  !
+  ! compute legendre coefficients
+  !
+  do ikr=1,nk
+    do ikmu=1,nmu(ikr)
+      kmu2=kmu(ikr,ikmu)**2
+      coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
+      if (kmu2==1.) then
+        coeff_a(ikr,ikmu)=vxx(ikr,ikmu)/(pi*2.)
+      else
+        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
+            ( 2*pi*(1-kmu2)*(2+kmu2) )
+        coeff_b(ikr,ikmu)=( -2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/ &
+            ( pi*(1-kmu2)**2*(2+kmu2) )
+      endif
+      do i=1,legendre_lmax+1
+        legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
+        legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
+        legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
       enddo
     enddo
-  endif
+  enddo
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  if(lcylindrical_spectra) then
-    call mpireduce_sum(cyl_vxx,cyl_vxx_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_vzz,cyl_vzz_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_wxy,cyl_wxy_sum,(/nk,nzgrid/))
-  else
-    call mpireduce_sum(vxx,vxx_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(vxy,vxy_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(vxz,vxz_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(vyy,vyy_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(vyz,vyz_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(vzz,vzz_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(wxy,wxy_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(wzx,wzx_sum,(/nxgrid,nygrid,nzgrid/))
-    call mpireduce_sum(wyz,wyz_sum,(/nxgrid,nygrid,nzgrid/))
-  endif
+  call mpireduce_sum(vxx,vxx_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(vxy,vxy_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(vzz,vzz_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(coeff_a,coeff_a_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(coeff_b,coeff_b_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(coeff_c,coeff_c_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
+  call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
+  call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/))
   !
   !  on root processor, write global result to file
-  !
   !  append to diagnostics file
   !
   if (lroot) then
     if (ip<10) print*,'Writing two point correlations to'  &
         ,trim(datadir)//'/cor2_.dat files'
-    !
-    if (lcylindrical_spectra) then
-      open(1,file=trim(datadir)//'/cor2_kin_vxx_cyl.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') cyl_vxx_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vzz_cyl.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') cyl_vzz_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_wxy_cyl.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') cyl_wxy_sum
-      close(1)
-      !
-    else
-      open(1,file=trim(datadir)//'/cor2_kin_vxx.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vxx_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vxy.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vxy_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vxz.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vxz_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vyy.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vyy_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vyz.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vyz_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_vzz.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vzz_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_wxy.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') wxy_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_wyz.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') wyz_sum
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cor2_kin_wzx.dat',position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') wzx_sum
-      close(1)
-      !
-    endif
+    open(1,file=trim(datadir)//'/cor2_la_a_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
+    enddo; enddo
+    close(1)
+    open(1,file=trim(datadir)//'/cor2_la_b_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
+    enddo; enddo
+    close(1)
+    open(1,file=trim(datadir)//'/cor2_la_c_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
+    enddo; enddo
+    close(1)
   endif
     
-  endsubroutine corrfunc_3d
+  endsubroutine corfunc_cyl
 !***********************************************************************
   subroutine k_omega_spectra(f,sp)
 !
@@ -4090,8 +4053,8 @@ endsubroutine pdf
         if (legendre_lmax>=2) then
           do i=3,legendre_lmax+1
             legendre_p(i,ikr,ikmu)=1./i*( &
-              (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
-              -(i-1)*legendre_p(i-2,ikr,ikmu) )
+                (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
+                -(i-1)*legendre_p(i-2,ikr,ikmu) )
           enddo
         endif
       enddo
@@ -4136,10 +4099,10 @@ endsubroutine pdf
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
           cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-            +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+              +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
           cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-            +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-            +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
         endif
 !  compute azimuthally averaged spectrum
 !  but as a function of kr=norm(kx,ky,kz) and kz/kr
@@ -4151,10 +4114,10 @@ endsubroutine pdf
             temp=minloc(abs(kmu(ikr+1,:)-mu))
             ikmu=temp(1)
             cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu) &
-              +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+                +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
             cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu) &
-              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
           endif
         endif
 !
@@ -4170,11 +4133,11 @@ endsubroutine pdf
         do ikr=1,nk; do ikmu=1,nmu(ikr)
           do i=1,legendre_lmax+1
             legendre_al(i,ikr)=legendre_al(i,ikr)+ &
-              1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
-              legendre_p(i,ikr,ikmu)
+                1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
+                legendre_p(i,ikr,ikmu)
             legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-              1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
-              legendre_p(i,ikr,ikmu)
+                1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
+                legendre_p(i,ikr,ikmu)
           enddo
         enddo; enddo
       endif

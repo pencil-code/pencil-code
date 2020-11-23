@@ -715,7 +715,7 @@ module Snapshot
 !  2d and 3d spectra
 !
         if (ani_spec) call anisoq_diag(f)
-        if (corr_3d)  call corrfunc_3d(f)
+        if (cor_cyl)  call corfunc_cyl(f,'kin')
 !
 !  Spectra with both space and time Fourier transformed
 !

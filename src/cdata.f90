@@ -541,7 +541,7 @@ module Cdata
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
   logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false.
-  logical :: ani_spec=.false., corr_3d=.false.
+  logical :: ani_spec=.false., cor_cyl=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
