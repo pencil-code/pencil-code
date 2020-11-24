@@ -1,15 +1,19 @@
+! vi: syntax=fortran
 !
 ! Code fragment to be used in both read_snap_single and read_snap_double - type agnostic
 !
       real :: t_test   ! t in single precision for backwards compatibility
-      logical :: ltest,lok,l0
+      logical :: ltest,lok,l0,lmail,lmail_
       integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1
       character(LEN=fnlen) :: readdir
+      character(LEN=linelen) :: string
+      character(LEN=1024) :: mailstr
+      character(LEN=20) :: cjobid
 !
       if (lserial_io) call start_serialize
 
       readdir = directory_snap
-      lok=.false.; l0=.true.
+      lok=.false.; l0=.true.; string=''; lmail=.false.
 !
 kloop:do kk=max(0,ipz-1),min(ipz+1,nprocz-1)
 jloop:  do jj=max(0,ipy-1),min(ipy+1,nprocy-1)
@@ -180,8 +184,15 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
                 cycle iloop
               endif
               lok=.true.
-              if (.not.l0) call warning('read_snap', 'reading '//trim(readdir)//'/'//trim(file)// &
-                                        ' instead of '//trim(directory_snap)//'/'//trim(file),iproc)
+              if (.not.l0) then
+                call warning('read_snap', 'reading '//trim(readdir)//'/'//trim(file)// &
+                             ' instead of '//trim(directory_snap)//'/'//trim(file),iproc)
+                if (mailaddress/='') then
+                  lmail=.true.
+                  string=' reading '//trim(readdir)//'/'//trim(file)// &
+                         ' instead of '//trim(directory_snap)//'/'//trim(file)
+                endif
+              endif
               exit kloop
             endif
             l0=.false.
@@ -243,3 +254,33 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
 !  Verify the read value for t.
 !
       if (ip <= 3) print *, 'read_snap: t=', t
+!
+!  Send "repair" warning to user.
+!
+      call mpiallreduce_or(lmail,lmail_)
+      if (lmail_) then
+        if (lroot) then
+          mailstr=trim(string)
+          do ipp=1,ncpus-1
+            call mpirecv_char(string,ipp,ipp)
+            if (string/='') mailstr=trim(mailstr)//trim(string)
+          enddo
+        else
+          call mpisend_char(string,root,iproc)
+        endif
+        if (lroot) then
+          if (file_exists(trim(datadir)//'/jobid.dat')) then
+            open(1,file=trim(datadir)//'/jobid.dat',position='append')
+            backspace(1)
+            read(1,*) cjobid
+            close(1) 
+            mailstr=', job '//trim(cjobid)//'. WARNING - read_snap:'//trim(mailstr)
+          else
+            mailstr='. WARNING - read_snap:'//trim(mailstr)
+          endif
+        
+          call system_cmd( &
+            'echo From `pwd`'//trim(mailstr)//"| mail -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+        endif
+      endif
+

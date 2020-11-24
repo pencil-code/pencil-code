@@ -19,6 +19,8 @@ nogsl.o: nogsl.c Makefile.src Makefile.local
 #
 syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
+io_dist.o: io_dist.h
+#
 # Explicit dependencies for the different infrastructure modules.
 #
 $(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc

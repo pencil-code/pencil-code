@@ -64,15 +64,12 @@ module Messages
 
       inquire(FILE="COLOR", EXIST=ltermcap_color)
 !
-      if (lroot) then
-        if (mailaddress=='') &
-          call get_env_var('PENCIL_USER_ADDR',mailaddress)
-
-        if (mailaddress/='') then
-          if (index(trim(mailaddress),'@')==0 .or. index(trim(mailaddress),'.')==0) then
-            call warning('initialize_messages', 'invalid mail address')
-            mailaddress=''
-          endif
+      if (mailaddress=='') &
+        call get_env_var('PENCIL_USER_ADDR',mailaddress)
+      if (mailaddress/='') then
+        if (index(trim(mailaddress),'@')==0 .or. index(trim(mailaddress),'.')==0) then
+          call warning('initialize_messages', 'invalid mail address')
+          mailaddress=''
         endif
       endif
 
