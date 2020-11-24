@@ -129,10 +129,6 @@ program run
 !
   if (lroot) call svn_id('$Id$')
 !
-!  Initialize the message subsystem, eg. color setting etc.
-!
-  call initialize_messages
-!
 !  Initialize use of multiple special modules if relevant.
 !
   call initialize_mult_special
@@ -148,6 +144,10 @@ program run
 !  Read parameters and output parameter list.
 !
   call read_all_run_pars
+!
+!  Initialize the message subsystem, eg. color setting etc.
+!
+  call initialize_messages
 !
 !  Initialise MPI communication.
 !
