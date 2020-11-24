@@ -405,7 +405,8 @@ module InitialCondition
          print*,'initial_condition: total_mass =',total_mass
          print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
          print*,'initial_condition: hcond0_kramers =',kramers_hcond0
-         print*,'initial_condition: Kelvin-Helmholz time=', tau_KH
+         print*,'initial_condition: Kelvin-Helmholz time in PC units=', tau_KH
+         print*,'initial_condition: Kelvin-Helmholz time in years =', tau_KH*Omsim/Omsun/3.15360e+07
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
