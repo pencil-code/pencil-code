@@ -3732,7 +3732,7 @@ endsubroutine pdf
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use General, only: plegendre
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, ikr, ikmu
@@ -3747,7 +3747,6 @@ endsubroutine pdf
   real, allocatable, dimension(:,:) :: vxx_sum, vxy_sum, vzz_sum
   real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
   real, allocatable, dimension(:,:) :: coeff_a_sum, coeff_b_sum, coeff_c_sum
-  real, allocatable, dimension(:,:,:) :: legendre_p
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
@@ -3821,22 +3820,6 @@ endsubroutine pdf
   legendre_al_c=0.
   legendre_al_c_sum=0.
   !
-  allocate( legendre_p(legendre_lmax+1,nk,nmu(nk)) )
-  legendre_p=0.
-  do ikr=1,nk
-    do ikmu=1, nmu(ikr)
-      legendre_p(1,ikr,ikmu)=1  ! legendre_p(i,:,:) is the (i-1)th order
-      legendre_p(2,ikr,ikmu)=kmu(ikr,ikmu)
-      if (legendre_lmax>=2) then
-        do i=3,legendre_lmax+1
-          legendre_p(i,ikr,ikmu)=1./i*( &
-              (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
-              -(i-1)*legendre_p(i-2,ikr,ikmu) )
-        enddo
-      endif
-    enddo
-  enddo
-  !
   !  calculate each components
   !
   if (sp=='kin') then
@@ -3896,11 +3879,14 @@ endsubroutine pdf
       endif
       do i=1,legendre_lmax+1
         legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)*legendre_p(i,ikr,ikmu)
+            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
       enddo
     enddo
   enddo
@@ -3959,7 +3945,8 @@ endsubroutine pdf
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use General, only: plegendre
+
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
@@ -3977,7 +3964,6 @@ endsubroutine pdf
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   real, allocatable, dimension(:,:) :: cyl_polar_spec, cyl_polar_spec_sum
   real, allocatable, dimension(:,:) :: cyl_polar_spechel, cyl_polar_spechel_sum
-  real, allocatable, dimension(:,:,:) :: legendre_p
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_alhel, legendre_alhel_sum
   real, dimension(nxgrid) :: kx
@@ -4042,23 +4028,6 @@ endsubroutine pdf
       legendre_al_sum=0.
       legendre_alhel=0.
       legendre_alhel_sum=0.
-      !
-      allocate( legendre_p(legendre_lmax+1,nk,nmu(nk)) )
-      legendre_p=0.
-      do ikr=1,nk
-      do ikmu=1, nmu(ikr)
-        ! legendre_p(i,:,:) is the (i-1)th order
-        legendre_p(1,ikr,ikmu)=1
-        legendre_p(2,ikr,ikmu)=kmu(ikr,ikmu)
-        if (legendre_lmax>=2) then
-          do i=3,legendre_lmax+1
-            legendre_p(i,ikr,ikmu)=1./i*( &
-                (2*i-1)*kmu(ikr,ikmu)*legendre_p(i-1,ikr,ikmu) &
-                -(i-1)*legendre_p(i-2,ikr,ikmu) )
-          enddo
-        endif
-      enddo
-      enddo
     endif
   endif
   !
@@ -4134,10 +4103,10 @@ endsubroutine pdf
           do i=1,legendre_lmax+1
             legendre_al(i,ikr)=legendre_al(i,ikr)+ &
                 1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
-                legendre_p(i,ikr,ikmu)
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
             legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
                 1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
-                legendre_p(i,ikr,ikmu)
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           enddo
         enddo; enddo
       endif
@@ -4176,10 +4145,10 @@ endsubroutine pdf
     if (lcyl_polar_spectra) then
       !  outputs for debug
       !  legendre p
-      open(1,file=trim(datadir)//'/legendreP.dat',position='append')
+      open(1,file=trim(datadir)//'/plegendre.dat',position='append')
       write(1,*) t
       do i=1,legendre_lmax+1; do ikr=1,nk; do ikmu=1,nmu(ikr)
-      write(1,'(2i4,1p,8e10.2,3p,8e10.2)') i-1,ikr-1,kmu(ikr,ikmu),legendre_p(i,ikr,ikmu)
+      write(1,'(2i4,1p,8e10.2,3p,8e10.2)') i-1,ikr-1,kmu(ikr,ikmu),plegendre(i-1,0,kmu(ikr,ikmu))
       enddo;enddo;enddo
       close(1)
       !  spectra for comparison

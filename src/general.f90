@@ -29,6 +29,7 @@ module General
   public :: arcsinh
   public :: besselj_nu_int, calc_complete_ellints
   public :: bessj, cyclic
+  public :: plegendre
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, log2str, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
