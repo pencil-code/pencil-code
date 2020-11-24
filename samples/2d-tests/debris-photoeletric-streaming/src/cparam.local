@@ -7,7 +7,7 @@
 !
 !
 !  MGLOBAL CONTRIBUTION 4
-!  MAUX CONTRIBUTION 3
+!  MAUX CONTRIBUTION 0
 !  COMMUNICATED AUXILIARIES 1
 !
 integer, parameter :: ncpus=2,nprocx=2,nprocy=1,nprocz=1

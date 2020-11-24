@@ -89,7 +89,7 @@ module Param_IO
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       ireset_tstart, tstart, lghostfold_usebspline, &
-      lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
+      lread_aux, lwrite_aux, lkinflow_as_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       tstart, lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &

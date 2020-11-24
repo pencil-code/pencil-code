@@ -48,6 +48,7 @@
   initxxp='random-cylindrical', initvvp='Keplerian'
   dustdensity_powerlaw=1.5
   bcpx='rmv',bcpy='p',bcpz='p'
+  lcommunicate_rhop=T
   lparticlemesh_tsc=T
   tausp=1.0
   eps_dtog=1.

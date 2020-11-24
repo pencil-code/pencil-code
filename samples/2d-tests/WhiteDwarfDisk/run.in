@@ -63,5 +63,4 @@
   ldraglaw_variable=T
   gravr_profile='newtonian'
   lcylindrical_gravity_par=T
-  lcommunicate_rhop=T
 /

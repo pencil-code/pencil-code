@@ -9,7 +9,6 @@
   random_gen='nr_f90'
   lpencil_check=T
   !nghost_read_fewer=0, luse_oldgrid=T
-  lkinflow_as_aux=T
 /
 &hydro_run_pars
   kinematic_flow='roberts'

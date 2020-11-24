@@ -9,7 +9,7 @@
 !
 ! If chemistry is solved on th ogrid add 3 aux var for cp, viscosity and R
 !
-! MAUX CONTRIBUTION 6
+! MAUX CONTRIBUTION 5
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=1,nprocx=1
 integer, parameter :: nxgrid=240,nygrid=480,nzgrid=1

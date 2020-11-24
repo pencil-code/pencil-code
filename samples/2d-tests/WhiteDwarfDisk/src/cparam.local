@@ -6,7 +6,7 @@
 !  This file is included by cparam.f90
 !
 !  MGLOBAL CONTRIBUTION 4
-!  MAUX CONTRIBUTION 3
+!  MAUX CONTRIBUTION 0
 !  COMMUNICATED AUXILIARIES 1
 !
 !integer, parameter :: ncpus=256,nprocx=16,nprocy=16,nprocz=1
