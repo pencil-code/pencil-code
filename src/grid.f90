@@ -97,9 +97,9 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 !
-      real, dimension(0:2*nprocx+1) :: xi1proc,g1proc
-      real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
-      real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
+      real, dimension(0:nprocx) :: xi1proc, g1proc
+      real, dimension(0:nprocy) :: xi2proc, g2proc
+      real, dimension(0:nprocz) :: xi3proc, g3proc
 !
       real :: a,b,c
       integer :: i
@@ -154,23 +154,26 @@ module Grid
 !  particle migration (see redist_particles_bounds). The select cases
 !  should use these arrays to set g{2,3}proc using the grid function.
 !
-      if (lparticles .or. lsolid_cells) then
-        do i=0,nprocx
-          xi1proc(2*i)  =i*nx-1
-          xi1proc(2*i+1)=i*nx
-        enddo
-        do i=0,nprocy
-          xi2proc(2*i)  =i*ny-1
-          xi2proc(2*i+1)=i*ny
-        enddo
-        do i=0,nprocz
-          xi3proc(2*i)  =i*nz-1
-          xi3proc(2*i+1)=i*nz
-        enddo
-        if (lperi(1)) xi1proc = xi1proc + 0.5
-        if (lperi(2)) xi2proc = xi2proc + 0.5
-        if (lperi(3)) xi3proc = xi3proc + 0.5
-      endif
+      xi1proc = (/ (real(i * nx), i = 0, nprocx) /)
+      xi1p: if (lactive_dimension(1) .and. .not. lperi(1)) then
+        xi1proc = xi1proc - 0.5
+        xi1proc(0) = 0.0
+        xi1proc(nprocx) = real(nxgrid - 1)
+      endif xi1p
+!
+      xi2proc = (/ (real(i * ny), i = 0, nprocy) /)
+      xi2p: if (lactive_dimension(2) .and. .not. (lperi(2) .or. lpole(2))) then
+        xi2proc = xi2proc - 0.5
+        xi2proc(0) = 0.0
+        xi2proc(nprocy) = real(nygrid - 1)
+      endif xi2p
+!
+      xi3proc = (/ (real(i * nz), i = 0, nprocz) /)
+      xi3p: if (lactive_dimension(3) .and. .not. lperi(3)) then
+        xi3proc = xi3proc - 0.5
+        xi3proc(0) = 0.0
+        xi3proc(nprocz) = real(nzgrid - 1)
+      endif xi3p
 !
 !  The following is correct for periodic and non-periodic case
 !    Periodic: x(xi=0) = x0 and x(xi=N) = x1
@@ -196,7 +199,8 @@ module Grid
         xprim2 = 0.
         dx_1 = 0.
         dx_tilde = 0.
-        g1proc=x00
+        g1proc(0) = x00
+        g1proc(1) = x00 + Lx
       else
 !
         select case (grid_func(1))
@@ -207,15 +211,12 @@ module Grid
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+          call grid_profile(a * (xi1proc - xi1star), grid_func(1), g1proc)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc)
-            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
-          endif
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
@@ -225,15 +226,12 @@ module Grid
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=b)
+          call grid_profile(a * (xi1proc - xi1star), grid_func(1), g1proc, param=b)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
-            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
-          endif
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
@@ -243,6 +241,7 @@ module Grid
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=b)
+          call grid_profile(a * (xi1proc - xi1star), grid_func(1), g1proc, param=b)
 !
           ! Slope should be 1 at the minimum:
           b = minval (g1der1)
@@ -251,17 +250,13 @@ module Grid
             g1     = g1   + (1.0 - b) * a * (xi1   - xi1star)
             g1lo   = g1lo + (1.0 - b) * a * (xi1lo - xi1star)
             g1up   = g1up + (1.0 - b) * a * (xi1up - xi1star)
+            g1proc = g1proc + (1.0 - b) * a * (xi1proc - xi1star)
           endif
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            b=dxi_fact(3)   !!!! (1)
-            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
-            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
-          endif
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
         case ('step-linear')
 !
@@ -276,33 +271,24 @@ module Grid
            dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
           call grid_profile(xi1lo,grid_func(1),g1lo, &
            dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
+          call grid_profile(xi1proc, grid_func(1), g1proc, dxyz=dxyz_step(1,:), xistep=xi_step(1,:), delta=xi_step_width(1,:))
 !
           x     = x00 + g1-g1lo
           xprim = g1der1
           xprim2= g1der2
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(xi1proc,grid_func(1),g1proc, &
-              dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
-            g1proc=x00+g1proc-g1lo
-          endif
+          g1proc = x00 + g1proc - g1lo
 !
         case ('duct')
           a = pi/(max(nxgrid-1,1))
           call grid_profile(a*xi1  -pi/2,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*xi1lo-pi/2,grid_func(1),g1lo)
           call grid_profile(a*xi1up-pi/2,grid_func(1),g1up)
+          call grid_profile(a * xi1proc - 0.5 * pi, grid_func(1), g1proc)
 !
           x     =x00+Lx*(g1-g1lo)/2
           xprim =    Lx*(g1der1*a   )/2
           xprim2=    Lx*(g1der2*a**2)/2
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
-            g1proc=x00+Lx*(g1proc-g1lo)/2
-            g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
-            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
-          endif
+          g1proc = x00 + 0.5 * Lx * (g1proc - g1lo)
 !
           if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
@@ -327,19 +313,12 @@ module Grid
           call grid_profile(pi/2.+a*xi1,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(pi/2.+a*xi1lo,grid_func(1),g1lo)
           call grid_profile(pi/2.+a*xi1up,grid_func(1),g1up)
+          call grid_profile(0.5 * pi + a * xi1proc, grid_func(1), g1proc)
 !
           x     =x00+Lx*g1
           xprim =    Lx*(g1der1*a   )
           xprim2=    Lx*(g1der2*a**2)
-!
-          if (lparticles .or. lsolid_cells) then
-             call fatal_error('construct_grid: non-equidistant grid', &
-                  'half-duct not implemented for particles.')
-!            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
-!            g1proc=x00+Lx*(g1proc-g1lo)/2
-!            g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
-!            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
-          endif
+          g1proc = x00 + Lx * g1proc
 !
           if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
@@ -366,15 +345,12 @@ module Grid
           call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-b),grid_func(1),g1up)
+          call grid_profile(a * (xi1proc - b), grid_func(1), g1proc)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc)
-            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
-          endif
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
         case ('power-law')
           ! Grid distance increases as a power-law set by c=coeff_grid(1)
@@ -399,28 +375,27 @@ module Grid
           call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
           call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
           call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
+          call grid_profile(a * (xi1proc - b), grid_func(1), g1proc, param=c)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc,param=c)
-            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
-          endif
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
         case ('squared')
           ! Grid distance increases linearily
-          a=max(nxgrid,1)
-          b=-max(nxgrid,1)/10
-          !b=0.
+          a = real(max(nxgrid, 1))
+          !b=-max(nxgrid,1)/10  ! 23-nov-20/ccyang: is it correct to use integer arithmetic like this?
+          b = 0.0
           call grid_profile(a*(xi1  -b),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-b),grid_func(1),g1up)
+          call grid_profile(a * (xi1proc - b), grid_func(1), g1proc)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
           if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
@@ -437,11 +412,6 @@ module Grid
             enddo
           endif
 !
-          if (lparticles .or. lsolid_cells) then
-            call fatal_error('construct_grid: non-equidistant grid', &
-                 'squared not implemented for particles.')
-          endif
-!
         case ('frozensphere')
           ! Just like sinh, except set dx constant below a certain radius, and
           ! constant for top ghost points.
@@ -450,10 +420,12 @@ module Grid
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+          call grid_profile(a * (xi1proc - xi1star), grid_func(1), g1proc)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
           if (llast_proc_x) then
             bound_prim2=x(l2-2)-x(l2-3)
@@ -461,11 +433,6 @@ module Grid
               x(l2-2+i)=x(l2-2)+i*bound_prim2
               xprim(l2-2:mx)=bound_prim2
             enddo
-          endif
-!
-          if (lparticles .or. lsolid_cells) then
-            call fatal_error('construct_grid: non-equidistant grid', &
-                 'frozensphere not implemented for particles.')
           endif
 !
         case default
@@ -506,13 +473,6 @@ module Grid
         dx_1=1./xprim
         dx_tilde=-xprim2/dx2
 !
-        if (lfirst_proc_x) &
-          dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
-        if (llast_proc_x) &
-          dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
-!
-        call calc_bound_coeffs(x,coeffs_1_x)
-
       endif
 !
 !  y coordinate
@@ -527,7 +487,8 @@ module Grid
         yprim2 = 0.
         dy_1 = 0.
         dy_tilde = 0.
-        g2proc=y00
+        g2proc(0) = y00
+        g2proc(1) = y00 + Ly
       else
 !
         select case (grid_func(2))
@@ -539,15 +500,12 @@ module Grid
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
           call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
+          call grid_profile(a * (xi2proc - xi2star), grid_func(2), g2proc)
 !
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc)
-            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
-          endif
+          g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
 !
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
@@ -557,15 +515,12 @@ module Grid
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
           call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=b)
+          call grid_profile(a * (xi2proc - xi2star), grid_func(2), g2proc, param=b)
 !
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
-            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
-          endif
+          g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
 !
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
@@ -575,6 +530,7 @@ module Grid
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
           call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=b)
+          call grid_profile(a * (xi2proc - xi2star), grid_func(2), g2proc, param=b)
 !
           ! Slope should be 1 at the minimum:
           b = minval (g2der1)
@@ -583,17 +539,13 @@ module Grid
             g2     = g2   + (1.0 - b) * a * (xi2   - xi2star)
             g2lo   = g2lo + (1.0 - b) * a * (xi2lo - xi2star)
             g2up   = g2up + (1.0 - b) * a * (xi2up - xi2star)
+            g2proc = g2proc + (1.0 - b) * a * (xi2proc - xi2star)
           endif
 !
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            b=dxi_fact(3)    !!!! (2)
-            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
-            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
-          endif
+          g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
 !
         case ('duct')
 !
@@ -601,17 +553,12 @@ module Grid
           call grid_profile(a*xi2  -pi/2,grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*xi2lo-pi/2,grid_func(2),g2lo)
           call grid_profile(a*xi2up-pi/2,grid_func(2),g2up)
+          call grid_profile(a * xi2proc - 0.5 * pi, grid_func(2), g2proc)
 !
           y     =y00+Ly*(g2-g2lo)/2
           yprim =    Ly*(g2der1*a   )/2
           yprim2=    Ly*(g2der2*a**2)/2
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
-            g2proc=y00+Ly*(g2proc-g2lo)/2
-            g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
-            g2proc(2*nprocy+1)=g2proc(2*nprocy)+y(m2)-y(m2-1)
-          endif
+          g2proc = y00 + 0.5 * Ly * (g2proc - g2lo)
 !
           if (lfirst_proc_y) then
             bound_prim1=y(m1+1)-y(m1)
@@ -643,27 +590,29 @@ module Grid
               xi2(i)=0.5-nghost+0.5+(ipy*ny+i-1)*&
                 (nygrid+2.*(nghost-0.5)-1)/(nygrid+2.*nghost-1)
             enddo
+            xi2proc = (/ (real(1 - nghost) + (real(nghost + i * ny) - 0.5) * real(mygrid - 2) &
+                                                                           / real(mygrid - 1), i = 0, nprocy) /)
           endif
+!
           call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2,dxyz= &
               dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           call grid_profile(xi2lo,grid_func(2),g2lo,dxyz= &
               dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          call grid_profile(xi2proc, grid_func(2), g2proc, dxyz=dxyz_step(2,:), xistep=xi_step(2,:), delta=xi_step_width(2,:))
+!
           if (lpole(2)) then
             call grid_profile(xi2up,grid_func(2),g2up,dxyz= &
                 dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
             y = y00 + g2 -0.5*(g2lo+g2up-pi)
+            g2proc = y00 + g2proc - 0.5 * (g2lo + g2up - pi)
           else
 !if(iproc<2) print*, 'iproc, y00, g2-g2lo=', iproc, y00, g2-g2lo
             y = y00 + g2-g2lo
+            g2proc = y00 + g2proc - g2lo
           endif
+!
           yprim = g2der1
           yprim2= g2der2
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(xi2proc,grid_func(2),g2proc, &
-              dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
-            g2proc=y00+g2proc-g2lo
-          endif
 !
         case default
           call fatal_error('construct_grid', &
@@ -693,13 +642,6 @@ module Grid
         dy_1=1./yprim
         dy_tilde=-yprim2/dy2
 !
-        if (lfirst_proc_y) &
-          dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
-        if (llast_proc_y) &
-          dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
-!
-        call calc_bound_coeffs(y,coeffs_1_y)
-
       endif
 !
 !  z coordinate
@@ -714,7 +656,8 @@ module Grid
         zprim2 = 0.
         dz_1 = 0.
         dz_tilde = 0.
-        g3proc=z00
+        g3proc(0) = z00
+        g3proc(1) = z00 + Lz
       else
 !
         select case (grid_func(3))
@@ -726,15 +669,12 @@ module Grid
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
           call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
+          call grid_profile(a * (xi3proc - xi3star), grid_func(3), g3proc)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
-            g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
-          endif
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
@@ -744,15 +684,12 @@ module Grid
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
           call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=b)
+          call grid_profile(a * (xi3proc - xi3star), grid_func(3), g3proc, param=b)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
-            g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
-          endif
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
@@ -762,6 +699,7 @@ module Grid
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
           call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=b)
+          call grid_profile(a * (xi3proc - xi3star), grid_func(3), g3proc, param=b)
 !
           ! Slope should be 1 at the minimum:
           b = minval (g3der1)
@@ -770,17 +708,13 @@ module Grid
             g3     = g3   + (1.0 - b) * a * (xi3   - xi3star)
             g3lo   = g3lo + (1.0 - b) * a * (xi3lo - xi3star)
             g3up   = g3up + (1.0 - b) * a * (xi3up - xi3star)
+            g3proc = g3proc + (1.0 - b) * a * (xi3proc - xi3star)
           endif
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            b=dxi_fact(3)
-            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
-            g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
-          endif
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
         case ('step-linear')
 !
@@ -795,15 +729,12 @@ module Grid
            dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
           call grid_profile(xi3lo,grid_func(3),g3lo, &
            dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
+          call grid_profile(xi3proc, grid_func(3), g3proc, dxyz=dxyz_step(3,:), xistep=xi_step(3,:), delta=xi_step_width(3,:))
+!
           z     = z00 + g3-g3lo
           zprim = g3der1
           zprim2= g3der2
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(xi3proc,grid_func(3),g3proc, &
-              dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
-            g3proc=z00+g3proc-g3lo
-          endif
+          g3proc = z00 + g3proc - g3lo
 !
         case ('linear+log')
           ! Grid distance is equidistant first and then increases logarithmically
@@ -816,28 +747,27 @@ module Grid
           call grid_profile(a*(xi3-b)  ,grid_func(3),g3,g3der1,g3der2,param=c)
           call grid_profile(a*(xi3lo-b),grid_func(3),g3lo,param=c)
           call grid_profile(a*(xi3up-b),grid_func(3),g3up,param=c)
+          call grid_profile(a * (xi3proc - b), grid_func(3), g3proc, param=c)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call fatal_error('construct_grid: non-equidistant grid', &
-                 'linear+log not implemented for particles.')
-          endif
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
         case ('squared')
           ! Grid distance increases linearily
           a=max(nzgrid,1)
-          b=-max(nzgrid,1)/10
-          !b=0.
+          !b=-max(nzgrid,1)/10  ! 23-nov-20/ccyang: is it correct to use integer arithmetic like this?
+          b = 0.0
           call grid_profile(a*(xi3  -b),grid_func(3),g3,g3der1,g3der2)
           call grid_profile(a*(xi3lo-b),grid_func(3),g3lo)
           call grid_profile(a*(xi3up-b),grid_func(3),g3up)
+          call grid_profile(a * (xi3proc - b), grid_func(3), g3proc)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
           if (lfirst_proc_z) then
             bound_prim1=z(n1+1)-z(n1)
@@ -854,11 +784,6 @@ module Grid
             enddo
           endif
 !
-          if (lparticles .or. lsolid_cells) then
-            call fatal_error('construct_grid: non-equidistant grid', &
-                 'squared not implemented for particles.')
-          endif
-!
         case ('trough')
           ! Grid distance is almost equidistant at boundaries and then decreases
           ! at the middle
@@ -869,16 +794,13 @@ module Grid
           call grid_profile(xi3  ,grid_func(3),g3,g3der1,g3der2,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
           call grid_profile(xi3lo,grid_func(3),g3lo,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
           call grid_profile(xi3up,grid_func(3),g3up,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+          call grid_profile(xi3proc, grid_func(3), g3proc, param=a, xistep=(/b,c/), delta=(/0.5,0.1/))
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*g3der1/(g3up-g3lo)
           zprim2=    Lz*g3der2/(g3up-g3lo)
+          g3proc = z00 + Lz * (g3proc - g3lo) / (g3up - g3lo)
 !
-          if (lparticles .or. lsolid_cells) then
-            call fatal_error('construct_grid: non-equidistant grid', &
-                 'trough not implemented for particles.')
-          endif
-
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
@@ -888,29 +810,15 @@ module Grid
         dz_1=1./zprim
         dz_tilde=-zprim2/dz2
 !
-        if (lfirst_proc_z) &
-          dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
-        if (llast_proc_z) &
-          dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
-!
-        call calc_bound_coeffs(z,coeffs_1_z)
-
       endif
 !
-!  Compute averages across processor boundaries to calculate the physical
-!  boundaries
+!  Record the processor boundary.
 !
-      if (lparticles .or. lsolid_cells) then
-        do i=0,nprocx
-          procx_bounds(i)=(g1proc(2*i)+g1proc(2*i+1))*0.5
-        enddo
-        do i=0,nprocy
-          procy_bounds(i)=(g2proc(2*i)+g2proc(2*i+1))*0.5
-        enddo
-        do i=0,nprocz
-          procz_bounds(i)=(g3proc(2*i)+g3proc(2*i+1))*0.5
-        enddo
-      endif
+      procx_bounds = g1proc
+      procy_bounds = g2proc
+      procz_bounds = g3proc
+!
+      call grid_bound_data
 !
 !  Fargo (orbital advection acceleration) is implemented for polar coordinates only.
 !  Die otherwise.       
@@ -2173,6 +2081,8 @@ module Grid
 !
 !  Check the direction.
 !
+      h = 0.0
+      shift = 0
       ckdir: select case (dir)
       case (1) ckdir
         h = dx
@@ -2558,7 +2468,23 @@ module Grid
     endsubroutine calc_bound_coeffs
 !***********************************************************************
     subroutine grid_bound_data
-
+!
+!  Assign local boundary data after the grid is constructed.
+!
+!  08-apr-15/MR: coded
+!  23-nov-20/ccyang: added xyz[01]_loc and Lxyz_loc
+!
+      xyz0_loc(1) = procx_bounds(ipx)
+      xyz1_loc(1) = procx_bounds(ipx+1)
+!
+      xyz0_loc(2) = procy_bounds(ipy)
+      xyz1_loc(2) = procy_bounds(ipy+1)
+!
+      xyz0_loc(3) = procz_bounds(ipz)
+      xyz1_loc(3) = procz_bounds(ipz+1)
+!
+      Lxyz_loc = xyz1_loc - xyz0_loc
+!
       if (nxgrid>1) then
         if (lfirst_proc_x) &
           dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
@@ -2585,7 +2511,7 @@ module Grid
 !
         call calc_bound_coeffs(z,coeffs_1_z)
       endif
-
+!
     endsubroutine grid_bound_data
 !***********************************************************************
     subroutine generate_halfgrid(x12,y12,z12)
