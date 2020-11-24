@@ -3882,10 +3882,10 @@ endsubroutine pdf
             1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
             sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+            1./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
             sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+            1./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
             sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
       enddo
     enddo
