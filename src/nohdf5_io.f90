@@ -971,7 +971,7 @@ module HDF5_IO
         open(lun_output, file=filename, form='unformatted', position='append')
         if (present (header)) write(lun_output) header
         write(lun_output) time
-        if (label == 'z') then
+        if (label(1:1) == 'z') then
           write(lun_output) ( data(ia,:,:), ia=1, nc )
         else
           write(lun_output) data(:,:,1:nc)
@@ -981,7 +981,7 @@ module HDF5_IO
         open(lun_output, file=filename, position='append')
         if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
         write(lun_output,'(1pe12.5)') time
-        if (label == 'z') then
+        if (label(1:1) == 'z') then
           write(lun_output,'(1p,8'//trim(fmt_avgs)//')') ( data(ia,:,:), ia=1, nc )
         else
           write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,:,1:nc)

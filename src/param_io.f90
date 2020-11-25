@@ -364,6 +364,10 @@ module Param_IO
         lyinyang=.false.
       endif
 !
+!  Set lcoarse for coarsening grid near poles.
+!
+      lcoarse = lcoarse .and. lpole(2) .and. ncoarse>1 
+!
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !

@@ -1,7 +1,7 @@
 !
 module Io
 !
-  use Cparam, only: mx,my,mz,mparray,labellen
+  use Cparam, only: mx,my,mz,mparray,labellen,fnlen
   use Cdata, only: lstart, lroot
 !
   implicit none
