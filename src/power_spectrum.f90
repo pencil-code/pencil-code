@@ -3779,6 +3779,7 @@ endsubroutine pdf
   !
   k2m=0.
   nks=0.
+  nmu=1
   do ikr=1,nk
     nmu(ikr)=2*(ikr-1)+1
   enddo
@@ -3868,7 +3869,7 @@ endsubroutine pdf
   do ikr=1,nk
     do ikmu=1,nmu(ikr)
       kmu2=kmu(ikr,ikmu)**2
-      coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
+      if (kmu2/=0.) coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
       if (kmu2==1.) then
         coeff_a(ikr,ikmu)=vxx(ikr,ikmu)/(pi*2.)
       else
@@ -3878,15 +3879,17 @@ endsubroutine pdf
             ( pi*(1-kmu2)**2*(2+kmu2) )
       endif
       do i=1,legendre_lmax+1
-        legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
-            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-        legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
-            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-        legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-            1./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
-            sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+          legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
+              1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
+              1./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
+              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
+              1./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
+              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+        endif
       enddo
     enddo
   enddo
@@ -3910,19 +3913,39 @@ endsubroutine pdf
   if (lroot) then
     if (ip<10) print*,'Writing two point correlations to'  &
         ,trim(datadir)//'/cor2_.dat files'
-    open(1,file=trim(datadir)//'/cor2_la_a_'//trim(sp)//'.dat',position='append')
+    !  ABC coefficients
+    open(1,file=trim(datadir)//'/cor2_a_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do ikr=1,nk; do ikmu=1,nmu(ikr)
+      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_a_sum(ikr,ikmu)
+    enddo; enddo
+    close(1)
+    open(1,file=trim(datadir)//'/cor2_b_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do ikr=1,nk; do ikmu=1,nmu(ikr)
+      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_b_sum(ikr,ikmu)
+    enddo; enddo
+    close(1)
+    open(1,file=trim(datadir)//'/cor2_c_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do ikr=1,nk; do ikmu=1,nmu(ikr)
+      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_c_sum(ikr,ikmu)
+    enddo; enddo
+    close(1)
+    !  legendre coefficients
+    open(1,file=trim(datadir)//'/cor2_a_al_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     do i=1,legendre_lmax+1; do ikr=1,nk
       write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
     enddo; enddo
     close(1)
-    open(1,file=trim(datadir)//'/cor2_la_b_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/cor2_b_al_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     do i=1,legendre_lmax+1; do ikr=1,nk
       write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
     enddo; enddo
     close(1)
-    open(1,file=trim(datadir)//'/cor2_la_c_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/cor2_c_al_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     do i=1,legendre_lmax+1; do ikr=1,nk
       write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
@@ -4101,12 +4124,14 @@ endsubroutine pdf
       if (lcyl_polar_spectra) then
         do ikr=1,nk; do ikmu=1,nmu(ikr)
           do i=1,legendre_lmax+1
-            legendre_al(i,ikr)=legendre_al(i,ikr)+ &
-                1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
-                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-                1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
-                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+              legendre_al(i,ikr)=legendre_al(i,ikr)+ &
+                  1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
+                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+              legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+                  1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
+                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            endif
           enddo
         enddo; enddo
       endif
@@ -4142,42 +4167,6 @@ endsubroutine pdf
   !  append to diagnostics file
   !
   if (lroot) then
-    if (lcyl_polar_spectra) then
-      !  outputs for debug
-      !  legendre p
-      open(1,file=trim(datadir)//'/plegendre.dat',position='append')
-      write(1,*) t
-      do i=1,legendre_lmax+1; do ikr=1,nk; do ikmu=1,nmu(ikr)
-      write(1,'(2i4,1p,8e10.2,3p,8e10.2)') i-1,ikr-1,kmu(ikr,ikmu),plegendre(i-1,0,kmu(ikr,ikmu))
-      enddo;enddo;enddo
-      close(1)
-      !  spectra for comparison
-      open(1,file=trim(datadir)//'/cyl_omega_power_cyl_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do jkz=1, nzgrid; do k=1, nk
-        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrum_sum(k,jkz)
-      enddo; enddo
-      close(1)
-      open(1,file=trim(datadir)//'/cyl_omega_power_polar_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do ikr=1,nk; do ikmu=1,nmu(ikr)
-        write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1, kmu(ikr,ikmu), cyl_polar_spec_sum(ikr,ikmu)
-      enddo; enddo
-      close(1)
-      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
-      open(1,file=trim(datadir)//'/legendre_al_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
-      enddo;enddo
-      close(1)
-      open(1,file=trim(datadir)//'/legendre_alhel_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
-      enddo;enddo
-      close(1)
-    endif
     if (lcylindrical_spectra) then
       if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
            ,' to ',trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat'
@@ -4205,6 +4194,22 @@ endsubroutine pdf
         write(1,*) t
         write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
       endif
+      close(1)
+    endif
+    !
+    if (lcyl_polar_spectra) then
+      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+      open(1,file=trim(datadir)//'/legendre_al_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
+      enddo;enddo
+      close(1)
+      open(1,file=trim(datadir)//'/legendre_alhel_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
+      enddo;enddo
       close(1)
     endif
     !
