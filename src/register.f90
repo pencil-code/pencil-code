@@ -195,6 +195,7 @@ module Register
 ! 26-aug-13/MR: changed initialize_prints into initialize_diagnostics
 !
       use Cdata
+      use FArrayManager, only: farray_check_maux
       use Param_IO
       use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
                                   mpisend_real,mpirecv_real
@@ -413,6 +414,10 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
+!
+!  Check if MAUX is consistent with what is required.
+!
+      call farray_check_maux
 !
 !  print summary of variable names
 !

@@ -33,6 +33,8 @@ module FArrayManager
   public :: farray_size_by_name
   public :: farray_type_by_name
 !
+  public :: farray_check_maux
+!
   public :: farray_acquire_scratch_area
   public :: farray_release_scratch_area
 !
@@ -823,6 +825,35 @@ module FArrayManager
 !      return
 !!
 !    endfunction farray_index_by_name
+!***********************************************************************
+    subroutine farray_check_maux
+!
+!  Check if MAUX allocated equates with actual number of auxiliaries.
+!
+!  24-nov-2020/ccyang: coded
+!
+      use Cdata, only: lwrite_aux
+!
+      character(len=*), parameter :: NEWLINE = achar(10) // achar(9) // "| "
+      character(len=*), parameter :: ROUTINE = "farray_check_maux"
+      character(len=*), parameter :: MESSAGE = &
+          NEWLINE // "The count of MAUXs is inconsistent with the actual number of" // &
+          NEWLINE // "auxiliaries required.  Please check your src/cparam.local.  It is" // &
+          NEWLINE // "also possible that someone unintentionally added *optional*" // &
+          NEWLINE // "auxiliaries to MAUX CONTRIBUTION to one of the physics modules." // &
+          NEWLINE // "Please urge them to move it to src/cparam.local under their" // &
+          NEWLINE // "specific application. "
+!
+      neq: if (naux /= maux) then
+        if (lroot) print *, "farray_check_maux: naux, maux = ", naux, maux
+        if (lwrite_aux) then
+          call fatal_error(ROUTINE, MESSAGE)
+        else
+          call warning(ROUTINE, MESSAGE)
+        endif
+      endif neq
+!
+    endsubroutine farray_check_maux
 !***********************************************************************
     subroutine free_list(list)
 !
