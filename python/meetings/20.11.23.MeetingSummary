@@ -1,0 +1,58 @@
+###### Meeting 23 Nov 20 Summary #######
+
+Attendees: Fred, Simon, Wladimir, Wolfgang, Alberto, Illa
+
+Minutes:
+
+We agree on going over the issues on the files: 
+-pencil-code/python/meetings/Nov20_topics
+-pencil-code/python/pencil/TO_DO_LIST.txt
+
+And discuss the issues:
+
+*Where to import modules:
+Right now the modules are imported inside the functions, but according to the 
+PEP8 guidelines they should be imported at the beginning of the file.
+
+Simon proposed to leave it as it is, since it was agreed upon on a Pencil Code 
+meeting 2 years ago, and is cleaner. Plus it is less messy when using 
+autocomplition in ipython.
+
+Wolfang and Illa proposed to move to the PEP8 convention and find a solution 
+for ipython.
+
+*Reload:
+Functions won't reload in an ipython session.
+Fred pointed out that the file names are the same as functions names, making 
+it imposible to reload, and suggested to change file names.
+We proposed different ways of reloading, using importlib, but it didn's seem to 
+work.
+
+*Standarize formatting:
+Wolfgang suggested to use "black" for formatting the code. Also as a way to 
+standarize the formatting. 
+We agreed to give it a try, and he would give us more info on the next meeting.
+
+*Automatic documentation:
+Illa suggested to use either Epydoc or sphinx to create automatic documentation 
+of the python code.
+We agreed on the idea, and Illa will research the different options, keeping in 
+mind doing the minimal work on the already existing documentation inside the 
+functions.
+
+*Tutorials:
+We discuss the use of Jupyter versus plain scripts to add into the tutorials, 
+and agreed on having both version.
+The Jupyter notebooks can be translated into scripts using pandoc or 
+>jupyter nboconvert --to script
+
+Alberto will try to add new tutorials.
+We also agree on changing the dir names inside the tutorials to make them more 
+relevant to the content. Creating a "Getting started" dir and examples of 
+different topics.
+Simon will try to change the look of the tutorials dir.
+
+*Functions:
+We will try to add the relevant IDL functionality.
+We agree on adding the missing IDL functions to the TO_DO_LIST and keep a check 
+there.
