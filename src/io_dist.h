@@ -280,7 +280,7 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
           endif
         
           call system_cmd( &
-            'echo From `pwd`'//trim(mailstr)//"| mail -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+            'echo From `pwd`'//trim(mailstr)//"|"//trim(mailcmd)//" -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
         endif
       endif
 

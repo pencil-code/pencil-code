@@ -704,14 +704,14 @@ module HDF5_IO
           enddo
         elseif ((vector > 0) .and. (array < 0)) then
           write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(-array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))            
-        elseif (array /= 0) then
+        elseif (array /= 0) then    ! i.e. vector<0
           ! backwards compatibility: ind => indgen(array)+ivar
           write (lun_output,*) trim (varname)//'=indgen('//trim(itoa(abs(array)))//')+'//trim (itoa (ivar))
           ! expand array: ind => [ind1,ind2,...]
           do pos = 1, array
             write (lun_output,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+(pos-1)))
           enddo
-        elseif (vector > 0) then
+        elseif (vector > 0) then    ! i.e. array=0
           ! expand vectors: iuu => [iux,iuy,iuz], iaa => [iax,iay,iaz], etc.
           if (vector == 3) then
             ! backwards compatibility: write original vector

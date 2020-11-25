@@ -65,13 +65,16 @@ module Messages
       inquire(FILE="COLOR", EXIST=ltermcap_color)
 !
       if (mailaddress=='') &
-        call get_env_var('PENCIL_USER_ADDR',mailaddress)
+        call get_env_var('PENCIL_USER_MAILADDR',mailaddress)
       if (mailaddress/='') then
         if (index(trim(mailaddress),'@')==0 .or. index(trim(mailaddress),'.')==0) then
           call warning('initialize_messages', 'invalid mail address')
           mailaddress=''
         endif
       endif
+
+      call get_env_var('PENCIL_USER_MAILCMD',mailcmd)
+      if (mailcmd=='') mailcmd = 'mail'
 
     endsubroutine initialize_messages
 !***********************************************************************
@@ -916,9 +919,9 @@ module Messages
 !
         if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
-        if ( .not.lopen.and..not.lread .and. index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
+        if ( .not.lopen.and..not.lread ) &        ! send mail to user
           call system_cmd( &
-               'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
+               'echo '//trim(errormsg)//'|'//trim(mailcmd)//"-s 'PencilCode Message' "//trim(mailaddress) )
       endif
     endif
 !
