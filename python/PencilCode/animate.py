@@ -49,7 +49,7 @@ def avg2d(name, direction, datadir='./data', save=False, **kwarg):
     # Animate.
     _frame_rectangle(t, x, y, avg[name], xlabel=xlabel, ylabel=ylabel, clabel=name, save=save, **kwarg)
 #=======================================================================
-def slices(field, datadir='./data', **kwarg):
+def slices(field, datadir='./data', tmin=None, **kwarg):
     """Dispatches to the respective animator of video slices.
 
     Positional Argument:
@@ -59,16 +59,27 @@ def slices(field, datadir='./data', **kwarg):
     Keyword Arguments:
         datadir
             Path to the data directory.
+        tmin
+            If not None, the slices with time earlier than tmin are
+            truncated.
         **kwarg
             Keyword arguments passed to _get_range().
     """
     # Author: Chao-Chin Yang
     # Created: 2015-04-22
-    # Last Modified: 2018-06-05
+    # Last Modified: 2020-11-24
     from . import read
+    import numpy as np
 
     # Read the slices.
     t, s = read.slices(field, datadir=datadir)
+
+    if tmin is not None:
+        # Truncate the beginning of the slices.
+        indices = np.where(t >= tmin)
+        for v in s._fields:
+            s = s._replace(**{v: getattr(s, v)[indices]})
+        t = t[indices]
 
     # Get the dimensions.
     dim = read.dimensions(datadir=datadir)
