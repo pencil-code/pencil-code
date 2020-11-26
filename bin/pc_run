@@ -927,9 +927,10 @@ sub subdir_list {
 # Return list of directories below data/ that must exist
     my @subdirs = qw/ allprocs averages idl /;
     my $HDF5 = `grep -Eci '^ *io *= *io_hdf5' src/Makefile.local`;
+    my $MPIIO = `grep -Ec '^ *IO *= *io_mpi2' src/Makefile.local`;
     if ($HDF5 > 0) {
         push @subdirs, 'slices';
-    } else {
+    } elsif ($MPIIO == 0) {
         for my $i (1..$Ncpus) {
             push @subdirs, 'proc' . ($i - 1);
         }
