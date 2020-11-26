@@ -81,7 +81,7 @@ class __Simulation__(object):
         self.start_components = ['index.pro',
                                  'param.nml',
                                  'time_series.dat',
-                                 'jobid.dat',
+#                                 'jobid.dat',
                                  'pencils.list']
         # optional files that should stick with the simulation when copied
         self.start_optionals = [ '*.pro', '*.h5']
