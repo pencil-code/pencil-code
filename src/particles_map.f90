@@ -1013,6 +1013,8 @@ module Particles_map
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
+      if (present(f)) call keep_compiler_quiet(f)
+!
       t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
@@ -1310,12 +1312,10 @@ module Particles_map
 !
 !  Possible to map sink particles by temporarily switching irhop to irhops.
 !
+      irhopm = irhop
       if (present(lmapsink_opt)) then
         lmapsink=lmapsink_opt
-        if (lmapsink) then
-          irhopm=irhop
-          irhop=ipotself
-        endif
+        if (lmapsink) irhop=ipotself
       else
         lmapsink=.false.
       endif
@@ -1775,7 +1775,6 @@ module Particles_map
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
-      real, dimension(nx) :: rhop_swarm_mn
       real :: weight, weight0, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -2012,8 +2011,6 @@ module Particles_map
 !
 !  Check that all interpolation requirements are satisfied:
 !
-      use Particles_cdata
-!
       if (interp%luu .and. (.not. &
           (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)))) then
         call warning('initialize_particles','interpolated uu '// &
@@ -2047,8 +2044,6 @@ module Particles_map
 !  interpolation policies.
 !
 !  28-jul-08/kapelrud: coded
-!
-      use Particles_cdata
 !
       real,dimension(mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
@@ -2216,8 +2211,6 @@ module Particles_map
 !
 !  28-jul-08/kapelrud: coded
 !
-      use Particles_cdata
-!
       if (allocated(interp_uu)) deallocate(interp_uu)
       if (allocated(interp_oo)) deallocate(interp_oo)
       if (allocated(interp_TT)) deallocate(interp_TT)
@@ -2342,9 +2335,7 @@ module Particles_map
       intent(inout) :: vec
 !
       integer :: k
-      ! TODO
-      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec2
-
+!
       r2_ogrid=r_int_outer*r_int_outer
 !
       if (npar_imn(imn)/=0) then
