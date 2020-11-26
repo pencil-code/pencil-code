@@ -190,7 +190,7 @@ program run
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
-    call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
+    if (lparticles) call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
     call construct_serial_arrays
     call grid_bound_data
   else
