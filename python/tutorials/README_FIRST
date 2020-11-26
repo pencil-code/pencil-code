@@ -1,5 +1,3 @@
-$Id$
-
 Dear Pencil Code User,
 
 this directory contains tutorials for using Python with your Pencil Code
@@ -20,24 +18,20 @@ by using 'ipython notebook' (or 'jupyter-notebook') in your bash shell.
 
 
 Note: If you are trying to do these tutorials on a distant cluster you are connected
-to via ssh, this may not work. Instead try what is written in the tutorial 0001 Jupyter_on_a_cluster.
+to via ssh, this may not work. Instead try what is written in the tutorial basics/Jupyter_on_a_cluster.
 
 
 TUTORIAL OVERVIEW:
 
 The tutorials are grouped as follows:
 
-0xxx    On using pencilnew and Jupyter/Python in general.
-         Basics and neat tricks await you here.
-1xxx    On using pencilnew to READ in your simulation data.
-2xxx    On using pencilnew to VISUALIZE your data.
-3xxx    On using pencilnew to POSTPROCESS your data.
-4xxx    On using pencilnew and python to postprocess PARTICLE data.
-5xxx    On using the full capacity of pencilnew.
-7xxx    On using FANCY pencil code MODULES.
+basics                On using pencil and Jupyter/Python in general.
+                      Basics and neat tricks await you here.
+red                   On using pencil to READ in your simulation data.
+visualize             On using pencil to VISUALIZE your data.
+simulation_objects    On using the full capacity of the pencil simulation objects.
 
 Now go and check them out! Feel free to add you own tutorials or request them from the Pencil Code Community! 
-I recommend to go through the tutorials in number ordering.
 
 Tutorials may use dummy/sample simulations. You find them in the
 sample_simulations folder.
