@@ -1,0 +1,9 @@
+If you wish to add/edit Python tutorials make sure you adhere to the
+PC Python coding style which can be found here:
+https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
+
+Tutorials can be written as Jupyter files or as .py script files.
+We aim to have both formats avialable. So, if you write the tutorial
+as Jupyter notebook convert to a Python script using:
+jupyter nbconvert --to script JUPYTER_SCRIPT.ipynb
+
