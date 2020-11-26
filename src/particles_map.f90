@@ -899,20 +899,18 @@ module Particles_map
 !
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidistant grids
+!  26-nov-20/ccyang: delegated to Grid
 !
-      use Sub, only: find_index_by_bisection
+      use Grid, only: real_to_index
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      integer, optional :: k1_opt, k2_opt
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(out) :: ineargrid
+      integer, intent(in), optional :: k1_opt, k2_opt
 !
-      double precision, save :: dx1, dy1, dz1
-      integer :: k, k1, k2, ix0, iy0, iz0
-      logical, save :: lfirstcall=.true.
+      real, dimension(:,:), allocatable :: xi
+      logical, dimension(:), allocatable :: loutside
+      integer :: np, k, k1, k2, istat
       real :: t_sp   ! t in single precision for backwards compatibility
-!
-      intent(in)  :: fp
-      intent(out) :: ineargrid
 !
       t_sp = t
 !
@@ -928,74 +926,33 @@ module Particles_map
         k2=npar_loc
       endif
 !
-!  Default values in case of missing directions.
+!  Convert the coordinates to index space.
 !
-      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
-!
-      if (lfirstcall) then
-        dx1=dx_1(l1); dy1=dy_1(m1); dz1=dz_1(n1)
-        lfirstcall=.false.
-      endif
-!
-      do k=k1,k2
-!
-!  Find nearest grid point in x-direction.
-!  Find nearest grid point by bisection if the grid is not equidistant.
-!
-        if (nxgrid/=1) then
-          if (lequidist(1)) then
-            ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
-          else
-            call find_index_by_bisection(fp(k,ixp),x,ix0)
-          endif
-        endif
-!
-!  Find nearest grid point in y-direction.
-!
-        if (nygrid/=1) then
-          if (lequidist(2)) then
-            iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
-          else
-            call find_index_by_bisection(fp(k,iyp),y,iy0)
-          endif
-        endif
-!
-!  Find nearest grid point in z-direction.
-!
-        if (nzgrid/=1) then
-          if (lequidist(3)) then
-            iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
-          else
-            call find_index_by_bisection(fp(k,izp),z,iz0)
-          endif
-        endif
-!
-        ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
+      np = k2 - k1 + 1
+      allocate(xi(np,3), stat=istat)
+      if (istat /= 0) call fatal_error_local("map_nearest_grid", "cannot allocate array xi")
+      call real_to_index(np, fp(k1:k2,ixp:izp), xi)
+      ineargrid(k1:k2,:) = nint(xi)
+      deallocate(xi)
 !
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
 !
-          if (ineargrid(k,1)<=l1-1.or.ineargrid(k,1)>=l2+1.or. &
-              ineargrid(k,2)<=m1-1.or.ineargrid(k,2)>=m2+1.or. &
-              ineargrid(k,3)<=n1-1.or.ineargrid(k,3)>=n2+1) then
-            if (lcheck_exact_frontier) then
-              if (ineargrid(k,1)<=l1-1) then
-                ineargrid(k,1)=l1
-              elseif (ineargrid(k,1)>=l2+1) then
-                ineargrid(k,1)=l2
-              endif
-              if (ineargrid(k,2)<=m1-1) then
-                ineargrid(k,2)=m1
-              elseif (ineargrid(k,2)>=m2+1) then
-                ineargrid(k,2)=m2
-              endif
-              if (ineargrid(k,3)<=n1-1) then
-                ineargrid(k,3)=n1
-              elseif (ineargrid(k,3)>=n2+1) then
-                ineargrid(k,3)=n2
-              endif
-            else
+      allocate(loutside(np), stat=istat)
+      if (istat /= 0) call fatal_error_local("map_nearest_grid", "cannot allocate array loutside")
+!
+      loutside = ineargrid(k1:k2,1) < l1 .or. ineargrid(k1:k2,1) > l2 .or. &
+                 ineargrid(k1:k2,2) < m1 .or. ineargrid(k1:k2,2) > m2 .or. &
+                 ineargrid(k1:k2,3) < n1 .or. ineargrid(k1:k2,3) > n2
+      outside: if (any(loutside)) then
+        cef: if (lcheck_exact_frontier) then
+          ineargrid(k1:k2,1) = min(max(ineargrid(k1:k2,1), l1), l2)
+          ineargrid(k1:k2,2) = min(max(ineargrid(k1:k2,2), m1), m2)
+          ineargrid(k1:k2,3) = min(max(ineargrid(k1:k2,3), n1), n2)
+        else cef
+          ploop: do k = k1, k2
+            info: if (loutside(k - k1 + 1)) then
               print*, 'map_nearest_grid: particle must never be closer to a '//&
                       'ghost point than'
               print*, '                  to a physical point.'
@@ -1016,9 +973,11 @@ module Particles_map
               print*, 'x1, y1, z1  =', x(l1), y(m1), z(n1)
               print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
               call fatal_error_local('map_nearest_grid','')
-            endif
-        endif
-      enddo
+            endif info
+          enddo ploop
+        endif cef
+      endif outside
+      deallocate(loutside)
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
