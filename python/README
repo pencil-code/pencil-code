@@ -10,11 +10,11 @@ in your script or from your favorite python shell (ipython is a good one).
 
 Once you've done so,
 
-  ts = pc.read_ts()
+  ts = pc.read.ts()
 
 reads the 'time_series.dat' file and
 
-  var = pc.read_var(datadir='data/')
+  var = pc.read.var(datadir='data/')
 
 returns an object with the entire f array as well as some handy constants.
 
