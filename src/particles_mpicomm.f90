@@ -329,7 +329,7 @@ module Particles_mpicomm
             enddo
           else if (fp(k,ixp)<procx_bounds(ipx).and.ipx>0) then
             do j=ipx-1,0,-1
-              if (fp(k,ixp)>procx_bounds(j)) then
+              if (fp(k,ixp)>=procx_bounds(j)) then
                 ipx_rec=j
                 exit
               endif
@@ -346,7 +346,7 @@ module Particles_mpicomm
             enddo
           else if (fp(k,iyp)<procy_bounds(ipy).and.ipy>0) then
             do j=ipy-1,0,-1
-              if (fp(k,iyp)>procy_bounds(j)) then
+              if (fp(k,iyp)>=procy_bounds(j)) then
                 ipy_rec=j
                 exit
               endif
@@ -363,7 +363,7 @@ module Particles_mpicomm
             enddo
           else if (fp(k,izp)<procz_bounds(ipz).and.ipz>0) then
             do j=ipz-1,0,-1
-              if (fp(k,izp)>procz_bounds(j)) then
+              if (fp(k,izp)>=procz_bounds(j)) then
                 ipz_rec=j
                 exit
               endif
