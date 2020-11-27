@@ -327,7 +327,7 @@ program start
 !  Write grid.dat file.
 !
   call wgrid('grid.dat',lwrite=.true.)
-  if (lparticles) call wproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
+  if (lparticles.or.lpointmasses.or.lshear) call wproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
 !
 !  Update the list of neighboring processes.
 !

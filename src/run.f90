@@ -190,7 +190,7 @@ program run
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
-    if (lparticles) call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
+    if (lparticles.or.lpointmasses.or.lshear) call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
     call construct_serial_arrays
     call grid_bound_data
   else
@@ -415,6 +415,7 @@ program run
 !
 !  Initialize the list of neighboring processes.
 !
+print*, 'Lxyz_loc=', Lxyz_loc
   call update_neighbors     !MR: Isn't this only needed for particles?
 !
 !  Allow modules to do any physics modules do parameter dependent
