@@ -15,9 +15,9 @@ help,var                                 SIM = pc.get_sim('path_to_simulation')
 power,'_GWs','hel_GWs',k=k,spec1=grav1,spec2=grav2,i=n,tt=t,/noplot,/lks
 
 
-pc_read_param,obj=param
+pc_read_param,obj=param                  pc.read.param(datadir = SIM.datadir)   
 
 help,param
 
 Example:
-print,param.tstart
+print,param.tstart                       print(pc.read.param.tstart)
