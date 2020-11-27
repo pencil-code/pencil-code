@@ -279,10 +279,10 @@ module Particles_mpicomm
       use Mpicomm
       use Diagnostics, only: max_name
 !
-      real, dimension (mpar_loc,mpcom) :: fp
-      integer, dimension (mpar_loc) :: ipar
-      real, dimension (mpar_loc,mpvar), optional :: dfp
-      logical, optional :: linsert
+      real, dimension(mpar_loc,mpcom), intent(inout) :: fp
+      integer, dimension(mpar_loc), intent(inout) :: ipar
+      real, dimension (mpar_loc,mpvar), intent(inout), optional :: dfp
+      logical, intent(in), optional :: linsert
 !
       real, dimension (npar_mig,mpcom) :: fp_mig
       real, dimension (npar_mig,mpvar) :: dfp_mig
@@ -297,8 +297,6 @@ module Particles_mpicomm
       real, dimension (:,:), allocatable :: buffer
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
-!
-      intent (inout) :: fp, ipar, dfp
 !
 !  Possible to iterate until all particles have migrated.
 !
