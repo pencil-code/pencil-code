@@ -972,6 +972,8 @@ module Particles_map
               print*, 'l2, m2, n2  =', l2, m2, n2
               print*, 'x1, y1, z1  =', x(l1), y(m1), z(n1)
               print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
+              print *, "xyz0_loc = ", xyz0_loc
+              print *, "xyz1_loc = ", xyz1_loc
               call fatal_error_local('map_nearest_grid','')
             endif info
           enddo ploop
