@@ -286,6 +286,7 @@ module Particles_mpicomm
 !
       real, dimension (npar_mig,mpcom) :: fp_mig
       real, dimension (npar_mig,mpvar) :: dfp_mig
+      real, dimension(3) :: eps
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -297,6 +298,10 @@ module Particles_mpicomm
       real, dimension (:,:), allocatable :: buffer
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
+!
+!  Set the spacing to the process boundary.
+!
+      eps = 0.5 * spacing(xyz0)
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -325,7 +330,7 @@ module Particles_mpicomm
                 exit
               endif
             enddo
-          else if (fp(k,ixp)<procx_bounds(ipx).and.ipx>0) then
+          else if (procx_bounds(ipx) - fp(k,ixp) > eps(1) .and. ipx > 0) then
             do j=ipx-1,0,-1
               if (fp(k,ixp)>=procx_bounds(j)) then
                 ipx_rec=j
@@ -342,7 +347,7 @@ module Particles_mpicomm
                 exit
               endif
             enddo
-          else if (fp(k,iyp)<procy_bounds(ipy).and.ipy>0) then
+          else if (procy_bounds(ipy) - fp(k,iyp) > eps(2) .and. ipy > 0) then
             do j=ipy-1,0,-1
               if (fp(k,iyp)>=procy_bounds(j)) then
                 ipy_rec=j
@@ -359,7 +364,7 @@ module Particles_mpicomm
                 exit
               endif
             enddo
-          else if (fp(k,izp)<procz_bounds(ipz).and.ipz>0) then
+          else if (procz_bounds(ipz) - fp(k,izp) > eps(3) .and. ipz > 0) then
             do j=ipz-1,0,-1
               if (fp(k,izp)>=procz_bounds(j)) then
                 ipz_rec=j
