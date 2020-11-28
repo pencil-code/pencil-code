@@ -21,6 +21,11 @@ module Io
 !
   include 'io.h'
 !
+  interface input_proc_bounds
+    module procedure input_proc_bounds_double
+    module procedure input_proc_bounds_single
+  endinterface
+!
 ! Indicates if IO is done distributed (each proc writes into a procdir)
 ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
 !
@@ -1326,13 +1331,27 @@ module Io
 !***********************************************************************
     subroutine wproc_bounds(file)
 !
-!   Export processor boundaries to file.
+!  Export processor boundaries to file.
 !
-!   27-Oct-2018/PABourdin: coded
+!  22-Feb-2012/PABourdin: adapted from io_dist
+!  27-nov-2020/ccyang: make the file single
 !
-      character (len=*), intent(in) :: file
+      character(len=*), intent(in) :: file
 !
-      ! already written in particle snapshot
+      integer :: ierr
+!
+!  Only one process is needed.
+!
+      if (.not. lroot) return
+!
+!  Write proc[xyz]_bounds.
+!
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
+      write (lun_output) procx_bounds
+      write (lun_output) procy_bounds
+      write (lun_output) procz_bounds
+      close (lun_output)
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -1340,12 +1359,67 @@ module Io
 !
 !   Import processor boundaries from file.
 !
-!   27-Oct-2018/PABourdin: coded
+!   10-jul-08/kapelrud: coded
+!   16-Feb-2012/Bourdin.KIS: rewritten
 !
-      character (len=*), intent(in) :: file
+      character (len=*) :: file
 !
-      ! already read with particle snapshot
+      real(KIND=rkind4), dimension(0:nprocx):: procx_boundssg
+      real(KIND=rkind4), dimension(0:nprocy):: procy_boundssg
+      real(KIND=rkind4), dimension(0:nprocz):: procz_boundssg
+!
+      real(KIND=rkind8), dimension(0:nprocx):: procx_boundsdb
+      real(KIND=rkind8), dimension(0:nprocy):: procy_boundsdb
+      real(KIND=rkind8), dimension(0:nprocz):: procz_boundsdb
+!
+      open(lun_input,FILE=file,FORM='unformatted',status='old')
+
+      if (lread_from_other_prec) then
+        if (kind(x)==rkind4) then
+          call input_proc_bounds(procx_boundsdb,procy_boundsdb,procz_boundsdb)
+          procx_bounds=procx_boundsdb; procy_bounds=procy_boundsdb; procz_bounds=procz_boundsdb
+        elseif (kind(x)==rkind8) then
+          call input_proc_bounds(procx_boundssg,procy_boundssg,procz_boundssg)
+          procx_bounds=procx_boundssg; procy_bounds=procy_boundssg; procz_bounds=procz_boundssg
+        endif
+      else
+        call input_proc_bounds(procx_bounds,procy_bounds,procz_bounds)
+      endif
+
+      close(lun_output)
 !
     endsubroutine rproc_bounds
+!***********************************************************************
+    subroutine input_proc_bounds_double(procx_bounds,procy_bounds,procz_bounds)
+!
+!   Import processor boundaries from file.in double precision
+!
+!   23-oct-13/MR: derivced from rproc_bounds
+!
+      real(KIND=rkind8), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=rkind8), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=rkind8), dimension(0:nprocz), intent(OUT):: procz_bounds
+!
+      read(lun_input) procx_bounds
+      read(lun_input) procy_bounds
+      read(lun_input) procz_bounds
+!
+    endsubroutine input_proc_bounds_double
+!***********************************************************************
+    subroutine input_proc_bounds_single(procx_bounds,procy_bounds,procz_bounds)
+!
+!   Import processor boundaries from file.in single precision
+!
+!   23-oct-13/MR: derivced from rproc_bounds
+!
+      real(KIND=rkind4), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=rkind4), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=rkind4), dimension(0:nprocz), intent(OUT):: procz_bounds
+!
+      read(lun_input) procx_bounds
+      read(lun_input) procy_bounds
+      read(lun_input) procz_bounds
+!
+    endsubroutine input_proc_bounds_single
 !***********************************************************************
 endmodule Io

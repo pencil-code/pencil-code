@@ -312,6 +312,8 @@ program start
 !  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
+  call wgrid('grid.dat',lwrite=.true.)
+  call wproc_bounds(trim(datadir) // "/proc_bounds.dat")
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
@@ -323,11 +325,6 @@ program start
 !  Set up limits of averaging if needed.
 !
   if (lav_smallx) call init_xaver
-!
-!  Write grid.dat file.
-!
-  call wgrid('grid.dat',lwrite=.true.)
-  if (lparticles.or.lpointmasses.or.lshear) call wproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
 !
 !  Update the list of neighboring processes.
 !

@@ -1458,20 +1458,24 @@ module Io
 !***********************************************************************
     subroutine wproc_bounds(file)
 !
-!   Export processor boundaries to file.
+!  Export processor boundaries to file.
 !
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
+!  22-Feb-2012/PABourdin: adapted from io_dist
+!  27-nov-2020/ccyang: make the file single
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
+      character(len=*), intent(in) :: file
 !
       integer :: ierr
 !
+!  Only one process is needed.
+!
+      if (.not. lroot) return
+!
+!  Write proc[xyz]_bounds.
+!
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
+      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
+      write (lun_output) procx_bounds
       write (lun_output) procy_bounds
       write (lun_output) procz_bounds
       close (lun_output)
@@ -1494,6 +1498,7 @@ module Io
       if (ierr /= 0) call stop_it ( &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?")
+      read (lun_input) procx_bounds
       read (lun_input) procy_bounds
       read (lun_input) procz_bounds
       close (lun_input)

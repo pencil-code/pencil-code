@@ -73,7 +73,7 @@ program run
                                              kinematic_random_wavenumber
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
+  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use HDF5_IO,         only: wdim
   use Magnetic,        only: rescaling_magnetic
   use Messages
@@ -104,6 +104,7 @@ program run
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
   type (pencil_case) :: p
+  character(len=fnlen) :: fproc_bounds
   double precision :: time1, time2, tvar1
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
@@ -114,6 +115,7 @@ program run
   logical :: lreload_file=.false., lreload_always_file=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lonemorestep = .false.
+  logical :: lexist
 !
   lrun = .true.
 !
@@ -187,16 +189,23 @@ program run
 !
   call set_coorsys_dimmask
 !
-  if (luse_oldgrid) then
+  fproc_bounds = trim(datadir) // "/proc_bounds.dat"
+  inquire (file=fproc_bounds, exist=lexist)
+  call mpibarrier()
+!
+  grid: if (luse_oldgrid .and. lexist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
-    if (lparticles.or.lpointmasses.or.lshear) call rproc_bounds(trim(directory_snap) // "/proc_bounds.dat")
+    call rproc_bounds(fproc_bounds)
     call construct_serial_arrays
     call grid_bound_data
-  else
+  else grid
+    if (luse_oldgrid) call warning("run.x", "reconstructing the grid")
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
-  endif
+    call wgrid("grid.dat", lwrite=.true.)
+    call wproc_bounds(fproc_bounds)
+  endif grid
 !
 !  Shorthands (global).
 !
@@ -364,7 +373,7 @@ program run
 !  Read particle snapshot.
 !
   if (lparticles) then
-    if (ip <= 6 .and. lroot) print *, "reading processor boundaries and particle snapshot"
+    if (ip <= 6 .and. lroot) print *, "reading particle snapshot"
     call read_snapshot_particles()
   endif
 !
@@ -415,7 +424,6 @@ program run
 !
 !  Initialize the list of neighboring processes.
 !
-print*, 'Lxyz_loc=', Lxyz_loc
   call update_neighbors     !MR: Isn't this only needed for particles?
 !
 !  Allow modules to do any physics modules do parameter dependent

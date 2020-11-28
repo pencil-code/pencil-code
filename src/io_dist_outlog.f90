@@ -1951,26 +1951,27 @@ module Io
 !***********************************************************************
     subroutine wproc_bounds(file)
 !
-!   Export processor boundaries to file.
+!  Export processor boundaries to file.
 !
-!   10-jul-08/kapelrud: coded
-!   16-Feb-2012/Bourdin.KIS: rewritten
+!  22-Feb-2012/PABourdin: adapted from io_dist
+!  27-nov-2020/ccyang: make the file single
 !
-      character (len=*) :: file
+      character(len=*), intent(in) :: file
 !
-      integer :: io_err
-      logical :: lerror
+      integer :: ierr
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
-      lerror = outlog(io_err,"openw",file,location='wproc_bounds')
-      write(lun_output,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'procx_bounds')
-      write(lun_output,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'procy_bounds')
-      write(lun_output,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'procz_bounds')
-      close(lun_output,IOSTAT=io_err)
-      lerror = outlog(io_err,'close')
+!  Only one process is needed.
+!
+      if (.not. lroot) return
+!
+!  Write proc[xyz]_bounds.
+!
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
+      write (lun_output) procx_bounds
+      write (lun_output) procy_bounds
+      write (lun_output) procz_bounds
+      close (lun_output)
 !
     endsubroutine wproc_bounds
 !***********************************************************************
