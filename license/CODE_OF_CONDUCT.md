@@ -58,14 +58,20 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting all 5 members of the [Pencil Code Steering Committee][PCSC]
 (<matthias.rheinhardt@aalto.fi> , <brandenb@nordita.org>, <wdobler@gmail.com>,
 <wladimir.lyra@gmail.com>, <Nils.E.Haugen@sintef.no>).
+To avoid any conflicts of interest, the PCSC will then establish an ad-hoc committee
+from the group of owners, excluding its own members, the plaintiff and the accused to deal
+with the complaint. It will be directed to align its actions with standard legal procedures
+of modern societies, in particular to ensure the right to be heard.
+
 All complaints will be reviewed and investigated and will result in a response that
-is deemed necessary and appropriate to the circumstances. The committee is
-obligated to maintain confidentiality with regard to the reporter of an incident.
+is deemed necessary and appropriate to the circumstances. The ad-hoc committee is
+obligated to maintain confidentiality with regard to the reporter of an incident
+as far as not in conflict with the right of the accused to be heard.
 Further details of specific enforcement policies may be posted separately.
 
 Project maintainers who do not follow or enforce the Code of Conduct in good
 faith may face temporary or permanent repercussions as determined by 
-the committee.
+the ad-hoc committee.
 
 ## Attribution
 
