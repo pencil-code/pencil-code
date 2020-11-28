@@ -55,6 +55,7 @@ source $PENCIL_HOME/sourceme.csh
 * There is also a [quick start][quick_start] to help getting started.
 * Information about [PythonCodingStyle][PythonCodingStyle] and the
   [PythonCodingStyle][PythonCodingStyle] can be found on the [wiki][wiki].
+* Updates to the community are provided through the [newsletter][newsletter].
 
 ## List of Contributors
 
@@ -96,4 +97,5 @@ source $PENCIL_HOME/sourceme.csh
 [wiki]: https://github.com/pencil-code/pencil-code/wiki
 [PythonCodingStyle]: https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
 [PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
+[newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
 
