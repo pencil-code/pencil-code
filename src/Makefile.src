@@ -2536,6 +2536,14 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 	endif
 endif
 #
+# Define utility functions
+#
+define sed_follow_link
+  file="$(or $(shell readlink $(2)),$(2))" && \
+  sed $(1) $$file > $(2).out && \
+  mv $(2).out $$file
+endef
+#
 #  RULES SECTION
 #
 #
@@ -2625,19 +2633,19 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 #
 $(IO_OBJ):
 ifneq ($(IO),io_wrapper)
-	@sed -i --follow-symlinks -e"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/" $(IO_SRC)
+	$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC))
 endif
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
 #
 ifneq ($(IO_IN),)
 $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
-	@sed -i --follow-symlinks -e"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/" $(IO_IN_SRC)
+	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC))
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC) 
-	@sed -i --follow-symlinks -e"s/^\( *[^!]*module  *\)Io_in/\1Io/" $(IO_IN_SRC)
+	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_in/\1Io/",$(IO_IN_SRC))
 $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
-	@sed -i --follow-symlinks -e"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/" $(IO_OUT_SRC)
+	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/",$(IO_OUT_SRC))
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
-	@sed -i --follow-symlinks -e"s/^\( *[^!]*module  *\)Io_out/\1Io/" $(IO_OUT_SRC)
+	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_out/\1Io/",$(IO_OUT_SRC))
 endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
