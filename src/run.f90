@@ -193,19 +193,19 @@ program run
   inquire (file=fproc_bounds, exist=lexist)
   call mpibarrier()
 !
-  grid: if (luse_oldgrid .and. lexist) then
+  cgrid: if (luse_oldgrid .and. lexist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
     call rproc_bounds(fproc_bounds)
     call construct_serial_arrays
     call grid_bound_data
-  else grid
+  else cgrid
     if (luse_oldgrid) call warning("run.x", "reconstructing the grid")
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
     call wgrid("grid.dat", lwrite=.true.)
     call wproc_bounds(fproc_bounds)
-  endif grid
+  endif cgrid
 !
 !  Shorthands (global).
 !
