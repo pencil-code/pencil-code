@@ -56,8 +56,8 @@ further defined and clarified by project maintainers.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting all 5 members of the [Pencil Code Steering Committee][PCSC]
-(<matthias.rheinhardt@aalto.fi> , <brandenb@nordita.org>, <wdobler@gmail.com>,
-<wladimir.lyra@gmail.com>, <Nils.E.Haugen@sintef.no>).
+(PCSC, current members: <brandenb@nordita.org>, <matthias.rheinhardt@aalto.fi>,
+<mppiyali@gmail.com>, <Nils.E.Haugen@sintef.no>, <Philippe.Bourdin@oeaw.ac.at>).
 To avoid any conflicts of interest, the PCSC will then establish an ad-hoc committee
 from the group of owners, excluding its own members, the plaintiff and the accused to deal
 with the complaint. It will be directed to align its actions with standard legal procedures
