@@ -14,12 +14,12 @@ if [ -h $lastarg ]; then
   olddir=`pwd`
   lnkpath="$(dirname `readlink $lastarg`)"
   cd $lnkpath
-  sed $@
+  sed "$@"
   cd $olddir
   
 else
 
-  sed $@
+  sed "$@"
 
 fi
 
