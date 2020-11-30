@@ -3780,14 +3780,14 @@ endsubroutine pdf
   k2m=0.
   nks=0.
   nmu=1
-  do ikr=1,nk
-    nmu(ikr)=2*(ikr-1)+1
+  do ikr=2,nk
+    nmu(ikr)=2*(ikr-1)+3
   enddo
   allocate( kmu(nk,nmu(nk)) )
   kmu=0.
-  do ikr=2,nk
+  do ikr=1,nk
     do ikmu=1, nmu(ikr)
-      kmu(ikr,ikmu)=-1+2.*(ikmu-1)/(nmu(ikr)-1)
+      kmu(ikr,ikmu) = -1.+2.*(ikmu-0.5)/nmu(ikr)
     enddo
   enddo
   allocate( vxx(nk,nmu(nk)) )
@@ -3881,13 +3881,13 @@ endsubroutine pdf
       do i=1,legendre_lmax+1
         if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
           legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-              1./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+              2./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-              1./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
+              2./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-              1./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
+              2./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         endif
       enddo
@@ -4026,8 +4026,9 @@ endsubroutine pdf
 ! allow for polar representation
 !
     if (lcyl_polar_spectra) then
-      do ikr=1,nk
-        nmu(ikr)=2*(ikr-1)+1
+      nmu=1
+      do ikr=2,nk
+        nmu(ikr)=2*(ikr-1)+3
       enddo
       !
       allocate( kmu(nk,nmu(nk)) )
@@ -4037,9 +4038,9 @@ endsubroutine pdf
       allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
       !
       kmu=0.
-      do ikr=2,nk
+      do ikr=1,nk
         do ikmu=1, nmu(ikr)
-          kmu(ikr,ikmu) = -1+2.*(ikmu-1)/(nmu(ikr)-1)
+          kmu(ikr,ikmu) = -1.+2.*(ikmu-0.5)/nmu(ikr)
         enddo
       enddo
       ! 
@@ -4119,26 +4120,33 @@ endsubroutine pdf
       enddo
       enddo
 !
-! compute legendre coefficients
-!
-      if (lcyl_polar_spectra) then
-        do ikr=1,nk; do ikmu=1,nmu(ikr)
-          do i=1,legendre_lmax+1
-            if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-              legendre_al(i,ikr)=legendre_al(i,ikr)+ &
-                  1./nmu(ikr)*(2*i-1)/2*cyl_polar_spec(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-              legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-                  1./nmu(ikr)*(2*i-1)/2*cyl_polar_spechel(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-            endif
-          enddo
-        enddo; enddo
-      endif
-!
     endif
     !
   enddo !(from loop over ivec)
+!
+!  compute legendre coefficients
+!  the ith oder legendre polynomial (i,m=0) is
+!  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+!  this part can be moved into the loop over ivec
+!
+  if (lcylindrical_spectra .and. lcyl_polar_spectra) then
+    do ikr=1,nk
+      do i=1,legendre_lmax+1
+        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+          do ikmu=1,nmu(ikr)
+            legendre_al(i,ikr)=legendre_al(i,ikr)+&
+                2./nmu(ikr)*(2.*i-1)/2.* &
+                cyl_polar_spec(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+                2./nmu(ikr)*(2*i-1)/2* &
+                cyl_polar_spechel(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          enddo
+        endif
+      enddo
+    enddo
+  endif
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
