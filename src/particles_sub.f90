@@ -67,6 +67,9 @@ module Particles_sub
 !
       if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '//filename
 !
+      ! ltruncate should be always be set, if it is possible to determine.
+      ! TODO: If the number of particles is constant, set ltruncate=.false.
+      ! which will save resources while overwriting pre-existing HDF5 files.
       call output_part_snap (ipar, fp, mpar_loc, npar_loc, filename, ltruncate=.true.)
 !
     endsubroutine output_particles
