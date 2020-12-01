@@ -203,10 +203,12 @@ module Io
       else
         filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       endif
-      lexists = parallel_file_exists(filename)
-      ltrunc = .true.
+      ltrunc = .false.
       if (present (ltruncate)) ltrunc = ltruncate
-      if (.not. lexists) ltrunc = .true.
+      if (.not. ltrunc) then
+        lexists = parallel_file_exists(filename)
+        if (.not. lexists) ltrunc = .true.
+      endif
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
@@ -311,10 +313,12 @@ module Io
       dataset = 'fp'
       if (present (label)) dataset = label
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
-      lexists = parallel_file_exists(filename)
-      ltrunc = .true.
+      ltrunc = .false.
       if (present (ltruncate)) ltrunc = ltruncate
-      if (.not. lexists) ltrunc = .true.
+      if (.not. ltrunc) then
+        lexists = parallel_file_exists(filename)
+        if (.not. lexists) ltrunc = .true.
+      endif
 !
       ! open global HDF5 file and write particle data
       call file_open_hdf5 (filename, truncate=ltrunc)
