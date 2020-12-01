@@ -3878,7 +3878,7 @@ endsubroutine pdf
     do ikmu=1,nmu(ikr)
       kmu2=kmu(ikr,ikmu)**2
       if (kmu2/=0.) coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
-      if (1-kmu2<=0.2) then  !  to avoid diverging 1/(1-kmu2)
+      if (1-kmu2==0.)  then
         coeff_a(ikr,ikmu)=vxx(ikr,ikmu)/(pi*2.)
       else
         coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
@@ -3891,7 +3891,8 @@ endsubroutine pdf
           legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
               dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-          legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
+          !  to avoid diverging 1/(1-kmu2) regions in coeff_b
+          if (abs(kmu(ikr,ikmu))<=0.9) legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
               dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
