@@ -8,7 +8,8 @@
 #  if this procedure is called with an argument,
 #  then first go into this directory and continue from there
 #
-#  When invoked via tar_run, a corresponding tarball is created.
+#  When invoked as tar_run, a corresponding tarball is created
+#  as <working directory>.a in the parent directory.
 #  Tested for only one argument.
 #
 if ( $#argv >= 1 ) then
@@ -143,7 +144,7 @@ endif
       endif
     endif
   else
-    $add_cmd -h src/*.local src/.build-history
+    $add_cmd -h src/*.local src/.build-history >& /dev/null
   endif
 
   cd ..
