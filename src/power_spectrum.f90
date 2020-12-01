@@ -3739,7 +3739,7 @@ endsubroutine pdf
   integer, dimension(1) :: temploc
   integer, dimension(nk) :: nmu
   real, dimension (mx,my,mz,mfarray) :: f
-  real, allocatable, dimension(:,:) :: kmu
+  real, allocatable, dimension(:,:) :: kmu, dmu
   real, dimension(nx,ny,nz) :: ux_re, ux_im
   real, dimension(nx,ny,nz) :: uy_re, uy_im
   real, dimension(nx,ny,nz) :: uz_re, uz_im
@@ -3750,7 +3750,7 @@ endsubroutine pdf
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
-  real :: k2, mu, kmu2
+  real :: k2, mu, kmu2, mu_offset
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nxgrid) :: kx
@@ -3784,11 +3784,19 @@ endsubroutine pdf
     nmu(ikr)=2*(ikr-1)+3
   enddo
   allocate( kmu(nk,nmu(nk)) )
+  allocate( dmu(nk,nmu(nk)) )
   kmu=0.
+  mu_offset=0.01
+  dmu=2-2*mu_offset
   do ikr=1,nk
-    do ikmu=1, nmu(ikr)
-      kmu(ikr,ikmu) = -1.+2.*(ikmu-0.5)/nmu(ikr)
-    enddo
+    if (nmu(ikr)>=2) then
+      do ikmu=1, nmu(ikr)
+        kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
+        dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
+      enddo
+      dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
+      dmu(ikr,nmu(ikr))=dmu(ikr,1)/2+mu_offset
+    endif
   enddo
   allocate( vxx(nk,nmu(nk)) )
   allocate( vxx_sum(nk,nmu(nk)) )
@@ -3870,7 +3878,7 @@ endsubroutine pdf
     do ikmu=1,nmu(ikr)
       kmu2=kmu(ikr,ikmu)**2
       if (kmu2/=0.) coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
-      if (kmu2==1.) then
+      if (1-kmu2<=0.2) then  !  to avoid diverging 1/(1-kmu2)
         coeff_a(ikr,ikmu)=vxx(ikr,ikmu)/(pi*2.)
       else
         coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
@@ -3881,13 +3889,13 @@ endsubroutine pdf
       do i=1,legendre_lmax+1
         if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
           legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-              2./nmu(ikr)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+              dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-              2./nmu(ikr)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
+              dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-              2./nmu(ikr)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
+              dmu(ikr,ikmu)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         endif
       enddo
@@ -3975,8 +3983,8 @@ endsubroutine pdf
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
-  real, allocatable, dimension(:,:) :: kmu
-  real :: k2,mu
+  real, allocatable, dimension(:,:) :: kmu, dmu
+  real :: k2,mu, mu_offset
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi, jji, b2, j2
@@ -4032,16 +4040,24 @@ endsubroutine pdf
       enddo
       !
       allocate( kmu(nk,nmu(nk)) )
+      allocate( dmu(nk,nmu(nk)) )
       allocate( cyl_polar_spec(nk,nmu(nk)) )
       allocate( cyl_polar_spec_sum(nk,nmu(nk)) )
       allocate( cyl_polar_spechel(nk,nmu(nk)) )
       allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
       !
       kmu=0.
+      mu_offset=0.01
+      dmu=2-2*mu_offset
       do ikr=1,nk
-        do ikmu=1, nmu(ikr)
-          kmu(ikr,ikmu) = -1.+2.*(ikmu-0.5)/nmu(ikr)
-        enddo
+        if (nmu(ikr)>=2) then
+          do ikmu=1, nmu(ikr)
+            kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
+            dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
+          enddo
+          dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
+          dmu(ikr,nmu(ikr))=dmu(ikr,1)/2+mu_offset
+        endif
       enddo
       ! 
       cyl_polar_spec=0.
@@ -4135,11 +4151,11 @@ endsubroutine pdf
         if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
           do ikmu=1,nmu(ikr)
             legendre_al(i,ikr)=legendre_al(i,ikr)+&
-                2./nmu(ikr)*(2.*i-1)/2.* &
+                dmu(ikr,ikmu)*(2.*i-1)/2.* &
                 cyl_polar_spec(ikr,ikmu)* &
                 sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
             legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-                2./nmu(ikr)*(2*i-1)/2* &
+                dmu(ikr,ikmu)*(2*i-1)/2* &
                 cyl_polar_spechel(ikr,ikmu)* &
                 sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           enddo
