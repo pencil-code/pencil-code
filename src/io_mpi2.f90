@@ -669,6 +669,9 @@ module Io
 !  23-Oct-2018/PABourdin: stub
 !  12-nov-2020/ccyang: coded
 !
+!  NOTE: The optional argument ltruncate is required by IO=io_hdf5.
+!
+      use General, only: keep_compiler_quiet
       use Mpicomm, only: mpiallreduce_sum_int
 !
       integer, intent(in) :: mv, nv
@@ -683,8 +686,8 @@ module Io
       integer :: handle, ftype, npar_tot, ip0
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
+      if (present(ltruncate)) call keep_compiler_quiet(ltruncate)
       if (present(label)) call warning("output_part_snap", "The argument label has no effects. ")
-      if (present(ltruncate)) call warning("output_part_snap", "The argument ltruncate has no effects. ")
 !
 !  Broadcast number of particles from each process.
 !
