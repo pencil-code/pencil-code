@@ -1,9 +1,6 @@
 #!/bin/sh
 #$Id$
 echo ""
-echo "==> The Pencil Code User Meeting 2020 will zoom during 27-31 July 2020"
-echo "       https://indico.fysik.su.se/event/6870/"
-echo ""
-echo "==> The Pencil Code Steering Committee (PCSC) has its 4rd anniversary:"
-echo "          http://www.nordita.org/~brandenb/pencil-code/PCSC/"
+echo "==> Pencil Code Newsletters can be found on:"
+echo "    https://www.nordita.org/~brandenb/pencil-code/newsletter/"
 echo ""
