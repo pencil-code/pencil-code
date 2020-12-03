@@ -73,9 +73,9 @@ module Testfield
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
-  real :: delta_testfield_next=0., delta_testfield_time=0.
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
+  real :: damp_uxb=0.
 
   namelist /testfield_init_pars/ &
        Btest_ext,zextent,initaatest, &
@@ -88,7 +88,7 @@ module Testfield
        lugutest, lfprestest, lSghtest
 
   ! run parameters
-  real :: etatest=0.,etatest1=0.,nutest=0.,nutest1=0.
+  real :: etatest=0.,etatest1=0.,nutest=0.,nutest1=0.,eta_hyper3_test=0.
   real :: ampl_fcont_aatest=1.,ampl_fcont_uutest=1.
   real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.,rescale_hhtest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
@@ -113,7 +113,7 @@ module Testfield
        rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
        lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega, &
        lugutest, lfprestest, lSghtest, &
-       lremove_meanaa0x_test, lremove_meanaa0y_test
+       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -196,6 +196,7 @@ module Testfield
   integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
   integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
   integer :: idiag_h0max=0      ! DIAG_DOC: $\operatorname{max}h_{0}$
+  integer :: idiag_bhrms=0      ! DIAG_DOC: $\left<b_{h}^2\right>^{1/2}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
@@ -421,7 +422,7 @@ module Testfield
 !  Override iE0 if njtest is big enough.
 !  This method of identifying the location of the reference field is not very elegant.
 !
-      if (njtest==5) iE0=5
+      if (njtest>=5) iE0=njtest
 !
 !  rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -430,7 +431,7 @@ module Testfield
 !
 !  Don't rescale the reference field, so if existent rescale only to njtest-1
 !
-        if (iE0==5) then
+        if (iE0>=5) then
           nscal=4
         else
           nscal=njtest
@@ -574,7 +575,7 @@ module Testfield
 
       do j=1,ninit
 !
-!  select on initial condition for aatest
+!  select an initial condition for aatest
 !
         select case (initaatest(j))
         case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
@@ -588,6 +589,7 @@ module Testfield
         case ('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
         case ('sinwave-x-4'); call sinwave(amplaatest(j),f,iaxtest+9+1,kx=kx_aatest(j))
         case ('sinwave-x-5'); call sinwave(amplaatest(j),f,iaxtest+12+1,kx=kx_aatest(j))
+        case ('sinwave-x-6'); if (njtest==6) call sinwave(amplaatest(j),f,iaxtest+15+1,kx=kx_aatest(j))
         case ('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j),phase=phasex_aatest(j))
         case ('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=-kz_aatest(j),phase=phasez_aatest(j))
         case ('Beltrami-z-2'); call beltrami(amplaatest(j),f,iaxtest+3,kz=-kz_aatest(j),phase=phasez_aatest(j))
@@ -603,7 +605,7 @@ module Testfield
           call stop_it("")
         endselect
 !
-!  select on initial condition for uutest
+!  select an initial condition for uutest
 !
       select case (inituutest(j))
         case ('zero'); f(:,:,:,iuutest:iuutest+3*njtest-1)=0.
@@ -612,6 +614,7 @@ module Testfield
         case ('sinwave-x-3'); call sinwave(ampluutest(j),f,iuxtest+6,kx=kx_aatest(j))
         case ('sinwave-x-4'); call sinwave(ampluutest(j),f,iuxtest+9,kx=kx_aatest(j))
         case ('sinwave-x-5'); call sinwave(ampluutest(j),f,iuxtest+12,kx=kx_aatest(j))
+        case ('sinwave-x-6'); if (njtest==6) call sinwave(ampluutest(j),f,iuxtest+15,kx=kx_aatest(j))
         case ('nothing'); !(do nothing)
         case default
           !
@@ -630,6 +633,7 @@ module Testfield
         case ('sinwave-x-3'); call sinwave(amplhhtest(j),f,ihhtest+2,kx=kx_aatest(j))
         case ('sinwave-x-4'); call sinwave(amplhhtest(j),f,ihhtest+3,kx=kx_aatest(j))
         case ('sinwave-x-5'); call sinwave(amplhhtest(j),f,ihhtest+4,kx=kx_aatest(j))
+        case ('sinwave-x-6'); if (njtest==6) call sinwave(amplhhtest(j),f,ihhtest+5,kx=kx_aatest(j))
         case ('nothing'); !(do nothing)
         case default
           !
@@ -744,7 +748,7 @@ module Testfield
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,guumz,lcalc_uumeanz,coriolis_cartesian
-      use Density, only: lnrhomz,glnrhomz,lcalc_lnrhomean,lcalc_glnrhomean
+      use Density, only: lnrhomz,glnrhomz,lcalc_glnrhomean
       use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
@@ -854,8 +858,9 @@ module Testfield
         call curl_mn(bijtest,jjtest,bbtest)
         call div_mn(uijtest,divutest,uutest)
         call grad(f,ihxtest,ghhtest)
+!if (lroot.and.n==n1.and.m==m1.and.jtest==5) print*, 'ghhtest=',maxval(ghhtest)
 !
-!  Set u0ref, b0ref, and j0ref (if iE0=5).
+!  Set u0ref, b0ref, and j0ref (if iE0=5 or 6).
 !
         if (jtest==iE0) then
           u0ref=uutest
@@ -947,13 +952,14 @@ module Testfield
 !
 !  terms in enthalpy equation
 !
-            call dot(uum,ghhtest,ughm)                                                 ! Ubar.grad h^T
+            call dot(uum,ghhtest,ughm)                                                   ! Ubar.grad h^T
           else
             ughm=0.
           endif
 !
 !  mean density terms
 !
+!if (lroot.and.m==m1.and.n==n1) print*, 'glnrhomz,ughm=', maxval(abs(glnrhomz)), maxval(abs(ughm))
           if (ldensity.and.lcalc_glnrhomean) &
             ughm = ughm + uutest(:,3)*glnrhomz(nl)                                     ! u^T.grad Hbar
 
@@ -975,6 +981,7 @@ module Testfield
                 duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(nl,j,jtest)                  ! (utest x btest)'
               enddo
             endif
+            if (damp_uxb>0.) duxbtest=damp_uxb*duxbtest
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) + duxbtest
           endif
 !
@@ -1033,6 +1040,8 @@ module Testfield
             else
               dughtest=ughtest-ughtestmz(nl,jtest)                            ! (utest.grad htest)'
             endif
+
+!if (lroot.and.n==n1.and.m==m1.and.jtest==iE0) print*, 'ughtest,ughtestmz,dughtest=',maxval(ughtest),ughtestmz(nl,jtest),maxval(dughtest)
             df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-dughtest
           endif
 !
@@ -1043,7 +1052,7 @@ module Testfield
         if (jtest==iE0) then
 !
 !  Add possibility of forcing that is not delta-correlated in time.
-!  (no enthalpy forcing at the moment)
+!  (no pseudo-enthalpy forcing at the moment)
 !
           if (lforcing_cont_uutest) &
             df(l1:l2,m,n,iuxtest:iuztest)= df(l1:l2,m,n,iuxtest:iuztest) &
@@ -1051,7 +1060,8 @@ module Testfield
           if (lforcing_cont_aatest) &
             df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                           +ampl_fcont_aatest*p%fcont(:,:,2)
-        else
+!
+        elseif (jtest<=4) then                               ! exclude homogeneous test problem, generalize?
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -1091,7 +1101,7 @@ module Testfield
         endif
 !
         if ((ldiagnos.or.l1davgfirst).and. &
-          (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
+          (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or.idiag_bhrms/=0.or. &
            idiag_j11rms/=0.or.idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
            idiag_s2kzDFm/=0.or. &
@@ -1378,6 +1388,10 @@ module Testfield
           call dot2(bpq(:,:,iE0),bpq2)
           call max_mn_name(bpq2,idiag_b0max,lsqrt=.true.)
         endif
+        if (idiag_bhrms/=0.and.njtest==6) then
+          call dot2(bpq(:,:,iE0-1),bpq2)
+          call sum_mn_name(bpq2,idiag_bhrms,lsqrt=.true.)
+        endif
 !
         if (idiag_u11rms/=0) then
           call dot2(upq(:,:,1),upq2)
@@ -1551,8 +1565,8 @@ module Testfield
 ! 
 !  Stop if iE0 is too small.
 !
-      if (iE0/=5) &
-        call fatal_error('testfield_after_boundary','need ntest=5 for u0ref')
+      if (iE0<5) &
+        call fatal_error('testfield_after_boundary','need njtest>=5 for u0ref')
 !
 !  initialize buffer for mean fields
 !
@@ -1649,7 +1663,7 @@ mn:   do n=n1,n2
 !
           if (jtest==iE0) then
 
-!  Set u0ref, b0ref, and j0ref (if iE0=5).
+!  Set u0ref, b0ref, and j0ref (if test points to "zero-problem").
 !  Also compute u0 x b0, j0 x b0, u0.grad u0, and u0.grad h0 and put into corresponding arrays.
 !  They continue to exist throughout the jtest loop.
 !
@@ -1747,7 +1761,7 @@ mn:   do n=n1,n2
           jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
           ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+fac*sum(ugutest,1)
           Sghtestmz(nl,:,jtest)=Sghtestmz(nl,:,jtest)+fac*sum(Sghtest,1)
-          ughtestmz(nl,jtest)=ughtestmz(nl,jtest)+fac*sum(ughtest)
+          ughtestmz(nl,jtest)  =ughtestmz(nl,  jtest)+fac*sum(ughtest)
 !
           headtt=.false.
 !
@@ -2105,7 +2119,7 @@ mn:   do n=n1,n2
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
         idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0
-        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0 
+        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0; idiag_bhrms=0
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
@@ -2214,6 +2228,7 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'u0max',idiag_u0max)
         call parse_name(iname,cname(iname),cform(iname),'b0max',idiag_b0max)
         call parse_name(iname,cname(iname),cform(iname),'h0max',idiag_h0max)
+        call parse_name(iname,cname(iname),cform(iname),'bhrms',idiag_bhrms)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
         call parse_name(iname,cname(iname),cform(iname),'E12rms',idiag_E12rms)
