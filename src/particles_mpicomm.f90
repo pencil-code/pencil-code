@@ -301,7 +301,7 @@ module Particles_mpicomm
 !
 !  Set the spacing to the process boundary.
 !
-      eps = 0.5 * spacing(xyz0)
+      eps = spacing(Lxyz)
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -323,55 +323,55 @@ module Particles_mpicomm
         do k=npar_loc,1,-1
 !  Find x index of receiving processor.
           ipx_rec=ipx
-          if (fp(k,ixp)>=procx_bounds(ipx+1).and.ipx<nprocx-1) then
+          findipx: if (procx_bounds(ipx+1) - fp(k,ixp) <= eps(1) .and. ipx < nprocx - 1) then
             do j=ipx+1,nprocx-1
               if (fp(k,ixp)<procx_bounds(j+1)) then
                 ipx_rec=j
                 exit
               endif
             enddo
-          else if (procx_bounds(ipx) - fp(k,ixp) > eps(1) .and. ipx > 0) then
+          else if (procx_bounds(ipx) - fp(k,ixp) > eps(1) .and. ipx > 0) then findipx
             do j=ipx-1,0,-1
               if (fp(k,ixp)>=procx_bounds(j)) then
                 ipx_rec=j
                 exit
               endif
             enddo
-          endif
+          endif findipx
 !  Find y index of receiving processor.
           ipy_rec=ipy
-          if (fp(k,iyp)>=procy_bounds(ipy+1).and.ipy<nprocy-1) then
+          findipy: if (procy_bounds(ipy+1) - fp(k,iyp) <= eps(2) .and. ipy < nprocy - 1) then
             do j=ipy+1,nprocy-1
               if (fp(k,iyp)<procy_bounds(j+1)) then
                 ipy_rec=j
                 exit
               endif
             enddo
-          else if (procy_bounds(ipy) - fp(k,iyp) > eps(2) .and. ipy > 0) then
+          else if (procy_bounds(ipy) - fp(k,iyp) > eps(2) .and. ipy > 0) then findipy
             do j=ipy-1,0,-1
               if (fp(k,iyp)>=procy_bounds(j)) then
                 ipy_rec=j
                 exit
               endif
             enddo
-          endif
+          endif findipy
 !  Find z index of receiving processor.
           ipz_rec=ipz
-          if (fp(k,izp)>=procz_bounds(ipz+1).and.ipz<nprocz-1) then
+          findipz: if (procz_bounds(ipz+1) - fp(k,izp) <= eps(3) .and. ipz < nprocz - 1) then
             do j=ipz+1,nprocz-1
               if (fp(k,izp)<procz_bounds(j+1)) then
                 ipz_rec=j
                 exit
               endif
             enddo
-          else if (procz_bounds(ipz) - fp(k,izp) > eps(3) .and. ipz > 0) then
+          else if (procz_bounds(ipz) - fp(k,izp) > eps(3) .and. ipz > 0) then findipz
             do j=ipz-1,0,-1
               if (fp(k,izp)>=procz_bounds(j)) then
                 ipz_rec=j
                 exit
               endif
             enddo
-          endif
+          endif findipz
 !
 !  Fix for error that might occur when a particle lands exactly at the
 !  box boundary and is assigned to a non-existing processor.
@@ -610,39 +610,18 @@ module Particles_mpicomm
 !
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig_enter(i)
-                if (nxgrid/=1) then
-                  if (fp(k,ixp)<procx_bounds(ipx) .or. &
-                      fp(k,ixp)>=procx_bounds(ipx+1)) then
-                    print*, 'migrate_particles: received particle '// &
-                        'closer to ghost point than to physical grid point!'
-                    print*, 'migrate_particles: ipar, xxp=', &
-                        ipar(k), fp(k,ixp:izp)
-                    print*, 'migrate_particles: x0_mig, x1_mig=', &
-                        procx_bounds(ipx), procx_bounds(ipx+1)
-                  endif
-                endif
-                if (nygrid/=1) then
-                  if (fp(k,iyp)<procy_bounds(ipy) .or. &
-                      fp(k,iyp)>=procy_bounds(ipy+1)) then
-                    print*, 'migrate_particles: received particle '// &
-                        'closer to ghost point than to physical grid point!'
-                    print*, 'migrate_particles: ipar, xxp=', &
-                        ipar(k), fp(k,ixp:izp)
-                    print*, 'migrate_particles: y0_mig, y1_mig=', &
-                        procy_bounds(ipy), procy_bounds(ipy+1)
-                  endif
-                endif
-                if (nzgrid/=1) then
-                  if (fp(k,izp)<procz_bounds(ipz) .or. &
-                      fp(k,izp)>=procz_bounds(ipz+1)) then
-                    print*, 'migrate_particles: received particle '// &
-                        'closer to ghost point than to physical grid point!'
-                    print*, 'migrate_particles: ipar, xxp=', &
-                        ipar(k), fp(k,ixp:izp)
-                    print*, 'migrate_particles: z0_mig, z1_mig=', &
-                        procz_bounds(ipz), procz_bounds(ipz+1)
-                  endif
-                endif
+                out: if ((lactive_dimension(1) .and. (procx_bounds(ipx) - fp(k,ixp) > eps(1) .or. &
+                                                      procx_bounds(ipx+1) - fp(k,ixp) <= eps(1))) .or. &
+                         (lactive_dimension(2) .and. (procy_bounds(ipy) - fp(k,iyp) > eps(2) .or. &
+                                                      procy_bounds(ipy+1) - fp(k,iyp) <= eps(2))) .or. &
+                         (lactive_dimension(3) .and. (procz_bounds(ipz) - fp(k,izp) > eps(3) .or. &
+                                                      procz_bounds(ipz+1) - fp(k,izp) <= eps(3)))) then
+                  print *, "migrate_particles: received particle closer to ghost point than to physical grid point!"
+                  print *, "migrate_particles: ipar, xxp = ", ipar(k), fp(k,ixp:izp)
+                  print *, "migrate_particles: x0_mig, x1_mig = ", procx_bounds(ipx), procx_bounds(ipx+1)
+                  print *, "migrate_particles: y0_mig, y1_mig = ", procy_bounds(ipy), procy_bounds(ipy+1)
+                  print *, "migrate_particles: z0_mig, z1_mig = ", procz_bounds(ipz), procz_bounds(ipz+1)
+                endif out
               enddo
             endif
             npar_loc=npar_loc+nmig_enter(i)
