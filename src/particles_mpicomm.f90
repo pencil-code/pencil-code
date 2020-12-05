@@ -284,14 +284,17 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), intent(inout), optional :: dfp
       logical, intent(in), optional :: linsert
 !
+      logical :: lfirstcall = .true.
+      real, dimension(3) :: xx0_loc = 0.0, xx1_loc = 0.0
+!
       real, dimension (npar_mig,mpcom) :: fp_mig
       real, dimension (npar_mig,mpvar) :: dfp_mig
-      real, dimension(3) :: eps
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
+      real, dimension(3) :: xxp
       integer, save :: nmig_max = 0
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       integer :: nmig_leave_total, nmig_left, ileave_high_max, buffer_max
@@ -299,9 +302,18 @@ module Particles_mpicomm
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
 !
-!  Set the spacing to the process boundary.
+!  Make xyz0 the reference point to both process boundary and each
+!  particle to avoid round-off errors in detecting boundary crossing.
 !
-      eps = spacing(Lxyz)
+!  TODO(04-dec-20/ccyang): Consistently use the module Grid and the
+!    index space to compute which cell a particle is located in, also in
+!    subroutine map_nearest_grid() of module Particles_map.
+!
+      init: if (lfirstcall) then
+        xx0_loc = xyz0_loc - xyz0
+        xx1_loc = xyz1_loc - xyz0
+        lfirstcall = .false.
+      endif init
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -321,16 +333,17 @@ module Particles_mpicomm
         nmig_enter=0
 !
         do k=npar_loc,1,-1
+          xxp = fp(k,ixp:izp) - xyz0
 !  Find x index of receiving processor.
           ipx_rec=ipx
-          findipx: if (procx_bounds(ipx+1) - fp(k,ixp) <= eps(1) .and. ipx < nprocx - 1) then
+          findipx: if (xxp(1) >= xx1_loc(1) .and. ipx < nprocx - 1) then
             do j=ipx+1,nprocx-1
               if (fp(k,ixp)<procx_bounds(j+1)) then
                 ipx_rec=j
                 exit
               endif
             enddo
-          else if (procx_bounds(ipx) - fp(k,ixp) > eps(1) .and. ipx > 0) then findipx
+          else if (xxp(1) < xx0_loc(1) .and. ipx > 0) then findipx
             do j=ipx-1,0,-1
               if (fp(k,ixp)>=procx_bounds(j)) then
                 ipx_rec=j
@@ -340,14 +353,14 @@ module Particles_mpicomm
           endif findipx
 !  Find y index of receiving processor.
           ipy_rec=ipy
-          findipy: if (procy_bounds(ipy+1) - fp(k,iyp) <= eps(2) .and. ipy < nprocy - 1) then
+          findipy: if (xxp(2) >= xx1_loc(2) .and. ipy < nprocy - 1) then
             do j=ipy+1,nprocy-1
               if (fp(k,iyp)<procy_bounds(j+1)) then
                 ipy_rec=j
                 exit
               endif
             enddo
-          else if (procy_bounds(ipy) - fp(k,iyp) > eps(2) .and. ipy > 0) then findipy
+          else if (xxp(2) < xx0_loc(2) .and. ipy > 0) then findipy
             do j=ipy-1,0,-1
               if (fp(k,iyp)>=procy_bounds(j)) then
                 ipy_rec=j
@@ -357,14 +370,14 @@ module Particles_mpicomm
           endif findipy
 !  Find z index of receiving processor.
           ipz_rec=ipz
-          findipz: if (procz_bounds(ipz+1) - fp(k,izp) <= eps(3) .and. ipz < nprocz - 1) then
+          findipz: if (xxp(3) >= xx1_loc(3) .and. ipz < nprocz - 1) then
             do j=ipz+1,nprocz-1
               if (fp(k,izp)<procz_bounds(j+1)) then
                 ipz_rec=j
                 exit
               endif
             enddo
-          else if (procz_bounds(ipz) - fp(k,izp) > eps(3) .and. ipz > 0) then findipz
+          else if (xxp(3) < xx0_loc(3) .and. ipz > 0) then findipz
             do j=ipz-1,0,-1
               if (fp(k,izp)>=procz_bounds(j)) then
                 ipz_rec=j
@@ -610,12 +623,8 @@ module Particles_mpicomm
 !
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig_enter(i)
-                out: if ((lactive_dimension(1) .and. (procx_bounds(ipx) - fp(k,ixp) > eps(1) .or. &
-                                                      procx_bounds(ipx+1) - fp(k,ixp) <= eps(1))) .or. &
-                         (lactive_dimension(2) .and. (procy_bounds(ipy) - fp(k,iyp) > eps(2) .or. &
-                                                      procy_bounds(ipy+1) - fp(k,iyp) <= eps(2))) .or. &
-                         (lactive_dimension(3) .and. (procz_bounds(ipz) - fp(k,izp) > eps(3) .or. &
-                                                      procz_bounds(ipz+1) - fp(k,izp) <= eps(3)))) then
+                xxp = fp(k,ixp:izp) - xyz0
+                out: if (any(lactive_dimension .and. (xxp < xx0_loc .or. xxp >= xx1_loc))) then
                   print *, "migrate_particles: received particle closer to ghost point than to physical grid point!"
                   print *, "migrate_particles: ipar, xxp = ", ipar(k), fp(k,ixp:izp)
                   print *, "migrate_particles: x0_mig, x1_mig = ", procx_bounds(ipx), procx_bounds(ipx+1)
