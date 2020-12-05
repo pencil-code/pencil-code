@@ -2061,14 +2061,13 @@ module Density
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0) &
            lpenc_diagnos(i_rho)=.true.
-           if ( idiag_lnrhorms/=0 ) lpenc_diagnos(i_lnrho)=.true.
 !AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
 !PJK: The up/down averages should actually appear above as well and they
 !PJK: need the velocity too. idiag_rhof2mz does not, however.
       if (idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
            idiag_rho2downmz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
            lpenc_diagnos(i_uu)=.true.
-      if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0) lpenc_diagnos(i_lnrho)=.true.
+      if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0.or.idiag_lnrhorms/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
       if (idiag_uglnrhomz/=0) lpenc_diagnos(i_uglnrho)=.true.
@@ -2580,10 +2579,6 @@ module Density
         endif
      endif
 !
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_density(f,df,p)
-!
 !  Add diffusion term to continuity equation
 !
       if (ldensity_nolog) then
@@ -2591,6 +2586,10 @@ module Density
       else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
       endif
+!
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_density(f,df,p)
 !
 !  Improve energy and momentum conservation by compensating for mass diffusion
 !
@@ -2882,7 +2881,7 @@ module Density
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_rhof2m/=0.and.lrho_flucz_as_aux) call sum_mn_name(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2m)
         if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
-        if (idiag_lnrhorms/=0) call sum_mn_name(p%rho**2,idiag_lnrhorms,lsqrt=.true.)
+        if (idiag_lnrhorms/=0) call sum_mn_name(p%lnrho**2,idiag_lnrhorms,lsqrt=.true.)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
