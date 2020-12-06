@@ -210,9 +210,9 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
       if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
         t_test = t_sp
-        call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
+        call mpibcast_real(t_test,comm=MPI_COMM_PENCIL)
         call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                             .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_WORLD)
+                             .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_PENCIL)
 !
 !  If timestamp deviates at any processor
 !
@@ -222,11 +222,11 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
             if (ireset_tstart == MINT) then
-              call mpiallreduce_min(t_sp,t_red,MPI_COMM_WORLD)
+              call mpiallreduce_min(t_sp,t_red,MPI_COMM_PENCIL)
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                      ' Using (min) t=', t_red,'with ireset_tstart=', MINT,'.'
             elseif (ireset_tstart >= MAXT) then
-              call mpiallreduce_max(t_sp,t_red,MPI_COMM_WORLD)
+              call mpiallreduce_max(t_sp,t_red,MPI_COMM_PENCIL)
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                      ' Using (max) t=', t_red,'with ireset_tstart=', MAXT,'.'
             endif
