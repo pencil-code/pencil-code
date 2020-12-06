@@ -582,7 +582,7 @@ module Io
 !                processors' snaphots.
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD, &
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char, mpireduce_or
       use Syscalls, only: islink, system_cmd
       use General, only: itoa, find_proc
@@ -619,7 +619,7 @@ module Io
 !                                > 0, tstart specified: use this value
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD, &
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char
       use Syscalls, only: islink, system_cmd
       use General, only: itoa, find_proc
