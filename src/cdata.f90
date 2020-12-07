@@ -249,7 +249,8 @@ module Cdata
 !
   logical :: ldensity_nolog=.false., lwrite_stratification=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
-             lsubstract_reference_state=.false.
+             lsubstract_reference_state=.false., &
+             ldensity_linearstart=.false.
   logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.

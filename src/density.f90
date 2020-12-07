@@ -151,7 +151,8 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
-      lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux
+      lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
+      ldensity_linearstart
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -1591,7 +1592,8 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
+      if (ldensity_nolog .and. (.not.lread_oldsnap) .and. (.not.ldensity_linearstart)) &
+           f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
 !  Impose density floor or ceiling if requested.
 !
