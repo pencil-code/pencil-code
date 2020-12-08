@@ -3757,7 +3757,6 @@ endsubroutine pdf
 !  2020-Nov-23/hongzhe:  removed 3d outputs
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use General, only: plegendre
 !
   integer, parameter :: nk=nxgrid/2
@@ -3785,10 +3784,6 @@ endsubroutine pdf
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
 !
-!  passive scalar contributions (hardwired for now)
-!
-  real, dimension(nx,3) :: gtmp1,gtmp2
-!
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
@@ -3805,25 +3800,43 @@ endsubroutine pdf
   !
   k2m=0.
   nks=0.
-  nmu=1
-  do ikr=2,nk
-    nmu(ikr)=2*(ikr-1)+3
-  enddo
-  allocate( kmu(nk,nmu(nk)) )
-  allocate( dmu(nk,nmu(nk)) )
-  kmu=0.
-  mu_offset=0.01
-  dmu=2-2*mu_offset
-  do ikr=1,nk
-    if (nmu(ikr)>=2) then
-      do ikmu=1, nmu(ikr)
-        kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
-        dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
+!
+! mesh for polar representation
+!
+  if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
+    allocate( kmu(nk,n_glq) )
+    allocate( dmu(nk,n_glq) )
+    do ikr=1,nk
+      nmu(ikr)=min( n_glq,max(1,3*(ikr-1)) )
+      do ikmu=1,nmu(ikr)
+        kmu(ikr,ikmu)=legendre_zeros(nmu(ikr),ikmu)
+        dmu(ikr,ikmu)=glq_weight(nmu(ikr),ikmu)
       enddo
-      dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
-      dmu(ikr,nmu(ikr))=dmu(ikr,1)/2+mu_offset
-    endif
-  enddo
+    enddo
+  else  !  otherwise generate mesh by hand
+    nmu=1
+    do ikr=2,nk
+      nmu(ikr)=2*(ikr-1)+3
+    enddo
+    allocate( kmu(nk,nmu(nk)) )
+    allocate( dmu(nk,nmu(nk)) )
+    kmu=0.
+    mu_offset=0.01
+    dmu=2-2*mu_offset
+    do ikr=1,nk
+      if (nmu(ikr)>=2) then
+        do ikmu=1, nmu(ikr)
+          kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
+          dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
+        enddo
+        dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
+        dmu(ikr,nmu(ikr))=dmu(ikr,nmu(ikr))/2+mu_offset
+      endif
+    enddo
+  endif
+!
+!  initialize spectra
+!
   allocate( vxx(nk,nmu(nk)) )
   allocate( vxx_sum(nk,nmu(nk)) )
   allocate( vzz(nk,nmu(nk)) )
@@ -4006,7 +4019,6 @@ endsubroutine pdf
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use General, only: plegendre
-    use Messages
 
 !
   integer, parameter :: nk=nxgrid/2
@@ -4021,8 +4033,8 @@ endsubroutine pdf
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, allocatable, dimension(:,:) :: cyl_polar_spec, cyl_polar_spec_sum
-  real, allocatable, dimension(:,:) :: cyl_polar_spechel, cyl_polar_spechel_sum
+  real, allocatable, dimension(:,:) :: polar_spec, polar_spec_sum
+  real, allocatable, dimension(:,:) :: polar_spechel, polar_spechel_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_alhel, legendre_alhel_sum
   real, dimension(nxgrid) :: kx
@@ -4090,14 +4102,14 @@ endsubroutine pdf
   !
   !  initialize polar spectra
   !
-  allocate( cyl_polar_spec(nk,nmu(nk)) )
-  allocate( cyl_polar_spec_sum(nk,nmu(nk)) )
-  allocate( cyl_polar_spechel(nk,nmu(nk)) )
-  allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
-  cyl_polar_spec=0.
-  cyl_polar_spec_sum=0.
-  cyl_polar_spechel=0.
-  cyl_polar_spechel_sum=0.
+  allocate( polar_spec(nk,nmu(nk)) )
+  allocate( polar_spec_sum(nk,nmu(nk)) )
+  allocate( polar_spechel(nk,nmu(nk)) )
+  allocate( polar_spechel_sum(nk,nmu(nk)) )
+  polar_spec=0.
+  polar_spec_sum=0.
+  polar_spechel=0.
+  polar_spechel_sum=0.
   legendre_al=0.
   legendre_al_sum=0.
   legendre_alhel=0.
@@ -4155,20 +4167,20 @@ endsubroutine pdf
             temp=minloc(abs(kmu(ikr+1,:)-mu))
             ikmu=temp(1)
             if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
-              cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu)+0.5*&
+              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+0.5*&
                   ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-              cyl_polar_spec(ikr+1,ikmu+1)=cyl_polar_spec(ikr+1,ikmu+1)+0.5*&
+              polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+0.5*&
                   ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
-              cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu)+0.5*&
+              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+0.5*&
                   ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                   +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-              cyl_polar_spechel(ikr+1,ikmu+1)=cyl_polar_spechel(ikr+1,ikmu+1)+0.5*&
+              polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+0.5*&
                   ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                   +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
             else
-              cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu) &
+              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu) &
                   +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-              cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu) &
+              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu) &
                   +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                   +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
             endif
@@ -4192,11 +4204,11 @@ endsubroutine pdf
         do ikmu=1,nmu(ikr)
           legendre_al(i,ikr)=legendre_al(i,ikr)+&
               dmu(ikr,ikmu)*(2.*i-1)/2.* &
-              cyl_polar_spec(ikr,ikmu)* &
+              polar_spec(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
           legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
               dmu(ikr,ikmu)*(2*i-1)/2* &
-              cyl_polar_spechel(ikr,ikmu)* &
+              polar_spechel(ikr,ikmu)* &
               sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
         enddo
       endif
@@ -4208,8 +4220,8 @@ endsubroutine pdf
 !
   call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
   call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
-  call mpireduce_sum(cyl_polar_spec,cyl_polar_spec_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(cyl_polar_spechel,cyl_polar_spechel_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(polar_spec,polar_spec_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(polar_spechel,polar_spechel_sum,(/nk,nmu(nk)/))
   call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
   call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
 !
@@ -4250,7 +4262,7 @@ endsubroutine pdf
     write(1,*) t
     do ikr=1,nk
       do ikmu=1,nmu(ikr)
-        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),cyl_polar_spec_sum(ikr,ikmu)
+        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
       enddo
     enddo
     close(1)
