@@ -69,7 +69,8 @@ module Testfield
   logical :: lugutest=.true., lfprestest=.true., lSghtest=.true.
   logical :: lphase_adjust=.false.
   logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
-  logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false.
+  logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false., &
+             lzero_only=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -113,7 +114,7 @@ module Testfield
        rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
        lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega, &
        lugutest, lfprestest, lSghtest, &
-       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb
+       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb, lzero_only
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -248,6 +249,7 @@ module Testfield
 !  auxiliaries
 !
   logical :: lBext
+  integer :: jtest_start
 
   contains
 
@@ -424,19 +426,28 @@ module Testfield
 !
       if (njtest>=5) iE0=njtest
 !
+!  Suppress integration of the test problems proper for lzero_only=.true.
+!
+      if (lzero_only.and.iE0>0) then
+        jtest_start=iE0
+      else
+        jtest_start=1
+      endif
+!
 !  rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitialize_aatest) then
 !
 !  Don't rescale the reference field, so if existent rescale only to njtest-1
+!  on njtest-2.
 !
         if (iE0>=5) then
           nscal=4
         else
           nscal=njtest
         endif
-        do jtest=1,nscal
+        do jtest=jtest_start,nscal
           iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
           iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
           ihxtest=ihhtest+  (jtest-1)
@@ -840,7 +851,7 @@ module Testfield
       advec_uu=0.; advec_va2=0.
 !
 !testfields:
-      do jtest=njtest,1,-1
+      do jtest=njtest,jtest_start,-1
 
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
         iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
@@ -981,7 +992,7 @@ module Testfield
                 duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(nl,j,jtest)                  ! (utest x btest)'
               enddo
             endif
-            if (damp_uxb>0.) duxbtest=damp_uxb*duxbtest
+            if (jtest/=iE0.and.damp_uxb>0.) duxbtest=damp_uxb*duxbtest
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) + duxbtest
           endif
 !
@@ -1147,7 +1158,7 @@ module Testfield
           advec_uu=max(advec_uu,sum(abs(uutest)*dline_1,2))
           advec_va2=max(advec_va2,sum((bbtest*dline_1)**2,2)*(mu01*rho0test1)) 
         endif
-      enddo !testfields
+      enddo   ! jtest loop = loop over test problems
 !
 !  compute kinetic, magnetic, and magneto-kinetic contributions
 !
@@ -1639,7 +1650,7 @@ mn:   do n=n1,n2
 !
 !  Count jtest backward, so we have already access to the reference fields.
 !
-        do jtest=njtest,1,-1
+        do jtest=njtest,jtest_start,-1
 !
 !  Compute test solutions aatest, bbtest, jjtest, and uutest,
 !  and set bbref, jjref, uuref if jtest=iE0 (first loop iteration)
@@ -1767,7 +1778,7 @@ mn:   do n=n1,n2
 !
 !  finish jtest and mn loops
 !
-        enddo
+        enddo  ! jtest loop
         enddo
       enddo mn
 !
@@ -1886,7 +1897,7 @@ mn:   do n=n1,n2
         endif
 !
         if (t >= taainit) then
-          do jtest=1,njtest
+          do jtest=jtest_start,njtest
             iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
             iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
             ihxtest=ihhtest+  (jtest-1)
