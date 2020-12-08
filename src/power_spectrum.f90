@@ -34,9 +34,12 @@ module power_spectrum
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
-  logical :: lcyl_polar_spectra=.false.
-  integer :: legendre_lmax=1.
+  logical :: lread_gauss_quadrature=.false.
+  integer :: legendre_lmax=1
   integer :: firstout = 0
+  logical :: lglq_dot_dat_exists=.false.
+  integer :: n_glq=1
+  real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
@@ -48,12 +51,14 @@ module power_spectrum
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
-      lcyl_polar_spectra, legendre_lmax
+      lread_gauss_quadrature, legendre_lmax
 !
   contains
 !***********************************************************************
     subroutine initialize_power_spectrum
 !
+      use Messages
+      integer :: ikr, ikmu
       !!! the following warnings should become fatal errors
       if (nxgrid > nx) call warning ('power_spectrum', &
           "Part of the high-frequency spectrum are lost because nxgrid/= nx.")
@@ -61,6 +66,27 @@ module power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+      !
+      !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
+      !
+      if(lread_gauss_quadrature) then
+        inquire(FILE="gauss_legendre_quadrature.dat", EXIST=lglq_dot_dat_exists)
+        if (lglq_dot_dat_exists) then
+          open(9,file='gauss_legendre_quadrature.dat',status='old')
+          read(9,*) n_glq
+          if (n_glq<=legendre_lmax) call inevitably_fatal_error( &
+              'k_omega_spectra','either smaller lmax or larger gauss_legendre_quadrature.dat required')
+          allocate( legendre_zeros(n_glq,n_glq) )
+          allocate( glq_weight(n_glq,n_glq) )
+          do ikr=1,n_glq; do ikmu=1,n_glq
+            read(9,*) legendre_zeros(ikr,ikmu)
+            read(9,*) glq_weight(ikr,ikmu)
+          enddo; enddo
+          close(9)
+        else
+          call inevitably_fatal_error('k_omega_spectra', 'you must give an input gauss_legendre_quadrature.dat file')
+        endif
+      endif
 !
     endsubroutine initialize_power_spectrum
 !***********************************************************************
@@ -3973,23 +3999,24 @@ endsubroutine pdf
 !
 !  29-oct-20/hongzhe: added this subroutine
 !  20-nov-20/hongzhe: can now also compute Legendre coefficients
+!  08-dec-20/hongzhe: lread_gauss_quadrature=T generates polar coordinates
+!                     in gauss-legendre quadrature; need to provide file
+!                     gauss_legendre_quadrature.dat
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use General, only: plegendre
+    use Messages
 
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+  integer :: i, k, ikx, iky, ikz, jkz, ivec
   integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
   real, allocatable, dimension(:,:) :: kmu, dmu
-  real :: k2,mu, mu_offset
+  real :: k2, mu, mu_offset
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi, jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
@@ -4004,10 +4031,6 @@ endsubroutine pdf
   integer, dimension(1) :: temp
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
-!
-!  passive scalar contributions (hardwired for now)
-!
-  real, dimension(nx,3) :: gtmp1,gtmp2
 !
 !  identify version
 !
@@ -4026,51 +4049,59 @@ endsubroutine pdf
   k2m=0.
   nks=0.
   !
-  if (lcylindrical_spectra) then
-    cyl_spectrum=0.
-    cyl_spectrum_sum=0.
-    cyl_spectrumhel=0.
-    cyl_spectrumhel_sum=0.
+  cyl_spectrum=0.
+  cyl_spectrum_sum=0.
+  cyl_spectrumhel=0.
+  cyl_spectrumhel_sum=0.
 !
-! allow for polar representation
+! mesh for polar representation
 !
-    if (lcyl_polar_spectra) then
-      nmu=1
-      do ikr=2,nk
-        nmu(ikr)=2*(ikr-1)+3
+  if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
+    allocate( kmu(nk,n_glq) )
+    allocate( dmu(nk,n_glq) )
+    do ikr=1,nk
+      nmu(ikr)=min( n_glq,max(1,3*(ikr-1)) )
+      do ikmu=1,nmu(ikr)
+        kmu(ikr,ikmu)=legendre_zeros(nmu(ikr),ikmu)
+        dmu(ikr,ikmu)=glq_weight(nmu(ikr),ikmu)
       enddo
-      !
-      allocate( kmu(nk,nmu(nk)) )
-      allocate( dmu(nk,nmu(nk)) )
-      allocate( cyl_polar_spec(nk,nmu(nk)) )
-      allocate( cyl_polar_spec_sum(nk,nmu(nk)) )
-      allocate( cyl_polar_spechel(nk,nmu(nk)) )
-      allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
-      !
-      kmu=0.
-      mu_offset=0.01
-      dmu=2-2*mu_offset
-      do ikr=1,nk
-        if (nmu(ikr)>=2) then
-          do ikmu=1, nmu(ikr)
-            kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
-            dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
-          enddo
-          dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
-          dmu(ikr,nmu(ikr))=dmu(ikr,1)/2+mu_offset
-        endif
-      enddo
-      ! 
-      cyl_polar_spec=0.
-      cyl_polar_spec_sum=0.
-      cyl_polar_spechel=0.
-      cyl_polar_spechel_sum=0.
-      legendre_al=0.
-      legendre_al_sum=0.
-      legendre_alhel=0.
-      legendre_alhel_sum=0.
-    endif
+    enddo
+  else  !  otherwise generate mesh by hand
+    nmu=1
+    do ikr=2,nk
+      nmu(ikr)=2*(ikr-1)+3
+    enddo
+    allocate( kmu(nk,nmu(nk)) )
+    allocate( dmu(nk,nmu(nk)) )
+    kmu=0.
+    mu_offset=0.01
+    dmu=2-2*mu_offset
+    do ikr=1,nk
+      if (nmu(ikr)>=2) then
+        do ikmu=1, nmu(ikr)
+          kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
+          dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
+        enddo
+        dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
+        dmu(ikr,nmu(ikr))=dmu(ikr,nmu(ikr))/2+mu_offset
+      endif
+    enddo
   endif
+  !
+  !  initialize polar spectra
+  !
+  allocate( cyl_polar_spec(nk,nmu(nk)) )
+  allocate( cyl_polar_spec_sum(nk,nmu(nk)) )
+  allocate( cyl_polar_spechel(nk,nmu(nk)) )
+  allocate( cyl_polar_spechel_sum(nk,nmu(nk)) )
+  cyl_polar_spec=0.
+  cyl_polar_spec_sum=0.
+  cyl_polar_spechel=0.
+  cyl_polar_spechel_sum=0.
+  legendre_al=0.
+  legendre_al_sum=0.
+  legendre_alhel=0.
+  legendre_alhel_sum=0.
   !
   !  loop over all the components
   !
@@ -4099,85 +4130,88 @@ endsubroutine pdf
 !
 !  Compute cylindrical spectrum
 !
-    if (lcylindrical_spectra) then
-      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
-      do ikz=1,nz
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    do ikz=1,nz
       do iky=1,ny
-      do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-        jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-        k=nint(sqrt(k2))
-        if (k>=0 .and. k<=(nk-1)) then
-          cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-              +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-          cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-        endif
-!  compute azimuthally averaged spectrum
-!  but as a function of kr=norm(kx,ky,kz) and kz/kr
-        if (lcyl_polar_spectra) then
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+            cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+                +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+            cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          endif
+!
+!  compute azimuthally averaged spectra in polar coordinates
+!  as functions of kr=norm(kx,ky,kz) and kz/kr
+!
           k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
           ikr=nint(sqrt(k2))
           mu=kz(ikz+ipz*nz)/sqrt(k2)
           if (ikr>=0. .and. ikr<=(nk-1)) then
             temp=minloc(abs(kmu(ikr+1,:)-mu))
             ikmu=temp(1)
-            cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu) &
-                +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-            cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu) &
-                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
+              cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu)+0.5*&
+                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+              cyl_polar_spec(ikr+1,ikmu+1)=cyl_polar_spec(ikr+1,ikmu+1)+0.5*&
+                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
+              cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu)+0.5*&
+                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+              cyl_polar_spechel(ikr+1,ikmu+1)=cyl_polar_spechel(ikr+1,ikmu+1)+0.5*&
+                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+            else
+              cyl_polar_spec(ikr+1,ikmu)=cyl_polar_spec(ikr+1,ikmu) &
+                  +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+              cyl_polar_spechel(ikr+1,ikmu)=cyl_polar_spechel(ikr+1,ikmu) &
+                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            endif
           endif
-        endif
 !
 !  end of loop through all points
 !
+        enddo
       enddo
-      enddo
-      enddo
-!
-    endif
+    enddo
     !
   enddo !(from loop over ivec)
 !
 !  compute legendre coefficients
 !  the ith oder legendre polynomial (i,m=0) is
 !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-!  this part can be moved into the loop over ivec
 !
-  if (lcylindrical_spectra .and. lcyl_polar_spectra) then
-    do ikr=1,nk
-      do i=1,legendre_lmax+1
-        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-          do ikmu=1,nmu(ikr)
-            legendre_al(i,ikr)=legendre_al(i,ikr)+&
-                dmu(ikr,ikmu)*(2.*i-1)/2.* &
-                cyl_polar_spec(ikr,ikmu)* &
-                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-                dmu(ikr,ikmu)*(2*i-1)/2* &
-                cyl_polar_spechel(ikr,ikmu)* &
-                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-          enddo
-        endif
-      enddo
+  do ikr=1,nk
+    do i=1,legendre_lmax+1
+      if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+        do ikmu=1,nmu(ikr)
+          legendre_al(i,ikr)=legendre_al(i,ikr)+&
+              dmu(ikr,ikmu)*(2.*i-1)/2.* &
+              cyl_polar_spec(ikr,ikmu)* &
+              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+              dmu(ikr,ikmu)*(2*i-1)/2* &
+              cyl_polar_spechel(ikr,ikmu)* &
+              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+        enddo
+      endif
     enddo
-  endif
-  !
-  !  Summing up the results from the different processors.
-  !  The result is available only on root.
-  !
-  if (lcylindrical_spectra) then
-    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
-    if (lcyl_polar_spectra) then
-      call mpireduce_sum(cyl_polar_spec,cyl_polar_spec_sum,(/nk,nmu(nk)/))
-      call mpireduce_sum(cyl_polar_spechel,cyl_polar_spechel_sum,(/nk,nmu(nk)/))
-      call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
-      call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
-    endif
-  endif
+  enddo
+!
+!  Summing up the results from the different processors.
+!  The result is available only on root.
+!
+  call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
+  call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+  call mpireduce_sum(cyl_polar_spec,cyl_polar_spec_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(cyl_polar_spechel,cyl_polar_spechel_sum,(/nk,nmu(nk)/))
+  call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
+  call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
 !
 !  compute krms only once
 !
@@ -4186,57 +4220,57 @@ endsubroutine pdf
     call mpireduce_sum(nks,nks_sum,nk)
     if (iproc/=root) lwrite_krms=.false.
   endif
-  !
-  !  on root processor, write global result to file
-  !
-  !  append to diagnostics file
-  !
+!
+!  on root processor, write global result to file
+!  everything is in lformat
+!
   if (lroot) then
-    if (lcylindrical_spectra) then
-      if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
-           ,' to ',trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat'
-      open(1,file=trim(datadir)//'/cyl_omega_power_'//trim(sp)//'.dat',position='append')
-      if (lformat) then
-        do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
-        enddo
-        enddo
-      else
-        write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrum_sum
-      endif
-      close(1)
-      !
-      open(1,file=trim(datadir)//'/cyl_omega_powerhel_'//trim(sp)//'.dat',position='append')
-      if (lformat) then
-        do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrumhel_sum(k,jkz)
-        enddo
-        enddo
-      else
-        write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
-      endif
-      close(1)
-    endif
+    if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
+         ,' to ',trim(datadir)//'/omega_'//trim(sp)//'.dat'
+    ! energy and helicity spectra
+    open(1,file=trim(datadir)//'/omega_cyl_power_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do k=1,nk
+      do jkz = 1, nzgrid
+        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrum_sum(k,jkz)
+      enddo
+    enddo
+    close(1)
     !
-    if (lcyl_polar_spectra) then
-      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
-      open(1,file=trim(datadir)//'/legendre_al_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
-      enddo;enddo
-      close(1)
-      open(1,file=trim(datadir)//'/legendre_alhel_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
-      do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
-      enddo;enddo
-      close(1)
-    endif
+    open(1,file=trim(datadir)//'/omega_cyl_powerhel_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do k=1,nk
+      do jkz = 1, nzgrid
+        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrumhel_sum(k,jkz)
+      enddo
+    enddo
+    close(1)
+    !  energy spectra in polar coordinates
+    open(1,file=trim(datadir)//'/omega_polar_power_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do ikr=1,nk
+      do ikmu=1,nmu(ikr)
+        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),cyl_polar_spec_sum(ikr,ikmu)
+      enddo
+    enddo
+    close(1)
+    !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+    open(1,file=trim(datadir)//'/omega_power_legendre_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do i=1,legendre_lmax+1
+      do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
+      enddo
+    enddo
+    close(1)
+    open(1,file=trim(datadir)//'/omega_powerhel_legendre_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    do i=1,legendre_lmax+1
+      do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
+      enddo
+    enddo
+    close(1)
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
@@ -4276,10 +4310,6 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-!
-!  passive scalar contributions (hardwired for now)
-!
-  real, dimension(nx,3) :: gtmp1,gtmp2
 !
 !  identify version
 !
