@@ -1,0 +1,99 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      3256,         91]
+NotebookOptionsPosition[      2906,         77]
+NotebookOutlinePosition[      3303,         93]
+CellTagsIndexPosition[      3260,         90]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{"Needs", "[", "\"\<NumericalDifferentialEquationAnalysis`\>\"", 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Module", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"precision", ",", "nmax", ",", "d", ",", "GLQ"}], "}"}], ",", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"precision", "=", "32"}], ";", 
+    RowBox[{"(*", 
+     RowBox[{"digits", " ", "of", " ", "precision"}], "*)"}], 
+    "\[IndentingNewLine]", 
+    RowBox[{"nmax", "=", "36"}], ";", 
+    RowBox[{"(*", 
+     RowBox[{"largest", " ", "order"}], "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"GLQ", "=", 
+     RowBox[{"Flatten", "@", 
+      RowBox[{"{", 
+       RowBox[{"nmax", ",", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"d", "=", 
+             RowBox[{"GaussianQuadratureWeights", "[", 
+              RowBox[{"#", ",", 
+               RowBox[{"-", "1"}], ",", "1", ",", "precision"}], "]"}]}], ";",
+             "\[IndentingNewLine]", 
+            RowBox[{"{", 
+             RowBox[{"d", ",", 
+              RowBox[{"ConstantArray", "[", 
+               RowBox[{
+                RowBox[{"{", 
+                 RowBox[{"0.", ",", "0."}], "}"}], ",", 
+                RowBox[{"nmax", "-", 
+                 RowBox[{"Length", "[", "d", "]"}]}]}], "]"}]}], "}"}]}], 
+           ")"}], "\[IndentingNewLine]", "&"}], "/@", 
+         RowBox[{"Range", "[", "nmax", "]"}]}]}], "}"}]}]}], ";", 
+    "\[IndentingNewLine]", "\[IndentingNewLine]", 
+    RowBox[{"(*", "export", "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"Export", "[", 
+     RowBox[{
+      RowBox[{"StringJoin", "[", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"NotebookDirectory", "[", "]"}], ",", 
+        "\"\<gauss_legendre_quadrature_n\>\"", ",", "\[IndentingNewLine]", 
+        RowBox[{"ToString", "@", "nmax"}], ",", "\"\<p\>\"", ",", 
+        RowBox[{"ToString", "@", "precision"}], ",", "\"\<.dat\>\""}], "]"}], 
+      ",", "\[IndentingNewLine]", "GLQ"}], "]"}], ";"}]}], 
+  "\[IndentingNewLine]", "]"}]}], "Input",
+ CellChangeTimes->{{3.816421030158613*^9, 3.8164211323720512`*^9}, {
+   3.8164211639482117`*^9, 3.816421232785041*^9}, {3.816422615728497*^9, 
+   3.8164227256035*^9}, 3.816422927231694*^9},
+ CellLabel->
+  "In[16699]:=",ExpressionUUID->"7575a632-1210-4666-a395-a2dc9536d69f"]
+},
+WindowSize->{808, 699},
+WindowMargins->{{Automatic, -255}, {Automatic, -855}},
+FrontEndVersion->"12.1 for Mac OS X x86 (64-bit) (June 19, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"3c99d463-d647-43a7-ad0d-8243ba9612a2"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 2344, 55, 325, "Input",ExpressionUUID->"7575a632-1210-4666-a395-a2dc9536d69f"]
+}
+]
+*)
+

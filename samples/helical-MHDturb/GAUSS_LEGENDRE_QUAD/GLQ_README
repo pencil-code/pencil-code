@@ -1,0 +1,23 @@
+The provided mathematica notebook generates the
+"gauss_legendre_quadrature.dat" file that can be imported
+using lread_gauss_quadrature=T in run.in.
+The output directory is the same as the notebook's directory.
+
+To approximate the definite integral of f(x), we have
+\int_{-1}^1 f(x) dx
+=\sum_{i=1}^{n} f(x_i)*w_i
+where n is the number of sample points used,
+x_i is the ith zero point of the nth-order Legendre polynomial,
+and w_i is the associated weight.
+The generated file "gauss_legendre_quadrature.dat" provides
+such a table of {n,x_i,w_i}, with desired digits of precision,
+where n runs from 1 to nmax (adjustable).
+The generated files are labeld by nmax and the precision; for example
+gauss_legendre_quadrature_n32p32.dat
+means nmax=32 and the number of digits of precision is 32.
+The first line of the file gives nmax, then 2*nmax*nmax lines follow.
+Putting those 2*nmax*nmax lines into nmax groups,
+in the nth group, the first 2n numbers gives n pairs {x_i,w_i}, where
+x_i = the ith zero point the nth-order Legendre polynomial, and
+w_i = the weight of x_i for the Gauss-Legendre quadrature.
+The rest (2*nmax-2*n) elements are filled with zeros.
