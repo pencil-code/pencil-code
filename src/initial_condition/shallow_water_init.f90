@@ -26,13 +26,14 @@ module InitialCondition
   real :: Omega_vortex=1.
 ! Vortex parameters: 
   real :: xv0,yv0, bv,rm,vm,rout  
+  integer :: nagrid=10000
 !
   character (len=labellen), dimension(ninit) :: init_shallow_density='nothing'
   character (len=labellen), dimension(ninit) :: init_shallow_hydro='nothing'
 !
   namelist /initial_condition_pars/  eta0, k_eta, x0_drop, y0_drop, Omega_SB, &
        init_shallow_density,init_shallow_hydro,gamma_parameter,v_jet_peak, &
-       sigma_jet,r_jet_cent,Omega_vortex,xv0,yv0,bv,rm,vm,rout
+       sigma_jet,r_jet_cent,Omega_vortex,xv0,yv0,bv,rm,vm,rout,nagrid
 !
   real :: planetary_radius=impossible ! derives from gamma_parameter and Omega
 !
@@ -127,7 +128,7 @@ module InitialCondition
                do i=l1,l2
                  call calc_phi(rr(i-l1+1),phi)
                  if (ldensity_linearstart) then
-                    f(i,m,n,irho) = - phi
+                    f(i,m,n,irho) = eta0 - phi
                  else
                     call fatal_error("initial_condition_lnrho",&
                          "switch ldensity_linearstart=T in density_init_pars")
@@ -146,22 +147,33 @@ module InitialCondition
     subroutine calc_phi(r,intgr)
 !
       real :: Lr,dr,vr,tmp,rr
-      integer :: ir
+      integer :: ir,alloc_err
       real, intent(in) :: r
-      real, dimension(nx) :: a
+      real, allocatable, dimension(:) :: a
       real, intent(out) :: intgr
 !
+      if (nagrid >= 1) then
+        allocate(a(nagrid),stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('calc_phi','Could not allocate memory',.true.)
+      else
+        if (lroot) print*,"nagrid=",nagrid
+        call fatal_error("calc_phi",&
+              "give nagrid a positive integer greater than 1")
+      endif
+!
       Lr = rout - r
-      dr = Lr/nx
-      do ir=1,nx
+      dr = Lr/nagrid
+      do ir=1,nagrid
         rr = r + (ir-1)*dr
         vr = vm * (rr/rm) * exp(1/bv * (1-(rr/rm)**bv))
         tmp = vr**2/rr + 2*Omega_SB*vr 
         a(ir) = tmp*dr
       enddo
 !      
-      intgr = 0.5*(a(1)+a(nx)) + sum(a(2:nx-1))
+      intgr = 0.5*(a(1)+a(nagrid-1)) + sum(a(2:nagrid-1))
 !      
+      deallocate(a)
+!
     endsubroutine calc_phi
 !***********************************************************************    
     subroutine initial_condition_uu(f)
