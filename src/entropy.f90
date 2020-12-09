@@ -3785,11 +3785,11 @@ module Energy
 !   1-apr-20/joern: coded
 !
       use EquationOfState, only : lnrho0, cs20, get_cv1, cs2top
-      use Sub, only : cubic_step
+      use Sub, only : step
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: cs2, fact_cs, fact_rho, fact_wsld
-      real :: cv1, rhotop, lnrhotop
+      real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
+      real :: cv1, rhotop, lnrhotop, w_sldrat2
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
@@ -3802,9 +3802,10 @@ module Energy
          lnrhotop=lnrho0+(1./gamma_m1)*log(cs2top/cs20)
        endif
        cs2=0.
-       fact_cs=1.
+       prof_cs=1.
        fact_rho=1.
        fact_wsld=1.
+       w_sldrat2=w_sldchar_ene2**2./w_sldchar_ene**2.
 !
        if (lsld_char_wprofr) fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.) &
                                            *(x/w_sldchar_ene_r0)**w_sldchar_ene_p
@@ -3830,15 +3831,24 @@ module Energy
 !  density
 !
            if (lsld_char_rholimit) &
-           fact_rho=1.+ exp((lnrhotop-f(:,m,n,ilnrho)))*cs2top/cs2
+            fact_rho=1.+ exp((lnrhotop-f(:,m,n,ilnrho)))*cs2top/cs2
 !
          endif
 !
 !  make sure cs2 contribution is always larger than cs2top
+!  with a continue transition from w_slchar_ene_top*sqrt(cs2top) to
+!  w_sldchar_ene*sqrt(cs2)
 !
-         if (lsld_char_cslimit) fact_cs=1.+(cs2top/cs2)**2.
-!         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho*fact_cs)
+         if (lsld_char_cslimit) then
+           prof_cs=step(cs2,w_sldrat2*cs2top,cs2top/2.)
+           f(:,m,n,isld_char)=f(:,m,n,isld_char) &
+                             + w_sldchar_ene*prof_cs*sqrt(cs2) &
+                             + (1.-prof_cs)*w_sldchar_ene2*sqrt(cs2top)
+         else
+!           f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
+           f(:,m,n,isld_char)=f(:,m,n,isld_char) &
+                             + w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho)
+         endif
        enddo
        enddo
      endif
