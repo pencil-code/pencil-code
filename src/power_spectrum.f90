@@ -3524,7 +3524,7 @@ endsubroutine pdf
 !***********************************************************************
   subroutine polar_spectrum(f,sp)
 !
-!  In k space, calculate azimuthally averaged spectra in poloar coordinates,
+!  In k space, calculate azimuthally averaged spectra in polar coordinates,
 !  and perform legendre decomposition.
 !  Specify in &run_pars:
 !    ou_omega=T: energy and helicity spectra of velocity u(k,omega);
@@ -3816,7 +3816,7 @@ endsubroutine pdf
       !
       call fft_xyz_parallel(a_re,a_im)
       call fft_xyz_parallel(b_re,b_im)
-      !  compute poloar spectra as functions of kr=norm(kx,ky,kz) and kz/kr
+      !  compute polar spectra as functions of kr=norm(kx,ky,kz) and kz/kr
       if (lroot .AND. ip<10) print*,'fft done; now integrate azimuthally in k space...'
       do ikz=1,nz
         do iky=1,ny
