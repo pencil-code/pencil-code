@@ -3593,6 +3593,8 @@ endsubroutine pdf
   if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
     allocate( kmu(nk,n_glq) )
     allocate( dmu(nk,n_glq) )
+    kmu=0.
+    dmu=2.
     do ikr=1,nk
       nmu(ikr)=min( n_glq,max(1,3*(ikr-1)) )
       do ikmu=1,nmu(ikr)
