@@ -173,8 +173,7 @@ module Param_IO
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &
-      it_timing, har_spec, hav_spec, j_spec, jb_spec, ja_spec, ani_spec, &
-      cor_cyl, &
+      it_timing, har_spec, hav_spec, j_spec, jb_spec, ja_spec, &
       lread_less, lread_nogrid, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
@@ -187,7 +186,7 @@ module Param_IO
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
       lignore_nonequi, tag_foreign, tau_aver1, fmt_avgs, &
-      ou_omega, ou_kzspec, ab_kzspec
+      ou_omega, ou_kzspec, ab_kzspec, cor_uu, ou_polar, ab_polar, jb_polar
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

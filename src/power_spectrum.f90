@@ -75,7 +75,8 @@ module power_spectrum
           open(9,file='gauss_legendre_quadrature.dat',status='old')
           read(9,*) n_glq
           if (n_glq<=legendre_lmax) call inevitably_fatal_error( &
-              'k_omega_spectra','either smaller lmax or larger gauss_legendre_quadrature.dat required')
+              'initialize_power_spectrum', &
+              'either smaller lmax or larger gauss_legendre_quadrature.dat required')
           allocate( legendre_zeros(n_glq,n_glq) )
           allocate( glq_weight(n_glq,n_glq) )
           do ikr=1,n_glq; do ikmu=1,n_glq
@@ -84,7 +85,8 @@ module power_spectrum
           enddo; enddo
           close(9)
         else
-          call inevitably_fatal_error('k_omega_spectra', 'you must give an input gauss_legendre_quadrature.dat file')
+          call inevitably_fatal_error('initialize_power_spectrum', &
+              'you must give an input gauss_legendre_quadrature.dat file')
         endif
       endif
 !
@@ -3520,519 +3522,50 @@ endsubroutine pdf
   !
   endsubroutine power_vec
 !***********************************************************************
-  subroutine anisoq_diag(f)
+  subroutine polar_spectrum(f,sp)
 !
-!  Anisotropic alpha2 dynamo diagostics.
-!  Calculate azimuthally averaged spectra of
-!  fluid (v.u), kinetic (u.o), magnetic (a.b), and current (b.j) helicities.
-!  Here v is the vector potential of u if u is incompressible.
-!
-!  16-sep-20/hongzhe: added this subroutine, modified from powerhel subroutine
-    use Fourier, only: fft_xyz_parallel
-    use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
-!
-  integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
-  real :: k2, ktot2
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: u_re, u_im, o_re, o_im
-  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
-  real, dimension(nx) :: bbi, jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, jj
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nk,nzgrid) :: vu_spec, vu_spec_sum
-  real, dimension(nk,nzgrid) :: uo_spec, uo_spec_sum
-  real, dimension(nk,nzgrid) :: ab_spec, ab_spec_sum
-  real, dimension(nk,nzgrid) :: bj_spec, bj_spec_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
-  character (len=3) :: sp
-  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
-!
-!  passive scalar contributions (hardwired for now)
-!
-  real, dimension(nx,3) :: gtmp1,gtmp2
-!
-!  identify version
-!
-  if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize power spectrum to zero
-  !
-  k2m=0.
-  nks=0.
-  vu_spec=0.
-  vu_spec_sum=0.
-  uo_spec=0.
-  uo_spec_sum=0.
-  ab_spec=0.
-  ab_spec_sum=0.
-  bj_spec=0.
-  bj_spec_sum=0.
-  !
-  !  loop over all the components
-  !
-  do ivec=1,3
-    !
-    ! calculate u and o
-    !
-    if (iuu==0) call fatal_error('powerhel','iuu=0')
-    do n=n1,n2
-      do m=m1,m2
-        call curli(f,iuu,bbi,ivec)
-        im=m-nghost
-        in=n-nghost
-        o_re(:,im,in)=bbi  !(this corresponds to vorticity)
-      enddo
-    enddo
-    u_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-    o_im=0.
-    u_im=0.
-    !
-    ! calculate a, b, and j
-    !
-    if (iaa==0) call fatal_error('powerhel','iaa=0')
-    if (lmagnetic) then
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
-        enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
-      a_im=0.
-      b_im=0.
-    else
-      if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
-    endif
-!
-!  Doing the Fourier transform
-!
-    call fft_xyz_parallel(u_re,u_im)
-    call fft_xyz_parallel(o_re,o_im)
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-!
-!  calculate cylindrical helicity spectra
-!
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
-    do ikz=1,nz
-      do iky=1,ny
-        do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-          ktot2=k2+kz(ikz+ipz*nz)**2
-          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1) .and. ktot2>0.) then
-            uo_spec(k+1,jkz)=uo_spec(k+1,jkz) &
-              +u_re(ikx,iky,ikz)*o_re(ikx,iky,ikz) &
-              +u_im(ikx,iky,ikz)*o_im(ikx,iky,ikz)
-            ab_spec(k+1,jkz)=ab_spec(k+1,jkz) &
-              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-            vu_spec(k+1,jkz)=uo_spec(k+1,jkz)/ktot2    ! fluid helicity is calculated by u.o/k^2, only work for low Mach numbers
-            bj_spec(k+1,jkz)=ab_spec(k+1,jkz)*ktot2    ! current helicity is a.b*k^2
-!
-!  end of loop through all points
-!
-          endif
-        enddo
-      enddo
-    enddo
-    !
-  enddo !(from loop over ivec)
-  !
-  !  Summing up the results from the different processors.
-  !  The result is available only on root.
-  !
-  call mpireduce_sum(vu_spec,vu_spec_sum,(/nk,nzgrid/))
-  call mpireduce_sum(uo_spec,uo_spec_sum,(/nk,nzgrid/))
-  call mpireduce_sum(ab_spec,ab_spec_sum,(/nk,nzgrid/))
-  call mpireduce_sum(bj_spec,bj_spec_sum,(/nk,nzgrid/))
-!
-!  compute krms only once
-!
-  if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
-    if (iproc/=root) lwrite_krms=.false.
-  endif
-  !
-  !  on root processor, write global result to file
-  !  no multiplication by 1/2
-  !
-  !  append to diagnostics file
-  !
-  if (lroot) then
-    if (ip<10) print*,'Writing cylindrical power spectrum to'  &
-        ,trim(datadir)//'/powerhel_fg.dat files'
-    !
-    open(1,file=trim(datadir)//'/powerhel_vu.dat',position='append')
-    if (lformat) then
-      do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, vu_spec_sum(k,jkz)
-        enddo
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') vu_spec_sum
-    endif
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/powerhel_uo.dat',position='append')
-    if (lformat) then
-      do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, uo_spec_sum(k,jkz)
-        enddo
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') uo_spec_sum
-    endif
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/powerhel_ab.dat',position='append')
-    if (lformat) then
-      do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, ab_spec_sum(k,jkz)
-        enddo
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') ab_spec_sum
-    endif
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/powerhel_bj.dat',position='append')
-    if (lformat) then
-      do jkz = 1, nzgrid
-        do k = 1, nk
-          write(1,'(2i4,3p,8e10.2)') k, jkz, bj_spec_sum(k,jkz)
-        enddo
-      enddo
-    else
-      write(1,*) t
-      write(1,'(1p,8e10.2)') bj_spec_sum
-    endif
-    close(1)
-    !
-    if (lwrite_krms) then
-      krms=sqrt(k2m_sum/nks_sum)
-      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
-      close(1)
-      lwrite_krms=.false.
-    endif
-  endif
-  !
-  endsubroutine anisoq_diag
-!***********************************************************************
-  subroutine corfunc_cyl(f,sp)
-!
-!  Calculate azimuthally averaged correlation functions v11,v33,v12.
-!  Here v11=(w11+w22)/2, v33=w33, v12=w12/sqrt(-1),
-!  where wij=<u_i^* u_j>, for i,j=1,2,3.
-!  They are functions kr=norm(kx,ky,kz) and kz/kr.
-!  For the moment u=velocity field only,
-!  but possible to extend using 'sp'
-!
-!  2020-Oct-14/hongzhe:  added this subroutine
-!  2020-Nov-23/hongzhe:  removed 3d outputs
-    use Fourier, only: fft_xyz_parallel
-    use Mpicomm, only: mpireduce_sum
-    use General, only: plegendre
-!
-  integer, parameter :: nk=nxgrid/2
-  integer :: i, ikx, iky, ikz, ikr, ikmu
-  integer, dimension(1) :: temploc
-  integer, dimension(nk) :: nmu
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, allocatable, dimension(:,:) :: kmu, dmu
-  real, dimension(nx,ny,nz) :: ux_re, ux_im
-  real, dimension(nx,ny,nz) :: uy_re, uy_im
-  real, dimension(nx,ny,nz) :: uz_re, uz_im
-  real, allocatable, dimension(:,:) :: vxx, vxy, vzz
-  real, allocatable, dimension(:,:) :: vxx_sum, vxy_sum, vzz_sum
-  real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
-  real, allocatable, dimension(:,:) :: coeff_a_sum, coeff_b_sum, coeff_c_sum
-  real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
-  real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
-  real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
-  real :: k2, mu, kmu2, mu_offset
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
-  character (len=3) :: sp
-  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
-!
-!  identify version
-!
-  if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize
-  !
-  k2m=0.
-  nks=0.
-!
-! mesh for polar representation
-!
-  if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
-    allocate( kmu(nk,n_glq) )
-    allocate( dmu(nk,n_glq) )
-    do ikr=1,nk
-      nmu(ikr)=min( n_glq,max(1,3*(ikr-1)) )
-      do ikmu=1,nmu(ikr)
-        kmu(ikr,ikmu)=legendre_zeros(nmu(ikr),ikmu)
-        dmu(ikr,ikmu)=glq_weight(nmu(ikr),ikmu)
-      enddo
-    enddo
-  else  !  otherwise generate mesh by hand
-    nmu=1
-    do ikr=2,nk
-      nmu(ikr)=2*(ikr-1)+3
-    enddo
-    allocate( kmu(nk,nmu(nk)) )
-    allocate( dmu(nk,nmu(nk)) )
-    kmu=0.
-    mu_offset=0.01
-    dmu=2-2*mu_offset
-    do ikr=1,nk
-      if (nmu(ikr)>=2) then
-        do ikmu=1, nmu(ikr)
-          kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
-          dmu(ikr,ikmu)=(2-2*mu_offset)/(nmu(ikr)-1)
-        enddo
-        dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
-        dmu(ikr,nmu(ikr))=dmu(ikr,nmu(ikr))/2+mu_offset
-      endif
-    enddo
-  endif
-!
-!  initialize spectra
-!
-  allocate( vxx(nk,nmu(nk)) )
-  allocate( vxx_sum(nk,nmu(nk)) )
-  allocate( vzz(nk,nmu(nk)) )
-  allocate( vzz_sum(nk,nmu(nk)) )
-  allocate( vxy(nk,nmu(nk)) )
-  allocate( vxy_sum(nk,nmu(nk)) )
-  allocate( coeff_a(nk,nmu(nk)) )
-  allocate( coeff_a_sum(nk,nmu(nk)) )
-  allocate( coeff_b(nk,nmu(nk)) )
-  allocate( coeff_b_sum(nk,nmu(nk)) )
-  allocate( coeff_c(nk,nmu(nk)) )
-  allocate( coeff_c_sum(nk,nmu(nk)) )
-  vxx=0.
-  vxx_sum=0.
-  vxy=0.
-  vxy_sum=0.
-  vzz=0.
-  vzz_sum=0.
-  coeff_a=0.
-  coeff_a_sum=0.
-  coeff_b=0.
-  coeff_b_sum=0.
-  coeff_c=0.
-  coeff_c_sum=0.
-  legendre_al_a=0.
-  legendre_al_a_sum=0.
-  legendre_al_b=0.
-  legendre_al_b_sum=0.
-  legendre_al_c=0.
-  legendre_al_c_sum=0.
-  !
-  !  calculate each components
-  !
-  if (sp=='kin') then
-    if (iuu==0) call fatal_error('powerhel','iuu=0')
-    ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1)
-    uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1)
-    uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1)
-    ux_im=0.
-    uy_im=0.
-    uz_im=0.
-  endif
-  !
-  !  Doing the Fourier transform
-  !
-  call fft_xyz_parallel(ux_re,ux_im)
-  call fft_xyz_parallel(uy_re,uy_im)
-  call fft_xyz_parallel(uz_re,uz_im)
-  !
-  !  calculate correlation functions
-  !
-  if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
-  do ikz=1,nz
-    do iky=1,ny
-      do ikx=1, nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-        ikr=nint(sqrt(k2))
-        mu=kz(ikz+ipz*nz)/sqrt(k2)
-        if (ikr>=0. .and. ikr<=(nk-1)) then
-          temploc=minloc(abs(kmu(ikr+1,:)-mu))
-          ikmu=temploc(1)
-          vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*( &
-              ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
-              +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-          vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ &
-              uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2
-          vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ &
-              ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-              -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
-        endif
-      enddo
-    enddo
-  enddo
-  !
-  ! compute legendre coefficients
-  !
-  do ikr=1,nk
-    do ikmu=1,nmu(ikr)
-      kmu2=kmu(ikr,ikmu)**2
-      if (kmu2/=0.) coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi*kmu(ikr,ikmu))
-      if (1-kmu2==0.)  then
-        coeff_a(ikr,ikmu)=vxx(ikr,ikmu)/(pi*2.)
-      else
-        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
-            ( 2*pi*(1-kmu2)*(2+kmu2) )
-        coeff_b(ikr,ikmu)=( -2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/ &
-            ( pi*(1-kmu2)**2*(2+kmu2) )
-      endif
-      do i=1,legendre_lmax+1
-        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-          legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-              dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
-              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-          !  to avoid diverging 1/(1-kmu2) regions in coeff_b
-          if (abs(kmu(ikr,ikmu))<=0.9) legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-              dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
-              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-          legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-              dmu(ikr,ikmu)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
-              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-        endif
-      enddo
-    enddo
-  enddo
-  !
-  !  Summing up the results from the different processors.
-  !  The result is available only on root.
-  !
-  call mpireduce_sum(vxx,vxx_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(vxy,vxy_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(vzz,vzz_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(coeff_a,coeff_a_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(coeff_b,coeff_b_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(coeff_c,coeff_c_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
-  call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
-  call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/))
-  !
-  !  on root processor, write global result to file
-  !  append to diagnostics file
-  !
-  if (lroot) then
-    if (ip<10) print*,'Writing two point correlations to'  &
-        ,trim(datadir)//'/cor2_.dat files'
-    !  ABC coefficients
-    open(1,file=trim(datadir)//'/cor2_a_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do ikr=1,nk; do ikmu=1,nmu(ikr)
-      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_a_sum(ikr,ikmu)
-    enddo; enddo
-    close(1)
-    open(1,file=trim(datadir)//'/cor2_b_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do ikr=1,nk; do ikmu=1,nmu(ikr)
-      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_b_sum(ikr,ikmu)
-    enddo; enddo
-    close(1)
-    open(1,file=trim(datadir)//'/cor2_c_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do ikr=1,nk; do ikmu=1,nmu(ikr)
-      write(1,'(i4,1p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),coeff_c_sum(ikr,ikmu)
-    enddo; enddo
-    close(1)
-    !  legendre coefficients
-    open(1,file=trim(datadir)//'/cor2_a_al_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
-    enddo; enddo
-    close(1)
-    open(1,file=trim(datadir)//'/cor2_b_al_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
-    enddo; enddo
-    close(1)
-    open(1,file=trim(datadir)//'/cor2_c_al_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do i=1,legendre_lmax+1; do ikr=1,nk
-      write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
-    enddo; enddo
-    close(1)
-  endif
-    
-  endsubroutine corfunc_cyl
-!***********************************************************************
-  subroutine k_omega_spectra(f,sp)
-!
-!  Calculate spectra with both (x,y,z) and t Fourier-transformed
-!  For the moment only works with kinetic helicity
-!  Use luut_as_aux=T and specify omega_fourier
-!  in run.in under &hydro_run_pars
+!  In k space, calculate azimuthally averaged spectra in poloar coordinates,
+!  and perform legendre decomposition.
+!  Specify in &run_pars:
+!    ou_omega=T: energy and helicity spectra of velocity u(k,omega);
+!                need luut_as_aux=loot_as_aux=T, omega_fourier in &hydro_run_pars
+!                and MAUX CONTRIBUTION 12
+!    cor_uu=T:   velocity coorelation functions <u_i u_j>
+!    ou_polar, ab_polar, jb_polar:
+!                kinetic/magnetic/current helicity spectra
 !
 !  29-oct-20/hongzhe: added this subroutine
 !  20-nov-20/hongzhe: can now also compute Legendre coefficients
 !  08-dec-20/hongzhe: lread_gauss_quadrature=T generates polar coordinates
 !                     in gauss-legendre quadrature; need to provide file
 !                     gauss_legendre_quadrature.dat
+!  10-dec-20/hongzhe: merged subroutines corfunc_cyl and anisoq_diag into this one
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use General, only: plegendre
+    use Sub, only: curli, del2vi_etc
 
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, ivec
+  integer :: i, k, ikx, iky, ikz, jkz, ivec, im, in
   integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
   real, allocatable, dimension(:,:) :: kmu, dmu
-  real :: k2, mu, mu_offset
+  real :: k2, mu, mu_offset, kmu2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+  !
+  real, dimension(nx,ny,nz) :: ux_re, ux_im
+  real, dimension(nx,ny,nz) :: uy_re, uy_im
+  real, dimension(nx,ny,nz) :: uz_re, uz_im
+  real, allocatable, dimension(:,:) :: vxx, vxy, vzz
+  real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
+  real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
+  !
+  real, dimension(nx) :: bbi, jji
   real, allocatable, dimension(:,:) :: polar_spec, polar_spec_sum
   real, allocatable, dimension(:,:) :: polar_spechel, polar_spechel_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
@@ -4040,9 +3573,8 @@ endsubroutine pdf
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  integer, dimension(1) :: temp
-  character (len=3) :: sp
-  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+  integer, dimension(1) :: temploc
+  character (len=*) :: sp
 !
 !  identify version
 !
@@ -4055,16 +3587,6 @@ endsubroutine pdf
   kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize power spectrum to zero
-  !
-  k2m=0.
-  nks=0.
-  !
-  cyl_spectrum=0.
-  cyl_spectrum_sum=0.
-  cyl_spectrumhel=0.
-  cyl_spectrumhel_sum=0.
 !
 ! mesh for polar representation
 !
@@ -4099,201 +3621,304 @@ endsubroutine pdf
       endif
     enddo
   endif
-  !
-  !  initialize polar spectra
-  !
-  allocate( polar_spec(nk,nmu(nk)) )
-  allocate( polar_spec_sum(nk,nmu(nk)) )
-  allocate( polar_spechel(nk,nmu(nk)) )
-  allocate( polar_spechel_sum(nk,nmu(nk)) )
-  polar_spec=0.
-  polar_spec_sum=0.
-  polar_spechel=0.
-  polar_spechel_sum=0.
-  legendre_al=0.
-  legendre_al_sum=0.
-  legendre_alhel=0.
-  legendre_alhel_sum=0.
-  !
-  !  loop over all the components
-  !
-  do ivec=1,3
-    !
-    !  In fft, real and imaginary parts are handled separately.
-    !  For "kin", calculate spectra of <uk^2> and <ok.uk>
-    !  For "mag", calculate spectra of <bk^2> and <ak.bk>
-    !
-    if (sp=='kin') then
-      if (iuu==0) call fatal_error('k_omega_spectra','iuu=0')
-      if (iuut==0) call fatal_error('k_omega_spectra','iuut=0')
-      if (iuust==0) call fatal_error('k_omega_spectra','iuust=0')
-      if (ioot==0) call fatal_error('k_omega_spectra','ioot=0')
-      if (ioost==0) call fatal_error('k_omega_spectra','ioost=0')
-      b_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)    ! the real part of u(\vec x,\omega)
-      b_im=f(l1:l2,m1:m2,n1:n2,iuust+ivec-1)   ! the imaginary part of u(\vec x,\omega)
-      a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)    ! the real part of omega(\vec x,\omega)
-      a_im=f(l1:l2,m1:m2,n1:n2,ioost+ivec-1)   ! the imaginary part of omega(\vec x,\omega)
-    endif
 !
-!  Doing the Fourier transform
+!  compute spectra
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-!
-!  Compute cylindrical spectrum
-!
+!  For computing tensors, don't loop over ivec
+  if (sp=='uucor') then
+    if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+    ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1); ux_im=0.
+    uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1); uy_im=0.
+    uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1); uz_im=0.
+    call fft_xyz_parallel(ux_re,ux_im)
+    call fft_xyz_parallel(uy_re,uy_im)
+    call fft_xyz_parallel(uz_re,uz_im)
+    !  initialize correlation functions
+    allocate( vxx(nk,nmu(nk)) )
+    allocate( vzz(nk,nmu(nk)) )
+    allocate( vxy(nk,nmu(nk)) )
+    vxx=0.
+    vxy=0.
+    vzz=0.
+    !  calculate correlation functions
     if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
     do ikz=1,nz
       do iky=1,ny
-        do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) then
-            cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-                +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-            cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-          endif
-!
-!  compute azimuthally averaged spectra in polar coordinates
-!  as functions of kr=norm(kx,ky,kz) and kz/kr
-!
+        do ikx=1, nx
           k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
           ikr=nint(sqrt(k2))
           mu=kz(ikz+ipz*nz)/sqrt(k2)
           if (ikr>=0. .and. ikr<=(nk-1)) then
-            temp=minloc(abs(kmu(ikr+1,:)-mu))
-            ikmu=temp(1)
-            if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
-              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+0.5*&
-                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-              polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+0.5*&
-                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
-              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+0.5*&
-                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-              polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+0.5*&
-                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+            temploc=minloc(abs(kmu(ikr+1,:)-mu))
+            ikmu=temploc(1)
+            if (mu==0. .and. mod(nmu(ikr+1),2)==0) then
+              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*0.5*( &
+                  +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                  +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+              vxx(ikr+1,ikmu+1)=vxx(ikr+1,ikmu+1)+0.5*0.5*( &
+                  +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                  +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ 0.5*( &
+                  uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+              vzz(ikr+1,ikmu+1)=vzz(ikr+1,ikmu+1)+ 0.5*( &
+                  uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ 0.5*( &
+                  ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                  -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
+              vxy(ikr+1,ikmu+1)=vxy(ikr+1,ikmu+1)+ 0.5*( &
+                  ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                  -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
             else
-              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu) &
-                  +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu) &
-                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*( &
+                  ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                  +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ &
+                  uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2
+              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ &
+                  ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                  -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
             endif
           endif
-!
-!  end of loop through all points
-!
         enddo
       enddo
     enddo
+    !  initialize correlation coefficients and legendre coefficients
+    allocate( coeff_a(nk,nmu(nk)) )
+    allocate( coeff_b(nk,nmu(nk)) )
+    allocate( coeff_c(nk,nmu(nk)) )
+    coeff_a=0.
+    coeff_b=0.
+    coeff_c=0.
+    legendre_al_a=0.; legendre_al_a_sum=0.
+    legendre_al_b=0.; legendre_al_b_sum=0.
+    legendre_al_c=0.; legendre_al_c_sum=0.
     !
-  enddo !(from loop over ivec)
-!
-!  compute legendre coefficients
-!  the ith oder legendre polynomial (i,m=0) is
-!  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-!
-  do ikr=1,nk
-    do i=1,legendre_lmax+1
-      if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-        do ikmu=1,nmu(ikr)
-          legendre_al(i,ikr)=legendre_al(i,ikr)+&
-              dmu(ikr,ikmu)*(2.*i-1)/2.* &
-              polar_spec(ikr,ikmu)* &
-              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-          legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-              dmu(ikr,ikmu)*(2*i-1)/2* &
-              polar_spechel(ikr,ikmu)* &
-              sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+    !  compute legendre coefficients
+    !  the (i-1)th oder legendre polynomial (i-1,m=0) is
+    !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+    !
+    do ikr=1,nk
+      do ikmu=1,nmu(ikr)
+        kmu2=kmu(ikr,ikmu)**2
+        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
+            ( 2*pi*(2+kmu2) )
+        coeff_b(ikr,ikmu)=( -2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/ &
+            ( pi*(2+kmu2) )
+        coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi)
+        do i=1,legendre_lmax+1
+          if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+            legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          endif
         enddo
-      endif
+      enddo
     enddo
-  enddo
+    !  sum up results
+    call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
+    call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
+    call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/))
+    !  on root processor, write to file; always in lformat
+    if (lroot) then
+      if (ip<10) print*,'Writing two point correlations to'  &
+          ,trim(datadir)//'/polarspec_.dat'
+      open(1,file=trim(datadir)//'/polarspec_lcoeff_a_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
+      enddo; enddo
+      close(1)
+      open(1,file=trim(datadir)//'/polarspec_lcoeff_b_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
+      enddo; enddo
+      close(1)
+      open(1,file=trim(datadir)//'/polarspec_lcoeff_c_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
+      enddo; enddo
+      close(1)
+    endif
+!
+!  for computing scalars, loop over ivec
+!
+  else
+    !  initialize polar spectra and legendre coefficients
+    allocate( polar_spec(nk,nmu(nk)) )
+    allocate( polar_spec_sum(nk,nmu(nk)) )
+    allocate( polar_spechel(nk,nmu(nk)) )
+    allocate( polar_spechel_sum(nk,nmu(nk)) )
+    polar_spec=0.; polar_spec_sum=0.
+    polar_spechel=0.; polar_spechel_sum=0.
+    legendre_al=0.; legendre_al_sum=0.
+    legendre_alhel=0.; legendre_alhel_sum=0.
+    !
+    do ivec=1,3
+      if (sp=='kin_omega') then
+        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        if (iuust==0) call fatal_error('polar_spectrum','iuust=0')
+        if (ioot==0) call fatal_error('polar_spectrum','ioot=0')
+        if (ioost==0) call fatal_error('polar_spectrum','ioost=0')
+        b_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)    ! the real part of u(\vec x,\omega)
+        b_im=f(l1:l2,m1:m2,n1:n2,iuust+ivec-1)   ! the imaginary part of u(\vec x,\omega)
+        a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)    ! the real part of omega(\vec x,\omega)
+        a_im=f(l1:l2,m1:m2,n1:n2,ioost+ivec-1)   ! the imaginary part of omega(\vec x,\omega)
+      elseif (sp=='kin') then
+        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iuu,bbi,ivec)
+            im=m-nghost
+            in=n-nghost
+            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          enddo
+        enddo
+        b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+        a_im=0.
+        b_im=0.
+      elseif (sp=='mag') then
+        if (iaa==0) call fatal_error('polar_spectrum','iaa=0')
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iaa,bbi,ivec)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          enddo
+        enddo
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      elseif (sp=='j.b') then
+        if (iaa==0) call fatal_error('powerhel','iaa=0')
+          do n=n1,n2
+            do m=m1,m2
+              call curli(f,iaa,bbi,ivec)
+              call del2vi_etc(f,iaa,ivec,curlcurl=jji)
+              im=m-nghost
+              in=n-nghost
+              a_re(:,im,in)=bbi  !(this corresponds to the magnetic field)
+              b_re(:,im,in)=jji  !(this corresponds to the current density)
+            enddo
+          enddo
+          a_im=0.
+          b_im=0.
+      endif
+      !
+      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(b_re,b_im)
+      !  compute poloar spectra as functions of kr=norm(kx,ky,kz) and kz/kr
+      if (lroot .AND. ip<10) print*,'fft done; now integrate azimuthally in k space...'
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            ikr=nint(sqrt(k2))
+            mu=kz(ikz+ipz*nz)/sqrt(k2)
+            if (ikr>=0. .and. ikr<=(nk-1)) then
+              temploc=minloc(abs(kmu(ikr+1,:)-mu))
+              ikmu=temploc(1)
+              if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
+                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+0.5*&
+                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+                polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+0.5*&
+                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
+                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+0.5*&
+                    ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                    +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+                polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+0.5*&
+                    ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                    +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+              else
+                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu) &
+                    +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu) &
+                    +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                    +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+              endif
+            endif
+        !  end of loop through all points
+          enddo
+        enddo
+      enddo
+    !  (from loop over ivec)
+    enddo
+    !
+    !  compute legendre coefficients
+    !  the ith oder legendre polynomial (i,m=0) is
+    !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+    !
+    do ikr=1,nk
+      do i=1,legendre_lmax+1
+        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+          do ikmu=1,nmu(ikr)
+            legendre_al(i,ikr)=legendre_al(i,ikr)+&
+                dmu(ikr,ikmu)*(2.*i-1)/2.* &
+                polar_spec(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2* &
+                polar_spechel(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          enddo
+        endif
+      enddo
+    enddo
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
 !
-  call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
-  call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
-  call mpireduce_sum(polar_spec,polar_spec_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(polar_spechel,polar_spechel_sum,(/nk,nmu(nk)/))
-  call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
-  call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
-!
-!  compute krms only once
-!
-  if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
-    if (iproc/=root) lwrite_krms=.false.
-  endif
+    call mpireduce_sum(polar_spec,polar_spec_sum,(/nk,nmu(nk)/))
+    call mpireduce_sum(polar_spechel,polar_spechel_sum,(/nk,nmu(nk)/))
+    call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
+    call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
 !
 !  on root processor, write global result to file
 !  everything is in lformat
 !
-  if (lroot) then
-    if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
-         ,' to ',trim(datadir)//'/omega_'//trim(sp)//'.dat'
-    ! energy and helicity spectra
-    open(1,file=trim(datadir)//'/omega_cyl_power_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do k=1,nk
-      do jkz = 1, nzgrid
-        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrum_sum(k,jkz)
-      enddo
-    enddo
-    close(1)
-    !
-    open(1,file=trim(datadir)//'/omega_cyl_powerhel_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do k=1,nk
-      do jkz = 1, nzgrid
-        write(1,'(2i4,3p,8e10.2)') k-1, jkz-1-nzgrid/2, cyl_spectrumhel_sum(k,jkz)
-      enddo
-    enddo
-    close(1)
-    !  energy spectra in polar coordinates
-    open(1,file=trim(datadir)//'/omega_polar_power_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do ikr=1,nk
-      do ikmu=1,nmu(ikr)
+    if (lroot) then
+      if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
+           ,' to ',trim(datadir)//'/polarspec_'//trim(sp)//'.dat'
+      !  energy and helicity spectra in polar coordinates
+      open(1,file=trim(datadir)//'/polarspec_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do ikr=1,nk; do ikmu=1,nmu(ikr)
         write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
-      enddo
-    enddo
-    close(1)
-    !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
-    open(1,file=trim(datadir)//'/omega_power_legendre_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do i=1,legendre_lmax+1
-      do ikr=1,nk
-        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
-      enddo
-    enddo
-    close(1)
-    open(1,file=trim(datadir)//'/omega_powerhel_legendre_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    do i=1,legendre_lmax+1
-      do ikr=1,nk
-        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
-      enddo
-    enddo
-    close(1)
-    !
-    if (lwrite_krms) then
-      krms=sqrt(k2m_sum/nks_sum)
-      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      enddo; enddo
       close(1)
-      lwrite_krms=.false.
+      open(1,file=trim(datadir)//'/polarspechel_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do ikr=1,nk; do ikmu=1,nmu(ikr)
+        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
+      enddo; enddo
+      close(1)
+      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+      open(1,file=trim(datadir)//'/polarspec_lcoeff_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
+      enddo; enddo
+      close(1)
+      open(1,file=trim(datadir)//'/polarspechel_lcoeff_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      do i=1,legendre_lmax+1; do ikr=1,nk
+        write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
+      enddo; enddo
+      close(1)
     endif
+  !
   endif
   !
-  endsubroutine k_omega_spectra
+  endsubroutine polar_spectrum
 !***********************************************************************
   subroutine power1d_plane(f,sp)
 !

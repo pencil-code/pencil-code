@@ -208,25 +208,7 @@ module power_spectrum
 !
   endsubroutine power_vec
 !***********************************************************************
-  subroutine anisoq_diag(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-  endsubroutine anisoq_diag
-!***********************************************************************
-    subroutine corfunc_cyl(f, sp)
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      character(len=*), intent(in) :: sp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(sp)
-!
-    endsubroutine corfunc_cyl
-!***********************************************************************
-  subroutine k_omega_spectra(f,sp)
+  subroutine polar_spectrum(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=*) :: sp
@@ -234,7 +216,7 @@ module power_spectrum
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
 !
-  endsubroutine k_omega_spectra
+  endsubroutine polar_spectrum
 !***********************************************************************
   subroutine power1d_plane(f,sp)
 !

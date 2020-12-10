@@ -542,7 +542,6 @@ module Cdata
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
   logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false.
-  logical :: ani_spec=.false., cor_cyl=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
@@ -568,7 +567,8 @@ module Cdata
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
-  logical :: ou_omega=.false.,ab_kzspec=.false.,ou_kzspec=.false.
+  logical :: ou_omega=.false., cor_uu=.false., ab_kzspec=.false.,ou_kzspec=.false.
+  logical :: ou_polar=.false., ab_polar=.false., jb_polar=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.

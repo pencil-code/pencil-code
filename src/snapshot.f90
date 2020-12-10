@@ -712,14 +712,16 @@ module Snapshot
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf) call pdf(f,'special',0.,1.)
 !
-!  2d and 3d spectra
+!  azimuthally averaged spectra in polar coorinates
 !
-        if (ani_spec) call anisoq_diag(f)
-        if (cor_cyl)  call corfunc_cyl(f,'kin')
+        if (ou_omega) call polar_spectrum(f,'kin_omega')
+        if (cor_uu)   call polar_spectrum(f,'uucor')
+        if (ou_polar) call polar_spectrum(f,'kin')
+        if (ab_polar) call polar_spectrum(f,'mag')
+        if (jb_polar) call polar_spectrum(f,'j.b')
 !
-!  Spectra with both space and time Fourier transformed
+!  power spectra of xy averaged fields
 !
-        if (ou_omega) call k_omega_spectra(f,'kin')
         if (ou_kzspec) call power1d_plane(f,'kin')
         if (ab_kzspec) call power1d_plane(f,'mag')
 !
