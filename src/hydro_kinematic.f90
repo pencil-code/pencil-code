@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
+! PENCILS PROVIDED oo(3); o2; ou; oxu2; oxu(3); uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED der6u(3); curlo(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
@@ -136,6 +136,7 @@ module Hydro
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
+  integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
 !
 !  Video data.
 !
@@ -605,7 +606,7 @@ endif
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
-      if (idiag_ekin/=0 .or. idiag_ekintot/=0) then
+      if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
@@ -640,7 +641,7 @@ endif
       endif
       if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
-!  ugu
+! ugu
       if (lpencil_in(i_ugu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
@@ -1347,10 +1348,6 @@ endif
 !  Beltrami-x flow
 !
       case ('Beltrami-x')
-!        call legendre_pl(xi,3,.1)
-!print*,'call legendre_pl(xi,3,.1)',xi
-!        call legendre_pl(xi,3,cos(.1))
-!print*,'call legendre_pl(xi,3,cos(.1))',xi
         if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -2408,6 +2405,7 @@ endif
         if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
         if (idiag_oum/=0)   call sum_mn_name(p%ou,idiag_oum)
 !
+        if (idiag_EEK/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_EEK)
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
@@ -3213,7 +3211,7 @@ endif
         idiag_umx=0; idiag_umy=0; idiag_umz=0
         idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
-        idiag_ekin=0; idiag_ekintot=0
+        idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
         ivid_uu=0
       endif
@@ -3222,6 +3220,7 @@ endif
 !
       if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
