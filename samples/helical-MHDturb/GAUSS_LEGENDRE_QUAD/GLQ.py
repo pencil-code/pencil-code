@@ -1,7 +1,7 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import numpy as np
-nmax=12
+nmax=36
 precision=8
 
 file='gauss_legendre_quadrature_n'+str(nmax)+'p'+str(precision)+'.dat'
