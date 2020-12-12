@@ -35,7 +35,7 @@ module Special
   use Diagnostics
   use General, only: keep_compiler_quiet,numeric_precision
   use Messages, only: svn_id, fatal_error, warning
-  use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max
+  use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max,mpibarrier
 
   use Sub, only: dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
   use HDF5
@@ -50,7 +50,7 @@ module Special
   ! HDF debug parameters:
 
   integer :: hdferr
-  logical :: hdf_exists
+  logical :: hdf_grid_exists
 
   ! Main HDF object ids and variables
 
@@ -284,6 +284,7 @@ module Special
 !  6-oct-03/tony: coded
 !
       integer :: i
+      logical :: hdf_exists
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -323,7 +324,7 @@ module Special
 !
         call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
 !
-! Checks whether in HDF5 file there is a link /emftensor/.
+! Checks whether in HDF5 file there is a group /emftensor/.
 !
         call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
 
@@ -362,45 +363,53 @@ module Special
 
         if (trim(dataset) == 'time-series' .or. trim(dataset) == 'time-crop') then
           lread_time_series=.true.
-        else
-        !  call fatal_error('initialize_special','Unknown dataset chosen!')
-        end if
+        elseif (trim(dataset) /= 'mean') then
+          call fatal_error('initialize_special','Unknown dataset chosen!')
+        endif
+
+        if (lalt_decomp.or.lreconstruct_tensors) then
+          lacoef=.true.; lacoef=.true.
+        endif
 
         if (.not.lreloading) then
 
-          call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
-          if (.not. hdf_exists) then
+          call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_grid_exists, hdferr)
+          if (.not. hdf_grid_exists) then
             call H5Fclose_F(hdf_emftensors_file, hdferr)
             call H5Pclose_F(hdf_emftensors_plist, hdferr)
             call H5close_F(hdferr)
-            call fatal_error('initialize_special','group /grid/ does not exist!')
-          end if
-
-          call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-          if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
-
-          call openDataset_grid(time_id)
-        
-          if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
-
-          call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
-          call H5Tequal_f(datatype_id, hdf_memtype, flag, hdferr)
-          if (.not.flag.and.lroot) &
-            call information('initialize_special','Type of stored HDF5 data different from type in memory - converting while reading!')
-
-          if (lread_time_series) then 
-
-            allocate(tensor_times(scalar_dims(time_id))) 
-            call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
-                           [scalar_dims(time_id)], hdferr)
-            if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
-
-            t = tensor_times(1)
-            if (lroot) then
-              print*, 'min time array=',minval(tensor_times)
-              print*, 'max time array=',maxval(tensor_times)
+            call warning('initialize_special','error while opening /grid/ - time not available')
+            if (lread_time_series) then
+              lread_time_series=.false.
+              call warning('initialize_special','time-series cannot be read')
             endif
-   
+          else
+
+            call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
+            call openDataset_grid(time_id)
+          
+            if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+
+            call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
+            call H5Tequal_f(datatype_id, hdf_memtype, flag, hdferr)
+            if (.not.flag.and.lroot) &
+              call information('initialize_special', &
+              'Type of stored HDF5 data different from type in memory - converting while reading!')
+
+            if (lread_time_series) then 
+
+              allocate(tensor_times(scalar_dims(time_id))) 
+              call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
+                             [scalar_dims(time_id)], hdferr)
+              if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
+
+              t = tensor_times(1)
+              if (lroot) then
+                print*, 'min time array=',minval(tensor_times)
+                print*, 'max time array=',maxval(tensor_times)
+              endif
+     
+            endif
           endif
         endif
 
@@ -758,9 +767,9 @@ module Special
 !
 !    14-aug-2011/Bourdin.KIS: coded
 !
-        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-        call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
 
       if (lrun) then
 
@@ -781,10 +790,12 @@ module Special
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
 
-        call closeDataset_grid(time_id)
-        call H5Gclose_F(hdf_grid_group, hdferr)
-        if (lread_time_series) then
-          if (allocated(tensor_times)) deallocate(tensor_times)
+        if (hdf_grid_exists) then
+          call closeDataset_grid(time_id)
+          call H5Gclose_F(hdf_grid_group, hdferr)
+          if (lread_time_series) then
+            if (allocated(tensor_times)) deallocate(tensor_times)
+          endif
         endif
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
@@ -854,7 +865,7 @@ module Special
           if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
           if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
           if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
-          if (lumean) call loadDataset(umean_data, lumean_arr, umean_id, iload-1,'Umean') !!!
+          if (lumean) call loadDataset(umean_data, lumean_arr, umean_id, iload-1,'Umean')
           if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
           if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
@@ -1028,32 +1039,34 @@ module Special
 !
 !  Look for locations of negative definite beta.
 !
-            numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
-            do mm=1,ny; do ll=1,nx
+            do
 
-              oldtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
-              beta_sav=beta_data(1,ll,mm,1,:,:)
+              numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
+              do mm=1,ny; do ll=1,nx
 
-              polcoeffs=(/2.*beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3)*beta_data(1,ll,mm,1,2,3) &
-                           - beta_data(1,ll,mm,1,1,2)**2*beta_data(1,ll,mm,1,3,3) &
-                           - beta_data(1,ll,mm,1,1,3)**2*beta_data(1,ll,mm,1,2,2) &
-                           - beta_data(1,ll,mm,1,2,3)**2*beta_data(1,ll,mm,1,1,1) &
-                           + beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
+                oldtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
+                beta_sav=beta_data(1,ll,mm,1,:,:)
+
+                polcoeffs=(/2.*beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3)*beta_data(1,ll,mm,1,2,3) &
+                             - beta_data(1,ll,mm,1,1,2)**2*beta_data(1,ll,mm,1,3,3) &
+                             - beta_data(1,ll,mm,1,1,3)**2*beta_data(1,ll,mm,1,2,2) &
+                             - beta_data(1,ll,mm,1,2,3)**2*beta_data(1,ll,mm,1,1,1) &
+                             + beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
 !
-                             beta_data(1,ll,mm,1,1,2)**2+beta_data(1,ll,mm,1,1,3)**2+beta_data(1,ll,mm,1,2,3)**2 &
-                           - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2) &
-                           - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,3,3) &
-                           - beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
+                               beta_data(1,ll,mm,1,1,2)**2+beta_data(1,ll,mm,1,1,3)**2+beta_data(1,ll,mm,1,2,3)**2 &
+                             - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2) &
+                             - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,3,3) &
+                             - beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
 !
-                             beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3), &
-                           -1. /)
-              call cubicroots(polcoeffs, eigenvals)
-              if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
+                               beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3), &
+                             -1. /)
+                call cubicroots(polcoeffs, eigenvals)
+                if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
 
-              newtrace=sum(real(eigenvals))
-              if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (1)=', ll,mm,abs(oldtrace-newtrace),oldtrace,newtrace
+                newtrace=sum(real(eigenvals))
+                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (1)=', ll,mm,abs(oldtrace-newtrace),oldtrace,newtrace
 
-              if (any(real(eigenvals)<-eta)) then
+                if (any(real(eigenvals)<-eta)) then
 !
 !  If there are negative eigenvalues of beta,
 !
@@ -1061,61 +1074,67 @@ module Special
 !sum(polcoeffs*(/1.d0,real(eigenvals(1)),real(eigenvals(1))**2,real(eigenvals(1))**3/)), &
 !sum(polcoeffs*(/1.d0,real(eigenvals(2)),real(eigenvals(2))**2,real(eigenvals(2))**3/)), &
 !sum(polcoeffs*(/1.d0,real(eigenvals(3)),real(eigenvals(3))**2,real(eigenvals(3))**3/))
-                numzeros=numzeros+1
-                trmin=min(trmin,sum(real(eigenvals)))
-                rmin=min(rmin,x(ll+nghost)); rmax=max(rmax,x(ll+nghost))
-                thmin=min(thmin,y(mm+nghost)); thmax=max(thmax,y(mm+nghost))
+                  numzeros=numzeros+1
+                  trmin=min(trmin,sum(real(eigenvals)))
+                  rmin=min(rmin,x(ll+nghost)); rmax=max(rmax,x(ll+nghost))
+                  thmin=min(thmin,y(mm+nghost)); thmax=max(thmax,y(mm+nghost))
 !
 !  calculate eigenvectors (v1,v2,-1) for all three eigenvalues.
 !
-                ev(:,3)=-1.
-                do iv=1,3
+                  ev(:,3)=-1.
+                  do iv=1,3
 !
 ! Eigenvalues < -eta are set to (-1.+rel_eta)*eta with rel_eta>0.
 !
 ! output here: eigenvalues JOERN
 !
-                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
+                    if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
 
-                  det = (beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
-                        -beta_data(1,ll,mm,1,1,2)**2
-                  ev(iv,1)= (beta_data(1,ll,mm,1,1,3)*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
-                            -beta_data(1,ll,mm,1,2,3)*beta_data(1,ll,mm,1,1,2))/det
-                  ev(iv,2)=((beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*beta_data(1,ll,mm,1,2,3) &
-                            -beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3))/det
-                  ev(iv,:)=ev(iv,:)/sqrt(sum(ev(iv,:)**2))    ! normalization
-                enddo
+                    det = (beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
+                          -beta_data(1,ll,mm,1,1,2)**2
+                    ev(iv,1)= (beta_data(1,ll,mm,1,1,3)*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
+                              -beta_data(1,ll,mm,1,2,3)*beta_data(1,ll,mm,1,1,2))/det
+                    ev(iv,2)=((beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*beta_data(1,ll,mm,1,2,3) &
+                              -beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3))/det
+                    ev(iv,:)=ev(iv,:)/sqrt(sum(ev(iv,:)**2))    ! normalization
+                  enddo
 
-                beta_data(1,ll,mm,1,:,:)=0.
+                  beta_data(1,ll,mm,1,:,:)=0.
 !
 !  Transform back with non-negative eigenvalues.
 !
-                oldtrace=0.
-                do iv=1,3
-                  beta_data(1,ll,mm,1,:,:)=beta_data(1,ll,mm,1,:,:)+real(eigenvals(iv))*dyadic2_other(ev(iv,:))
-                  oldtrace=oldtrace+real(eigenvals(iv))
-                enddo
-                newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
-                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (2) =', ll,mm,abs(oldtrace-newtrace)
-              endif
-do i=1,3; do j=1,3
-  if (beta_sav(i,j)/=0.) then
+                  oldtrace=0.
+                  do iv=1,3
+                    beta_data(1,ll,mm,1,:,:)=beta_data(1,ll,mm,1,:,:)+real(eigenvals(iv))*dyadic2_other(ev(iv,:))
+                    oldtrace=oldtrace+real(eigenvals(iv))
+                  enddo
+                  newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
+                  if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (2) =', ll,mm,abs(oldtrace-newtrace)
+                endif
+111 do i=1,3; do j=1,3
+    if (beta_sav(i,j)/=0.) then
 !     if (abs(beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j) > 1e-1)  &
 !       print*, 'JOERN', ll, mm, abs((beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j)),beta_sav(i,j) 
-  endif
+    endif
 enddo; enddo
-            enddo; enddo
+              enddo; enddo
 
-            call mpiallreduce_sum_int(numzeros,numzeros_)
-            if (numzeros_>0) then
-              if (lroot) print'(a,i15,a)', 'beta is negative definite at', numzeros_,' positions.'
-              print'(4(a,f6.3),a,i4)', &
-                   'in r-theta region (',rmin,',',rmax,')x(',thmin,',',thmax,') of proc ',iproc,'.'
-              call mpireduce_min(trmin,minbeta_)
-              if (lroot) print'(a,e12.5)', 'minimal trace = ', minbeta_
-            endif
-            call mpireduce_sum_int(numcomplex,numzeros_)
-            if (lroot.and.numzeros_>0) print'(a,i15,a)', 'beta has complex eigenvalues at', numzeros_,' positions.'
+              call mpireduce_sum_int(numcomplex,numzeros_)
+              if (lroot.and.numzeros_>0) print'(a,i15,a)', 'beta has complex eigenvalues at', numzeros_,' positions.'
+
+              call mpiallreduce_sum_int(numzeros,numzeros_)
+              if (numzeros_>0) then
+                if (lroot) print'(a,i15,a)', 'beta is negative definite at', numzeros_,' positions.'
+                if (numzeros>0) print'(4(a,f6.3),a,i4)', &
+                                'in r-theta region (',rmin,',',rmax,')x(',thmin,',',thmax,') of proc ',iproc,'.'
+                call mpireduce_min(trmin,minbeta_)
+                if (lroot) print'(a,e12.5)', 'minimal trace = ', minbeta_
+              else
+                exit
+              endif
+!write(66) beta_data
+            enddo
+
           endif
 
 !if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
@@ -2039,7 +2058,7 @@ endif
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       if (hdferr /= 0) &
-        call fatal_error('loadDataset_rank1','Error creating reading dataset '// &
+        call fatal_error('loadDataset_rank1','Error reading dataset '// &
                          'for /grid/'//name)
       sum = 0.; rms = 0.
       do i=1,3
@@ -2104,7 +2123,7 @@ endif
                                      hdferr)
           if (hdferr /= 0) &
             call fatal_error('loadDataset_rank2','Error creating File mapping '// &
-                             'for /grid/'//name)
+                             'for /emftensor/'//name)
           ! Hyperslab for memory
 !print*, 'before H5Sselect_hyperslab_F for memory'
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
@@ -2113,7 +2132,7 @@ endif
                                      hdferr)
            if (hdferr /= 0) then
              call fatal_error('loadDataset_rank2','Error creating memory mapping '// &
-                           'for /grid/'//name)
+                           'for /emftensor/'//name)
            end if
         end if
       end do; end do
@@ -2126,8 +2145,8 @@ endif
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       if (hdferr /= 0) &
-        call fatal_error('loadDataset_rank1','Error reading dataset '// &
-                         'for /grid/'//name)
+        call fatal_error('loadDataset_rank2','Error reading dataset '// &
+                         'for /emftensor/'//name)
       sum = 0.; rms = 0.
       do i=1,3 ; do j=1,3 
         tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i,j))
@@ -2186,11 +2205,17 @@ endif
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
+          if (hdferr /= 0) &
+            call fatal_error('loadDataset_rank3','Error creating File mapping '// &
+                             'for /emftensor/'//name)
           ! Hyperslab for memory
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),        &
                                      tensor_memcounts(tensor_id,1:ndims),         &
                                      hdferr)
+           if (hdferr /= 0) &
+             call fatal_error('loadDataset_rank3','Error creating memory mapping '// &
+                              'for /emftensor/'//name)
         end if
       end do; end do; end do
       ! Read data into memory
@@ -2198,6 +2223,9 @@ endif
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+      if (hdferr /= 0) &
+        call fatal_error('loadDataset_rank3','Error reading dataset '// &
+                         'for /emftensor/'//name)
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
       if (present(name)) then
