@@ -1,0 +1,48 @@
+# Log file of Pencil Code commands.
+# This compiles with the same parameters as last time in this directory:
+# pc_build -p
+
+# 2020-12-12 18:45:42
+/home/xyli/pencil-code/bin/pc_build 
+
+# 2020-12-12 18:46:34
+/home/xyli/pencil-code/bin/pc_build 
+
+# 2020-12-12 18:51:04
+mpiexec -n 8 ./src/start.x
+
+# 2020-12-12 18:51:07
+mpiexec -n 8 ./src/run.x
+
+# 2020-12-12 18:52:49
+mpiexec -n 8 ./src/start.x
+
+# 2020-12-12 18:52:51
+mpiexec -n 8 ./src/run.x
+
+# 2020-12-12 18:53:39
+mpiexec -n 8 ./src/start.x
+
+# 2020-12-12 18:53:42
+mpiexec -n 8 ./src/run.x
+
+# 2020-12-12 18:56:02
+/home/xyli/pencil-code/bin/pc_build 
+
+# 2020-12-12 19:03:26
+mpiexec -n 8 ./src/start.x
+
+# 2020-12-12 19:19:21
+/home/xyli/pencil-code/bin/pc_build 
+
+# 2020-12-12 19:19:26
+/home/xyli/pencil-code/bin/pc_build 
+
+# 2020-12-12 19:24:05
+mpiexec -n 8 ./src/start.x
+
+# 2020-12-12 19:24:20
+mpiexec -n 8 ./src/run.x
+
+# 2020-12-12 19:24:38
+# copied from '/home/xyli/pencil-code/samples/dust_accretion'

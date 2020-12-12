@@ -1,0 +1,52 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2020/02/23 20:50:00 xiangyu Exp $',
+  nt=100, it1=20, isave=50, itorder=3
+  dsnap=0.5, dvid=500.
+  dspec=1., ou_spec=T
+  lpencil_check=T
+  dtmin=1e-10
+  max_walltime=82800
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lreinitialize_uu=F, inituu='rescale', rescale_uu=0.
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+  lconserve_total_mass=T
+/
+&forcing_run_pars
+!  iforce='helical', force=2.5e1, relhel=0., lscale_kvector_tobox=T
+/
+&viscosity_run_pars
+!  ivisc='nu-const', 'nu-shock'
+!  nu=1.e-2, nu_shock=2.
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/
+&power_spectrum_run_pars
+/
+&particles_run_pars
+  cdtp=0.5
+  cdtp_drag=200.
+  ldragforce_dust_par=T, ldragforce_gas_par=F
+  ldraglaw_epstein_transonic=T
+  lnostore_uu=F
+  ldragforce_heat=F
+  lcheck_exact_frontier=T
+  lmigration_redo=T
+  loutput_psize_dist=T, log_ap_min_dist=-23., log_ap_max_dist=-21., nbin_ap_dist=100
+/
+&particles_radius_run_pars
+  tstart_condensation_par=1.
+  lcondensation_par=T
+  lcondensation_simplified=T
+  ldust_accretion=T
+  xi_accretion = 2.3788616485502736e-24
+/

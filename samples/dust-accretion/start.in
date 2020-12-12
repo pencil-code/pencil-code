@@ -1,0 +1,38 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for coagulation run.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2020/02/23 20:50:00 xiangyu Exp $'
+  xyz0=-2.5,-2.5,-2.5
+  xyz1=+2.5,+2.5,+2.5
+  unit_system='cgs'
+  unit_length = 3.086e18 ! cm
+  unit_velocity = 1.0e5 ! cm/s
+  unit_density = 6.771e-23 !g/cm^3
+  lwrite_aux=T
+  /
+&eos_init_pars
+  gamma=1.
+  cs0=3.41e-1
+  mu=2.
+  rho0 = 49.33 ! This needs to be set, the default one is 1
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_rho', rho_const=49.33
+/
+&particles_init_pars
+  initxxp='random', initvvp='random'
+  delta_vp0=0.0
+  lparticlemesh_cic=F
+  lparticlemesh_tsc=F
+  lnocalc_np=F
+  lnocalc_rhop=T
+/
+&particles_radius_init_pars
+  initap='constant', ap0=1.e-23
+  rhopmat=3.545e22, nbin_initdist=100
+  apmin=1.e-26, tau_damp_evap=1.
+/
