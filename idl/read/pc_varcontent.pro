@@ -101,6 +101,7 @@ indices = [ $
   { name:'idelta', label:'delta as auxiliary variable', dims:1 }, $
   { name:'iviscosity', label:'viscosity as auxiliary variable', dims:1 }, $
   { name:'ics', label:'Sound speed as auxiliary variable', dims:1 }, $
+  { name:'ivarphi', label:'Bernoulli', dims:1 }, $
   { name:'ilnrho', label:'Log density', dims:1 }, $
   { name:'irho', label:'Density', dims:1 }, $
   { name:'irho_b', label:'Base density', dims:1 }, $
@@ -138,6 +139,7 @@ indices = [ $
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
+  { name:'iqx', label:'qx scalar', dims:1 }, $
   { name:'ilnrhon', label:'Log density of neutrals', dims:1 }, $
   { name:'ifx', label:'Radiation vector', dims:3 }, $
   { name:'ie', label:'Radiation scalar', dims:1 }, $
