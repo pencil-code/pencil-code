@@ -49,7 +49,7 @@ module Yinyang
 !  20-dec-15/MR: coded
 ! 
       use General, only: transform_spher_cart_yy, notanumber,transform_cart_spher, &
-                         transform_thph_yy_other, yy_transform_strip_other,transform_cart_spher_other
+                         transform_thph_yy_other, yy_transform_strip_other
       use Cdata, only: iproc_world, itsub, m1, m2, n1, n2, lrun
 
       type(ind_coeffs),         intent(IN) :: indcoeffs
@@ -89,7 +89,7 @@ module Yinyang
         ! the following tb used when interpolation is done with the Cartesian components: transformed to spherical ones
         !!call yy_transform_strip_other([indcoeffs%pcoors(ith,iph,1)],[indcoeffs%pcoors(ith,iph,2)],thphprime)
         !!tmp2=buffer(:,i2buf,i3buf,:)
-        !!call transform_cart_spher_other(tmp2,thphprime(1,1,1),thphprime(2,1,1))
+        !!call transform_cart_spher(tmp2,thphprime(1,1,1),thphprime(2,1,1))
         !!buffer(:,i2buf,i3buf,:)=tmp2
 if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indphl, i2buf,i3buf=', indthl,indphl, i2buf,i3buf
       else
