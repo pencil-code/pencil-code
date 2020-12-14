@@ -286,10 +286,12 @@ module InitialCondition
 !  with a magnitude directly proportional to the density. 
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       integer :: i ,j, l, m, n
+      real, dimension(nx) :: nxran
 !
       if (.not. lmagnetic) then
 !
@@ -300,6 +302,14 @@ module InitialCondition
           select case (initaa(j))
           case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
           case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
+          case ('gaussian-noise')
+            f(:,:,:,iax:iay) = 0.0
+            do m=m1,m2
+            do n=n1,n2
+              call random_number_wrapper(nxran)
+              f(l1:l2,m,n,iaz) = amplaa * nxran * sqrt(rho(n))
+            enddo
+            enddo
           case ('uniform-x')
             f(:,:,:,iax:iay) = 0.0
             do l=l1,l2
