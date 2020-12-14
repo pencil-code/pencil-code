@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2018/06/15 13:24:13 xiangyu Exp $',
-  nt=10000000, it1=200, isave=1000, itorder=3
+  nt=100, it1=20, isave=20, itorder=3
   dsnap=1., dvid=500.
   dspec=1., ou_spec=T
   lsfu=T
@@ -46,12 +46,12 @@
   ascalar_ngp=T
   lcondensation_rate=T
   G_condensation = 1.17e-10
+  loutput_psize_dist=T, log_ap_min_dist=-6., log_ap_max_dist=-3., nbin_ap_dist=50
 /
 &particles_radius_run_pars
   lcondensation_par=T
   lcondensation_rate=T
   ldt_condensation_off=T
-  loutput_psize_dist=T, log_ap_min_dist=-6., log_ap_max_dist=-3., nbin_ap_dist=50
 /
 &particles_number_run_pars
 /
