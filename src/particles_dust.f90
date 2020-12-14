@@ -384,13 +384,13 @@ module Particles
         iapn = iapn(1) + indgen(ndustrad) - 1
         call farray_index_append('n_np_ap',ndustrad)
       end if
-      call put_shared_variable('iapn', iapn, caller='register_particles')
+      call put_shared_variable('iapn', iapn)
 !
 !  Rhop
 !
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated = lparticles_sink .or. lcommunicate_rhop)
-      call put_shared_variable('irhop', irhop, caller='register_particles')
+      call put_shared_variable('irhop', irhop)
       if (lcalc_uup .or. ldragforce_stiff) then
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx = iuup
@@ -561,7 +561,7 @@ module Particles
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
       if (lshear) then
-        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='initialize_particles')
         lcdtp_shear = .not. lshearadvection_as_shift
         nullify(lshearadvection_as_shift)
       endif
@@ -626,7 +626,7 @@ module Particles
 !  Share friction time (but only if Epstein drag regime!).
 !
       if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable( 'tausp_species', tausp_species, caller='initialize_particles')
         call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
@@ -662,7 +662,7 @@ module Particles
             rhom = mean_density(f)
             if (lreference_state) then
               call get_shared_variable('reference_state_mass',reference_state_mass, &
-                  caller = 'initialize_particles')
+                                       caller = 'initialize_particles')
               rhom = rhom+reference_state_mass/box_volume
             endif
           endif
@@ -697,9 +697,7 @@ module Particles
 !
 !  Share Keplerian gravity.
 !
-      call put_shared_variable('gravr',gravr,ierr)
-      if (ierr /= 0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
+      call put_shared_variable('gravr',gravr,caller = 'initialize_particles')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -761,6 +759,8 @@ module Particles
             'both. Stop and choose only one.'
         call fatal_error('initialize_particles','')
       endif
+      if (ldraglaw_steadystate .and. mean_free_path_gas==0. .and. .not.lstocunn1) &
+        call fatal_error('initialize_particles','mean_free_path_gas==0. for ldraglaw_steadystate=T, lstocunn1=F')
 !
 !  Stiff drag force approximation.
 !
@@ -946,10 +946,10 @@ module Particles
 !
       if (l_shell) then
         if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
-        call put_shared_variable('uup_shared',uup_shared,ierr)
-        call put_shared_variable('vel_call',vel_call,ierr)
-        call put_shared_variable('turnover_call',turnover_call,ierr)
-        call put_shared_variable('turnover_shared',turnover_shared,ierr)
+        call put_shared_variable('uup_shared',uup_shared)
+        call put_shared_variable('vel_call',vel_call)
+        call put_shared_variable('turnover_call',turnover_call)
+        call put_shared_variable('turnover_shared',turnover_shared)
       endif
 !
 !  Write constants to disk.
@@ -981,27 +981,13 @@ module Particles
 !  Variables needed for corotational frame on particles.
 !
       if (lgravr .and. lcorotational_frame) then
-        call get_shared_variable('g1',g1,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting g1')
-        call get_shared_variable('rp1',rp1,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting rp1')
-        call get_shared_variable('rp1_smooth',rp1_smooth,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting rp1_smooth')
-        call get_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting t_ramp_mass')
-        call get_shared_variable('t_start_secondary',t_start_secondary,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting t_start_secondary')
-        call get_shared_variable('lramp_mass',lramp_mass,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting lramp_mass')
-        call get_shared_variable('lsecondary_wait',lsecondary_wait,ierr)
-        if (ierr /= 0) call fatal_error('initialize_particles', &
-            'there was a problem when getting lsecondary_wait')
+        call get_shared_variable('g1',g1)
+        call get_shared_variable('rp1',rp1)
+        call get_shared_variable('rp1_smooth',rp1_smooth)
+        call get_shared_variable('t_ramp_mass',t_ramp_mass)
+        call get_shared_variable('t_start_secondary',t_start_secondary)
+        call get_shared_variable('lramp_mass',lramp_mass)
+        call get_shared_variable('lsecondary_wait',lsecondary_wait)
       endif
 !
     endsubroutine initialize_particles
@@ -2362,7 +2348,7 @@ module Particles
               if (j == 1) print*, 'init_particles: No particle velocity set'
 !
             case ('Keplerian','keplerian')
-              call get_shared_variable('gravr',gravr)
+              call get_shared_variable('gravr',gravr,caller='insert_particles')
               if (lcartesian_coords) then
                 rr_tmp(npar_loc_old+1:npar_loc) = sqrt(fp(npar_loc_old+1:npar_loc,ixp)**2+ &
                     fp(npar_loc_old+1:npar_loc,iyp)**2+fp(npar_loc_old+1:npar_loc,izp)**2)
@@ -3524,7 +3510,6 @@ module Particles
 !  11-oct-12/dhruba: copied from dvvp_dt
 !
       use Diagnostics
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -3784,8 +3769,6 @@ module Particles
 !  Clone of gas routine in gravity_r, but for particles.
 !
 !  24-aug-18/wlad: coded
-!
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -4133,7 +4116,7 @@ module Particles
 !
 !  Get the passive scalar diffusion rate
 !
-            call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
+            call get_shared_variable('pscalar_diff',pscalar_diff,caller='dvvp_dt_pencil')
 !
           endif
 !
@@ -4184,7 +4167,7 @@ module Particles
 !  NILS: Could this be moved to calc_pencils_particles
               if (lpenc_requested(i_npvz) .or. lpenc_requested(i_npvz2) .or. &
                   lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
-                call get_shared_variable('ap0',ap0,ierr)
+                call get_shared_variable('ap0',ap0,caller='dvvp_dt_pencil')
                 do irad = 1,npart_radii
                   if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad) = p%npvz(ix0-nghost,irad)+fp(k,ivpz)
@@ -6290,7 +6273,7 @@ module Particles
           stocunn(k) = 1.
         else
           stocunn(k) = 1.+2.*mean_free_path_gas/dia* &
-              (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+                      (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
         endif
 !
       enddo
@@ -6305,6 +6288,7 @@ module Particles
 !
 !  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
 !  problem: we would have to calculate beta every time for every particle
+!
       added_mass_beta = 3*interp_rho(k)/(2*rhopmat+interp_rho(k))
 !
     endsubroutine calc_added_mass_beta
