@@ -204,10 +204,10 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be 
 !  destroyed by SN, so may be better to allow unrestricted 
-  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=2E7
+  real, parameter :: TT_SN_min_cgs=1.E3, TT_SN_max_cgs=5E6
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=2e2
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=1.75e2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -383,7 +383,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0
+  real :: N_mass=250.0, eps_mass=0.05, rfactor_SN=5.0
 !
 !  Requested SNe location (used for test SN)
 !
@@ -2114,7 +2114,8 @@ module Interstellar
 !  Avoid sites with dense mass shown to excessively cool remnants, given the
 !  high thermal conductivity we are forced to adopt.
 !
-            if (SNRs(iSNR)%site%rho > rho_SN_max) then
+            if ((SNRs(iSNR)%site%rho > rho_SN_max) .or. &
+                (SNRs(iSNR)%site%TT < TT_SN_min)) then
               cycle
             endif
           endif
@@ -3291,6 +3292,8 @@ module Interstellar
       SNR%feat%rhom=rhom
       endif
       radius2=SNR%feat%radius**2
+      call get_properties(f,SNR,rhom,ekintot,rhomin)
+      SNR%feat%rhom=rhom
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
 !
@@ -3321,6 +3324,7 @@ module Interstellar
             SNR%feat%dr>pc_cgs/unit_length) then
           frackin = kfrac_norm*SNR%feat%rhom*RPDS**7/ampl_SN/&
                   (SNR%feat%t_SF*SNR%feat%dr)**2
+          if (frackin < 1e-3) frackin = 0.
         else
           frackin = 0.
         endif
@@ -3460,8 +3464,8 @@ module Interstellar
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
           maskedlnTT=lnTT
-          if (SNR%feat%radius<=1.1*rfactor_SN*SNR%feat%dr) then
-            where (dr2_SN>1.21*radius2) maskedlnTT=-10.0 !dense remnant
+          if (SNR%feat%radius<=1.25*rfactor_SN*SNR%feat%dr) then
+            where (dr2_SN>2.5*radius2) maskedlnTT=-10.0 !dense remnant
             maxTT=maxval(exp(maskedlnTT))
             if (maxTT>TT_SN_max) then
               if (present(ierr)) then
@@ -3885,7 +3889,6 @@ module Interstellar
 !  Calculate mean density inside the remnant and return zero if the volume is
 !  zero.
 !
-      tmp2=tmp
       call mpiallreduce_sum(tmp,tmp2,3)
       ekintot=0.5*tmp2(3)
       if ((lSN_velocity).and.(abs(tmp2(2)) < tini)) then
