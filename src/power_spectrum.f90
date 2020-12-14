@@ -3566,6 +3566,7 @@ endsubroutine pdf
   real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
   !
   real, dimension(nx) :: bbi, jji
+  real, allocatable, dimension(:,:) :: jac !  jacobian when doing remeshing
   real, allocatable, dimension(:,:) :: polar_spec, polar_spec_sum
   real, allocatable, dimension(:,:) :: polar_spechel, polar_spechel_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
@@ -3593,13 +3594,16 @@ endsubroutine pdf
   if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
     allocate( kmu(nk,n_glq) )
     allocate( dmu(nk,n_glq) )
+    allocate( jac(nk,n_glq) )
     kmu=0.
     dmu=2.
     do ikr=1,nk
+      jac(ikr,:)=1./max(1,ikr-1)/2.
       nmu(ikr)=min( n_glq,max(1,3*(ikr-1)) )
       do ikmu=1,nmu(ikr)
         kmu(ikr,ikmu)=legendre_zeros(nmu(ikr),ikmu)
         dmu(ikr,ikmu)=glq_weight(nmu(ikr),ikmu)
+        jac(ikr,ikmu)=1./max(1,ikr-1)/dmu(ikr,ikmu)
       enddo
     enddo
   else  !  otherwise generate mesh by hand
@@ -3609,10 +3613,12 @@ endsubroutine pdf
     enddo
     allocate( kmu(nk,nmu(nk)) )
     allocate( dmu(nk,nmu(nk)) )
+    allocate( jac(nk,nmu(nk)) )
     kmu=0.
     mu_offset=0.01
     dmu=2-2*mu_offset
     do ikr=1,nk
+      jac(ikr,:)=1./max(1,ikr-1)/(2-2*mu_offset)
       if (nmu(ikr)>=2) then
         do ikmu=1, nmu(ikr)
           kmu(ikr,ikmu) = -1+mu_offset+(ikmu-1)*(2-2*mu_offset)/(nmu(ikr)-1)
@@ -3620,6 +3626,9 @@ endsubroutine pdf
         enddo
         dmu(ikr,1)=dmu(ikr,1)/2+mu_offset
         dmu(ikr,nmu(ikr))=dmu(ikr,nmu(ikr))/2+mu_offset
+        do ikmu=1, nmu(ikr)
+          jac(ikr,ikmu)=1./max(1,ikr-1)/dmu(ikr,ikmu)
+        enddo
       endif
     enddo
   endif
@@ -3654,31 +3663,31 @@ endsubroutine pdf
             temploc=minloc(abs(kmu(ikr+1,:)-mu))
             ikmu=temploc(1)
             if (mu==0. .and. mod(nmu(ikr+1),2)==0) then
-              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*0.5*( &
+              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*0.5*( &
                   +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
                   +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-              vxx(ikr+1,ikmu+1)=vxx(ikr+1,ikmu+1)+0.5*0.5*( &
+              vxx(ikr+1,ikmu+1)=vxx(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*0.5*( &
                   +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
                   +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ 0.5*( &
+              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
                   uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
-              vzz(ikr+1,ikmu+1)=vzz(ikr+1,ikmu+1)+ 0.5*( &
+              vzz(ikr+1,ikmu+1)=vzz(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
                   uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
-              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ 0.5*( &
+              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
                   ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
                   -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
-              vxy(ikr+1,ikmu+1)=vxy(ikr+1,ikmu+1)+ 0.5*( &
+              vxy(ikr+1,ikmu+1)=vxy(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
                   ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
                   -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
             else
-              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+0.5*( &
+              vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*( &
                   ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
                   +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ &
-                  uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2
-              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ &
+              vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
+                  uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+              vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
                   ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-                  -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz)
+                  -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
             endif
           endif
         enddo
@@ -3830,22 +3839,22 @@ endsubroutine pdf
               temploc=minloc(abs(kmu(ikr+1,:)-mu))
               ikmu=temploc(1)
               if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
-                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+0.5*&
+                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-                polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+0.5*&
+                polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
                     ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
-                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+0.5*&
+                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                     +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-                polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+0.5*&
+                polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
                     ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                     +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
               else
-                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu) &
-                    +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu) &
+                polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*( &
+                    +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+                polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)* (&
                     +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                    +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+                    +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
               endif
             endif
         !  end of loop through all points
@@ -3891,16 +3900,17 @@ endsubroutine pdf
       if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
            ,' to ',trim(datadir)//'/polarspec_'//trim(sp)//'.dat'
       !  energy and helicity spectra in polar coordinates
+      !  in the form (kr,mu,dmu,spec), kr=0,1,2,...
       open(1,file=trim(datadir)//'/polarspec_'//trim(sp)//'.dat',position='append')
       write(1,*) t
       do ikr=1,nk; do ikmu=1,nmu(ikr)
-        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
+        write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspechel_'//trim(sp)//'.dat',position='append')
       write(1,*) t
       do ikr=1,nk; do ikmu=1,nmu(ikr)
-        write(1,'(i4,2p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
+        write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
       enddo; enddo
       close(1)
       !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
