@@ -157,9 +157,9 @@ my %tests = (
                          spherical-convection
                          spherical-convection-corona
 			 dust-accretion
-			 superparticle_condensation
-			 superparticle-coagulation
-			 superparticle-condensation-coagulation
+			 #superparticle_condensation
+			 #superparticle-coagulation
+			 #superparticle-condensation-coagulation
                      )],
              # Level 4 for now contains overlong tests (e.g. test that
              # compile, start and then run for more than 5 minutes on
@@ -442,7 +442,7 @@ my @exit_status=('setting up directory',
 $list_only = 1 if ($list_all);
 
 my $makeopts  = '';
-if ($makejobs) { $makeopts = "-j $makejobs"; }
+#if ($makejobs) { $makeopts = "-j $makejobs"; }
 
 my @pc_dump_config = qw/pc_dump_config/;
 my @pc_build = qw/pc_build/;
