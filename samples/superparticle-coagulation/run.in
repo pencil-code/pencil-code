@@ -31,6 +31,7 @@
   ldragforce_dust_par=T, ldragforce_gas_par=F
   ldraglaw_steadystate=T, lnostore_uu=F
   ldragforce_heat=F, lnu_draglaw=T, nu_draglaw=1e-5
+  mean_free_path_gas=6.8e-8 ! mean free path of air
 /
 &particles_radius_run_pars
   lcondensation_simplified=F, GS_condensation=5e-11! 100 times larger
