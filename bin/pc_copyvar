@@ -140,16 +140,16 @@ else
   echo "This command would execute"
 endif
 if ($link) then
-  echo "  rm -f $dest/${data}proc*/$var2; ln -s $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
+  echo "  rm -f $dest/${data}proc[0-9]*/$var2; ln -s $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
 else
-  echo "  $cp $source/${data}proc*/$var1 $dest/${data}proc*/$var2"
+  echo "  $cp $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
 endif
 if ($execute) echo ""
 #
 #  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
 #
 if ($execute) then
-  foreach dir ( $source/${data}proc* )
+  foreach dir ( $source/${data}proc[0-9]* )
     set procdir=`basename $dir`
     if ($remdest) then
       set res=`ssh $dest:s/:/ ls -d //${data}$procdir`
