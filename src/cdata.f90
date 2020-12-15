@@ -98,13 +98,24 @@ module Cdata
                            lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
                            lpole=.false., &                                      ! in spherical coords: pole excluded
                            lequidist=.true.                                      ! grid equidistant in every direction
-  logical :: lignore_nonequi=.false., lcoarse=.false.
+  logical :: lignore_nonequi=.false.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
-  integer :: nghost_read_fewer=0, ncoarse=8
+  integer :: nghost_read_fewer=0
+!
+!  Polar grid
+!
+  integer :: ncoarse=8
+  logical :: lcoarse=.false.
+  integer, dimension(2) :: mexts=(/m1,m1+ny-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
+
   integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
 !  Derivative parameters
@@ -202,7 +213,7 @@ module Cdata
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
-  logical :: ldownsampl=.false., ldownsampling
+  logical :: ldownsampl=.false., ldownsampling, lrepair_snap=.false.
   integer :: ivar_omit1=0, ivar_omit2=0
 !
 ! Debugging
