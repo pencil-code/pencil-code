@@ -4,7 +4,7 @@
 !
       real :: t_test   ! t in single precision for backwards compatibility
       logical :: ltest,lok,l0,lmail,lmail_
-      integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1
+      integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1,kka,kke,jja,jje,iie
       character(LEN=fnlen) :: readdir
       character(LEN=linelen) :: string
       character(LEN=1024) :: mailstr
@@ -15,11 +15,24 @@
       readdir = directory_snap
       lok=.false.; l0=.true.; string=''; lmail=.false.
 !
-kloop:do kk=max(0,ipz-1),min(ipz+1,nprocz-1)
-jloop:  do jj=max(0,ipy-1),min(ipy+1,nprocy-1)
+      if (lrepair_snap.or.snaplink/='') then
+        kka=max(0,ipz-1); kke=min(ipz+1,nprocz-1)
+        jja=max(0,ipy-1); jje=min(ipy+1,nprocy-1)
+        iie=1
+      else
+        kka=1; kke=1; jja=1; jje=1
+      endif
+
+kloop:do kk=kka,kke
+jloop:  do jj=jja,jje
           iia=max(0,ipx-1)
-          if (l0) iia=iia-1             ! add one iteration for the original path
-iloop:    do ii=iia,min(nprocx-1,ipx+1)
+          if (l0) iia=iia-1                           ! add one iteration for the original path
+          if (lrepair_snap.or.snaplink/='') then
+            iie=min(nprocx-1,ipx+1)
+          else
+            iie=iia
+          endif
+iloop:    do ii=iia,iie
             if (.not.l0) then
               iip=find_proc(ii,jj,kk)
               if (iip/=iproc) then
@@ -34,6 +47,7 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
                 cycle iloop
               endif
             endif
+print*, 'iproc,file=', iproc, trim(readdir)
             open (lun_input, FILE=trim(readdir)//'/'//trim(file), FORM='unformatted', status='old', iostat=ios)
             if (ios==0) then
 
@@ -255,32 +269,35 @@ iloop:    do ii=iia,min(nprocx-1,ipx+1)
 !
       if (ip <= 3) print *, 'read_snap: t=', t
 !
+      if (lrepair_snap.or.snaplink/='') then
+!
 !  Send "repair" warning to user.
 !
-      call mpiallreduce_or(lmail,lmail_)
-      if (lmail_) then
-        if (lroot) then
-          mailstr=trim(string)
-          do ipp=1,ncpus-1
-            call mpirecv_char(string,ipp,ipp)
-            if (string/='') mailstr=trim(mailstr)//trim(string)
-          enddo
-        else
-          call mpisend_char(string,root,iproc)
-        endif
-        if (lroot) then
-          if (file_exists(trim(datadir)//'/jobid.dat')) then
-            open(1,file=trim(datadir)//'/jobid.dat',position='append')
-            backspace(1)
-            read(1,*) cjobid
-            close(1) 
-            mailstr=', job '//trim(cjobid)//'. WARNING - read_snap:'//trim(mailstr)
+        call mpiallreduce_or(lmail,lmail_)
+        if (lmail_) then
+          if (lroot) then
+            mailstr=trim(string)
+            do ipp=1,ncpus-1
+              call mpirecv_char(string,ipp,ipp)
+              if (string/='') mailstr=trim(mailstr)//trim(string)
+            enddo
           else
-            mailstr='. WARNING - read_snap:'//trim(mailstr)
+            call mpisend_char(string,root,iproc)
           endif
-        
-          call system_cmd( &
-            'echo From `pwd`'//trim(mailstr)//"|"//trim(mailcmd)//" -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+          if (lroot) then
+            if (file_exists(trim(datadir)//'/jobid.dat')) then
+              open(1,file=trim(datadir)//'/jobid.dat',position='append')
+              backspace(1)
+              read(1,*) cjobid
+              close(1) 
+              mailstr=', job '//trim(cjobid)//'. WARNING - read_snap:'//trim(mailstr)
+            else
+              mailstr='. WARNING - read_snap:'//trim(mailstr)
+            endif
+          
+            call system_cmd( &
+              'echo From `pwd`'//trim(mailstr)//"|"//trim(mailcmd)//" -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+          endif
         endif
       endif
 
