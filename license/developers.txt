@@ -54,7 +54,7 @@ Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,    
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         ,            NORDITA
 Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       dehrgeif,    Max-Planck-Institut für Sonnensystemforschung Göttingen
-Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
+Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
 Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 702 895 0961,   ,                         ,            University of Nevada, Las Vegas
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
