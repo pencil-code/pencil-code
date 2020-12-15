@@ -46,6 +46,7 @@
   ascalar_ngp=T
   lcondensation_rate=T
   G_condensation = 1.17e-10
+  mean_free_path_gas=6.8e-8 ! mean free path of air
 /
 &particles_radius_run_pars
   tstart_condensation_par=0.

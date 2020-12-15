@@ -38,6 +38,7 @@
   delta_vp0=0.0
   lparticlemesh_cic=F
   lparticlemesh_tsc=F
+  mean_free_path_gas=6.8e-8 ! mean free path of air
 /
 &particles_radius_init_pars
   initap='constant', ap0=1.e-5
