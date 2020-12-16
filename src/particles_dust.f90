@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 2
+!!! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM character (len=20), parameter :: particles_module="dust"
 !
