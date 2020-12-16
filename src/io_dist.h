@@ -6,14 +6,14 @@
       logical :: ltest,lok,l0,lmail,lmail_
       integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1,kka,kke,jja,jje,iie
       character(LEN=fnlen) :: readdir
-      character(LEN=linelen) :: string
+      character(LEN=linelen) :: message
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
 !
       if (lserial_io) call start_serialize
 
       readdir = directory_snap
-      lok=.false.; l0=.true.; string=''; lmail=.false.
+      lok=.false.; l0=.true.; message=''; lmail=.false.
 !
       if (lrepair_snap.or.snaplink/='') then
         kka=max(0,ipz-1); kke=min(ipz+1,nprocz-1)
@@ -47,7 +47,6 @@ iloop:    do ii=iia,iie
                 cycle iloop
               endif
             endif
-print*, 'iproc,file=', iproc, trim(readdir)
             open (lun_input, FILE=trim(readdir)//'/'//trim(file), FORM='unformatted', status='old', iostat=ios)
             if (ios==0) then
 
@@ -199,13 +198,13 @@ print*, 'iproc,file=', iproc, trim(readdir)
               endif
               lok=.true.
               if (.not.l0) then
-                call warning('read_snap', 'reading '//trim(readdir)//'/'//trim(file)// &
-                             ' instead of '//trim(directory_snap)//'/'//trim(file),iproc)
-                if (mailaddress/='') then
-                  lmail=.true.
-                  string=' reading '//trim(readdir)//'/'//trim(file)// &
-                         ' instead of '//trim(directory_snap)//'/'//trim(file)
-                endif
+                message=' reading '//trim(readdir)//'/'//trim(file)// &
+                        ' instead of '//trim(directory_snap)//'/'//trim(file)
+                call warning('read_snap', trim(message), iproc)
+                open(11,file=trim(datadir)//'/jobid.dat',position='append')
+                write(11,*) trim(message) 
+                close(11)
+                if (mailaddress/='') lmail=.true.
               endif
               exit kloop
             endif
@@ -276,13 +275,13 @@ print*, 'iproc,file=', iproc, trim(readdir)
         call mpiallreduce_or(lmail,lmail_)
         if (lmail_) then
           if (lroot) then
-            mailstr=trim(string)
+            mailstr=trim(message)
             do ipp=1,ncpus-1
-              call mpirecv_char(string,ipp,ipp)
-              if (string/='') mailstr=trim(mailstr)//trim(string)
+              call mpirecv_char(message,ipp,ipp)
+              if (message/='') mailstr=trim(mailstr)//trim(message)
             enddo
           else
-            call mpisend_char(string,root,iproc)
+            call mpisend_char(message,root,iproc)
           endif
           if (lroot) then
             if (file_exists(trim(datadir)//'/jobid.dat')) then
