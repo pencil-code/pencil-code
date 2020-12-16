@@ -10,7 +10,7 @@
   unit_length = 3.086e18 ! cm
   unit_velocity = 1.0e5 ! cm/s
   unit_density = 6.771e-23 !g/cm^3
-!  lwrite_aux=T
+  lwrite_aux=T
   /
 &eos_init_pars
   gamma=1.
