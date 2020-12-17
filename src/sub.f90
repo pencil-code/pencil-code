@@ -2722,8 +2722,6 @@ module Sub
           bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
           bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
           if (loptest(lcovariant_derivative)) then
-            bij(:,1,1)=bij(:,1,1)+(aij(:,3,2)*r1_mn-aa(:,3)*r2_mn)*cotth(m) ! MR: not correct, but strangely bij(:,1,1)
-                                                                            !     does need covariant correction. Why? 
             bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*r1_mn+aa(:,3)*r2_mn
             bij(:,1,3)=bij(:,1,3)+(aij(:,1,2)-aij(:,2,1))*r1_mn-aa(:,2)*r2_mn
             bij(:,2,2)=bij(:,2,2)-aij(:,2,3)*r1_mn         +aa(:,3)*r2_mn*cotth(m)
