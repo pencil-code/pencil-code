@@ -8,7 +8,7 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION -1
 !
 !***************************************************************
 integer, parameter :: ncpus=8,nprocx=2,nprocy=2,nprocz=ncpus/(nprocx*nprocy)

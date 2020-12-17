@@ -4,9 +4,8 @@
 ###
 
 #DIAGNOSTICS  =   diagnostics_f90
-MPICOMM      = mpicomm
+MPICOMM      =   mpicomm
 #IO        =   io_hdf5
-#HDF5_IO   =   hdf5_io_parallel
 
 HYDRO        =   hydro
 DENSITY      =   density
@@ -25,5 +24,3 @@ FOURIER = fourier_fftpack
 POWER   = power_spectrum
 
 REAL_PRECISION = double
-
-DERIV_3SEC_INSTEADOF_14MIN_COMPILETIME = deriv_3sec_insteadof_14min_compiletime
