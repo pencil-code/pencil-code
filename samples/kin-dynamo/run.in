@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$'
   nt=400, it1=50, isave=1000, itorder=3
-  dsnap=50, dvid=0.5
+  dsnap=50, dvid=0.5, dsound=5
   random_gen='nr_f90'
   lpencil_check=T
   !nghost_read_fewer=0, luse_oldgrid=T
