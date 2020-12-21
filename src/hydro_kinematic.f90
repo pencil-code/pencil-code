@@ -136,6 +136,8 @@ module Hydro
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
+  integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
+  integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
 !
 !  Video data.
@@ -603,7 +605,8 @@ endif
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_ourms/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0) then
@@ -2389,6 +2392,10 @@ endif
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+! ou and oxu
+      if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+      if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
+      if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -2404,6 +2411,8 @@ endif
         if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
         if (idiag_oum/=0)   call sum_mn_name(p%ou,idiag_oum)
+        if (idiag_ourms/=0) call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
+        if (idiag_oxurms/=0) call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
 !
         if (idiag_EEK/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_EEK)
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
@@ -3201,6 +3210,7 @@ endif
 !
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
+        idiag_ourms=0; idiag_oxurms=0
         idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
         idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
         idiag_phase1=0; idiag_phase2=0
@@ -3227,6 +3237,8 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'ourms',idiag_ourms)
+        call parse_name(iname,cname(iname),cform(iname),'oxurms',idiag_oxurms)
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
