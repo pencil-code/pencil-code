@@ -16,6 +16,7 @@ module Particles_sub
 !
   private
 !
+  public :: assign_species
   public :: input_particles, output_particles
   public :: append_npvar, append_npaux, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
@@ -34,6 +35,20 @@ module Particles_sub
   endinterface
 !
   contains
+!***********************************************************************
+    elemental integer function assign_species(ipar) result(p)
+!
+! Assigns a species to a particle given its ipar.
+!
+! 26-dec-20/ccyang: coded
+!
+      integer, intent(in) :: ipar
+!
+      integer, parameter :: KIND = selected_int_kind(int(log10(real(npar_species)) + log10(real(npar))) + 1)
+!
+      p = int(int(npar_species, kind=KIND) * int(ipar - 1, kind=KIND) / int(npar, kind=KIND)) + 1
+!
+    endfunction assign_species
 !***********************************************************************
     subroutine input_particles(filename,fp,ipar)
 !

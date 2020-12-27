@@ -3627,7 +3627,7 @@ module Particles
               if (lparticles_radius .and. lparticles_radius_rpbeta) then
                 rpbeta_tmp_arr(1:npar_loc) = fp(1:npar_loc,irpbeta)
               elseif (npar_species > 1) then
-                jspec_arr(1:npar_loc) = npar_species*(ipar(1:npar_loc)-1)/npar+1
+                jspec_arr(1:npar_loc) = assign_species(ipar(1:npar_loc))
               else
                 rpbeta_tmp_arr(1:npar_loc) = rpbeta
               endif
@@ -3691,7 +3691,7 @@ module Particles
             do k = 1,npar_loc
               if (t >= tstart_rpbeta) then
                 if (npar_species > 1) then
-                  jspec = npar_species*(ipar(k)-1)/npar+1
+                  jspec = assign_species(ipar(k))
                   rpbeta_tmp = rpbeta_species(jspec)
                 else
                   rpbeta_tmp = rpbeta
@@ -5368,7 +5368,7 @@ module Particles
         else
 !  Check if we are using multiple or single particle species.
           if (npar_species > 1) then
-            jspec = npar_species*(ipar(k)-1)/npar+1
+            jspec = assign_species(ipar(k))
             tmp = tausp1_species(jspec)
           else
             tmp = tausp1
@@ -5481,7 +5481,7 @@ module Particles
 !        write(*,*)'DM','simple drag'
 !  Check if we are using multiple or single particle species.
         if (npar_species > 1) then
-          jspec = npar_species*(ipar(k)-1)/npar+1
+          jspec = assign_species(ipar(k))
           tmp = tausp1_species(jspec)
         else
           tmp = tausp1
@@ -5610,7 +5610,7 @@ module Particles
         tmp = tausp
         tmp1 = tausp1
       else
-        jspec = npar_species*(ipar(k)-1)/npar+1
+        jspec = assign_species(ipar(k))
         tmp = tausp_species(jspec)
         tmp1 = tausp1_species(jspec)
       endif
@@ -5958,7 +5958,7 @@ module Particles
 !  Calculate mean velocity and number of particles for each species.
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
-            ispecies = npar_species*(ipar(k)-1)/npar+1
+            ispecies = assign_species(ipar(k))
             vvpm_species(ix0-nghost,:,ispecies) = &
                 vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
             np_species(ix0-nghost,ispecies)  = &
@@ -5974,7 +5974,7 @@ module Particles
 !  Calculate rms speed for each species.
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
-            ispecies = npar_species*(ipar(k)-1)/npar+1
+            ispecies = assign_species(ipar(k))
             vpm_species(ix0-nghost,ispecies) = &
                 vpm_species(ix0-nghost,ispecies) + sqrt( &
                 (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
@@ -6043,7 +6043,7 @@ module Particles
 !  Add to equation of motion.
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
-            ispecies = npar_species*(ipar(k)-1)/npar+1
+            ispecies = assign_species(ipar(k))
             do jspecies = 1,npar_species
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                   tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
