@@ -17,7 +17,7 @@ module InitialCondition
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_sub, only: dragforce_equi_multispecies 
+  use Particles_sub, only: assign_species, dragforce_equi_multispecies 
 !
   implicit none
 !
@@ -396,7 +396,7 @@ module InitialCondition
 ! Assign the mass and the equilibrium velocity of each particle.
 !
       equil: do k = 1, npar_loc
-        p = npar_species * (ipar(k) - 1) / npar + 1
+        p = assign_species(ipar(k))
         fp(k,irhopswarm) = rhopj(p)
         fp(k,ivpx) = fp(k,ivpx) + vpx0(p)
         fp(k,ivpy) = fp(k,ivpy) + vpy0(p)
@@ -415,7 +415,7 @@ module InitialCondition
         sinkz = sin(argz)
         coskz = cos(argz)
 !
-        p = npar_species * (ipar(k) - 1) / npar + 1
+        p = assign_species(ipar(k))
         i = 4 * p + 1
         dvpx = dv * (real(si_ev(i)) * coskx - aimag(si_ev(i)) * sinkx) * coskz
         dvpy = dv * (real(si_ev(i+1)) * coskx - aimag(si_ev(i+1)) * sinkx) * coskz

@@ -192,7 +192,7 @@ module Special
 !
 !  04-oct-19/ccyang: coded
 !
-      use Particles_sub, only: sum_par_name
+      use Particles_sub, only: assign_species, sum_par_name
       use Particles_cdata, only: ipar, npar_loc, ivpx, ivpy, ivpz, irhopswarm
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -212,7 +212,7 @@ module Special
 !  Compute the deviation from the equilibrium velocities.
 !
         vpeq: do k = 1, npar_loc
-          jspec = npar_species * (ipar(k) - 1) / npar + 1
+          jspec = assign_species(ipar(k))
           dvpx(k) = fp(k,ivpx) - vpx0(jspec)
           dvpy(k) = fp(k,ivpy) - vpy0(jspec)
         enddo vpeq
