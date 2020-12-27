@@ -421,7 +421,6 @@ module InitialCondition
         dvpy = dv * (real(si_ev(i+1)) * coskx - aimag(si_ev(i+1)) * sinkx) * coskz
         dvpz = -dv * (real(si_ev(i+2)) * sinkx + aimag(si_ev(i+2)) * coskx) * sinkz
 !
-        fp(k,irhopswarm) = rhopj(p)
         fp(k,ivpx) = fp(k,ivpx) + dvpx
         fp(k,ivpy) = fp(k,ivpy) + dvpy
         fp(k,ivpz) = fp(k,ivpz) + dvpz
