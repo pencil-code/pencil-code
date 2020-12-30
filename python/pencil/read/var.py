@@ -605,6 +605,9 @@ class DataCube(object):
                 cp = param.cp
                 gamma = param.gamma
                 cv = cp/gamma
+                cs20 = param.cs0**2
+                lnrho0 = np.log(param.rho0)
+                rho0 = param.rho0
                 if hasattr(self, 'lnrho'):
                     lnrho = self.lnrho
                 elif hasattr(self, 'rho'):
@@ -612,7 +615,7 @@ class DataCube(object):
                 else:
                     sys.exit("pb in magic: missing rho or lnrho variable")
                 if hasattr(self, 'ss'):
-                    setattr(self, 'pp', np.exp(gamma*(self.ss+lnrho)))
+                    setattr(self, 'pp', (rho0*cs20/gamma)*np.exp(gamma*(self.ss+lnrho-lnrho0)))
                 elif hasattr(self, 'lntt'):
                     setattr(self, 'pp', (cp-cv)*np.exp(self.lnTT+lnrho))
                 elif hasattr(self, 'tt'):
