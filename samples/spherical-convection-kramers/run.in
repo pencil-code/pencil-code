@@ -29,7 +29,7 @@
   lupw_ss=T
   iheatcond='kramers','chit','K-profile'
   lread_hcond=T
-  hcond0_kramers=3.16464e-08, nkramers=1.
+  hcond0_kramers=1.8615102406958016e-08, nkramers=1.
   lchit_fluct=T
   chi_t1=2e-4
   lcalc_ssmeanxy=T
