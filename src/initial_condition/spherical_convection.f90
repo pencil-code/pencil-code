@@ -386,9 +386,13 @@ module InitialCondition
 !
       volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
 !
-!  Compute Kelvin-Helmolz time scale: GM*M_domain/(2*DR_domain*Luminosity)
+!  Compute Kelvin-Helmholtz time scale: GM*M_domain/(2*Rsurf*Luminosity)
 !
-      tau_KH=gravx*total_mass/L00/(Rsurf-x0)/2.
+!      tau_KH=gravx*total_mass/L00/(Rsurf-x0)/2.
+! PJK: Assuming the convection zone as a point mass at r=R now.
+! PJK: The previous formulation is effectively the same but putting
+! PJK: the CZ as a point mass at r=0.3R.
+      tau_KH=gravx*total_mass/(2.*Rsurf*L00)
 !
       if (lroot) then
          print*,''
@@ -405,8 +409,8 @@ module InitialCondition
          print*,'initial_condition: total_mass =',total_mass
          print*,'initial_condition: number of density scale heights =',lnrho_global(1)-lnrho_global(nxgrid)
          print*,'initial_condition: hcond0_kramers =',kramers_hcond0
-         print*,'initial_condition: Kelvin-Helmholz time in PC units=', tau_KH
-         print*,'initial_condition: Kelvin-Helmholz time in years =', tau_KH*Omsim/Omsun/3.15360e+07
+         print*,'initial_condition: Kelvin-Helmholtz time in PC units =', tau_KH
+         print*,'initial_condition: Kelvin-Helmholtz time in years =', tau_KH*Omsim/Omsun/3.15360e+07
          if (lcorona) then
            print*, ''
            print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
