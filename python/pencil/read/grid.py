@@ -130,6 +130,7 @@ class Grid(object):
             if proc < 0:
                 proc_dirs = list(filter(lambda string: string.startswith(
                     'proc'), os.listdir(datadir)))
+                proc_dirs.remove("proc_bounds.dat")
                 if param.lcollective_io:
                     # A collective IO strategy is being used
                     proc_dirs = ['allprocs']
