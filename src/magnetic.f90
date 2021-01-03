@@ -21,7 +21,7 @@
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
-! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
+! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
@@ -262,7 +262,7 @@ module Magnetic
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
   real :: eta_tdep_exponent=0.0, eta_tdep_t0=0.0, eta_tdep_toffset=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
-          eta_anom_thresh=0.0
+          eta_anom_thresh=0.0, eta_ampl=0.
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
   real :: tau_aa_exterior=0.0, tauAD=0.0, alev=1.0
@@ -339,7 +339,7 @@ module Magnetic
   character (len=labellen) :: div_sld_magn='2nd'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, eta_ampl, &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, Hhall, battery_term, &
       ihall_term, hall_tdep_t0, hall_tdep_exponent, hall_zdep_exponent, &
@@ -3061,10 +3061,10 @@ module Magnetic
         lpencil_in(i_jxb)=.true.
       endif
 !
-      if (lpencil_in(i_oxu)) then
-        lpencil_in(i_oo)=.true.
-        lpencil_in(i_uu)=.true.
-      endif
+!AB   if (lpencil_in(i_oxu)) then
+!       lpencil_in(i_oo)=.true.
+!       lpencil_in(i_uu)=.true.
+!     endif
 !
       if (lpencil_in(i_oxuxb)) then
         lpencil_in(i_oxu)=.true.
@@ -3721,7 +3721,7 @@ module Magnetic
 ! ujxb
       if (lpenc_loc(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
 ! oxu
-      if (lpenc_loc(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
+!AB   if (lpenc_loc(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
 ! oxuxb
       if (lpenc_loc(i_oxuxb)) call cross_mn(p%oxu,p%bb,p%oxuxb)
 ! jxbxb
@@ -8601,6 +8601,15 @@ module Magnetic
       real, dimension(ny), intent(out), optional :: geta_y
 !
       select case (ydep_profile)
+!
+!  cos(y) profile
+!
+        case ('cos(y)')
+          eta_y=eta*(1.+eta_ampl*cos(y))
+          if (present(geta_y)) then
+            geta_y=-eta*eta_ampl*sin(y)
+          endif
+!
 !
 !  Two-step function
 !
