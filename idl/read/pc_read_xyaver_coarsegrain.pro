@@ -7,9 +7,9 @@ common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0,nghostx,nghosty,nghostz
 ;
 @xder_6th
 pc_read_kf,kf
-pc_read_xyaver,o=xyaver
-pc_read_param,o=param,/param2
-pc_read_param,o=param1
+pc_read_xyaver,obj=xyaver
+pc_read_param,obj=param,/param2
+pc_read_param,obj=param1
 z0=param1.xyz0(2)
 z1=param1.xyz1(2)
 Lz=z1-z0
@@ -23,15 +23,15 @@ spawn,'touch parameters.pro'
 @parameters
 ;
 if use_grid eq 1 then begin
-  pc_read_grid,o=grid
-  pc_read_dim,o=dim
+  pc_read_grid,obj=grid
+  pc_read_dim,obj=dim
   nz=dim.nz & n1=dim.n1 & n2=dim.n2
   zzz=grid.z(n1:n2)
 endif else begin
   ;
   ;  read in z-array
   ;
-  pc_read_dim,o=dim
+  pc_read_dim,obj=dim
   default,nz,dim.nz
   dz=Lz/(nz-1)
   print,'assume non-periodic domain with dz=',dz
