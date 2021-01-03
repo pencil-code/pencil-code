@@ -90,7 +90,7 @@ module Hydro
   real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
-  real :: kinflow_ck_Balpha=0.
+  real :: kinflow_ck_Balpha=0., TC_omega_out=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp=0, gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
@@ -115,7 +115,7 @@ module Hydro
       location_fixed, dtforce, &
       lwrite_random_ampl, lkinflow_as_comaux, lkinflow_as_uudat, &
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
-      uphi_step_width,gcs_rzero, &
+      uphi_step_width,gcs_rzero, TC_omega_out, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
@@ -705,6 +705,7 @@ endif
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha, ABC_A1, ABC_B1, ABC_C1
+      real :: coef_mu, coef_eta2, coef_aa, coef_bb
       real :: ro
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
@@ -2029,6 +2030,24 @@ endif
             p%uu(:,1)=-local_Omega*y(m)    +tmp_mn*x(l1:l2)
             p%uu(:,2)=+local_Omega*x(l1:l2)+tmp_mn*y(m)
             p%uu(:,3)=0.                   +tmp_mn*z(n)
+          endif
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Taylor-Couette flow
+!
+      case ('Taylor-Couette')
+        if (lcylindrical_coords) then
+          if (headtt) print*,'Taylor-Couette (cylindrical coords)',ampl_kinflow
+! uu
+          if (lpenc_loc(i_uu)) then
+            coef_mu=TC_omega_out/ampl_kinflow
+            coef_eta2=(x(l1)/x(l2))**2
+            coef_aa=ampl_kinflow*(coef_mu-coef_eta2)/(1.-coef_eta2)
+            coef_bb=ampl_kinflow*x(l1)**2*(1.-coef_mu)/(1.-coef_eta2)
+            p%uu(:,1)=0.
+            p%uu(:,2)=coef_aa*x(l1:l2)+coef_bb/x(l1:l2)
+            p%uu(:,3)=0.
           endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
