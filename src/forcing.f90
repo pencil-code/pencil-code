@@ -5276,10 +5276,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real :: theta,phi,alpha,beta
       real :: ex,ey,ez,norm,a
 !
-      allocate(KS_k(3,KS_modes))
-      allocate(KS_A(3,KS_modes))
-      allocate(KS_B(3,KS_modes))
-      allocate(KS_omega(KS_modes))
+      if (.not.allocated(KS_k)) then
+        allocate(KS_k(3,KS_modes))
+        allocate(KS_A(3,KS_modes))
+        allocate(KS_B(3,KS_modes))
+        allocate(KS_omega(KS_modes))
+      endif
 !
       kmin=2.*pi      !/(1.0*Lxyz(1))
       kmax=128.*pi    !nx*pi
@@ -5382,10 +5384,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension(KS_modes) :: k,dk,energy,ps
       real :: initpower,kmin,kmax
 !
-      allocate(KS_k(3,KS_modes))
-      allocate(KS_A(3,KS_modes))
-      allocate(KS_B(3,KS_modes))
-      allocate(KS_omega(KS_modes))
+      if (.not.allocated(KS_k)) then
+        allocate(KS_k(3,KS_modes))
+        allocate(KS_A(3,KS_modes))
+        allocate(KS_B(3,KS_modes))
+        allocate(KS_omega(KS_modes))
+      endif
 !
       initpower=-5./3.
       kmin=10.88279619
@@ -6051,7 +6055,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !   12-aug-09/dhruba: coded
 !
       if (iforce=='chandra-kendall') then
-        print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing.'
+        print*,'Deallocating arrays relevant to Chanrasekhar-Kendall forcing.'
         deallocate(psif,cklist)
         if (lfastCK)  deallocate(Zpsi_list,RYlm_list)
       endif
