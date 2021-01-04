@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
+! PENCILS PROVIDED uu(3); u2; oo(3); ou;  oxu(3); uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
 ! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
 !
@@ -207,7 +207,7 @@ module Hydro
       endif
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
 ! oo
-      if (lpencil_in(i_ou)) then
+      if (lpencil_in(i_ou) .or. lpencil_in(i_oxu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
       endif
@@ -254,6 +254,8 @@ module Hydro
       if (lpenc_loc(i_oo)) p%oo=0.0
 ! ou
       if (lpenc_loc(i_ou)) p%ou=0.0
+! oxu
+      if (lpenc_loc(i_oxu)) p%oxu=0.0
 ! uij
       if (lpenc_loc(i_uij)) p%uij=0.0
 ! sij
