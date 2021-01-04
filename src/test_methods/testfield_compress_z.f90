@@ -70,7 +70,7 @@ module Testfield
   logical :: lphase_adjust=.false.
   logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
   logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false., &
-             lzero_only=.false.
+             lzero_only=.false., lremove_E0=.false., lremove_F0=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -114,7 +114,8 @@ module Testfield
        rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
        lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega, &
        lugutest, lfprestest, lSghtest, &
-       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb, lzero_only
+       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb, lzero_only, &
+       lremove_E0, lremove_F0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -536,6 +537,9 @@ module Testfield
       endif
 !
       lBext=any(Btest_ext /= 0.)
+!
+      lremove_E0 = lremove_E0 .and. lmagnetic
+      lremove_F0 = lremove_F0 .and. lhydro
 !
       if (ivid_bb11/=0) then
         !call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
@@ -1176,6 +1180,9 @@ module Testfield
         call dot(B_ext_inv,jxbtestM,phiM)
         call dot(B_ext_inv,jxbtestMK,phiMK)
       endif
+!
+      if (lremove_E0) df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - Eipq(:,:,iE0)
+      if (lremove_F0) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - Fipq(:,:,iE0)
 
       if (lfirst.and.ldt) then
         maxadvec=maxadvec+advec_uu
