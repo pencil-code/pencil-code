@@ -148,7 +148,7 @@ module Gravity
 !  
   contains
 !***********************************************************************
-    subroutine register_gravity()
+    subroutine register_gravity
 !
 !  Initialise gravity variables (currently none).
 !
@@ -701,7 +701,7 @@ module Gravity
 !
     endsubroutine init_gg
 !***********************************************************************
-    subroutine pencil_criteria_gravity()
+    subroutine pencil_criteria_gravity
 !
 !  All pencils that the Gravity module depends on are specified here.
 !
@@ -1223,13 +1223,6 @@ module Gravity
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
             'epotuxmxy', idiag_epotuxmxy)
       enddo
-!
-!  Write column, idiag_XYZ, where our variable XYZ is stored.
-!  IDL needs this even if everything is zero.
-!
-      if (lwr) then
-        call farray_index_append('igg',igg)
-      endif
 !
     endsubroutine rprint_gravity
 !***********************************************************************

@@ -81,7 +81,7 @@ module Gravity
 !
   contains
 !***********************************************************************
-    subroutine register_gravity()
+    subroutine register_gravity
 !
 !  initialise gravity flags
 !
@@ -89,12 +89,20 @@ module Gravity
 !
 !  Identify version number.
 !
+      use FArrayManager, only: farray_register_global
+
       if (lroot) call svn_id("$Id$")
 !
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
       lgravr_neutrals=.true.
+!
+!  Register global_gg, so we can later retrieve gravity via get_global.
+!  Ensure the reserved f-array slots are initialized to zero, so we can add
+!  ninit different gravity fields (done in initialize_gravity).
+!
+        if (iglobal_gg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -110,7 +118,6 @@ module Gravity
 !
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
-      use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -157,12 +164,7 @@ module Gravity
         endif
 !
       else
-!
-!  Initialize gg, so we can later retrieve gravity via get_global.
-!  Ensure the reserved array slots are initialized to zero, so we can add
-!  ninit different gravity fields.
-!
-        if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
+
         f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
         do j=1,1
@@ -394,7 +396,7 @@ module Gravity
 !
     endsubroutine init_gg
 !***********************************************************************
-    subroutine pencil_criteria_gravity()
+    subroutine pencil_criteria_gravity
 !
 !  All pencils that the Gravity module depends on are specified here.
 !
@@ -1013,16 +1015,6 @@ module Gravity
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
-!
-      if (lwr) then
-        call farray_index_append('igg',igg)
-        call farray_index_append('igx',igx)
-        call farray_index_append('igy',igy)
-        call farray_index_append('igz',igz)
-      endif
 !
       call keep_compiler_quiet(lreset)
 !

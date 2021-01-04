@@ -92,7 +92,7 @@ module Gravity
 !
   contains
 !***********************************************************************
-    subroutine register_gravity()
+    subroutine register_gravity
 !
 !  initialise gravity flags
 !
@@ -100,12 +100,21 @@ module Gravity
 !
 !  Identify version number.
 !
+      use FArrayManager
       if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
       lgravr_neutrals=.true.
+!
+!  Register global_gg, so we can later retrieve gravity via get_global.
+!  Ensure the reserved f-array slots are initialized to zero, so we can add
+!  ninit different gravity fields (done in initialize_gravity).
+!
+      if (.not.lnumerical_equilibrium) then
+        if (iglobal_gg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
+      endif
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -121,7 +130,6 @@ module Gravity
 !
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
-      use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -155,41 +163,15 @@ module Gravity
 !
 !  Share variables related to corotational frame to modules that may need it
 !
-      call put_shared_variable('gsum',gsum,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting gsum')
-!
-      call put_shared_variable('g0',g0,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting g0')
-!
-      call put_shared_variable('g1',g1,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting g1')
-!
-      call put_shared_variable('rp1',rp1,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting rp1')
-!
-      call put_shared_variable('rp1_smooth',rp1_smooth,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting rp1_smooth')
-!
-      call put_shared_variable('lramp_mass',lramp_mass,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting lramp_mass')
-!
-      call put_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting t_ramp_mass')
-!
-      call put_shared_variable('lsecondary_wait',lsecondary_wait,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting lsecondary_wait')
-!
-      call put_shared_variable('t_start_secondary',t_start_secondary,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting t_start_secondary')
+      call put_shared_variable('gsum',gsum,caller='initialize_gravity')
+      call put_shared_variable('g0',g0)
+      call put_shared_variable('g1',g1)
+      call put_shared_variable('rp1',rp1)
+      call put_shared_variable('rp1_smooth',rp1_smooth)
+      call put_shared_variable('lramp_mass',lramp_mass)
+      call put_shared_variable('t_ramp_mass',t_ramp_mass)
+      call put_shared_variable('lsecondary_wait',lsecondary_wait)
+      call put_shared_variable('t_start_secondary',t_start_secondary)
 !
 !  Shortcut for optimization
 !
@@ -210,12 +192,7 @@ module Gravity
         endif
 !
       else
-!
-!  Initialize gg, so we can later retrieve gravity via get_global.
-!  Ensure the reserved array slots are initialized to zero, so we can add
-!  ninit different gravity fields.
-!
-        if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
+
         f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
         do j=1,1
@@ -455,7 +432,7 @@ module Gravity
 !
     endsubroutine init_gg
 !***********************************************************************
-    subroutine pencil_criteria_gravity()
+    subroutine pencil_criteria_gravity
 !
 !  All pencils that the Gravity module depends on are specified here.
 !
@@ -1184,16 +1161,6 @@ module Gravity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'torque',idiag_torque)
       enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
-!
-      if (lwr) then
-        call farray_index_append('igg',igg)
-        call farray_index_append('igx',igx)
-        call farray_index_append('igy',igy)
-        call farray_index_append('igz',igz)
-      endif
 !
       call keep_compiler_quiet(lreset)
 !
