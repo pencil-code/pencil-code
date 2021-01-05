@@ -5,7 +5,7 @@
 !***********************************************************************
 module Particles_main
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -14,7 +14,7 @@ module Particles_main
 !
   contains
 !***********************************************************************
-    subroutine particles_register_modules()
+    subroutine particles_register_modules
 !
 !  Register particle modules.
 !
@@ -58,7 +58,7 @@ module Particles_main
 !
     endsubroutine particles_init
 !***********************************************************************
-    subroutine particles_finalize()
+    subroutine particles_finalize
 !
 !  Finalize particle modules.
 !
@@ -196,7 +196,7 @@ module Particles_main
 !
     endsubroutine particles_boundconds
 !***********************************************************************
-    subroutine particles_pencil_criteria()
+    subroutine particles_pencil_criteria
 !
 !  Request pencils for particles.
 !
@@ -329,7 +329,7 @@ module Particles_main
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
-    subroutine read_all_particles_init_pars()
+    subroutine read_all_particles_init_pars
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
@@ -341,7 +341,7 @@ module Particles_main
 !
     endsubroutine write_all_particles_init_pars
 !***********************************************************************
-    subroutine read_all_particles_run_pars()
+    subroutine read_all_particles_run_pars
 !
     endsubroutine read_all_particles_run_pars
 !***********************************************************************
@@ -399,7 +399,7 @@ module Particles_main
 !
     endsubroutine write_snapshot_particles
 !***********************************************************************
-    subroutine read_snapshot_particles()
+    subroutine read_snapshot_particles
 !
 ! dummy subroutine
 !
@@ -418,9 +418,12 @@ module Particles_main
     endsubroutine particles_stochastic
 !***********************************************************************
     subroutine fetch_nparloc(dummy)
+!
 ! dummy subroutine
+!
       integer :: dummy
       call keep_compiler_quiet(dummy)
+
     endsubroutine fetch_nparloc
 !***********************************************************************
     subroutine append_particle_index(label,ilabel)

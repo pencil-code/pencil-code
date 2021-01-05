@@ -105,7 +105,7 @@ module Testfield
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        cs0test, &
-       luxb_as_aux,ljxb_as_aux,lugu_as_aux,lugh_as_aux, lSgh_as_aux, &
+       luxb_as_aux,ljxb_as_aux,lugu_as_aux,lugh_as_aux,lSgh_as_aux, &
        lignore_uxbtestm,lignore_jxbtestm, &
        lignore_ugutestm,lignore_ughtestm, lignore_Sghtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &

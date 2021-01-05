@@ -1643,7 +1643,7 @@ module Initcond
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz,zprof
       real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
-      real :: ampl,k=1.,ph,sig
+      real :: ampl,k,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
 !

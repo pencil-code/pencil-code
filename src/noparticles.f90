@@ -19,7 +19,6 @@ module Particles
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Particles_cdata
 !
   implicit none
 !
@@ -27,7 +26,7 @@ module Particles
 !
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -64,7 +63,7 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
-    subroutine read_particles_init_pars()
+    subroutine read_particles_init_pars
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
@@ -76,7 +75,7 @@ module Particles
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars()
+    subroutine read_particles_run_pars
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
@@ -88,7 +87,7 @@ module Particles
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************
-    subroutine pencil_criteria_particles()
+    subroutine pencil_criteria_particles
 !
 !  All pencils that the Particles module depends on are specified here.
 !
