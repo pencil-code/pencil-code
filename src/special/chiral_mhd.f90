@@ -111,7 +111,7 @@ module chiral_mhd
    logical :: ldiffmu5_hyper2_simplified=.false.
    logical :: ldiffmuS_hyper2_simplified=.false.
    logical :: lremove_mean_mu5=.false.
-   logical :: lmu5adv=.true., lmuSadv=.true.
+   logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
@@ -127,7 +127,7 @@ module chiral_mhd
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
-      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv
+      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -305,6 +305,7 @@ module chiral_mhd
          lpenc_requested(i_uu)=.true.
          if (lCVE) lpenc_requested(i_oo)=.true.
       endif
+      if (lmu5divu_term) lpenc_requested(i_divu)=.true.
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
@@ -414,6 +415,11 @@ module chiral_mhd
       if (lmu5adv) then
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
       endif
+!
+      if (lmu5divu_term) then
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
+      endif
+!
       if (lCVE) then
         call dot(p%oo,p%gmu5,oogmu5)
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
