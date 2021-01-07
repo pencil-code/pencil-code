@@ -374,6 +374,7 @@ module Energy
   integer :: idiag_heatmz=0     ! XYAVG_DOC: heating
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
+  integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -2944,6 +2945,7 @@ module Energy
           idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. & 
           idiag_ssmr/=0) & 
           lpenc_diagnos(i_ss)=.true.
+      if (idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
          lpenc_diagnos(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
@@ -3578,6 +3580,7 @@ module Energy
         if (idiag_uzTTmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
         call phizsum_mn_name_r(p%ss,idiag_ssmr)
         call phizsum_mn_name_r(p%TT,idiag_TTmr)
+        call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
         if (lFenth_as_aux) &
             call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
         if (lss_flucz_as_aux) then
@@ -6770,8 +6773,9 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
-        idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0;
+        idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
+        idiag_fpreszmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -6899,6 +6903,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsy2mz',idiag_gTxgsy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsz2mz',idiag_gTxgsz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz',idiag_ethmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpreszmz',idiag_fpreszmz)
       enddo
 !
       do inamer=1,nnamer
