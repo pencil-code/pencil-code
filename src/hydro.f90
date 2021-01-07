@@ -607,9 +607,15 @@ module Hydro
   integer :: idiag_u2u31mz=0    ! XYAVG_DOC:
   integer :: idiag_u3u12mz=0    ! XYAVG_DOC:
   integer :: idiag_u1u23mz=0    ! XYAVG_DOC:
+  integer :: idiag_acczmz=0     ! XYAVG_DOC: $\left<Du_z/Dt\right>_{xy}$
+  integer :: idiag_acczupmz=0   ! XYAVG_DOC: $\left<Du_z/Dt\right>_{xy+}$
+  integer :: idiag_acczdownmz=0 ! XYAVG_DOC: $\left<Du_z/Dt\right>_{xy-}$
   integer :: idiag_accpowzmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy}$
   integer :: idiag_accpowzupmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy+}$
   integer :: idiag_accpowzdownmz=0! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy-}$
+  integer :: idiag_totalforcezmz=0     ! XYAVG_DOC: $\left<\varrho Du_z/Dt\right>_{xy}$
+  integer :: idiag_totalforcezupmz=0   ! XYAVG_DOC: $\left<\varrho Du_z/Dt\right>_{xy+}$
+  integer :: idiag_totalforcezdownmz=0 ! XYAVG_DOC: $\left<\varrho Du_z/Dt\right>_{xy-}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -2377,9 +2383,12 @@ module Hydro
       if (idiag_u2u31m/=0 .or. idiag_u2u31mz/=0) lpenc_diagnos(i_u2u31)=.true.
       if (idiag_u3u12m/=0 .or. idiag_u3u12mz/=0) lpenc_diagnos(i_u3u12)=.true.
       if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
-      if (idiag_accpowzmz/=0 .or. idiag_accpowzupmz/=0 .or. idiag_accpowzdownmz/=0) then
-        lpenc_diagnos(i_fpres)=.true.; lpenc_diagnos(i_fvisc)=.true.
-        if (lgrav) lpenc_diagnos(i_gg)=.true.
+      if (idiag_acczmz/=0 .or. idiag_acczupmz/=0 .or. idiag_acczdownmz/=0 .or. &
+          idiag_accpowzmz/=0 .or. idiag_accpowzupmz/=0 .or. idiag_accpowzdownmz/=0 .or. &
+          idiag_totalforcezmz/=0 .or. idiag_totalforcezupmz/=0 .or. &
+          idiag_totalforcezdownmz/=0) then
+          lpenc_diagnos(i_fpres)=.true.; lpenc_diagnos(i_fvisc)=.true.
+          if (lgrav) lpenc_diagnos(i_gg)=.true.
       endif
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
@@ -3930,6 +3939,51 @@ module Hydro
         call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
         call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
         call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
+!
+        if (idiag_totalforcezmz/=0) then
+          uus = p%rho*(p%fpres(:,3) + p%fvisc(:,3))
+          if (lgrav) uus = uus + p%rho*p%gg(:,3)
+          call xysum_mn_name_z(uus,idiag_totalforcezmz)
+        endif
+        if (idiag_totalforcezupmz/=0) then
+          where (p%uu(:,3) > 0.) 
+            uus = p%rho*(p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3))
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_totalforcezupmz)
+        endif
+        if (idiag_totalforcezdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%rho*(p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3))
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_totalforcezdownmz)
+        endif
+!
+        if (idiag_acczmz/=0) then
+          uus = p%fpres(:,3) + p%fvisc(:,3)
+          if (lgrav) uus = uus + p%gg(:,3)
+          call xysum_mn_name_z(uus,idiag_acczmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_acczupmz/=0) then
+          where (p%uu(:,3) > 0.) 
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_acczupmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_acczdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_acczdownmz)   ! yet incorrect for Yin-Yang
+        endif
+!
         if (idiag_accpowzmz/=0) then
           uus = p%fpres(:,3) + p%fvisc(:,3)
           if (lgrav) uus = uus + p%gg(:,3)
@@ -5261,9 +5315,15 @@ module Hydro
         idiag_u2u31mz=0
         idiag_u3u12mz=0
         idiag_u1u23mz=0
+        idiag_acczmz=0
+        idiag_acczupmz=0
+        idiag_acczdownmz=0
         idiag_accpowzmz=0
         idiag_accpowzupmz=0
         idiag_accpowzdownmz=0
+        idiag_totalforcezmz=0
+        idiag_totalforcezupmz=0
+        idiag_totalforcezdownmz=0
         idiag_urmphi=0
         idiag_ursphmphi=0
         idiag_uthmphi=0
@@ -5878,11 +5938,23 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'u1u23mz',idiag_u1u23mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'acczmz',idiag_acczmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'acczupmz',idiag_acczupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'acczdownmz',idiag_acczdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'accpowzmz',idiag_accpowzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'accpowzupmz',idiag_accpowzupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'accpowzdownmz',idiag_accpowzdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'totalforcezmz',idiag_totalforcezmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'totalforcezupmz',idiag_totalforcezupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'totalforcezdownmz',idiag_totalforcezdownmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
