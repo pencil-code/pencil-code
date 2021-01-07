@@ -40,11 +40,13 @@ module Shock
   logical :: lfix_Re_mesh=.false.
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
-  logical :: lrewrite_shock_boundary=.false.
+  logical :: lrewrite_shock_boundary=.false., &
+             lconvergence_only=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
-      div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear
+      div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear, &
+      lconvergence_only
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -437,9 +439,15 @@ module Shock
           call boundconds_y(f,iuy,iuy)
           call boundconds_z(f,iuz,iuz)
         endif
+!
 ! The following will calculate div u for any coordinate system.
+!
         call div(f,iuu,penc)
-        f(l1:l2,m,n,ishock) = max(0.0,-penc)
+        if (lconvergence_only) then
+          f(l1:l2,m,n,ishock) = max(0.0,-penc)
+        else
+          f(l1:l2,m,n,ishock) = abs(penc)
+        endif
 !
 !  Add the linear term if requested
 !
