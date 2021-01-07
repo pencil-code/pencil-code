@@ -175,6 +175,9 @@ module Viscosity
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
   integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2
                                 ! XYAVG_DOC: \right>_{xy}$
+  integer :: idiag_viscforcezmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}
+  integer :: idiag_viscforcezupmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}
+  integer :: idiag_viscforcezdownmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}
 !
 ! yz averaged diagnostics given in yzaver.in written every it1d timestep
 !
@@ -841,6 +844,7 @@ module Viscosity
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
         idiag_fviscmax=0; idiag_fviscmin=0; idiag_fviscrsphmphi=0
+        idiag_viscforcezmz=0; idiag_viscforcezupmz=0; idiag_viscforcezdownmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -874,6 +878,9 @@ module Viscosity
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscsmmz',idiag_fviscsmmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsKmz',idiag_epsKmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezmz',idiag_viscforcezmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezupmz',idiag_viscforcezupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezdownmz',idiag_viscforcezdownmz)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -1069,7 +1076,9 @@ module Viscosity
         lpenc_diagnos(i_visc_heat)=.true.
 !        lpenc_diagnos(i_sij2)=.true.
       endif
-      if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
+      if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0.or. &
+          idiag_viscforcezmz/=0.or.idiag_viscforcezupmz/=0.or. &
+          idiag_viscforcezdownmz/=0) then
         lpenc_diagnos(i_rho)=.true.
 !        lpenc_diagnos(i_sij2)=.true.
 ! JW: There are also viscosities, which do not need sij
@@ -2502,7 +2511,7 @@ module Viscosity
       use Sub, only: cross, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Reshock,fvisc2
+      real, dimension (nx) :: Reshock,fvisc2,uus
       real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
       integer :: i
@@ -2580,11 +2589,9 @@ module Viscosity
         endif
       endif
 !
-!
 ! For slope-limted diffusion viscocity diagnostics need to be written
 ! out at the last time step
 !
-
       if (ldiagnos) then
         if (idiag_fviscm/=0 .or. idiag_fviscmax/=0 .or. idiag_fviscrmsx/=0) &
         call dot2(p%fvisc,fvisc2)
@@ -2622,6 +2629,24 @@ module Viscosity
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmx)
         if (idiag_numx/=0) &
             call yzsum_mn_name_x(p%nu,idiag_numx)
+        if (idiag_viscforcezmz/=0) &
+            call xysum_mn_name_z(p%rho*p%fvisc(:,3),idiag_viscforcezmz)
+        if (idiag_viscforcezupmz/=0) then
+          where (p%uu(:,3) > 0.)
+            uus = p%rho*p%fvisc(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_viscforcezupmz)
+        endif
+        if (idiag_viscforcezdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%rho*p%fvisc(:,3)
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_viscforcezdownmz)
+        endif
       endif
 !
 !  2D-averages.
