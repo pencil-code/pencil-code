@@ -1,0 +1,13 @@
+#!/bin/csh
+#$Id$
+#
+#  Example:
+#     rmVAR19
+
+cd $1
+set procdirs  =  `\ls data/ | grep proc `
+foreach proc ($procdirs)
+  rm data/$proc/V*[1-9]
+  rm data/$proc/slice*
+end
+
