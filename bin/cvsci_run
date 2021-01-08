@@ -137,7 +137,7 @@ endif
     if ( $status ) then
       $add_cmd src
       cd src
-      $add_cmd *.local .build-history
+      $add_cmd *.local .build-history .moduleinfo
       cd ..
       if ( $0:t == 'cvsci_run' ) then
         cvs ci -m "added new run: `uname -n -s`" src
