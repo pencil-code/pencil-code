@@ -1674,6 +1674,9 @@ endif
 !  Possibility of gaussian distributed random amplitudes if lrandom_ampl.
 !
       case ('potential')
+        if (nxgrid==1) kx_uukin=0.
+        if (nygrid==1) ky_uukin=0.
+        if (nzgrid==1) kz_uukin=0.
 !
 !  Allow for harmonic phase changes.
 !
