@@ -239,6 +239,8 @@ else if (($hn =~ blogin*) && ($USER =~ hhpfehnn))then # felipe on Lise
   set str='s/home/scratch\/usr/g'
 else if (($hn =~ puhti*.bullx) && ($USER =~ mreinhar))then # mreinhar on Puhti (CSC)
   set str='s/users\/mreinhar\/pencil-code/scratch\/ituomine\/pencil-code\/mreinhar/g'
+else if ($hn =~ Canopus.local) then # ccyang's machines
+  set str='s/devel/scratch/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
