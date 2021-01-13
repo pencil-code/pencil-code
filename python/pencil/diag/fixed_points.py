@@ -324,7 +324,10 @@ class FixedPoint(object):
 
                     # Find the streamline at the fixed point.
                     time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
-                    stream = Stream(field, self.params, xx=np.array([fixed_point[0], fixed_point[1], self.params.Oz]), time=time)
+                    stream = Stream(field, self.params, xx=np.array([fixed_point[0],
+                                                                     fixed_point[1],
+                                                                     self.params.Oz]),
+                                    time=time)
                     fixed_tracers.append(stream.tracers)
 
         queue.put((i_proc, fixed, fixed_tracers, fixed_sign, fixed_index, poincare_array))
@@ -520,7 +523,7 @@ class FixedPoint(object):
             set_t = f.create_dataset("t", self.t.shape, dtype=self.t.dtype)
             set_t[...] = self.t[...]
             set_fixed_index = f.create_dataset("fixed_index", self.fixed_index.shape,
-                                        dtype=self.fixed_index.dtype)
+                                               dtype=self.fixed_index.dtype)
             set_fixed_index[...] = self.fixed_index[...]
             set_poincare = f.create_dataset("poincare", self.poincare.shape,
                                             dtype=self.poincare.dtype)
@@ -538,8 +541,8 @@ class FixedPoint(object):
             for t_idx in range(len(self.t)):
                 fixed_groups.append(f.create_group('{0}'.format(t_idx)))
                 set_fixed_points = fixed_groups[-1].create_dataset("fixed_points",
-                                                                  self.fixed_points[t_idx].shape,
-                                                                  dtype=self.fixed_points[t_idx].dtype)
+                                                                   self.fixed_points[t_idx].shape,
+                                                                   dtype=self.fixed_points[t_idx].dtype)
                 set_fixed_points[...] = self.fixed_points[t_idx]
                 set_fixed_sign = fixed_groups[-1].create_dataset("fixed_sign",
                                                                  self.fixed_sign[t_idx].shape,
