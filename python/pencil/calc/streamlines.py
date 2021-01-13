@@ -37,6 +37,8 @@ params.interpolation = 'trilinear'
 time = np.linspace(0, 20, 100)
 stream = pc.calc.Stream(bb, params, xx=[0.5, 0.5, -1], time=time)
 '''
+
+
 class Stream(object):
     """
     Contains the methods and results for the streamline tracing for a field on a grid.
@@ -74,11 +76,13 @@ class Stream(object):
 
         *splines*:
             Spline interpolation functions for the tricubic interpolation.
-            This can speed up the calculations greatly for repeated streamline tracing on the same data.
+            This can speed up the calculations greatly for repeated streamline
+            tracing on the same data.
             Accepts a list of the spline functions for the three vector components.
         """
 
         import numpy as np
+        from scipy.integrate import ode
         from scipy.integrate import solve_ivp
         from ..math.interpolation import vec_int
 
@@ -121,9 +125,20 @@ class Stream(object):
             del(y)
             del(z)
         # Set up the ode solver.
-        self.tracers = solve_ivp(odeint_func, (time[0], time[-1]), xx,
-                                 t_eval=time, rtol=params.rtol, atol=params.atol,
-                                 method=params.method).y.T
+        methods_ode = ['vode', 'zvode', 'lsoda', 'dopri5', 'dop853']
+        methods_ivp = ['RK45', 'RK23', 'Radau', 'BDF', 'LSODA']
+        if params.method in methods_ode:
+            solver = ode(odeint_func, jac=metric)
+            solver.set_initial_value(xx, time[0])
+            solver.set_integrator(params.method, rtol=params.rtol, atol=params.atol)
+            self.tracers = np.zeros([len(time), 3])
+            self.tracers[0, :] = xx
+            for i, t in enumerate(time[1:]):
+                self.tracers[i+1, :] = solver.integrate(t)
+        if params.method in methods_ivp:
+            self.tracers = solve_ivp(odeint_func, (time[0], time[-1]), xx,
+                                     t_eval=time, rtol=params.rtol, atol=params.atol,
+                                     method=params.method).y.T
 
         # Remove points that lie outside the domain and interpolation on the boundary.
         cut_mask = ((self.tracers[:, 0] > params.Ox+params.Lx) + \
