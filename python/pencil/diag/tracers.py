@@ -119,7 +119,8 @@ class Tracers(object):
         if self.params.int_q == 'ee':
             self.ee = np.zeros([int(self.params.trace_sub*dim.nx),
                                 int(self.params.trace_sub*dim.ny), nTimes])
-        self.mapping = np.zeros([int(self.params.trace_sub*dim.nx), int(self.params.trace_sub*dim.ny),
+        self.mapping = np.zeros([int(self.params.trace_sub*dim.nx),
+                                 int(self.params.trace_sub*dim.ny),
                                  nTimes, 3])
         self.t = np.zeros(nTimes)
 
@@ -190,6 +191,8 @@ class Tracers(object):
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
 
+            return 0
+
 
     # Return the tracers for the specified starting locations.
     def __sub_tracers(self, queue, field, t_idx, i_proc, n_proc):
@@ -231,7 +234,8 @@ class Tracers(object):
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
         for ix in range(i_proc, self.x0.shape[0], n_proc):
             for iy in range(self.x0.shape[1]):
-                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :], time=time, splines=splines)
+                stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :],
+                                time=time, splines=splines)
                 sub_x1[int(ix/n_proc), iy] = stream.tracers[-1, 0]
                 sub_y1[int(ix/n_proc), iy] = stream.tracers[-1, 1]
                 sub_z1[int(ix/n_proc), iy] = stream.tracers[-1, 2]
@@ -423,4 +427,3 @@ class TracersParameterClass(object):
         self.datadir = 'data'
         self.destination = 'tracers.hdf5'
         self.n_proc = 1
-
