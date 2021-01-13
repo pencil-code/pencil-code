@@ -275,7 +275,7 @@ class DataCube(object):
                 proc_dirs = self.__natural_sort(
                     filter(lambda s: s.startswith('proc'),
                            os.listdir(datadir)))
-                if (proc_dirs.index("proc_bounds.dat") > 0):
+                if (proc_dirs.count("proc_bounds.dat") > 0):
                     proc_dirs.remove("proc_bounds.dat")
                 if param.lcollective_io:
                     # A collective IO strategy is being used
