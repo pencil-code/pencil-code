@@ -222,7 +222,7 @@ module Special
 !
 ! regularize beta
 !
-  logical :: lregularize_beta=.false., &
+  logical :: lregularize_beta=.false., lregularize_kappa=.false., &
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
@@ -254,7 +254,7 @@ module Special
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
-      lalt_decomp, lremove_beta_negativ, rel_eta
+      lregularize_kappa, lalt_decomp, lremove_beta_negativ, rel_eta
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -1137,6 +1137,10 @@ enddo; enddo
 
           endif
 
+          if (lkappa.and.lregularize_kappa) then
+            where(kappa_data(1,:,:,1,3,2,1)<-eta-beta_data(1,:,:,1,3,3)) &
+              kappa_data(1,:,:,1,3,2,1)=(-1.+rel_eta)*(eta+beta_data(1,:,:,1,3,3))
+          endif
 !if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
 
           if (lsymmetrize) then
