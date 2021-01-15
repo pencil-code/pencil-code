@@ -752,9 +752,9 @@ module Io
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
       if (lroot) then
-        call MPI_FILE_WRITE_AT_ALL(handle, 0_MPI_OFFSET_KIND, real(t), 1, mpi_precision, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, real(t), 1, mpi_precision, status, mpi_err)
       else
-        call MPI_FILE_WRITE_AT_ALL(handle, 0_MPI_OFFSET_KIND, huge(0.0), 0, mpi_precision, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
       endif
       call check_success("output_part", "write additional data", fpath)
 !
