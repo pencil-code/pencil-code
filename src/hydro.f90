@@ -51,6 +51,8 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
+  real, target, dimension (:,:), allocatable :: ou_xy,ou_xy2,ou_xy3,ou_xy4
+  real, target, dimension (:,:), allocatable :: ou_xz,ou_yz,ou_xz2
 
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
   real, dimension (nz,3) :: guumz=0.0
@@ -739,6 +741,7 @@ module Hydro
 !  Video data.
 !
   integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0, ivid_uu_sph=0
+  integer :: ivid_ou=0
 !
 !  Auxiliary variables
 !
@@ -1190,6 +1193,16 @@ module Hydro
         if (lwrite_slice_xy3.and..not.allocated(o2_xy3)) allocate(o2_xy3(nx,ny))
         if (lwrite_slice_xy4.and..not.allocated(o2_xy4)) allocate(o2_xy4(nx,ny))
         if (lwrite_slice_xz2.and..not.allocated(o2_xz2)) allocate(o2_xz2(nx,nz))
+      endif
+      if (ivid_ou/=0) then
+        !call alloc_slice_buffers(ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2)
+        if (lwrite_slice_xy .and..not.allocated(ou_xy) ) allocate(ou_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(ou_xz) ) allocate(ou_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(ou_yz) ) allocate(ou_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(ou_xy2)) allocate(ou_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(ou_xy3)) allocate(ou_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(ou_xy4)) allocate(ou_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(ou_xz2)) allocate(ou_xz2(nx,nz))
       endif
       if (ivid_u2/=0) then
         !call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
@@ -2335,6 +2348,7 @@ module Hydro
 !
       if (lwrite_slices) then
         if (ivid_oo  /=0) lpenc_video(i_oo)=.true.
+        if (ivid_ou  /=0) lpenc_video(i_ou)=.true.
         if (ivid_o2  /=0) lpenc_video(i_o2)=.true.
         if (ivid_divu/=0) lpenc_video(i_divu)=.true.
         if (ivid_u2  /=0) lpenc_video(i_u2)=.true.
@@ -4233,6 +4247,7 @@ module Hydro
         if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+        if (ivid_ou  /=0) call store_slices(p%ou,ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
         if (ivid_uu_sph/=0) call store_slices(p%uu_sph,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2)
         if (othresh_per_orms/=0) then
@@ -5537,7 +5552,7 @@ module Hydro
         idiag_taufmin=0
         idiag_dtF=0
         idiag_nshift=0
-        ivid_oo=0; ivid_o2=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
+        ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -6070,6 +6085,7 @@ module Hydro
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu',  idum)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'oo',  ivid_oo)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'o2',  ivid_o2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'ou',  ivid_ou)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'divu',ivid_divu)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'u2',  ivid_u2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ma2', ivid_Ma2)
@@ -6124,6 +6140,11 @@ module Hydro
 !
         case ('o2')
           call assign_slices_scal(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+!
+!  kinetic helicity.
+!
+        case ('ou')
+          call assign_slices_scal(slices,ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2)
 !
 !  Mach number squared.
 !
