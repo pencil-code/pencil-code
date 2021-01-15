@@ -34,14 +34,14 @@ module InitialCondition
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0, kramers_hcond0=0.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
-  logical :: lwrite_hcond_profile=.true.
+  logical :: lwrite_hcond_profile=.true., lkappa_constchi=.false.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
       npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, &
-      lwrite_hcond_profile
+      lwrite_hcond_profile, lkappa_constchi
 !
   contains
 !***********************************************************************
@@ -217,12 +217,14 @@ module InitialCondition
       lnrho=log(rho_prof/rho0)
       lnrho_global=log(rho_global/rho0)
 !
-      if (lcorona) then
+      if (lcorona .or. lkappa_constchi) then
         dlnrhodr_global=-dlnTdr_global-gravx/xglobal(nghost+1:nxgrid+nghost)**2/(cv*(gamma-1)*TT_global)
-        do j=nsurf_global-nsurf_global/10, nxgrid
-          lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
-        enddo
-        lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
+        if (lcorona) then
+          do j=nsurf_global-nsurf_global/10, nxgrid
+            lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
+          enddo
+          lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
+        endif
       else
         dlnrhodr_global=0.
       endif
@@ -281,12 +283,20 @@ module InitialCondition
       gnpoly2=0.
 !
       do n=1,nxgrid
-        npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
-        gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-        if ((xglobal(nghost+n)>=Rstar) .and. &
-            ((npoly2(n)+1.)/exp(lnrho_global(n))>2.*(npoly2(1)+1.)/exp(lnrho_global(1)))) then
-          npoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1.
-          gnpoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
+!
+!     set kappa that chi is constant with initial stratification
+!
+        if (lkappa_constchi) then
+          npoly2(n)=nad*exp(lnrho_global(n)-lnrho_global(1))
+          gnpoly2(n)=npoly2(n)*dlnrhodr_global(n)
+        else
+          npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+          gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+          if ((xglobal(nghost+n)>=Rstar) .and. &
+              ((npoly2(n)+1.)/exp(lnrho_global(n))>2.*(npoly2(1)+1.)/exp(lnrho_global(1)))) then
+            npoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1.
+            gnpoly2(n)=2.*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
+          endif
         endif
       enddo
 !
