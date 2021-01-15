@@ -746,25 +746,17 @@ module Io
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("output_part", "free subarray type")
 !
-!  Set global view of the file.
-!
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_BYTE, MPI_BYTE, "native", io_info, mpi_err)
-      call check_success("output_part", "set global view of", fpath)
-!
-!  Set the size of the file.
-!
-      offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * realsize
-      call MPI_FILE_SET_SIZE(handle, offset, mpi_err)
-      call check_success("output_part", "set size of", fpath)
-!
 !  Write additional data.
 !
-      wadd: if (lroot) then
-        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
-        call check_success_local("output_part", "seek the end of the file")
-        call MPI_FILE_WRITE(handle, real(t), 1, mpi_precision, status, mpi_err)
-        call check_success_local("output_part", "write additional data")
-      endif wadd
+      offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * realsize
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      call check_success("output_part", "set global view of", fpath)
+      if (lroot) then
+        call MPI_FILE_WRITE_AT_ALL(handle, 0_MPI_OFFSET_KIND, real(t), 1, mpi_precision, status, mpi_err)
+      else
+        call MPI_FILE_WRITE_AT_ALL(handle, 0_MPI_OFFSET_KIND, huge(0.0), 0, mpi_precision, status, mpi_err)
+      endif
+      call check_success("output_part", "write additional data", fpath)
 !
 !  Close snapshot file.
 !
