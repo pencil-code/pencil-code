@@ -146,7 +146,7 @@ module Param_IO
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
-      lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
+      lread_aux, comment_char, ix, iy, iy2, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
