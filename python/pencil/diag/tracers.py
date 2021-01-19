@@ -319,11 +319,11 @@ class Tracers(object):
             set_y1[...] = self.y1[...]
             set_z1[...] = self.z1[...]
             set_l[...] = self.l[...]
-            set_q = []
-            if not self.params.int_q == '':
-                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
-                                              dtype=getattr(self, self.params.int_q).dtype))
-                set_q[-1][...] = getattr(self, self.params.int_q)[...]
+#            set_q = []
+#            if not self.params.int_q == '':
+#                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
+#                                              dtype=getattr(self, self.params.int_q).dtype))
+#                set_q[-1][...] = getattr(self, self.params.int_q)[...]
             set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset("mapping", self.mapping.shape,
                                      dtype=self.mapping.dtype)
@@ -333,8 +333,9 @@ class Tracers(object):
             group_params = f.create_group('params')
             for key in dir(self.params):
                 if not key.startswith('_'):
-                    value = getattr(self.params, key)
-                    group_params.attrs[key] = value
+                    if not key == 'int_q':
+                        value = getattr(self.params, key)
+                        group_params.attrs[key] = value
             f.close()
         else:
             print("error: empty destination file")

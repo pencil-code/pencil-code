@@ -533,8 +533,9 @@ class FixedPoint(object):
             group_params = f.create_group('params')
             for key in dir(self.params):
                 if not key.startswith('_'):
-                    value = getattr(self.params, key)
-                    group_params.attrs[key] = value
+                    if not key == 'int_q':
+                        value = getattr(self.params, key)
+                        group_params.attrs[key] = value
 
             # Create a new group for each time step.
             fixed_groups = []
