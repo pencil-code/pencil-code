@@ -81,7 +81,6 @@ module Cdata
   real, dimension (mx) :: x12    ! for slope-limted-diffusion
   real, dimension (my) :: y12    ! for slope-limted-diffusion
   real, dimension (mz) :: z12    ! for slope-limted-diffusion
-
 !
 !  Grid parameters.
 !
@@ -188,6 +187,7 @@ module Cdata
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
+  logical :: lwrite_ts_hdf5=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
