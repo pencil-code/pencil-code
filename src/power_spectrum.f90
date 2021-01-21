@@ -2593,6 +2593,7 @@ module power_spectrum
   integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
+  real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -2710,7 +2711,8 @@ module power_spectrum
   do ikz=1,nz
     do iky=1,ny
       do ikx=1,nx
-        k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
           spectrum(k+1)=spectrum(k+1) &
              +a_re(ikx,iky,ikz)**2 &
