@@ -54,7 +54,7 @@ class SedovTaylor(object):
 
 
     def get_st(self,
-           t_sedov=0, par=list(), time=list(), nt=2000, startt=0., endt=0.005,
+           t_sedov=0, par=list(), time=list(), nt=5000, startt=0., endt=0.005,
            dims=3, quiet=True, rho0=1.6728e-24, M0=10, lsnowplough=True,
            lcioffi=True
         ):
@@ -92,12 +92,12 @@ class SedovTaylor(object):
         
         if isinstance(par, list):
             unit_length = 3.086e21 # 1pc in cm
-            unit_time = 3.1557e16 # Myr in s
+            unit_time = 3.1557e16 # Gyr in s
             unit_velocity = unit_length/unit_time # ~km/s in cm/s
-            unit_density = 1e-24 # g/cm3
+            unit_density = 1.6728e-24 # g/cm3
             unit_energy_density = unit_density*unit_velocity**2 # erg/cm3
             unit_energy = unit_energy_density*unit_length**3 # erg
-            E0 = 10e51/unit_energy # erg
+            E0 = 1e51/unit_energy # erg
             M0 = 10
         else:
             unit_length =         par.unit_length      
@@ -129,8 +129,9 @@ class SedovTaylor(object):
         setattr(self, 't_sedov', t_sedov)
         setattr(self, 'dims', dims)
         setattr(self, 't', time)
-        
-         
+        for key in self.__dict__.keys():
+            print(key,self.__getattribute__(key))
+ 
         #Sedov-Taylor
         rst  = (self.xi*self.E0/self.rho0)**(1./(self.dims+2.)
                )*self.t**(2./(self.dims+2.))
