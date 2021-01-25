@@ -57,6 +57,7 @@ module Hydro
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
   real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
+  real, dimension (my,3) :: uumy=0.0
   real, dimension (:,:,:), allocatable :: uumxy, ruumxy
   real, dimension (mx,mz,3) :: uumxz=0.0
 !
@@ -199,12 +200,12 @@ module Hydro
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lremove_uumeanxy=.false.
-  logical :: lremove_uumeanz=.false.
+  logical :: lremove_uumeanx=.false., lremove_uumeany=.false., lremove_uumeanz=.false.
   logical :: lremove_uumeanz_horizontal=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
-  logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
+  logical :: lcalc_uumeanx=.false.,lcalc_uumeany=.false.,lcalc_uumeanxz=.false.
   logical :: lcalc_ruumeanz=.false.,lcalc_ruumeanxy=.false.
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
@@ -239,8 +240,8 @@ module Hydro
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
       xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
-      lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
-      lremove_uumeanxy,lremove_uumeanz,lremove_uumeanz_horizontal, &
+      lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, lremove_uumeanx,&
+      lremove_uumeany,lremove_uumeanxy,lremove_uumeanz,lremove_uumeanz_horizontal, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
@@ -1143,6 +1144,8 @@ module Hydro
 !
       lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz .or. &      ! lcalc_uumean for compatibility
                       lremove_uumeanz .or. lremove_uumeanz_horizontal
+      lcalc_uumeanx = lcalc_uumeanx.or.lremove_uumeanx
+      lcalc_uumeany = lcalc_uumeany.or.lremove_uumeany
       lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy
 !
       if (Omega/=0. .and. lyinyang) then
@@ -1349,6 +1352,19 @@ module Hydro
           enddo
         enddo
         call finalize_aver(nprocyz,23,uumx)
+!
+      endif
+!
+!  do xz-averaged mean field for each component
+!
+      if (lcalc_uumeany) then
+        fact=1./nxzgrid
+        do m=1,my
+          do j=1,3
+            uumy(m,j)=fact*sum(f(l1:l2,m,n1:n2,iux+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocxz,13,uumy)
 !
       endif
 !
@@ -4323,7 +4339,7 @@ module Hydro
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
       real, dimension (3) :: OO, dOO
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      integer :: i,j
+      integer :: i,j,l
 !
       intent(inout) :: f
 !
@@ -4435,6 +4451,26 @@ module Hydro
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
+          enddo
+        endif
+!
+!  Remove mean flow (xz average).
+!
+        if (lremove_uumeany) then
+          do j=1,3
+            do m=1,my
+              f(:,m,:,iuu+j-1) = f(:,m,:,iuu+j-1)-uumy(m,j)
+            enddo
+          enddo
+        endif
+!
+!  Remove mean flow (yz average).
+!
+        if (lremove_uumeanx) then
+          do j=1,3
+            do l=1,mx
+              f(l,:,:,iuu+j-1) = f(l,:,:,iuu+j-1)-uumx(l,j)
             enddo
           enddo
         endif
