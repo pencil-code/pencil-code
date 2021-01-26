@@ -67,6 +67,10 @@ module HDF5_IO
   logical :: lcollective = .false., lwrite = .false.
   character (len=fnlen) :: current
 !
+! Number of open/close retries if file is locked, waiting time in seconds.
+!
+  integer, parameter :: ntries=10, nsleep=60
+!
 ! The name of the calling subroutine.
 !
   character(LEN=2*labellen) :: scaller=''
@@ -196,6 +200,7 @@ module HDF5_IO
 !
       logical :: ltrunc, lread_only
       integer :: h5_read_mode, pos
+      integer :: i
 !
       if (lcollective .or. lwrite) call file_close_hdf5
 !
@@ -226,7 +231,12 @@ module HDF5_IO
           call check_error (h5_err, 'create global file "'//trim (file)//'"')
         else
           ! open existing HDF5 file
-          call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err, access_prp=h5_plist)
+          i=0; h5_err=1
+          do while (h5_err/=0.and.i<ntries)
+            call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err, access_prp=h5_plist)
+            i=i+1
+            if (h5_err/=0) call sleep(nsleep)
+          enddo
           call check_error (h5_err, 'open global file "'//trim (file)//'"')
         endif
 !
@@ -237,7 +247,14 @@ module HDF5_IO
           call h5fcreate_f (trim (file), H5F_ACC_TRUNC_F, h5_file, h5_err)
           call check_error (h5_err, 'create local file "'//trim (file)//'"', caller='file_open_hdf5')
         else
-          call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
+
+          i=0; h5_err=1
+          do while (h5_err/=0.and.i<ntries)
+            call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
+            i=i+1
+!print*, 'local: iproc,i,h5_err=', iproc,i,h5_err
+            if (h5_err/=0) call sleep(nsleep)
+          enddo
           call check_error (h5_err, 'open local file "'//trim (file)//'"', caller='file_open_hdf5')
         endif
       endif
@@ -245,10 +262,19 @@ module HDF5_IO
     endsubroutine file_open_hdf5
 !***********************************************************************
     subroutine file_close_hdf5
+
+      integer :: i
 !
       if (.not. (lcollective .or. lwrite)) return
+
+      i=0; h5_err=1
+
+      do while (h5_err/=0.and.i<ntries)
+        call h5fclose_f (h5_file, h5_err)
+        i=i+1
+        if (h5_err/=0) call sleep(nsleep)
+      enddo
 !
-      call h5fclose_f (h5_file, h5_err)
       call check_error (h5_err, 'close file "'//trim (current)//'"',caller='file_close_hdf5')
 !
       current = repeat (' ', fnlen)
