@@ -95,7 +95,7 @@ module Hydro
   real :: rp=0, gamma_dg11=0.4, relhel_uukin=1., chi_uukin=45., del_uukin=0.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
-  real :: sigma_uukin=1., tau_uukin=1., time_uukin=1.
+  real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -120,7 +120,7 @@ module Hydro
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
       ll_sh, mm_sh, n_xprof, lrandom_ampl, &
-      sigma_uukin, tau_uukin, time_uukin
+      sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -1183,8 +1183,8 @@ endif
 !
         if (lpenc_loc(i_uu)) then
           fac2=.5/sigma_uukin**2
-          tmp_mn=fac*exp(-fac2*(x(l1:l2)**2+y(m)**2+z(n)**2))
-          p%uu(:,1)=- 2.*y(m    )*fac2*coskx                *tmp_mn
+          tmp_mn=fac*exp(-fac2*(x(l1:l2)**2+sigma1_uukin_scl_yz*(y(m)**2+z(n)**2)))
+          p%uu(:,1)=- 2.*y(m    )*fac2*coskx                *tmp_mn*sigma1_uukin_scl_yz
           p%uu(:,2)=+(2.*x(l1:l2)*fac2*coskx+kx_uukin*sinkx)*tmp_mn
           p%uu(:,3)=0.
 !
@@ -1193,7 +1193,7 @@ endif
           if (lpenc_loc(i_oo)) then
             p%oo(:,1)=0.
             p%oo(:,2)=0.
-            p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+y(m)**2))*fac2*tmp_mn
+            p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+sigma1_uukin_scl_yz*y(m)**2))*fac2*tmp_mn
           endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
