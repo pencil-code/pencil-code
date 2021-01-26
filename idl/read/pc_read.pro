@@ -50,7 +50,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 				; translate two-letter shortcuts
 				if (strlen (vectors[pos]) eq 2) then expanded = strmid (quantity, 1)
 				if (stregex (quantity, '^'+vectors[pos]+'$', /bool)) then expanded += [ 'x', 'y', 'z' ]
-				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close)
 			end
 		end
 	end
