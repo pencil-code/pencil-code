@@ -3792,7 +3792,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
-      real :: cv1, rhotop, lnrhotop, w_sldrat2
+      real :: cv1, rhotop, lnrhotop, w_sldrat2=1.0
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
@@ -3808,7 +3808,7 @@ module Energy
        prof_cs=1.
        fact_rho=1.
        fact_wsld=1.
-       w_sldrat2=w_sldchar_ene2**2./w_sldchar_ene**2.
+       if (lsld_char_cslimit) w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
 !
        if (lsld_char_wprofr) fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.) &
                                            *(x/w_sldchar_ene_r0)**w_sldchar_ene_p
@@ -3843,10 +3843,15 @@ module Energy
 !  w_sldchar_ene*sqrt(cs2)
 !
          if (lsld_char_cslimit) then
-           prof_cs=step(cs2,w_sldrat2*cs2top,cs2top/2.)
-           f(:,m,n,isld_char)=f(:,m,n,isld_char) &
+           if (w_sldchar_ene==0.0) then
+             f(:,m,n,isld_char)=f(:,m,n,isld_char) &
+                               + w_sldchar_ene2*sqrt(cs2top)
+           else
+             prof_cs=step(cs2,w_sldrat2*cs2top+cs2top/200.,cs2top/200.)
+             f(:,m,n,isld_char)=f(:,m,n,isld_char) &
                              + w_sldchar_ene*prof_cs*sqrt(cs2) &
                              + (1.-prof_cs)*w_sldchar_ene2*sqrt(cs2top)
+           endif
          else
 !           f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
            f(:,m,n,isld_char)=f(:,m,n,isld_char) &
