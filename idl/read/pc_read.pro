@@ -39,23 +39,22 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 	common pc_read_common, file
 
 	quantity = strtrim (quantity, 2)
+	num_quantities = n_elements (quantity)
 
-	if (n_elements (quantity) eq 1) then begin
+	if (num_quantities eq 1) then begin
 		; expand vector quantities
 		vectors = [ 'aa', 'uu', 'bb', 'jj', 'ff' ]
-		num_vectors = n_elements (vectors)
-		for pos = 0, num_vectors-1 do begin
+		for pos = 0, n_elements (vectors)-1 do begin
 			if (stregex (quantity, '^'+vectors[pos]+'[xyz]?$', /bool)) then begin
 				expanded = quantity
 				; translate two-letter shortcuts
 				if (strlen (vectors[pos]) eq 2) then expanded = strmid (quantity, 1)
 				if (stregex (quantity, '^'+vectors[pos]+'$', /bool)) then expanded += [ 'x', 'y', 'z' ]
-				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close)
+				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
 			end
 		end
 	end
 
-	num_quantities = n_elements (quantity)
 	if (num_quantities gt 1) then begin
 		; read multiple quantities in one large array
 		data = pc_read (quantity[0], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
