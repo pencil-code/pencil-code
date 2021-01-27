@@ -88,12 +88,12 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 	end else begin
 		if (not keyword_set (file)) then begin
 			; no file is open
-                        filename=identify_varfile(path=file)
+			filename=identify_varfile(path=file)
 			if strpos(filename,'.h5') eq -1 then begin
-                                undefine, file
+				undefine, file
 				; read old file format
 				return, pc_read_old (quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
-                        endif
+			endif
 		end
 	end
 
@@ -109,10 +109,10 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 			ipx = processor mod dim.nprocx
 			ipy = (processor / dim.nprocx) mod dim.nprocy
 			ipz = processor / (dim.nprocx * dim.nprocy)
-                        nx = dim.nxgrid / dim.nprocx
-                        ny = dim.nygrid / dim.nprocy
-                        nz = dim.nzgrid / dim.nprocz
-                        ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
+			nx = dim.nxgrid / dim.nprocx
+			ny = dim.nygrid / dim.nprocy
+			nz = dim.nzgrid / dim.nprocz
+			ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
 			start = [ ipx*nx, ipy*ny, ipz*nz ]
 			count = [ nx, ny, nz ]
 			if (not keyword_set (ghostless)) then count += ghost * 2
@@ -128,7 +128,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 			default, start, [ 0, 0, 0 ]
 			default, count, [ dim.mxgrid, dim.mygrid, dim.mzgrid ]
 			if (size (dim, /type) eq 0) then pc_read_dim, obj=dim, datadir=datadir
-                        ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
+			ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
 			degenerated = where (count eq 1, num_degenerated)
 			if (num_degenerated gt 0) then ghost[degenerated] = 0
 			return, h5_read (quantity, filename=file, start=start+ghost, count=count-ghost*2, close=close)
