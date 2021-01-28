@@ -226,7 +226,8 @@ module Special
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
-  real :: rel_eta=1e-3    ! must be > 0
+  real :: rel_eta=1e-3, jthresh=0.3    ! must be > 0
+  real, pointer :: eta
   real :: kappa_floor=-1e-5
 
   ! Input dataset name
@@ -352,6 +353,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Messages, only: information
+      use SharedVariables, only: get_shared_variable
 
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
@@ -362,6 +364,7 @@ module Special
 
       if (lrun) then 
 
+        call get_shared_variable('eta', eta)
         if (trim(dataset) == 'time-series' .or. trim(dataset) == 'time-crop') then
           lread_time_series=.true.
         elseif (trim(dataset) /= 'mean') then
@@ -821,7 +824,6 @@ module Special
 !  20-may-19/MR: added beta regularization, reconstruction of alpha and gamma from acoef and bcoef,
 !                alternative decomposition of tensors
 !
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: mpireduce_sum_int, mpiallreduce_sum_int, mpireduce_min
       use PolynomialRoots, only: cubicroots
       use Sub, only: dyadic2_other
@@ -830,7 +832,6 @@ module Special
 !
       real :: delt,minbeta,minbeta_,thmin,thmax,rmin,rmax,trmin,det,oldtrace,newtrace
       integer :: i,j,k,numzeros,numcomplex,numzeros_,mm,ll,iv,iv0,ik
-      real, pointer :: eta
       integer, dimension(:,:,:,:), allocatable :: beta_mask
       real, dimension(4) :: polcoeffs
       complex, dimension(3) :: eigenvals
@@ -1005,7 +1006,6 @@ module Special
 !if (lroot.and.lbeta) write(200,*) beta_data(1,:,:,1,:,:)
 
            if (lbeta.and.lremove_beta_negativ) then
-           if (iload==1) call get_shared_variable('eta', eta)
              do i=1,3
                where(beta_data(:,:,:,:,i,i)<eta*rel_eta) beta_data(:,:,:,:,i,i)=eta*rel_eta
              enddo
@@ -1016,7 +1016,6 @@ module Special
           if (lbeta.and.lregularize_beta) then
 
             allocate(beta_mask(dataload_len,nx,ny,nz))
-            if (iload==1) call get_shared_variable('eta', eta)
             do i=1,3
 !
 !  Look for vanishing diagonal elements of beta.
@@ -1139,19 +1138,15 @@ enddo; enddo
           endif
 
           if (lkappa.and.lregularize_kappa) then
-!            where(kappa_data(1,:,:,1,3,2,1)<-eta-beta_data(1,:,:,1,3,3)) &
-!              kappa_data(1,:,:,1,3,2,1)=(-1.+rel_eta)*(eta+beta_data(1,:,:,1,3,3))
-!            where(kappa_data(1,:,:,1,3,1,2)<-eta-beta_data(1,:,:,1,3,3)) &
-!              kappa_data(1,:,:,1,3,1,2)=(-1.+rel_eta)*(eta+beta_data(1,:,:,1,3,3))
 !
 ! Setting kappa_floor by hand
 !
-!
-            where(kappa_data(1,:,:,1,3,2,1)< kappa_floor) &
-              kappa_data(1,:,:,1,3,2,1)= kappa_floor
-            where(kappa_data(1,:,:,1,3,1,2)< kappa_floor) &
-              kappa_data(1,:,:,1,3,1,2)= kappa_floor
+            !!!where(kappa_data(1,:,:,1,3,2,1) < kappa_floor) &
+            !!!  kappa_data(1,:,:,1,3,2,1)= kappa_floor
+            !!!where(kappa_data(1,:,:,1,3,1,2) < kappa_floor) &
+            !!!  kappa_data(1,:,:,1,3,1,2)= kappa_floor
           endif
+
 !if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
 
           if (lsymmetrize) then
@@ -1214,6 +1209,7 @@ enddo; enddo
       intent(inout) :: p
 !
       integer :: i,j,k, ind(1)
+      real, dimension(nx) :: jrt,jtr
 !
       call keep_compiler_quiet(f)
 !
@@ -1324,8 +1320,25 @@ enddo; enddo
 
         p%kappa_emf = 0
         do k=1,3; do j=1,3; do i=1,3
-          if (lkappa_arr(i,j,k)) &
+          if (lkappa_arr(i,j,k)) then
+            if (lregularize_kappa) then
+              if (i==3.and.(j==1.and.k==2).or.(j==2.and.k==1)) then
+!
+! For cases where |B_x;y| << |B_y;x| or |B_y;x| << |B_x;y|: ensure that beta+kappa are positive
+! definit.
+                jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
+                jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
+                where (abs(jrt)<jthresh*abs(jtr) .and. &
+                       p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) ) 
+                  p%kappa_coefs(:,3,j,k)=(-1.+rel_eta)*(eta+p%beta_coefs(:,3,3))
+                elsewhere (abs(jtr)<jthresh*abs(jrt) .and. &
+                           p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
+                  p%kappa_coefs(:,3,j,k)=(1.-rel_eta)*(eta+p%beta_coefs(:,3,3))
+                endwhere
+              endif
+            endif
             p%kappa_emf(:,i)=p%kappa_emf(:,i)+p%kappa_coefs(:,i,j,k)*p%bij_symm(:,j,k)
+          endif
         end do; end do; end do
         p%emf = p%emf - p%kappa_emf
       end if
