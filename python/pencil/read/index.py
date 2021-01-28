@@ -69,6 +69,8 @@ class Index(object):
         """
 
         import os
+        import re
+        import numpy as np
         from .. import read
 
         if param is None:
@@ -88,7 +90,11 @@ class Index(object):
             name = clean.split('=')[0].strip().replace('[', '').replace(']', '')
             if clean.split('=')[1].strip().startswith('intarr(370)'):
                 continue
-            val = int(clean.split('=')[1].strip())
+            try:
+                val = int(clean.split('=')[1].strip())
+            except:
+                val = np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1))) + \
+                      int(clean.split('=')[1].strip().split('+')[1])
 
             if val != 0  and val <= totalvars \
                 and not name.startswith('i_') and name.startswith('i'):
