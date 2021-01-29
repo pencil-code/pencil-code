@@ -222,7 +222,7 @@ module Special
 !
 ! regularize beta
 !
-  logical :: lregularize_beta=.false., lregularize_kappa=.false., &
+  logical :: lregularize_beta=.false., lregularize_kappa=.false., lregularize_kappa_simple=.false., &
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
@@ -256,7 +256,7 @@ module Special
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
-      lregularize_kappa, lalt_decomp, lremove_beta_negativ, rel_eta, kappa_floor
+      lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, rel_eta, kappa_floor
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -1137,14 +1137,18 @@ enddo; enddo
 
           endif
 
-          if (lkappa.and.lregularize_kappa) then
+          if (lkappa) then
+            if (lregularize_kappa_simple) then
+!
+              lregularize_kappa=.false.
 !
 ! Setting kappa_floor by hand
 !
-            !!!where(kappa_data(1,:,:,1,3,2,1) < kappa_floor) &
-            !!!  kappa_data(1,:,:,1,3,2,1)= kappa_floor
-            !!!where(kappa_data(1,:,:,1,3,1,2) < kappa_floor) &
-            !!!  kappa_data(1,:,:,1,3,1,2)= kappa_floor
+              where(kappa_data(1,:,:,1,3,2,1) < kappa_floor) &
+                kappa_data(1,:,:,1,3,2,1)= kappa_floor
+              where(kappa_data(1,:,:,1,3,1,2) < kappa_floor) &
+                kappa_data(1,:,:,1,3,1,2)= kappa_floor
+            endif
           endif
 
 !if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
@@ -1326,6 +1330,7 @@ enddo; enddo
 !
 ! For cases where |B_x;y| << |B_y;x| or |B_y;x| << |B_x;y|: ensure that beta+kappa are positive
 ! definit.
+!
                 jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
                 jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
                 where (abs(jrt)<jthresh*abs(jtr) .and. &
