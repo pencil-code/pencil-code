@@ -133,8 +133,8 @@ class DataCube(object):
                 varfile = 'VAR'+str(ivar)
 
         if proc < 0:
-            procdirs = natural_sort(filter(lambda s:s.startswith('proc'),
-                                    os.listdir(datadir)))
+            procdirs = natural_sort(filter(lambda s:s.startswith('proc') and not
+                s.endswith('.dat'), os.listdir(datadir)))
         else:
             procdirs = ['proc'+str(proc)]
 

@@ -39,8 +39,8 @@ class Grid(object):
             precision = 'f'
 
         if proc < 0:
-            procdirs = list(filter(lambda s:s.startswith('proc'),
-                                   os.listdir(datadir)))
+            procdirs = list(filter(lambda s:s.startswith('proc') and not
+                s.endswith('.dat'), os.listdir(datadir)))
             if (param.io_strategy == 'MPI-IO|collect' or param.io_strategy == 'collect'):
             	procdirs = ['allprocs']
         else:
