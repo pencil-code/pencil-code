@@ -75,7 +75,8 @@ module Special
   real :: tmass_relaxation=176.0,tmass_relaxation1
   real :: tduration=17.0,rsize_storm=0.03
   real :: interval_between_storms=17.0 
-  real, dimension(nstorm) :: tstorm,rstorm,tpeak,xc,yc,smax
+  real, dimension(nstorm) :: tstorm=impossible,rstorm=impossible,tpeak=impossible
+  real, dimension(nstorm) :: xc=impossible,yc=impossible,smax=impossible
 ! 
 ! Parameters for the jet model
 ! 
@@ -104,7 +105,7 @@ module Special
 !
   real :: height_floor=-1.0
 !
-  namelist /special_init_pars/ tstorm,tduration,rsize_storm,interval_between_storms,storm_strength
+  namelist /special_init_pars/ tduration,rsize_storm,interval_between_storms,storm_strength
 !  
   namelist /special_run_pars/ ladvection_base_height,lcompression_base_height,&
        c0,cx1,cx2,cy1,cy2,cx1y1,cx1y2,cx2y1,cx2y2,lcoriolis_force,&
@@ -698,16 +699,14 @@ module Special
 !***********************************************************************
   subroutine get_storm(istorm)
 !
-    use General, only: random_number_wrapper
-!
     real :: r,p,srand,trand
     real, dimension(6) :: smax_values=(/ -5.0 , -2.5 , -1.0 , 1.0 , 2.5 , 5.0 /)
     integer :: ismax
 !    
     integer, intent(in) :: istorm
 !
-    call random_number_wrapper(r)
-    call random_number_wrapper(p)
+    call random_number(r)
+    call random_number(p)
     r=r_int + sqrt(r) *((r_ext- wborder_ext)-r_int)
     p=2*pi*p
     xc(istorm)     = r*cos(p)
@@ -717,14 +716,14 @@ module Special
 !  storm duration (1.1*tstorm). trand_updated is a random number from 0 to 1, to
 !  randomize so that the storms do not all peak at the same time.
 !      
-    call random_number_wrapper(trand)      
+    call random_number(trand)
     tpeak(istorm)  = t + (1.1+trand)*tstorm(istorm)
 !         
 ! Maximum strength of the storm - pick randomly between the values
 ! pre-assigned in smax_values=(-5,-2.5,-1,1,2.5,5) -- values in m^2/s^3,
 ! to be converted to code units by storm_strength
 !
-    call random_number_wrapper(srand)
+    call random_number(srand)
     ismax = nint(srand*5 + 1)
     smax(istorm)   = smax_values(ismax)*storm_strength
 !
