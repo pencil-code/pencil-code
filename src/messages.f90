@@ -206,8 +206,14 @@ module Messages
         endif
 !
       endif
-      
-      message_stored=trim(scaller)//": "//trim(message)
+
+      if (message/='') then
+        if (message_stored=='') then
+          message_stored=trim(scaller)//": "//trim(message)
+        elseif (index(message_stored,trim(scaller)//": "//trim(message))==0) then      
+          message_stored=trim(message_stored)//'; '//trim(scaller)//": "//trim(message)
+        endif
+      endif
 !
     endsubroutine fatal_error_local
 !***********************************************************************
@@ -234,26 +240,37 @@ module Messages
           if (lroot) then
             print*, 'DYING - there were', fatal_errors_total, 'errors.'
             print*, 'This is probably due to one or more fatal errors that'
-            print*, 'have occurred only on a single processor.'
+            print*, 'have occurred only on individual processors.'
             print*, 'Messages:'
             preceding=''; istart=0; iend=0
             do i=1,ncpus
-              if (trim(messages(i))/='') then
+              if (trim(messages(i))/=''.or.preceding/='') then
                 if (trim(messages(i))/=preceding) then
                   if (istart>0) then
                     if (iend>istart) then
-                      print*, ' - '//trim(itoa(iend-1))//': '//trim(messages(iend))
+                      print'(a)', ' - '//trim(itoa(iend-1))//': '//trim(messages(iend))
                     else
-                      print*, ': '//trim(messages(iend))
+                      print'(a)', ': '//trim(messages(iend))
                     endif
                   endif
-                  print'(a)', 'processor '//trim(itoa(i-1))
-                  istart=i
+                  if (trim(messages(i))/='') then
+                    print'(a$)', 'processor(s) '//trim(itoa(i-1))
+                    istart=i
+                  else
+                    istart=0
+                  endif
                   preceding=messages(i)
                 endif
                 iend=i
               endif
             enddo
+            if (istart>0) then
+              if (iend>istart) then
+                print'(a)', ' - '//trim(itoa(iend-1))//': '//trim(messages(iend))
+              else
+                print'(a)', ': '//trim(messages(iend))
+              endif
+            endif
           endif
           if (ldie_onfatalerror) call die_gracefully
         endif

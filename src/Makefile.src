@@ -2633,7 +2633,7 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 #
 $(IO_OBJ):
 ifneq ($(IO),io_wrapper)
-	$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC))
+	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC))
 endif
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
 #
