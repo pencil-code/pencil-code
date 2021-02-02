@@ -297,10 +297,12 @@ the high level of flexibility and modularity, and the way it is organized
 (open source, distributed ownership, openness of development version).
 
 Other software addressing related needs include: 
-Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, and several other LES codes.
+Athena, CO5BOLD, ENZO, MuRAM, NIRVANA, Stagger, ZEUS, Snoopy, and several other LES codes.
 There are also several other engineering DNS codes such as
 Sandia-3-Dimensional (S3D), a high-order compressible code,
 optimized for combustion, which is not open source, however.
+Another example is SpECTRE, a task-based discontinuous Galerkin code for
+relativistic astrophysics [@Kidder_2017].
 In addition, there are frameworks like Dedalus or Cactus,
 which allow one to program the equations in symbolic form.
 
