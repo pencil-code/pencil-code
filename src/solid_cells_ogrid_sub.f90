@@ -556,10 +556,10 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
             if(SBP) then
               call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
               if (.not. SBP_reduced_to2) then
-		i=6
-	      else
-		i=4
-	      endif
+                i=6
+              else
+                i=4
+              endif
             elseif(BDRY5) then
               call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df(1:3))
               i=3
@@ -636,11 +636,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if(lfirst_proc_x) then
             if(SBP) then
               call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid),df(1:6))
-	      if (.not. SBP_reduced_to2) then
-		i=6
-	      else
-		i=4
-	      endif
+              if (.not. SBP_reduced_to2) then
+                i=6
+              else
+                i=4
+              endif
             elseif(BDRY5) then
               call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid),df(1:3))
               i=3
@@ -711,11 +711,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if(lfirst_proc_x) then
             if(SBP) then
               call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
-	      if (.not. SBP_reduced_to2) then
-		i=6
-	      else
-		i=4
-	      endif
+              if (.not. SBP_reduced_to2) then
+                i=6
+              else
+                i=4
+              endif
             elseif(BDRY5) then
               call der2_ogrid_bdry5(f(l1_ogrid:l1_ogrid+6,m_ogrid,n_ogrid,k),df2(1:3))
               !call der2_ogrid_bdry5_alt(f,df2(1:3),k)
@@ -851,11 +851,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
             if(lfirst_proc_x) then
               if(SBP) then
-	        if (.not. SBP_reduced_to2) then
-		  ii=6
-	        else
-		  ii=4
-	        endif
+                if (.not. SBP_reduced_to2) then
+                  ii=6
+                else
+                  ii=4
+                endif
                 call der_ijm_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
@@ -922,11 +922,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
             if(lfirst_proc_x) then
               if(SBP) then
-	        if (.not. SBP_reduced_to2) then
-		  ii=6
-	        else
-		  ii=4
-	        endif
+                if (.not. SBP_reduced_to2) then
+                  ii=6
+                else
+                  ii=4
+                endif
                 call der_ijn_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
@@ -1024,11 +1024,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
         if(lfirst_proc_x) then
           if(SBP) then
-	    if (.not. SBP_reduced_to2) then
+            if (.not. SBP_reduced_to2) then
               df(1:6)=0.
-	    else
+            else
               df(1:4)=0.
-	    endif
+            endif
           elseif(BDRY5) then
             df(1:3)=0.
           endif
@@ -1167,7 +1167,6 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                           +21*f_ogrid(k+5,:,:,ivar) &
                            -7*f_ogrid(k+6,:,:,ivar) &
                              +f_ogrid(k+7,:,:,ivar)
-
       enddo
 
     endsubroutine set_ghosts_onesided_ogrid
@@ -1180,70 +1179,195 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  16-feb-17/Jorgen: Adapted from deriv.f90
 !  jan-19/Eva: added BC for chemistry
 !
+!
       real :: val=0.
       real, dimension (my_ogrid, mz_ogrid) :: mdot_c,diff_coeff
-      integer :: k,j
+      integer :: k,j,i,count_dos,i_CO2
+      real :: MC_MO2 = 12.0107/(2.*15.9994), MC_MCO2 = 12.0107/(12.0107 + 2.*15.9994)
+      real :: MCO_MO2 = (12.0107+15.9994)/(2.*15.9994), MCO_MCO2 = (12.0107+15.9994)/(12.0107 + 2.*15.9994)
+      real :: A_CO2, A_O2, B_CO2, B_O2, C_CO2, C_O2, rho_Rate_CO2, rho_Rate_O2
+      real :: YO2_chosen_l=0., YO2_chosen_r=0., YO2_computed_l, YO2_computed_r, YO2_computed=0, Y_CO2=0
+      real :: Y_min, Y_max, q, residual_l, residual_r
 
       k=l1_ogrid
       if (lexpl_rho) then
-        f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
-						 - 450.*f_ogrid(k+2,:,:,irho) &
+        f_ogrid(k,:,:,irho) = (-val*60.*(1./dx_1_ogrid(l1_ogrid))+ 360.*f_ogrid(k+1,:,:,irho) &
+                                                 - 450.*f_ogrid(k+2,:,:,irho) &
                                                  + 400.*f_ogrid(k+3,:,:,irho) &
                                                  - 225.*f_ogrid(k+4,:,:,irho) &
                                                  +  72.*f_ogrid(k+5,:,:,irho) &
                                                  -  10.*f_ogrid(k+6,:,:,irho) )/147.
       endif
       if (lchemistry) then
-	if (.not. lreac_heter) then
+        if (.not. lreac_heter) then
           do j = 1,nchemspec
-              f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
-							       - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
-							       + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
-							       - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
-							       +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
-							       -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
+              f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*1./dx_1_ogrid(l1_ogrid) + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                             - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                             + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                             - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+                                             +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+                                             -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
 ! Set-up ghost points based on non-symmetric stencils
-              f_ogrid(k-1,:,:,ichemspec(j)) = (-val*60.*dx_ogrid -  77.*f_ogrid(k  ,:,:,ichemspec(j)) &
-							         + 150.*f_ogrid(k+1,:,:,ichemspec(j)) &
-							         - 100.*f_ogrid(k+2,:,:,ichemspec(j)) &
-								 +  50.*f_ogrid(k+3,:,:,ichemspec(j)) &
-							         -  15.*f_ogrid(k+4,:,:,ichemspec(j)) &
-							         +   2.*f_ogrid(k+5,:,:,ichemspec(j)) )/10.
+              f_ogrid(k-1,:,:,ichemspec(j)) = (-val*60.*1./dx_1_ogrid(l1_ogrid) -  77.*f_ogrid(k  ,:,:,ichemspec(j)) &
+                                               + 150.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                               - 100.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                               +  50.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                               -  15.*f_ogrid(k+4,:,:,ichemspec(j)) &
+                                               +   2.*f_ogrid(k+5,:,:,ichemspec(j)) )/10.
 
-              f_ogrid(k-2,:,:,ichemspec(j)) = (-val*60.*dx_ogrid -  24.*f_ogrid(k-1,:,:,ichemspec(j)) &
-								 -  35.*f_ogrid(k  ,:,:,ichemspec(j)) &
-								 +  80.*f_ogrid(k+1,:,:,ichemspec(j)) &
-								 -  30.*f_ogrid(k+2,:,:,ichemspec(j)) &
-							         +   8.*f_ogrid(k+3,:,:,ichemspec(j)) &
-							         -   1.*f_ogrid(k+4,:,:,ichemspec(j)) )/(-2.)
+              f_ogrid(k-2,:,:,ichemspec(j)) = (-val*60.*1./dx_1_ogrid(l1_ogrid) -  24.*f_ogrid(k-1,:,:,ichemspec(j)) &
+                                               -  35.*f_ogrid(k  ,:,:,ichemspec(j)) &
+                                               +  80.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                               -  30.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                               +   8.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                               -   1.*f_ogrid(k+4,:,:,ichemspec(j)) )/(-2.)
 
-              f_ogrid(k-3,:,:,ichemspec(j)) = (-val*60.*dx_ogrid +   9.*f_ogrid(k-2,:,:,ichemspec(j)) &
-								 -  45.*f_ogrid(k-1,:,:,ichemspec(j)) &
-								 +  45.*f_ogrid(k+1,:,:,ichemspec(j)) &
-								 -   9.*f_ogrid(k+2,:,:,ichemspec(j)) &
-							         +   1.*f_ogrid(k+3,:,:,ichemspec(j)) )
-	  enddo
+              f_ogrid(k-3,:,:,ichemspec(j)) = (-val*60.*1./dx_1_ogrid(l1_ogrid) +   9.*f_ogrid(k-2,:,:,ichemspec(j)) &
+                                               -  45.*f_ogrid(k-1,:,:,ichemspec(j)) &
+                                               +  45.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                               -   9.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                               +   1.*f_ogrid(k+3,:,:,ichemspec(j)) )
+          enddo
         else
 
 ! if heterogeneous reactions grad(Y_k) = (-mdot_c*Y_k-m_k)/(rho*D_k)
 !
-          mdot_c = heter_reaction_rate(:,:,nchemspec+1)
-          do j = 1,nchemspec
-            diff_coeff = f_ogrid(k,:,:,iviscosity)*Pr_number1*Lewis_coef1(j)
-	    f_ogrid(k,:,:,ichemspec(j)) = (heter_reaction_rate(:,:,j)*60.*dx_ogrid/(f_ogrid(k,:,:,irho)*diff_coeff) &
-					+ 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
-					- 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
-					+ 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
-					- 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
-					+  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
-					-  10.*f_ogrid(k+6,:,:,ichemspec(j))) &
-					/147./(1.-mdot_c*60.*dx_ogrid/(147.*f_ogrid(k,:,:,irho)*diff_coeff))
-          enddo
+          if (lnonegative_Yk) then
+            i_CO2 = (mvar-nchemspec) + ichem_CO2
+            q=(3.-sqrt(5.))/2.
+            diff_coeff = f_ogrid(k,:,:,iviscosity)*Pr_number1
+            do i = m1_ogrid,m2_ogrid
+                count_dos = 0
+                Y_min = 0.0
+                Y_max = 0.2
+                if (f_ogrid(k,i,4,i_O2) > 0) then
+                  rho_Rate_O2 = -heter_reaction_rate(i,4,ichem_O2)/f_ogrid(k,i,4,i_O2)
+                else
+                  rho_Rate_O2 = 0.
+                endif
+                if (f_ogrid(k,i,4,i_CO2) > 0) then
+                  rho_Rate_CO2 = -heter_reaction_rate(i,4,ichem_CO2)/f_ogrid(k,i,4,i_CO2)
+                else
+                  rho_Rate_CO2 = 0.
+                endif
+                A_CO2 = -MC_MCO2*rho_Rate_CO2
+                A_O2 = -2.*MC_MO2*rho_Rate_O2
+
+                if ((A_CO2 .ne. 0.) .and. (A_O2 .ne. 0.)) then
+
+                  B_CO2 = f_ogrid(k,i,4,irho)*diff_coeff(i,4)*Lewis_coef1(ichem_CO2)*(-147./60.*dx_1_ogrid(l1_ogrid)) - rho_Rate_CO2
+                  B_O2 = f_ogrid(k,i,4,irho)*diff_coeff(i,4)*Lewis_coef1(ichem_O2)*(-147./60.*dx_1_ogrid(l1_ogrid)) - rho_Rate_O2
+
+                  C_CO2 = f_ogrid(k,i,4,irho)*diff_coeff(i,4)*Lewis_coef1(ichem_CO2)*dx_1_ogrid(l1_ogrid)/60.*( &
+                        + 360.*f_ogrid(k+1,i,4,i_CO2) &
+                        - 450.*f_ogrid(k+2,i,4,i_CO2) &
+                        + 400.*f_ogrid(k+3,i,4,i_CO2) &
+                        - 225.*f_ogrid(k+4,i,4,i_CO2) &
+                        +  72.*f_ogrid(k+5,i,4,i_CO2) &
+                        -  10.*f_ogrid(k+6,i,4,i_CO2))
+                  C_O2 = f_ogrid(k,i,4,irho)*diff_coeff(i,4)*Lewis_coef1(ichem_O2)*dx_1_ogrid(l1_ogrid)/60.*( &
+                       + 360.*f_ogrid(k+1,i,4,i_O2) &
+                       - 450.*f_ogrid(k+2,i,4,i_O2) &
+                       + 400.*f_ogrid(k+3,i,4,i_O2) &
+                       - 225.*f_ogrid(k+4,i,4,i_O2) &
+                       +  72.*f_ogrid(k+5,i,4,i_O2) &
+                       -  10.*f_ogrid(k+6,i,4,i_O2))
+
+                  YO2_chosen_l = Y_min + q*(Y_max-Y_min)
+                  YO2_chosen_r = Y_max - q*(Y_max-Y_min)
+                  call compute_Yresidual(YO2_chosen_l,YO2_computed,Y_CO2,residual_l,A_O2,B_O2,C_O2,A_CO2,B_CO2,C_CO2,&
+                                         MC_MO2,MC_MCO2,rho_Rate_O2,rho_Rate_CO2,i)
+                  call compute_Yresidual(YO2_chosen_r,YO2_computed,Y_CO2,residual_r,A_O2,B_O2,C_O2,A_CO2,B_CO2,C_CO2,&
+                                         MC_MO2,MC_MCO2,rho_Rate_O2,rho_Rate_CO2,i)
+                  do while ((residual_l > toler) .and. (residual_r > toler))
+                      if (residual_l .le. residual_r) then
+                          Y_max = YO2_chosen_r
+                          residual_r = residual_l
+                          YO2_chosen_r = YO2_chosen_l
+                          YO2_chosen_l = Y_min + q*(Y_max-Y_min)
+                          call compute_Yresidual(YO2_chosen_l,YO2_computed,Y_CO2,residual_l,A_O2,B_O2,C_O2,A_CO2,B_CO2,C_CO2,&
+                                                 MC_MO2,MC_MCO2,rho_Rate_O2,rho_Rate_CO2,i)
+                      elseif (residual_l > residual_r) then
+                          Y_min = YO2_chosen_l
+                          residual_l = residual_r
+                          YO2_chosen_l = YO2_chosen_r
+                          YO2_chosen_r = Y_max - q*(Y_max-Y_min)
+                          call compute_Yresidual(YO2_chosen_r,YO2_computed,Y_CO2,residual_r,A_O2,B_O2,C_O2,A_CO2,B_CO2,C_CO2,&
+                                                 MC_MO2,MC_MCO2,rho_Rate_O2,rho_Rate_CO2,i)
+                      endif
+                      count_dos = count_dos + 1
+                      if (count_dos > 10000) then
+                          print*,'residual_l,residual_r,YO2_l,YO2_r',residual_l,residual_r,YO2_chosen_l,YO2_chosen_r
+                          call fatal_error('bval_from_neumann_arr_ogrid','no solutions for YO2 in the assumed range')
+                      endif
+                  end do
+                  f_ogrid(k,i,:,i_CO2) = Y_CO2
+                  f_ogrid(k,i,:,i_O2 ) = YO2_computed
+                  heter_reaction_rate(i,:,nchemspec+1) = -(2.*MC_MO2*rho_Rate_O2*YO2_computed + MC_MCO2*rho_Rate_CO2*Y_CO2)
+                  heter_reaction_rate(i,:,ichem_CO2) = -rho_Rate_CO2*Y_CO2
+                  heter_reaction_rate(i,:,ichem_O2) = -rho_Rate_O2*YO2_computed
+                  heter_reaction_rate(i,:,ichem_CO) = 2.*(MCO_MO2*rho_Rate_O2*YO2_computed + MCO_MCO2*rho_Rate_CO2*Y_CO2)
+                endif
+            enddo
+            mdot_c = heter_reaction_rate(:,:,nchemspec+1)
+
+            do j = 1,nchemspec
+                if (((j .ne. 4) .and. (j .ne. 1)) .or. &
+                ((j .eq. 4) .and. (A_O2 .eq. 0.)) .or. ((j .eq. 1) .and. (A_CO2 .eq. 0.))) then
+                  diff_coeff = f_ogrid(k,:,:,iviscosity)*Pr_number1*Lewis_coef1(j)
+                  f_ogrid(k,:,:,ichemspec(j)) = (heter_reaction_rate(:,:,j)*60.*1./dx_1_ogrid(l1_ogrid)&
+                                              /(f_ogrid(k,:,:,irho)*diff_coeff) &
+                                              + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                              - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                              + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                              - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+                                              +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+                                              -  10.*f_ogrid(k+6,:,:,ichemspec(j))) &
+                                              /(147.-mdot_c*60.*1./dx_1_ogrid(l1_ogrid)/(f_ogrid(k,:,:,irho)*diff_coeff))
+                endif
+            enddo
+          else
+            mdot_c = heter_reaction_rate(:,:,nchemspec+1)
+            do j = 1,nchemspec
+              diff_coeff = f_ogrid(k,:,:,iviscosity)*Pr_number1*Lewis_coef1(j)
+              f_ogrid(k,:,:,ichemspec(j)) = (heter_reaction_rate(:,:,j)*60.*1./dx_1_ogrid(l1_ogrid) &
+                                          / (f_ogrid(k,:,:,irho)*diff_coeff)   &
+                                          + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                          - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                          + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                          - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+                                          +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+                                          -  10.*f_ogrid(k+6,:,:,ichemspec(j))) &
+                                          /(147.-mdot_c*60.*1./dx_1_ogrid(l1_ogrid)/(f_ogrid(k,:,:,irho)*diff_coeff))
+            enddo
+          endif
         endif
       endif
 !
-
     endsubroutine bval_from_neumann_arr_ogrid
+!***********************************************************************
+    subroutine compute_Yresidual(YO2,YO2_computed,Y_CO2,residual,A_O2,&
+               B_O2,C_O2,A_CO2,B_CO2,C_CO2,MC_MO2,MC_MCO2,rho_Rate_O2,rho_Rate_CO2,i)
+!
+      real, intent(in) :: A_CO2, A_O2, B_CO2, B_O2, C_CO2, C_O2
+      real, intent(out) :: YO2_computed, Y_CO2, residual
+      real, intent(in) :: rho_Rate_O2, rho_Rate_CO2, MC_MO2, MC_MCO2, YO2
+      real  :: B1, B2, YO2_YCO2, B_CO2_rest, F_O2
+      integer :: i
+!
+        B_CO2_rest = - 2.*MC_MO2*rho_Rate_O2
+        B1 = B_CO2 + B_CO2_rest*YO2
+        Y_CO2 = (- B1 - sqrt(B1**2 - 4.*A_CO2*C_CO2))/(2.*A_CO2)
+        if (Y_CO2 > 1. .or. Y_CO2 < 0.) Y_CO2 = Y_CO2 + sqrt(B1**2 - 4.*A_CO2*C_CO2)/A_CO2
+!
+        B2 = - MC_MCO2*rho_Rate_CO2
+        YO2_YCO2 = (-A_CO2*Y_CO2**2 - B_CO2*Y_CO2 - C_CO2)/B_CO2_rest
+        F_O2 = A_O2*YO2**2 + B_O2*YO2 + B2*YO2_YCO2 + C_O2
+
+        residual = abs(F_O2)
+        YO2_computed = YO2
+!
+    endsubroutine compute_Yresidual
 !***********************************************************************
     subroutine bval_from_neumann_SBP(f_og)
 !
@@ -1358,10 +1482,10 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
         ! The below is the proper expression for the line above if gradM is accounted for in equations
         ! (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c - diff_coeff*f_og(k,:,:,irho)*grad_lnR)
         ! If this is used remember to compute grad_lnR :
-	!        call der_ogrid_SBP_surf(f_og,dR,iRR)
-	!        grad_lnR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid) &
-	!            = dR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid)&
-	!            /f_og(k,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iRR)
+        !        call der_ogrid_SBP_surf(f_og,dR,iRR)
+        !        grad_lnR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid) &
+        !            = dR(m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid)&
+        !            /f_og(k,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iRR)
         enddo
       endif
 !
@@ -1436,7 +1560,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(my_ogrid,mz_ogrid), intent(out) :: df_surf
       integer :: k, ii
-	  
+
       k = l1_ogrid
       df_surf(:,:) = D1_SBP(1,1)*f(k,:,:,ii) + &
            D1_SBP(1,2)*f(k+1,:,:,ii) + &

@@ -48,7 +48,7 @@ module EquationOfState
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   real :: gamma=5./3.
-  real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
+  real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6, scale_Rgas=1.
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
@@ -71,7 +71,7 @@ module EquationOfState
 !
  real, dimension(nchemspec,18) :: species_constants
 !
-  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad, linterp_pressure
+  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad, linterp_pressure, scale_Rgas
 !
   namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, Cp_const, Pr_number
 !
@@ -132,7 +132,7 @@ module EquationOfState
       if (unit_temperature == impossible) then
         call stop_it('unit_temperature is not found!')
       else
-        Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+        Rgas=Rgas_unit_sys*unit_temperature*scale_Rgas/unit_velocity**2
       endif
 !
       inquire(file='chem.inp',exist=cheminp)
@@ -188,6 +188,7 @@ module EquationOfState
       endif
 
       call put_shared_variable('linterp_pressure',linterp_pressure)
+      call put_shared_variable('scale_Rgas',scale_Rgas)
 !
     endsubroutine initialize_eos
 !***********************************************************************

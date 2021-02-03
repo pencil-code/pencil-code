@@ -43,16 +43,17 @@ module Solid_Cells
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth_solid, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
-      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
+      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, ltanh_rate, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
       interpolation_method, lock_dt, lexpl_rho, SBP_reduced_to2, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, interp_shift, llin_BC, lnonegative_Yk, &
       particle_interpolate, lparticle_uradonly, lsinus_spec_distr, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
-      lfilter_rhoonly, lspecial_rad_int_mom, &
+      lfilter_rhoonly, lspecial_rad_int_mom, toler, reduce_timestep, &
       init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
-      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time
+      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, &
+      solid_reactions_intro_time, tanh_a1, tanh_a2 
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -60,7 +61,7 @@ module Solid_Cells
       SBP, BDRY5, lrk_tvd, SBP_optimized, SBP_reduced_to2, lexpl_rho, &
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
-      solid_reactions_intro_time, &
+      solid_reactions_intro_time, toler,&
       filter_frequency, lwrite_mdotc
 
   interface dot2_ogrid
@@ -235,7 +236,7 @@ module Solid_Cells
       else
 !Jorgen:  Removed +1 from timestep_factor, still not safe if ogrid limited by
 !         diffusive timestep
-        timestep_factor = ceiling(dxmin/dxmin_ogrid)
+        timestep_factor = ceiling(dxmin/dxmin_ogrid)*reduce_timestep
         if(timestep_factor < 1)  then
           timestep_factor = 1
         endif
@@ -348,7 +349,7 @@ module Solid_Cells
           D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
                          -54899./131403. ,  820271./525612., -117600./43801. , &
                          64800./43801.   , -6480./43801.   , 480./43801.     /)
-	elseif(SBP_reduced_to2) then
+        elseif(SBP_reduced_to2) then
           if(lroot) print*, 'Cylinder boundary condition: Second order SBP boundary closures'
           D1_SBP(1,:)=(/-24./17.         , 59./34.         , -4./17.      , &
                         -3./34.          , 0.              , 0.           , &
@@ -365,27 +366,27 @@ module Solid_Cells
           D1_SBP(5,:)=(/ 0.              , 0.              , 0.           , &
                          0.              , 0.              , 0.           , &
                          0.              , 0.              , 0.              /)
-          D1_SBP(6,:)=(/ 0.              , 0. 		   , 0.           , &
-                         0. 		 , 0.		   , 0.           , &
-                         0.   		 , 0.		   , 0.		     /)
-          D2_SBP(1,:)=(/ 2.  		 ,-5.		   , 4. 	  , &
-                         -1. 		 , 0.   	   , 0.  	  , &
+          D1_SBP(6,:)=(/ 0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.           , &
                          0.              , 0.              , 0.              /)
-          D2_SBP(2,:)=(/ 1.     	 ,-2.	           , 1.   	  , &
-                         0.      	 , 0.    	   , 0. 	  , &
+          D2_SBP(1,:)=(/ 2.              ,-5.              , 4.           , &
+                         -1.             , 0.              , 0.           , &
                          0.              , 0.              , 0.              /)
-          D2_SBP(3,:)=(/ -4./43.         , 59./43.	   , -110./43.	  , &
-                         59./43.         ,-4./43.	   , 0.   	  , &
+          D2_SBP(2,:)=(/ 1.              ,-2.              , 1.           , &
+                         0.              , 0.              , 0.           , &
                          0.              , 0.              , 0.              /)
-          D2_SBP(4,:)=(/-1./49.          , 0.		   , 59./49.	  , &
-                         -118./49.  	 , 64./49.	   , -4./49.	  , &
-                         0.	         , 0.              , 0.              /)
-          D2_SBP(5,:)=(/ 0.              , 0. 		   , 0.           , &
-                         0. 		 , 0.		   , 0.           , &
-                         0.   		 , 0.		   , 0.		     /)
-          D2_SBP(6,:)=(/ 0.              , 0. 		   , 0.           , &
-                         0. 		 , 0.		   , 0.           , &
-                         0.   		 , 0.		   , 0.		     /)
+          D2_SBP(3,:)=(/ -4./43.         , 59./43.         , -110./43.    , &
+                         59./43.         ,-4./43.          , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(4,:)=(/-1./49.          , 0.              , 59./49.      , &
+                         -118./49.       , 64./49.         , -4./49.      , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(5,:)=(/ 0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.              /)
+          D2_SBP(6,:)=(/ 0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.           , &
+                         0.              , 0.              , 0.              /)
         else
           D1_SBP(1,1) = -21600./13649.; D1_SBP(1,2) = 81763./40947.;  D1_SBP(1,3) = 131./27298. 
           D1_SBP(1,4) = -9143./13649.;  D1_SBP(1,5) = 20539./81894.;  D1_SBP(1,6) = 0. 
@@ -512,6 +513,7 @@ module Solid_Cells
         call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call get_shared_variable('ladvection_temperature',ladvection_temperature)
         call get_shared_variable('lupw_lnTT',lupw_lnTT)
+        call get_shared_variable('scale_Rgas',scale_Rgas)
       else
        !   call fatal_error('initialize_solid_cells',&
        !       'Must use linear temperature for solid_cells_ogrid') 
@@ -614,7 +616,7 @@ module Solid_Cells
       elseif (unit_system=='SI') then
          Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
       endif
-      Rgas = Rgas_unit_sys/unit_energy
+      Rgas = Rgas_unit_sys*scale_Rgas/unit_energy
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -4605,6 +4607,11 @@ module Solid_Cells
           endif
           call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
+          if (lchemistry) then
+             do k = 1,nchemspec
+                call set_ghosts_onesided_ogrid(ichemspec(k))
+             enddo
+          endif
       !    if (lreac_heter) call fatal_error('boundconds_x_ogrid', &
       !    'chemistry BCs set correctly only when SBP=T')
         endif

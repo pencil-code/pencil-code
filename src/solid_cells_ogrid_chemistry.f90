@@ -195,8 +195,9 @@ module solid_cells_ogrid_chemistry
 !  and the proton mass
 !
         if (unit_system == 'cgs') then
+       !   Rgas_unit_sys = Rgas*unit_energy
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas = Rgas_unit_sys/unit_energy
+          Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
         endif
 !
       if ((nxgrid_ogrid == 1) .and. (nygrid_ogrid == 1) .and. (nzgrid_ogrid == 1)) then
@@ -1305,8 +1306,8 @@ module solid_cells_ogrid_chemistry
 !
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
-          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
-         ! kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
+         ! kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+          kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
@@ -1513,16 +1514,16 @@ module solid_cells_ogrid_chemistry
       ! C + CO2 -> 2CO
 !
 ! Zhang (same as in Luo)
-!      B_n_het=(/1.97e9,1.291e7/)        ! cm/s
-!      E_an_het=(/47301.701,45635.267/)  ! cal/mol
+      B_n_het=(/1.97e9,1.291e7/)        ! cm/s 1.291
+      E_an_het=(/47301.701,45635.267/)  ! cal/mol
 !
 ! Schulze (REMEMBER to change back prod(2) and mdot for O2 because 1st reaction is C + 1/2O2 -> CO)
 !      B_n_het=(/3.007e7, 460.5/)        ! cm/s (/K) (in second reaction there's T^1 in rate expression)
 !      E_an_het=(/35700.2868, 41849.9044/)  ! cal/mol
 !
 ! Kestel/Caram (REMEMBER to change mdot for O2 because and CO 1st reaction is C + 1/2O2 -> CO)
-      B_n_het=(/3.007e7, 4.016e10/)        ! cm/s
-      E_an_het=(/35700.2868, 59194.5507/)  ! cal/mol
+!      B_n_het=(/3.007e7, 4.016e10/)        ! cm/s
+!      E_an_het=(/35700.2868, 59194.5507/)  ! cal/mol
 !
 !  Chemkin data case
 !
@@ -1536,9 +1537,16 @@ module solid_cells_ogrid_chemistry
         vreact_p(i)=prod(i)*exp(kf(i))
       enddo
 !
-!      mdot(ichem_O2)=-vreact_p(1)
-      mdot(ichem_O2)=-0.5*vreact_p(1)
-      mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*vreact_p(1)&
+      mdot(ichem_O2)=-vreact_p(1)
+      if (ltanh_rate) then
+        if (f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2) .gt. (tanh_a2/tanh_a1)) then
+           mdot(ichem_O2)=mdot(ichem_O2)*tanh(tanh_a1*f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)-tanh_a2)
+        else
+             mdot(ichem_O2)=0.0
+        endif
+      endif
+!      mdot(ichem_O2)=-0.5*vreact_p(1)
+      mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*(-mdot(ichem_O2))&
                         +species_constants(ichem_CO,imass)/species_constants(ichem_CO2,imass)*vreact_p(2))
       mdot(ichem_CO2)=-vreact_p(2)
       mdot=mdot*unit_time
@@ -1552,7 +1560,7 @@ module solid_cells_ogrid_chemistry
       ! the above = (2.*M_C/species_constants(ichem_O2,imass)*mdot(ichem_O2) &
       !             + M_C/species_constants(ichem_CO2,imass)*mdot(ichem_CO2))
       u_stefan = u_stefan/rho_cgs
- 
+
       if (t < solid_reactions_intro_time) then
         heter_reaction_rate(m_ogrid,n_ogrid,:) = heter_reaction_rate(m_ogrid,n_ogrid,:)*t/solid_reactions_intro_time
         u_stefan = u_stefan*t/solid_reactions_intro_time

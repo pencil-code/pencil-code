@@ -276,7 +276,7 @@ module solid_cells_ogrid_cdata
   real, dimension (my_ogrid) :: y_ogrid,dy_1_ogrid,dy2_ogrid,dy_tilde_ogrid,yprim_ogrid
   real, dimension (mz_ogrid) :: z_ogrid,dz_1_ogrid,dz2_ogrid,dz_tilde_ogrid,zprim_ogrid
 !  Grid properties computed in grid routines and used in external routines
-  integer :: timestep_factor
+  integer :: timestep_factor, reduce_timestep=1
   real :: dxmin_ogrid,dxmax_ogrid,drmax_ogrid
   logical, dimension(3) :: lequidist_ogrid
   real, dimension (nx_ogrid) :: rcyl_mn_ogrid,rcyl_mn1_ogrid,rcyl_mn2_ogrid,rcyl_weight_ogrid
@@ -343,11 +343,13 @@ module solid_cells_ogrid_cdata
   real, dimension(:), pointer :: Lewis_coef1
   real :: solid_reactions_intro_time=0.0
   real, pointer :: p_init
+  real, pointer :: scale_Rgas
   logical :: ldist_CO2=.false., ldist_CO=.false.
   integer, pointer :: ireac, ireac_CO2, ireac_CO, ireac_O2
   integer :: ichem_O2=0, ichem_CO2=0, ichem_CO=0
   logical :: lwrite_mdotc=.false., lnonegative_Yk=.false.
-  logical :: llin_BC=.false., lsinus_spec_distr=.false.
+  logical :: llin_BC=.false., lsinus_spec_distr=.false., ltanh_rate = .false.
+  real :: toler = 1e-7, tanh_a1 = 1000., tanh_a2 = 0.0001
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0

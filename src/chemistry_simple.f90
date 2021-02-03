@@ -38,6 +38,7 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
+  real, pointer :: scale_Rgas
   real, dimension(mx,my,mz,nchemspec) :: cp_R_spec
 ! parameters for simplified cases
   logical :: init_from_file, reinitialize_chemistry=.false.
@@ -442,9 +443,10 @@ module Chemistry
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
 !
+        call get_shared_variable('scale_Rgas', scale_Rgas)
         if (unit_system == 'cgs') then
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas = Rgas_unit_sys/unit_energy
+          Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
         endif
 !
 !  Read in data file in ChemKin format
@@ -1091,7 +1093,7 @@ module Chemistry
 !
       if (unit_system == 'cgs') then
         Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
+        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
       endif
 !
 !  Find logaritm of density at inlet
@@ -1297,7 +1299,7 @@ module Chemistry
 !
       if (unit_system == 'cgs') then
         Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
+        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
       endif
 !
 !  Find logaritm of density at inlet
@@ -1367,6 +1369,7 @@ module Chemistry
               f(:,:,:,icp) = Cp_const*mu1_full
 !            
             else
+
 !
               do j3 = nn1,nn2
                 do j2 = mm1,mm2
@@ -1420,7 +1423,8 @@ module Chemistry
 !
 ! Find cp and cv for the mixture for the full domain
 !
-                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec(:,j2,j3,k)*Rgas/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec(:,j2,j3,k)*Rgas/species_constants(k,imass) &
+                                      *f(:,j2,j3,ichemspec(k))
                     endif
                   enddo
                 enddo
@@ -2340,8 +2344,8 @@ module Chemistry
         Sijm(nchemspec,1) = 0.0
       endif
 !
-      B_n = 33.6174731212
-      !B_n = 32.680877  !changed A to lower S_l
+      !B_n = 33.6174731212
+      B_n = 32.680877  !changed A to lower S_l
       alpha_n = 0.0
       !! E_an in CAL !!
       E_an = 40000 
@@ -4252,8 +4256,8 @@ module Chemistry
 !
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
-          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
-       !   kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
+       !   kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+          kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
