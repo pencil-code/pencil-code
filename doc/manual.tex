@@ -1504,6 +1504,16 @@ meshpoint in the $z$ direction.
 There have been some now outdates specific routines that
 produce results like that shown in Fig.~\ref{Fig-pvert1}.
 
+The same can be achieved using \name{Python}
+(see Sect.~\ref{Python} for details) with
+\begin{alltt}
+  \prompt{unix > } python
+  \prompt{python >  } from matplotlib import pylab as plt
+  \prompt{python >  } var = pc.read.var(trimall=True)
+  \prompt{python >  } plt.imshow(var.uu[0, 0, :, : ].T, origin='lower')
+\end{alltt}
+where we also make sure that the axis are shown in a natural way.
+
 \paragraph{Note:}
 If you want to run the code with \name{MPI}, you will probably need to
 adapt \file{getconf.csh}, which defines the commands and flags used to
