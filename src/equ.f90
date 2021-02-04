@@ -46,7 +46,7 @@ module Equ
 !                         
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use General, only: notanumber, ioptest, loptest
+      use General, only: ioptest, loptest
       use GhostFold, only: fold_df, fold_df_3points
       use Gpu
       use Gravity
@@ -591,14 +591,6 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 !
-!  Check for NaNs in the advection time-step.
-!
-      if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
-        if (lenergy) print*, 'advec_cs2  =',advec_cs2
-        call fatal_error_local('pde','')
-      endif
-!
 !  0-D Diagnostics.
 !
       if (ldiagnos) then
@@ -659,8 +651,6 @@ module Equ
 !  Reset lwrite_prof.
 !
       lwrite_prof=.false.
-!if (lroot) print*, 'end of pde'
-!AB: Matthias, this was not supposed to be here permanently, right? Better mark, so you find it!
 !
     endsubroutine pde
 !****************************************************************************
@@ -822,6 +812,7 @@ module Equ
       use Energy
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, forcing_continuous
+      use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Heatflux
@@ -856,6 +847,7 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
+      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src
 
       nyz=ny*nz
       mn_loop: do imn=1,nyz
@@ -1113,6 +1105,12 @@ module Equ
 !  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
 !
           dt1_advec  = maxadvec/cdt
+!
+!  Check for NaNs in the advection time-step.
+!
+          if (notanumber(dt1_advec)) &
+            call fatal_error_local('pde','NaN in dt1_advec')
+!
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
 !
 !  Timestep constraint from source terms.
@@ -1167,7 +1165,6 @@ module Equ
                 call max_mn_name(maxadvec,idiag_maxadvec)
           endif
         endif
-        if (.not.ldt) dt1_advec=0.0 
 !
 !  Display derivative info
 !

@@ -155,7 +155,7 @@ module Cdata
   real, dimension (nx) :: advec_cs2=0.
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
-  real, dimension (nx) :: dt1_advec=0., dt1_diffus, dt1_diffus2, dt1_diffus3, dt1_src, dt1_max
+  real, dimension (nx) :: dt1_max
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
   real :: reac_pchem,dt1_preac
