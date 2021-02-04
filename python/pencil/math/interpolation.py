@@ -66,9 +66,9 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear'):
 
     # Interpolate the field.
     if interpolation == 'mean':
-        sub_field = field[:, :, :, [ii[0], ii[1]]]
-        sub_field = sub_field[:, :, [jj[0], jj[1]], :]
-        sub_field = sub_field[:, [kk[0], kk[1]], :, :]
+        sub_field = field[:, :, :, ii[0]:ii[1]+1]
+        sub_field = sub_field[:, :, jj[0]:jj[1]+1, :]
+        sub_field = sub_field[:, kk[0]:kk[1]+1, :, :]
         return np.mean(sub_field, axis=(1, 2, 3))
 
     if interpolation == 'trilinear':
@@ -88,9 +88,10 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear'):
             w3 = np.array([nxyz[2]-k, k-kk[0]])
 
         weight = abs(w3.reshape((2, 1, 1))*w2.reshape((1, 2, 1))*w1.reshape((1, 1, 2)))
-        sub_field = field[:, :, :, [ii[0], ii[1]]]
-        sub_field = sub_field[:, :, [jj[0], jj[1]], :]
-        sub_field = sub_field[:, [kk[0], kk[1]], :, :]
+
+        sub_field = field[:, :, :, ii[0]:ii[1]+1]
+        sub_field = sub_field[:, :, jj[0]:jj[1]+1, :]
+        sub_field = sub_field[:, kk[0]:kk[1]+1, :, :]
         return np.sum(sub_field*weight, axis=(1, 2, 3))/np.sum(weight)
 
     # If the point lies outside the domain, return 0.
