@@ -39,6 +39,7 @@
    ldensity_nolog=T
 /
 &special_init_pars
+  lautotest_mode=T
   !tstorm
   !tduration
   rsize_storm=0.01

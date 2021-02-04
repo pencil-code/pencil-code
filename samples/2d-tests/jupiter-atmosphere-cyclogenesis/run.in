@@ -40,6 +40,7 @@
    !gravity=1.0
    c0=0.0004   ! c0= (gh)_0
 
+   lautotest_mode=T
    !ladvection_base_height=T
    !lcompression_base_height=T
    lmass_relaxation=T
