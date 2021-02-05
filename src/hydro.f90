@@ -1148,7 +1148,7 @@ module Hydro
       lcalc_uumeany = lcalc_uumeany.or.lremove_uumeany
       lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy
 
-      if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeany) lremove_mean_flow=.false.
+      if (lremove_uumeanz.or.lremove_uumeanx.or.lremove_uumeany) lremove_mean_flow=.false.
 !
       if (Omega/=0. .and. lyinyang) then
         if (phi==0.) then
