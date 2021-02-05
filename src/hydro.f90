@@ -1147,6 +1147,8 @@ module Hydro
       lcalc_uumeanx = lcalc_uumeanx.or.lremove_uumeanx
       lcalc_uumeany = lcalc_uumeany.or.lremove_uumeany
       lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy
+
+      if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeany) lremove_mean_flow=.false.
 !
       if (Omega/=0. .and. lyinyang) then
         if (phi==0.) then
@@ -1277,6 +1279,7 @@ module Hydro
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
       real, dimension (:,:,:), allocatable :: buffer
+      real, dimension (3) :: uum0
       real :: fact
       integer :: j,nnz,l,m,n
 !
@@ -1352,6 +1355,14 @@ module Hydro
           enddo
         enddo
         call finalize_aver(nprocyz,23,uumx)
+
+        if (lremove_uumeanz.and.lremove_uumeanx) then
+          uum0=sum(uumx(l1:l2,:),1)/nxgrid
+          call finalize_aver(nprocx,1,uum0)
+          do j=1,3 
+            uumx(:,j)=uumx(:,j)-uum0(j)
+          enddo
+        endif
 !
       endif
 !
@@ -1366,6 +1377,16 @@ module Hydro
         enddo
         call finalize_aver(nprocxz,13,uumy)
 !
+        if (lremove_uumeany.and.(lremove_uumeanx.or.lremove_uumeanz)) then
+          if (.not.(lremove_uumeanx.and.lremove_uumeanz)) then
+            uum0=sum(uumy(m1:m2,:),1)/nygrid
+            call finalize_aver(nprocy,2,uum0)
+          endif
+          do j=1,3 
+            uumy(:,j)=uumy(:,j)-uum0(j)
+          enddo
+        endif
+
       endif
 !
 !  Do mean 2D field in (x,y)-plane for each component
