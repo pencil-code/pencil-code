@@ -195,6 +195,7 @@
   \var{heatmz}    & heating \\
   \var{Kkramersmz} & $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$ \\
   \var{ethmz}     & $\left<\varrho e\right>_{xy}$ \\
+  \var{fpreszmz}  & $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -490,6 +491,9 @@
                     ($z$-component of viscous flux) \\
   \var{epsKmz}    & $\left<2\nu\varrho\Strain^2
                     \right>_{xy}$ \\
+  \var{viscforcezmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}$ \\
+  \var{viscforcezupmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}$ \\
+  \var{viscforcezdownmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}$ \\
 %
 \bottomrule
 \end{longtable}

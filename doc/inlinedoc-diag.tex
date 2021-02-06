@@ -28,6 +28,7 @@
 %%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
+%%   hydro_kinematic.f90
 %%   hydro_potential.f90
 %%   lorenz_gauge.f90
 %%   lucky_droplet.f90
@@ -280,6 +281,8 @@
   \var{rhomax}    & $\max(\rho)$ \\
   \var{lnrhomin}  & $\min(\log\rho)$ \\
   \var{lnrhomax}  & $\max(\log\rho)$ \\
+  \var{rhorms}    & $\sqrt{<\varrho^2>}$ \\
+  \var{lnrhorms}  & $\sqrt{<(\ln\varrho)^2>}$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
@@ -622,6 +625,7 @@
   \var{etajrhomax} & Max of artificial resistivity
                     $\eta\sim J / \rho$ \\
   \var{etaaniso}  & $\eta_1$ \\
+  \var{etaanisoBB} & $\eta_{BB}$ \\
   \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
   \var{jparallelm} & Mean value of the component
                     of J parallel to B \\
@@ -853,6 +857,30 @@
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk.f90}} \\
 \midrule
+  \var{STrept}    & $Re S_{T}(k_1,k_1,k_1,t)$ \\
+  \var{STimpt}    & $Im S_{T}(k_1,k_1,k_1,t)$ \\
+  \var{SXrept}    & $Re S_{X}(k_1,k_1,k_1,t)$ \\
+  \var{SXimpt}    & $Im S_{X}(k_1,k_1,k_1,t)$ \\
+  \var{hTrept}    & $Re h_{T}(k_1,k_1,k_1,t)$ \\
+  \var{hTimpt}    & $Im h_{T}(k_1,k_1,k_1,t)$ \\
+  \var{hXrept}    & $Re h_{X}(k_1,k_1,k_1,t)$ \\
+  \var{hXimpt}    & $Im h_{X}(k_1,k_1,k_1,t)$ \\
+  \var{gTrept}    & $Re h_{T}(k_1,k_1,k_1,t)$ \\
+  \var{gTimpt}    & $Im h_{T}(k_1,k_1,k_1,t)$ \\
+  \var{gXrept}    & $Re h_{X}(k_1,k_1,k_1,t)$ \\
+  \var{gXimpt}    & $Im h_{X}(k_1,k_1,k_1,t)$ \\
+  \var{STrep2}    & $Re S_{T}(k_2,k_2,k_2,t)$ \\
+  \var{STimp2}    & $Im S_{T}(k_2,k_2,k_2,t)$ \\
+  \var{SXrep2}    & $Re S_{X}(k_2,k_2,k_2,t)$ \\
+  \var{SXimp2}    & $Im S_{X}(k_2,k_2,k_2,t)$ \\
+  \var{hTrep2}    & $Re h_{T}(k_2,k_2,k_2,t)$ \\
+  \var{hTimp2}    & $Im h_{T}(k_2,k_2,k_2,t)$ \\
+  \var{hXrep2}    & $Re h_{X}(k_2,k_2,k_2,t)$ \\
+  \var{hXimp2}    & $Im h_{X}(k_2,k_2,k_2,t)$ \\
+  \var{gTrep2}    & $Re g_{T}(k_2,k_2,k_2,t)$ \\
+  \var{gTimp2}    & $Im g_{T}(k_2,k_2,k_2,t)$ \\
+  \var{gXrep2}    & $Re g_{X}(k_2,k_2,k_2,t)$ \\
+  \var{gXimp2}    & $Im g_{X}(k_2,k_2,k_2,t)$ \\
   \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
   \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
   \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
@@ -962,6 +990,12 @@
   \var{qrms}      & $\sqrt(|\qv|^2)$ \\
   \var{qsatmin}   & minimum of qsat/qabs \\
   \var{qsatrms}   & rms of qsat/abs \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_kinematic.f90}} \\
+\midrule
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
 \midrule
@@ -1121,6 +1155,8 @@
 \midrule
   \multicolumn{2}{c}{Module \file{lucky_droplet.f90}} \\
 \midrule
+  \var{rad}       & $r/r_\ast$ \\
+  \var{tauk}      & $\tau_k$ \\
   \var{tt1m}      & $\langle T \rangle$ \\
   \var{qq1m}      & $\langle \ln T \rangle$ \\
   \var{qq2m}      & $\langle \ln T^2 \rangle$ \\
@@ -1415,6 +1451,7 @@
                     \quad(mean thermal
                     [=internal] energy) \\
   \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
+  \var{csm}       & $\left<c_{\rm s}\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{particles_caustics.f90}} \\
 \midrule
@@ -1789,6 +1826,7 @@
   \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
   \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
   \var{h0max}     & $\operatorname{max}h_{0}$ \\
+  \var{bhrms}     & $\left<b_{h}^2\right>^{1/2}$ \\
   \var{jb0m}      & $\left<jb_{0}\right>$ \\
   \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
   \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
@@ -1959,7 +1997,9 @@
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
   \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
   \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
-  \var{jb0m}      & $\left<jb_{0}\right>$ \\
+  \var{jb0m}      & $\left<j_0\cdot b_0\right>$ \\
+  \var{ub0m}      & $\left<u_0\cdot b_0\right>$ \\
+  \var{uj0m}      & $\left<u_0\cdot j_0\right>$ \\
   \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
   \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
   \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
