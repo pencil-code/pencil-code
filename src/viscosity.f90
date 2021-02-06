@@ -175,9 +175,9 @@ module Viscosity
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
   integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2
                                 ! XYAVG_DOC: \right>_{xy}$
-  integer :: idiag_viscforcezmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}
-  integer :: idiag_viscforcezupmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}
-  integer :: idiag_viscforcezdownmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}
+  integer :: idiag_viscforcezmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}$
+  integer :: idiag_viscforcezupmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}$
+  integer :: idiag_viscforcezdownmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}$
 !
 ! yz averaged diagnostics given in yzaver.in written every it1d timestep
 !
