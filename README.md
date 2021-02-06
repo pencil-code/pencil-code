@@ -53,8 +53,8 @@ source $PENCIL_HOME/sourceme.csh
 
 * The [manual][manual] is the main source of information.
 * There is also a [quick start][quick_start] to help getting started.
-* Information about [PythonCodingStyle][PythonCodingStyle] and the
-  [PythonCodingStyle][PythonCodingStyle] can be found on the [wiki][wiki].
+* Information about [Python with the Pencil Code][PythonForPencil] and the
+  [Python Coding Style][PythonCodingStyle] can be found on the [wiki][wiki].
 * Updates to the community are provided through the [newsletter][newsletter].
 
 ## List of Contributors
