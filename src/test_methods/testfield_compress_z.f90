@@ -70,6 +70,7 @@ module Testfield
   logical :: lphase_adjust=.false.
   logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
   logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false., &
+             lremove_meanuu0x_test=.false., lremove_meanuu0y_test=.false., &
              lzero_only=.false., lremove_E0=.false., lremove_F0=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
@@ -114,8 +115,9 @@ module Testfield
        rescale_aatest,rescale_uutest, rescale_hhtest, rho0test, &
        lupw_uutest, lupw_hhtest, luse_main_run, lvisc_simplified_testfield, Omega, &
        lugutest, lfprestest, lSghtest, &
-       lremove_meanaa0x_test, lremove_meanaa0y_test, damp_uxb, lzero_only, &
-       lremove_E0, lremove_F0
+       lremove_meanaa0x_test, lremove_meanaa0y_test, &
+       lremove_meanuu0x_test, lremove_meanuu0y_test, &
+       damp_uxb, lzero_only, lremove_E0, lremove_F0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -1566,8 +1568,9 @@ module Testfield
       real, dimension (nx,3) :: uufluct,ghhfluct,bbfluct,jjfluct
       real, dimension (nx,3,3) :: sijfluct, sij0ref
       real, dimension (nx) :: divutest,ughtest
-      real, dimension (mx,3) :: aatestmx
-      real, dimension (my,3) :: aatestmy
+      real, dimension (mx,3) :: aatestmx,uutestmx
+      real, dimension (my,3) :: aatestmy,uutestmy
+      real, dimension (3) :: uutestm0
       integer :: jtest,j,juxb,jjxb,jugu,jugh,jSgh,nl,lll,mmm
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
@@ -1830,6 +1833,60 @@ mn:   do n=n1,n2
         do j=1,3
           do mmm=1,my
             f(:,mmm,:,iaxtest+j-1) = f(:,mmm,:,iaxtest+j-1)-aatestmy(mmm,j)
+          enddo
+        enddo
+
+      endif
+!
+      if (lremove_meanuu0x_test) then
+
+        fac=1./nyzgrid
+        do j=1,3
+          do lll=1,mx
+            uutestmx(lll,j)=fac*sum(f(lll,m1:m2,n1:n2,iuxtest+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocyz,23,uutestmx)
+!
+!  Remove volume average from uutestmx as this is already removed by the z-averaging.
+!
+        uutestm0=sum(uutestmx(l1:l2,:),1)/nxgrid
+        call finalize_aver(nprocx,1,uutestm0)
+        do j=1,3
+          uutestmx(:,j)=uutestmx(:,j)-uutestm0(j)
+        enddo
+!
+        do j=1,3
+          do lll=1,mx
+            f(lll,:,:,iuxtest+j-1) = f(lll,:,:,iuxtest+j-1)-uutestmx(lll,j)
+          enddo
+        enddo
+
+      endif
+      
+      if (lremove_meanuu0y_test) then
+
+        fac=1./nxzgrid
+        do j=1,3
+          do mmm=1,my
+            uutestmy(mmm,j)=fac*sum(f(l1:l2,mmm,n1:n2,iuxtest+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocxz,13,uutestmy)
+!
+!  Remove volume average from uutestmy as this is already removed by the z-averaging.
+!
+        if (.not.lremove_meanuu0x_test) then
+          uutestm0=sum(uutestmy(m1:m2,:),1)/nygrid
+          call finalize_aver(nprocy,2,uutestm0)
+        endif
+        do j=1,3
+          uutestmy(:,j)=uutestmy(:,j)-uutestm0(j)
+        enddo
+
+        do j=1,3
+          do mmm=1,my
+            f(:,mmm,:,iuxtest+j-1) = f(:,mmm,:,iuxtest+j-1)-uutestmy(mmm,j)
           enddo
         enddo
 
