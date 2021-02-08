@@ -1988,7 +1988,7 @@ module Hydro
 ! initial spectrum k^power
 !
         case ('power_randomphase')
-          call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
+          call power_randomphase(ampluu(j),initpower,kgaussian_uu,kpeak,cutoff,f,iux,iuz,lscale_tobox)
 !
 ! initial spectrum k^power
 !

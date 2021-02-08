@@ -35,7 +35,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of chiral_mhd_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -76,7 +76,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module chiral_mhd
+module Special
 !
   use Cparam
   use Cdata
@@ -98,6 +98,8 @@ module chiral_mhd
    real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
    real :: initpower_muS=0., cutoff_muS=0.
+   real :: kgaussian_mu5=0.,kpeak_mu5=0.
+   real :: kgaussian_muS=0.,kpeak_muS=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -115,15 +117,16 @@ module chiral_mhd
 !
   character (len=labellen) :: initspecial='nothing'
 !
-  namelist /chiral_mhd_init_pars/ &
+  namelist /special_init_pars/ &
       initspecial, mu5_const, &
       lmuS, lCVE, lmu5adv, lmuSadv, muS_const, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
-      initpower_muS, cutoff_muS, lremove_mean_mu5
+      initpower_muS, cutoff_muS, lremove_mean_mu5, &
+      kgaussian_mu5, kpeak_mu5, kgaussian_muS, kpeak_muS
 !
-  namelist /chiral_mhd_run_pars/ &
+  namelist /special_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
@@ -268,10 +271,12 @@ module chiral_mhd
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
 !
         case ('power_randomphase')
-          call power_randomphase(amplmu5,initpower_mu5,cutoff_mu5,f,imu5,imu5,lscale_tobox=.false.)
+          call power_randomphase(amplmu5,initpower_mu5,kgaussian_mu5,kpeak_mu5,cutoff_mu5,&
+            f,imu5,imu5,lscale_tobox=.false.)
           if(lremove_mean_mu5) call remove_mean(f,imu5)
           if (lmuS) then
-            call power_randomphase(amplmuS,initpower_muS,cutoff_muS,f,imuS,imuS,lscale_tobox=.false.)
+            call power_randomphase(amplmuS,initpower_muS,kgaussian_muS,kpeak_muS,cutoff_muS,&
+              f,imuS,imuS,lscale_tobox=.false.)
           endif
         case default
           call fatal_error("init_special: No such value for initspecial:" &
@@ -575,7 +580,7 @@ module chiral_mhd
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=chiral_mhd_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -583,7 +588,7 @@ module chiral_mhd
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=chiral_mhd_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -593,7 +598,7 @@ module chiral_mhd
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=chiral_mhd_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -601,7 +606,7 @@ module chiral_mhd
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=chiral_mhd_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -740,6 +745,6 @@ module chiral_mhd
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../chiral_mhd_dummies.inc'
+    include '../special_dummies.inc'
 !*********************************************************************** 
-endmodule chiral_mhd
+endmodule Special

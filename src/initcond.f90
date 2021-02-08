@@ -4809,7 +4809,8 @@ module Initcond
 !
     endsubroutine powern
 !***********************************************************************
-    subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2,lscale_tobox)
+    subroutine power_randomphase(ampl,initpower,kgaussian,kpeak,cutoff, &
+      f,i1,i2,lscale_tobox)
 !
 !  Produces k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  However, initpower=-3 produces a k^{-1} spectrum.
@@ -4818,6 +4819,8 @@ module Initcond
 !  08-may-08/nils: adapted to work on multiple processors
 !  06-jul-08/nils+andre: Fixed problem when running on
 !      mult. procs (thanks to Andre Kapelrud for finding the bug)
+!  08-feb-21/jennifer: added a Gaussian (adapted from power_randomphase_hel
+!      but with a shift in k)
 !
       use Fourier, only: fft_xyz_parallel
 !
@@ -4825,9 +4828,11 @@ module Initcond
       logical :: lscale_tobox1
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, dimension (:,:,:), allocatable :: k2, u_re, u_im, r
+      real, dimension (:,:,:), allocatable :: k2mkpeak
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,mhalf,cutoff,scale_factor
+      real :: nfact=4.,kpeak,kpeak1,kpeak21,nexp1,nexp2,kgaussian,fact
 !
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
@@ -4839,6 +4844,10 @@ module Initcond
 !
       allocate(k2(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      if (kgaussian /= 0.) then
+         allocate(k2mkpeak(nx,ny,nz),stat=stat)
+         if (stat>0) call fatal_error('powern','Could not allocate memory for k2mkpeak')
+      endif
       allocate(u_re(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
       allocate(u_im(nx,ny,nz),stat=stat)
@@ -4884,6 +4893,9 @@ module Initcond
           do iky=1,ny
             do ikx=1,nx
               k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+              if (kgaussian /= 0.) then
+                k2mkpeak(ikx,iky,ikz)=(kx(ikx+ipx*nx)-kpeak)**2+(ky(iky+ipy*ny)-kpeak)**2
+              endif
             enddo
           enddo
 !  In 3-D
@@ -4892,6 +4904,10 @@ module Initcond
             do iky=1,ny
               do ikx=1,nx
                 k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+                if (kgaussian /= 0.) then
+                  k2mkpeak(ikx,iky,ikz)=(kx(ikx+ipx*nx)-kpeak)**2+(ky(iky+ipy*ny)-kpeak)**2 &
+                  +(kz(ikz+ipz*nz)-kpeak)**2
+                endif
               enddo
             enddo
           enddo
@@ -4916,6 +4932,32 @@ module Initcond
             u_re = u_re*exp(-(k2/cutoff**2.)**2)
             u_im = u_im*exp(-(k2/cutoff**2.)**2)
           endif
+!
+! Gaussian (adapted from power_randomphase_hel)
+!
+          if (kgaussian /= 0.) then
+            nexp1=.25*nfact*initpower
+            nexp2=1./nfact
+            kpeak1=1./kpeak
+            kpeak21=1./kpeak**2
+!
+!  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
+!  which comes from a kpeak^3 factor in the k^2 dk integration.
+!  The 1/2 factor comes from setting uk (as opposed to uk^2).
+!
+            fact=(kpeak1*scale_factor)**1.5
+            fact=fact*kgaussian**(-.5*(initpower+1.))
+            r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+!
+            if (kpeak /= 0.) then
+               r=r*exp(-.25*(k2mkpeak/kgaussian**2.-1.))
+            else
+               r=r*exp(-.25*(k2/kgaussian**2.-1.))
+            endif
+            u_re = r*u_re
+            u_im = r*u_im
+          endif
+!
           ! back to real space
           call fft_xyz_parallel(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
