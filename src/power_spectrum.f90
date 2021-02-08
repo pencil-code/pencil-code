@@ -255,7 +255,7 @@ module power_spectrum
 !
   integer, intent(in), optional :: iapn_index
 ! integer, pointer :: inp,irhop,iapn(:)
-  integer, parameter :: nk=nx/2
+  integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
