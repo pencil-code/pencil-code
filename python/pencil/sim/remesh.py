@@ -120,9 +120,9 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
 
     # copy settings from srcsim and revise with changes to dstsim var.h5
     srcsets=srch5['settings']
-    sets = group_h5(dsth5, 'settings', mode='a')
+    sets = group_h5(dsth5, 'settings', status='a')
     for key in srcsets.keys():
-        dset = dataset_h5(sets, key, data=srcsets[key][()], mode='a')
+        dset = dataset_h5(sets, key, data=srcsets[key][()], status='a')
     #update grid dimensions
     sets['nx'][()] = int(srcsets['nx'][()]*multxyz[0]/fracxyz[0])
     sets['mx'][()] = sets['nx'][()] + 2*dstghost
@@ -142,9 +142,9 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
         sets['nprocz'][()] = ncpus[2]
     #copy the grid from the srcsim to dstsim var.h5 and grid.h5
     srcgrid=srch5['grid']
-    grid = group_h5(dsth5, 'grid', mode='a')
+    grid = group_h5(dsth5, 'grid', status='a')
     for key in srcgrid.keys():
-        dset = dataset_h5(grid, key, data=srcgrid[key][()], mode='a')
+        dset = dataset_h5(grid, key, data=srcgrid[key][()], status='a')
     #replace grid data changed for dstsim
     for ii,mm in [[0,'mx'],[1,'my'],[2,'mz']]:
         if not srcpar['lequidist'][ii]:
@@ -158,10 +158,11 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                                 srcgrid[mstr][srcghost])/(sets['n'+mstr][()]-1))
             grid.__delitem__(mstr)
             grid.create_dataset(mstr, (sets[mm][()],), dtype=dtype)
+            print('grid 161:',mstr,srcgrid[mstr][srcghost],grid['d'+mstr][()],srcgrid[mstr][-srcghost-1][()],sets['n'+mstr][()])
             grid[mstr][dstghost:-dstghost] = np.linspace(
                             srcgrid[mstr][srcghost]-grid['d'+mstr][()],
-                            srcgrid[mstr][-srcghost-1],
-                            sets['n'+mstr][()],dtype=dtype
+                            srcgrid[mstr][-srcghost-1][()],
+                            sets['n'+mstr][0],dtype=dtype
                             )
             if srcpar['lshift_origin'][ii] or lsymmetric:
                 grid[mstr][dstghost:-dstghost] += dtype(0.5*grid['d'+mstr][()])
@@ -342,13 +343,15 @@ def src2dst_remesh(src, dst,
                              OVERWRITE=OVERWRITE, optionals=optionals,
                              start_optionals=start_optionals,
                              rename_submit_script=rename_submit_script)
-    with open_h5(join(srcsim.path,srcdatadir,h5in),mode='r',rank=rank,comm=comm) as srch5:
-        with open_h5(join(dstsim.path,dstdatadir,h5out),mode='w',lfs=lfs,MB=MB,count=count,rank=rank,comm=comm) as dsth5:
+    print('opening src file and dst file on rank{}'.format(rank))
+    with open_h5(join(srcsim.path,srcdatadir,h5in),'r',rank=rank,comm=comm) as srch5:
+        with open_h5(join(dstsim.path,dstdatadir,h5out),'w',lfs=lfs,MB=MB,count=count,rank=rank,comm=comm) as dsth5:
             #apply settings and grid to dst h5 files
             get_dstgrid(srch5, srcsim.param, dsth5, ncpus=ncpus,
                         multxyz=multxyz, fracxyz=fracxyz, srcghost=srcghost,
                         dstghost=dstghost, dtype=dtype, lsymmetric=lsymmetric,
                         quiet=quiet)
+            print('get_dstgrid completed on rank {}'.format(rank))
             #use settings to determine available proc dist then set ncpus 
             factors = cpu_optimal(
                    dsth5['settings/nx'][0],
@@ -383,35 +386,35 @@ def src2dst_remesh(src, dst,
                '\n**********************************************************\n')
             if check_grid:
                 return 1
-            group = group_h5(dsth5, 'unit', mode='w')
+            group = group_h5(dsth5, 'unit', status='w')
             for key in srch5['unit'].keys():
                 if type(srch5['unit'][key][()]) == np.float64 or\
                     type(srch5['unit'][key][()]) == np.float32:
-                    dset = dataset_h5(group, key, mode='w',
+                    dset = dataset_h5(group, key, status='w',
                                       data=srch5['unit'][key][()],
                                       overwrite=True, dtype=dtype)
                 else:
-                    dset = dataset_h5(group, key, mode='w',
+                    dset = dataset_h5(group, key, status='w',
                                       data=srch5['unit'][key][()],
                                       overwrite=True)
-            gridh5 = open_h5(join(dstsim.datadir,'grid.h5'), mode='w')
+            gridh5 = open_h5(join(dstsim.datadir,'grid.h5'), status='w')
             dsth5.copy('settings', gridh5)
             dsth5.copy('grid', gridh5)
             dsth5.copy('unit', gridh5)
             gridh5.close()
             if 'persist' in srch5.keys():
-                group = group_h5(dsth5, 'persist', mode='w')
+                group = group_h5(dsth5, 'persist', status='w')
                 for key in srch5['persist'].keys():
                     tmp = np.zeros(nprocs)
                     tmp[:] = srch5['persist'][key][0]
                     if type(srch5['persist'][key][()]) == np.float64 or\
                                  type(srch5['persist'][key][()]) == np.float32:
-                        dset = dataset_h5(group, key, mode='w',
+                        dset = dataset_h5(group, key, status='w',
                                           data=tmp, overwrite=True, dtype=dtype)
                     else:
-                        dset = dataset_h5(group, key, mode='w',
+                        dset = dataset_h5(group, key, status='w',
                                           data=tmp, overwrite=True)
-            dset = dataset_h5(dsth5, 'time', mode='w',
+            dset = dataset_h5(dsth5, 'time', status='w',
                              data=srch5['time'][()], dtype=dtype)
             nx, ny, nz = dsth5['settings']['nx'][0],\
                          dsth5['settings']['ny'][0],\
@@ -431,7 +434,7 @@ def src2dst_remesh(src, dst,
                 if not quiet:
                     print('nx {}, ny {}, nz {}'.format(nx, ny, nz)) 
                     print('mx {}, my {}, mz {}'.format(mx, my, mz)) 
-            group = group_h5(dsth5, 'data', mode='w')
+            group = group_h5(dsth5, 'data', status='w')
             for key in srch5['data'].keys():
                 print('remeshing '+key)     
                 if not lchunks:
@@ -441,10 +444,10 @@ def src2dst_remesh(src, dst,
                                        dsth5['grid']['y'], dsth5['grid']['z'],
                                        quiet=quiet)
                     print('writing '+key+' shape {}'.format(var.shape))
-                    dset = dataset_h5(group, key, mode='w', data=var,
+                    dset = dataset_h5(group, key, status='w', data=var,
                                       overwrite=True, dtype=dtype)
                 else:
-                    dset = dataset_h5(group, key, mode='w', shape=[mz,my,mx],
+                    dset = dataset_h5(group, key, status='w', shape=[mz,my,mx],
                                       overwrite=True, dtype=dtype)
                     print('writing '+key+' shape {}'.format([mz,my,mx]))
                     for iz in range(nchunks[2]):
