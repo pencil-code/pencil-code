@@ -226,7 +226,7 @@ module Special
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
-  real :: rel_eta=1e-3, jthresh=0.3    ! must be > 0
+  real :: rel_eta=1e-3, jthresh=0.3, rel_kappa=1e-3    ! must be > 0
   real, pointer :: eta
   real :: kappa_floor=-1e-5
 
@@ -256,7 +256,8 @@ module Special
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
-      lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, rel_eta, kappa_floor
+      lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, &
+      rel_eta, rel_kappa, kappa_floor
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -1214,6 +1215,7 @@ enddo; enddo
 !
       integer :: i,j,k, ind(1)
       real, dimension(nx) :: jrt,jtr
+      logical :: l0
 !
       call keep_compiler_quiet(f)
 !
@@ -1333,12 +1335,17 @@ enddo; enddo
 !
                 jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
                 jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
+l0=.false.   !.true.
+if (l0.and.any(abs(jrt)<jthresh*abs(jtr).and.p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3))) then
+  print*, 'iprocs, m=', ipx,ipy, m
+  !l0=.false.
+endif
                 where (abs(jrt)<jthresh*abs(jtr) .and. &
                        p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) ) 
-                  p%kappa_coefs(:,3,j,k)=(-1.+rel_eta)*(eta+p%beta_coefs(:,3,3))
+                  p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
                 elsewhere (abs(jtr)<jthresh*abs(jrt) .and. &
                            p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
-                  p%kappa_coefs(:,3,j,k)=(1.-rel_eta)*(eta+p%beta_coefs(:,3,3))
+                  p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
                 endwhere
               endif
             endif
