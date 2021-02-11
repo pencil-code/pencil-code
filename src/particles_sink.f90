@@ -258,7 +258,7 @@ module Particles_sink
       real, dimension(:,:,:), allocatable, save :: srhop
       real, dimension(1) :: rhop_interp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
-      real :: rhoc
+      real :: rhoc,rhop_interp_diag
 !
       if (ip<=6) then
         print*, 'create_particles_sink: entering, iproc, it, itsub=', &
@@ -285,6 +285,10 @@ module Particles_sink
         rhoc = rhop_sink_create
       endif init
 !
+!  Start the diagnostic
+!
+      if (ldiagnos.and.idiag_rhopinterp/=0) rhop_interp_diag=0.
+!
 !  Particle block domain decomposition.
 !
       if (lparticles_blocks) then
@@ -309,7 +313,6 @@ module Particles_sink
                 else
                   rhop_interp=fb(ix0,iy0,iz0,irhop:irhop,iblock)
                 endif
-                if (ldiagnos.and.idiag_rhopinterp/=0) call max_name(rhop_interp(1),idiag_rhopinterp)
                 if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
                 creatb: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
@@ -325,6 +328,12 @@ module Particles_sink
                     srhop(ix0,iy0,iz0) = rhop_interp(1)
                   endif recb
                 endif creatb
+!
+!  Save the diagnostic of rhop_interp, which is the collected in every block.
+!
+                if (ldiagnos.and.idiag_rhopinterp/=0) &
+                     rhop_interp_diag = max(rhop_interp_diag,rhop_interp(1))
+!
               endif
             enddo
           endif
@@ -354,7 +363,6 @@ module Particles_sink
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
                 endif
-                if (ldiagnos.and.idiag_rhopinterp/=0) call max_name(rhop_interp(1),idiag_rhopinterp)
                 if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
                 creat: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
@@ -369,6 +377,8 @@ module Particles_sink
                     srhop(ix0,iy0,iz0) = rhop_interp(1)
                   endif record
                 endif creat
+                if (ldiagnos.and.idiag_rhopinterp/=0) &
+                     rhop_interp_diag = max(rhop_interp_diag,rhop_interp(1))
               endif ifsink
             enddo particles
           endif pencil_has_particles
@@ -378,6 +388,9 @@ module Particles_sink
 !  Sink particle diagnostics.
 !
       if (ldiagnos) then
+!
+!  Number of sink particles
+!
         if (idiag_nparsink/=0) then
           npar_sink_loc=0
           do k=1,npar_loc
@@ -385,6 +398,11 @@ module Particles_sink
           enddo
           call sum_name(float(npar_sink_loc),idiag_nparsink)
         endif
+!
+!  Exact value of rhop used to produce a sink particle.
+!
+        if (idiag_rhopinterp/=0) call max_name(rhop_interp_diag,idiag_rhopinterp)
+!
       endif
 !
       if (ip<=6) then
