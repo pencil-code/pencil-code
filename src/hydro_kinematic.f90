@@ -96,6 +96,7 @@ module Hydro
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
+  real :: binary_radius=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -120,7 +121,8 @@ module Hydro
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
       ll_sh, mm_sh, n_xprof, lrandom_ampl, &
-      sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz
+      sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
+      binary_radius
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -696,7 +698,7 @@ endif
       real, dimension(nx) :: wind_prof,div_uprof,der6_uprof
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
-      real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
+      real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn, tmp1, tmp2
       real, dimension(nx) :: rone, argx, pom2
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
@@ -710,6 +712,7 @@ endif
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
+      real :: xpos1, ypos1, xpos2, ypos2
       integer :: modeN, ell, ll, nn, ii, nn_max, kk
 !
 !  Choose from a list of different flow profiles.
@@ -1195,6 +1198,36 @@ endif
             p%oo(:,2)=0.
             p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+sigma1_uukin_scl_yz*y(m)**2))*fac2*tmp_mn
           endif
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Time-dependent velocity field corresponding to a spiraling binary
+!
+      case ('t-dep_binary')
+        if (headtt) print*,'t-dep_binary; ampl_kinflow,omega_kinflow,binary_radius=',ampl_kinflow,omega_kinflow,binary_radius
+        fac=-ampl_kinflow/sigma_uukin**2
+        fac2=.5/sigma_uukin**2
+!
+! uu
+!
+        if (lpenc_loc(i_uu)) then
+          xpos1=binary_radius*cos(omega_kinflow*t)
+          ypos1=binary_radius*sin(omega_kinflow*t)
+          xpos2=-binary_radius*cos(omega_kinflow*t)
+          ypos2=-binary_radius*sin(omega_kinflow*t)
+          tmp1=fac*exp(-fac2*((x(l1:l2)-xpos1)**2+(y(m)-ypos1)**2+z(n)**2))
+          tmp2=fac*exp(-fac2*((x(l1:l2)-xpos2)**2+(y(m)-ypos2)**2+z(n)**2))
+          p%uu(:,1)=(x(l1:l2)-xpos1)*tmp1+eps_kinflow*(x(l1:l2)-xpos2)*tmp2
+          p%uu(:,2)=(y(m    )-ypos1)*tmp1+eps_kinflow*(y(m    )-ypos2)*tmp2
+          p%uu(:,3)=(z(n    )      )*(tmp1+tmp2)
+!
+! oo (currently only for kx_uukin=0)
+!
+  !       if (lpenc_loc(i_oo)) then
+  !         p%oo(:,1)=0.
+  !         p%oo(:,2)=0.
+  !         p%oo(:,3)=-4.*(1.-fac2*(x(l1:l2)**2+sigma1_uukin_scl_yz*y(m)**2))*fac2*tmp_mn
+  !       endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
