@@ -22,6 +22,7 @@ pro fit_rms, t, rms, lam=lam, om=om, res=result
 ; Provides an estimate for growth rate and oscillation frequency of a field based on its rms. 
 ; Requires a rather good inital guess for the frequency (om), if the growth rate is not small compared to the frequency,
 ; also for the growth rate (lam).
+; Returns fitted values of rms in result.
 ;
   default, lam, 0.
   default, om, 0.
