@@ -60,8 +60,6 @@ module power_spectrum
       use Messages
       integer :: ikr, ikmu
       !!! the following warnings should become fatal errors
-      if (nxgrid > nx) call warning ('power_spectrum', &
-          "Part of the high-frequency spectrum are lost because nxgrid/= nx.")
       if (((dx /= dy) .and. ((nxgrid-1)*(nxgrid-1) /= 0)) .or. &
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
