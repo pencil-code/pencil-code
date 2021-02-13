@@ -3545,12 +3545,12 @@ module Hydro
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
-        if (idiag_rux2m/=0)   call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
-        if (idiag_ruy2m/=0)   call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
-        if (idiag_ruz2m/=0)   call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        call sum_mn_name(p%ekin,idiag_EEK)
-        call sum_mn_name(p%ekin,idiag_ekin)
-        call integrate_mn_name(p%ekin,idiag_ekintot)
+        if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
+        if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
+        if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
+        if (idiag_ekin/=0) call sum_mn_name(p%ekin,idiag_ekin)
+        if (idiag_EEK/=0) call sum_mn_name(p%ekin,idiag_EEK)
+        if (idiag_ekintot/=0) call integrate_mn_name(p%ekin,idiag_ekintot)
         if (idiag_totangmom/=0) &
             call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
             idiag_totangmom,p)
