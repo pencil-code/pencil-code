@@ -186,15 +186,15 @@ class FixedPoint(object):
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
 
-#            # Discard fixed points which lie too close to each other.
-#            fixed, fixed_tracers, fixed_sign = self.__discard_close_fixed_points(np.array(fixed),
-#                                                                                 np.array(fixed_sign),
-#                                                                                 np.array(fixed_tracers),
-#                                                                                 var)
-#            if self.fixed_points is None:
-#                self.fixed_points = []
-#                self.fixed_sign = []
-#                self.fixed_tracers = []
+            # Discard fixed points which lie too close to each other.
+            fixed, fixed_tracers, fixed_sign = self.__discard_close_fixed_points(np.array(fixed),
+                                                                                 np.array(fixed_sign),
+                                                                                 np.array(fixed_tracers),
+                                                                                 var)
+            if self.fixed_points is None:
+                self.fixed_points = []
+                self.fixed_sign = []
+                self.fixed_tracers = []
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
             self.fixed_tracers.append(fixed_tracers)
@@ -488,7 +488,7 @@ class FixedPoint(object):
                     fixed_sign_new.append(fixed_sign[idx])
                     fixed_tracers_new.append(fixed_tracers[idx])
 
-        return np.array(fixed_new), np.array(fixed_sign_new), np.array(fixed_tracers_new)
+        return np.array(fixed_new), np.array(fixed_tracers_new), np.array(fixed_sign_new)
 
 
     def write(self, datadir='data', destination='fixed_points.hdf5'):
