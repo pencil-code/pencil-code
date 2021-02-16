@@ -34,7 +34,7 @@ module Special
   use Cdata
   use Diagnostics
   use General, only: keep_compiler_quiet,numeric_precision
-  use Messages, only: svn_id, fatal_error, warning
+  use Messages, only: svn_id, fatal_error, fatal_error_local, warning
   use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max,mpibarrier
 
   use Sub, only: dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
@@ -123,7 +123,7 @@ module Special
   logical, dimension(3,6)  :: lkappa_c, lbcoef_c
   logical :: lalpha=.false., lbeta=.false., lgamma=.false., ldelta=.false., lkappa=.false.
   logical :: lumean=.false., lacoef=.false., lbcoef=.false., lusecoefs=.false.
-  logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
+  logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false., lbblimit=.false.
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, umean_scale, acoef_scale, bcoef_scale
 
   character (len=fnlen) :: dataset
@@ -257,7 +257,7 @@ module Special
       interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
       lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, &
-      rel_eta, rel_kappa, kappa_floor
+      rel_eta, rel_kappa, kappa_floor, lbblimit
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -1205,7 +1205,7 @@ enddo; enddo
 !
 !  24-nov-04/tony: coded
 !
-      use General, only: notanumber
+!      use General, only: notanumber
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1216,8 +1216,17 @@ enddo; enddo
       integer :: i,j,k, ind(1)
       real, dimension(nx) :: jrt,jtr
       logical :: l0
+      real :: limit=1e30
 !
       call keep_compiler_quiet(f)
+!
+! Check if p%bb is not already to large
+!
+      if (lbblimit) then
+        if (maxval(abs(p%bb)) > limit) call fatal_error_local('calc_pencils_special', &
+          'magnetic field too big')
+      endif
+!
 !
 ! Calculate emf pencil
 !
