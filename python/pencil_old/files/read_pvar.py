@@ -15,7 +15,7 @@ def read_pvar(*args, **kwargs):
 		
 		Parameters:
 			varfile=''    e.g. pvar.dat, PVAR9 and so on.
-			datadir='data/'
+			datadir='./data'
 			proc=-1           
 			verbose=False    puts out some debugging output
 			!!!!! DISCLAIMER!!!!! the next one is potentially dangerous and untested for a low number of particles 
