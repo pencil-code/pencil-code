@@ -80,6 +80,7 @@
 ;       Note that the variable "variables" is being modified upon exiting.
 ;
 ;-
+@pc_noghost.pro
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
@@ -95,7 +96,7 @@ pro pc_read_var,                                                  $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status, sphere=sphere,single=single,         $
-    toyang=toyang,cubint=cubint,ogrid=ogrid
+    toyang=toyang,cubint=cubint,ogrid=ogrid,stay=stay
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -212,6 +213,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
     message, 'pc_read_var: /unshear only works with /trimall'
+    trimall=1
   endif
 ;
 ; Downsampled snapshot?
@@ -487,9 +489,12 @@ COMPILE_OPT IDL2,HIDDEN
       strg=strmid(strg,0,pos)+',2'+strmid(strg,pos)
     endif
 
-    if (execute(varcontent[iv].idlvar+'='+strg,0) ne 1) then $
-        message, 'Error initialising ' + varcontent[iv].variable $
-        +' - '+ varcontent[iv].idlvar, /info
+    if (nprocs eq 1 and allprocs ne 2 and not run2D or $
+        total(varcontent[iv].idlvar eq variables) ne 0) then begin
+      if (execute(varcontent[iv].idlvar+'='+strg,0) ne 1) then $
+          message, 'Error initialising ' + varcontent[iv].variable $
+          +' - '+ varcontent[iv].idlvar, /info
+    endif
 ;
 ; For vector quantities skip the required number of elements of the f array.
 ;
@@ -712,7 +717,9 @@ incomplete:
 ; Loop over variables.
 ;
       for iv=0L,totalvars-1L do begin
+;
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
+        if total(varcontent[iv].idlvar eq variables) eq 0 then continue
 ;
 ; For 2-D run with lwrite_2d=T we only need to read 2-D data.
 ;
@@ -951,6 +958,7 @@ incomplete:
     if is_defined(zghosts) then tagnames += ",'zghosts'"
     if keyword_set(sphere) then tagnames += ",'sphere_data', 'fval'"
   endif 
+
   tagnames += arraytostring(tags,QUOTE="'") 
 ;
 ;  Merged data into object.
@@ -971,36 +979,51 @@ incomplete:
 ;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+  if (keyword_set(trimall)) then begin
+    if execute(strjoin('pc_noghost_pro,'+variables+',dim=dim',' & ')) ne 1 then $
+      message, 'ERROR trimming variables'
+  endif
 ;
 ; Transform to unsheared frame if requested.
 ;
   if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
-  makeobject += arraytostring(variables)
-  if yinyang then makeobject += mergevars
-  makeobject += ")"      
+  if keyword_set(stay) then begin
+    if (keyword_set(trimxyz)) then begin
+      xyzstring=xyzstring.Replace(',',' & ')
+      xyzstring=xyzstring.Replace('x','x=x')
+      xyzstring=xyzstring.Replace('y','y=y')
+      xyzstring=xyzstring.Replace('z','z=z')
+      res=execute(xyzstring)
+    endif
+    print, 'Stopped due to stay=1; object will not be created!'
+    print, 'Available variables: x,y,z,dx,dy,dz,', trim(variables)
+    stop 
+  endif else begin
+    makeobject += arraytostring(variables)
+    if yinyang then makeobject += mergevars
+    makeobject += ")"      
 ;
 ; Execute command to make the structure.
 ;
-  if (execute(makeobject) ne 1) then begin
-    message, 'ERROR evaluating variables: '+makeobject
-    undefine, object
-  endif
+    if (execute(makeobject) ne 1) then begin
+      message, 'ERROR evaluating variables: '+makeobject
+      undefine, object
+    endif
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;
-  if (keyword_set(stats) or $
-     (not (keyword_set(nostats) or keyword_set(quiet)))) then begin
-    if (not keyword_set(quiet)) then begin
-      print, ''
-      print, '                             Variable summary:'
+    if (keyword_set(stats) or $
+       (not (keyword_set(nostats) or keyword_set(quiet)))) then begin
+      if (not keyword_set(quiet)) then begin
+        print, ''
+        print, '                             Variable summary:'
+        print, ''
+      endif
+
+      pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet, yinyang=yinyang
+      print, ' t = ', t
       print, ''
     endif
-
-    pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet, yinyang=yinyang
-    print, ' t = ', t
-    print, ''
-  endif
-
+  endelse
 end
