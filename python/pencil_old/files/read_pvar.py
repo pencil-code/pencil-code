@@ -44,6 +44,8 @@ class pcpvar(object):
 			if (proc==-1):
 				procdirs = list(filter(lambda s:s.startswith('proc'),os.listdir(datadir)))
 				nprocs=len(procdirs)
+                                if ('proc_bounds.dat' in procdirs):
+                                    nprocs -= 1
 				ipars,pvars = collect_class_pdata(pfile=varfile,datadir=datadir,nprocs=nprocs,
 					verbose=verbose,reduce_to=reduce_to)
 			else:
