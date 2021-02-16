@@ -148,7 +148,7 @@ else if (($hn =~ copson*) && ($USER =~ asnod)) then
   set str='s/$/\/data/g'
 else if (($hn =~ copson*) && ($USER =~ n9405169)) then
   set str='s/$/\/data/g'
-else if ($hn =~ linux*) then
+else if ($hn =~ oldlinux*) then
   set str='s/users\/physik\/physik/scratch/g'
 else if (($hn =~ obelix*) && ($USER =~ svart)) then
   echo "special entry for Mike"
