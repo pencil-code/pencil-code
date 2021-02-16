@@ -524,13 +524,14 @@ module FArrayManager
       use General, only: itoa
 !
       type (farray_contents_list), pointer :: item
-      integer :: i
+      integer :: i, nvars
 !
 !  Put variable name in array for
 !  use by analysis tool output
 !
-      if (item%ncomponents>1) then
-        do i=0,item%ncomponents-1
+      nvars=item%ncomponents*item%narray
+      if (nvars>1) then
+        do i=0,nvars-1
           varname(item%ivar(1)%p+i) = trim(item%varname)//trim(itoa(i+1))
         enddo
       else
