@@ -4949,8 +4949,12 @@ module Initcond
             fact=fact*kgaussian**(-.5*(initpower+1.))
             r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
 !
+!  for kpeak /= 0, we have a gaussian centered around kpeak.
+!  There are two options, neither of them are currently well normalized.
+!
             if (kpeak /= 0.) then
-               r=r*exp(-.25*(k2mkpeak/kgaussian**2.-1.))
+               !r=r*exp(-.5*(((sqrt(k2)-kpeak)/kgaussian)**2))
+               r=r*exp(-.5*(((k2-kpeak**2)/kgaussian**2)**2))
             else
                r=r*exp(-.25*(k2/kgaussian**2.-1.))
             endif
