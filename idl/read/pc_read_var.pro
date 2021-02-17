@@ -96,7 +96,7 @@ pro pc_read_var,                                                  $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status, sphere=sphere,single=single,         $
-    toyang=toyang,cubint=cubint,ogrid=ogrid,stay=stay
+    toyang=toyang,cubint=cubint,ogrid=ogrid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -152,6 +152,7 @@ COMPILE_OPT IDL2,HIDDEN
     else $
       default, varfile_, 'var.dat'
   endelse
+  obj_given=keyword_set(object)
 ;
 ; Identify youngest of snapshot files.
 ;
@@ -160,7 +161,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    message, "pc_read_var: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    message, "WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     if (size (varcontent, /type) eq 0) then begin
       varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, par2=par2, quiet=quiet, scalar=scalar, noaux=noaux, run2D=run2D, down=ldownsampled, single=single, /hdf5)
     end
@@ -179,6 +180,8 @@ COMPILE_OPT IDL2,HIDDEN
     end
     h5_close_file
     pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
+    if not obj_given then $
+      message, '"WARNING: No object named; data will not be returned, but are available locally in variable "object".'
     return
   end
 ;
@@ -186,7 +189,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, reduced, 0
   if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
-      message, "pc_read_var: /reduced and 'proc' cannot be set both."
+      message, "/reduced and 'proc' cannot be set both."
 ;
 ; Infer allprocs setting.
 ;
@@ -201,7 +204,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check if allprocs is set.
 ;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
+  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "'allprocs' and 'proc' cannot be set both."
 ;
 ; Set f77 keyword according to allprocs.
 ;
@@ -212,7 +215,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Can only unshear coordinate frame if variables have been trimmed.
 ;
   if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
-    message, 'pc_read_var: /unshear only works with /trimall'
+    message, '/unshear only works with /trimall', /info
     trimall=1
   endif
 ;
@@ -988,7 +991,7 @@ incomplete:
 ;
   if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
-  if keyword_set(stay) then begin
+  if not keyword_set(object) then begin
     if (keyword_set(trimxyz)) then begin
       xyzstring=xyzstring.Replace(',',' & ')
       xyzstring=xyzstring.Replace('x','x=x')
@@ -996,9 +999,7 @@ incomplete:
       xyzstring=xyzstring.Replace('z','z=z')
       res=execute(xyzstring)
     endif
-    print, 'Stopped due to stay=1; object will not be created!'
-    print, 'Available variables: x,y,z,dx,dy,dz,', trim(variables)
-    stop 
+    message, '"WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strtrim(variables,2)+'.' 
   endif else begin
     makeobject += arraytostring(variables)
     if yinyang then makeobject += mergevars
@@ -1007,7 +1008,7 @@ incomplete:
 ; Execute command to make the structure.
 ;
     if (execute(makeobject) ne 1) then begin
-      message, 'ERROR evaluating variables: '+makeobject
+      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strtrim(variables,2)+'.'
       undefine, object
     endif
 ;
