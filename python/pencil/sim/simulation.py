@@ -130,7 +130,7 @@ class __Simulation__(object):
                                      in submit* files
             OVERWRITE:          Set True to overwrite no matter what happens!
         """
-        from os import listdir
+        from os import listdir, symlink
         from shutil import copyfile
         from glob import glob
         from numpy import size
@@ -272,7 +272,7 @@ class __Simulation__(object):
                   +path_newsim_data+' !!')
             return False
         if link_data:
-            os.symlink(path_newsim_data, path_newsim_data_link)
+            symlink(path_newsim_data, path_newsim_data_link)
 
         # copy files
         files_to_be_copied = []
