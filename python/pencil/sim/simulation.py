@@ -10,6 +10,8 @@
 Contains the simulation class which can be used to directly create, access and
 manipulate simulations.
 """
+import os
+from os.path import join, exists, split, islink, realpath, abspath, basename
 
 def simulation(*args, **kwargs):
     """
@@ -51,8 +53,6 @@ class __Simulation__(object):
     """
 
     def __init__(self, path='.', hidden=False, hard=False, quiet=False):
-        import os
-        from os.path import join, exists,split
         #from pen.intern.hash_sim import hash_sim
 
         path = path.strip()
@@ -101,7 +101,8 @@ class __Simulation__(object):
         """
         This method does a copy of the simulation object by creating a new
         directory 'name' in 'path_root' and copy all simulation components and
-        optionals to its directory.
+        optiona)
+                ls to its directory.
         This method neither links/compiles the simulation.
         If start_optionals it creates data dir.
         It does not overwrite anything, unless OVERWRITE is True.
@@ -130,7 +131,6 @@ class __Simulation__(object):
             OVERWRITE:          Set True to overwrite no matter what happens!
         """
         from os import listdir
-        from os.path import exists, join, abspath, basename
         from shutil import copyfile
         from glob import glob
         from numpy import size
@@ -158,7 +158,20 @@ class __Simulation__(object):
                   'already found! New simulation name now '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
-        path_newsim_data = join(path_newsim, 'data')
+        if islink(join(path_root, self.name, 'data')):
+            link_data = True
+            oldtmp = os.path.realpath(join(path_root, self.name, 'data'))
+            newtmp = join(str.strip(str.strip(oldtmp,'data'),self.name),
+                                                name,'data')
+            if exists(newtmp) and OVERWRITE == False:
+                raise ValueError('Data directory {0} already exists'.format(
+                                  newtmp))
+            else:    
+                path_newsim_data = newtmp
+                path_newsim_data_link = join(path_newsim, 'data') 
+        else:            
+            link_data = False
+            path_newsim_data = join(path_newsim, 'data')
 
         path_initial_condition = join(self.path, 'initial_condition')
         if exists(path_initial_condition):
@@ -258,6 +271,8 @@ class __Simulation__(object):
             print('! ERROR: Couldnt create new simulation data directory '
                   +path_newsim_data+' !!')
             return False
+        if link_data:
+            symlink(path_newsim_data, path_newsim_data_link)
 
         # copy files
         files_to_be_copied = []
