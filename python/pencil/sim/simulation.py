@@ -272,7 +272,7 @@ class __Simulation__(object):
                   +path_newsim_data+' !!')
             return False
         if link_data:
-            symlink(path_newsim_data, path_newsim_data_link)
+            os.symlink(path_newsim_data, path_newsim_data_link)
 
         # copy files
         files_to_be_copied = []
