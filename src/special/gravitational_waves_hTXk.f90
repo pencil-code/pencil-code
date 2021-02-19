@@ -174,8 +174,8 @@ module Special
 !
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
-    real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str
-    real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel
+    real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
+    real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
   endtype GWspectra
@@ -204,6 +204,7 @@ module Special
         call farray_register_auxiliary('ggX',iggX)
         call farray_register_auxiliary('ggTim',iggTim)
         call farray_register_auxiliary('ggXim',iggXim)
+        !f(:,:,:,iggT:iggXim)=0.
       endif
 !
       if (lhhTX_as_aux) then
@@ -211,6 +212,7 @@ module Special
         call farray_register_auxiliary('hhX',ihhX)
         call farray_register_auxiliary('hhTim',ihhTim)
         call farray_register_auxiliary('hhXim',ihhXim)
+        !f(:,:,:,ihhT:ihhXim)=0.
       endif
 !
       if (lStress_as_aux) then
@@ -219,6 +221,7 @@ module Special
         call farray_register_auxiliary('StTim',iStressTim)
         call farray_register_auxiliary('StXim',iStressXim)
         call farray_register_auxiliary('Str',iStress_ij,array=6)
+        !f(:,:,:,iStressT:iStressXim)=0.
       endif
 !
     endsubroutine register_special
@@ -714,6 +717,7 @@ module Special
       spectra%GWh=0.; spectra%GWhhel=0.
       spectra%GWm=0.; spectra%GWmhel=0.
       spectra%Str=0.; spectra%Strhel=0.
+      spectra%Stg=0.; spectra%Stghel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
 !
 !  Define negative Nyquist wavenumbers if lswitch_symmetric
@@ -873,6 +877,25 @@ module Special
                    *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
               endif
 !
+!  Gravitational wave production spectrum for TTgT
+!
+              if (Stg_spec) then
+                spectra%Stg(ik)=spectra%Stg(ik) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
+                spectra%Stghel(ik)=spectra%Stghel(ik)-sign_switch*( &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+              endif
+!
 !  Stress spectrum computed from Str
 !  ?not used currently
 !
@@ -943,6 +966,7 @@ module Special
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
       case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
@@ -982,6 +1006,7 @@ module Special
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
       case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 

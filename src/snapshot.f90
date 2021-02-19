@@ -570,6 +570,7 @@ module Snapshot
         if (GWh_spec) call powerGWs(f,'GWh',lfirstcall)
         if (GWm_spec) call powerGWs(f,'GWm',lfirstcall)
         if (Str_spec) call powerGWs(f,'Str',lfirstcall)
+        if (Stg_spec) call powerGWs(f,'Stg',lfirstcall)
         if (SCL_spec) call powerGWs(f,'SCL',lfirstcall)
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
