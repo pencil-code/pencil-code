@@ -102,6 +102,8 @@
                     dt'\right>$ \\
   \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
   \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
   \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
@@ -209,13 +211,18 @@
                     \quad(time step relative to
                     advective time step;
                     see \S~\ref{time-step}) \\
-  \var{oum}       & $\left<\boldsymbol{\omega}
-                    \cdot\uv\right>$ \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
   \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
   \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
   \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
@@ -1451,7 +1458,6 @@
                     \quad(mean thermal
                     [=internal] energy) \\
   \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
-  \var{csm}       & $\left<c_{\rm s}\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{particles_caustics.f90}} \\
 \midrule
