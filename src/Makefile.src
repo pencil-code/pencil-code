@@ -1248,6 +1248,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O2 -DFUNDERSC=1 #(triolith)
 #LD_MPI= #(triolith)
 ##
+## Axel on Tetralith (ifc 7.1)
+##
+#FC=mpif90 #(tetralith*)
+#FFLAGS=-O2 #(tetralith*)
+#FFLAGS_DOUBLE=-autodouble #(tetralith*)
+#CC=mpicc #(tetralith*)
+#CFLAGS=-O2 -DFUNDERSC=1 #(tetralith*)
+#LD_MPI= #(tetralith*)
+##
 ## Axel on Hexagon (ftn using pgf90)
 ##
 #FC=ftn #(nid00*)
