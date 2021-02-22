@@ -23,26 +23,28 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
   step = skip + 1
   num = 1 + (last - first) / step
 
-  if (keyword_set(single)) then $
-    data = fltarr ([h5_get_size ('1/data'), num]) $
-  else $
+  if (keyword_set(single)) then begin
+    data = fltarr ([h5_get_size ('1/data'), num]) 
+    time = fltarr (num)
+  endif else begin
     data = dblarr ([h5_get_size ('1/data'), num])
+    time = dblarr (num)
+  endelse
 
-  time = dblarr (num)
-  coord = dblarr (num)
+  coord = time 
   pos = lonarr (num)
 
   ; iterate over slices
   for slice = first, last, step do begin
     index = (slice - first) / step
     group = strtrim (slice, 2)
-    data[*,*,index] = pc_read (group+'/data')
+    data[*,*,index] = pc_read (group+'/data',/single)
     time[index] = pc_read (group+'/time')
     coord[index] = pc_read (group+'/coordinate')
     pos[index] = pc_read (group+'/position')
   end
   h5_close_file
 
-  return, reform(data)
+  return, reform(data,/overwrite)
 end
 
