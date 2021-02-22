@@ -165,6 +165,7 @@ module Special
   integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
   integer :: idiag_EEGW=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}\,c^2/(32\pi G)$
   integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
+  integer :: idiag_Stgm=0        ! DIAG_DOC: $\bra{S_Tg_T+S_Xg_X}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
   integer :: idiag_hhX2m=0       ! DIAG_DOC: $\bra{h_X^2}$
   integer :: idiag_hhTXm=0       ! DIAG_DOC: $\bra{h_T h_X}$
@@ -537,6 +538,11 @@ module Special
            if (idiag_gg2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
                                                +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
                                                )*nwgrid,idiag_gg2m)
+           if (idiag_Stgm/=0) call sum_mn_name((f(l1:l2,m,n,iStressT  )*f(l1:l2,m,n,iggT  ) &
+                                               +f(l1:l2,m,n,iStressTim)*f(l1:l2,m,n,iggTim) &
+                                               +f(l1:l2,m,n,iStressX  )*f(l1:l2,m,n,iggX  ) &
+                                               +f(l1:l2,m,n,iStressXim)*f(l1:l2,m,n,iggXim) &
+                                               )*nwgrid,idiag_Stgm)
            if (idiag_ggT2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
                                                 )*nwgrid,idiag_ggT2m)
            if (idiag_ggX2m/=0) call sum_mn_name((f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
@@ -1321,7 +1327,7 @@ module Special
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
-        idiag_EEGW=0
+        idiag_Stgm=0 ; idiag_EEGW=0
         cformv=''
       endif
 !
@@ -1373,6 +1379,7 @@ module Special
           call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
           call parse_name(iname,cname(iname),cform(iname),'EEGW',idiag_EEGW)
           call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
+          call parse_name(iname,cname(iname),cform(iname),'Stgm',idiag_Stgm)
           call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
           call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
           call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
