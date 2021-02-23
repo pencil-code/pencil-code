@@ -162,24 +162,37 @@ module HDF5_IO
 !
     endsubroutine finalize_hdf5
 !***********************************************************************
-    subroutine check_error(code, message, dataset, caller)
+    subroutine check_error(code, message, dataset, caller, lerrcont)
 !
 !   7-May-2019/MR: made caller optional, added module variable scaller,
 !                  so caller needs to be set only once in a subroutine
 !
+      use General, only: loptest
+
       integer, intent(in) :: code
       character (len=*), intent(in) :: message
       character (len=*), optional, intent(in) :: dataset, caller
+      logical, optional, intent(INOUT) :: lerrcont
 !
       if (present(caller)) scaller=caller
 
       ! check for an HDF5 error
       if (code /= 0) then
-        if (present (dataset)) then
-          call fatal_error (scaller, message//' '//"'"//trim (dataset)//"'"//' in "'//trim (current)//'"', .true.)
+        if (loptest(lerrcont)) then
+          if (present (dataset)) then
+            call warning (scaller, message//' '//"'"//trim (dataset)//"'"//' in "'//trim (current)//'"')
+          else
+            call warning (scaller, message)
+          endif
         else
-          call fatal_error (scaller, message, .true.)
+          if (present (dataset)) then
+            call fatal_error (scaller, message//' '//"'"//trim (dataset)//"'"//' in "'//trim (current)//'"', .true.)
+          else
+            call fatal_error (scaller, message, .true.)
+          endif
         endif
+      else
+        if (loptest(lerrcont)) lerrcont=.false.
       endif
 !
     endsubroutine check_error
@@ -252,7 +265,6 @@ module HDF5_IO
           do while (h5_err/=0.and.i<ntries)
             call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
             i=i+1
-!print*, 'local: iproc,i,h5_err=', iproc,i,h5_err
             if (h5_err/=0) call sleep(nsleep)
           enddo
           call check_error (h5_err, 'open local file "'//trim (file)//'"', caller='file_open_hdf5')
@@ -320,27 +332,31 @@ module HDF5_IO
 
     endsubroutine input_hdf5_string
 !***********************************************************************
-    subroutine input_hdf5_int_0D(name, data)
+    subroutine input_hdf5_int_0D(name, data, lerrcont)
 !
       character (len=*), intent(in) :: name
       integer, intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer, dimension(1) :: read
 !
-      call input_hdf5_int_1D (name, read, 1)
+      call input_hdf5_int_1D (name, read, 1, lerrcont)
       data = read(1)
 !
     endsubroutine input_hdf5_int_0D
 !***********************************************************************
-    subroutine input_local_hdf5_int_1D(name, data, nv)
+    subroutine input_local_hdf5_int_1D(name, data, nv, lerrcont)
 !
 !  Read HDF5 dataset as scalar or array.
 !
 !  05-Jun-2017/Fred: coded based on input_hdf5_1D
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       integer, dimension (nv), intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer(HSIZE_T), dimension(1) :: size
 !
@@ -351,7 +367,9 @@ module HDF5_IO
 !
       ! open dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_int_1D')
+      call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_int_1D', lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
+
       ! read dataset
       call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
       call check_error (h5_err, 'read data', name)
@@ -361,31 +379,31 @@ module HDF5_IO
 !
     endsubroutine input_local_hdf5_int_1D
 !***********************************************************************
-    subroutine input_hdf5_int_1D(name, data, nv, same_size)
+    subroutine input_hdf5_int_1D(name, data, nv, same_size, lerrcont)
 !
 !  Read HDF5 dataset as scalar or array.
 !
 !  24-Oct-2018/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       integer, dimension (nv), intent(out) :: data
       logical, optional, intent(in) :: same_size
+      logical, optional, intent(INOUT) :: lerrcont
 !
-      logical :: lsame_size
       integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
       integer(kind=8), dimension (1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
-        call input_local_hdf5_int_1D(name, data, nv)
+        call input_local_hdf5_int_1D(name, data, nv,lerrcont)
         return
       endif
 !
-      lsame_size = .false.
-      if (present (same_size)) lsame_size = same_size
-      if (lsame_size) then
+      if (loptest(same_size)) then
         last = nv * (iproc + 1) - 1
         total = nv * ncpus
         offset = nv * iproc
@@ -408,7 +426,8 @@ module HDF5_IO
 !
       ! open the dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name)
+      call check_error (h5_err, 'open dataset', name, lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
 !
       ! define local 'hyper-slab' in the global file
       h5_stride(:) = 1
@@ -445,27 +464,31 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_int_1D
 !***********************************************************************
-    subroutine input_hdf5_0D(name, data)
+    subroutine input_hdf5_0D(name, data, lerrcont)
 !
       character (len=*), intent(in) :: name
       real, intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       real, dimension(1) :: input
 !
-      call input_hdf5_1D (name, input, 1)
+      call input_hdf5_1D (name, input, 1, lerrcont=lerrcont)
       data = input(1)
 !
     endsubroutine input_hdf5_0D
 !***********************************************************************
-    subroutine input_local_hdf5_1D(name, data, nv)
+    subroutine input_local_hdf5_1D(name, data, nv, lerrcont)
 !
 !  Read HDF5 dataset as scalar or array.
 !
 !  26-Oct-2016/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer(HSIZE_T), dimension(1) :: size
 !
@@ -476,7 +499,9 @@ module HDF5_IO
 !
       ! open dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_1D')
+      call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_1D',lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
+
       ! read dataset
       call h5dread_f (h5_dset, h5_ntype, data, size, h5_err)
       call check_error (h5_err, 'read data', name)
@@ -486,31 +511,31 @@ module HDF5_IO
 !
     endsubroutine input_local_hdf5_1D
 !***********************************************************************
-    subroutine input_hdf5_1D(name, data, nv, same_size)
+    subroutine input_hdf5_1D(name, data, nv, same_size, lerrcont)
 !
 !  Read HDF5 dataset as scalar or array.
 !
 !  24-Oct-2016/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(out) :: data
       logical, optional, intent(in) :: same_size
+      logical, optional, intent(INOUT) :: lerrcont
 !
-      logical :: lsame_size
       integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
       integer(kind=8), dimension (1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
-        call input_local_hdf5_1D(name, data, nv)
+        call input_local_hdf5_1D(name, data, nv, lerrcont)
         return
       endif
 !
-      lsame_size = .false.
-      if (present (same_size)) lsame_size = same_size
-      if (lsame_size) then
+      if (loptest(same_size)) then
         last = nv * (iproc + 1) - 1
         total = nv * ncpus
         offset = nv * iproc
@@ -533,7 +558,8 @@ module HDF5_IO
 !
       ! open the dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name)
+      call check_error (h5_err, 'open dataset', name, lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
 !
       ! define local 'hyper-slab' in the global file
       h5_stride(:) = 1
@@ -570,7 +596,7 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_1D
 !***********************************************************************
-    subroutine input_hdf5_part_2D(name, data, mv, nc, nv)
+    subroutine input_hdf5_part_2D(name, data, mv, nc, nv, lerrcont)
 !
 !  Read HDF5 particle dataset into a distributed array.
 !
@@ -580,6 +606,7 @@ module HDF5_IO
       integer, intent(in) :: mv, nc
       real, dimension (mv,nc), intent(out) :: data
       integer, intent(in) :: nv
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer :: pos
       character (len=labellen) :: label
@@ -595,7 +622,7 @@ module HDF5_IO
           label = trim(name)
           if (nc >= 2) label = trim(label)//'_'//trim(itoa(pos))
         endif
-        call input_hdf5_1D (label, data(1:nv,pos), nv)
+        call input_hdf5_1D (label, data(1:nv,pos), nv, lerrcont=lerrcont)
       enddo
 !
     endsubroutine input_hdf5_part_2D
@@ -664,15 +691,18 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_profile_1D
 !***********************************************************************
-    subroutine input_hdf5_2D(name, gdims, iprocs, data)
+    subroutine input_hdf5_2D(name, gdims, iprocs, data, lerrcont)
 !
 !  Read HDF5 dataset from a distributed 2D array.
 !
 !  26-Oct-2016/MR: coded
 !
+      use General, only: loptest
+
       character (len=*),     intent(in) :: name
       integer, dimension(2), intent(in) :: gdims, iprocs 
       real, dimension (:,:), intent(out):: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer(kind=8), dimension(2), parameter :: h5_stride=1, h5_count=1
       integer(kind=8), dimension(2) :: ldims, i8dum
@@ -684,7 +714,8 @@ module HDF5_IO
 !
       ! open the dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name)
+      call check_error (h5_err, 'open dataset', name, lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
 !
       ! define local 'hyper-slab' in the global file
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
@@ -721,14 +752,17 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_2D
 !***********************************************************************
-    subroutine input_hdf5_3D(name, data)
+    subroutine input_hdf5_3D(name, data, lerrcont)
 !
 !  Read HDF5 dataset from a distributed 3D array.
 !
 !  26-Oct-2016/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       real, dimension (mx,my,mz), intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer(kind=8), dimension (n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
@@ -739,7 +773,8 @@ module HDF5_IO
 !
       ! open the dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name)
+      call check_error (h5_err, 'open dataset', name, lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
 !
       ! define local 'hyper-slab' in the global file
       h5_stride(:) = 1
@@ -776,15 +811,18 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_3D
 !***********************************************************************
-    subroutine input_hdf5_4D(name, data, nv)
+    subroutine input_hdf5_4D(name, data, nv, lerrcont)
 !
 !  Read HDF5 dataset from a distributed 4D array.
 !
 !  26-Oct-2016/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(out) :: data
+      logical, optional, intent(INOUT) :: lerrcont
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
 !
@@ -799,7 +837,8 @@ module HDF5_IO
 !
       ! open the dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      call check_error (h5_err, 'open dataset', name)
+      call check_error (h5_err, 'open dataset', name, lerrcont=lerrcont)
+      if (loptest(lerrcont)) return
 !
       ! define local 'hyper-slab' in the global file
       h5_stride(:) = 1
@@ -1028,12 +1067,13 @@ module HDF5_IO
 !
 !  24-Oct-2018/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       integer, dimension (nv), intent(in) :: data
       logical, optional, intent(in) :: same_size
 !
-      logical :: lsame_size
       integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
@@ -1044,9 +1084,7 @@ module HDF5_IO
         return
       endif
 !
-      lsame_size = .false.
-      if (present (same_size)) lsame_size = same_size
-      if (lsame_size) then
+      if (loptest(same_size)) then
         last = nv * (iproc + 1) - 1
         total = nv * ncpus
         offset = nv * iproc
@@ -1185,12 +1223,13 @@ module HDF5_IO
 !
 !  24-Oct-2016/PABourdin: coded
 !
+      use General, only: loptest
+
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(in) :: data
       logical, optional, intent(in) :: same_size
 !
-      logical :: lsame_size
       integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
@@ -1201,9 +1240,7 @@ module HDF5_IO
         return
       endif
 !
-      lsame_size = .false.
-      if (present (same_size)) lsame_size = same_size
-      if (lsame_size) then
+      if (loptest(same_size)) then
         last = nv * (iproc + 1) - 1
         total = nv * ncpus
         offset = nv * iproc

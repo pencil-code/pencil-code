@@ -614,64 +614,132 @@ module Io
       real :: time
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
+      logical :: lerrcont
 !
       call file_close_hdf5
       persist_initialized = .false.
 !
       ! read additional data
-      if (lread_add .and. lomit_add_data) then
+
+      if (lread_add .and. lomit_add_data) then   !.and.lroot !!!
         call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
-        call input_hdf5 ('time', time)
+        lerrcont=.true.
+        call input_hdf5 ('time', time, lerrcont)
         call file_close_hdf5
+        if (lerrcont) call recover_time_from_series(time)
 !
         call mpibcast_real (time, comm=MPI_COMM_WORLD)
         t = time
+
       elseif (lread_add) then
+!
+        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
+        lerrcont=.true.
+        call input_hdf5 ('time', time, lerrcont)
+        if (lerrcont) call recover_time_from_series(time)
+
+        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        t = time
+
+        if (lerrcont) goto 100
+
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
         else
           allocate (gx(1), gy(1), gz(1), stat=alloc_err)
         endif
-        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
-        call input_hdf5 ('time', time)
-        call input_hdf5 ('grid/x', gx, mxgrid)
-        call input_hdf5 ('grid/y', gy, mygrid)
-        call input_hdf5 ('grid/z', gz, mzgrid)
+        
+        lerrcont=.true.
+        call input_hdf5 ('grid/x', gx, mxgrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/y', gy, mygrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/z', gz, mzgrid, lerrcont)
+        if (lerrcont) goto 100
         call distribute_grid (x, y, z, gx, gy, gz)
-        call input_hdf5 ('grid/dx', dx)
-        call input_hdf5 ('grid/dy', dy)
-        call input_hdf5 ('grid/dz', dz)
+        lerrcont=.true.
+        call input_hdf5 ('grid/dx', dx, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dy', dy, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dz', dz, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
         call input_hdf5 ('grid/Lx', Lx)
+        lerrcont=.true.
         call input_hdf5 ('grid/Ly', Ly)
+        lerrcont=.true.
         call input_hdf5 ('grid/Lz', Lz)
-        call input_hdf5 ('grid/dx_1', gx, mxgrid)
-        call input_hdf5 ('grid/dy_1', gy, mygrid)
-        call input_hdf5 ('grid/dz_1', gz, mzgrid)
+        lerrcont=.true.
+        call input_hdf5 ('grid/dx_1', gx, mxgrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dy_1', gy, mygrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dz_1', gz, mzgrid, lerrcont)
+        if (lerrcont) goto 100
         call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
-        call input_hdf5 ('grid/dy_tilde', gy, mygrid)
-        call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
+        lerrcont=.true.
+        call input_hdf5 ('grid/dx_tilde', gx, mxgrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dy_tilde', gy, mygrid, lerrcont)
+        if (lerrcont) goto 100
+        lerrcont=.true.
+        call input_hdf5 ('grid/dz_tilde', gz, mzgrid, lerrcont)
+        if (lerrcont) goto 100
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-        call file_close_hdf5
-        if (snaplink/='') then
-          call system_cmd('rm -f '//snaplink)
-          snaplink=''
-        endif
-!
-        deallocate (gx, gy, gz)
-!
-        call mpibcast_real (time, comm=MPI_COMM_WORLD)
-        t = time
         call mpibcast_real (dx, comm=MPI_COMM_WORLD)
         call mpibcast_real (dy, comm=MPI_COMM_WORLD)
         call mpibcast_real (dz, comm=MPI_COMM_WORLD)
         call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
         call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
         call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
+
+100     if (lerrcont) call rgrid('') 
+        call file_close_hdf5
+        if (snaplink/='') then
+          call system_cmd('rm -f '//snaplink)
+          snaplink=''
+        endif
+!
       endif
 !
+contains
+      subroutine recover_time_from_series(time)
+!
+!  Requires ---it--------t---------dt----  tb the first three entries in time_series. Tb improved.
+!  If nothing can be read, time is set to zero.
+!
+        real, intent(OUT) :: time
+
+        character(LEN=15) :: ctime
+        real :: dtime
+
+        if (lroot) then
+          call system_cmd("tail -n 1 data/time_series.dat | tac | sed -e's/^ *[0-9][0-9]*  *\([0-9][0-9]*\.[0-9E+-][0-9E+-]*  *[0-9]\.[0-9E+-][0-9E+-]*\) *.*$/\1/' > time.tmp")
+          open(11,file='time.tmp')
+          read(11,*) ctime
+          if (ctime == '') then
+            time=0.; ctime='0.'
+          else
+            backspace 11
+            read(11,*) time, dtime
+          endif
+          close(11, status='delete')
+          time=time+dtime
+          write(ctime,'(e15.7)') time
+          call warning('input_snap_finalize', 'snapshot corrupted; time was set to '//trim(ctime))
+        endif
+
+       endsubroutine recover_time_from_series
+
     endsubroutine input_snap_finalize
 !***********************************************************************
     subroutine input_slice_real_arr(file, time, pos, data)
@@ -1283,7 +1351,7 @@ module Io
 !
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
-      character (len=*) :: file
+      character (len=*) :: file         ! not used
 !
       character (len=fnlen) :: filename
       real, dimension (:), allocatable :: gx, gy, gz
