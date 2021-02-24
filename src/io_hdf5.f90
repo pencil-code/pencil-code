@@ -723,7 +723,9 @@ contains
         real :: dtime
 
         if (lroot) then
-          call system_cmd("tail -n 1 data/time_series.dat | tac | sed -e's/^ *[0-9][0-9]*  *\([0-9][0-9]*\.[0-9E+-][0-9E+-]*  *[0-9]\.[0-9E+-][0-9E+-]*\) *.*$/\1/' > time.tmp")
+          call system_cmd("tail -n 1 data/time_series.dat | tac | "// &
+                          "sed -e's/^ *[0-9][0-9]*  *\([0-9][0-9]*\.[0-9E+-][0-9E+-]*  *[0-9]\.[0-9E+-][0-9E+-]*\) *.*$/\1/'"// &
+                          " > time.tmp")
           open(11,file='time.tmp')
           read(11,*) ctime
           if (ctime == '') then
@@ -731,10 +733,10 @@ contains
           else
             backspace 11
             read(11,*) time, dtime
+            time=time+dtime
+            write(ctime,'(e15.7)') time
           endif
           close(11, status='delete')
-          time=time+dtime
-          write(ctime,'(e15.7)') time
           call warning('input_snap_finalize', 'snapshot corrupted; time was set to '//trim(ctime))
         endif
 
