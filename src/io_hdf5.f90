@@ -712,32 +712,47 @@ module Io
       endif
 !
 contains
+!
+!------------------------------------------------------------------------------------------------
       subroutine recover_time_from_series(time)
 !
-!  Requires ---it--------t---------dt----  tb the first three entries in time_series. Tb improved.
+!  Requires the start and end positions of t and dt in a record of time_series.dat to be stored in
+!  the second record of data/legend.dat in the order start(t), end(t), start(dt), end(dt).
 !  If nothing can be read, time is set to zero.
 !
         real, intent(OUT) :: time
 
-        character(LEN=15) :: ctime
+        integer, dimension(2) :: itpos=(/0,0/), idtpos=(/0,0/)
+        !character(LEN=:), allocatable :: ctime
+        character(LEN=256) :: ctime
         real :: dtime
 
         if (lroot) then
-          call system_cmd("tail -n 1 data/time_series.dat | tac | "// &
-                          "sed -e's/^ *[0-9][0-9]*  *\([0-9][0-9]*\.[0-9E+-][0-9E+-]*  *[0-9]\.[0-9E+-][0-9E+-]*\) *.*$/\1/'"// &
-                          " > time.tmp")
-          open(11,file='time.tmp')
-          read(11,*) ctime
-          if (ctime == '') then
-            time=0.; ctime='0.'
-          else
+          time=0.; dtime=0.
+          open(11,file='data/legend.dat', position='append')
+          backspace 11
+          read(11,*,err=100,end=100) itpos, idtpos
+          close(11)
+          open(11,file='data/time_series.dat', position='append')
+         ! if (max(itpos(2), idtpos(2))>0) allocate(character(LEN=max(itpos(2), idtpos(2))) :: ctime)
+          if (itpos(1)/=0) then
             backspace 11
-            read(11,*) time, dtime
-            time=time+dtime
-            write(ctime,'(e15.7)') time
+            read(11,'(a)') ctime(1:itpos(2))
+            read(ctime(itpos(1):itpos(2)),*) time
           endif
-          close(11, status='delete')
+          if (idtpos(1)/=0) then
+            backspace 11
+            read(11,'(a)') ctime(1:idtpos(2))
+            read(ctime(idtpos(1):idtpos(2)),*) dtime
+          endif
+100       close(11)
+          time=time+dtime
+          write(ctime,'(e15.7)') time
           call warning('input_snap_finalize', 'snapshot corrupted; time was set to '//trim(ctime))
+
+          !call system_cmd("tail -n 1 data/time_series.dat | tac | "// &
+          !                "sed -e's/^ *[0-9][0-9]*  *\([0-9][0-9]*\.[0-9E+-][0-9E+-]*  *[0-9]\.[0-9E+-][0-9E+-]*\) *.*$/\1/'"// &
+          !                " > time.tmp")
         endif
 
        endsubroutine recover_time_from_series
