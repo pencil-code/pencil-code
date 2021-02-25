@@ -7,17 +7,20 @@ Here are the links to a few potentially useful sites:
 1) IDL to Python bridge: https://www.l3harrisgeospatial.com/docs/IDLToPython.html
 2) IDL commands in numerical Python: http://mathesaurus.sourceforge.net/idl-python-xref.pdf
 
-           IDL                  <--->        Python
-pc_read_var,obj=var,/trimall             var = pc.read.var(var_file = 'var.dat', trimall = True, sim = SIM)
-help,var                                 SIM = pc.get_sim('path_to_simulation') 
-                                         help(var)
+           IDL                                    <----->                            Python
+                                                                           SIM = pc.get_sim('path_to_simulation')
+                                                                           ts = pc.read.ts(datadir = SIM.datadir, sim = SIM)
+                                                                           ts.keys
+pc_read_var,obj=var,/trimall                                               var = pc.read.var(var_file = '', trimall = True, sim = SIM)
+help,var                                                                   help(var)
 
 power,'_GWs','hel_GWs',k=k,spec1=grav1,spec2=grav2,i=n,tt=t,/noplot,/lks
+                                                                           power = pc.read.power(datadir = '../data')
+                                                                           power.GWs (power.GWh, etc.)
 
-
-pc_read_param,obj=param                  pc.read.param(datadir = SIM.datadir)   
-
+pc_read_param,obj=param                                                    pc.read.param(datadir = SIM.datadir) # for start.in
+                                                                           pc.read.param(datadir = SIM.datadir, param2 = True) # for run.in
 help,param
 
 Example:
-print,param.tstart                       print(pc.read.param.tstart)
+print,param.tstart                                                         print(pc.read.param.tstart)
