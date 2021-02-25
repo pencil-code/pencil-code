@@ -156,52 +156,71 @@ def zav2h5(
     else:
         imask=tensor.imask
 
-    yndx_tmp = np.array_split(yindex, dim.nprocy)
-    # list of vectors ipy*ny/nprocy ... (ipy+1)*ny/nprocy - 1, ipy=0,nprocy-1
+    import os
 
-    for ipy in range(dim.nprocy):            # over all y processors of the PC run
-        for ipx in range(dim.nprocx):        # over all x processors of the PC run
+    if os.path.exists('data/averages/z.h5'):
+        zav=aver(plane_list=['z'])     # read all averages
+        tensor_buf=tensors_sph(        # calculate tensors
+                           aver=zav,
+                           rank=rank,
+                           lskip_zeros=lskip_zeros,
+                           timereducer=timereducers[timereducer],
+                           #trargs=trargs,
+                           rmfzeros=rmfzeros,
+                           rmbzeros=rmbzeros,
+                           l_correction=l_correction,
+                           t_correction=t_correction,
+                           dim=dim,
+                           #tindex=tindex,
+                           imask=imask
+                           )
+    else:
+        yndx_tmp = np.array_split(yindex, dim.nprocy)
+        # list of vectors ipy*ny/nprocy ... (ipy+1)*ny/nprocy - 1, ipy=0,nprocy-1
 
-            iproc=dim.nprocx*ipy+ipx         # proc rank of the PC run (0 ... nprocx*nprocy-1)
-            yndx=yndx_tmp[ipy]-ipy*int(dim.nygrid/dim.nprocy)
+        for ipy in range(dim.nprocy):            # over all y processors of the PC run
+            for ipx in range(dim.nprocx):        # over all x processors of the PC run
 
-            zav=aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
+                iproc=dim.nprocx*ipy+ipx         # proc rank of the PC run (0 ... nprocx*nprocy-1)
+                yndx=yndx_tmp[ipy]-ipy*int(dim.nygrid/dim.nprocy)
 
-            print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
-            """
-            if iproc==1:             # as there is corrupted data on proc 1
-                with open('zaver.in', 'r') as f:
-                    zavers = f.read().splitlines()
-                for zaver in  zavers:
-                    zav.z.__setattr__(zaver,np.insert(
-                            zav.z.__getattribute__(zaver),3766,
-                            0.5*(zav.z.__getattribute__(zaver)[3766]+
-                            zav.z.__getattribute__(zaver)[3767]),axis=0))
-                    zav.t=np.insert(zav.t,3766,0.5*(zav.t[3766]+zav.t[3767]),axis=0)
-            """
-            tensor_buf=tensors_sph(   # calculate tensors
-                               aver=zav,
-                               proc=iproc,
-                               rank=rank,
-                               lskip_zeros=lskip_zeros,
-                               iy=yndx,
-                               timereducer=timereducers[timereducer],
-                               #trargs=trargs,
-                               rmfzeros=rmfzeros,
-                               rmbzeros=rmbzeros,
-                               l_correction=l_correction,
-                               t_correction=t_correction,
-                               dim=dim,
-                               #tindex=tindex,
-                               imask=imask
-                               )
-            if ipx==0:
-                tensor=copy.deepcopy(tensor_buf)
-            else:
-                for field, comp in fvars:
-                    setattr(tensor,field,np.concatenate((tensor.__getattribute__(field),
-                                                         tensor_buf.__getattribute__(field)),
-                                                         axis=len(comp)+2))
+                zav=aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
+
+                print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
+                """
+                if iproc==1:             # as there is corrupted data on proc 1
+                    with open('zaver.in', 'r') as f:
+                        zavers = f.read().splitlines()
+                    for zaver in  zavers:
+                        zav.z.__setattr__(zaver,np.insert(
+                                zav.z.__getattribute__(zaver),3766,
+                                0.5*(zav.z.__getattribute__(zaver)[3766]+
+                                zav.z.__getattribute__(zaver)[3767]),axis=0))
+                        zav.t=np.insert(zav.t,3766,0.5*(zav.t[3766]+zav.t[3767]),axis=0)
+                """
+                tensor_buf=tensors_sph(   # calculate tensors
+                                   aver=zav,
+                                   proc=iproc,
+                                   rank=rank,
+                                   lskip_zeros=lskip_zeros,
+                                   iy=yndx,
+                                   timereducer=timereducers[timereducer],
+                                   #trargs=trargs,
+                                   rmfzeros=rmfzeros,
+                                   rmbzeros=rmbzeros,
+                                   l_correction=l_correction,
+                                   t_correction=t_correction,
+                                   dim=dim,
+                                   #tindex=tindex,
+                                   imask=imask
+                                   )
+                if ipx==0:
+                    tensor=copy.deepcopy(tensor_buf)
+                else:
+                    for field, comp in fvars:
+                        setattr(tensor,field,np.concatenate((tensor.__getattribute__(field),
+                                                             tensor_buf.__getattribute__(field)),
+                                                             axis=len(comp)+2))
 
         if l_mpi:
             comm.barrier()
