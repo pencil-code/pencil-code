@@ -158,7 +158,7 @@ def zav2h5(
 
     import os
 
-    if os.path.exists('data/averages/z.h5'):
+    if os.path.exists(os.path.join(folder, 'averages/z.h5')):
         zav=aver(plane_list=['z'])     # read all averages
         tensor_buf=tensors_sph(        # calculate tensors
                            aver=zav,
