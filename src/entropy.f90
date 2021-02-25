@@ -65,6 +65,7 @@ module Energy
   real, target :: hcondxbot=impossible, hcondxtop=0.0
   real, target :: hcondzbot=impossible, hcondztop=impossible
   real, target :: Fbot=impossible, FbotKbot=0. !set default to 0 vs impossible
+  real :: rescale_hcond=0.
   ! FbotKbot normally overwritten, but to remain finite if not
   real, target :: Ftop=impossible, FtopKtop=0. !also 0 not impossible
   real, target :: chit_prof1=1.0, chit_prof2=1.0
@@ -235,7 +236,7 @@ module Energy
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
-      lss_flucz_as_aux, lTT_flucz_as_aux, &
+      lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver
 !
 !  Diagnostic variables for print.in
@@ -7866,6 +7867,10 @@ module Energy
       enddo
 !
       close(31)
+      if (rescale_hcond>0.) then
+        tmp1=tmp1*rescale_hcond 
+        tmp2=tmp2*rescale_hcond 
+      endif
 !
 !  Assuming no ghost zones in hcond_glhc.dat.
 !
