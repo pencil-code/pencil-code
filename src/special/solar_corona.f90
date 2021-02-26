@@ -1394,6 +1394,10 @@ module Special
                f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
                f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
+             else
+               f(l1:l2,m,n,iux)=0.0
+               f(l1:l2,m,n,iuy)=0.0
+               f(l1:l2,m,n,iuz)=0.0
             endif
           enddo
         enddo
