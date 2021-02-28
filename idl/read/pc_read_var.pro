@@ -152,7 +152,7 @@ COMPILE_OPT IDL2,HIDDEN
     else $
       default, varfile_, 'var.dat'
   endelse
-  obj_given=keyword_set(object)
+  obj_given=arg_present(object)
 ;
 ; Identify youngest of snapshot files.
 ;
@@ -991,7 +991,7 @@ incomplete:
 ;
   if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
-  if not keyword_set(object) then begin
+  if not arg_present(object) then begin
     if (keyword_set(trimxyz)) then begin
       xyzstring=xyzstring.Replace(',',' & ')
       xyzstring=xyzstring.Replace('x','x=x')
