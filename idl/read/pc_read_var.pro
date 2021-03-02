@@ -980,7 +980,7 @@ incomplete:
   if yinyang then $
     tagnames += arraytostring(tags+'_merge',QUOTE="'")
 
-  makeobject = "object = CREATE_STRUCT(name=nameobject,["+tagnames+"],t,"+xyzstring+",dx,dy,dz" $
+  makeobject = "object = CREATE_STRUCT(name=nameobject,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
 
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
@@ -1007,7 +1007,7 @@ incomplete:
       xyzstring=(((xyzstring.Replace(',',' & ')).Replace('x','x=x')).Replace('y','y=y')).Replace('z','z=z')
       res=execute(xyzstring)
     endif
-    message, '"WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(strtrim(variables,2),',')+'.' 
+    message, 'WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.' 
   endif else begin
     makeobject += arraytostring(variables)
     if yinyang then makeobject += mergevars
@@ -1016,7 +1016,7 @@ incomplete:
 ; Execute command to make the structure.
 ;
     if (execute(makeobject) ne 1) then begin
-      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strtrim(variables,2)+'.'
+      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.'
       undefine, object
     endif
 ;
