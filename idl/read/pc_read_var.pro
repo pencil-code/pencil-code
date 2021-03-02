@@ -152,7 +152,10 @@ COMPILE_OPT IDL2,HIDDEN
     else $
       default, varfile_, 'var.dat'
   endelse
-  obj_given=arg_present(object)
+;
+; Should ghost zones be returned?
+;
+  if (trimall) then trimxyz=1
 ;
 ; Identify youngest of snapshot files.
 ;
@@ -169,18 +172,30 @@ COMPILE_OPT IDL2,HIDDEN
     num_quantities = n_elements (quantities)
     if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
     t = pc_read ('time', file=varfile, datadir=datadir)
-    object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
+    object = {t:t}     ; object is only preliminarily created
+
     if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
     for pos = 0, num_quantities-1 do begin
       quantity = quantities[pos]
       label = quantity
       if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
-      object = create_struct (object, label, pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
+      object = create_struct (object, label, pc_read (quantity, processor=proc, dim=dim))
       pos += varcontent[pos].skip
     end
     h5_close_file
-    pc_magic_add, object, varcontent, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
-    if not obj_given then $
+
+    pc_magic_add, object, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
+;
+; Final creation of object
+;
+    if keyword_set(trimall) then $
+      res=execute("object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, "+ $
+                  strjoin("'"+(tag_names(object))[1:*]+"'"+', pc_noghost(object.'+(tag_names(object))[1:*]+', dim=dim)', ',')+')') $
+    else $
+      res=execute("object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, "+ $
+                  strjoin("'"+(tag_names(object))[1:*]+"'"+', object.'+(tag_names(object))[1:*],',')+')')
+
+    if not arg_present(object) then $
       message, '"WARNING: No object named; data will not be returned, but are available locally in variable "object".'
     return
   end
@@ -292,10 +307,6 @@ COMPILE_OPT IDL2,HIDDEN
 ; ... and check pc_precision is set for all Pencil Code tools.
 ;
   pc_set_precision, dim=dim, quiet=quiet
-;
-; Should ghost zones be returned?
-;
-  if (trimall) then trimxyz=1
 ;
 ; Local shorthand for some parameters.
 ;
@@ -459,7 +470,7 @@ COMPILE_OPT IDL2,HIDDEN
     global_names=tag_names(gg)
   endif
 ;
-; Apply "magic" variable transformations for derived quantities.
+; Add "magic" variable transformations for derived quantities to command strings.
 ;
   if (keyword_set(magic)) then $
       pc_magic_var, variables, tags, $
@@ -970,7 +981,7 @@ incomplete:
     tagnames += arraytostring(tags+'_merge',QUOTE="'")
 
   makeobject = "object = "+ $
-      "CREATE_STRUCT(name=objectname,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
+               "CREATE_STRUCT(name=objectname,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
     makeobject += ",yz,triangles"
@@ -983,23 +994,20 @@ incomplete:
 ; Remove ghost zones if requested.
 ;
   if (keyword_set(trimall)) then begin
-    if execute(strjoin('pc_noghost_pro,'+variables+',dim=dim',' & ')) ne 1 then $
+    if execute(strjoin('pc_noghost_pro,'+tags+',dim=dim',' & ')) ne 1 then $
       message, 'ERROR trimming variables'
   endif
 ;
 ; Transform to unsheared frame if requested.
 ;
-  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
+  if (keyword_set(unshear)) then variables = 'pc_unshear('+tags+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
   if not arg_present(object) then begin
     if (keyword_set(trimxyz)) then begin
-      xyzstring=xyzstring.Replace(',',' & ')
-      xyzstring=xyzstring.Replace('x','x=x')
-      xyzstring=xyzstring.Replace('y','y=y')
-      xyzstring=xyzstring.Replace('z','z=z')
+      xyzstring=(((xyzstring.Replace(',',' & ')).Replace('x','x=x')).Replace('y','y=y')).Replace('z','z=z')
       res=execute(xyzstring)
     endif
-    message, '"WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strtrim(variables,2)+'.' 
+    message, '"WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(strtrim(variables,2),',')+'.' 
   endif else begin
     makeobject += arraytostring(variables)
     if yinyang then makeobject += mergevars
