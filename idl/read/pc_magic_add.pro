@@ -1,6 +1,6 @@
 ; Add magic variables to an existing variable data structure.
 
-pro pc_magic_add, vars, varcontent, bb=bb, jj=jj, oo=oo, TT=TT, pp=pp, global=global, processor=proc, dim=dim, datadir=datadir, start_param=param
+pro pc_magic_add, vars, bb=bb, jj=jj, oo=oo, TT=TT, pp=pp, global=global, processor=proc, dim=dim, datadir=datadir, start_param=param
 
 	if (keyword_set (global)) then begin
 		; add global parameters to requested quantities (like external magnetic field to 'bb')
