@@ -1,4 +1,4 @@
-function h5_read, label, start=start, count=count, transpose=transpose, filename=filename, close=close
+function h5_read, label, start=start, count=count, transpose=transpose, filename=filename, close=close, single=single
 
 	common h5_file_info, file_id, file_name, group_name, group_content
 
@@ -21,11 +21,18 @@ function h5_read, label, start=start, count=count, transpose=transpose, filename
 		dataspace = H5D_GET_SPACE (dataset)
 		H5S_SELECT_HYPERSLAB, dataspace, start, count, /reset
 		mem_space = H5S_CREATE_SIMPLE (count)
-		data = H5D_READ (dataset, file_space=dataspace, memory_space=mem_space)
+                if keyword_set(single) then $
+		  data = float(H5D_READ (dataset, file_space=dataspace, memory_space=mem_space)) $
+                else $
+		  data = H5D_READ (dataset, file_space=dataspace, memory_space=mem_space)
+
 		H5S_CLOSE, dataspace
 		H5S_CLOSE, mem_space
 	end else begin
-		data = H5D_READ (dataset)
+                if keyword_set(single) then $
+		  data = float(H5D_READ (dataset)) $
+                else $
+		  data = H5D_READ (dataset)
 	end
 	H5D_CLOSE, dataset
 
