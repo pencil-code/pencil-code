@@ -32,7 +32,7 @@
 ;       $Id$
 ;       07-Apr-2019/PABourdin: coded
 ;
-function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, ghostless=ghostless, processor=processor, dim=dim, start=start, count=count, close=close
+function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, ghostless=ghostless, processor=processor, dim=dim, start=start, count=count, close=close, single=single
 
 	COMPILE_OPT IDL2,HIDDEN
 
@@ -50,18 +50,26 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 				; translate two-letter shortcuts
 				if (strlen (vectors[pos]) eq 2) then expanded = strmid (quantity, 1)
 				if (stregex (quantity, '^'+vectors[pos]+'$', /bool)) then expanded += [ 'x', 'y', 'z' ]
-				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close)
+				return, pc_read (expanded, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close, singl=single)
 			end
 		end
 	end
 
 	if (num_quantities gt 1) then begin
 		; read multiple quantities in one large array
-		data = pc_read (quantity[0], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+		data = pc_read (quantity[0], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, single=single)
 		sizes = size (data, /dimensions) > 1
 		dimensions = size (data, /n_dimensions) > 1
+;
+; Allow continuation of program if reading of individual variables fails, say, due to lack of memory.
+;
+                failed=0
 		for pos = 1, num_quantities-1 do begin
-			tmp = pc_read (quantity[pos], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+			tmp = pc_read (quantity[pos], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, single=single)
+                        if (size(tmp))[0] eq 0 then begin
+                          failed+=1
+                          continue
+                        endif
 			if (dimensions eq 1) then begin
 				data = [ data, tmp ]
 			end else if (dimensions eq 2) then begin
@@ -72,8 +80,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 		end
 		tmp = !Values.D_NaN
 		if (keyword_set (close)) then h5_close_file
-		data = reform (data, [ sizes, num_quantities ])
-		return, data
+		return, reform (data, [ sizes, num_quantities-failed ], /overwrite)
 	end
 
 	particles = (strpos (strlowcase (quantity) ,'part/') ge 0)
@@ -103,7 +110,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 			start = 0
 			if (processor ge 1) then start = total (distribution[0:processor-1])
 			count = distribution[processor]
-			return, h5_read (quantity, start=start, count=count, close=close)
+			return, h5_read (quantity, start=start, count=count, close=close, single=single)
 		end else begin
 			if (size (dim, /type) eq 0) then pc_read_dim, obj=dim, datadir=datadir, proc=proc
 			ipx = processor mod dim.nprocx
@@ -131,10 +138,9 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 			ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
 			degenerated = where (count eq 1, num_degenerated)
 			if (num_degenerated gt 0) then ghost[degenerated] = 0
-			return, h5_read (quantity, filename=file, start=start+ghost, count=count-ghost*2, close=close)
+			return, h5_read (quantity, filename=file, start=start+ghost, count=count-ghost*2, close=close, single=single)
 		end
 	end
-
-	return, h5_read (quantity, filename=file, start=start, count=count, close=close)
+	return, h5_read (quantity, filename=file, start=start, count=count, close=close, single=single)
 end
 
