@@ -179,7 +179,7 @@ COMPILE_OPT IDL2,HIDDEN
       quantity = quantities[pos]
       label = quantity
       if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
-      object = create_struct (object, label, pc_read (quantity, processor=proc, dim=dim))
+      object = create_struct (object, label, pc_read (quantity, processor=proc, dim=dim, single=single))
       pos += varcontent[pos].skip
     end
     h5_close_file
@@ -980,8 +980,8 @@ incomplete:
   if yinyang then $
     tagnames += arraytostring(tags+'_merge',QUOTE="'")
 
-  makeobject = "object = "+ $
-               "CREATE_STRUCT(name=objectname,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
+  makeobject = "object = CREATE_STRUCT(name=nameobject,["+tagnames+"],t,"+xyzstring+",dx,dy,dz" $
+
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
     makeobject += ",yz,triangles"
