@@ -1157,19 +1157,19 @@ endif
 !
 !  Sound wave: 1D velocity field, superposition of waves traveling in positive and 
 !  negative x directions, modulated by a slow spatial variability with wavenumber K0
-!  u = cos[k1x-w1ct](1+cosK0x) + cos[k1x-w1ct](1-cosK0x)
+!  u = cos[k1x-w1ct][1+cos(K0x-Omega0t)] + cos[k1x+w1ct][1-cos(K0x+Omega0t)]
 !  kx_uukin = k1 ; phasex_uukin = w1 ; eps_kinflow = K0
 !
       case ('SoundWave')
         if (headtt) print*,'Sound wave;',&
-            'k1, omega1, K0=',kx_uukin,phasex_uukin, eps_kinflow
+            'k1, omega1, K0, Omega0 =',kx_uukin,phasex_uukin, eps_kinflow, omega_kinflow
         fac=ampl_kinflow
         if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
-        eps1=cos(omega_kinflow*t)
+        !eps1=cos(omega_kinflow*t)
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=fac*cos(kx_uukin*x(l1:l2)-phasex_uukin*t)*(1.+cos(eps_kinflow*x(l1:l2))) + &
-                    fac*cos(kx_uukin*x(l1:l2)+phasex_uukin*t)*(1.-cos(eps_kinflow*x(l1:l2)))
+          p%uu(:,1)=fac*cos(kx_uukin*x(l1:l2)-phasex_uukin*t)*(1.+cos(eps_kinflow*x(l1:l2)-omega_kinflow*t)) + &
+                    fac*cos(kx_uukin*x(l1:l2)+phasex_uukin*t)*(1.-cos(eps_kinflow*x(l1:l2)+omega_kinflow*t))
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
