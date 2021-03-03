@@ -160,31 +160,177 @@ COMPILE_OPT IDL2,HIDDEN
 ; Identify youngest of snapshot files.
 ;
   varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5,datadir=datadir,proc=proc)
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    l_hdf5=1
+  endif else $
+    l_hdf5=0
+;
+;  When reading derivative data, do not attempt to read aux variables.
+;
+  if (varfile eq 'dvar.dat') then noaux=1
+;
+; Can only unshear coordinate frame if variables have been trimmed.
+;
+  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
+    message, '/unshear only works with /trimall', /info
+    trimall=1
+  endif
+;
+; Downsampled snapshot?
+;
+  ldownsampled=strmid(varfile,0,4) eq 'VARd'
+;
+; Get necessary dimensions quietly.
+;
+  logrid=0
+  if (keyword_set(ogrid)) then logrid=1  
+  if (n_elements(dim) eq 0) then $
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
+  if (n_elements(param) eq 0) then $
+      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+  if (n_elements(par2) eq 0) then begin
+    if (file_test(datadir+'/param2.nml')) then begin
+      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
+    endif else begin
+      print, 'Could not find '+datadir+'/param2.nml'
+      if (magic) then print, 'This may give problems with magic variables.'
+      undefine, par2
+    endelse
+  endif
+;
+; Set the coordinate system.
+;
+  coord_system=param.coord_system
+;
+;  Read meta data and set up variable/tag lists.
+;
+  if (size(grid, /type) eq 0) then $
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
+      proc=proc, allprocs=allprocs, reduced=reduced, $
+      swap_endian=swap_endian, /quiet, down=ldownsampled
+    
+  if (is_defined(par2)) then begin
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=l_hdf5)
+  endif else begin
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
+      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=l_hdf5)
+  endelse
+;
+  totalvars=(size(varcontent))[1]
+;
+  filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)     ; all variables which are in file
+  if (n_elements(variables) ne 0) then begin
+    if (keyword_set(additional)) then begin
+      for iv=0,n_elements(variables)-1 do $
+        if ~any(strmatch(varcontent.idlvar, variables[iv])) then begin
+          magic=1
+          filevars=[filevars,variables[iv]]
+        endif
+      variables=filevars
+      if (n_elements(tags) ne 0) then tags=[filevars,tags]
+    endif else magic=1
+  endif else $
+    variables=filevars
+;
+;  variables contains now all variables which are in file or those selected by parameter variables or set union of both for /additional.
+;
+;
+; Shortcut for getting magnetic field bb.
+;
+  default, bbtoo, 0
+  if (bbtoo and ~any(strmatch(varcontent.idlvar, 'bb'))) then begin
+    variables=[variables,'bb']
+    magic=1
+  endif
+;
+; Shortcut for getting current density jj.
+;
+  default, jjtoo, 0
+  if (jjtoo and ~any(strmatch(varcontent.idlvar, 'jj'))) then begin
+    variables=[variables,'jj']
+    magic=1
+  endif
+;
+; Shortcut for getting vorticity oo.
+;
+  default, ootoo, 0
+  if (ootoo and ~any(strmatch(varcontent.idlvar, 'oo'))) then begin
+    variables=[variables,'oo']
+    magic=1
+  endif
+;
+; Shortcut for getting temperature.
+;
+  default, TTtoo, 0
+  if (TTtoo and ~any(strmatch(varcontent.idlvar, 'tt'))) then begin
+    variables=[variables,'tt']
+    magic=1
+  endif
+;
+; Shortcut for getting pressure.
+;
+  default, pptoo, 0
+  if (pptoo and ~any(strmatch(varcontent.idlvar, 'pp'))) then begin
+    variables=[variables,'pp']
+    magic=1
+  endif
+;
+; Default tags are set equal to the variables.
+;
+  default, tags, variables
+;
+;  tags contains concatenation of all file variables and parameter tags (if any).
+;
+; Sanity check for variables and tags.
+;
+  if (n_elements(variables) ne n_elements(tags)) then $
+    message, 'ERROR: variables and tags arrays differ in size'
+;
+; Add global parameters (like external magnetic field) to snapshot.
+;
+  default, global, 0
+  if (global) then begin
+    pc_read_global, obj=gg, proc=proc, $
+        param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, allprocs=allprocs, /quiet
+    global_names=tag_names(gg)
+  endif
+;
+; Add "magic" variable transformations for derived quantities to command strings.
+;
+  if (keyword_set(magic)) then $
+    pc_magic_var, variables, tags, $
+    param=param, par2=par2, global_names=global_names, $
+    datadir=datadir, quiet=quiet
 ;
 ; Load HDF5 varfile if requested or available.
 ;
-  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    message, "WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    if (size (varcontent, /type) eq 0) then begin
-      varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, par2=par2, quiet=quiet, scalar=scalar, noaux=noaux, run2D=run2D, down=ldownsampled, single=single, /hdf5)
-    end
-    quantities = varcontent[*].idlvar
-    num_quantities = n_elements (quantities)
-    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
-    t = pc_read ('time', file=varfile, datadir=datadir)
-    object = {t:t}     ; object is only preliminarily created
-
-    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
-    for pos = 0, num_quantities-1 do begin
-      quantity = quantities[pos]
-      label = quantity
-      if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
-      object = create_struct (object, label, pc_read (quantity, processor=proc, dim=dim, single=single))
+  if l_hdf5 then begin
+;
+;  Read all variables from file, which are required.
+;
+    for pos = 0, n_elements (varcontent.idlvar)-1 do begin
+      quantity = varcontent.idlvar[pos]
+      if is_in(variables,quantity) then begin
+        label = quantity
+        if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
+        if size(object,/type) eq 0 then $
+          object = create_struct(label, pc_read (quantity, processor=proc, dim=dim, single=single)) $
+        else $
+          object = create_struct(object, label, pc_read (quantity, processor=proc, dim=dim, single=single))
+      endif
       pos += varcontent[pos].skip
     end
-    h5_close_file
-
-    pc_magic_add, object, bb=bbtoo, jj=jjtoo, oo=ootoo, TT=TTtoo, pp=pptoo, global=global, proc=proc, dim=dim, datadir=datadir, start_param=param
+;
+;  Perform operations to obtain derived variables.
+;
+    for i=0,n_elements(tags)-1 do begin
+      if (total(variables[i] eq varcontent.idlvar) eq 0) then $
+        res = execute("object = create_struct('"+tags[i]+"',"+variables[i]+",object)")
+    endfor
+    
+    t = pc_read ('time', file=varfile, datadir=datadir)
 ;
 ; Final creation of object
 ;
@@ -192,8 +338,10 @@ COMPILE_OPT IDL2,HIDDEN
       res=execute("object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, "+ $
                   strjoin("'"+(tag_names(object))[1:*]+"'"+', pc_noghost(object.'+(tag_names(object))[1:*]+', dim=dim)', ',')+')') $
     else $
-      res=execute("object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, "+ $
-                  strjoin("'"+(tag_names(object))[1:*]+"'"+', object.'+(tag_names(object))[1:*],',')+')')
+      object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, object)
+
+    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
+    h5_close_file
 
     if not arg_present(object) then $
       message, '"WARNING: No object named; data will not be returned, but are available locally in variable "object".'
@@ -227,40 +375,6 @@ COMPILE_OPT IDL2,HIDDEN
     if allprocs eq 1 then default, f77, 0
   default, f77, 1
 ;
-; Can only unshear coordinate frame if variables have been trimmed.
-;
-  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
-    message, '/unshear only works with /trimall', /info
-    trimall=1
-  endif
-;
-; Downsampled snapshot?
-;
-  ldownsampled=strmid(varfile,0,4) eq 'VARd'
-;
-; Get necessary dimensions quietly.
-;
-  logrid=0
-  if (keyword_set(ogrid)) then logrid=1  
-  if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
-  if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-  if (n_elements(par2) eq 0) then begin
-    if (file_test(datadir+'/param2.nml')) then begin
-      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
-    endif else begin
-      print, 'Could not find '+datadir+'/param2.nml'
-      if (magic) then print, 'This may give problems with magic variables.'
-      undefine, par2
-    endelse
-  endif
-
-  if (n_elements(grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
-      proc=proc, allprocs=allprocs, reduced=reduced, $
-      swap_endian=swap_endian, /quiet, down=ldownsampled
-;
 ; We know from param whether we have to read 2-D or 3-D data.
 ;
   default, run2D, 0
@@ -291,10 +405,6 @@ COMPILE_OPT IDL2,HIDDEN
     print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
     print, 'Merged data refer to the basis of the '+(toyang ? 'Yang':'Yin')+' grid.'
   endif
-;
-; Set the coordinate system.
-;
-  coord_system=param.coord_system
 ;
 ; Read dimensions (global)...
 ;
@@ -381,101 +491,6 @@ COMPILE_OPT IDL2,HIDDEN
     yloc=fltarr(procdim.my)*one
     zloc=fltarr(procdim.mz)*one
   endif
-;
-;  When reading derivative data, do not attempt to read aux variables.
-;
-  if (varfile eq 'dvar.dat') then noaux=1
-;
-;  Read meta data and set up variable/tag lists.
-;
-  if (is_defined(par2)) then begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
-  endif else begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
-  endelse
-
-  totalvars=(size(varcontent))[1]
-;
-  filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
-  if (n_elements(variables) ne 0) then begin
-    if (keyword_set(additional)) then begin
-      for iv=0,n_elements(variables)-1 do $
-        if ~any(strmatch(varcontent.idlvar, variables[iv])) then begin
-          magic=1
-          filevars=[filevars,variables[iv]]
-        endif
-      variables=filevars
-      if (n_elements(tags) ne 0) then tags=[filevars,tags]
-    endif else magic=1
-  endif else $
-    variables=filevars
-;
-; Shortcut for getting magnetic field bb.
-;
-  default, bbtoo, 0
-  if (bbtoo and ~any(strmatch(varcontent.idlvar, 'bb'))) then begin
-    variables=[variables,'bb']
-    magic=1
-  endif
-;
-; Shortcut for getting current density jj.
-;
-  default, jjtoo, 0
-  if (jjtoo and ~any(strmatch(varcontent.idlvar, 'jj'))) then begin
-    variables=[variables,'jj']
-    magic=1
-  endif
-;
-; Shortcut for getting vorticity oo.
-;
-  default, ootoo, 0
-  if (ootoo) then begin
-    variables=[variables,'oo']
-    magic=1
-  endif
-;
-; Shortcut for getting temperature.
-;
-  default, TTtoo, 0
-  if (TTtoo) then begin
-    variables=[variables,'tt']
-    magic=1
-  endif
-;
-; Shortcut for getting pressure.
-;
-  default, pptoo, 0
-  if (pptoo) then begin
-    variables=[variables,'pp']
-    magic=1
-  endif
-;
-; Default tags are set equal to the variables.
-;
-  default, tags, variables
-;
-; Sanity check for variables and tags.
-;
-  if (n_elements(variables) ne n_elements(tags)) then $
-    message, 'ERROR: variables and tags arrays differ in size'
-;
-; Add global parameters (like external magnetic field) to snapshot.
-;
-  default, global, 0
-  if (global) then begin
-    pc_read_global, obj=gg, proc=proc, $
-        param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, allprocs=allprocs, /quiet
-    global_names=tag_names(gg)
-  endif
-;
-; Add "magic" variable transformations for derived quantities to command strings.
-;
-  if (keyword_set(magic)) then $
-      pc_magic_var, variables, tags, $
-      param=param, par2=par2, global_names=global_names, $
-      datadir=datadir, quiet=quiet
 ;
 ; Get a free unit number.
 ;
