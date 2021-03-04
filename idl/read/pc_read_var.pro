@@ -181,6 +181,27 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   ldownsampled=strmid(varfile,0,4) eq 'VARd'
 ;
+; Check if reduced keyword is set.
+;
+  default, reduced, 0
+  if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+      message, "/reduced and 'proc' cannot be set both."
+;
+; Infer allprocs setting.
+;
+  if (keyword_set(reduced)) then allprocs = 1
+  if (not is_defined(allprocs)) then begin
+    allprocs = 0
+    if (strpos(varpath,'allprocs') ne -1) and (n_elements (proc) eq 0) then $
+      allprocs=1 $
+    else $
+      if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
+  endif
+;
+; Check if allprocs is set.
+;
+  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "'allprocs' and 'proc' cannot be set both."
+;
 ; Get necessary dimensions quietly.
 ;
   logrid=0
@@ -310,15 +331,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read all variables from file, which are required.
 ;
+    iyy=0
+    if size(object,/type) ne 0 then undefine, object
+
     for pos = 0, n_elements (varcontent.idlvar)-1 do begin
-      quantity = varcontent.idlvar[pos]
-      if is_in(variables,quantity) then begin
+      quantity = varcontent[pos].idlvar
+      if is_in(variables,quantity) ge 0 then begin
         label = quantity
         if (varcontent[pos].skip eq 2) then quantity += ['x','y','z']
-        if size(object,/type) eq 0 then $
-          object = create_struct(label, pc_read (quantity, processor=proc, dim=dim, single=single)) $
-        else $
-          object = create_struct(object, label, pc_read (quantity, processor=proc, dim=dim, single=single))
+        res = execute(label+'= pc_read (quantity, processor=proc, dim=dim, single=single)')
       endif
       pos += varcontent[pos].skip
     end
@@ -327,47 +348,32 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     for i=0,n_elements(tags)-1 do begin
       if (total(variables[i] eq varcontent.idlvar) eq 0) then $
-        res = execute("object = create_struct('"+tags[i]+"',"+variables[i]+",object)")
+        res = execute(tags[i]+"="+variables[i])
     endfor
     
     t = pc_read ('time', file=varfile, datadir=datadir)
-;
-; Final creation of object
-;
-    if keyword_set(trimall) then $
-      res=execute("object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, "+ $
-                  strjoin("'"+(tag_names(object))[1:*]+"'"+', pc_noghost(object.'+(tag_names(object))[1:*]+', dim=dim)', ',')+')') $
-    else $
-      object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz, object)
-
-    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
-    h5_close_file
 
     if not arg_present(object) then $
-      message, '"WARNING: No object named; data will not be returned, but are available locally in variable "object".'
+      message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags) $
+    else begin
+      if keyword_set(trimall) then $
+        object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz) $
+      else $
+        object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz)
+
+      if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', (pc_read ('persist/shear_delta_y'))[0])
+      h5_close_file
+;
+; Final completion of object
+;
+      if keyword_set(trimall) then $
+        res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring('pc_noghost('+tags+', dim=dim)')+")") $
+      else $
+        res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring(tags)+")")
+    endelse
+
     return
   end
-;
-; Check if reduced keyword is set.
-;
-  default, reduced, 0
-  if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
-      message, "/reduced and 'proc' cannot be set both."
-;
-; Infer allprocs setting.
-;
-  if (keyword_set(reduced)) then allprocs = 1
-  if (not is_defined(allprocs)) then begin
-    allprocs = 0
-    if (strpos(varpath,'allprocs') ne -1) and (n_elements (proc) eq 0) then $
-      allprocs=1 $
-    else $
-      if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
-  endif
-;
-; Check if allprocs is set.
-;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "'allprocs' and 'proc' cannot be set both."
 ;
 ; Set f77 keyword according to allprocs.
 ;
@@ -1030,6 +1036,7 @@ incomplete:
 ;
 ; Execute command to make the structure.
 ;
+tags=variables ;!!!
     if (execute(makeobject) ne 1) then begin
       message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.'
       undefine, object
