@@ -2316,7 +2316,6 @@ module power_spectrum
 !
     use Fourier, only: fft_xyz_parallel, fourier_transform
     use Mpicomm, only: mpireduce_sum, mpigather_and_out_cmplx
-    use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
     use Special, only: special_calc_spectra
 !
@@ -2782,11 +2781,11 @@ module power_spectrum
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !
     if (sp=='u') then
-      if (lhydro) then
+      if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
       else
         if (lroot) &
-            print*, 'power_1d: must have hydro module for velocity power'
+            print*, 'power_1d: must have velocity in f-array for velocity power'
         call fatal_error('power_1d','')
       endif
     elseif (sp=='b') then
@@ -2829,16 +2828,12 @@ module power_spectrum
     b1=0
     a2=a1
 !
-    !!print*,'checking lcomplex, oned',lcomplex,oned
-!
     if (lcomplex) then
       nc=2
     else
       nc=1
     endif
     allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
-
-   !! print*,'nc=',nc
 !
 ! Need to initialize
 !
