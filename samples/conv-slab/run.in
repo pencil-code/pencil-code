@@ -7,6 +7,9 @@
   cvsid='$Id$',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2,
+!! uncomment the following block to see the free evolution of the system:
+!  nt=4000, it1=50, isave=2000, itorder=3,
+!  dsnap=0.2, dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:cT'
@@ -18,6 +21,11 @@
 &hydro_run_pars
   Omega=0.1 ! angular velocity
   theta=0.  ! direction of angular velocity vector (0 : vertical)
+!! uncomment the following block to start without artificial switch-on shocks:
+!  dampu = 0.05
+!  tdamp = 8.0
+!  ldamp_fade = T
+!  tfade_start = 2.0
 /
 &density_run_pars
   cdiffrho=0.
