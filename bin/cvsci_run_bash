@@ -17,45 +17,81 @@ else
 fi
 
 for pdir in  $dirlist ; do
-  echo $pdir
   cd "$pdir"
+
+#IL
+if [[ "$(basename $0)" == "tar_run" ]] ; then
+        cvsci=0
+        add_cmd="tar -f $PWD.a --ignore-failed-read --append"
+        add_data_opt=('--transform s,^,data/,')
+        add_cmd_bin="$add_cmd"
+        tar cf $PWD.a run.in
+        tar --delete --file=$PWD.a run.in
+else
+        cvsci=1
+        add_cmd="cvs add"
+        add_cmd_bin="$add_cmd -kb"
+        add_data_opt=""
+fi
 
 #
 #  set directory
 #
   CWD=$PWD
-  dir=$PWD
+  dir=$(basename $PWD)
+
 #
 #  go one up add add our run directory to cvs
 #
-  cd ..
-  cvs add $dir
-  cd $dir
+if [ $cvsci ] ; then
+        cd ..
+        $add_cmd $dir
+        cd $dir
+fi
 #
 #  add directories and files to cvs
+#  also get a copy of their time stamps before checking in
 #
-  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat  data
+ls -l *.in *.dat *.pro src/*.local > .log
+$add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log >& /dev/null
+
 #
   if [ -d "data" ]; then
-      cd data
-      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro
+	if [ "$(basename $0)" == 'cvsci_run_bash' ] ; then
+	       $add_cmd data
+	fi	
+	
+	cd data
+	$add_cmd $add_data_opt index.pro legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat pt_positions.dat tstalk.dat particles_stalker_header.dat >& /dev/null
+	if [ -e dim.dat ]; then
+		$add_cmd $add_data_opt dim.dat
+	fi
+	if [ -e time_series.dat ]; then
+		$add_cmd $add_data_opt time_series.dat
+	fi
+	if [ -e time_series.h5 ]; then
+		$add_cmd_bin $add_data_opt time_serie
+	fi
+	if [ -e grid.h5 ]; then
+		$add_cmd_bin $add_data_opt grid.h5
+	fi
+
   else
       echo "no data directory found"
   fi
 #
 #  add alpeta.sav, if it exists
 #
-  \ls | egrep 'alpeta.sav' >/dev/null
-  if [[ ! $status ]]; then
-    cvs add alpeta.sav
-  fi
+if [ -e alpeta.sav ] ; then
+	$add_cmd $add_data_opt alpeta.sav
+fi
 #
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few such files)
 #
   \ls | egrep 'power.*\.dat' >/dev/null
   if [[ ! $status ]]; then
-    cvs add power*.dat
+	  $add_cmd $add_data_opt *power*.dat
   fi
 #
 #  add structure functions, if they exist
@@ -63,44 +99,33 @@ for pdir in  $dirlist ; do
 #
   \ls | egrep 'sf.*\.dat' >/dev/null
   if [[ ! $status ]]; then
-    cvs add sf*.dat
+	  $add_cmd $add_data_opt sf*.dat
   fi
 #
-# add *.h5 files and the particle size distribution
-  \ls | egrep 'grid.h5' >/dev/null
-  if [[ ! $status ]]; then
-    cvs add grid.h5
-  fi
-#
-  \ls | egrep 'time_series.h5' >/dev/null
-  if [[ ! $status ]]; then
-    cvs add time_series.h5
-  fi
 #
   \ls | egrep 'particle_size_dist.dat' >/dev/null
   if [[ ! $status ]]; then
-    cvs add particle_size_dist.dat
+    	$add_cmd $add_data_opt particle_size_dist.dat
   fi
 #  
 #  add testfield_info.dat file if it exists
 #
-  \ls | egrep 'testfield_info\.dat' >/dev/null
-  if [[ ! $status ]]; then
-    cvs add testfield_info.dat
+  if [[ -e testfield_info.dat ]]; then
+	  $add_cmd $add_data_opt testfield_info.dat
   fi
 #
 #  add info about directory history
 #
   if [ -f "new_from.dir" ]; then
-      cvs add new_from.dir
+	  $add_cmd $add_data_opt new_from.dir
   fi
 #
   if [ -f "new_to.dir" ]; then
-      cvs add new_to.dir
+	  $add_cmd $add_data_opt new_to.dir
   fi
 #
   if [ -f "remeshed_from.dir" ]; then
-      cvs add remeshed_from.dir
+	  $add_cmd $add_data_opt remeshed_from.dir
   fi
 #
 #  check in everything
@@ -108,18 +133,26 @@ for pdir in  $dirlist ; do
 #  which may only be a link.
 #
   cd $CWD
-  cvs ci -l -m "added new run: `uname -n -s`" . data
+
+  if [ $cvsci ]; then
+	 cvs ci -l -m "added new run: `uname -n -s`" . data
 #
 #  add src stuff only if it is not a link
 #  Do this at the very end, in case this step fails.
 #
   test -h src
   if [ $status ]; then
-    cvs add src
-    cd src
-    cvs add *.local .build-history
-    cd ..
-    cvs ci -m "added new run: `uname -n -s`" src
+	$add_cmd src
+    	cd src
+	$add_cmd *.local .build-history .moduleinfo
+	cd ..
+	if [ "$(basename $0)" == 'cvsci_run_bash' ] ; then
+		cvs ci -m "added new run: `uname -n -s`" src
+	fi
+   fi
+
+else
+	$add_cmd -h src/*.local src/.build-history >& /dev/null
   fi
 
   cd ..
