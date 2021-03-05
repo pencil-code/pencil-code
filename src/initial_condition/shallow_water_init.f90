@@ -146,6 +146,15 @@ module InitialCondition
 !***********************************************************************
     subroutine calc_phi(r,intgr)
 !
+!  The analytical solution for the geopotential is Eq 1 of the supplement of 
+!  Li & Ingersoll (2020)
+!
+!   phi(r) = phi_0 - Int_r^{infty} (v^2/r + f*v) dr 
+!
+!  We use rout = infty 
+!
+!  05-mar-21/wlad+ali: coded
+!      
       real :: Lr,dr,vr,tmp,rr
       integer :: ir,alloc_err
       real, intent(in) :: r
