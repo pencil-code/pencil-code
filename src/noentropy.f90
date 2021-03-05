@@ -46,6 +46,7 @@ module Energy
                                 ! DIAG_DOC:   [=internal] energy)
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_ufpresm=0
+  integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
@@ -207,6 +208,8 @@ module Energy
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
+!
+      if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
 !
     endsubroutine pencil_criteria_energy
 !***********************************************************************
@@ -399,6 +402,7 @@ module Energy
             call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
+        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ufpresm/=0) then
           ufpres=0
           do i = 1, 3
@@ -497,7 +501,7 @@ module Energy
 !
       if (lreset) then
         idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
-        idiag_pdivum=0; idiag_ufpresm=0
+        idiag_pdivum=0; idiag_ufpresm=0; idiag_csm=0
       endif
 !
       do iname=1,nname
@@ -507,6 +511,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
+        call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
       enddo
 
       call keep_compiler_quiet(present(lwrite))
