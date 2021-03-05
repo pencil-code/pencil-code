@@ -42,7 +42,7 @@ def var(*args, **kwargs):
         trimall:    Trim the data cube to exclude ghost zones.
         magic:      Values to be computed from the data, e.g. B = curl(A).
         sim:        Simulation sim object.
-        precision:  Float (f) or double (d).
+        precision:  Float (f), double (d) or half (half).
         lpersist:   Read the persistent variables if they exist
     
     The default var file is var.dat (which is the latests snapshot of the fields)
@@ -138,7 +138,7 @@ class DataCube(object):
             trimall:    Trim the data cube to exclude ghost zones.
             magic:      Values to be computed from the data, e.g. B = curl(A).
             sim:        Simulation sim object.
-            precision:  Float (f) or double (d).
+            precision:  Float (f), double (d) or half (half).
         """
 
         import numpy as np
@@ -215,25 +215,23 @@ class DataCube(object):
             total_vars = dim.mvar
 
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
+#
+#  Read HDF5 files.
+#
             import h5py
             run2D = param.lwrite_2d
 
-            if dim.precision == 'D':
-                precision = 'd'
-            else:
-                precision = 'f'
-
             # Set up the global array.
             if not run2D:
-                f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
-                             dtype=precision)
+                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
+                                  dtype=precision)
             else:
                 if dim.ny == 1:
-                    f = np.zeros((total_vars, dim.mz, dim.mx),
-                                 dtype=precision)
+                    self.f = np.zeros((total_vars, dim.mz, dim.mx),
+                                      dtype=precision)
                 else:
-                    f = np.zeros((total_vars, dim.my, dim.mx),
-                                 dtype=precision)
+                    self.f = np.zeros((total_vars, dim.my, dim.mx),
+                                      dtype=precision)
 
             if not var_file:
                 if ivar < 0:
@@ -244,26 +242,29 @@ class DataCube(object):
             file_name = os.path.join(datadir, 'allprocs', var_file)
             with h5py.File(file_name, 'r') as tmp:
                 for key in tmp['data'].keys():
-                    f[index.__getattribute__(key)-1, :] = tmp['data/'+key][:]
-                t = tmp['time'][()]
-                x = tmp['grid/x'][()]
-                y = tmp['grid/y'][()]
-                z = tmp['grid/z'][()]
-                dx = tmp['grid/dx'][()]
-                dy = tmp['grid/dy'][()]
-                dz = tmp['grid/dz'][()]
+                    self.f[index.__getattribute__(key)-1, :] = tmp['data/'+key][:]
+                t = (tmp['time'][()]).astype(precision)
+                x = (tmp['grid/x'][()]).astype(precision)
+                y = (tmp['grid/y'][()]).astype(precision)
+                z = (tmp['grid/z'][()]).astype(precision)
+                dx = (tmp['grid/dx'][()]).astype(precision)
+                dy = (tmp['grid/dy'][()]).astype(precision)
+                dz = (tmp['grid/dz'][()]).astype(precision)
                 if param.lshear:
-                    deltay = tmp['persist/shear_delta_y'][(0)]
+                    deltay = (tmp['persist/shear_delta_y'][(0)]).astype(precision)
                 if lpersist:
                     for key in tmp['persist'].keys():
-                        self.__setattr__(key, tmp['persist'][key][0])
+                        self.__setattr__(key, (tmp['persist'][key][0]).astype(precision))
         else:
+#
+#  Read scattered Fortran binary files.
+#
             run2D = param.lwrite_2d
 
             if dim.precision == 'D':
-                precision = 'd'
+                read_precision = 'd'
             else:
-                precision = 'f'
+                read_precision = 'f'
 
             if not var_file:
                 if ivar < 0:
@@ -287,15 +288,15 @@ class DataCube(object):
 
             # Set up the global array.
             if not run2D:
-                f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
-                             dtype=precision)
+                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
+                                  dtype=precision)
             else:
                 if dim.ny == 1:
-                    f = np.zeros((total_vars, dim.mz, dim.mx),
-                                 dtype=precision)
+                    self.f = np.zeros((total_vars, dim.mz, dim.mx),
+                                      dtype=precision)
                 else:
-                    f = np.zeros((total_vars, dim.my, dim.mx),
-                                 dtype=precision)
+                    self.f = np.zeros((total_vars, dim.my, dim.mx),
+                                      dtype=precision)
 
             x = np.zeros(dim.mx, dtype=precision)
             y = np.zeros(dim.my, dtype=precision)
@@ -334,18 +335,18 @@ class DataCube(object):
                 file_name = os.path.join(datadir, directory, var_file)
                 infile = FortranFile(file_name)
                 if not run2D:
-                    f_loc = infile.read_record(dtype=precision)
+                    f_loc = infile.read_record(dtype=read_precision)
                     f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
                 else:
                     if dim.ny == 1:
-                        f_loc = infile.read_record(dtype=precision)
+                        f_loc = infile.read_record(dtype=read_precision)
                         f_loc = f_loc.reshape((-1, mzloc, mxloc))
                     else:
-                        f_loc = infile.read_record(dtype=precision)
+                        f_loc = infile.read_record(dtype=read_precision)
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
-                raw_etc = infile.read_record(dtype=precision)
+                raw_etc = infile.read_record(dtype=read_precision)
                 if lpersist:
-                    persist(self, infile=infile, precision=precision, quiet=quiet)
+                    persist(self, infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
 
                 t = raw_etc[0]
@@ -412,16 +413,16 @@ class DataCube(object):
                     z[i0z:i1z] = z_loc[i0zloc:i1zloc]
 
                     if not run2D:
-                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[:, i0zloc:i1zloc,
+                        self.f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[:, i0zloc:i1zloc,
                                                                 i0yloc:i1yloc, i0xloc:i1xloc]
                     else:
                         if dim.ny == 1:
-                            f[:, i0z:i1z, i0x:i1x] = f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                            self.f[:, i0z:i1z, i0x:i1x] = f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
                         else:
-                            f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[i0zloc:i1zloc,
+                            self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[i0zloc:i1zloc,
                                                                  i0yloc:i1yloc, i0xloc:i1xloc]
                 else:
-                    f = f_loc
+                    self.f = f_loc
                     x = x_loc
                     y = y_loc
                     z = z_loc
@@ -429,7 +430,7 @@ class DataCube(object):
         if magic is not None:
             if 'bb' in magic:
                 # Compute the magnetic field before doing trimall.
-                aa = f[index.ax-1:index.az, ...]
+                aa = self.f[index.ax-1:index.az, ...]
                 self.bb = curl(aa, dx, dy, dz, x=x, y=y, run2D=run2D,
                                coordinate_system=param.coord_system)
                 if trimall:
@@ -437,7 +438,7 @@ class DataCube(object):
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'jj' in magic:
                 # Compute the electric current field before doing trimall.
-                aa = f[index.ax-1:index.az, ...]
+                aa = self.f[index.ax-1:index.az, ...]
                 self.jj = curl2(aa, dx, dy, dz, x=x, y=y,
                                 coordinate_system=param.coord_system)
                 if trimall:
@@ -445,7 +446,7 @@ class DataCube(object):
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'vort' in magic:
                 # Compute the vorticity field before doing trimall.
-                uu = f[index.ux-1:index.uz, ...]
+                uu = self.f[index.ux-1:index.uz, ...]
                 self.vort = curl(uu, dx, dy, dz, x=x, y=y, run2D=run2D,
                                  coordinate_system=param.coord_system)
                 if trimall:
@@ -467,18 +468,17 @@ class DataCube(object):
             self.y = y[dim.m1:dim.m2+1]
             self.z = z[dim.n1:dim.n2+1]
             if not run2D:
-                self.f = f[:, dim.n1:dim.n2+1,
-                           dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                self.f = self.f[:, dim.n1:dim.n2+1,
+                                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             else:
                 if dim.ny == 1:
-                    self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
+                    self.f = self.f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
                 else:
-                    self.f = f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                    self.f = self.f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
         else:
             self.x = x
             self.y = y
             self.z = z
-            self.f = f
             self.l1 = dim.l1
             self.l2 = dim.l2 + 1
             self.m1 = dim.m1
