@@ -709,13 +709,13 @@ module Special
     integer, intent(in) :: istorm
 !
     if (lautotest_mode) then
-      print*,'IN AUTOTEST ON!'
+      if (ldebug) print*,'get_storm: This line is only activated for the auto-test.'
       call random_number_wrapper(r)
       call random_number_wrapper(p)
       call random_number_wrapper(trand)
       call random_number_wrapper(srand)
     else
-      print*,'IN AUTOTEST OFF!'
+      if (ldebug) print*,'get_storm: This is a production run.'
       call random_number(r)
       call random_number(p)
       call random_number(trand)
