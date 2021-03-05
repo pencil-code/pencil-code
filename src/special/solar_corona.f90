@@ -43,7 +43,8 @@ module Special
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
   logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
-             lemerg_profx=.false.,lset_boundary_emf=.false.,lset_hotplate_lnTT=.false.
+             lemerg_profx=.false.,lset_boundary_emf=.false.,lset_hotplate_lnTT=.false.,&
+             lconv_vel_set_to_zero=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -105,7 +106,7 @@ module Special
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
       lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench, &
-      lset_hotplate_lnTT,lnTT_hotplate_tau
+      lset_hotplate_lnTT,lnTT_hotplate_tau,lconv_vel_set_to_zero
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1395,7 +1396,7 @@ module Special
                f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
              else
-               if (z(n) .lt. z_ff(1)) then
+               if (lconv_vel_set_to_zero .and. (z(n) .lt. z_ff(1))) then
                  f(l1:l2,m,n,iux)=0.0
                  f(l1:l2,m,n,iuy)=0.0
                  f(l1:l2,m,n,iuz)=0.0
