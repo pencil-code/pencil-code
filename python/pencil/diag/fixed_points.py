@@ -629,7 +629,7 @@ class FixedPoint(object):
             fixed_idx = 0
             while True:
                 try:
-                    self.fixed_tracers[-1].extend(group['fixed_tracer_{0}'.format(fixed_idx)].value)
+                    self.fixed_tracers[-1].append(group['fixed_tracers_{0}'.format(fixed_idx)].value)
                     fixed_idx += 1
                 except:
                     break
