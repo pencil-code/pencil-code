@@ -349,30 +349,25 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Perform operations to obtain derived variables.
 ;
     for i=0,n_elements(tags)-1 do begin
-      if (total(variables[i] eq varcontent.idlvar) eq 0) then $
-        res = execute(tags[i]+"="+variables[i])
+      if (total(variables[i] eq varcontent.idlvar) eq 0) then res = execute(tags[i]+"="+variables[i])
     endfor
+
+    object = create_struct('t', t)
+    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', (pc_read ('persist/shear_delta_y'))[0])
+    h5_close_file
     
-    if not arg_present(object) then begin
-      h5_close_file
+    if (not arg_present(object)) then begin
       message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags), /info
       return
     end
 
-    if keyword_set(trimall) then $
-      object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz) $
-    else $
+    if keyword_set(trimall) then begin
+      object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz)
+      res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring('pc_noghost('+tags+', dim=dim)')+")")
+    end else begin
       object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz)
-
-    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', (pc_read ('persist/shear_delta_y'))[0])
-    h5_close_file
-;
-; Final completion of object
-;
-    if keyword_set(trimall) then $
-      res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring('pc_noghost('+tags+', dim=dim)')+")") $
-    else $
       res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring(tags)+")")
+    end
 
     return
   end
