@@ -162,9 +162,8 @@ COMPILE_OPT IDL2,HIDDEN
   varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5,datadir=datadir,proc=proc)
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    l_hdf5=1
-  endif else $
-    l_hdf5=0
+    hdf5_varfile = 1
+  endif
 ;
 ;  When reading derivative data, do not attempt to read aux variables.
 ;
@@ -233,10 +232,10 @@ COMPILE_OPT IDL2,HIDDEN
     
   if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=l_hdf5)
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=hdf5_varfile)
   endif else begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=l_hdf5)
+      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=hdf5_varfile)
   endelse
 ;
   totalvars=(size(varcontent))[1]
@@ -327,7 +326,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Load HDF5 varfile if requested or available.
 ;
-  if l_hdf5 then begin
+  if (keyword_set (hdf5_varfile)) then begin
 ;
 ;  Read all variables from file, which are required.
 ;
