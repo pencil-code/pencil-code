@@ -100,6 +100,7 @@ module Special
    real :: initpower_muS=0., cutoff_muS=0.
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
    real :: kgaussian_muS=0.,kpeak_muS=0.
+   real :: radius_mu5=0., sigma_mu5=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -124,7 +125,8 @@ module Special
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
       initpower_muS, cutoff_muS, lremove_mean_mu5, &
-      kgaussian_mu5, kpeak_mu5, kgaussian_muS, kpeak_muS
+      kgaussian_mu5, kpeak_mu5, kgaussian_muS, kpeak_muS, &
+      radius_mu5, sigma_mu5
 !
   namelist /special_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
@@ -217,7 +219,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Initcond
-      use Sub, only: remove_mean_value, remove_mean
+      use Sub, only: remove_mean_value, remove_mean, blob
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
 !
@@ -254,6 +256,12 @@ module Special
           enddo; enddo
           if (lmuS) f(:,:,:,imuS) = muS_const
 !
+        case ('blob')
+          call blob(amplmu5,f,imu5,radius_mu5,0.,0.,0.)
+
+        case ('plusminus_sphere')
+          call plusminus_sphere(amplmu5,f,imu5,radius_mu5,sigma_mu5,0.,0.,0.)
+
         case ('gaussian-noise')
           call gaunoise(amplmu5,f,imu5)
           if (lmuS) call gaunoise(amplmuS,f,imuS)
@@ -286,6 +294,35 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine plusminus_sphere(ampl,f,i,radius,sigma,xblob,yblob,zblob)
+!
+!  Single sphere with negative outside and positive inside.
+!
+!  24-feb-21/axel: adapted from blob
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, optional :: xblob,yblob,zblob
+      real :: ampl,radius,sigma,x01=0.,y01=0.,z01=0.,fact
+!
+!  Single  blob.
+!
+      if (present(xblob)) x01=xblob
+      if (present(yblob)) y01=yblob
+      if (present(zblob)) z01=zblob
+      if (ampl==0) then
+        if (lroot) print*,'ampl=0 in plusminus_sphere'
+      else
+        if (lroot.and.ip<14) print*,'plusminus_sphere: variable i,ampl=',i,ampl
+        fact=1./sigma**2
+        f(:,:,:,i)=f(:,:,:,i)-ampl*tanh(fact*(( &
+           spread(spread((x-x01)**2,2,my),3,mz) &
+          +spread(spread((y-y01)**2,1,mx),3,mz) &
+          +spread(spread((z-z01)**2,1,mx),2,my))-radius**2))
+      endif
+!
+    endsubroutine plusminus_sphere
 !***********************************************************************
     subroutine pencil_criteria_special()
 !
