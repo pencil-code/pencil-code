@@ -334,6 +334,8 @@ COMPILE_OPT IDL2,HIDDEN
     iyy=0
     if size(object,/type) ne 0 then undefine, object
 
+    t = pc_read ('time', file=varfile, datadir=datadir)
+
     for pos = 0, n_elements (varcontent.idlvar)-1 do begin
       quantity = varcontent[pos].idlvar
       if is_in(variables,quantity) ge 0 then begin
@@ -351,8 +353,6 @@ COMPILE_OPT IDL2,HIDDEN
         res = execute(tags[i]+"="+variables[i])
     endfor
     
-    t = pc_read ('time', file=varfile, datadir=datadir)
-
     if not arg_present(object) then $
       message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags) $
     else begin
