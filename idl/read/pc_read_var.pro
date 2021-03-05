@@ -355,7 +355,7 @@ COMPILE_OPT IDL2,HIDDEN
     
     if not arg_present(object) then begin
       h5_close_file
-      message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags)
+      message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags), /info
       return
     end
 
