@@ -55,6 +55,11 @@ import numpy as np
 import os
 import plotly.graph_objs as go
 import plotly.io as pio
+import plotly.io._orca
+import retrying
+unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
+wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
+plotly.io._orca.request_image_with_retrying = wrapped
 
 def plot(
          #field (or multiple todo) and 4 surfaces (extra todo) 
@@ -65,8 +70,7 @@ def plot(
          figdir='./images/', imageformat='png',
          #set color parameters
          norm='linear', colorscale='RdBu',
-         color_levels=None,
-         color_range=None,
+         cmin=0, cmax=1,
          #locate the box and axes
          viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
          autosize=False, image_dim=(800,500),
@@ -75,7 +79,7 @@ def plot(
          #color bar properties
          cbar_label='', cbar_loc=1., cbar_label_pos='right', 
          #add text for time stamp
-         time=0, textxy=(0,0), unit='', isd=3, fontsize=25,
+         time=0, textxy=(0,0), str_unit='', isd=3, fontsize=25,
         ):
 
     """
@@ -121,18 +125,6 @@ def plot(
     if not quiet:
         print('Printing t={:.2g} box plot'.format(time))
     for field in fields:
-        cmin,cmax=1e38,-1e38
-        #set color limits based on time series or single snapshot
-        if color_levels=='common':
-            for key in xyzplane:
-                globals()[key+'slice']=slice_obj.__getattribute__(key).__getattribute__(field)
-                cmax = max(cmax,globals()[key+'slice'][it].max())
-                cmin = min(cmin,globals()[key+'slice'][it].min())
-        else:
-            for key in xyzplane:
-                globals()[key+'slice']=slice_obj.__getattribute__(key).__getattribute__(field)
-                cmax = max(cmax,globals()[key+'slice'][itt].max())
-                cmin = min(cmin,globals()[key+'slice'][itt].min())
 
         height= globals()['xzslice'][itt].shape[0]
         width = globals()['xyslice'][itt].shape[1]
@@ -150,10 +142,12 @@ def plot(
         if norm == 'log':
             # field argu
             if 'ln' in field:
-                z1 = globals()['xyslice' ][itt]
-                y1 = globals()['xzslice' ][itt]
-                x1 = globals()['yzslice' ][itt]
-                z2 = globals()['xy2slice'][itt]
+                z1 = np.log10(np.exp(globals()['xyslice' ][itt]))
+                y1 = np.log10(np.exp(globals()['xzslice' ][itt]))
+                x1 = np.log10(np.exp(globals()['yzslice' ][itt]))
+                z2 = np.log10(np.exp(globals()['xy2slice'][itt]))
+                cmax=np.log10(np.exp(cmax))
+                cmin=np.log10(np.exp(cmin))
             else:
                 z1 = np.log10(globals()['xyslice' ][itt])
                 y1 = np.log10(globals()['xzslice' ][itt])
@@ -264,7 +258,7 @@ def plot(
 
         layout = go.Layout(
                 annotations=[
-                    dict(text=r'$t='+str(round(time,isd))+unit+r'$',
+                    dict(text=r'$t='+str(round(time,isd))+str_unit+r'$',
                          x=textxy[0],
                          y=textxy[1],
                          showarrow=False
@@ -323,8 +317,9 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #set image properties
              imageformat="png", figdir='./images/',
              #set color parameters
-             colorscale='Hot', norm='linear', 
-             color_range=None, color_levels=None,
+             colorscale='Hot', norm='linear',
+             #color_range size 2 list cmin and cmax
+             color_range=None, color_levels=None, 
              #locate the box and axes
              viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
              autosize=False, image_dim=(800,500),
@@ -332,9 +327,13 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              visxyz=[True,True,True], axestitle=('x', 'y', 'z'), xyz=None,
              #color bar properties
              cbar_label = r'$u_x\,[{\rm km s}^{-1}]$', cbar_loc=1.,
-             cbar_label_pos='top',
+             cbar_label_pos='right', #['top', 'right', 'bottom']
              #add text for time stamp                                     
-             timestamp=False, textxy=(0,0), unit='', isd=2,  fontsize=25,
+             timestamp=False, textxy=(0,0),
+             #convert data to cgs from code units and rescale to cbar_label
+             #par if present is a param object
+             unit='unit_velocity', rescale=1., par=list(),
+             str_unit='', isd=2,  fontsize=25,
              ):
 
     #gd = pcn.read.grid(trim=True, quiet=True, datadir=datadir)
@@ -346,9 +345,43 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                 xyzplane.append(key)
     if len(xyzplane)<4:
         raise ValueError("xyzplane: rvid_box requires at least 4 surfaces.")
-        
+    if not isinstance(color_range, list):
+        for field in fields:
+            cmin,cmax=1e38,-1e38
+            #set color limits based on time series or single snapshot
+            if color_levels=='common':
+                for key in xyzplane:
+                    if not isinstance(par,list) and len(unit) > 0:
+                        unitscale = par.__getattribute__(unit)*rescale
+                    else:
+                        unitscale = 1.
+                    if 'ln' in field:
+                        globals()[key+'slice']=slice_obj.__getattribute__(
+                          key).__getattribute__(field)+np.log10(unitscale)
+                    else:
+                        globals()[key+'slice']=slice_obj.__getattribute__(
+                                          key).__getattribute__(field)*unitscale
+                    cmax = max(cmax,globals()[key+'slice'][it].max())
+                    cmin = min(cmin,globals()[key+'slice'][it].min())
+    else:
+        cmin = color_range[0]
+        cmax = color_range[1]
     if islice == -1:
         for itt in it:
+            if not color_levels=='common' and not isinstance(color_range, list):
+                for key in xyzplane:
+                    if not isinstance(par,list) and len(unit) > 0:
+                        unitscale = par.__getattribute__(unit)*rescale
+                    else:
+                        unitscale = 1.
+                    if 'ln' in field:
+                        globals()[key+'slice']=slice_obj.__getattribute__(
+                          key).__getattribute__(field)+np.log10(unitscale)
+                    else:
+                        globals()[key+'slice']=slice_obj.__getattribute__(
+                                          key).__getattribute__(field)*unitscale
+                    cmax = max(cmax,globals()[key+'slice'][itt].max())
+                    cmin = min(cmin,globals()[key+'slice'][itt].min())
             plot(
                  #field (or multiple todo) and 4 surfaces (extra todo) 
                  slice_obj, fields, xyzplane,
@@ -358,8 +391,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  figdir=figdir, imageformat=imageformat,
                  #set color parameters
                  norm=norm, colorscale=colorscale,
-                 color_levels=color_levels,
-                 color_range=color_range,
+                 cmin=cmin, cmax=cmax,
                  #locate the box and axes
                  viewpoint=viewpoint, offset=offset, margin=margin,
                  autosize=autosize, image_dim=image_dim,
@@ -369,10 +401,24 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  cbar_label=cbar_label, cbar_loc=cbar_loc,
                  cbar_label_pos=cbar_label_pos,
                  #add text for time stamp                               
-                 time=slice_obj.t[itt], textxy=textxy, unit=unit,
+                 time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
                  isd=isd, fontsize=25,  
                 )
     else:
+        if not isinstance(color_range, list):
+            for key in xyzplane:
+                if not isinstance(par,list) and len(unit) > 0:
+                    unitscale = par.__getattribute__(unit)*rescale
+                else:
+                    unitscale = 1.
+                if 'ln' in field:
+                    globals()[key+'slice']=slice_obj.__getattribute__(
+                      key).__getattribute__(field)+np.log10(unitscale)
+                else:
+                    globals()[key+'slice']=slice_obj.__getattribute__(
+                                      key).__getattribute__(field)*unitscale
+                cmax = max(cmax,globals()[key+'slice'][islice].max())
+                cmin = min(cmin,globals()[key+'slice'][islice].min())
         plot(
              #field (or multiple todo) and 4 surfaces (extra todo) 
              slice_obj, fields, xyzplane,
@@ -382,8 +428,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              figdir=figdir, imageformat=imageformat,
              #set color parameters
              norm=norm, colorscale=colorscale,
-             color_levels=color_levels,
-             color_range=color_range,
+             cmin=cmin, cmax=cmax,
              #locate the box and axes
              viewpoint=viewpoint, offset=offset, margin=margin,
              autosize=autosize, image_dim=image_dim,
@@ -393,6 +438,6 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              cbar_label=cbar_label, cbar_loc=cbar_loc,
              cbar_label_pos=cbar_label_pos,
              #add text for time stamp
-             time=slice_obj.t[itt], textxy=textxy, unit=unit,
+             time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
              isd=isd, fontsize=25,  
             )
