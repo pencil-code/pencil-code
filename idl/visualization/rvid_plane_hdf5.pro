@@ -390,6 +390,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     end else if (keyword_set (sqroot)) then begin
       plane2 = rebin (sqrt (plane), zoom*nx_plane, zoom*ny_plane, sample=sample)
     end else if (keyword_set (log)) then begin
+       tiny = 1e-30
        plane2 = rebin (alog10 (plane > tiny), zoom*nx_plane, zoom*ny_plane, sample=sample)
     end else if (keyword_set(cubic)) then begin
        if (cubic gt 0.0) then cubic = -0.5
