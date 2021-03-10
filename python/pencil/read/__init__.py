@@ -2,7 +2,7 @@
 Reading routines for the pencil code data.
 '''
 
-from .pdim import pdim, PDim
+from .pdims import pdim, PDim
 from .index import index
 from .timeseries import ts
 from .power import power
