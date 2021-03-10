@@ -1,4 +1,4 @@
-# pdim.py
+# pdims.py
 #
 # Author: D. Mitra (dhruba.mitra@gmail.com). based on idl pc_read_pdim.pro.
 """

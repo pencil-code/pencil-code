@@ -1,4 +1,4 @@
-# slices.py
+# allslices.py
 #
 # Read the slice files.
 #
@@ -6,6 +6,8 @@
 """
 Contains the classes and methods to read slice files.
 """
+
+import numpy as np
 
 def slices(*args, **kwargs):
     """
@@ -61,15 +63,13 @@ class SliceSeries(object):
         Fill members with default values.
         """
 
-        import numpy as np
-
         self.t = np.array([])
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f',
              iter_list=None, vlarge=1000000000,
-             quiet=True
+             quiet=True, dtype=np.float32
             ):
         """
         Read Pencil Code slice data.
@@ -107,6 +107,9 @@ class SliceSeries(object):
 
         *quiet*:
           Print progress
+
+        *dtype*:
+          Output float precision, by default float32 to save memory.
         """
 
         import os
@@ -174,10 +177,11 @@ class SliceSeries(object):
                             nt = ds['last'][0]
                         vsize = ds['1/data'].shape[0]
                         hsize = ds['1/data'].shape[1]
-                        slice_series = np.zeros([nt,vsize,hsize])
+                        slice_series = np.zeros([nt,vsize,hsize],dtype=dtype)
                         for it in range(0,nt):
                             if ds.__contains__(str(it+1)):
-                                slice_series[it] = ds[str(it+1)+'/data'][()]
+                                slice_series[it] = dtype(
+                                                   ds[str(it+1)+'/data'][()])
                             else:
                                 print('no data at {} in '.format(it+1)+
                                       file_name)
@@ -289,7 +293,8 @@ class SliceSeries(object):
                         sys.stdout.flush()
                     while True:
                         try:
-                            raw_data = infile.read_record(dtype=precision)
+                            raw_data = dtype(
+                                           infile.read_record(dtype=precision))
                         except ValueError:
                             break
                         except TypeError:
@@ -311,7 +316,7 @@ class SliceSeries(object):
                         print('Reshaping array')
                         sys.stdout.flush()
                     self.t = np.array(self.t, dtype=precision)[:, 0]
-                    slice_series = np.array(slice_series, dtype=precision)
+                    slice_series = np.array(slice_series, dtype=dtype)
                     # Separate the data in chunks if too big
                     if slice_series.size > vlarge:
                         vscaled = (int(vlarge/vsize/hsize)+1)*vsize*hsize

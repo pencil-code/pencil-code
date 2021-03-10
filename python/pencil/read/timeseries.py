@@ -1,4 +1,4 @@
-# ts.py
+# timeseries.py
 #
 # Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays

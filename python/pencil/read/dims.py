@@ -1,4 +1,4 @@
-# dim.py
+# dims.py
 #
 # Read the dimensions of the simulation.
 #

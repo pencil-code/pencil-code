@@ -1,4 +1,4 @@
-# param.py
+# params.py
 #
 # Read the parameters for the simulation.
 # Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
