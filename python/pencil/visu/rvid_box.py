@@ -63,23 +63,22 @@ plotly.io._orca.request_image_with_retrying = wrapped
 
 def plot(
          #field (or multiple todo) and 4 surfaces (extra todo) 
-         slice_obj, fields, xyzplane,
-         itt, it, quiet=True,  
-         #yz[i], xy[i], xz[i], xy2[i], 
+         slice_obj, fields, xyzplane, itt, it, quiet=True,  
          #save output
          figdir='./images/', imageformat='png',
          #set color parameters
          norm='linear', colorscale='RdBu',
          cmin=0, cmax=1,
          #locate the box and axes
-         viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
+         viewpoint=(-1.35, -2.1, 0.5), offset=2., margin=(20,20,30,0),
          autosize=False, image_dim=(800,500),
          #handle axes properties
          visxyz=[True,True,True], axestitle=('x','y','z'), xyz=None,
          #color bar properties
-         cbar_label='', cbar_loc=1., cbar_label_pos='right', 
+         cbar_label='', cbar_loc=1., cbar_label_pos='right',
+         cbar_thickness=10.0, cbar_borderwidth=None,
          #add text for time stamp
-         time=0, textxy=(0,0), str_unit='', isd=3, fontsize=25,
+         time=0, textxy=(0,0), str_unit='', tscale=1., isd=3, fontsize=25,
         ):
 
     """
@@ -127,17 +126,21 @@ def plot(
     for field in fields:
 
         height= globals()['xzslice'][itt].shape[0]
-        width = globals()['xyslice'][itt].shape[1]
+        width = globals()['xyslice'][itt].shape[0]
+        depth = globals()['xyslice'][itt].shape[1]
         
         if xyz is None:
-            xx = np.linspace(0, width - 1, width)
+            xx = np.linspace(0, depth - 1, depth)
             yy = np.linspace(0, width - 1, width)
             zz = np.linspace(0, height - 1, height)
-            x_z, z_z = np.meshgrid(xx, zz)
-            x_y, y_y = np.meshgrid(xx, yy)
+            x_z, z_x = np.meshgrid(xx, zz)
+            y_z, z_y = np.meshgrid(yy, zz)
+            x_y, y_x = np.meshgrid(xx, yy)
         else:
-            x_z, z_z = np.meshgrid(xyz[0], xyz[2])
-            x_y, y_y = np.meshgrid(xyz[0], xyz[1])
+            #python array order is z,y,x
+            x_z, z_x = np.meshgrid(xyz[0], xyz[2])
+            y_z, z_y = np.meshgrid(xyz[1], xyz[2])
+            x_y, y_x = np.meshgrid(xyz[0], xyz[1])
 
         if norm == 'log':
             # field argu
@@ -173,7 +176,7 @@ def plot(
 
         # set offsets of four slices for placing them in correct positions
         if xyz is None:
-            z1_offset = -height / 2  * np.ones(z1.shape)
+            z1_offset = -height / offset  * np.ones(z1.shape)
             y1_offset =           0  * np.ones(y1.shape)
             x1_offset =           0  * np.ones(x1.shape)
             z2_offset = (height - 1) * np.ones(z2.shape)
@@ -188,17 +191,17 @@ def plot(
         proj_z = lambda x, y, z: z
 
         # for projection slice xy
-        colorsurfz1 = proj_z(x_z, z_z, z1.tolist())
-        colorsurfz2 = proj_z(x_z, z_z, z2.tolist())
+        colorsurfz1 = proj_z(x_y, y_x, z1.tolist())
+        colorsurfz2 = proj_z(x_y, y_x, z2.tolist())
 
         # for projection slice xz
-        colorsurfy1 = proj_z(x_y, y_y, y1.tolist())
+        colorsurfy1 = proj_z(x_z, z_x, y1.tolist())
 
         # for projection slice yz
-        colorsurfx1 = proj_z(x_y, y_y, x1.tolist())
+        colorsurfx1 = proj_z(y_z, z_y, x1.tolist())
 
         # plot slices to surfaces
-        trace_y1 = go.Surface(z=list(z_z),
+        trace_y1 = go.Surface(z=list(z_x),
                               x=list(x_z),
                               y=list(y1_offset),
                               showscale=True,
@@ -207,49 +210,47 @@ def plot(
                               cmin=cmin,
                               cmax=cmax,
                               colorbar=dict(
-                                  title=cbar_label,
-                                  x=cbar_loc,
+                                  x=cbar_loc,thickness=cbar_thickness,
+                                  borderwidth=cbar_borderwidth
                               )
                               )
         trace_y1.colorbar.title.side=cbar_label_pos
+        trace_y1.colorbar.title.text=cbar_label
         trace_y1.colorbar.title.font.size=fontsize
  
-        trace_x1 = go.Surface(z=list(z_z),
+        trace_x1 = go.Surface(z=list(z_y),
                               x=list(x1_offset),
-                              y=list(x_z),
+                              y=list(y_z),
                               showscale=False,
                               surfacecolor=colorsurfx1,
                               colorscale=colorscale,
                               cmin=cmin,
                               cmax=cmax,
                               colorbar=dict(
-                              #    title=cbar_label,
                                   x=cbar_loc,
                               )
                               )
         trace_z1 = go.Surface(z=list(z1_offset),
                               x=list(x_y),
-                              y=list(y_y),
+                              y=list(y_x),
                               showscale=False,
                               surfacecolor=colorsurfz1,
                               colorscale=colorscale,
                               cmin=cmin,
                               cmax=cmax,
                               colorbar=dict(
-                              #    title=cbar_label,
                                   x=cbar_loc,
                               )
                               )
         trace_z2 = go.Surface(z=list(z2_offset),
                               x=list(x_y),
-                              y=list(y_y),
+                              y=list(y_x),
                               showscale=False,
                               surfacecolor=colorsurfz2,
                               colorscale=colorscale,
                               cmin=cmin,
                               cmax=cmax,
                               colorbar=dict(
-                              #     title=cbar_label,
                                    x=cbar_loc,
                               )
                               )
@@ -258,7 +259,9 @@ def plot(
 
         layout = go.Layout(
                 annotations=[
-                    dict(text=r'$t='+str(round(time,isd))+str_unit+r'$',
+                    dict(
+                     text=r'$t={}\,'.format(round(time*tscale,isd)
+                                                      )+str_unit+r'$',
                          x=textxy[0],
                          y=textxy[1],
                          showarrow=False
@@ -294,8 +297,7 @@ def plot(
                             t=margin[3],
                            ),
                           )
-
-        # plot the figure
+        # plot the figuresurface
         fig = go.Figure(data=data, layout=layout)
         # set filename of the figure
         filename = field+ '_{0:04d}'.format(itt) + "." + imageformat
@@ -321,19 +323,20 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #color_range size 2 list cmin and cmax
              color_range=None, color_levels=None, 
              #locate the box and axes
-             viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
+             viewpoint=(-1.35, -2.1, 0.5), offset=2., margin=(20,20,30,0),
              autosize=False, image_dim=(800,500),
              #handle axes properties
              visxyz=[True,True,True], axestitle=('x', 'y', 'z'), xyz=None,
              #color bar properties
-             cbar_label = r'$u_x\,[{\rm km s}^{-1}]$', cbar_loc=1.,
+             cbar_label=r'$u_x\,[{\rm km s}^{-1}]$', cbar_loc=1.,
              cbar_label_pos='right', #['top', 'right', 'bottom']
+             cbar_thickness=10., cbar_borderwidth=None,
              #add text for time stamp                                     
-             timestamp=False, textxy=(0,0),
+             timestamp=False, textxy=(0,0), tscale=1,
+             str_unit='', isd=2,  fontsize=25,
              #convert data to cgs from code units and rescale to cbar_label
              #par if present is a param object
              unit='unit_velocity', rescale=1., par=list(),
-             str_unit='', isd=2,  fontsize=25,
              ):
 
     #gd = pcn.read.grid(trim=True, quiet=True, datadir=datadir)
@@ -345,47 +348,68 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                 xyzplane.append(key)
     if len(xyzplane)<4:
         raise ValueError("xyzplane: rvid_box requires at least 4 surfaces.")
-    if not isinstance(color_range, list):
-        for field in fields:
-            cmin,cmax=1e38,-1e38
-            #set color limits based on time series or single snapshot
-            if color_levels=='common':
+    for field in fields:
+        if not isinstance(par,list) and len(unit) > 0:
+            unitscale = par.__getattribute__(unit)*rescale
+        else:
+            unitscale = 1.
+        for key in xyzplane:
+            if 'ln' in field:
+                globals()[key+'slice']=slice_obj.__getattribute__(
+                  key).__getattribute__(field)+np.log10(unitscale)
+            else:
+                globals()[key+'slice']=slice_obj.__getattribute__(
+                                  key).__getattribute__(field)*unitscale
+        if not isinstance(color_range, list):
+            for field in fields:
+                cmin,cmax=1e38,-1e38
+                #set color limits based on time series or single snapshot
+                if color_levels=='common':
+                    for key in xyzplane:
+                        cmax = max(cmax,globals()[key+'slice'][it].max())
+                        cmin = min(cmin,globals()[key+'slice'][it].min())
+        else:
+            cmin = color_range[0]
+            cmax = color_range[1]
+        if islice == -1:
+            for itt in it:
+                if not color_levels=='common' and not isinstance(color_range, list):
+                    cmin,cmax=1e38,-1e38
+                    for key in xyzplane:
+                        cmax = max(cmax,globals()[key+'slice'][itt].max())
+                        cmin = min(cmin,globals()[key+'slice'][itt].min())
+                plot(
+                     #field (or multiple todo) and 4 surfaces (extra todo) 
+                     slice_obj, fields, xyzplane,
+                     itt, it, quiet=quiet,  
+                     #yz[i], xy[i], xz[i], xy2[i], 
+                     #save output
+                     figdir=figdir, imageformat=imageformat,
+                     #set color parameters
+                     norm=norm, colorscale=colorscale,
+                     cmin=cmin, cmax=cmax,
+                     #locate the box and axes
+                     viewpoint=viewpoint, offset=offset, margin=margin,
+                     autosize=autosize, image_dim=image_dim,
+                     #handle axes properties
+                     visxyz=visxyz, axestitle=axestitle, xyz=xyz,
+                     #color bar properties
+                     cbar_label=cbar_label, cbar_loc=cbar_loc,
+                     cbar_label_pos=cbar_label_pos, cbar_thickness=cbar_thickness,
+                     cbar_borderwidth=cbar_borderwidth,
+                     #add text for time stamp                               
+                     time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
+                     isd=isd, fontsize=fontsize, tscale=tscale  
+                    )
+        else:
+            if not isinstance(color_range, list):
                 for key in xyzplane:
-                    if not isinstance(par,list) and len(unit) > 0:
-                        unitscale = par.__getattribute__(unit)*rescale
-                    else:
-                        unitscale = 1.
-                    if 'ln' in field:
-                        globals()[key+'slice']=slice_obj.__getattribute__(
-                          key).__getattribute__(field)+np.log10(unitscale)
-                    else:
-                        globals()[key+'slice']=slice_obj.__getattribute__(
-                                          key).__getattribute__(field)*unitscale
-                    cmax = max(cmax,globals()[key+'slice'][it].max())
-                    cmin = min(cmin,globals()[key+'slice'][it].min())
-    else:
-        cmin = color_range[0]
-        cmax = color_range[1]
-    if islice == -1:
-        for itt in it:
-            if not color_levels=='common' and not isinstance(color_range, list):
-                for key in xyzplane:
-                    if not isinstance(par,list) and len(unit) > 0:
-                        unitscale = par.__getattribute__(unit)*rescale
-                    else:
-                        unitscale = 1.
-                    if 'ln' in field:
-                        globals()[key+'slice']=slice_obj.__getattribute__(
-                          key).__getattribute__(field)+np.log10(unitscale)
-                    else:
-                        globals()[key+'slice']=slice_obj.__getattribute__(
-                                          key).__getattribute__(field)*unitscale
-                    cmax = max(cmax,globals()[key+'slice'][itt].max())
-                    cmin = min(cmin,globals()[key+'slice'][itt].min())
+                    cmax = max(cmax,globals()[key+'slice'][islice].max())
+                    cmin = min(cmin,globals()[key+'slice'][islice].min())
             plot(
                  #field (or multiple todo) and 4 surfaces (extra todo) 
                  slice_obj, fields, xyzplane,
-                 itt, it, quiet=quiet,  
+                 islice, [islice,], quiet=quiet,  
                  #yz[i], xy[i], xz[i], xy2[i], 
                  #save output
                  figdir=figdir, imageformat=imageformat,
@@ -396,48 +420,12 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  viewpoint=viewpoint, offset=offset, margin=margin,
                  autosize=autosize, image_dim=image_dim,
                  #handle axes properties
-                 visxyz=visxyz, axestitle=axestitle, xyz=xyz,
+                 visxyz=visxyz, xyz=xyz, axestitle=axestitle,
                  #color bar properties
                  cbar_label=cbar_label, cbar_loc=cbar_loc,
-                 cbar_label_pos=cbar_label_pos,
-                 #add text for time stamp                               
+                 cbar_label_pos=cbar_label_pos, cbar_thickness=cbar_thickness,
+                 cbar_borderwidth=cbar_borderwidth,
+                 #add text for time stamp
                  time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-                 isd=isd, fontsize=25,  
+                 isd=isd, fontsize=fontsize,  tscale=tscale 
                 )
-    else:
-        if not isinstance(color_range, list):
-            for key in xyzplane:
-                if not isinstance(par,list) and len(unit) > 0:
-                    unitscale = par.__getattribute__(unit)*rescale
-                else:
-                    unitscale = 1.
-                if 'ln' in field:
-                    globals()[key+'slice']=slice_obj.__getattribute__(
-                      key).__getattribute__(field)+np.log10(unitscale)
-                else:
-                    globals()[key+'slice']=slice_obj.__getattribute__(
-                                      key).__getattribute__(field)*unitscale
-                cmax = max(cmax,globals()[key+'slice'][islice].max())
-                cmin = min(cmin,globals()[key+'slice'][islice].min())
-        plot(
-             #field (or multiple todo) and 4 surfaces (extra todo) 
-             slice_obj, fields, xyzplane,
-             islice, [islice,], quiet=quiet,  
-             #yz[i], xy[i], xz[i], xy2[i], 
-             #save output
-             figdir=figdir, imageformat=imageformat,
-             #set color parameters
-             norm=norm, colorscale=colorscale,
-             cmin=cmin, cmax=cmax,
-             #locate the box and axes
-             viewpoint=viewpoint, offset=offset, margin=margin,
-             autosize=autosize, image_dim=image_dim,
-             #handle axes properties
-             visxyz=visxyz, xyz=(gd.x, gd.y, gd.z), axestitle=axestitle,
-             #color bar properties
-             cbar_label=cbar_label, cbar_loc=cbar_loc,
-             cbar_label_pos=cbar_label_pos,
-             #add text for time stamp
-             time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-             isd=isd, fontsize=25,  
-            )
