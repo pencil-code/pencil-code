@@ -63,7 +63,7 @@ class Grid(object):
         self.Lx = self.Ly = self.Lz = 0
 
 
-    def read(self, datadir='data', proc=-1, quiet=False,
+    def read(self, datadir='data', proc=-1, quiet=False, precision='f',
              trim=False):
         """
         Read the grid data from the pencil code simulation.
@@ -87,6 +87,9 @@ class Grid(object):
         *quiet*
           Flag for switching of output.
 
+        *precision*
+          Float (f), double (d) or half (half).
+
         *trim*
           Cuts off the ghost points.
         """
@@ -96,36 +99,47 @@ class Grid(object):
         from scipy.io import FortranFile
         from .. import read
 
+        if precision == 'f':
+            dtype = np.float32
+        elif precision == 'd':
+            dtype = np.float64
+        elif precision == 'half':
+            dtype = np.float16
+        else:
+            print('read grid: {} precision not set, using "f"'.format(
+                  precision))
+            dtype = np.float32
+
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             dim = read.dim(datadir, proc)
             import h5py
 
             with h5py.File(os.path.join(datadir, 'grid.h5'), 'r') as tmp:
-                x = tmp['grid']['x'][()]
-                y = tmp['grid']['y'][()]
-                z = tmp['grid']['z'][()]
-                dx_1 = tmp['grid']['dx_1'][()]
-                dy_1 = tmp['grid']['dy_1'][()]
-                dz_1 = tmp['grid']['dz_1'][()]
-                dx_tilde = tmp['grid']['dx_tilde'][()]
-                dy_tilde = tmp['grid']['dy_tilde'][()]
-                dz_tilde = tmp['grid']['dz_tilde'][()]
-                dx = tmp['grid']['dx'][()]
-                dy = tmp['grid']['dy'][()]
-                dz = tmp['grid']['dz'][()]
-                Lx = tmp['grid']['Lx'][()]
-                Ly = tmp['grid']['Ly'][()]
-                Lz = tmp['grid']['Lz'][()]
-                t = 0.0
+                x = dtype(tmp['grid']['x'][()])
+                y = dtype(tmp['grid']['y'][()])
+                z = dtype(tmp['grid']['z'][()])
+                dx_1 = dtype(tmp['grid']['dx_1'][()])
+                dy_1 = dtype(tmp['grid']['dy_1'][()])
+                dz_1 = dtype(tmp['grid']['dz_1'][()])
+                dx_tilde = dtype(tmp['grid']['dx_tilde'][()])
+                dy_tilde = dtype(tmp['grid']['dy_tilde'][()])
+                dz_tilde = dtype(tmp['grid']['dz_tilde'][()])
+                dx = dtype(tmp['grid']['dx'][()])
+                dy = dtype(tmp['grid']['dy'][()])
+                dz = dtype(tmp['grid']['dz'][()])
+                Lx = dtype(tmp['grid']['Lx'][()])
+                Ly = dtype(tmp['grid']['Ly'][()])
+                Lz = dtype(tmp['grid']['Lz'][()])
+                t = dtype(0.0)
         else:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
             param = read.param(datadir=datadir, quiet=True,
                                conflicts_quiet=True)
             if dim.precision == 'D':
-                precision = 'd'
+                read_precision = 'd'
             else:
-                precision = 'f'
+                read_precision = 'f'
 
             if proc < 0:
                 proc_dirs = list(filter(lambda string: string.startswith(
@@ -165,15 +179,15 @@ class Grid(object):
                 # Read the grid data.
                 file_name = os.path.join(datadir, directory, 'grid.dat')
                 infile = FortranFile(file_name, 'r')
-                grid_raw = infile.read_record(dtype=precision)
-                dx, dy, dz = tuple(infile.read_record(dtype=precision))
-                Lx, Ly, Lz = tuple(infile.read_record(dtype=precision))
-                dx_1_raw = infile.read_record(dtype=precision)
-                dx_tilde_raw = infile.read_record(dtype=precision)
+                grid_raw = infile.read_record(dtype=read_precision)
+                dx, dy, dz = tuple(infile.read_record(dtype=read_precision))
+                Lx, Ly, Lz = tuple(infile.read_record(dtype=read_precision))
+                dx_1_raw = infile.read_record(dtype=read_precision)
+                dx_tilde_raw = infile.read_record(dtype=read_precision)
                 infile.close()
 
                 # Reshape the arrays.
-                t = grid_raw[0]
+                t = dtype(grid_raw[0])
                 x_loc = grid_raw[1:mxloc+1]
                 y_loc = grid_raw[mxloc+1:mxloc+myloc+1]
                 z_loc = grid_raw[mxloc+myloc+1:mxloc+myloc+mzloc+1]
@@ -229,15 +243,15 @@ class Grid(object):
                     dz_tilde[i0z:i1z] = dz_tilde_loc[i0z_loc:i1z_loc]
 
                 else:
-                    x = x_loc
-                    y = y_loc
-                    z = z_loc
-                    dx_1 = dx_1_loc
-                    dy_1 = dy_1_loc
-                    dz_1 = dz_1_loc
-                    dx_tilde = dx_tilde_loc
-                    dy_tilde = dy_tilde_loc
-                    dz_tilde = dz_tilde_loc
+                    x = dtype(x_loc.astype)
+                    y = dtype(y_loc)
+                    z = dtype(z_loc)
+                    dx_1 = dtype(dx_1_loc)
+                    dy_1 = dtype(dy_1_loc)
+                    dz_1 = dtype(dz_1_loc)
+                    dx_tilde = dtype(dx_tilde_loc)
+                    dy_tilde = dtype(dy_tilde_loc)
+                    dz_tilde = dtype(dz_tilde_loc)
 
         if trim:
             self.x = x[dim.l1:dim.l2+1]
