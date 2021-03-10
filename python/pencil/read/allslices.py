@@ -97,7 +97,7 @@ class SliceSeries(object):
           Flag for reading old file format.
 
         *precision*:
-          Precision of the data. Either float 'f' or double 'd'.
+          Precision of the data. Either 'half', float 'f' or double 'd'.
 
         *iter_list*
           list of iteration indices for which to sample the slices
@@ -185,7 +185,7 @@ class SliceSeries(object):
                             self.t = []
                             for it in range(0,nt):
                                 self.t.append(ds[str(it+1)+'/time'][()])
-                            self.t = np.array(self.t)
+                            self.t = np.array(self.t).astype(precision)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
