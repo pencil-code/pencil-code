@@ -14,7 +14,7 @@ some simulation attributes and the data cube.
 """
 
 
-from .var import DataCube
+from .varfile import DataCube
 
 
 def ogvar(*args, **kwargs):

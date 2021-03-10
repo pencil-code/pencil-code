@@ -9,7 +9,7 @@
 Contains the classes and methods to read the simulation dimensions.
 """
 
-from .dim import Dim
+from .dims import Dim
 
 def ogdim(*args, **kwargs):
     """
