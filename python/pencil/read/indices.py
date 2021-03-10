@@ -1,4 +1,4 @@
-# index.py
+# indices.py
 #
 # Read the index.pro file.
 #

@@ -1,4 +1,4 @@
-# power.py
+# powers.py
 #
 # Read the power spectra of the simulation.
 #

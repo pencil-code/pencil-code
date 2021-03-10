@@ -1,4 +1,4 @@
-# ogdim.py
+# ogdims.py
 #
 # Read the dimensions of the simulationp.
 # This routine is a simple adaptation of dim.py used to read dim files

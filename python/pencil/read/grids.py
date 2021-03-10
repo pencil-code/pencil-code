@@ -1,4 +1,4 @@
-# grid.py
+# grids.py
 #
 # Read the grid information from grid.dat.
 #
