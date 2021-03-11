@@ -46,7 +46,8 @@ class Averages(object):
         self.t = np.array([])
 
 
-    def read(self, datadir='data', avg_file='1', var_index=-1, iter_list=None):
+    def read(self, datadir='data', avg_file='1', var_index=-1,
+            iter_list=None, precision='f'):
         """
         Read Pencil Code phi-average data.
 
@@ -62,6 +63,9 @@ class Averages(object):
         *var_index*:
           Index of variable from among within the 'y' or 'z' averages.
           Takes an integer value < len(yaver.in or zaver.in).
+
+        *precision*
+          Float (f), double (d) or half (half).
         """
 
         import os
@@ -73,6 +77,7 @@ class Averages(object):
         aver_file_name_list = []
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             l_h5 = True
+            print('read.ogrid: not implemented for hdf5')
             #
             # Not implemented
             #
@@ -103,6 +108,7 @@ class Averages(object):
 
             t, r_cyl, z_cyl, raw_data = self.__read_phiaver(datadir, variables,
                                                aver_file_name, n_vars,
+                                               precision=precision,
                                                var_index, iter_list, l_h5=l_h5)
 
             # Add the raw data to self.
@@ -133,7 +139,7 @@ class Averages(object):
         return line == '\n'
 
 
-    def __read_phiaver(self, datadir, variables, aver_file_name,
+    def __read_phiaver(self, datadir, variables, aver_file_name, precision='f',
                        n_vars, var_index, iter_list, l_h5=False):
         """
         Read the PHIAVG file
@@ -158,9 +164,9 @@ class Averages(object):
 
             dim = read.dim(datadir)
             if dim.precision == 'S':
-                dtype = np.float32
+                read_precision = np.float32
             if dim.precision == 'D':
-                dtype = np.float64
+                read_precision = np.float64
 
             # Prepare the raw data.
             raw_data = []
@@ -177,12 +183,12 @@ class Averages(object):
             nvars = data1[2]
             nprocz = data1[3]
 
-            data2 = file_id.read_record(dtype=np.float64)
+            data2 = file_id.read_record(dtype=read_precision).astype(precision)
             t = data2[0]
             r_cyl = data2[1:nr_phiavg+1]
             z_cyl = data2[nr_phiavg+1:nr_phiavg+nz_phiavg+1]
 
-            data3 = file_id.read_record(dtype=np.float64)
+            data3 = file_id.read_record(dtype=read_precision).astype(precision)
             raw_data = data3.reshape(nvars,nz_phiavg,nr_phiavg)
 
             return t, r_cyl, z_cyl, raw_data
