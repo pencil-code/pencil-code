@@ -9,6 +9,16 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
+class Dict:
+    """A class that emulates NamedTuple but is picklable. """
+    # Author: Chao-Chin Yang
+    # Created: 2021-03-11
+    # Last Modified: 2021-03-11
+
+    def __init__(self, **kw):
+        for key, value in kw.items():
+            setattr(self, key, value)
+#=======================================================================
 def allprocs_grid(datadir='./data', dim=None):
     """Returns the grid under allprocs/.
 
@@ -21,8 +31,7 @@ def allprocs_grid(datadir='./data', dim=None):
     """
     # Author: Chao-Chin Yang
     # Created: 2020-11-15
-    # Last Modified: 2020-11-15
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import unpack, calcsize
 
@@ -53,11 +62,10 @@ def allprocs_grid(datadir='./data', dim=None):
     f.read(hsize)
     f.close()
 
-    # Define and return a named tuple.
-    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+    # Return the data.
+    return Dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
                 dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
-    return namedtuple("Grid", grid.keys())(**grid)
 #=======================================================================
 def allprocs_pvar(datadir='./data', pdim=None, pvarfile='pvar.dat'):
     """Returns the particles in one snapshot under allprocs/.
@@ -73,8 +81,7 @@ def allprocs_pvar(datadir='./data', pdim=None, pvarfile='pvar.dat'):
     """
     # Author: Chao-Chin Yang
     # Created: 2020-11-08
-    # Last Modified: 2020-11-08
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import calcsize, unpack
 
@@ -103,9 +110,8 @@ def allprocs_pvar(datadir='./data', pdim=None, pvarfile='pvar.dat'):
     t = unpack(fmt, f.read(nb))[0]
     f.close()
 
-    # Define and return a named tuple.
-    pvar = dict(npar=npar, fp=fp, ipar=ipar, t=t)
-    return namedtuple("PVar", pvar.keys())(**pvar)
+    # Return the data.
+    return Dict(npar=npar, fp=fp, ipar=ipar, t=t)
 #=======================================================================
 def allprocs_var(datadir='./data', dim=None, par=None, varfile='var.dat'):
     """Returns one snapshot under allprocs/.
@@ -124,8 +130,7 @@ def allprocs_var(datadir='./data', dim=None, par=None, varfile='var.dat'):
     """
     # Author: Chao-Chin Yang
     # Created: 2020-11-03
-    # Last Modified: 2020-11-03
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import unpack
 
@@ -161,9 +166,8 @@ def allprocs_var(datadir='./data', dim=None, par=None, varfile='var.dat'):
     f.read(hsize)
     f.close()
 
-    # Define and return a named tuple.
-    var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
-    return namedtuple('Var', var.keys())(**var)
+    # Return the data.
+    return Dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
 def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
           verbose=True):
@@ -331,8 +335,7 @@ def dimensions(datadir="./data"):
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-23
-    # Last Modified: 2020-11-15
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
 
     # Read dim.dat.
     f = open(datadir.strip() + "/dim.dat")
@@ -354,14 +357,13 @@ def dimensions(datadir="./data"):
     nprocx, nprocy, nprocz = (int(b) for b in a[10:13])
     procz_last = int(a[13]) == 1
 
-    # Define and return a named tuple.
-    dim = dict(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost,
+    # Return the data.
+    return Dict(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost,
                mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,
                mvar=mvar, maux=maux, mglobal=mglobal,
                double_precision=double_precision,
                nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,
                procz_last=procz_last)
-    return namedtuple("Dimensions", dim.keys())(**dim)
 #=======================================================================
 def grid(datadir='./data', interface=False, par=None, trim=True):
     """Returns the coordinates and their derivatives of the grid.
@@ -382,8 +384,7 @@ def grid(datadir='./data', interface=False, par=None, trim=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-11-02
-    # Last Modified: 2020-11-17
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
 
     # Get the dimensions and parameters.
@@ -484,11 +485,10 @@ def grid(datadir='./data', interface=False, par=None, trim=True):
         y = f(y, dy_1, par.xyz0[1], par.xyz1[1])
         z = f(z, dz_1, par.xyz0[2], par.xyz1[2])
 
-    # Define and return a named tuple.
-    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+    # Return the data.
+    return Dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
                 dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
-    return namedtuple("Grid", grid.keys())(**grid)
 #=======================================================================
 def parameters(datadir='./data', par2=False, warning=True):
     """Returns runtime parameters.
@@ -503,7 +503,7 @@ def parameters(datadir='./data', par2=False, warning=True):
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-31
-    # Last Modified: 2020-04-09
+    # Last Modified: 2021-03-11
 
     # Function to convert a string to the correct type.
     def convert(v):
@@ -568,13 +568,8 @@ def parameters(datadir='./data', par2=False, warning=True):
             line += next_line
     f.close()
 
-    # Define a container class and return the parameters in it.
-    class Parameter:
-        """A container class to hold the parameters of the Pencil Code data. """
-        def __init__(self, d):
-            for key, value in d.items():
-                setattr(self, key, value)
-    return Parameter(dict(zip(keys, values)))
+    # Return the parameters.
+    return Dict(**dict(zip(keys, values)))
 #=======================================================================
 def pardim(datadir='./data'):
     """Returns the numbers associated with particles.
@@ -583,21 +578,24 @@ def pardim(datadir='./data'):
         datadir
             Name of the data directory
     """
-    # Chao-Chin Yang, 2015-05-14
-    from collections import namedtuple
+    # Author: Chao-Chin Yang
+    # Created: 2014-02-11
+    # Last Modified: 2021-03-11
+
     # Read pdim.dat.
     f = open(datadir.strip() + '/pdim.dat')
     a = f.read().rsplit()
     f.close()
+
     # Extract the numbers.
     if len(a) == 4:
         npar, mpvar, npar_stalk, mpaux = (int(b) for b in a)
     else:  # for backward compatibility.
         npar, mpvar, npar_stalk = (int(b) for b in a)
         mpaux = 0
-    # Define and return a named tuple.
-    ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk', 'mpaux'])
-    return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk, mpaux=mpaux)
+
+    # Return the data.
+    return Dict(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk, mpaux=mpaux)
 #=======================================================================
 def proc_avg2d(datadir='./data', direction='z', proc=0):
     """Returns the time series of one chunk of the 2D averages from one
@@ -680,8 +678,10 @@ def proc_dim(datadir='./data', proc=0):
         proc
             Process ID
     """
-    # Chao-Chin Yang, 2013-10-23
-    from collections import namedtuple
+    # Author: Chao-Chin Yang
+    # Created: 2013-10-16
+    # Last Modified: 2021-03-11
+
     # Read dim.dat.
     f = open(datadir.strip() + '/proc' + str(proc) + '/dim.dat')
     a = f.read().rsplit()
@@ -697,11 +697,12 @@ def proc_dim(datadir='./data', proc=0):
     nghost = int(a[7])
     nx, ny, nz = (int(b) - 2 * nghost for b in a[0:3])
     iprocx, iprocy, iprocz = (int(b) for b in a[10:13])
-    # Define and return a named tuple.
-    Dimensions = namedtuple('Dimensions', ['nx', 'ny', 'nz', 'nghost', 'mx', 'my', 'mz', 'mvar', 'maux', 'mglobal',
-                                           'double_precision', 'iprocx', 'iprocy', 'iprocz'])
-    return Dimensions(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz, mvar=mvar, maux=maux, mglobal=mglobal,
-                      double_precision=double_precision, iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
+
+    # Return the data.
+    return Dict(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz,
+            mvar=mvar, maux=maux, mglobal=mglobal,
+            double_precision=double_precision,
+            iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
 #=======================================================================
 def proc_grid(datadir='./data', dim=None, proc=0):
     """Returns the grid controlled by one process.
@@ -717,8 +718,7 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-10-29
-    # Last Modified: 2015-04-20
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import unpack, calcsize
 
@@ -750,11 +750,10 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     f.read(hsize)
     f.close()
 
-    # Define and return a named tuple.
-    grid = dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
+    # Return the data.
+    return Dict(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz,
                 dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
-    return namedtuple("Grid", grid.keys())(**grid)
 #=======================================================================
 def proc_pvar(datadir='./data', pdim=None, proc=0, pvarfile='pvar.dat'):
     """Returns the particles in one snapshot held by one process.
@@ -772,8 +771,7 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, pvarfile='pvar.dat'):
     """
     # Author: Chao-Chin Yang
     # Created: 2015-07-12
-    # Last Modified: 2020-11-08
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import calcsize, unpack
 
@@ -812,10 +810,9 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, pvarfile='pvar.dat'):
     f.read(hsize)
     f.close()
 
-    # Define and return a named tuple.
-    pvar = dict(npar_loc=npar_loc, fp=fp, ipar=ipar,
+    # Return the data.
+    return Dict(npar_loc=npar_loc, fp=fp, ipar=ipar,
                 t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz)
-    return namedtuple("PVar", pvar.keys())(**pvar)
 #=======================================================================
 def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     """Returns the patch of one snapshot saved by one process.
@@ -836,8 +833,7 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-12-03
-    # Last Modified: 2015-04-20
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
     from struct import unpack
 
@@ -870,9 +866,8 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     f.read(hsize)
     f.close()
 
-    # Define and return a named tuple.
-    var = dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
-    return namedtuple('Var', var.keys())(**var)
+    # Return the data.
+    return Dict(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
 def pvar(allprocs=True, datadir='./data', ivar=None, pvarfile='pvar.dat',
          verbose=True):
@@ -893,8 +888,7 @@ def pvar(allprocs=True, datadir='./data', ivar=None, pvarfile='pvar.dat',
     """
     # Author: Chao-Chin Yang
     # Created: 2015-07-12
-    # Last Modified: 2020-11-08
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
 
     # Get the dimensions.
@@ -971,11 +965,11 @@ def pvar(allprocs=True, datadir='./data', ivar=None, pvarfile='pvar.dat',
     if not all(exist):
         raise RuntimeError("Missing some particles. ")
 
-    # Make and return a named tuple.
+    # Return the data.
     pvar = dict(npar=pdim.npar, t=t)
     for i, v in enumerate(var):
         pvar[v.lstrip('i')] = fp[:,i]
-    return namedtuple('PVar', pvar.keys())(**pvar)
+    return Dict(**pvar)
 #=======================================================================
 def slices(field, datadir="./data", return_pos=False):
     """Reads the video slices.
@@ -997,8 +991,7 @@ def slices(field, datadir="./data", return_pos=False):
     """
     # Author: Chao-Chin Yang
     # Created: 2015-04-21
-    # Last Modified: 2020-11-15
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     from glob import glob
     import numpy as np
     import os
@@ -1074,9 +1067,11 @@ def slices(field, datadir="./data", return_pos=False):
         s.append(np.array(s1))
         pos.append(np.array(pos1))
 
-    # Convert the data to named tuples.
-    s = namedtuple("Slice", planes)(*s)
-    pos = namedtuple("SlicePosition", planes)(*pos)
+    # Return the data.
+    dicts, dictp = {}, {}
+    for k, v in zip(planes, s): dicts[k] = v
+    for k, v in zip(planes, p): dictp[k] = v
+    s, pos = Dict(**dicts), Dict(**dictp)
     return (t, s, pos) if return_pos else (t, s)
 #=======================================================================
 def time_series(datadir='./data', unique=False):
@@ -1140,8 +1135,7 @@ def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
     """
     # Author: Chao-Chin Yang
     # Created: 2014-12-03
-    # Last Modified: 2020-11-03
-    from collections import namedtuple
+    # Last Modified: 2021-03-11
     import numpy as np
 
     # Get the parameters.
@@ -1253,11 +1247,11 @@ def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
         for i in range(fdim.count(1)):
             fdim.remove(1)
 
-    # Define and return a named tuple.
+    # Return the data.
     data = dict(t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
     for i, v in enumerate(var):
         data[v] = f[:,:,:,i].ravel().reshape(fdim)
-    return namedtuple('Var', data.keys())(**data)
+    return Dict(**data)
 #=======================================================================
 def varname(datadir='./data', filename='varname.dat'):
     """Returns the names of variables.
