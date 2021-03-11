@@ -35,6 +35,7 @@ module Energy
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
   real :: widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool1=0.0, cool2=0.0
+  real :: wpres=0.1
   real :: zcool=0.0, zcool1=0.0, zcool2=0.0
   real :: rcool=0.0, rcool1=0.0, rcool2=0.0, ppcool=1.
   real :: wcool=0.1, wcool1=0.1, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
@@ -236,7 +237,7 @@ module Energy
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
-      lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, &
+      lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver
 !
 !  Diagnostic variables for print.in
@@ -289,6 +290,7 @@ module Energy
   integer :: idiag_ss2mphi=0    ! PHIAVG_DOC: $\left<s^2\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
   integer :: idiag_TTmphi=0     ! PHIAVG_DOC: $\left<T\right>_\varphi$
+  integer :: idiag_ppmphi=0     ! PHIAVG_DOC: $\left<p\right>_\varphi$
   integer :: idiag_dcoolmphi=0  ! PHIAVG_DOC: divergence of combined heating and cooling fluxes
   integer :: idiag_divcoolmphi=0 ! PHIAVG_DOC: divergence of cooling flux
   integer :: idiag_divheatmphi=0 ! PHIAVG_DOC: divergence of heating flux
@@ -2678,6 +2680,7 @@ module Energy
       if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) then
         lpenc_requested(i_cs2)=.true.
         if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
+        if (cooltype=='pressure') lpenc_requested(i_pp)=.true.
         if (cooltype=='two-layer') lpenc_requested(i_rho)=.true.
         if (cooltype=='corona') then
           lpenc_requested(i_cv)=.true.
@@ -2949,6 +2952,7 @@ module Energy
       if (idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
          lpenc_diagnos(i_pp)=.true.
+      if (idiag_ppmphi/=0) lpenc_diagnos2d(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
       if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 .or. &
@@ -3679,6 +3683,7 @@ module Energy
         call phisum_mn_name_rz(p%ss**2,idiag_ss2mphi)
         call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
         call phisum_mn_name_rz(p%TT,idiag_TTmphi)
+        call phisum_mn_name_rz(p%pp,idiag_ppmphi)
         if (idiag_fconvrsphmphi/=0) &
             call phisum_mn_name_rz(p%cp*p%rho*p%TT*(p%uu(:,1)*p%evr(:,1)+ &
               p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_fconvrsphmphi)
@@ -6249,6 +6254,10 @@ module Energy
       case ('entropy')        ! cooling to reference entropy (currently =0)
         heat = heat - cool*prof*(p%ss-0.)
         div_cool = - cool*prof*(p%ss-0.)
+      case ('pressure')       ! cooling when pressure drops below a reference value
+        prof= 0.5*(1.-tanh((p%pp-ppcool)/wpres))
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
+        div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
       case ('shell')          !  heating/cooling at shell boundaries
 !
 !  Possibility of a latitudinal heating profile.
@@ -6756,7 +6765,7 @@ module Energy
         idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
         idiag_ssupmz=0; idiag_ssdownmz=0; idiag_ss2upmz=0; idiag_ss2downmz=0
         idiag_ssf2mz=0; idiag_ssf2upmz=0; idiag_ssf2downmz=0
-        idiag_ssmr=0; idiag_TTmr=0; idiag_TTmphi=0
+        idiag_ssmr=0; idiag_TTmr=0; idiag_TTmphi=0; idiag_ppmphi=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_TTupmz=0; idiag_TTdownmz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
@@ -6962,6 +6971,7 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ss2mphi',idiag_ss2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'TTmphi',idiag_TTmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ppmphi',idiag_ppmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'dcoolmphi',idiag_dcoolmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'divcoolmphi',idiag_divcoolmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'divheatmphi',idiag_divheatmphi)
