@@ -58,7 +58,7 @@ class Averages(object):
 
 
     def read(self, plane_list=None, var_index=-1, datadir='data',
-             proc=-1, iter_list=None):
+             proc=-1, iter_list=None, precision='f'):
         """
         Read Pencil Code average data.
 
@@ -85,6 +85,10 @@ class Averages(object):
         *proc*:
           Processor to be read. If -1 read all and assemble to one array.
           Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
+
+        *precision*
+          Float (f), double (d) or half (half).
+
         """
 
         import os
@@ -175,11 +179,15 @@ class Averages(object):
 
             if plane == 'xy' or plane == 'xz' or plane == 'yz':
                 t, raw_data = self.__read_2d_aver(plane, datadir, variables,
-                                                  aver_file_name, n_vars, l_h5=l_h5)
+                                                  aver_file_name, n_vars,
+                                                  l_h5=l_h5, 
+                                                  precision=precision)
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
                                                   aver_file_name, n_vars,
-                                                  var_index, iter_list, proc, l_h5=l_h5)
+                                                  var_index, iter_list, proc,
+                                                  l_h5=l_h5,
+                                                  precision=precision)
 
             # Add the raw data to self.
             var_idx = 0
@@ -208,7 +216,8 @@ class Averages(object):
 
 
     def __read_1d_aver(self, plane, datadir, variables, aver_file_name,
-                       n_vars, var_index, iter_list, proc, l_h5=False):
+                       n_vars, var_index, iter_list, proc, l_h5=False,
+                       precision='f'):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -232,8 +241,8 @@ class Averages(object):
                     nu = tmp[str(0) + '/' + var.strip()].shape[0]
                     nv = tmp[str(0) + '/' + var.strip()].shape[1]
                     break
-            raw_data = np.zeros([n_times, n_vars, nv, nu])
-            t = np.zeros(n_times, dtype=np.float32)
+            raw_data = np.zeros([n_times, n_vars, nu, nv],dtype=precision)
+            t = np.zeros(n_times, dtype=precision)
             with h5py.File(file_id, 'r') as tmp:
                 for t_idx in range(0, n_times):
                     t[t_idx] = tmp[str(t_idx) + '/time'][()]
@@ -268,9 +277,9 @@ class Averages(object):
 
             dim = read.dim(datadir, proc)
             if dim.precision == 'S':
-                dtype = np.float32
+                read_precision = np.float32
             if dim.precision == 'D':
-                dtype = np.float64
+                read_precision = np.float64
 
             # Prepare the raw data.
             # This will be reformatted at the end.
@@ -309,16 +318,17 @@ class Averages(object):
                     while True:
                         try:
                             if iiter in iter_list:
-                                t.append(file_id.read_record(dtype=dtype)[0])
-                                proc_data.append(
-                                            file_id.read_record(dtype=dtype))
+                                t.append(file_id.read_record(
+                                         dtype=read_precision)[0])
+                                proc_data.append(file_id.read_record(
+                                         dtype=read_precision))
                                 if iiter >= iter_list[-1]:
                                     # Finished reading.
                                     break
                                 iiter += 1
                             else:
-                                file_id.read_record(dtype=dtype)[0]
-                                file_id.read_record(dtype=dtype)
+                                file_id.read_record(dtype=read_precision)[0]
+                                file_id.read_record(dtype=read_precision)
                                 iiter += 1
                         except:
                             # Finished reading.
@@ -326,26 +336,30 @@ class Averages(object):
                 else:
                     while True:
                         try:
-                            t.append(file_id.read_record(dtype=dtype)[0])
+                            t.append(file_id.read_record(
+                                                    dtype=read_precision)[0])
                             if var_index >= 0:
                                 proc_data.append(
-                                    file_id.read_record(dtype=dtype)[inx1:inx2])
+                                    file_id.read_record(
+                                    dtype=read_precision)[inx1:inx2].astype(
+                                                                  precision))
                             else:
                                 proc_data.append(
-                                    file_id.read_record(dtype=dtype))
+                                    file_id.read_record(
+                                    dtype=read_precision).astype(precision))
                         except:
                             # Finished reading.
                             break
                 file_id.close()
                 # Reshape the proc data into [len(t), pnu, pnv].
-                proc_data = np.array(proc_data)
+                proc_data = np.array(proc_data, dtype=precision)
                 if var_index >= 0:
                     proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
                 else:
                     proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
                 if not all_procs:
-                    return np.array(t), proc_data.swapaxes(2, 3)
+                    return np.array(t,dtype=precision),proc_data.swapaxes(2, 3)
 
                 # Add the proc_data (one proc) to the raw_data (all procs)
                 if plane == 'y':
@@ -366,20 +380,23 @@ class Averages(object):
                 if not isinstance(raw_data, np.ndarray):
                     #Initialize the raw_data array with correct dimensions.
                     if var_index >= 0:
-                        raw_data = np.zeros([len(t), 1, nv, nu])
+                        raw_data = np.zeros([len(t), 1, nv, nu],
+                                                           dtype=precision)
                     else:
-                        raw_data = np.zeros([len(t), n_vars, nv, nu])
+                        raw_data = np.zeros([len(t), n_vars, nv, nu], 
+                                                           dtype=precision)
                 raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = \
                                                                 proc_data.copy()
 
-            t = np.array(t)
+            t = np.array(t, dtype=precision)
             raw_data = np.swapaxes(raw_data, 2, 3)
 
         return t, raw_data
 
 
     def __read_2d_aver(self, plane, datadir, variables,
-                       aver_file_name, n_vars, l_h5=False):
+                       aver_file_name, n_vars, l_h5=False,
+                       precision='f'):
         """
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
@@ -415,11 +432,11 @@ class Averages(object):
             n_times = int(len(aver_lines)/(1. + entry_length))
 
         # Prepare the data arrays.
-        t = np.zeros(n_times, dtype=np.float32)
+        t = np.zeros(n_times, dtype=precision)
 
         # Read the data
         if l_h5:
-            raw_data = np.zeros([n_times, n_vars, nw])
+            raw_data = np.zeros([n_times, n_vars, nw], dtype=precision)
             with h5py.File(file_id, 'r') as tmp:
                 for t_idx in range(0, n_times):
                     t[t_idx] = tmp[str(t_idx) + '/time'][()]
@@ -429,13 +446,13 @@ class Averages(object):
                                          tmp[str(t_idx) + '/' + var.strip()][()]
                         raw_idx += 1
         else:
-            raw_data = np.zeros([n_times, n_vars*nw])
+            raw_data = np.zeros([n_times, n_vars*nw], dtype=precision)
             line_idx = 0
             t_idx = -1
             for current_line in aver_lines:
                 if line_idx % (entry_length+1) == 0:
                     t_idx += 1
-                    t[t_idx] = np.float32(current_line)
+                    t[t_idx] = current_line
                     raw_idx = 0
                 else:
                     raw_data[t_idx, raw_idx*8:(raw_idx*8+8)] = \
