@@ -68,7 +68,7 @@ def plot(
          figdir='./images/', imageformat='png',
          #set color parameters
          norm='linear', colorscale='RdBu',
-         cmin=0, cmax=1,
+         cmin=0, cmax=1, dtype='f',
          #locate the box and axes
          viewpoint=(-1.35, -2.1, 0.5), offset=2., margin=(20,20,30,0),
          autosize=False, image_dim=(800,500),
@@ -141,16 +141,15 @@ def plot(
             x_z, z_x = np.meshgrid(xyz[0], xyz[2])
             y_z, z_y = np.meshgrid(xyz[1], xyz[2])
             x_y, y_x = np.meshgrid(xyz[0], xyz[1])
-
         if norm == 'log':
             # field argu
             if 'ln' in field:
-                z1 = np.log10(np.exp(globals()['xyslice' ][itt]))
-                y1 = np.log10(np.exp(globals()['xzslice' ][itt]))
-                x1 = np.log10(np.exp(globals()['yzslice' ][itt]))
-                z2 = np.log10(np.exp(globals()['xy2slice'][itt]))
-                cmax=np.log10(np.exp(cmax))
-                cmin=np.log10(np.exp(cmin))
+                z1 = (np.log10(np.exp(np.float32(globals()['xyslice' ][itt])))).astype(dtype)
+                y1 = (np.log10(np.exp(np.float32(globals()['xzslice' ][itt])))).astype(dtype)
+                x1 = (np.log10(np.exp(np.float32(globals()['yzslice' ][itt])))).astype(dtype)
+                z2 = (np.log10(np.exp(np.float32(globals()['xy2slice'][itt])))).astype(dtype)
+                cmax=(np.log10(np.exp(np.float32(cmax)))).astype(dtype)
+                cmin=(np.log10(np.exp(np.float32(cmin)))).astype(dtype)
             else:
                 z1 = np.log10(globals()['xyslice' ][itt])
                 y1 = np.log10(globals()['xzslice' ][itt])
@@ -173,6 +172,7 @@ def plot(
             z2 = globals()['xy2slice'][itt]
             cmax = max(-cmin, cmax)
             cmin = -cmax
+        ratios = [width/height, depth/height, 1] 
 
         # set offsets of four slices for placing them in correct positions
         if xyz is None:
@@ -186,6 +186,11 @@ def plot(
             y1_offset = xyz[1].min() * np.ones(y1.shape)
             x1_offset = xyz[0].min() * np.ones(x1.shape)
             z2_offset = xyz[2].max() * np.ones(z2.shape)
+
+        hmax = max(x_y.max(),y_x.max(),z_x.max())
+        hmin = min(x_y.min(),y_x.min(),z_x.min())
+        zmax = max(x_y.max(),y_x.max(),z_x.max())
+        zmin = min(x_y.min(),y_x.min(),z1_offset.min())
 
         # projection in the z-direction
         proj_z = lambda x, y, z: z
@@ -256,7 +261,6 @@ def plot(
                               )
 
         data = [trace_y1, trace_x1, trace_z1, trace_z2]
-
         layout = go.Layout(
                 annotations=[
                     dict(
@@ -270,6 +274,7 @@ def plot(
                 width=image_dim[0],
                 height=image_dim[1],
                 scene=dict(
+                    aspectmode='data',
                     camera=dict(
                         eye=dict(
                             x=viewpoint[0],
@@ -279,15 +284,30 @@ def plot(
 
                     xaxis=dict(
                         title=axestitle[0],
-                        visible=visxyz[0]
+                        visible=visxyz[0],
+                        #backgroundcolor='white',
+                        autorange=False,
+                        range=(x_y.min(),x_y.max()),
+                        rangemode='normal',
+                        #gridwidth=ratios[0]
                               ),
                     yaxis=dict(
                         title=axestitle[1],
-                        visible=visxyz[1]
+                        visible=visxyz[1],
+                        #backgroundcolor='white',
+                        autorange=False,
+                        range=(y_x.min(),y_x.max()),
+                        rangemode='normal',
+                        #gridwidth=ratios[1]
                               ),
                     zaxis=dict(
                         title=axestitle[2],
-                        visible=visxyz[2]
+                        visible=visxyz[2],
+                        #backgroundcolor='white',
+                        autorange=False,
+                        range=(zmin,zmax),
+                        rangemode='normal',
+                        #gridwidth=ratios[2]
                               )
                           ),
                 margin=dict(
@@ -348,6 +368,9 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                 xyzplane.append(key)
     if len(xyzplane)<4:
         raise ValueError("xyzplane: rvid_box requires at least 4 surfaces.")
+    #avoid increasing memory
+    dtype=type(slice_obj.__getattribute__(xyzplane[0]).__getattribute__(
+               fields[0])[0,0,0])
     for field in fields:
         if not isinstance(par,list) and len(unit) > 0:
             unitscale = par.__getattribute__(unit)*rescale
@@ -356,7 +379,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
         for key in xyzplane:
             if 'ln' in field:
                 globals()[key+'slice']=slice_obj.__getattribute__(
-                  key).__getattribute__(field)+np.log10(unitscale)
+                  key).__getattribute__(field)+np.log(unitscale)
             else:
                 globals()[key+'slice']=slice_obj.__getattribute__(
                                   key).__getattribute__(field)*unitscale
@@ -399,7 +422,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                      cbar_borderwidth=cbar_borderwidth,
                      #add text for time stamp                               
                      time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-                     isd=isd, fontsize=fontsize, tscale=tscale  
+                     isd=isd, fontsize=fontsize, tscale=tscale, dtype=dtype  
                     )
         else:
             if not isinstance(color_range, list):
@@ -427,5 +450,5 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  cbar_borderwidth=cbar_borderwidth,
                  #add text for time stamp
                  time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-                 isd=isd, fontsize=fontsize,  tscale=tscale 
+                 isd=isd, fontsize=fontsize,  tscale=tscale, dtype=dtype 
                 )
