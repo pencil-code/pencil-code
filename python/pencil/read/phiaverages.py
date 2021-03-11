@@ -107,9 +107,8 @@ class Averages(object):
             n_vars = len(variables)
 
             t, r_cyl, z_cyl, raw_data = self.__read_phiaver(datadir, variables,
-                                               aver_file_name, n_vars,
-                                               precision=precision,
-                                               var_index, iter_list, l_h5=l_h5)
+                                               aver_file_name, n_varsi,                                                       var_index, iter_list,
+                                               precision=precision, l_h5=l_h5)
 
             # Add the raw data to self.
             var_idx = 0
@@ -139,8 +138,8 @@ class Averages(object):
         return line == '\n'
 
 
-    def __read_phiaver(self, datadir, variables, aver_file_name, precision='f',
-                       n_vars, var_index, iter_list, l_h5=False):
+    def __read_phiaver(self, datadir, variables, aver_file_name, n_vars,
+                       var_index, iter_list, precision='f', l_h5=False):
         """
         Read the PHIAVG file
         Return the time, cylindrical r and z and raw data.
