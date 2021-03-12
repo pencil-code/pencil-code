@@ -60,8 +60,8 @@ source $PENCIL_HOME/sourceme.csh
   of the month at 13:00 CET via zoom (641-599-5185).
   You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
   Please contact them with your ideas.
-* Please contact Jennifer Schober regarding information about the
-  Pencil Code User Meeting 2021.
+* The [Pencil Code User Meeting][meetings] will be held every year.
+  The 2021 meeting will be online; check with Jennifer Schober regarding the latest information.
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
@@ -107,4 +107,5 @@ source $PENCIL_HOME/sourceme.csh
 [newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
 [citations]: https://github.com/pencil-code/website/blob/master/doc/citations.pdf
 [PCSC]: https://www.nordita.org/~brandenb/pencil-code/PCSC/
+[meetings]: http://pencil-code.nordita.org/meetings.php
 
