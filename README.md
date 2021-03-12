@@ -56,6 +56,8 @@ source $PENCIL_HOME/sourceme.csh
 * Information about [Python with the Pencil Code][PythonForPencil] and the
   [Python Coding Style][PythonCodingStyle] can be found on the [wiki][wiki].
 * Updates to the community are provided through the [newsletter][newsletter].
+* Talk to use during the Pencil Code Office Hours every second Friday
+of the month at 13:00 CET via zoom:6415995185.
 
 ## List of Contributors
 
