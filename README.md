@@ -58,6 +58,8 @@ source $PENCIL_HOME/sourceme.csh
 * Updates to the community are provided through the [newsletter][newsletter].
 * Talk to use during the Pencil Code Office Hours every second Friday
   of the month at 13:00 CET via zoom (641-599-5185).
+  You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
+  Please contact them with your ideas.
 * Please contact Jennifer Schober regarding information about the
   Pencil Code User Meeting 2021.
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
@@ -104,4 +106,5 @@ source $PENCIL_HOME/sourceme.csh
 [PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
 [newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
 [citations]: https://github.com/pencil-code/website/blob/master/doc/citations.pdf
+[PCSC]: https://www.nordita.org/~brandenb/pencil-code/PCSC/
 
