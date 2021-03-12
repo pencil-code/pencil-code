@@ -40,13 +40,14 @@ module Shock
   logical :: lfix_Re_mesh=.false.
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
+  real    :: shock_div_pow = 1.
   logical :: lrewrite_shock_boundary=.false., &
              lconvergence_only=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
       div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear, &
-      lconvergence_only
+      shock_div_pow, lconvergence_only
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -448,6 +449,7 @@ module Shock
         else
           f(l1:l2,m,n,ishock) = abs(penc)
         endif
+        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=f(l1:l2,m,n,ishock)**shock_div_pow
 !
 !  Add the linear term if requested
 !
