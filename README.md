@@ -60,6 +60,7 @@ source $PENCIL_HOME/sourceme.csh
   of the month at 13:00 CET via zoom (641-599-5185).
 * Please contact Jennifer Schober regarding information about the
   Pencil Code User Meeting 2021.
+* See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
 
@@ -102,4 +103,5 @@ source $PENCIL_HOME/sourceme.csh
 [PythonCodingStyle]: https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
 [PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
 [newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
+[citations]: https://github.com/pencil-code/website/blob/master/doc/citations.pdf
 
