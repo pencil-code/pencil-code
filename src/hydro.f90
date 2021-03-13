@@ -142,6 +142,7 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
+  logical :: lrelativistic=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -166,7 +167,7 @@ module Hydro
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
-      lskip_projection, z1_uu, z2_uu, &
+      lrelativistic, lskip_projection, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -247,7 +248,7 @@ module Hydro
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
-      lalways_use_gij_etc, amp_centforce, &
+      lrelativistic, lalways_use_gij_etc, amp_centforce, &
       lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz,lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -847,6 +848,12 @@ module Hydro
         endif
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
+!
+!  shared variable of lrelativistic for density
+!
+      if (ldensity) &
+        call put_shared_variable('lrelativistic', &
+            lrelativistic, caller='register_density')
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
@@ -3222,6 +3229,14 @@ module Hydro
           call identify_bcs('sld_char',isld_char)
         endif
       endif
+!
+!  Check whether we compute relativistic bulk flows
+!  (as opposed to just lrelativistic_eos)
+!
+      if (ldensity.and.lrelativistic) then
+        !print*,'AXEL'
+      endif
+
 !
 !  Advection term.
 !
