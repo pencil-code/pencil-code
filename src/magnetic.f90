@@ -8456,6 +8456,15 @@ module Magnetic
       real :: h
 !
       select case (zdep_profile)
+!
+!  cos(z) profile
+!
+        case ('cos(z)')
+          eta_z=eta*(1.+eta_ampl*cos(z))
+          if (present(geta_z)) then
+            geta_z=-eta*eta_ampl*sin(z)
+          endif
+!
         case ('fs')
           if (cs0 > 0. .and. Omega > 0.) then
             h = sqrt(2.) * cs0 / Omega
