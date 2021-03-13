@@ -5501,6 +5501,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
 !
         select case (iforcing_cont(i))
+        case('Fy=const')
+          force(:,1)=0.
+          force(:,2)=ampl_ff(i)
+          force(:,3)=0.
         case('Fz=const')
           force(:,1)=0.
           force(:,2)=0.
