@@ -17,7 +17,7 @@ class Dict:
     """
     # Author: Chao-Chin Yang
     # Created: 2021-03-11
-    # Last Modified: 2021-03-11
+    # Last Modified: 2021-03-16
 
     def __init__(self, **kw):
         """Initiate the object with all the keyword arguments.
@@ -27,10 +27,19 @@ class Dict:
         """
         # Author: Chao-Chin Yang
         # Created: 2021-03-11
-        # Last Modified: 2021-03-11
+        # Last Modified: 2021-03-16
 
+        self._keys = list(kw.keys())
         for key, value in kw.items():
             setattr(self, key, value)
+
+    def keys(self):
+        """Returns all the keywords recorded in the object. """
+        # Author: Chao-Chin Yang
+        # Created: 2021-03-16
+        # Last Modified: 2021-03-16
+
+        return self._keys
 #=======================================================================
 def allprocs_grid(datadir='./data', dim=None):
     """Returns the grid under allprocs/.
