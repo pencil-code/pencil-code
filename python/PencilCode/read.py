@@ -10,12 +10,25 @@
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
 class Dict:
-    """A class that emulates NamedTuple but is picklable. """
+    """A class that emulates NamedTuple but is picklable.
+
+    Instance Variables
+        All the keyword arguments when constructed.
+    """
     # Author: Chao-Chin Yang
     # Created: 2021-03-11
     # Last Modified: 2021-03-11
 
     def __init__(self, **kw):
+        """Initiate the object with all the keyword arguments.
+
+        **kw
+            Keyword values to be recorded in the object.
+        """
+        # Author: Chao-Chin Yang
+        # Created: 2021-03-11
+        # Last Modified: 2021-03-11
+
         for key, value in kw.items():
             setattr(self, key, value)
 #=======================================================================
