@@ -127,7 +127,6 @@ module Special
 !
   integer :: idiag_dtgh=0
   integer :: idiag_totKE=0
-  integer :: idiag_totAPE=0
 !
   contains
 !
@@ -320,8 +319,6 @@ module Special
 !  
         if (idiag_totKE/=0) &
              call integrate_mn_name(0.5 * (c0 + p%rho) * p%u2 , idiag_totKE)
-        if (idiag_totAPE/=0) &
-             call integrate_mn_name(0.5 * (p%rho**2 + 2*p%rho*c0) , idiag_totAPE)
         !if (idiag_pstratm/=0) &
         !     call sum_mn_name(strat,idiag_pstratm)
         !if (idiag_pstratmax/=0) &
@@ -850,14 +847,12 @@ module Special
       if (lreset) then
         idiag_dtgh=0
         idiag_totKE=0
-        idiag_totAPE=0
         !idiag_pstratm=0;idiag_pstratmax=0;idiag_pstratmin=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtgh',idiag_dtgh)
         call parse_name(iname,cname(iname),cform(iname),'totKE',idiag_totKE)
-        call parse_name(iname,cname(iname),cform(iname),'totAPE',idiag_totAPE)
         !call parse_name(iname,cname(iname),cform(iname),'pstratm',idiag_pstratm)
         !call parse_name(iname,cname(iname),cform(iname),'pstratmax',idiag_pstratmax)
         !call parse_name(iname,cname(iname),cform(iname),'pstratmin',idiag_pstratmin)
