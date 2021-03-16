@@ -101,7 +101,7 @@ module Special
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1.
+  real :: c_light2=1., delk=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
@@ -119,7 +119,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    tau_stress_kick, fac_stress_kick, &
+    tau_stress_kick, fac_stress_kick, delk, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -1121,8 +1121,12 @@ module Special
 !  compute omega (but assume c=1), omega*t, etc.
 !
               one_over_k2=1./ksqr
-              om=sqrt(ksqr)
-
+              if (delk/=0.) then
+                om=sqrt(ksqr+delk**2)
+              else
+                om=sqrt(ksqr)
+              endif
+;
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
