@@ -95,7 +95,7 @@ module Density
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
-  logical :: lrelativistic_eos=.false.
+  logical :: lrelativistic_eos=.false., ladvection_density=.true.
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -168,7 +168,7 @@ module Density
       lcalc_lnrhomean, lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, &
-      lreduced_sound_speed, lrelativistic_eos, &
+      lreduced_sound_speed, lrelativistic_eos, ladvection_density, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
       ieos_profile, width_eos_prof, beta_glnrho_global,&
@@ -2422,7 +2422,8 @@ module Density
           if (ldensity_nolog) then
             density_rhs= - p%ugrho  - p%rho*p%divu
           else
-            density_rhs= - p%uglnrho- p%divu
+            density_rhs= - p%divu
+            if (ladvection_density) density_rhs = density_rhs - p%uglnrho
             if (lrelativistic_eos) then
               if (lhydro) then
                 call multvs(p%uu,density_rhs,tmpv)
