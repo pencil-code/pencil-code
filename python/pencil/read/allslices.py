@@ -16,7 +16,7 @@ def slices(*args, **kwargs):
     call signature:
 
     read(field='', extension='', datadir='data', proc=-1,
-         old_file=False, precision='f', iter_list=None, quiet=True)
+         old_file=False, precision='f', iter_list=list, quiet=True)
 
     Keyword arguments:
 
@@ -68,8 +68,8 @@ class SliceSeries(object):
 
     def read(self, field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f',
-             iter_list=None, vlarge=1000000000,
-             quiet=True
+             iter_list=list(), vlarge=1000000000,
+             quiet=True, tstart=0, tend=None
             ):
         """
         Read Pencil Code slice data.
@@ -101,6 +101,12 @@ class SliceSeries(object):
 
         *iter_list*
           list of iteration indices for which to sample the slices
+
+        *tstart*
+          lower time range from which to sample the slices
+
+        *tend*
+          upper time range from which to sample the slices
 
         *vlarge*
           size of arrays over which memory limits reshaping
@@ -155,7 +161,14 @@ class SliceSeries(object):
             class Foo(object):
                 pass
 
-            nt = None
+            if len(iter_list) > 0:
+                nt = len(iter_list)
+                if tstart > 0 or tend:
+                    print('read.slices: using iter_list.',
+                          'If tstart or tend required set iter_list=None')
+                tstart = 0; tend = None
+            else:
+                nt = None
             for extension in extension_list:
                 if not quiet:
                     print('Extension: ' + str(extension))
@@ -170,12 +183,25 @@ class SliceSeries(object):
                     file_name = os.path.join(slice_dir,
                                              field+'_'+extension+'.h5')
                     with h5py.File(file_name, 'a') as ds:
+                        if tstart > 0 or tend:
+                            iter_list = []; it = 0
+                            while it < ds['last'][0]:
+                                if ds[str(it+1)+'/time'][()] > tstart:
+                                    iter_list.append(it)
+                                    it += 1
+                                if ds[str(it+1)+'/time'][()] > tend:
+                                    it = ds['last'][0]
+                                print('iter_list: it={}, time={}'.format(
+                                      it,ds[str(it+1)+'/time'][()]))
+                            nt = len(iter_list)
                         if not isinstance(nt, int):
                             nt = ds['last'][0]
                         vsize = ds['1/data'].shape[0]
                         hsize = ds['1/data'].shape[1]
                         slice_series = np.zeros([nt,vsize,hsize],dtype=precision)
-                        for it in range(0,nt):
+                        if len(iter_list) == 0:
+                            iter_list = list(range(nt))
+                        for it in iter_list:
                             if ds.__contains__(str(it+1)):
                                 slice_series[it] = ds[str(it+1)+'/data'][()]
                             else:
@@ -183,7 +209,7 @@ class SliceSeries(object):
                                       file_name)
                         if self.t.size == 0:
                             self.t = []
-                            for it in range(0,nt):
+                            for it in iter_list:
                                 self.t.append(ds[str(it+1)+'/time'][()])
                             self.t = np.array(self.t).astype(precision)
                     setattr(ext_object, field, slice_series)
