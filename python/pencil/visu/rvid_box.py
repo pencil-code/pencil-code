@@ -31,7 +31,7 @@ quiet --- a boolean variable, print debug information.
 slice --- the sequential integer number of a slice in given period (starting from 0), default is the first slice (slice 0),
     can be set to '-1' to generate all slices in given period.
 
-colorscale --- a string variable,  color scale for the plot. Default is 'Hot'.
+colorscale --- a string variable,  color scale for the plot. Default is 'brbg_r'.
     Plotly supports most matplotlib colormaps and you can customize a colorscale on your own.
     See https://plot.ly/python/colorscales/ for more information.
 
@@ -67,7 +67,7 @@ def plot(
          #save output
          figdir='./images/', imageformat='png',
          #set color parameters
-         norm='linear', colorscale='RdBu',
+         norm='linear', colorscale='brbg_r',
          cmin=0, cmax=1, dtype='f',
          #locate the box and axes
          viewpoint=(-1.35, -2.1, 0.5), offset=2., margin=(20,20,30,0),
@@ -91,7 +91,7 @@ def plot(
             can be changed to logarithmic by setting it 'log' (the base number is 10).
         slice --- the sequential integer number of a slice in given period (starting from 0),
             default is the first slice (slice 0), can be set to '-1' to generate all slices in given period.
-        colorscale --- a string variable,  color scale for the plot. Default is 'Hot'.
+        colorscale --- a string variable,  color scale for the plot. Default is 'brbg_r'.
             Plotly supports most Matplotlib colormaps and you can customize a colorscale on your own.
             See https://plot.ly/python/colorscales/ for more information.
         unit --- a string variable, define the unit of the colorbar, shown on its title.
@@ -151,25 +151,25 @@ def plot(
                 cmax=(np.log10(np.exp(np.float32(cmax)))).astype(dtype)
                 cmin=(np.log10(np.exp(np.float32(cmin)))).astype(dtype)
             else:
-                z1 = np.log10(globals()['xyslice' ][itt])
-                y1 = np.log10(globals()['xzslice' ][itt])
-                x1 = np.log10(globals()['yzslice' ][itt])
-                z2 = np.log10(globals()['xy2slice'][itt])
+                z1 = np.log10(globals()['xyslice' ][itt].astype('f')).astype(dtype)
+                y1 = np.log10(globals()['xzslice' ][itt].astype('f')).astype(dtype)
+                x1 = np.log10(globals()['yzslice' ][itt].astype('f')).astype(dtype)
+                z2 = np.log10(globals()['xy2slice'][itt].astype('f')).astype(dtype)
                 cmax=np.log10(cmax)
                 cmin=np.log10(cmin)
         elif norm == 'linear': 
-            z1 = globals()['xyslice' ][itt]
-            y1 = globals()['xzslice' ][itt]
-            x1 = globals()['yzslice' ][itt]
-            z2 = globals()['xy2slice'][itt]
+            z1 = globals()['xyslice' ][itt].astype(dtype)
+            y1 = globals()['xzslice' ][itt].astype(dtype)
+            x1 = globals()['yzslice' ][itt].astype(dtype)
+            z2 = globals()['xy2slice'][itt].astype(dtype)
             cmax = max(-cmin, cmax)
             cmin = -cmax
         else: 
             print("WARNING: 'norm' undefined, applying 'linear'")
-            z1 = globals()['xyslice' ][itt]
-            y1 = globals()['xzslice' ][itt]
-            x1 = globals()['yzslice' ][itt]
-            z2 = globals()['xy2slice'][itt]
+            z1 = globals()['xyslice' ][itt].astype(dtype)
+            y1 = globals()['xzslice' ][itt].astype(dtype)
+            x1 = globals()['yzslice' ][itt].astype(dtype)
+            z2 = globals()['xy2slice'][itt].astype(dtype)
             cmax = max(-cmin, cmax)
             cmin = -cmax
         ratios = [width/height, depth/height, 1] 
@@ -339,7 +339,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #set image properties
              imageformat="png", figdir='./images/',
              #set color parameters
-             colorscale='Hot', norm='linear',
+             colorscale='brbg_r', norm='linear',
              #color_range size 2 list cmin and cmax
              color_range=None, color_levels=None, 
              #locate the box and axes
@@ -371,6 +371,9 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
     #avoid increasing memory
     dtype=type(slice_obj.__getattribute__(xyzplane[0]).__getattribute__(
                fields[0])[0,0,0])
+    if dtype==np.float16 or dtype='half':
+        print('plot_box: caution dtype {} may cause under/overflow'.format(
+               dtype))
     for field in fields:
         if not isinstance(par,list) and len(unit) > 0:
             unitscale = par.__getattribute__(unit)*rescale
@@ -382,15 +385,15 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                   key).__getattribute__(field)+np.log(unitscale)
             else:
                 globals()[key+'slice']=slice_obj.__getattribute__(
-                                  key).__getattribute__(field)*unitscale
+                                  key).__getattribute__(field).astype('f')*unitscale
         if not isinstance(color_range, list):
             for field in fields:
                 cmin,cmax=1e38,-1e38
                 #set color limits based on time series or single snapshot
                 if color_levels=='common':
                     for key in xyzplane:
-                        cmax = max(cmax,globals()[key+'slice'][it].max())
-                        cmin = min(cmin,globals()[key+'slice'][it].min())
+                        cmax = max(cmax,globals()[key+'slice'][it].max().astype('f'))
+                        cmin = min(cmin,globals()[key+'slice'][it].min().astype('f'))
         else:
             cmin = color_range[0]
             cmax = color_range[1]
@@ -399,8 +402,8 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                 if not color_levels=='common' and not isinstance(color_range, list):
                     cmin,cmax=1e38,-1e38
                     for key in xyzplane:
-                        cmax = max(cmax,globals()[key+'slice'][itt].max())
-                        cmin = min(cmin,globals()[key+'slice'][itt].min())
+                        cmax = max(cmax,globals()[key+'slice'][itt].max().astype('f'))
+                        cmin = min(cmin,globals()[key+'slice'][itt].min().astype('f'))
                 plot(
                      #field (or multiple todo) and 4 surfaces (extra todo) 
                      slice_obj, fields, xyzplane,
@@ -427,8 +430,8 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
         else:
             if not isinstance(color_range, list):
                 for key in xyzplane:
-                    cmax = max(cmax,globals()[key+'slice'][islice].max())
-                    cmin = min(cmin,globals()[key+'slice'][islice].min())
+                    cmax = max(cmax,globals()[key+'slice'][islice].max().astype('f'))
+                    cmin = min(cmin,globals()[key+'slice'][islice].min().astype('f'))
             plot(
                  #field (or multiple todo) and 4 surfaces (extra todo) 
                  slice_obj, fields, xyzplane,
@@ -452,3 +455,22 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
                  isd=isd, fontsize=fontsize,  tscale=tscale, dtype=dtype 
                 )
+"""
+      - One of the following named colorscales:
+            ['aggrnyl', 'agsunset', 'algae', 'amp', 'armyrose', 'balance',
+             'blackbody', 'bluered', 'blues', 'blugrn', 'bluyl', 'brbg',
+             'brwnyl', 'bugn', 'bupu', 'burg', 'burgyl', 'cividis', 'curl',
+             'darkmint', 'deep', 'delta', 'dense', 'earth', 'edge', 'electric',
+             'emrld', 'fall', 'geyser', 'gnbu', 'gray', 'greens', 'greys',
+             'haline', 'hot', 'hsv', 'ice', 'icefire', 'inferno', 'jet',
+             'magenta', 'magma', 'matter', 'mint', 'mrybm', 'mygbm', 'oranges',
+             'orrd', 'oryel', 'oxy', 'peach', 'phase', 'picnic', 'pinkyl',
+             'piyg', 'plasma', 'plotly3', 'portland', 'prgn', 'pubu', 'pubugn',
+             'puor', 'purd', 'purp', 'purples', 'purpor', 'rainbow', 'rdbu',
+             'rdgy', 'rdpu', 'rdylbu', 'rdylgn', 'redor', 'reds', 'solar',
+             'spectral', 'speed', 'sunset', 'sunsetdark', 'teal', 'tealgrn',
+             'tealrose', 'tempo', 'temps', 'thermal', 'tropic', 'turbid',
+             'turbo', 'twilight', 'viridis', 'ylgn', 'ylgnbu', 'ylorbr',
+             'ylorrd'].
+
+"""
