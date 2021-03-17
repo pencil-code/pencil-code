@@ -1126,7 +1126,7 @@ module Special
               else
                 om=sqrt(ksqr)
               endif
-;
+!
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
