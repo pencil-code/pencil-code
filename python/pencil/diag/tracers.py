@@ -222,8 +222,6 @@ class Tracers(object):
         xx[:, :, 1] = self.y0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
         xx[:, :, 2] = self.z1[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
 
-        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
-
         # Initialize the local arrays for this core.
         sub_x1 = np.zeros(xx[:, :, 0].shape)
         sub_y1 = np.zeros(xx[:, :, 0].shape)
@@ -234,6 +232,7 @@ class Tracers(object):
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
         for ix in range(i_proc, self.x0.shape[0], n_proc):
             for iy in range(self.x0.shape[1]):
+                time = np.linspace(0, 20*self.params.Lz/field[2, 0, iy, ix], 1000)
                 stream = Stream(field, self.params, xx=xx[int(ix/n_proc), iy, :],
                                 time=time, splines=splines)
                 sub_x1[int(ix/n_proc), iy] = stream.tracers[-1, 0]
