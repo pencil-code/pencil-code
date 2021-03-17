@@ -5,7 +5,7 @@ Reading routines for the pencil code data.
 from .pdims import pdim, PDim
 from .indices import index
 from .timeseries import ts
-from .powers import power
+from .power import power
 from .ogdims import ogdim
 from .ogvar import ogvar
 from .pencil_record_types import record_types
