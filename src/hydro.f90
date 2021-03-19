@@ -7352,7 +7352,8 @@ module Hydro
       if (.not.lcalc_uumeanz) then
         call fatal_error("uumz_profile","you need to set lcalc_uumean=T in hydro_run_pars")
       else
-        if (it == 1) then 
+        if (it == 1) then
+          uumz_prof = 0.
           call read_uumz_profile(uumz_prof)
         endif
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumz(n,1)-uumz_prof(n-nghost,1))
