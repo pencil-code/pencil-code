@@ -64,6 +64,7 @@ module Magnetic_meanfield
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0, meanfield_Ba=1.0
   real :: meanfield_qp1, meanfield_qs1, meanfield_qe1, meanfield_qa1
   real :: meanfield_etaB=0.0
+  real :: x1_alp=0., x2_alp=0., y1_alp=0., y2_alp=0.
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
@@ -72,7 +73,7 @@ module Magnetic_meanfield
   logical :: lturb_temp_diff=.false., lqp_profile=.false., lqpx_profile=.false.
 !
   namelist /magn_mf_init_pars/ &
-      dummy
+      x1_alp, x2_alp, y1_alp, y2_alp
 !
 ! Run parameters
 !
@@ -133,7 +134,8 @@ module Magnetic_meanfield
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
-      Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z
+      Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
+      x1_alp, x2_alp, y1_alp, y2_alp
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -919,6 +921,16 @@ module Magnetic_meanfield
         if (nxgrid/=1) kx=2*pi/Lx
         select case (alpha_profile)
         case ('const'); alpha_tmp=1.
+        case ('box')
+          if (y(m) >= y1_alp .and. y(m) <= y2_alp) then
+            where(x(l1:l2)>=x1_alp .and. x(l1:l2)<=x2_alp)
+              alpha_tmp=1.
+            elsewhere
+              alpha_tmp=0.
+            endwhere
+          else
+            alpha_tmp=0.
+          endif
         case ('siny'); alpha_tmp=sin(y(m))
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
