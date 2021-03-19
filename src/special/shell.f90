@@ -121,7 +121,7 @@ module Special
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ns, ierr, nk,nk2, ik, count, cc_count
+      integer :: ns, ierr, nk,nk2, ik, ncount, cc_count
       character (len=fnlen) :: filename
       real :: kav
       real, dimension(1) :: fran
@@ -144,7 +144,7 @@ module Special
       do ns=1,nshell
         kval(ns)=k_amp*(lambda**dfloat(ns))
         ksquare(ns)=kval(ns)*kval(ns)
-        exfac(ns) = dexp(-visc*ksquare(ns)*deltG)
+        exfac(ns) = exp(-visc*ksquare(ns)*deltG)
         exrat(ns) = (1.0d0 - exfac(ns))/(visc*ksquare(ns))
 !
         if (ns >= (nshell-1)) then
@@ -168,7 +168,7 @@ module Special
 !
       if (minshell2 < 0) minshell2=minshell
 !
-      if (l_needspecialuu) call initialize_k_vectors()
+   !  if (l_needspecialuu) call initialize_k_vectors()
 !
 !  read goydata, bcast etc... (if not starting)
 !
@@ -185,8 +185,10 @@ module Special
 !  generate/allocate k/u vectors
 !
       use File_io, only: parallel_file_exists
+      use General, only: random_number_wrapper
 !
-      integer :: ns
+      real, dimension(1) :: fran
+      integer :: ns, ik, ncount, nk, nk2
 !
       if ((maxshell < 0) .or. (minshell < 0)) &
           call fatal_error ('initialize_k_vectors', 'Set maxshell and minshell if you want l_needspecialuu')
@@ -203,46 +205,46 @@ module Special
 !
 !  read in possible vectors
 !
-        call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
-        if (.not. parallel_file_exists (kdat_exists)) &
-            call fatal_error('initialize_k_vectors', 'k.dat file "'//trim(filename)//'" does not exist')
+  !     call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
+  !     if (.not. parallel_file_exists (kdat_exists)) &
+  !         call fatal_error('initialize_k_vectors', 'k.dat file "'//trim(filename)//'" does not exist')
 !
         call get_unit_vector(vec_split(ns,:))
 !
-        open(9,file=filename,status='old')
-        read(9,*) nk,kav
-        if (nk>4000) call fatal_error('initialize_k_vectors', 'too many kvectors (shell.f90)')
-        read(9,*) (kkx(ik),ik=1,nk)
-        read(9,*) (kky(ik),ik=1,nk)
-        read(9,*) (kkz(ik),ik=1,nk)
-        close(9)
+     !  open(9,file=filename,status='old')
+     !  read(9,*) nk,kav
+     !  if (nk>4000) call fatal_error('initialize_k_vectors', 'too many kvectors (shell.f90)')
+     !  read(9,*) (kkx(ik),ik=1,nk)
+     !  read(9,*) (kky(ik),ik=1,nk)
+     !  read(9,*) (kkz(ik),ik=1,nk)
+     !  close(9)
 !
 !  choose k vectors, u vectors
 !  1st pair
 !
         call random_number_wrapper(fran)
-        ik=nk*(.9999*fran(1))+1
-        kvec(1,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
-        call get_perp_vector(kvec(1, ns,:), uvec(1, ns,:))
+     !  ik=nk*(.9999*fran(1))+1
+     !  kvec(1,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
+     !  call get_perp_vector(kvec(1, ns,:), uvec(1, ns,:))
 !
 ! 2nd/3rd pairs
 !
-        do count=2,3
-          nk2=1
-          do
-            call random_number_wrapper(fran)
-            ik=nk*(.9999*fran(1))+1
-            kvec(count,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
-            if (abs(dot_product(uvec(count-1,ns,:),kvec(count,ns,:))) > 0.86) exit
-            if (nk2 > nk) then
-              call get_perp_vector(kvec(count-1, ns,:), uvec(count-1, ns,:))
-              nk2=0
-            endif
-            nk2=nk2+1
-          enddo
-          call cross(kvec(count-1,ns,:),kvec(count,ns,:), uvec(count,ns,:))
-          uvec(count,ns,:)=uvec(count,ns,:)/(sum(uvec(count,ns,:)**2))**(0.5)
-        enddo
+     !  do ncount=2,3
+     !    nk2=1
+     !    do
+     !      call random_number_wrapper(fran)
+     !      ik=nk*(.9999*fran(1))+1
+     !      kvec(ncount,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
+     !      if (abs(dot_product(uvec(ncount-1,ns,:),kvec(ncount,ns,:))) > 0.86) exit
+     !      if (nk2 > nk) then
+     !        call get_perp_vector(kvec(ncount-1, ns,:), uvec(ncount-1, ns,:))
+     !        nk2=0
+     !      endif
+     !      nk2=nk2+1
+     !    enddo
+     !    call cross(kvec(ncount-1,ns,:),kvec(ncount,ns,:), uvec(ncount,ns,:))
+     !    uvec(ncount,ns,:)=uvec(ncount,ns,:)/(sum(uvec(ncount,ns,:)**2))**(0.5)
+     !  enddo
       enddo
 !
     endsubroutine initialize_k_vectors
@@ -256,8 +258,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nshell) :: random_phase_uu_init
       double precision, dimension(nshell) ::randomd
-      integer :: ns, count=1
-      logical :: count_out
+      integer :: ns, ncount=1
+      logical :: ncount_out
       real :: noneoverthree=-1./3.
       real :: tstarting
 !
@@ -270,7 +272,7 @@ module Special
 !  set up initial velocity (k^-1/3 powerlaw); only on root
 !
       if (lroot) then
-        call initialize_k_vectors()
+   !    call initialize_k_vectors()
         do ns=1,nshell
           umod(ns)=u_amp*kval(ns)**noneoverthree
           zu(ns)=dcmplx(umod(ns)*dcos(randomd(ns)), &
@@ -291,37 +293,37 @@ module Special
 !
 ! stabilize velocities
 !
-        count=0
-        do while (count < nstability1)
+        ncount=0
+        do while (ncount < nstability1)
           call GOY_advance_timestep()
-          count=count+1
+          ncount=ncount+1
         enddo
 !
 ! start tracking the velocities to get eddy time estimates
 !
-        count=0
-        do while (count < nstability2)
+        ncount=0
+        do while (ncount < nstability2)
           call GOY_advance_timestep()
-          if (mod(count, stability_output)==0) then
+          if (mod(ncount, stability_output)==0) then
             if (l_altu) call calc_altu()
             call calc_eddy_time()
           endif
-          count=count+1
+          ncount=ncount+1
         enddo
 !
 ! more stabilization, with some data accumulation thrown in
 !
-        count=0
-        do while (count < nstability3)
+        ncount=0
+        do while (ncount < nstability3)
           call GOY_advance_timestep()
           if (.not. l_quenched) call update_vec(vec_split,sngl(deltG))
           if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
-          count=count+1
-          if (mod(count, stability_output)==0) then
-            print*, 'stabilizing, count=',count
+          ncount=ncount+1
+          if (mod(ncount, stability_output)==0) then
+            print*, 'stabilizing, ncount=',ncount
             if (l_altu) call calc_altu()
             call calc_eddy_time()
-            tstarting=deltG*count
+            tstarting=deltG*ncount
             call write_structure(tstarting=tstarting)
           endif
         enddo
@@ -583,7 +585,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_                          !dt_ passed by timestep
-      integer :: count, advances,ns, trip  !number of GOY timesteps to call
+      integer :: ncount, advances,ns, trip  !number of GOY timesteps to call
       logical, dimension(nshell) :: shell
       logical :: update_vecs
 !
@@ -591,21 +593,21 @@ module Special
 !
       if ((minshell /= -1) .and. (dt_ > eddy_time(minshell))) then
         print *, 'dt_=', dt_,' tturnover(minshell)=', eddy_time(minshell)
-        call fatal_error ('shell', 'Shell turn-over times unresolved (dt_>turnover)'
+        call fatal_error ('shell', 'Shell turn-over times unresolved (dt_>turnover)')
       endif
 !
 !  Number of advances to call
 !
-      count=floor(dt_/deltG)
-      if (count <= 5) then
-        print *, 'dt_/deltaG=',count
+      ncount=floor(dt_/deltG)
+      if (ncount <= 5) then
+        print *, 'dt_/deltaG=',ncount
         call fatal_error ('shell', 'Shell timestepping too long (decrease deltaG)')
       endif
 !
 !  Call advances
 !
       if (lroot) then
-        do advances=1,count
+        do advances=1,ncount
           if (.not. l_nogoy) &
               call GOY_advance_timestep()
           if (.not. l_quenched) call update_vec(vec_split, sngl(deltG))
@@ -615,7 +617,7 @@ module Special
 !
       call mpibcast_cmplx_arr_dbl(zu,nshell)
       call mpibcast_cmplx_arr_dbl(zgprev,nshell)
-      umod=zabs(zu); if (l_altu) call calc_altu()
+      umod=abs(zu); if (l_altu) call calc_altu()
       call calc_eddy_time()
       if (l_needspecialuu) then
         call mpibcast_real(vec_split, (/nshell,3/))
@@ -660,18 +662,18 @@ module Special
 !!        SHELL 1
       zt1 = exfac(1)*zu(1)
       zt2 = aval(1)*zu(2)*zu(3) + zforce
-      zgt = zi*dconjg(zt2)
+      zgt = zi*conjg(zt2)
       zt3 = 0.50d0*(3.0D0*zgt - zgprev(1))
       zu(1) = zt1 + exrat(1)*zt3
-      umod(1)=zabs(zu(1))
+      umod(1)=abs(zu(1))
       zgprev(1) = zgt
 !!        SHELL 2
       zt1 = exfac(2)*zu(2)
       zt2 = aval(2)*zu(3)*zu(4) + bval(2)*zu(1)*zu(3)
-      zgt = zi*dconjg(zt2)
+      zgt = zi*conjg(zt2)
       zt3 = 0.50d0*(3.0d0*zgt - zgprev(2))
       zu(2) = zt1 + exrat(2)*zt3
-      umod(2)=zabs(zu(2))
+      umod(2)=abs(zu(2))
       zgprev(2) = zgt
 !!        INNER (NSHELL-4) SHELLS
       do ns=3,nshell-2
@@ -679,28 +681,28 @@ module Special
         zt2 =  aval(ns)*zu(ns+1)*zu(ns+2) + &
                   bval(ns)*zu(ns-1)*zu(ns+1) + &
                   cval(ns)*zu(ns-1)*zu(ns-2)
-        zgt = zi*dconjg(zt2)
+        zgt = zi*conjg(zt2)
         zt3 = 0.50d0*(3.0D0*zgt - zgprev(ns))
         zu(ns) = zt1 + exrat(ns)*zt3
-        umod(ns)=zabs(zu(ns))
+        umod(ns)=abs(zu(ns))
         zgprev(ns) = zgt
       enddo
 !!        (NSHELL-1)TH SHELL
       zt1 = exfac(nshell-1)*zu(nshell-1)
       zt2 = bval(nshell-1)*zu(nshell-2)*zu(nshell) + &
                cval(nshell-1)*zu(nshell-2)*zu(nshell-3)
-      zgt = zi*dconjg(zt2)
+      zgt = zi*conjg(zt2)
       zt3 = 0.50d0*(3.0D0*zgt - zgprev(nshell-1))
       zu(nshell-1) = zt1 + exrat(nshell-1)*zt3
-      umod(nshell-1)=zabs(zu(nshell-1))
+      umod(nshell-1)=abs(zu(nshell-1))
       zgprev(nshell-1) = zgt
 !!        LAST SHELL
       zt1 = exfac(nshell)*zu(nshell)
       zt2 = cval(nshell)*zu(nshell-1)*zu(nshell-2)
-      zgt = zi*dconjg(zt2)
+      zgt = zi*conjg(zt2)
       zt3 = 0.50d0*(3.0D0*zgt - zgprev(nshell))
       zu(nshell) = zt1 + exrat(nshell)*zt3
-      umod(nshell)=zabs(zu(nshell))
+      umod(nshell)=abs(zu(nshell))
       zgprev(nshell) = zgt
 !
     endsubroutine GOY_advance_timestep
@@ -870,7 +872,7 @@ module Special
         else if (l_needspecialuu) then
           read(lun_input)   t_goy,zu, zgprev, kvec, uvec, uav, vec_split
         else
-          read(lun_input)   t_goy,zu, zgprev, uav
+   !      read(lun_input)   t_goy,zu, zgprev, uav
         endif
         close(lun_input)
       endif
