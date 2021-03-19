@@ -423,6 +423,9 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;
 ;  v1    : First variable to be plotted (Ex: 'u')
 ;  v2    : Second variable to be plotted (Ex: 'b') 
+;          The variables must be specified as the part of the spectrum file name behind "power" until the dot,
+;          e.g., if the file is data/poweruz_xy.dat, specify v1='uz_xy'
+;
 ;  all   : Plot all snapshots if /all is set, otherwise only last snapshot
 ;  wait  : Time to wait between each snapshot (if /all is set) 
 ;  k     : Returns the wavenumber vector
