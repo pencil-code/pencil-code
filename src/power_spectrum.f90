@@ -45,7 +45,7 @@ module power_spectrum
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
-  integer :: inz=0, n_segment_x=1, ndelx
+  integer :: inz=0, n_segment_x=1
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -166,10 +166,13 @@ module power_spectrum
       if (bxy_spec  ) n_spectra = n_spectra+1
       if (jxbxy_spec) n_spectra = n_spectra+1
 !
-      if (n_segment_x < 1) &
+      if (n_segment_x < 1) then
+        call warning('read_power_spectrum_run_pars', 'n_segment_x < 1 ignored')
+         n_segment_x=1
+      endif
+      if (n_segment_x > 1) &
         call fatal_error('read_power_spectrum_run_pars', &
-                         'n_segment_x < 1')
-      ndelx=nxgrid/n_segment_x
+                         'n_segment_x > 1 -- segmented FFT not yet operational')
 
     endsubroutine read_power_spectrum_run_pars
 !***********************************************************************
@@ -499,7 +502,7 @@ module power_spectrum
     intent(out) :: ai
 !
     real, dimension(nx) :: bb
-    integer :: m,n,ind,ivec,i,la,le,res
+    integer :: m,n,ind,ivec,i,la,le,ndelx
 !
     ivec = ioptest(ivecp,1)
 !
@@ -543,18 +546,14 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-    res=mod(nxgrid,n_segment_x)
-    la=0
-    do i=1,n_segment_x
-      le=la+1; la=la+ndelx
-      if (res>0) then
-        la=la+1
-        res=res-1
-      endif
+    ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
+    le=0
+    do i=1,n_segment_x+1
+      la=le+1
+      if (la>nxgrid) exit
+      le=min(le+ndelx,nxgrid)
       call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
     enddo
-!
-   return
 !
    endsubroutine comp_spectrum_xy
 !***********************************************************************
