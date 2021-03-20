@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
-! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
+! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlB(3); e3xa(3)
 ! PENCILS PROVIDED bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
@@ -91,7 +91,7 @@ module Magnetic
 !
   integer, parameter :: nresi_max=4
 !
-  real, dimension (ninit) :: amplaa=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: amplaa=0.0, amplaa2=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
   real, dimension (ninit) :: ampl_ax=0.0, ampl_ay=0.0, ampl_az=0.0
   real, dimension (ninit) :: kx_ax=0.0, kx_ay=0.0, kx_az=0.0
   real, dimension (ninit) :: ky_ax=0.0, ky_ay=0.0, ky_az=0.0
@@ -163,6 +163,7 @@ module Magnetic
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real
+  real :: r_inner=0.,r_outer=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
@@ -234,7 +235,7 @@ module Magnetic
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
       ABCaa, x0aa, y0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
-      initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
+      initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, &
       mu_r, mu_ext_pot, lB_ext_pot, &
@@ -254,7 +255,8 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
       lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
-      source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux
+      source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
+      r_inner, r_outer
 !
 ! Run parameters
 !
@@ -2079,6 +2081,8 @@ module Magnetic
         case ('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
         case ('sinwave-Ay-kz'); call sinwave_phase(f,iay,amplaa(j),kx_aa(j),ky_aa(j),kz_aa(j),phasez_aa(j))
         case ('dipole'); call dipole(f,iax,amplaa(j))
+        case ('dipole_general'); call dipole(f,iax,amplaa(j),r_inner,r_outer)
+        case ('switchback'); call switchback(f,iax,amplaa(j),amplaa2(j),r_inner,r_outer)
         case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))    !,ladd=.true.)
         case ('linear-zx')
           do n=n1,n2; do m=m1,m2
@@ -2481,7 +2485,7 @@ module Magnetic
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux.or. &
-          lresi_eta_aniso) &
+          lpenc_requested(i_curlB) .or. lresi_eta_aniso) &
           lpenc_requested(i_jj)=.true.
       if (battery_term/=0.0) then
         lpenc_requested(i_fpres)=.true.
@@ -2609,7 +2613,7 @@ module Magnetic
 !  Note that for the cylindrical case, according to lpencil_check,
 !  graddiva is not needed. We still need it for the lspherical_coords
 !  case, although we should check this.
-!  del2a now computed directly in all spherical so not reuired
+!  del2a now computed directly in all spherical so not required
 !      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
@@ -3540,8 +3544,9 @@ module Magnetic
       if (ldiamagnetism) call diamagnetism(p)
 !
 ! jj
+!
       if (lpenc_loc(i_jj)) then
-! consistency check...
+        p%curlB=p%jj
         p%jj=mu01*p%jj
 !
 !  Add external j-field.

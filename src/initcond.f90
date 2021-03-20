@@ -61,7 +61,7 @@ module Initcond
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
-  public :: rotblob, rotblob_yz, pre_stellar_cloud, dipole, dipole_tor
+  public :: rotblob, rotblob_yz, pre_stellar_cloud, dipole, dipole_tor, switchback
   public :: read_outside_scal_array, read_outside_vec_array
 !
   interface posnoise            ! Overload the `posnoise' function
@@ -6448,7 +6448,7 @@ module Initcond
 !
     endsubroutine rotblob_yz
 !***********************************************************************
-    subroutine dipole(f,ix,amp)
+    subroutine dipole(f,ix,amp,r_inner_,r_outer_)
 !
 !  initial vector potential for a
 !  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
@@ -6457,9 +6457,19 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ix
-      real :: amp, rpart, rr2, pom2
+      real :: amp, rpart, rr2, pom2, r_inner, r_outer
+      real, optional :: r_inner_, r_outer_
 
       integer :: l,m,n
+!
+      if (present(r_inner_).and.present(r_outer_)) then
+        r_inner=r_inner_
+        r_outer=r_outer_
+print*,'AXEL1: ', r_inner,r_outer
+      else
+        r_inner=xyz0(1)
+        r_outer=xyz1(1)
+      endif
 !
 !  Dipolar in the z direction in Cartesian coordinates
 !
@@ -6485,7 +6495,8 @@ module Initcond
         !  do l = l1,l2
         do m = 1,my
           do l = 1,mx
-            rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
+            !rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
+            rpart = amp*(r_inner-x(l))*(r_outer-x(l))
             f(l,m,:,ix:ix+1) = 0.
             !if (y(m1)==0.and.y(m2)==pi) then
               f(l,m,:,ix+2) = rpart*sin(y(m))
@@ -6497,6 +6508,67 @@ module Initcond
       endif
 !
     endsubroutine dipole
+!***********************************************************************
+    subroutine switchback(f,ix,amp,amp2,r_inner_,r_outer_)
+!
+!  initial vector potential for a
+!  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
+!
+!  18-jun-13/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, amp2, rpart, rr2, pom2, r_inner, r_outer
+      real, optional :: r_inner_, r_outer_
+
+      integer :: l,m,n
+!
+      if (present(r_inner_).and.present(r_outer_)) then
+        r_inner=r_inner_
+        r_outer=r_outer_
+print*,'AXEL1: ', r_inner,r_outer
+      else
+        r_inner=xyz0(1)
+        r_outer=xyz1(1)
+      endif
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Dipole in spherical coordinantes
+!
+      elseif (lspherical_coords) then
+        !do m = m1,m2
+        !  do l = l1,l2
+        do m = 1,my
+          do l = 1,mx
+            if (x(l)>=r_inner.and.x(l)<=r_outer) then
+              rpart=amp*sin(2.*pi*(x(l)-r_inner)/(r_outer-r_inner))
+            else
+              rpart=0.
+            endif
+print*,'AXEL',x(l),r_inner,r_outer,rpart
+            f(l,m,:,ix:ix+1)=0.
+            f(l,m,:,ix+2)=rpart+amp2*sin(y(m))
+          enddo
+        enddo
+      endif
+!
+    endsubroutine switchback
 !***********************************************************************
     subroutine dipole_tor(f,ix,amp,ladd)
 !
