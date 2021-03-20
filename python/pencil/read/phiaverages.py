@@ -107,7 +107,7 @@ class Averages(object):
             n_vars = len(variables)
 
             t, r_cyl, z_cyl, raw_data = self.__read_phiaver(datadir, variables,
-                                               aver_file_name, n_varsi,                                                       var_index, iter_list,
+                                               aver_file_name, n_vars,                                                       var_index, iter_list,
                                                precision=precision, l_h5=l_h5)
 
             # Add the raw data to self.
