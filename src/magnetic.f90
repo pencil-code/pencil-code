@@ -241,6 +241,7 @@ module Magnetic
       mu_r, mu_ext_pot, lB_ext_pot, &
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
+      initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,& 
