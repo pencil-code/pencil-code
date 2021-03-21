@@ -7376,11 +7376,13 @@ module Hydro
 !
 !  23-oct-18/pjk: added
 !
+      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_WORLD
+!
       real, dimension(nz,3), intent(out) :: uumz_prof
       real, dimension(nzgrid) :: tmp1z, tmp2z, tmp3z
       real :: var1,var2,var3
       logical :: exist
-      integer :: stat
+      integer :: stat, n
 !
 !  Read mean velocity (uumz) and write into an array.
 !  If file is not found in run directory, search under trim(directory).
@@ -7410,6 +7412,10 @@ module Hydro
           tmp2z(n)=var2
           tmp3z(n)=var3
         enddo
+!
+      call mpibcast_real_arr(tmp1z, nzgrid, comm=MPI_COMM_WORLD)
+      call mpibcast_real_arr(tmp2z, nzgrid, comm=MPI_COMM_WORLD)
+      call mpibcast_real_arr(tmp3z, nzgrid, comm=MPI_COMM_WORLD)
 !
 !  Assuming no ghost zones in uumz.dat.
 !
