@@ -31,7 +31,8 @@ module Special
 !
 ! constants
 !
-  complex :: zi=cmplx(0.,1.), zone=cmplx(1.,1.)
+! complex :: zi=cmplx(0.,1.), zone=cmplx(1.,1.)
+  complex :: zi=(0.,1.), zone=(1.,1.)
 !
 ! run parameters
 !
@@ -142,7 +143,7 @@ module Special
 ! set up k vector and evolution coefficients
 !
       do ns=1,nshell
-        kval(ns)=k_amp*(lambda**dfloat(ns))
+        kval(ns)=k_amp*(lambda**float(ns))
         ksquare(ns)=kval(ns)*kval(ns)
         exfac(ns) = exp(-visc*ksquare(ns)*deltG)
         exrat(ns) = (1.0d0 - exfac(ns))/(visc*ksquare(ns))
@@ -275,9 +276,9 @@ module Special
    !    call initialize_k_vectors()
         do ns=1,nshell
           umod(ns)=u_amp*kval(ns)**noneoverthree
-          zu(ns)=dcmplx(umod(ns)*dcos(randomd(ns)), &
+          zu(ns)=cmplx(umod(ns)*dcos(randomd(ns)), &
               umod(ns)*dsin(randomd(ns)))
-          zgprev=dcmplx(0.,0.)
+          zgprev=cmplx(0.,0.)
         enddo
         umod=abs(zu)
         if (l_altu) call calc_altu()
@@ -905,9 +906,9 @@ module Special
         open(UNIT=lun_input,FILE=trim(filename),&
             POSITION='append',FORM='unformatted')
         if (.not. l_quenched) then
-          write(UNIT=lun_input), t_goy, sf(1,:), phase(:),vecdot(:), eddy_time(:)
+          write(UNIT=lun_input) t_goy, sf(1,:), phase(:),vecdot(:), eddy_time(:)
         else
-          write(UNIT=lun_input), t_goy, sf(1,:), phase(:)
+          write(UNIT=lun_input) t_goy, sf(1,:), phase(:)
         endif
         close(UNIT=lun_input)
         if (nord > 1) then
@@ -915,7 +916,7 @@ module Special
             call get_structure_filenames(filename,iord)
             open(UNIT=lun_input,FILE=trim(filename),&
                 POSITION='append',FORM='unformatted')
-            write(UNIT=lun_input), t_goy, sf(iord,:)
+            write(UNIT=lun_input) t_goy, sf(iord,:)
             close(UNIT=lun_input)
           enddo
         endif
@@ -957,7 +958,7 @@ module Special
           enddo
         enddo
 !
-        write(UNIT=lun_input), t_goy, vel_plane
+        write(UNIT=lun_input) t_goy, vel_plane
         close(UNIT=lun_input)
       endif
 !
