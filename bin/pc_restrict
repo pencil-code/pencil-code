@@ -30,12 +30,12 @@ fi
 srcdir=src
 datadir=data
 
-nprocx=`grep 'nprocx *=' $srcdir/cparam.local | sed 's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'`
-nprocy=`grep 'nprocy *=' $srcdir/cparam.local | sed 's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'`
-nprocz=`grep 'nprocz *=' $srcdir/cparam.local | sed 's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'`
+nprocx=`grep '^[^!]*nprocx *=' $srcdir/cparam.local | sed 's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'`
+nprocy=`grep '^[^!]*nprocy *=' $srcdir/cparam.local | sed 's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'`
+nprocz=`grep '^[^!]*nprocz *=' $srcdir/cparam.local | sed 's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'`
 nprocxy=$(($nprocx*$nprocy))
 
-nzgrid=`grep 'nzgrid *=' $srcdir/cparam.local | sed 's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'`
+nzgrid=`grep '^[^!]*nzgrid *=' $srcdir/cparam.local | sed 's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'`
 nz=$(($nzgrid/$nprocz))
 zstart=`grep -i '^[^0-9A-Za-z_]*XYZ0 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
 zend=`grep -i '^[^0-9A-Za-z_]*XYZ1 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
@@ -105,7 +105,7 @@ if (($izshift != 0)); then
 fi
 
 cd $srcdir
-sed -i -e's/\(nprocz *= *\)[1-9][0-9]*/\1'$nprocz_new'/' \
-       -e's/\(nzgrid *= *\)[1-9][0-9]*/\1'$nzgrid_new'/' \
-       -e's/\(ncpus *= *\)[1-9][0-9]*/\1'$ncpus_new'/' cparam.local 
+sed -i -e's/\(^[^!]*nprocz *= *\)[1-9][0-9]*/\1'$nprocz_new'/' \
+       -e's/\(^[^!]*nzgrid *= *\)[1-9][0-9]*/\1'$nzgrid_new'/' \
+       -e's/\(^[^!]*ncpus *= *\)[1-9][0-9]*/\1'$ncpus_new'/' cparam.local 
 
