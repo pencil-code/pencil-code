@@ -1,0 +1,16 @@
+###### Meeting 24 Feb 21 Summary #######
+
+Topics:
+* Python <-> IDL descriptions
+We added this to the wiki: 
+https://github.com/pencil-code/pencil-code/wiki/Pencil-IDL------Python-guide
+Please contribute!
+
+* Documentation: sphinx creation of the documentation
+We discussed where to post the documentation and agreed on using readthedocs.org integrated with github.
+
+* npfile.py is used in animate_slices and appears to be deprecated in scipy, Simon will check this issue.
+
+* get_sim: Wolfgang is trying to get rid of it
+
+* Tutorials: Alberto will add tutorials related with gravitational waves.

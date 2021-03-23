@@ -1,0 +1,8 @@
+###### Meeting 14 Jan 21 Summary #######
+
+Topics:
+* Replace package names to non-conflicting  ones?
+* Documentation: use sphinx
+* Imports: import in the functions or in the header
+* Cyclic dependence structure in different imports.
+* Newsletter
