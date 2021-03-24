@@ -13525,6 +13525,19 @@ these configuration files, before you apply them in an active simulation run.
                  each step, but not evolved mathematically) to
                  \file{var.dat} and \file{VAR} files after the evolved
                  quantities. \\
+   %IL
+   \var{dspec}[value] & time unit to comput the power spectra. See 
+subsect.~\ref{power-spectrum} \\
+   \var{oned}[T] & \\
+   \var{onedall}[F] &  if set \code{T}, the fourier spectra is computed in all 
+directions. \\
+   \var{vel_spec}[F] & if set \code{T}, computes the velocity power spectra. \\
+   \var{ou_spec}[F] & if set \code{T}, computes the power and helicity spectra. 
+\\
+   \var{ab_spec}[F] & if set \code{T}, computers the magnetic power spectra.\\
+   \var{xy_spec}[string] &  if set, computes extra power spectra files. 
+For instance a value of 'uz' will generate the file poweruz_xy.dat, with 
+information on wavenumbers and z-positions.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
@@ -13894,7 +13907,34 @@ these configuration files, before you apply them in an active simulation run.
   \multicolumn{2}{c}{Namelist \name{particles_chem_run_pars}} \\
 \midrule
   \var{lthiele [T]}
-               & Modeling of particle porosity by application of Thiele modulus \\
+               & Modeling of particle porosity by application of Thiele modulus 
+\\
+%IL
+\midrule
+  \multicolumn{2}{c}{Namelist \name{power_spectrum_run_pars}} \\
+\midrule
+
+\var{inz} [0] & Compute the power_x at a given z. \\
+\var{ckxrange} [''] & Define the $k_x$ range. \\
+\var{ckyrange} [''] &  Define the $k_y$ range.\\
+\var{czrange} [''] & Define the $k_z$ range. \\
+\var{lintegrate_z} [T] & Compute the z-integrated power spectra. \\
+\var{lintegrate_shell} [T] & Compute the shell-integrated power spectra. \\
+\var{lcomplex} [F] &  \\
+\var{lcylindrical_spectra} [F] & Compute the cylindrical power spectra.  \\
+\var{n_segment_x} [1] &  \\
+\var{lhalf_factor_in_GW} [F] & if \code[F], the total(S)$=$gg2m; if \code[T], 
+total(S)$=\half$gg2m. \\
+\var{pdf_max} [30.] &  Maximum value of the pdf. \\
+\var{pdf_min} [-30.] &  Minimum value of the pdf.\\
+\var{pdf_min_logscale} [3.0] &  Miniimum value of the logarithmic pdf.\\
+\var{pdf_max_logscale} [-3.0] &  Maximum value of the logarithmic pdf.\\
+\var{lread_gauss_quadrature} [F] &  if  \code[T], generates polar coordinates 
+in gauss-legendre quadrature; need to provide file gauss_legendre_quadrature.dat
+\\
+\var{legendre_lmax} [1] & Maximum number of Legendre coefficients in the polar 
+spectrum. \\
+
 \bottomrule
 \end{longtable}
 % ---------------------------------------------------------------------- %
