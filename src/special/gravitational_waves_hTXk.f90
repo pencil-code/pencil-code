@@ -100,6 +100,7 @@ module Special
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
+  logical :: linflation=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -111,7 +112,7 @@ module Special
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
-    lggTX_as_aux, lhhTX_as_aux
+    lggTX_as_aux, lhhTX_as_aux, linflation
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -120,7 +121,7 @@ module Special
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     tau_stress_kick, fac_stress_kick, delk, &
-    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
+    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1040,9 +1041,10 @@ module Special
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: cosot, sinot, om12, om, om1
+      real :: cosot, sinot, om12, om, om1, om2
       intent(inout) :: f
       character (len=2) :: label
+      logical :: lsign_om2
 !
 !  Check that the relevant arrays are registered
 !
@@ -1121,10 +1123,17 @@ module Special
 !  compute omega (but assume c=1), omega*t, etc.
 !
               one_over_k2=1./ksqr
-              if (delk/=0.) then
-                om=sqrt(ksqr+delk**2)
+              if (linflation) then
+                om2=4.*ksqr-2./t**2
+                lsign_om2=(om2 >= 0.)
+                om=sqrt(abs(om2))
               else
-                om=sqrt(ksqr)
+                if (delk/=0.) then
+                  om=sqrt(ksqr+delk**2)
+                else
+                  om=sqrt(ksqr)
+                endif
+                lsign_om2=.true.
               endif
 !
               if(abs(k1)<abs(k2)) then
@@ -1234,8 +1243,16 @@ module Special
 
               om1=1./om
               om12=om1**2
-              cosot=cos(om*dt)
-              sinot=sin(om*dt)
+!
+!  check whether om^2 is positive
+!
+              if (lsign_om2) then
+                cosot=cos(om*dt)
+                sinot=sin(om*dt)
+              else
+                cosot=cosh(om*dt)
+                sinot=sinh(om*dt)
+              endif
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
