@@ -1,0 +1,111 @@
+#!/bin/bash
+##
+##  $Id$
+##
+#  Creates a new run directory for continuation of an existing run, but with
+#  restricted z extent, according to the range of z processors provided.
+#  Invokes pc_newrun. cparam.local, run.in and param.nml are modified to render the
+#  new run compile-and-run ready. start.x must not be executed.
+#
+
+if (($# < 3)); then
+  echo 'Usage: pc_restrict <from-z-proc> <to-z-proc> <new run directory>'
+  exit
+fi
+
+kprocz_from=$1
+kprocz_to=$2
+dest_dir=$3
+
+re='^[0-9]+$'
+if ! [[ $kprocz_from =~ $re ]] ; then
+   echo "Error: first parameter needs to be an integer!"
+   exit
+fi
+if ! [[ $kprocz_to =~ $re ]] ; then
+   echo "Error: second parameter needs to be integer!"
+   exit
+fi
+
+srcdir=src
+datadir=data
+
+nprocx=`grep '^[^!]*nprocx *=' $srcdir/cparam.local | sed 's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'`
+nprocy=`grep '^[^!]*nprocy *=' $srcdir/cparam.local | sed 's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'`
+nprocz=`grep '^[^!]*nprocz *=' $srcdir/cparam.local | sed 's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'`
+nprocxy=$(($nprocx*$nprocy))
+
+nzgrid=`grep '^[^!]*nzgrid *=' $srcdir/cparam.local | sed 's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'`
+nz=$(($nzgrid/$nprocz))
+zstart=`grep -i '^[^0-9A-Za-z_]*XYZ0 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
+zend=`grep -i '^[^0-9A-Za-z_]*XYZ1 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
+zext=`echo $zend-$zstart | bc -l`
+
+pc_newrun $dest_dir
+
+#
+# Functions.
+#
+find_proc(){
+  return $(($3 * $nprocxy + $2 * $nprocx + $1))
+}
+
+edit_iz(){
+  iz=`grep '^[^!]*[^_0-9a-zA-Z!]*iz'$1' *=' run.in | sed -e's/^.*[^_0-9a-zA-Z]*iz'$1' *= *\([1-9][0-9]*\).*$/\1/'`
+  if (( $iz -ne '')); then
+    sed -i -e's/\(^[^!]*[^_0-9a-zA-Z!]*iz'$1' *= *\)[1-9][0-9]*/\1'$(($iz-$izshift))'/' run.in
+  fi
+}
+#
+
+find_proc 0 0 $kprocz_from
+iproc=$?
+
+for k in `seq $kprocz_from $kprocz_to`;
+  do
+  for j in `seq 0 $(($nprocy-1))`;
+    do
+      for i in `seq 0 $(($nprocx-1))`;
+      do
+        k_new=$(($k-$kprocz_from))
+        find_proc $i $j $k_new
+        iproc_new=$?
+        #echo copy from $iproc to $iproc_new
+        mkdir ../$dest_dir/$datadir/proc$iproc_new
+        cp -r $datadir/proc$iproc/var.dat ../$dest_dir/$datadir/proc$iproc_new
+        cp -r $datadir/proc$iproc/global.dat ../$dest_dir/$datadir/proc$iproc_new >& /dev/null
+        iproc=$(($iproc+1))
+      done    
+    done    
+  done    
+
+nprocz_new=$(($kprocz_to - $kprocz_from + 1))
+ncpus_new=$(($nprocxy*$nprocz_new))
+nzgrid_new=$((($nzgrid*$nprocz_new)/$nprocz))
+izshift=$(($kprocz_from*nz))
+
+zstart_new=`echo $kprocz_from*$zext/$nprocz | bc -l`
+zend_new=`echo $zstart_new + $nprocz_new*$zext/$nprocz | bc -l`
+zext_new=`echo $zend_new-$zstart_new | bc -l`
+
+sed -e's/^\( *XYZ0[^,][^,]*,[^,][^,]*,\)[^,][^,]*\(.* *\)$/\1'$zstart_new'\2/' \
+    -e's/^\( *XYZ1[^,][^,]*,[^,][^,]*,\)[^,][^,]*\(.* *\)$/\1'$zend_new'\2/' \
+    -e's/^\( *LXYZ[^,][^,]*,[^,][^,]*,\)[^,][^,]*\(.* *\)$/\1'$zext_new'\2/' $datadir/param.nml > ../$dest_dir/$datadir/param.nml
+
+cd ../$dest_dir
+sed -i -e'/&run_pars/ a \  luse_oldgrid=F,' run.in
+
+if (($izshift != 0)); then 
+
+  edit_iz
+  edit_iz 2
+  edit_iz 3
+  edit_iz 4
+
+fi
+
+cd $srcdir
+sed -i -e's/\(^[^!]*nprocz *= *\)[1-9][0-9]*/\1'$nprocz_new'/' \
+       -e's/\(^[^!]*nzgrid *= *\)[1-9][0-9]*/\1'$nzgrid_new'/' \
+       -e's/\(^[^!]*ncpus *= *\)[1-9][0-9]*/\1'$ncpus_new'/' cparam.local 
+
