@@ -31,7 +31,7 @@
 !  Special equation                                | dspecial_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -70,7 +70,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module gravitational_waves_hTXk
 !
   use Cparam
   use Cdata
@@ -109,13 +109,13 @@ module Special
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
 !
 ! input parameters
-  namelist /special_init_pars/ &
+  namelist /gravitational_waves_hTXk_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lggTX_as_aux, lhhTX_as_aux, linflation
 !
 ! run parameters
-  namelist /special_run_pars/ &
+  namelist /gravitational_waves_hTXk_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
@@ -629,7 +629,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -637,7 +637,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=gravitational_waves_hTXk_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -647,7 +647,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gravitational_waves_hTXk_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -655,7 +655,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=gravitational_waves_hTXk_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1041,7 +1041,7 @@ module Special
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: cosot, sinot, om12, om, om1, om2
+      real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       intent(inout) :: f
       character (len=2) :: label
       logical :: lsign_om2
@@ -1244,14 +1244,18 @@ module Special
               om1=1./om
               om12=om1**2
 !
-!  check whether om^2 is positive
+!  check whether om^2 is positive. If om^2 is positive, we have the standard
+!  rotation matrix, whose third element is negative (sinot_minus), but
+!  if om^2 is negative, we have cosh and sinh, always with a plus sign.
 !
               if (lsign_om2) then
                 cosot=cos(om*dt)
                 sinot=sin(om*dt)
+                sinot_minus=-sinot
               else
                 cosot=cosh(om*dt)
                 sinot=sinh(om*dt)
+                sinot_minus=+sinot
               endif
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
@@ -1262,8 +1266,8 @@ module Special
               coefBim=ggTim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om-coefAre*om*sinot
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om-coefAim*om*sinot
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
 !
 !  Debug output
 !
@@ -1281,8 +1285,8 @@ module Special
               coefBim=ggXim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om-coefAre*om*sinot
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om-coefAim*om*sinot
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om+coefAre*om*sinot_minus
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om+coefAim*om*sinot_minus
 
             else
 !
@@ -1484,6 +1488,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../gravitational_waves_hTXk_dummies.inc'
 !********************************************************************
-endmodule Special
+endmodule gravitational_waves_hTXk
