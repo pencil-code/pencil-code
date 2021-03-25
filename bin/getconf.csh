@@ -920,6 +920,28 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if (($hn =~ tetralith*) && ($USER =~ x_axebr)) then
+  echo "Tetralith, Sweden"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  echo 'loading modules ..'
+  module load intel/12.1.4
+  module load impi/4.0.3.008
+  echo '..done'
+  set mpirunops = ''
+  set mpirun = 'mpirun'
+  set npops = "-n $ncpus"
+  set local_disc = 1
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
 else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma || $USER =~ mvaisala || $USER =~ cdstars1)) then
   echo "Taito - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
