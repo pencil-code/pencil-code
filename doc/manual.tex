@@ -13528,16 +13528,16 @@ these configuration files, before you apply them in an active simulation run.
    %IL
    \var{dspec}[value] & time unit to comput the power spectra. See 
 subsect.~\ref{power-spectrum} \\
-   \var{oned}[T] & \\
-   \var{onedall}[F] &  if set \code{T}, the fourier spectra is computed in all 
+   \var{oned}[T] & if set \code{T}, the Fourier spectra is computed only in the $x$ direction. \\
+   \var{onedall}[F] &  if set \code{T}, the Fourier spectra is computed in all 
 directions. \\
    \var{vel_spec}[F] & if set \code{T}, computes the velocity power spectra. \\
    \var{ou_spec}[F] & if set \code{T}, computes the power and helicity spectra. 
 \\
    \var{ab_spec}[F] & if set \code{T}, computers the magnetic power spectra.\\
    \var{xy_spec}[string] &  if set, computes extra power spectra files. 
-For instance a value of 'uz' will generate the file poweruz_xy.dat, with 
-information on wavenumbers and z-positions.\\
+For instance a value of 'uz' will generate the file \file{poweruz_xy.dat}, with 
+information on wavenumbers and $z$ positions.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
@@ -13920,9 +13920,9 @@ information on wavenumbers and z-positions.\\
 \var{czrange} [''] & Define the $k_z$ range. \\
 \var{lintegrate_z} [T] & Compute the z-integrated power spectra. \\
 \var{lintegrate_shell} [T] & Compute the shell-integrated power spectra. \\
-\var{lcomplex} [F] &  \\
+\var{lcomplex} [F] & outputs the complex Fourier transform. \\
 \var{lcylindrical_spectra} [F] & Compute the cylindrical power spectra.  \\
-\var{n_segment_x} [1] &  \\
+\var{n_segment_x} [1] & not yet operational! $\to$ \code{n_segment_x always 1} \\
 \var{lhalf_factor_in_GW} [F] & if \code[F], the total(S)$=$gg2m; if \code[T], 
 total(S)$=\half$gg2m. \\
 \var{pdf_max} [30.] &  Maximum value of the pdf. \\

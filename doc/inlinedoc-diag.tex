@@ -20,6 +20,7 @@
 %%   cosmicray_current.f90
 %%   density_stratified.f90
 %%   detonate.f90
+%%   disp_current.f90
 %%   dustdensity.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
@@ -813,6 +814,11 @@
   \var{detn}      & Number of detonated sites (summed over time steps between adjacent outputs) \\
   \var{dettot}    & Total energy input (summed over time steps between adjacent outputs) \\
 \midrule
+  \multicolumn{2}{c}{Module \file{disp_current.f90}} \\
+\midrule
+  \var{EErms}     & $\left<\Ev^2\right>^{1/2}$ \\
+  \var{EEmax}     & $\max(|\Ev|)$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
   \var{KKm}       & $\sum {\cal T}_k^{\rm coag}$ \\
@@ -905,6 +911,7 @@
   \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
   \var{EEGW}      & $\bra{g_T^2+g_X^2}\,c^2/(32\pi G)$ \\
   \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{Stgm}      & $\bra{S_Tg_T+S_Xg_X}$ \\
   \var{hhT2m}     & $\bra{h_T^2}$ \\
   \var{hhX2m}     & $\bra{h_X^2}$ \\
   \var{hhTXm}     & $\bra{h_T h_X}$ \\
@@ -1458,6 +1465,7 @@
                     \quad(mean thermal
                     [=internal] energy) \\
   \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
+  \var{csm}       & $\left<c_{\rm s}\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{particles_caustics.f90}} \\
 \midrule
