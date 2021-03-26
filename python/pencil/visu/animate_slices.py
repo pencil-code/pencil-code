@@ -4,7 +4,7 @@ import os
 from .. import read
 import numpy as np
 import pylab as plt
-from .. io import npfile
+from scipy.io import FortranFile
 
 def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='native',
                 tmin=0.,tmax=1.e38,wait=0.,amin=0.,amax=1.,transform='',oldfile=False):
@@ -55,7 +55,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
         vsize = dim.nz
     plane = np.zeros((vsize,hsize),dtype=precision)
 
-    infile = npfile(filename,endian=format)
+    infile = FortranFile(filename)
 
     ax = plt.axes()
     ax.set_xlabel('x')
@@ -72,7 +72,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
     islice = 0
     while 1:
         try:
-            raw_data = infile.fort_read(precision)
+            raw_data = infile.read_record(dtype=precision)
         except ValueError:
             break
         except TypeError:
