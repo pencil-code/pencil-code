@@ -9,12 +9,12 @@ Versatile interactive plotting routine for slices and tomography.
 
 
 def animate_interactive(data, t=None, dim_order=(0, 1, 2),
-                        fps=10.0, title=None, xlabel='x', ylabel='y',
+                        fps=10.0, title=None, x_label='x', y_label='y',
                         font_size=24, color_bar=0, colorbar_label=None,
                         sloppy=True, fancy=False,
                         range_min=None, range_max=None, extent=[-1, 1, -1, 1],
                         shade=False, azdeg=0, altdeg=65,
-                        arrowsX=None, arrowsY=None, arrows_resX=10, arrows_resY=10,
+                        arrows_x=None, arrows_y=None, arrows_res_x=10, arrows_res_y=10,
                         arrows_pivot='mid', arrows_width=0.002, arrows_scale=5,
                         arrows_color='black', plot_arrows_grid=False,
                         movie_file=None, bitrate=1800, keep_images=False,
@@ -26,12 +26,12 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     call signature::
 
     animate_interactive(data, t=None, dim_order=(0, 1, 2),
-                        fps=10.0, title=None, xlabel='x', ylabel='y',
+                        fps=10.0, title=None, x_label='x', y_label='y',
                         font_size=24, color_bar=0, colorbar_label=None,
                         sloppy=True, fancy=False,
                         range_min=None, range_max=None, extent=[-1, 1, -1, 1],
                         shade=False, azdeg=0, altdeg=65,
-                        arrowsX=None, arrowsY=None, arrows_resX=10, arrows_resY=10,
+                        arrows_x=None, arrows_y=None, arrows_res_x=10, arrows_res_y=10,
                         arrows_pivot='mid', arrows_width=0.002, arrows_scale=5,
                         arrows_color='black', plot_arrows_grid=False,
                         movie_file=None, bitrate=1800, keep_images=False,
@@ -54,10 +54,10 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     *title*:
       Title of the plot.
 
-    *xlabel*:
+    *x_label*:
       Label of the x-axis.
 
-    *ylabel*:
+    *y_label*:
       Label of the y-axis.
 
     *font_size*:
@@ -94,14 +94,14 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     *azdeg*, *altdeg*:
       Azimuth and altitude of the light source for the shading.
 
-    *arrowsX*:
+    *arrows_x*:
       Data containing the x-component of the arrows.
 
-    *arrowsY*:
+    *arrows_y*:
       Data containing the y-component of the arrows.
 
-    *arrows_resXY*:
-      Plot every arrows_resXY arrow in x and y.
+    *arrows_res_xY*:
+      Plot every arrows_res_xY arrow in x and y.
 
     *arrows_pivot*: [ 'tail' | 'middle' | 'tip' ]
       The part of the arrow that is used as pivot point.
@@ -182,8 +182,8 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
 
         # Update the arrows data.
         if plot_arrows:
-            arrows.set_UVC(U=arrowsX[time_step, ::arrows_resX, ::arrows_resY],
-                           V=arrowsY[time_step, ::arrows_resX, ::arrows_resY])
+            arrows.set_UVC(U=arrows_x[time_step, ::arrows_res_x, ::arrows_res_y],
+                           V=arrows_y[time_step, ::arrows_res_x, ::arrows_res_y])
 
         if not sloppy or (not movie_file is None):
             manager.canvas.draw()
@@ -272,27 +272,27 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     del(unordered_data)
 
     # Check if arrows should be plotted.
-    if not(arrowsX is None) and not(arrowsY is None):
-        if (isinstance(arrowsX, np.ndarray) and isinstance(arrowsY, np.ndarray)):
-            if arrowsX.ndim == 3:
+    if not(arrows_x is None) and not(arrows_y is None):
+        if (isinstance(arrows_x, np.ndarray) and isinstance(arrows_y, np.ndarray)):
+            if arrows_x.ndim == 3:
                 # Transpose the data according to dim_order.
-                unordered_data = arrowsX
-                arrowsX = np.transpose(unordered_data, dim_order)
+                unordered_data = arrows_x
+                arrows_x = np.transpose(unordered_data, dim_order)
                 del(unordered_data)
-            if arrowsY.ndim == 3:
+            if arrows_y.ndim == 3:
                 # Transpose the data according to dim_order.
-                unordered_data = arrowsY
-                arrowsY = np.transpose(unordered_data, dim_order)
+                unordered_data = arrows_y
+                arrows_y = np.transpose(unordered_data, dim_order)
                 unordered_data = []
 
                 # Check if the dimensions of the arrow arrays match each other.
-                if arrowsX.shape != arrowsY.shape:
+                if arrows_x.shape != arrows_y.shape:
                     print("Error: dimensions of arrowX do not match with dimensions of arrowY.")
                     return -1
                 else:
                     plot_arrows = True
         else:
-            print("Warning: arrowsX and/or arrowsY are of invalid type.")
+            print("Warning: arrows_x and/or arrows_y are of invalid type.")
 
     # Check if time array has the right length.
     n_times = len(t)
@@ -300,7 +300,7 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
         print("Error: length of time array does not match length of data array.")
         return -1
     if plot_arrows:
-        if (n_times != arrowsX.shape[0]) or (n_times != arrowsY.shape[0]):
+        if (n_times != arrows_x.shape[0]) or (n_times != arrows_y.shape[0]):
             print("error: length of time array does not match length of arrows array.")
             return -1
 
@@ -335,8 +335,8 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
 
     # Set up canvas of the plot.
     axes.set_title(title, fontsize=font_size)
-    axes.set_xlabel(xlabel, fontsize=font_size)
-    axes.set_ylabel(ylabel, fontsize=font_size)
+    axes.set_xlabel(x_label, fontsize=font_size)
+    axes.set_ylabel(y_label, fontsize=font_size)
     plt.xticks(fontsize=0.5*font_size)
     plt.yticks(fontsize=0.5*font_size)
     if shade:
@@ -376,12 +376,12 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     if plot_arrows:
         # Prepare the mesh grid where the arrows will be drawn.
         arrow_grid = np.meshgrid(np.arange(extent[0], extent[1],
-                                           float(extent[1]-extent[0])*arrows_resX/(data.shape[2]-1)),
+                                           float(extent[1]-extent[0])*arrows_res_x/(data.shape[2]-1)),
                                  np.arange(extent[2], extent[3],
-                                           float(extent[3]-extent[2])*arrows_resY/(data.shape[1]-1)))
+                                           float(extent[3]-extent[2])*arrows_res_y/(data.shape[1]-1)))
         arrows = axes.quiver(arrow_grid[0], arrow_grid[1],
-                             arrowsX[0, ::arrows_resX, ::arrows_resY],
-                             arrowsY[0, ::arrows_resX, ::arrows_resY],
+                             arrows_x[0, ::arrows_res_x, ::arrows_res_y],
+                             arrows_y[0, ::arrows_res_x, ::arrows_res_y],
                              units='width', pivot=arrows_pivot, width=arrows_width,
                              scale=arrows_scale, color=arrows_color)
         # Plot the grid for the arrows.
