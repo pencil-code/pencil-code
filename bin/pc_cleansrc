@@ -73,7 +73,7 @@ prune_dir()
   src_dir="src"
 
   if [ -d $src_dir ] || [ `ls -1 $clean_links $clean_files 2>/dev/null | wc -l` -ge 1 ]; then
-    if [ "$this" = '.' ]; then
+    if [ "$this" = '.' ] || [ -z "$this" ] ; then
       echo "Cleaning up run directory..."
     else
       echo "Cleaning up run directory: '$this'"
@@ -81,21 +81,25 @@ prune_dir()
     delete_links "$clean_links"
     delete_files "$clean_files"
     clean_src "$src_dir" "$clean_objects"
-    echo "...done."
   fi
 }
 
 enter_subdirs()
 {
-  local start=$1
+  local path=$1
+  local start=$2
   if [ "$start" != "." ]; then
     cd "$start"
   fi
+  if [ ! -z "$path" ]; then
+    path+="/"
+  fi
   for dir in *; do
-    if [ -d "$dir" ]; then
-      enter_subdirs "$dir"
+    if [ -d "$dir" ] && [ "$dir" != "src" ]; then
+      enter_subdirs "$path$dir" "$dir"
     fi
   done
+  prune_dir "$path"
   if [ "$start" != "." ]; then
     cd ..
   fi
@@ -113,9 +117,10 @@ fi
 
 if [ -d "$start_dir" ]; then
   if [ "$1" = "-R" ]; then
-    enter_subdirs "$start_dir"
+    enter_subdirs "" "$start_dir"
+  else
+    prune_dir "$start_dir"
   fi
-  prune_dir "$start_dir"
 else
   echo "No such directory: '$start_dir'"
 fi
