@@ -58,7 +58,7 @@ clean_src()
   for test in $dir/*
   do
     if [ -d $test ]; then
-      clean_dir "$test" "$objects"
+      clean_src "$test" "$objects"
     fi
   done
   rmdir $dir >/dev/null 2>&1
