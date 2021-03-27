@@ -64,15 +64,59 @@ clean_src()
   rmdir $dir >/dev/null 2>&1
 }
 
-clean_objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime tmp"
-clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
-clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision"
-src_dir="src"
+prune_dir()
+{
+  this=$1
+  clean_objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime tmp"
+  clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
+  clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision"
+  src_dir="src"
 
-echo "Cleaning up run directory..."
-delete_links "$clean_links"
-delete_files "$clean_files"
-clean_src "$src_dir" "$clean_objects"
-echo "...done."
+  if [ -d $src_dir ] || [ `ls -1 $clean_links $clean_files 2>/dev/null | wc -l` -ge 1 ]; then
+    if [ "$this" = '.' ]; then
+      echo "Cleaning up run directory..."
+    else
+      echo "Cleaning up run directory: '$this'"
+    fi
+    delete_links "$clean_links"
+    delete_files "$clean_files"
+    clean_src "$src_dir" "$clean_objects"
+    echo "...done."
+  fi
+}
 
+enter_subdirs()
+{
+  local start=$1
+  if [ "$start" != "." ]; then
+    cd "$start"
+  fi
+  for dir in *; do
+    if [ -d "$dir" ]; then
+      enter_subdirs "$dir"
+    fi
+  done
+  if [ "$start" != "." ]; then
+    cd ..
+  fi
+}
+
+if [ -z "$2" ]; then
+  if [ -z "$1" ] || [ "$1" = "-R" ]; then
+    start_dir="."
+  else
+    start_dir="$1"
+  fi
+else
+  start_dir="$2"
+fi
+
+if [ -d "$start_dir" ]; then
+  if [ "$1" = "-R" ]; then
+    enter_subdirs "$start_dir"
+  fi
+  prune_dir "$start_dir"
+else
+  echo "No such directory: '$start_dir'"
+fi
 
