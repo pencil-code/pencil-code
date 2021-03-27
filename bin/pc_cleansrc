@@ -33,7 +33,7 @@ delete_files()
   done
 }
 
-clean_dir()
+clean_src()
 {
   dir=$1
   objects=$2
@@ -72,7 +72,7 @@ src_dir="src"
 echo "Cleaning up run directory..."
 delete_links "$clean_links"
 delete_files "$clean_files"
-clean_dir "$src_dir" "$clean_objects"
+clean_src "$src_dir" "$clean_objects"
 echo "...done."
 
 
