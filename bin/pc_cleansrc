@@ -90,6 +90,9 @@ enter_subdirs()
   local start=$2
   if [ "$start" != "." ]; then
     cd "$start"
+    if [ -z "$path" ]; then
+      path="$start"
+    fi
   fi
   if [ ! -z "$path" ]; then
     path+="/"
