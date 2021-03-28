@@ -100,7 +100,7 @@ module gravitational_waves_hTXk
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
-  logical :: linflation=.false.
+  logical :: linflation=.false., lreal_space_hTX_as_aux=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -120,7 +120,7 @@ module gravitational_waves_hTXk
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    tau_stress_kick, fac_stress_kick, delk, &
+    tau_stress_kick, fac_stress_kick, delk, lreal_space_hTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -174,6 +174,7 @@ module gravitational_waves_hTXk
   integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
 !
+  integer :: ihhT_realspace, ihhX_realspace
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
@@ -224,6 +225,11 @@ module gravitational_waves_hTXk
         call farray_register_auxiliary('StXim',iStressXim)
         call farray_register_auxiliary('Str',iStress_ij,array=6)
         !f(:,:,:,iStressT:iStressXim)=0.
+      endif
+!
+      if (lreal_space_hTX_as_aux) then
+        call farray_register_auxiliary('hhT_realspace',ihhT_realspace)
+        call farray_register_auxiliary('hhX_realspace',ihhX_realspace)
       endif
 !
     endsubroutine register_special
@@ -1320,8 +1326,16 @@ module gravitational_waves_hTXk
 !
 !  back to real space
 !
-!--   call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
-!--   call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+      if (lreal_space_hTX_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,ihhX  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,ihhTim)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,ihhXim)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,ihhT_realspace)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,ihhX_realspace)=S_X_re
+      endif
 !
     endsubroutine compute_gT_and_gX_from_gij
 !***********************************************************************
