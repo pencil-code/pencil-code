@@ -9,8 +9,8 @@
   dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T
   !cdt=.7
   !dt=.02  !(cCFL=0.05)
-  lpencil_check=F
-  lpencil_check_small=T
+  !lpencil_check=F
+  !lpencil_check_small=T
 /
 &eos_run_pars
 /
@@ -20,6 +20,7 @@
   lcalc_lnrhomean=T
 /
 &special_run_pars
+  !cstress_prefactor='24', nscale_factor_conformal=2.
   !cstress_prefactor='16pi'
   !nscale_factor_conformal=.0
   !ldebug_print=F, lkinGW=T
