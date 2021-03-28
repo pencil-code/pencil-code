@@ -6465,7 +6465,6 @@ module Initcond
       if (present(r_inner_).and.present(r_outer_)) then
         r_inner=r_inner_
         r_outer=r_outer_
-print*,'AXEL1: ', r_inner,r_outer
       else
         r_inner=xyz0(1)
         r_outer=xyz1(1)
@@ -6526,7 +6525,6 @@ print*,'AXEL1: ', r_inner,r_outer
       if (present(r_inner_).and.present(r_outer_)) then
         r_inner=r_inner_
         r_outer=r_outer_
-print*,'AXEL1: ', r_inner,r_outer
       else
         r_inner=xyz0(1)
         r_outer=xyz1(1)
@@ -6561,9 +6559,8 @@ print*,'AXEL1: ', r_inner,r_outer
             else
               rpart=0.
             endif
-print*,'AXEL',x(l),r_inner,r_outer,rpart
             f(l,m,:,ix:ix+1)=0.
-            f(l,m,:,ix+2)=rpart+amp2*sin(y(m))
+            f(l,m,:,ix+2)=rpart+amp2/x(l)
           enddo
         enddo
       endif
