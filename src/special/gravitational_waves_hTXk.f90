@@ -595,6 +595,12 @@ module gravitational_waves_hTXk
              if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
              if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
            endif
+           if (lreal_space_hTX_as_aux) then
+             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT_realspace),idiag_hhTpt)
+             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX_realspace),idiag_hhXpt)
+             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT_realspace),idiag_hhTp2)
+             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX_realspace),idiag_hhXp2)
+           endif
            if (lggTX_as_aux) then
              if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
              if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
