@@ -1463,11 +1463,21 @@ module gravitational_waves_hTXk
 !
 !  hhT
 !
-        case ('hhT'); call assign_slices_scal(slices,f,ihhT)
+        case ('hhT')
+          if (lreal_space_hTX_as_aux) then
+            call assign_slices_scal(slices,f,ihhT_realspace)
+          else
+            call assign_slices_scal(slices,f,ihhT)
+          endif
 !
 !  hhX
 !
-        case ('hhX'); call assign_slices_scal(slices,f,ihhX)
+        case ('hhX')
+          if (lreal_space_hTX_as_aux) then
+            call assign_slices_scal(slices,f,ihhX_realspace)
+          else
+            call assign_slices_scal(slices,f,ihhX)
+          endif
 !
 !  ggT
 !
