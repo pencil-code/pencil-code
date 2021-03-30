@@ -94,6 +94,8 @@ class Power(object):
         import numpy as np
         from .. import read
         import sys
+        import math
+        import matplotlib as plt
         
         power_list = []
         file_list = []
@@ -157,6 +159,69 @@ class Power(object):
             if file_name == 'powero.dat' or \
                 file_name == 'powerb.dat' or file_name == 'powera.dat':
                 continue
+            elif file_name == 'powerux_xy.dat' or file_name == 'poweruy_xy.dat' or \
+                file_name == 'poweruz_xy.dat':
+                # This files has the k vector, and irrational numbers
+                # Get k vectors:
+                nk = 0
+                if 'k_x' in line_list[1]:
+                    nkx = int(line_list[1].split()[line_list[1].split().index('k_x')+1].split(')')[0][1:])
+                    ini = 2 
+                    kx = []
+                    for i in range(ini, math.ceil(nkx/8)+ini):
+                        kx.append([float(j) for j in line_list[i].split()])
+                    kx = np.array(list(plt.cbook.flatten(kx)))
+                    setattr(self, 'kx', kx)
+                    ini = i+1
+                    nk = max(nk,nkx)
+
+                if 'k_y' in line_list[1]:
+                    nky = int(line_list[1].split()[line_list[1].split().index('k_y')+1].split(')')[0][1:])
+                    ky = []
+                    for i in range(ini, math.ceil(nky/8)+ini):
+                        ky.append([float(j) for j in line_list[i].split()])
+                    ky = np.array(list(plt.cbook.flatten(ky)))
+                    setattr(self, 'ky', ky)
+                    ini = i+1
+                    nk = max(nk,nky)
+
+                if 'k_z' in line_list[1]:
+                    nkz = int(line_list[1].split()[line_list[1].split().index('k_z')+1].split(')')[0][1:])
+                    kz = []
+                    for i in range(ini, math.ceil(nkz/8)+ini):
+                        kz.append([float(j) for j in line_list[i].split()])
+                    kz = np.array(list(plt.cbook.flatten(ky)))
+                    setattr(self, 'kz', kz)
+                    ini = i+1
+                    nk = max(nk,nkz)
+
+                #Now read the rest of the file  
+                print('ini', ini) 
+                line_list = line_list[ini:]    
+                time = []
+                power_array = []
+                print('nk', nk)
+                block_size =  np.ceil(int(nk*2)/16.) + 1
+                n_blocks = int(len(line_list)/block_size)
+
+                for line_idx, line in enumerate(line_list):
+                    if np.mod(line_idx, block_size) == 0:
+                        #print(float(line.strip()))
+                        time.append(float(line.strip()))
+                    else:
+                        maxi = len(line.strip().split())
+                        for j in range(0,maxi,2):
+                            power_array.append(complex(real =float(line.strip().split()[j]), imag=float(line.strip().split()[j+1])))
+                time = np.array(time) 
+                power_array = np.array(power_array).reshape([n_blocks, int(nk)]).astype(np.complex)
+
+                self.t = time.astype(np.float32)
+                setattr(self, power_list[power_idx], power_array)
+
+
+
+
+
             elif file_name == 'poweruz_x.dat' or file_name == 'powerux_x.dat' or \
                 file_name == 'poweruy_x.dat':
                 #this has irrational numbers

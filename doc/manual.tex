@@ -14353,6 +14353,41 @@ initial condition.
 \end{longtable}
 
 
+\section{\code{bin} scripts}
+\label{bin-scripts}
+Brief description of the scripts included in \code{pencil-code/bin}
+\begin{longtable}{lp{0.7\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Script}} & {\emph{Meaning}} \\
+%
+\midrule
+  \multicolumn{2}{c}{run} \\
+\midrule
+  \var{pc\_build}  & Compile the executables in the running directory. \\
+  \var{pc\_start}  & Check the \code{start.in} file and initialize the 
+simulaiton.\\
+  \var{pc\_run}    & Check the \code{run.in} file and run the simulation \\
+%
+%
+\midrule
+  \multicolumn{2}{c}{CVS} \\
+\midrule
+  \var{cvsci_run} &  Add run directory to CVS. \code{csh} version.\\
+  \var{cvsci_run_bash} &  Add run directory to CVS. \code{bash} version. \\
+%
+\midrule
+  \multicolumn{2}{c}{git} \\
+\midrule
+  \var{pc_git}    &  Update and merge the local git repository with the master 
+branch. \\
+  
+
+%
+\bottomrule
+\end{longtable}
+
+
+
 % ====================================================================== %
 
 % r e f
