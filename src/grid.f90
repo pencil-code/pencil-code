@@ -437,7 +437,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such x grid function - '//grid_func(1))
+                           'No such x grid function - '//trim(grid_func(1)))
         endselect
 !
 !  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary,
@@ -616,7 +616,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such y grid function - '//grid_func(2))
+                           'No such y grid function - '//trim(grid_func(2)))
 !
         endselect
 !
@@ -803,7 +803,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such z grid function - '//grid_func(3))
+                           'No such z grid function - '//trim(grid_func(3)))
         endselect
 !
         dz2=zprim**2
@@ -835,6 +835,10 @@ module Grid
         endif
         call fatal_error("construct_grid","")
       endif
+!
+!  Set equator if possible.
+!
+      if (abs(xyz0(2)+xyz1(2))-pi<1e-3) lequatory=.true.
 !
 !  Set the serial grid arrays, that contain the coordinate values
 !  from all processors.
@@ -1211,7 +1215,7 @@ module Grid
 !
         case default
           call fatal_error('initialize_grid', &
-                           'no such pipe function - '//pipe_func)
+                           'no such pipe function - '//trim(pipe_func))
         endselect
 !
 !  Lobachevskii space
