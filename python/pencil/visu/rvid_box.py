@@ -371,7 +371,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
     #avoid increasing memory
     dtype=type(slice_obj.__getattribute__(xyzplane[0]).__getattribute__(
                fields[0])[0,0,0])
-    if dtype==np.float16 or dtype='half':
+    if dtype==np.float16 or dtype=='half':
         print('plot_box: caution dtype {} may cause under/overflow'.format(
                dtype))
     for field in fields:
