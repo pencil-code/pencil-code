@@ -2,7 +2,7 @@
 !
 ! This special module will contribute a mean electromotive
 ! force to the vector potential differential equation.
-! 
+!
 ! Calculation is done term by term, where each contribution
 ! is calculated using tensors supplied in a HDF5 file emftensors.h5.
 !
@@ -77,13 +77,13 @@ module Special
                                            scalar_offsets, scalar_counts, &
                                            scalar_memdims, &
                                            scalar_memoffsets, scalar_memcounts
-                                      
+
   ! Actual datasets
 
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data, acoef_data
   real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, umean_data
   real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data, bcoef_data
- 
+
   real, dimension(:), allocatable :: tensor_times
 
   logical, dimension(3,3)::lalpha_sym=reshape((/.false.,.true. ,.false., &
@@ -106,12 +106,12 @@ module Special
 
   integer,parameter :: alpha_id=1, beta_id=2,    &
                        gamma_id=3, delta_id=4,   &
-                       kappa_id=5, umean_id=6, & 
+                       kappa_id=5, umean_id=6, &
                        acoef_id=7, bcoef_id=8
   integer,parameter :: time_id=1
 
-  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5, 6, 7 /) 
-  integer, dimension(nscalars),parameter :: scalar_ndims = (/ 1 /) 
+  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5, 6, 7 /)
+  integer, dimension(nscalars),parameter :: scalar_ndims = (/ 1 /)
 
   ! Dataset logical variables
 
@@ -126,7 +126,7 @@ module Special
   logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false., lbblimit=.false.
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, umean_scale, acoef_scale, bcoef_scale
 
-  character (len=fnlen) :: dataset
+  character (len=fnlen) :: dataset, dataset_type, dataset_name
 
   character (len=fnlen) :: alpha_name, beta_name,    &
                            gamma_name, delta_name,   &
@@ -243,7 +243,8 @@ module Special
       lumean,   lumean_c,   umean_name,   umean_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, dataset, lusecoefs, lloop
+      interpname, dataset, dataset_name, dataset_type, &
+      lusecoefs, lloop
   namelist /special_run_pars/ &
       emftensors_file, &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
@@ -254,7 +255,8 @@ module Special
       lumean,   lumean_c,   umean_name,   umean_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, dataset, lusecoefs, lloop, lsymmetrize, field_symmetry, &
+      interpname, dataset, dataset_name, dataset_type, &
+      lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
       lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, &
       rel_eta, rel_kappa, kappa_floor, lbblimit
@@ -269,7 +271,7 @@ module Special
     module procedure symmetrize_3d
     module procedure symmetrize_4d
   end interface
- 
+
   interface smooth_thbound
     module procedure smooth_thbound_4d
   end interface
@@ -292,7 +294,7 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      if (lrun) then 
+      if (lrun) then
 
         call H5open_F(hdferr)                                              ! Initializes HDF5 library.
 
@@ -303,7 +305,7 @@ module Special
           if (lroot) write(*,*) 'register_special: loading data as double precision'
           hdf_memtype = H5T_NATIVE_DOUBLE
         end if
-          
+
         if (lroot) write (*,*) 'register_special: setting parallel HDF5 IO for data file reading'   !MR: Why parallel?
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)   ! Creates porperty list for HDF5 file.
 
@@ -363,13 +365,13 @@ module Special
 !
       call keep_compiler_quiet(f)
 
-      if (lrun) then 
+      if (lrun) then
 
         call get_shared_variable('eta', eta)
-        if (trim(dataset) == 'time-series' .or. trim(dataset) == 'time-crop') then
+        if (trim(dataset_type) == 'time-series' .or. trim(dataset_type) == 'time-crop') then
           lread_time_series=.true.
-        elseif (trim(dataset) /= 'mean') then
-          call fatal_error('initialize_special','Unknown dataset chosen!')
+        elseif (trim(dataset_type) /= 'mean') then
+          call fatal_error('initialize_special','Unknown dataset type chosen!')
         endif
 
         if (lalt_decomp.or.lreconstruct_tensors) then
@@ -380,9 +382,6 @@ module Special
 
           call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_grid_exists, hdferr)
           if (.not. hdf_grid_exists) then
-            call H5Fclose_F(hdf_emftensors_file, hdferr)
-            call H5Pclose_F(hdf_emftensors_plist, hdferr)
-            call H5close_F(hdferr)
             call warning('initialize_special','error while opening /grid/ - time not available')
             if (lread_time_series) then
               lread_time_series=.false.
@@ -392,7 +391,7 @@ module Special
 
             call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
             call openDataset_grid(time_id)
-          
+
             if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
 
             call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
@@ -401,9 +400,9 @@ module Special
               call information('initialize_special', &
               'Type of stored HDF5 data different from type in memory - converting while reading!')
 
-            if (lread_time_series) then 
+            if (lread_time_series) then
 
-              allocate(tensor_times(scalar_dims(time_id))) 
+              allocate(tensor_times(scalar_dims(time_id)))
               call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
                              [scalar_dims(time_id)], hdferr)
               if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
@@ -413,7 +412,7 @@ module Special
                 print*, 'min time array=',minval(tensor_times)
                 print*, 'max time array=',maxval(tensor_times)
               endif
-     
+
             endif
           endif
         endif
@@ -502,9 +501,9 @@ module Special
         endif
 
         if (lumean) then
-          if (.not.allocated(umean_data)) then 
+          if (.not.allocated(umean_data)) then
             allocate(umean_data(dataload_len,nx,ny,nz,3))
-            call openDataset((/'umean','utensor'/),umean_id)
+            call openDataset((/'umean  ','utensor'/),umean_id)
           endif
           umean_data = 0.
         elseif (allocated(umean_data)) then
@@ -524,7 +523,7 @@ module Special
         endif
 
         if (lbcoef) then
-          if (.not.allocated(bcoef_data)) then 
+          if (.not.allocated(bcoef_data)) then
             allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
             call openDataset((/'bcoef'/), bcoef_id)
           endif
@@ -537,7 +536,7 @@ module Special
         if (.not.lusecoefs) then
           idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
         endif
-        
+
         if (lroot) then
           if (lalpha) then
             write (*,*) 'Alpha scale:   ', alpha_scale
@@ -778,6 +777,8 @@ module Special
 
       if (lrun) then
 
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Deallocating coefficients'
+
         ! Deallocate data
         if (allocated(alpha_data)) deallocate(alpha_data)
         if (allocated(beta_data)) deallocate(beta_data)
@@ -785,6 +786,8 @@ module Special
         if (allocated(delta_data)) deallocate(delta_data)
         if (allocated(kappa_data)) deallocate(kappa_data)
         if (allocated(umean_data)) deallocate(umean_data)
+
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing datasets'
 
         if (lalpha)   call closeDataset(alpha_id)
         if (lbeta)    call closeDataset(beta_id)
@@ -795,7 +798,9 @@ module Special
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
 
+
         if (hdf_grid_exists) then
+          if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing grid'
           call closeDataset_grid(time_id)
           call H5Gclose_F(hdf_grid_group, hdferr)
           if (lread_time_series) then
@@ -803,9 +808,13 @@ module Special
           endif
         endif
 
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing emftensors group'
         call H5Gclose_F(hdf_emftensors_group, hdferr)
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing emftensors file'
         call H5Fclose_F(hdf_emftensors_file, hdferr)
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing emftensors parameters'
         call H5Pclose_F(hdf_emftensors_plist, hdferr)
+        if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing HDF5'
         call H5close_F(hdferr)
         call mpibarrier
 
@@ -844,24 +853,24 @@ module Special
         if (lread_time_series) then
           if (t >= tensor_times(iload+1)) then
             lread_datasets=.true.
-            iload = iload + 1  
+            iload = iload + 1
           endif
-        else 
+        else
           iload=1
         endif
-        
+
         if (lread_datasets) then
-          if (iload > tensor_times_len) then 
+          if (iload > tensor_times_len) then
             if (lloop) then
               iload=1
               delt=2*tensor_times(tensor_times_len)-tensor_times(1)-tensor_times(tensor_times_len-1)
               tensor_times = tensor_times+delt
             else
-              call fatal_error('special_before_boundary', 'no more data to load') 
+              call fatal_error('special_before_boundary', 'no more data to load')
             endif
           endif
 !if (lread_time_series) &
-!print *, 'loading: t,iload=',tensor_times(iload),iload 
+!print *, 'loading: t,iload=',tensor_times(iload),iload
           ! Load datasets
           if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload-1,'Alpha')
           if (lbeta)  call loadDataset(beta_data,  lbeta_arr,  beta_id,  iload-1,'Beta')
@@ -880,11 +889,11 @@ module Special
               alpha_data(1,:,mm,1,1,2)=0.5*(acoef_data(1,:,mm,1,1,2)+bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
                                            +acoef_data(1,:,mm,1,2,1)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
               alpha_data(1,:,mm,1,2,2)=     acoef_data(1,:,mm,1,2,2)+bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
-              alpha_data(1,:,mm,1,1,3)=0.5*(acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
+              alpha_data(1,:,mm,1,1,3)=0.5*(acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) &
                                            -bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
               alpha_data(1,:,mm,1,2,3)=0.5*(acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
                                            +bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
-            
+
               gamma_data(1,:,mm,1,1)=0.5*(acoef_data(1,:,mm,1,3,2)-acoef_data(1,:,mm,1,2,3) &
                                          +bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
               gamma_data(1,:,mm,1,2)=0.5*(acoef_data(1,:,mm,1,1,3)-acoef_data(1,:,mm,1,3,1) &
@@ -892,7 +901,7 @@ module Special
               gamma_data(1,:,mm,1,3)=0.5*(acoef_data(1,:,mm,1,2,1)-acoef_data(1,:,mm,1,1,2) &
                                          -bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
             enddo
-            
+
             alpha_data(:,:,:,:,2,1)=alpha_data(:,:,:,:,1,2)
             alpha_data(:,:,:,:,3,2)=alpha_data(:,:,:,:,2,3)
             alpha_data(:,:,:,:,3,1)=alpha_data(:,:,:,:,1,3)
@@ -910,13 +919,13 @@ module Special
                                             +acoef_data(1,:,mm,1,2,1)-bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
               alpha_data(1,:,mm,1,2,2)=      acoef_data(1,:,mm,1,2,2)+bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
 
-              alpha_data(1,:,mm,1,1,3)=0.5*( acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
+              alpha_data(1,:,mm,1,1,3)=0.5*( acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) &
                                             -(                  bcoef_data(1,:,mm,1,3,2,2) &
                                               +                 bcoef_data(1,:,mm,1,1,3,1) &
                                               +cotth(mm+nghost)*bcoef_data(1,:,mm,1,1,3,2))/x(l1:l2))
 
               alpha_data(1,:,mm,1,2,3)=0.5*( acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
-                                            -(                  bcoef_data(1,:,mm,1,2,3,1) &  
+                                            -(                  bcoef_data(1,:,mm,1,2,3,1) &
                                               -                 bcoef_data(1,:,mm,1,3,1,2) &
                                               +cotth(mm+nghost)*bcoef_data(1,:,mm,1,2,3,2))/x(l1:l2))
 
@@ -937,9 +946,9 @@ module Special
                                          -(bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,2,2,2))/x(l1:l2))
 
               delta_data(1,:,mm,1,1)=0.25*(bcoef_data(1,:,mm,1,2,2,1)-bcoef_data(1,:,mm,1,2,1,2)+2.*bcoef_data(1,:,mm,1,3,3,1))
-                            
+
               delta_data(1,:,mm,1,2)=0.25*(bcoef_data(1,:,mm,1,1,1,2)-bcoef_data(1,:,mm,1,1,2,1)+2.*bcoef_data(1,:,mm,1,3,3,2))
-                            
+
               delta_data(1,:,mm,1,3)=-0.5*(bcoef_data(1,:,mm,1,1,3,1)+bcoef_data(1,:,mm,1,2,3,2))
 
               beta_data(1,:,mm,1,1,1)=-bcoef_data(1,:,mm,1,1,3,2)
@@ -949,12 +958,12 @@ module Special
               beta_data(1,:,mm,1,1,2)=0.5*(-bcoef_data(1,:,mm,1,2,3,2)+bcoef_data(1,:,mm,1,1,3,1))
               beta_data(1,:,mm,1,1,3)=0.25*( -2.*bcoef_data(1,:,mm,1,3,3,2)+bcoef_data(1,:,mm,1,1,1,2)-bcoef_data(1,:,mm,1,1,2,1))
               beta_data(1,:,mm,1,2,3)=0.25*(2.*bcoef_data(1,:,mm,1,3,3,1)+bcoef_data(1,:,mm,1,2,1,2)-bcoef_data(1,:,mm,1,2,2,1))
- 
+
               do ik=1,3
                 kappa_data(1,:,mm,1,ik,:,3)=0.; kappa_data(1,:,mm,1,ik,3,:)=0.
               enddo
             enddo
-            
+
             alpha_data(:,:,:,:,2,1)=alpha_data(:,:,:,:,1,2)
             alpha_data(:,:,:,:,3,1)=alpha_data(:,:,:,:,1,3)
             alpha_data(:,:,:,:,3,2)=alpha_data(:,:,:,:,2,3)
@@ -1024,7 +1033,7 @@ module Special
               beta_mask=0
               where(beta_data(:,:,:,:,i,i)+eta<=0.) beta_mask=1
               minbeta=minval(beta_data(:,:,:,:,i,i),beta_mask==1)
-              !where(beta_mask==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta 
+              !where(beta_mask==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta
 
               numzeros=sum(beta_mask)
               call mpiallreduce_sum_int(numzeros,numzeros_)
@@ -1065,7 +1074,8 @@ module Special
                 if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
 
                 newtrace=sum(real(eigenvals))
-                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (1)=', ll,mm,abs(oldtrace-newtrace),oldtrace,newtrace
+                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (1)=', &
+                  ll,mm,abs(oldtrace-newtrace),oldtrace,newtrace
 
                 if (any(real(eigenvals)<-eta)) then
 !
@@ -1115,7 +1125,7 @@ module Special
 111 do i=1,3; do j=1,3
     if (beta_sav(i,j)/=0.) then
 !     if (abs(beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j) > 1e-1)  &
-!       print*, 'JOERN', ll, mm, abs((beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j)),beta_sav(i,j) 
+!       print*, 'JOERN', ll, mm, abs((beta_sav(i,j)-beta_data(1,ll,mm,1,i,j))/beta_sav(i,j)),beta_sav(i,j)
     endif
 enddo; enddo
               enddo; enddo
@@ -1155,7 +1165,7 @@ enddo; enddo
 !if (lroot.and.lbeta) write(100,*) beta_data(1,:,:,1,:,:)
 
           if (lsymmetrize) then
-            do i=1,3 
+            do i=1,3
               if (lgamma) call symmetrize(gamma_data(:,:,:,:,i),lgamma_sym(i))
               if (ldelta) call symmetrize(delta_data(:,:,:,:,i),ldelta_sym(i))
               if (lumean) call symmetrize(umean_data(:,:,:,:,i),lumean_sym(i))
@@ -1254,8 +1264,8 @@ enddo; enddo
           end if
         end do; end do; end do
         p%bcoef_emf = 0
-! 
-!  Use partial (non-covariant) derivatives of B in the form \partial B_{r,theta,phi}/\partial r, 
+!
+!  Use partial (non-covariant) derivatives of B in the form \partial B_{r,theta,phi}/\partial r,
 !  \partial B_{r,theta,phi}/(r \partial theta).
 !
         do k=1,2; do j=1,3; do i=1,3
@@ -1350,7 +1360,7 @@ if (l0.and.any(abs(jrt)<jthresh*abs(jtr).and.p%kappa_coefs(:,3,j,k)<-eta-p%beta_
   !l0=.false.
 endif
                 where (abs(jrt)<jthresh*abs(jtr) .and. &
-                       p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) ) 
+                       p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
                   p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
                 elsewhere (abs(jtr)<jthresh*abs(jrt) .and. &
                            p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
@@ -1513,7 +1523,7 @@ endif
           call dot2_mn(tmppencil,tmpline)
           call sum_mn_name(tmpline,idiag_emfdiffrms,lsqrt=.true.)
         end if
-      end if 
+      end if
 !
       if (l2davgfirst) then
         call zsum_mn_name_xy(p%emf(:,1),idiag_emfxmxy)
@@ -1590,12 +1600,20 @@ endif
       integer, intent(out) :: iostat
 !
       iostat = 0
-      
+
       call setParameterDefaults
       if (lroot) write (*,*) 'read_special_run_pars parameters read...'
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
       call parseParameters
       if (lroot) write (*,*) 'read_special_run_pars parameters parsed...'
+
+      ! For backwards compatibility, if dataset has been set,
+      ! overwrite dataset_type and give a warning.
+      if (len_trim(dataset) > 0) then
+          if (lroot) call warning('read_special_run_pars', &
+            'parameter "dataset" overwrites "dataset_type"')
+          dataset_type = dataset
+      endif
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -1790,7 +1808,7 @@ endif
         call parse_name(iname,cnamexy(iname),cformxy(iname),'kappayyzmxy',idiag_kappayyzmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'kappazyzmxy',idiag_kappazyzmxy)
       enddo
- 
+
     endsubroutine rprint_special
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -1859,13 +1877,13 @@ endif
           call dot_mn(dline_1, tmppencil, tmpline)
           diffus_special=diffus_special+tmpline
         end if
-!        
+!
         if (ldelta) then
           call cross_mn(dline_1,abs(p%delta_coefs), tmppencil)
           call dot_mn(dline_1,tmppencil,tmpline)
           diffus_special=diffus_special+tmpline
         end if
-!        
+!
         if (lkappa) then
           call vec_dot_3tensor(dline_1, abs(p%kappa_coefs), tmptensor)
           call dot_mn_vm(dline_1,tmptensor, tmppencil)
@@ -1878,7 +1896,7 @@ endif
           call max_mn_name(diffus_special/cdtv,idiag_dtemf_dif,l_dt=.true.)
         endif
 !
-      end if 
+      end if
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -1912,7 +1930,7 @@ endif
           call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           ' does not exist')
 
-      ! Open datagroup, returns identifier in tensor_id_G. 
+      ! Open datagroup, returns identifier in tensor_id_G.
       call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id),hdferr)
       if (hdferr /= 0) then
         call fatal_error('openDataset','Error opening /emftensor/'//trim(datagroup))
@@ -1951,7 +1969,7 @@ endif
       if (tensor_times_len==-1) then
         tensor_times_len=dimsizes(1)
       elseif (tensor_times_len/=dimsizes(1)) then
-        call fatal_error('openDataset','dataset emftensor/'//trim(datagroup)//'/'//trim(dataset)//' has deviating time extent')  
+        call fatal_error('openDataset','dataset emftensor/'//trim(datagroup)//'/'//trim(dataset)//' has deviating time extent')
       endif
       if (hdferr /= 0) then
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
@@ -2024,7 +2042,7 @@ endif
       end if
 
     end subroutine openDataset_grid
-!*********************************************************************** 
+!***********************************************************************
     subroutine closeDataset_grid(id)
 
       ! Close opened dataspaces, dataset and group
@@ -2035,7 +2053,7 @@ endif
       call H5Dclose_F(scalar_id_D(id), hdferr)
 
     end subroutine closeDataset_grid
-!*********************************************************************** 
+!***********************************************************************
     subroutine closeDataset(tensor_id)
 
       ! Close opened dataspaces, dataset and group
@@ -2048,11 +2066,11 @@ endif
       call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
 
     end subroutine closeDataset
-!*********************************************************************** 
+!***********************************************************************
     subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a vector, beginning at loadstart
-    
+
       use General, only: itoa
 
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
@@ -2077,10 +2095,10 @@ endif
           tensor_offsets(tensor_id,ndims)    = mask_i-1
           tensor_memoffsets(tensor_id,ndims) = mask_i-1
           ! Select hyperslab for data.
-!          print '(a,a,5(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims) 
-!          print '(a,a,5(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims) 
-!          print '(a,a,5(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims) 
-!          print '(a,a,5(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims) 
+!          print '(a,a,5(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
+!          print '(a,a,5(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+!          print '(a,a,5(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
+!          print '(a,a,5(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
 
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
@@ -2126,7 +2144,7 @@ endif
       dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank1
-!*********************************************************************** 
+!***********************************************************************
     subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
@@ -2197,7 +2215,7 @@ endif
         call fatal_error('loadDataset_rank2','Error reading dataset '// &
                          'for /emftensor/'//name)
       sum = 0.; rms = 0.
-      do i=1,3 ; do j=1,3 
+      do i=1,3 ; do j=1,3
         tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i,j))
         tensor_minvals(tensor_id) = minval(dataarray(:,:,:,:,i,j))
         if (present(name)) then
@@ -2214,7 +2232,7 @@ endif
       dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank2
-!*********************************************************************** 
+!***********************************************************************
     subroutine loadDataset_rank3(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 3-rank tensor, beginning at loadstart
@@ -2285,7 +2303,7 @@ endif
       dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank3
-!*********************************************************************** 
+!***********************************************************************
     function emf_interpolate(dataarray) result(interp_data)
 
       real, intent(in), dimension(dataload_len,nx) :: dataarray
@@ -2295,7 +2313,7 @@ endif
       interp_data=dataarray(1,:)
 
     end function emf_interpolate
-!*********************************************************************** 
+!***********************************************************************
     subroutine setParameterDefaults
 
       ! alpha
@@ -2348,7 +2366,9 @@ endif
       bcoef_name='data'
       ! other
       interpname  = 'none'
-      dataset = '' 
+      dataset = ''
+      dataset_type = 'mean'
+      dataset_name = 'mean'
       tensor_maxvals=0.0
       tensor_minvals=0.0
       lusecoefs = .false.
@@ -2357,7 +2377,7 @@ endif
     end subroutine setParameterDefaults
 !***********************************************************************
     subroutine parseParameters
- 
+
     integer :: i
 !
 ! Load boolean array for alpha
@@ -2446,7 +2466,7 @@ endif
         lacoef_arr(3,3) = lacoef_c(6)
         if (any([lalpha,lgamma])) then
           if (lroot) call warning('initialize_special', &
-            'any lacoef_c=T overrides settings of lalpha and lgamma')     
+            'any lacoef_c=T overrides settings of lalpha and lgamma')
           lalpha=.false.; lgamma=.false.
           lalpha_arr = .false.; lgamma_arr = .false.
         endif
@@ -2471,7 +2491,7 @@ endif
         enddo
         if (any([lbeta,ldelta,lkappa])) then
           if (lroot) call warning('initialize_special', &
-            'any lbcoef_c=T overrides settings of lbeta,ldelta,lkappa')     
+            'any lbcoef_c=T overrides settings of lbeta,ldelta,lkappa')
           lbeta=.false.; lbeta_arr = .false.
           ldelta=.false.; ldelta_arr = .false.
           lkappa=.false.; lkappa_arr = .false.
@@ -2502,15 +2522,15 @@ endif
 !
 ! Store names
 !
-      if (trim(dataset) /= '') then
-        alpha_name  = dataset
-        beta_name   = dataset
-        gamma_name  = dataset
-        delta_name  = dataset
-        kappa_name  = dataset
-        umean_name  = dataset
-        acoef_name  = dataset
-        bcoef_name  = dataset
+      if (trim(dataset_name) /= '') then
+        alpha_name  = dataset_name
+        beta_name   = dataset_name
+        gamma_name  = dataset_name
+        delta_name  = dataset_name
+        kappa_name  = dataset_name
+        umean_name  = dataset_name
+        acoef_name  = dataset_name
+        bcoef_name  = dataset_name
       end if
       tensor_names(alpha_id)  = alpha_name
       tensor_names(beta_id)   = beta_name
@@ -2520,7 +2540,7 @@ endif
       tensor_names(umean_id)  = umean_name
       tensor_names(acoef_id)  = acoef_name
       tensor_names(bcoef_id)  = bcoef_name
-            
+
     end subroutine parseParameters
 !*****************************************************************************
     logical function output_persistent_special()
@@ -2554,5 +2574,5 @@ endif
 !**  routines not implemented in this file                         **
 !**                                                                **
     include '../special_dummies.inc'
-!*********************************************************************** 
+!***********************************************************************
 endmodule Special

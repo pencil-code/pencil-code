@@ -6,7 +6,7 @@ import numpy as np
 from scipy.special import erf
 import h5py
 
-import pencil as pc
+import pencil_old as pc
 
 
 def labelDataset(dataset):
