@@ -1,0 +1,97 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
+
+"""Find cyclic Python imports."""
+
+
+# To do:
+# - Produce dot files (and instructions for running dot)
+
+import argparse
+import os
+import re
+import sys
+
+from typing import Collection, Dict, List, Iterator, Tuple
+
+
+def main():
+    args = parse_arguments()
+
+
+class Module:
+    """A Python module"""
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+
+def dfs(
+    graph: Dict[Module, Collection[Module]], start: Module, end: Module
+) -> Iterator[List[Module]]:
+    """Depth-first search algorithm for finding cycles in a graph.
+
+    [From: https://stackoverflow.com/a/40834276]
+
+    Arguments:
+      graph : The graph ...
+
+    Example:
+      >>> graph = { 1: [2, 3, 5], 2: [1], 3: [1], 4: [2], 5: [2] }
+      >>> cycles = [[node]+path
+                     for node in graph
+                     for path in dfs(graph, node, node)]
+      >>> print("There are {} cycles.\n".format(len(cycles)))
+      There are 7 cycles.
+
+    """
+    fringe = [(start, [])]  # type: List[Tuple[Module, List[Module]]]
+    while fringe:
+        state, path = fringe.pop()
+        if path and state == end:
+            yield path
+            continue
+        for next_state in graph[state]:
+            if next_state in path:
+                continue
+            fringe.append((next_state, path + [next_state]))
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Recursively find all .py files under all given PATHs.",
+    )
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Print this help text and exit.",
+    )
+    parser.add_argument(
+        "path",
+        nargs="*",
+        help="In non-recursive mode: Python file(s) to parse for imports."
+        " With -r|--recursive: root directory/ies to search recursively.",
+    )
+    args = parser.parse_args()
+
+    if args.help:
+        parser.print_help()
+        print(
+            """
+Examples:
+    cyclic-imports python/pencil/sim/*.py
+    cyclic-imports python/pencil/{math,read}/*.py
+    cyclic-imports --recursive python/pencil/"""
+        )
+        parser.exit()
+
+    return args
+
+
+if __name__ == "__main__":
+    main()

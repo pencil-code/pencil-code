@@ -1,0 +1,11 @@
+Directory pencil-code/python/utils.
+
+This directory contains utility scripts (and maybe modules) for analyzing
+coding aspects of the Pencil Code python files.
+  These will not be of much interest to the users of the Python modules and
+scripts, nor will they necessarily work without some extra packages and
+sufficiently recent Python versions..
+  You do not want to include this directory into your PATH or PYTHONPATH.
+
+Overview:
+- cyclic-imports :: identify import cycles
