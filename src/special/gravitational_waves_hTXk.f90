@@ -31,7 +31,7 @@
 !  Special equation                                | dspecial_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -39,6 +39,7 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
+!
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -70,7 +71,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module gravitational_waves_hTXk
+module Special
 !
   use Cparam
   use Cdata
@@ -110,13 +111,13 @@ module gravitational_waves_hTXk
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
 !
 ! input parameters
-  namelist /gravitational_waves_hTXk_init_pars/ &
+  namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation
 !
 ! run parameters
-  namelist /gravitational_waves_hTXk_run_pars/ &
+  namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
@@ -405,13 +406,6 @@ module gravitational_waves_hTXk
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
-!  Electric field needed for total electromagnetic stress
-!
-      if (lelectmag) then
-        lpenc_requested(i_EEE)=.true.
-        if (trace_factor/=0.) lpenc_requested(i_EEE2)=.true.
-      endif
-!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -435,9 +429,11 @@ module gravitational_waves_hTXk
 !   7-jun-18/axel: included 4/3*rho factor
 !
       use Deriv, only: derij
+      use Sub, only: dot2_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: prefactor
+      real, dimension (nx) :: prefactor, EEE2
+      real, dimension (nx,3) :: EEEE
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -452,6 +448,17 @@ module gravitational_waves_hTXk
         prefactor=fourthird_factor
       endif
 !
+!  Take electric field from f-array.
+!
+      if (lelectmag) then
+        if (iEEx==0) then
+          call fatal_error('calc_pencils_special','iEEx==0 for lelectmag not OK')
+        else
+          EEEE=f(l1:l2,m,n,iEEx:iEEz)
+          call dot2_mn(EEEE,EEE2)
+        endif
+      endif
+!
 !  Construct stress tensor; notice opposite signs for u and b.
 !
       p%stress_ij=0.0
@@ -460,14 +467,14 @@ module gravitational_waves_hTXk
         ij=ij_table(i,j)
         if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%EEE(:,i)*p%EEE(:,j)
+        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-EEEE(:,i)*EEEE(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
           if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%EEE2
+          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*EEE2
         endif
       enddo
       enddo
@@ -653,7 +660,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gravitational_waves_hTXk_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -661,7 +668,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gravitational_waves_hTXk_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -671,7 +678,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gravitational_waves_hTXk_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -679,7 +686,7 @@ module gravitational_waves_hTXk
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gravitational_waves_hTXk_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1530,6 +1537,6 @@ module gravitational_waves_hTXk
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../gravitational_waves_hTXk_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
-endmodule gravitational_waves_hTXk
+endmodule Special
