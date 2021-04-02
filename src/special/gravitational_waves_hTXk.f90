@@ -97,6 +97,7 @@ module gravitational_waves_hTXk
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
+  logical :: lelectmag=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
@@ -112,7 +113,7 @@ module gravitational_waves_hTXk
   namelist /gravitational_waves_hTXk_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
-    lggTX_as_aux, lhhTX_as_aux, linflation
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation
 !
 ! run parameters
   namelist /gravitational_waves_hTXk_run_pars/ &
@@ -120,7 +121,7 @@ module gravitational_waves_hTXk
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    tau_stress_kick, fac_stress_kick, delk, lreal_space_hTX_as_aux, &
+    lelectmag, tau_stress_kick, fac_stress_kick, delk, lreal_space_hTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -192,6 +193,7 @@ module gravitational_waves_hTXk
 !  Set up indices for variables in special modules.
 !
 !   3-aug-17/axel: coded
+!  28-mar-21/axel:allowed for lreal_space_hTX_as_aux
 !
       use Sub, only: register_report_aux
       use FArrayManager
@@ -403,6 +405,13 @@ module gravitational_waves_hTXk
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
+!  Electric field needed for total electromagnetic stress
+!
+      if (lelectmag) then
+        lpenc_requested(i_EEE)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_EEE2)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -451,12 +460,14 @@ module gravitational_waves_hTXk
         ij=ij_table(i,j)
         if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%EEE(:,i)*p%EEE(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
           if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%EEE2
         endif
       enddo
       enddo
