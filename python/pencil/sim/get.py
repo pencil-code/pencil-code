@@ -10,7 +10,7 @@ def get(path='.', quiet=False):
 
     from os.path import isdir, join, exists, basename
     from ..io import load
-    from . simulation import simulation
+    from .simulation import simulation
 
     if exists(join(path, 'pc/sim.dill')):
         try:
