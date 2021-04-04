@@ -102,7 +102,8 @@ module Special
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
-  logical :: linflation=.false., lreal_space_hTX_as_aux=.false.
+  logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
+  logical :: linflation=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -177,6 +178,7 @@ module Special
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
 !
   integer :: ihhT_realspace, ihhX_realspace
+  integer :: iggT_realspace, iggX_realspace
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
@@ -230,9 +232,18 @@ module Special
         !f(:,:,:,iStressT:iStressXim)=0.
       endif
 !
+!  To get hT and hX in real space, invoke lreal_space_hTX_as_aux
+!
       if (lreal_space_hTX_as_aux) then
         call farray_register_auxiliary('hhT_realspace',ihhT_realspace)
         call farray_register_auxiliary('hhX_realspace',ihhX_realspace)
+      endif
+!
+!  To get hT and hX in real space, invoke lreal_space_gTX_as_aux
+!
+      if (lreal_space_gTX_as_aux) then
+        call farray_register_auxiliary('ggT_realspace',iggT_realspace)
+        call farray_register_auxiliary('ggX_realspace',iggX_realspace)
       endif
 !
     endsubroutine register_special
@@ -622,6 +633,12 @@ module Special
            if (lggTX_as_aux) then
              if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
              if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+           endif
+           if (lreal_space_gTX_as_aux) then
+             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT_realspace),idiag_ggTpt)
+             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX_realspace),idiag_ggXpt)
+             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT_realspace),idiag_ggTp2)
+             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX_realspace),idiag_ggXp2)
            endif
          endif
 !
@@ -1348,7 +1365,7 @@ module Special
         enddo
       enddo
 !
-!  back to real space
+!  back to real space: hTX
 !
       if (lreal_space_hTX_as_aux) then
         S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT  )
@@ -1359,6 +1376,19 @@ module Special
         call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,ihhT_realspace)=S_T_re
         f(l1:l2,m1:m2,n1:n2,ihhX_realspace)=S_X_re
+      endif
+!
+!  back to real space: gTX
+!
+      if (lreal_space_gTX_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,iggT  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,iggX  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,iggTim)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,iggXim)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iggT_realspace)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
       endif
 !
     endsubroutine compute_gT_and_gX_from_gij
@@ -1499,23 +1529,21 @@ module Special
 !
 !  ggT
 !
-        case ('ggT'); call assign_slices_scal(slices,f,iggT)
+        case ('ggT')
+          if (lreal_space_hTX_as_aux) then
+            call assign_slices_scal(slices,f,iggT_realspace)
+          else
+            call assign_slices_scal(slices,f,iggT)
+          endif
 !
 !  ggX
 !
-        case ('ggX'); call assign_slices_scal(slices,f,iggX)
-!
-!  hh22
-!
-        case ('h22'); call assign_slices_scal(slices,f,ihij-1+2)
-!
-!  hh33
-!
-        case ('h33'); call assign_slices_scal(slices,f,ihij-1+3)
-!
-!  hh23
-!
-        case ('h23'); call assign_slices_scal(slices,f,ihij-1+5)
+        case ('ggX')
+          if (lreal_space_hTX_as_aux) then
+            call assign_slices_scal(slices,f,iggX_realspace)
+          else
+            call assign_slices_scal(slices,f,iggX)
+          endif
 !
       endselect
 !
