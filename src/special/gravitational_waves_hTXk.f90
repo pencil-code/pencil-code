@@ -123,7 +123,8 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    lelectmag, tau_stress_kick, fac_stress_kick, delk, lreal_space_hTX_as_aux, &
+    lelectmag, tau_stress_kick, fac_stress_kick, delk, &
+    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
