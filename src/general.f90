@@ -31,7 +31,7 @@ module General
   public :: bessj, cyclic
   public :: plegendre
   public :: spline_derivative_double, spline_integral, linear_interpolate
-  public :: itoa, log2str, count_bits, parser, write_full_columns
+  public :: itoa, atoi, log2str, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -1124,6 +1124,22 @@ module General
       itoa = adjustl(itoa)
 !
     endfunction itoa
+!***********************************************************************
+    integer function atoi(str)
+!
+!  Convert ASCII to integer.
+!
+!  31-mar-2021/MR: coded
+!
+      character(LEN=*), intent(in) :: str
+      integer :: leng
+!
+      leng = len(trim(str))
+      if (str(leng:leng)==char(0)) leng=leng-1
+      if (leng>1) leng=leng-1   !???
+      read(str,'(i'//trim(itoa(leng))//')') atoi
+!
+    endfunction atoi
 !***********************************************************************
   character function intochar(i)
 !

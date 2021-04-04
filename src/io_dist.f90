@@ -31,6 +31,11 @@ module Io
     module procedure read_snap_single
   endinterface
 !
+  interface read_part
+    module procedure read_part_double
+    module procedure read_part_single
+  endinterface
+!
   interface read_globals
     module procedure read_globals_double
     module procedure read_globals_single
@@ -584,8 +589,8 @@ module Io
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char, mpireduce_or
-      use Syscalls, only: islink, system_cmd
-      use General, only: itoa, find_proc
+      use Syscalls, only: islink, system_cmd, readlink, extract_str
+      use General, only: itoa, find_proc, atoi
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -598,7 +603,7 @@ module Io
       real(KIND=rkind4), dimension (my), intent(out) :: y
       real(KIND=rkind4), dimension (mz), intent(out) :: z
 
-      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
 !
       include 'io_dist.h'
 !
@@ -621,8 +626,8 @@ module Io
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char
-      use Syscalls, only: islink, system_cmd
-      use General, only: itoa, find_proc
+      use Syscalls, only: islink, system_cmd, readlink, extract_str
+      use General, only: itoa, find_proc, atoi
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -635,7 +640,7 @@ module Io
       real(KIND=rkind8), dimension (my), intent(out) :: y
       real(KIND=rkind8), dimension (mz), intent(out) :: z
 
-      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
 
       include 'io_dist.h'
 !
@@ -1412,7 +1417,7 @@ module Io
 !
 !   Import processor boundaries from file.in single precision
 !
-!   23-oct-13/MR: derivced from rproc_bounds
+!   23-oct-13/MR: derived from rproc_bounds
 !
       real(KIND=rkind4), dimension(0:nprocx), intent(OUT):: procx_bounds
       real(KIND=rkind4), dimension(0:nprocy), intent(OUT):: procy_bounds
@@ -1423,5 +1428,47 @@ module Io
       read(lun_input) procz_bounds
 !
     endsubroutine input_proc_bounds_single
+!***********************************************************************
+    function read_part_double(lun,a,omit) result (ios)
+!
+!  Reads part of array, stored on disk, defined by range of variable indices ivar_omit(1):ivar_omit(2)
+!  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
+!
+!   31-mar-21/MR: coded
+!
+      integer, intent(IN) :: lun
+      real(KIND=rkind8), dimension(:,:,:,:), intent(OUT) :: a, omit
+      integer :: ios
+
+      if (ivar_omit(1)==1) then
+        read (lun,iostat=ios) omit,a
+      elseif (ivar_omit(1)>1) then
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(1):)
+      else
+        read (lun,iostat=ios) a
+      endif
+
+    endfunction read_part_double
+!***********************************************************************
+    function read_part_single(lun,a,omit) result (ios)
+!
+!  Reads part of array, stored on disk, defined by range of variable indices ivar_omit(1):ivar_omit(2)
+!  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
+!
+!   31-mar-21/MR: coded
+!
+      integer, intent(IN) :: lun
+      real(KIND=rkind4), dimension(:,:,:,:), intent(OUT) :: a, omit
+      integer :: ios
+
+      if (ivar_omit(1)==1) then
+        read (lun,iostat=ios) omit,a
+      elseif (ivar_omit(1)>1) then
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(1):)
+      else
+        read (lun,iostat=ios) a
+      endif
+
+    endfunction read_part_single
 !***********************************************************************
 endmodule Io

@@ -12,6 +12,7 @@ module Syscalls
   external system_c
   external sizeof_real_c
   external copy_addr_c
+  external extract_string_c
 !
   interface is_nan
     module procedure is_nan_0D
@@ -269,6 +270,26 @@ module Syscalls
 !
     endfunction is_nan_4D
 !***********************************************************************
+    logical function readlink(filename,link)
+!
+!  Returns the file pointed to by symbolic link filename in link.
+!  Returns .true. if successful.
+!
+!  21-mar-20/MR: coded
+!
+      character(LEN=*), intent(IN) :: filename
+      character(LEN=*), intent(OUT):: link
+
+      integer :: readlink_c
+
+      integer :: retlen
+
+      retlen=readlink_c(trim(filename)//char(0),link,len(link))
+      link(retlen+1:len(link))=''
+      readlink=.not.(retlen>=len(link)-1)
+
+    endfunction readlink 
+!***********************************************************************
     logical function islink(filename)
 !
 !  Tests whether filename is a symbolic link.
@@ -281,6 +302,22 @@ module Syscalls
       islink = islink_c(trim(filename)//char(0))==1
 
     endfunction islink
+!***********************************************************************
+    subroutine extract_str(cmd,result)
+!
+!  Extracts a string by cmd, e.g., from a file (would be included in cmd)
+!  and returns it in result.
+!
+!  21-mar-20/MR: coded
+!
+    character(LEN=*), intent(IN) :: cmd
+    character(LEN=*), intent(OUT):: result
+
+    call extract_string_c(trim(cmd)//char(0),result)
+
+    result(index(result,char(0)):) = ''
+
+    endsubroutine extract_str
 !***********************************************************************
     subroutine copy_addr_int(var, caddr)
 

@@ -110,7 +110,7 @@
     libhandle=dlopen_c('src/special.so'//char(0),RTLD_NOW)
 
     if (libhandle==0) &
-      call fatal_error('setup_mult_special','library src/special.so could not be opened')
+      call fatal_error('initialize_mult_special','library src/special.so could not be opened')
 
     call getenv("MODULE_PREFIX", mod_prefix)
     call getenv("MODULE_INFIX", mod_infix)
@@ -121,7 +121,7 @@
         sub_handle=dlsym_c(libhandle,trim(mod_prefix)//trim(special_modules(i))// &
             trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)//char(0))
         if (sub_handle==0) &
-          call fatal_error('setup_mult_special','Error for symbol '// &
+          call fatal_error('initialize_mult_special','Error for symbol '// &
           trim(special_subroutines(j))//' in module '//trim(special_modules(i))) 
         special_sub_handles(i,j) = sub_handle
       enddo

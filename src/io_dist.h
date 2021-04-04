@@ -5,7 +5,9 @@
       real :: t_test   ! t in single precision for backwards compatibility
       logical :: ltest,lok,l0,lmail,lmail_
       integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1,kka,kke,jja,jje,iie
-      character(LEN=fnlen) :: readdir
+      integer :: nprocz_src, nzgrid_src, mz_src, ipz_src
+      character(LEN=fnlen) :: readdir, srcdir
+      character(LEN=2*fnlen) :: link
       character(LEN=linelen) :: message
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
@@ -14,6 +16,11 @@
 
       readdir = directory_snap
       lok=.false.; l0=.true.; message=''; lmail=.false.
+      if (ivar_omit(1)>0) then
+        if (ivar_omit(2)<=0) ivar_omit(2)=nv
+      endif
+!
+      if (lzaver_on_input) call prepare_zaver_on_input
 !
       if (lrepair_snap.or.snaplink/='') then
         kka=max(0,ipz-1); kke=min(ipz+1,nprocz-1)
@@ -53,66 +60,80 @@ iloop:    do ii=iia,iie
               if (islink(trim(readdir)//'/'//trim(file))) &
                  snaplink=trim(readdir)//'/'//trim(file)
 !      if (ip<=8) print *, 'read_snap: open, mx,my,mz,nv=', mx, my, mz, nv
+
               if (lwrite_2d) then
+
                 if (nx == 1) then
-                  if (ivar_omit1>0) allocate(tmp(1,my,mz,ivar_omit1:ivar_omit2))
-                  if (ivar_omit1==1) then
-                    read (lun_input,iostat=iosr) tmp,a(nghost+1,:,:,:)
-                  elseif (ivar_omit1>1) then
-                    read (lun_input,iostat=iosr) a(nghost+1,:,:,:ivar_omit1-1),tmp,a(nghost+1,:,:,ivar_omit1:)
+                  if (ivar_omit(1)>0) allocate(tmp_omit(1,my,mz,ivar_omit(1):ivar_omit(2)))
+                  if (ivar_omit(1)==1) then
+                    read (lun_input,iostat=iosr) tmp_omit,a(nghost+1,:,:,:)
+                  elseif (ivar_omit(1)>1) then
+                    read (lun_input,iostat=iosr) a(nghost+1,:,:,:ivar_omit(1)-1),tmp_omit,a(nghost+1,:,:,ivar_omit(1):)
                   else
                     read (lun_input,iostat=iosr) a(nghost+1,:,:,:)
                   endif
                 elseif (ny == 1) then
-                  if (ivar_omit1>0) allocate(tmp(mx,1,mz,ivar_omit1:ivar_omit2))
-                  if (ivar_omit1==1) then
-                    read (lun_input,iostat=iosr) tmp,a(:,nghost+1,:,:)
-                  elseif (ivar_omit1>1) then
-                    read (lun_input,iostat=iosr) a(:,nghost+1,:,:ivar_omit1-1),tmp,a(:,nghost+1,:,ivar_omit1:)
+                  if (ivar_omit(1)>0) allocate(tmp_omit(mx,1,mz,ivar_omit(1):ivar_omit(2)))
+                  if (ivar_omit(1)==1) then
+                    read (lun_input,iostat=iosr) tmp_omit,a(:,nghost+1,:,:)
+                  elseif (ivar_omit(1)>1) then
+                    read (lun_input,iostat=iosr) a(:,nghost+1,:,:ivar_omit(1)-1),tmp_omit,a(:,nghost+1,:,ivar_omit(1):)
                   else
                     read (lun_input,iostat=iosr) a(:,nghost+1,:,:)
                   endif
                 elseif (nz == 1) then
-                  if (ivar_omit1>0) allocate(tmp(mx,my,1,ivar_omit1:ivar_omit2))
-                  if (ivar_omit1==1) then
-                    read (lun_input,iostat=iosr) tmp,a(:,:,nghost+1,:)
-                  elseif (ivar_omit1>1) then
-                    read (lun_input,iostat=iosr) a(:,:,nghost+1,:ivar_omit1-1),tmp,a(:,:,nghost+1,ivar_omit1:)
+                  if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,1,ivar_omit(1):ivar_omit(2)))
+                  if (ivar_omit(1)==1) then
+                    read (lun_input,iostat=iosr) tmp_omit,a(:,:,nghost+1,:)
+                  elseif (ivar_omit(1)>1) then
+                    read (lun_input,iostat=iosr) a(:,:,nghost+1,:ivar_omit(1)-1),tmp_omit,a(:,:,nghost+1,ivar_omit(1):)
                   else
                     read (lun_input,iostat=iosr) a(:,:,nghost+1,:)
                   endif
                 else
                   call fatal_error ('read_snap', 'lwrite_2d used for 3-D simulation!')
                 endif
+
               else
 !
-                if (ivar_omit1>0) allocate(tmp(mx,my,mz,ivar_omit1:ivar_omit2))
+                if (nghost_read_fewer==0) then
+
+                  if (lzaver_on_input) then
+                    allocate(tmp(mx,my,mz_src,nv))
+                    if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,mz_src,ivar_omit(1):ivar_omit(2)))
+                    iosr=read_part(lun_input,tmp,tmp_omit)
+                    a(:,:,nghost+1,:)=sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
+                    do ipz_src=1,nprocz_src-1
+                      open(lun_input1,FILE=trim(srcdir)//'/data/proc'//trim(itoa(iproc+ipz_src*nprocxy))//'/'//trim(file), FORM='unformatted', status='old', iostat=ios)
+                      iosr=read_part(lun_input1,tmp,tmp_omit)
+                      a(:,:,nghost+1,:)=a(:,:,nghost+1,:)+sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
+                      close(lun_input1)
+                    enddo
+                    a(:,:,nghost+1,:)=a(:,:,nghost+1,:)/nzgrid_src
+                  else
+                    if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,mz,ivar_omit(1):ivar_omit(2)))
+                    iosr=read_part(lun_input,a,tmp_omit)
+                  endif
+!
+                elseif (nghost_read_fewer>0) then
 !
 !  Possibility of reading data with different numbers of ghost zones.
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
-                if (nghost_read_fewer==0) then
-                  if (ivar_omit1==1) then
-                    read (lun_input,iostat=iosr) tmp,a
-                  elseif (ivar_omit1>1) then
-                    read (lun_input,iostat=iosr) a(:,:,:,:ivar_omit1-1),tmp,a(:,:,:,ivar_omit1:)
-                  else
-                    read (lun_input,iostat=iosr) a
-                  endif
-                elseif (nghost_read_fewer>0) then
-                  if (ivar_omit1==1) then
-                    read (lun_input,iostat=iosr) tmp, &
+                  if (ivar_omit(1)>0) allocate(tmp_omit(mx-2*nghost_read_fewer,my-2*nghost_read_fewer,mz-2*nghost_read_fewer,ivar_omit(1):ivar_omit(2)))
+                  if (ivar_omit(1)==1) then
+                    read (lun_input,iostat=iosr) tmp_omit, &
                          a(1+nghost_read_fewer:mx-nghost_read_fewer, &
                            1+nghost_read_fewer:my-nghost_read_fewer, &
                            1+nghost_read_fewer:mz-nghost_read_fewer, :)
-                  elseif (ivar_omit1>1) then
+                  elseif (ivar_omit(1)>1) then
                     read (lun_input,iostat=iosr) &
                          a(1+nghost_read_fewer:mx-nghost_read_fewer, &
                            1+nghost_read_fewer:my-nghost_read_fewer, &
-                           1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit1-1),tmp, &
+                           1+nghost_read_fewer:mz-nghost_read_fewer,:ivar_omit(1)-1),tmp_omit, &
                          a(1+nghost_read_fewer:mx-nghost_read_fewer, &
                            1+nghost_read_fewer:my-nghost_read_fewer, &
-                           1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit1:)
+                           1+nghost_read_fewer:mz-nghost_read_fewer, ivar_omit(1):)
                   else
                     read (lun_input,iostat=iosr) &
                          a(1+nghost_read_fewer:mx-nghost_read_fewer, &
@@ -126,34 +147,37 @@ iloop:    do ii=iia,iie
                 else
                   len1d=2*nghost+1
                   if (nghost_read_fewer==-1) then
-                    if (ivar_omit1==1) then
-                      read (lun_input,iostat=iosr) tmp, &
+                    if (ivar_omit(1)>0) allocate(tmp_omit(mx,len1d,len1d,ivar_omit(1):ivar_omit(2)))
+                    if (ivar_omit(1)==1) then
+                      read (lun_input,iostat=iosr) tmp_omit, &
                                        a(:,1:len1d,1:len1d,:)
-                    elseif (ivar_omit1>1) then
-                      read (lun_input,iostat=iosr) a(:,1:len1d,1:len1d,:ivar_omit1-1),tmp, &
-                                       a(:,1:len1d,1:len1d, ivar_omit1:)
+                    elseif (ivar_omit(1)>1) then
+                      read (lun_input,iostat=iosr) a(:,1:len1d,1:len1d,:ivar_omit(1)-1),tmp_omit, &
+                                       a(:,1:len1d,1:len1d, ivar_omit(1):)
                     else
                       read (lun_input,iostat=iosr) a(:,1:len1d,1:len1d,:)
                     endif
                     a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
                   elseif (nghost_read_fewer==-2) then
-                    if (ivar_omit1==1) then
-                      read (lun_input,iostat=iosr) tmp, &
+                    if (ivar_omit(1)>0) allocate(tmp_omit(len1d,my,len1d,ivar_omit(1):ivar_omit(2)))
+                    if (ivar_omit(1)==1) then
+                      read (lun_input,iostat=iosr) tmp_omit, &
                                        a(1:len1d,:,1:len1d,:)
-                    elseif (ivar_omit1>1) then
-                      read (lun_input,iostat=iosr) a(1:len1d,:,1:len1d,:ivar_omit1-1),tmp, &
-                                       a(1:len1d,:,1:len1d, ivar_omit1:)
+                    elseif (ivar_omit(1)>1) then
+                      read (lun_input,iostat=iosr) a(1:len1d,:,1:len1d,:ivar_omit(1)-1),tmp_omit, &
+                                       a(1:len1d,:,1:len1d, ivar_omit(1):)
                     else
                       read (lun_input,iostat=iosr) a(1:len1d,:,1:len1d,:)
                     endif
                     a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
                   elseif (nghost_read_fewer==-3) then
-                    if (ivar_omit1==1) then
-                      read (lun_input,iostat=iosr) tmp, &
+                    if (ivar_omit(1)>0) allocate(tmp_omit(len1d,len1d,mz,ivar_omit(1):ivar_omit(2)))
+                    if (ivar_omit(1)==1) then
+                      read (lun_input,iostat=iosr) tmp_omit, &
                                        a(1:len1d,1:len1d,:,:)
-                    elseif (ivar_omit1>1) then
-                      read (lun_input,iostat=iosr) a(1:len1d,1:len1d,:,:ivar_omit1-1),tmp, &
-                                       a(1:len1d,1:len1d,:, ivar_omit1:)
+                    elseif (ivar_omit(1)>1) then
+                      read (lun_input,iostat=iosr) a(1:len1d,1:len1d,:,:ivar_omit(1)-1),tmp_omit, &
+                                       a(1:len1d,1:len1d,:, ivar_omit(1):)
                     else
                       read (lun_input,iostat=iosr) a(1:len1d,1:len1d,:,:)
                     endif
@@ -300,3 +324,42 @@ iloop:    do ii=iia,iie
         endif
       endif
 
+contains
+!----------------------------------------------------------------------------------------------------------------------------------------------------------
+      subroutine prepare_zaver_on_input
+!
+!  Prepares "z-averaging input" from a snapshot in a different (the source) run directory, which is inferred from the contents of the link that readdir//file needs to be.
+!  Only usable for spherical coordinates by now.
+!
+!  31-mar-21/MR: coded
+!
+        character(LEN=20) :: cres
+
+        if (.not.islink((trim(readdir)//'/'//trim(file)))) then
+          call fatal_error('prepare_zaver_on_input',trim(readdir)//'/'//trim(file)//' must be symbolic link for lzaver_on_input=T')
+        else
+          if (readlink(trim(readdir)//'/'//trim(file),link)) &
+          srcdir=link(1:index(trim(link),'data')-1)
+!
+!  Obtain nproc[xyz], n[xyz]grid from source run directory and check compatibility with target run.
+!
+          call extract_str("grep '^[^!]*nprocx *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          if (nprocx/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nprocx in '//trim(srcdir))
+          call extract_str("grep '^[^!]*nprocy *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          if (nprocy/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nprocy in '//trim(srcdir))
+
+          call extract_str("grep '^[^!]*nxgrid *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nxgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          if (nxgrid/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nxgrid in '//trim(srcdir))
+          call extract_str("grep '^[^!]*nygrid *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nygrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          if (nygrid/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nygrid in '//trim(srcdir))
+
+          call extract_str("grep '^[^!]*nprocz *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          nprocz_src=atoi(cres)
+          call extract_str("grep '^[^!]*nzgrid *= *[1-9][0-9]*' "//trim(srcdir)//"/src/cparam.local | sed -e's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+          nzgrid_src=atoi(cres)
+          mz_src=nzgrid_src/nprocz_src+2*nghost
+
+        endif
+
+      endsubroutine prepare_zaver_on_input
+!----------------------------------------------------------------------------------------------------------------------------------------------------------

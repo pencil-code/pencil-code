@@ -566,7 +566,7 @@ module HDF5_IO
       read (lun_input, '(l5,i5)') lexist_slice_xz, iy_bc_
       read (lun_input, '(l5,i5)') lexist_slice_xz2, iy2_bc_
       read (lun_input, '(l5,i5)') lexist_slice_yz, ix_bc_
-      close (lun_input)
+      close(lun_input)
 !
     endsubroutine input_slice_position
 !***********************************************************************
@@ -587,14 +587,15 @@ module HDF5_IO
 !
       if (.not.file_exists(file)) &
         call fatal_error('input_slice', 'no slices file '//trim(file))
-      open(lun_output, file=file, form='unformatted')
+
+      open(lun_input, file=file, form='unformatted')
       nt=0; ios=0
       do while(ios==0)
-        read(lun_output,iostat=ios) data(:,:,nt+1), time, pos
+        read(lun_input,iostat=ios) data(:,:,nt+1), time, pos
         if (ios/=0) exit
         nt=nt+1
       enddo
-      close(lun_output)
+      close(lun_input)
 !
     endsubroutine input_slice_real_arr
 !***********************************************************************
@@ -620,16 +621,16 @@ module HDF5_IO
       if (.not.file_exists(file)) &
         call fatal_error('input_slice', 'no slices file '//trim(file))
 
-      open(lun_output, file=file, form='unformatted')
+      open(lun_input, file=file, form='unformatted')
       nt=0; ios=0
       do while(ios==0)
-        read(lun_output,iostat=ios) slc, time, pos
+        read(lun_input,iostat=ios) slc, time, pos
         if (ios/=0) exit
         nt=nt+1
 !if (ivar==1.and.iproc==120) print*, 'nt=', nt
         call store_scattered_array(ivar,nt,slc,data,time)
       enddo
-      close(lun_output)
+      close(lun_input)
 !
     endsubroutine input_slice_scat_arr
 !***********************************************************************

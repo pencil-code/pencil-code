@@ -23,6 +23,32 @@
 #include "headers_c.h"
 
 /* ---------------------------------------------------------------------- */
+void FTNIZE(extract_string_c)(char *extract_cmd, char *result)
+{
+//  Extracts a string (e.g., from a file) by extract_cmd.
+//  31-mar-21/MR: coded
+
+    FILE *pipe = popen(extract_cmd, "r");
+    if (pipe == NULL) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+    fgets(result, sizeof(result), pipe);
+    pclose(pipe);
+}
+/* ---------------------------------------------------------------------- */
+
+int FTNIZE(readlink_c) (char *linkfile, char *link, FINT *size)
+{
+//  Returns the contents of a symbolic link.
+//  31-mar-21/MR: coded
+
+  int ret;
+
+  ret=readlink(linkfile,link,*size);
+  return ret;
+}
+/* ---------------------------------------------------------------------- */
 
 int FTNIZE(islink_c) (char *filename)
 {

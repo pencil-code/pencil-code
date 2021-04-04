@@ -79,7 +79,7 @@ module Param_IO
 ! 
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
-      xyz_units, wav1, coord_system, lpole, lcoarse, ncoarse, lfix_unit_std, &
+      xyz_units, wav1, coord_system, lpole, ncoarse, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, dvid, ldivu_perp, &
@@ -180,8 +180,8 @@ module Param_IO
       lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
-      lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit1, ivar_omit2, &
-      lsubstract_reference_state, &
+      lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
+      lsubstract_reference_state, lzaver_on_input, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
@@ -363,10 +363,6 @@ module Param_IO
         lyinyang=.false.
       endif
 !
-!  Set lcoarse for coarsening grid near poles.
-!
-      lcoarse = lcoarse .and. lpole(2) .and. ncoarse>1 
-!
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
@@ -537,15 +533,14 @@ module Param_IO
 !
       lwrite_dim_again = lwrite_dim_again .or. lread_from_other_prec
 !
-!  ivar_omit[12] define a range of variables which are omitted when reading the snapshot.
+!  ivar_omit(1:2) defines a range of variables which are omitted when reading the snapshot.
 !
-      if (ivar_omit1>0) then
-        if (ivar_omit2<=0) then
-          ivar_omit2=ivar_omit1 
-        elseif (ivar_omit2<ivar_omit1) then
-          idum=ivar_omit1; ivar_omit1=ivar_omit2; ivar_omit2=idum
-        endif
+      if (ivar_omit(1)>0) then
+        if (ivar_omit(2)>0.and.ivar_omit(2)<ivar_omit(1)) &
+          idum=ivar_omit(1); ivar_omit(1)=ivar_omit(2); ivar_omit(2)=idum
       endif
+
+      if (lactive_dimension(3)) lzaver_on_input=.false.
 
       if (tag_foreign>0) lforeign=.true.
 !
