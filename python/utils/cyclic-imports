@@ -106,13 +106,6 @@ def main() -> None:
 
     logging.debug(tree)
 
-    # for module, depss in tree.items():
-    #     logging.info(
-    #         "{} → {{{}}}".format(
-    #             module.file, ", ".join([str(d) for d in deps])
-    #         )
-    #     )
-
 
 def parse_imports(
     filename: str, pencil_python_directory: str
@@ -375,6 +368,11 @@ class Module:
             subdir = "."
         else:
             subdir = expand_dot_notation(import_from)
+            logging.debug(
+                "from_import: expanded {} → {}".format(
+                    import_from, subdir
+                )
+            )
         directory = os.path.realpath(
             os.path.join(start_directory, subdir)
         )
@@ -527,6 +525,9 @@ def parse_arguments() -> argparse.Namespace:
         help="Set the log level (one of {})".format(", ".join(levels)),
     )
     parser.add_argument(
+        "--debug", action="store_true", help="Set log-level to DEBUG."
+    )
+    parser.add_argument(
         "path",
         nargs="*",
         help="In non-recursive mode: Python file(s) to parse for imports."
@@ -534,8 +535,12 @@ def parse_arguments() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        log_level = "DEBUG"
+    else:
+        log_level = args.log_level
     logging.basicConfig(
-        level=args.log_level, format="%(levelname)s %(message)s"
+        level=log_level, format="%(levelname)s %(message)s"
     )
 
     if args.help:
