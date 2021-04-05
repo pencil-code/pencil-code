@@ -89,7 +89,7 @@ def main() -> None:
     else:
         python_files = args.path
 
-    tree = {}  # type: Dict[Module, Set[Module]]
+    graph = {}  # type: Dict[Module, Set[Module]]
     pencil_python_directory = os.path.join(
         find_pencil_home(python_files[0]), "python"
     )
@@ -97,14 +97,14 @@ def main() -> None:
     for python_file in python_files:
         deps = parse_imports(python_file, pencil_python_directory)
         if deps:
-            tree[Module.from_file(python_file)] = deps
+            graph[Module.from_file(python_file)] = deps
 
-    for file, deps in tree.items():
+    for file, deps in graph.items():
         print(
             "{} → [{}]".format(str(file), ", ".join(str(d) for d in deps))
         )
 
-    logging.debug(tree)
+    logging.debug(graph)
 
 
 def parse_imports(
