@@ -7,23 +7,469 @@
 # To do:
 # - Produce dot files (and instructions for running dot)
 
+from abc import ABC
 import argparse
+from collections import namedtuple
+import logging
 import os
 import re
 import sys
 
-from typing import Collection, Dict, List, Iterator, Tuple
+from typing import (
+    Collection,
+    Dict,
+    List,
+    Iterable,
+    Iterator,
+    NoReturn,
+    Optional,
+    Set,
+    Tuple,
+)
 
 
-def main():
+KNOWN_EXTERNAL_MODULES = [
+    "__future__",
+    "astropy",
+    "atexit",
+    "code",
+    "collections",
+    "copy",
+    "Cython",
+    "datetime",
+    "dill",
+    "distutils",
+    "doctest",
+    "eqtools",
+    "errno",
+    "fileinput",
+    "glob",
+    "h5py",
+    "idlpy",
+    "importlib",
+    "inspect",
+    "itertools",
+    "lic_internal",
+    "math",
+    "matplotlib",
+    "mpi4py",
+    "multiprocessing",
+    "numpy",
+    "os",
+    "pen",
+    "pexpect",
+    "pickle",
+    "plotly",
+    "pylab",
+    "re",
+    "retrying",
+    "scipy",
+    "shutil",
+    "socket",
+    "string",
+    "struct",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "_thread",
+    "thread",
+    "time",
+    "tqdm",
+    "unittest",
+    "vtk",
+    "warnings",
+    "weakref",
+]
+
+
+def main() -> None:
     args = parse_arguments()
+    if args.recursive:
+        python_files = list(find_python_files(args.path))
+    else:
+        python_files = args.path
+
+    tree = {}  # type: Dict[Module, Set[Module]]
+    pencil_python_directory = os.path.join(
+        find_pencil_home(python_files[0]), "python"
+    )
+
+    for python_file in python_files:
+        deps = parse_imports(python_file, pencil_python_directory)
+        if deps:
+            tree[Module.from_file(python_file)] = deps
+
+    for file, deps in tree.items():
+        print(
+            "{} → [{}]".format(str(file), ", ".join(str(d) for d in deps))
+        )
+
+    logging.debug(tree)
+
+    # for module, depss in tree.items():
+    #     logging.info(
+    #         "{} → {{{}}}".format(
+    #             module.file, ", ".join([str(d) for d in deps])
+    #         )
+    #     )
+
+
+def parse_imports(
+    filename: str, pencil_python_directory: str
+) -> Set["Module"]:
+    directory, _ = os.path.split(os.path.realpath(filename))
+    dependencies = set()  # type: Set[Module]
+    for i, line in enumerate(open(filename)):
+        if "import" in line:
+            import_line = ImportLine.create(Line(filename, i + 1, line))
+            if import_line is not None:
+                for module in Module.from_import_line(
+                    import_line, directory, pencil_python_directory
+                ):
+                    dependencies.add(module)
+    return dependencies
+
+
+Line = namedtuple("Line", ["file", "number", "text"])
+
+
+class ImportLine(ABC):
+    """A line with an import statement.
+
+    An import line imports _names_, possibly from a _module_.
+
+    At this point, it is not known whether the _module_ is a module or a
+    package, nor whether the _names_ are module names or symbols like
+    functions, classes or variables.
+    """
+
+    def __init__(self, module: Optional[str], names: List[str]):
+        self.module = module
+        self.names = names
+
+    @staticmethod
+    def create(line: Line) -> Optional["ImportLine"]:
+        if re.search(r"^\s*#", line.text):  # skip comment lines
+            return None
+        if re.search(r"\bfrom\b.*\bimport\b", line.text):
+            return FromImportLine(line)
+        elif re.search(r"\bimport\b", line.text):
+            return DirectImportLine(line)
+        else:
+            logging.debug(
+                "Not an import line: <{}>".format(line.text.strip())
+            )
+            return None
+
+
+class DirectImportLine(ImportLine):
+    """An import like 'import math' or 'import pencil/calc'."""
+
+    def __init__(self, line: Line) -> None:
+        m = re.search(
+            r"""
+            ^ \s*
+            import
+            \s+
+            (?P<names> \S .*?)
+            \s*
+            $
+            """,
+            line.text,
+            flags=re.VERBOSE,
+        )
+        if m:
+            module = None
+            # Drop everything after 'as':
+            names = re.sub(r"\s*\bas\b.*", "", m.group("names"))
+            names = [n.strip() for n in names.split(",")]
+            super().__init__(module, names)
+        else:
+            die(
+                "Cannot parse direct import line {}:{} <{}>"
+                " – it might be time to use /ast/ for parsing"
+                " the Python files".format(
+                    line.file, line.number, line.text.strip()
+                )
+            )
+
+    def __repr__(self) -> str:
+        return "DirectImportLine[import {}]".format(", ".join(self.names))
+
+
+class FromImportLine(ImportLine):
+    """An import like 'from ..sim import simulations'."""
+
+    def __init__(sekf, line: Line) -> None:
+        m = re.search(
+            r"""
+            ^ \s*
+            from \s+
+            (?P<module> \S+) \s+
+            import
+            \s+
+            (?P<names> \S .*?)
+            \s*
+            $
+            """,
+            line.text,
+            flags=re.VERBOSE,
+        )
+        if m:
+            module = m.group("module")
+            names = [n.strip() for n in m.group("names").split(",")]
+            super().__init__(module, names)
+        else:
+            die(
+                "Cannot parse from-import line {}:{} <{}>"
+                " – it might be time to use /ast/ for parsing"
+                " the Python files".format(
+                    line.file, line.number, line.text.strip()
+                )
+            )
+
+    def __repr__(self) -> str:
+        return "FromImportLine[from {} import {}]".format(
+            self.module, self.names
+        )
+
+
+class Package:
+    """A Python package.
+
+    E.g.
+      pencil.math.derivatives
+
+    A package is always represented by a __init__.py file in the package
+    directory.
+    """
+
+    def __init__(self, directory: str):
+        self.directory = os.path.realpath(directory)
+        if not (os.path.isdir(self.directory)):
+            raise PackageDirectoryDoesNotExist(self.directory)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Package):
+            return self.directory == other.directory
+        else:
+            return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.directory)
+
+    def __repr__(self) -> str:
+        return "Package {}".format(self.directory)
 
 
 class Module:
-    """A Python module"""
+    """A Python module (essentially a .py file).
 
-    def __init__(self, path: str) -> None:
-        self.path = path
+    For a package, point to the __init__.py file.
+    """
+
+    def __init__(self, package: Package, name: str) -> None:
+        self.package = package
+        self.name = name
+        self.file = self.find_module_file(package, name)
+
+    @staticmethod
+    def find_module_file(package: Package, module_name: str) -> str:
+        directory = package.directory
+        for cand in [
+            module_name + ".py",
+            os.path.join(module_name, "__init__.py"),
+        ]:
+            candidate = os.path.join(directory, cand)
+            if os.path.exists(candidate):
+                return candidate
+        raise Exception(
+            "No module file found for package {}, module {}".format(
+                package, module_name
+            )
+        )
+
+    @staticmethod
+    def from_file(filename: str) -> "Module":
+        if not filename.endswith(".py"):
+            die("File name {} has no .py suffix")
+        package_dir, basename = os.path.split(
+            re.sub(r"\.py$", "", filename)
+        )
+        return Module(Package(package_dir), basename)
+
+    @staticmethod
+    def from_import_line(
+        import_line: ImportLine,
+        directory: str,
+        pencil_python_directory: str,
+    ) -> Iterator["Module"]:
+        logging.debug(
+            "from_import_line({}, {}, {})".format(
+                import_line, directory, pencil_python_directory
+            )
+        )
+        if isinstance(import_line, DirectImportLine):
+            for name in import_line.names:
+                start = name.split(".")[0]
+                if start == "pencil":
+                    yield Module.from_import(
+                        ".", name, pencil_python_directory
+                    )
+                elif start in KNOWN_EXTERNAL_MODULES:
+                    # Absolute import of some non-pencil module
+                    logging.info(
+                        "Non-interesting import line <import {}>".format(
+                            import_line.names
+                        )
+                    )
+                else:
+                    logging.warning(
+                        "Unknown global import {}".format(import_line)
+                    )
+        elif isinstance(import_line, FromImportLine):
+            # A FromImportLine
+            for name in import_line.names:
+                import_from = import_line.module
+                if import_from is not None:
+                    start = import_from.split(".")[0]
+                    if start == "pencil":
+                        yield Module.from_import(
+                            import_from, name, pencil_python_directory
+                        )
+                    elif start in KNOWN_EXTERNAL_MODULES:
+                        logging.info(
+                            "Non-interesting import line <{}>".format(
+                                import_line
+                            )
+                        )
+                    else:
+                        yield Module.from_import(
+                            import_from, name, directory
+                        )
+                else:
+                    raise Exception(
+                        "Can't happen: FromImportLine has no module"
+                    )
+        else:
+            raise Exception(
+                "Can't happen: import_line is a", import_line.__class__
+            )
+
+    @staticmethod
+    def from_import(
+        import_from: str, importee: str, start_directory: str
+    ) -> "Module":
+        """Find a Module, based on information from an import line.
+
+        This is non-trivial, as the import can either be an import of a
+        module from a package, or the import of a symbol from a module.
+
+        """
+        logging.debug(
+            "from_import({}, {}, {}".format(
+                import_from, importee, start_directory
+            )
+        )
+        if import_from == ".":
+            subdir = "."
+        else:
+            subdir = expand_dot_notation(import_from)
+        directory = os.path.realpath(
+            os.path.join(start_directory, subdir)
+        )
+        parent_dir, last_part = os.path.split(directory)
+        candidates = [(directory, importee), (parent_dir, last_part)]
+        logging.debug(
+            "Module.from_import(): candidates = {}".format(candidates)
+        )
+        for package_dir, module_name in candidates:
+            candidate_file = os.path.join(
+                package_dir, module_name + ".py"
+            )
+            if os.path.exists(candidate_file):
+                logging.debug("Found: {}".format(candidate_file))
+                return Module(Package(package_dir), module_name)
+            else:
+                init_file = os.path.join(
+                    package_dir, module_name, "__init__.py"
+                )
+                if os.path.exists(init_file):
+                    logging.debug("Found: {}".format(init_file))
+                    return Module(Package(package_dir), module_name)
+        logging.debug("Not found: {}".format(candidate_file))
+        raise Exception(
+            "Cannot resolve 'from {} import {}'".format(
+                import_from, importee
+            )
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Module):
+            return self.file == other.file
+        else:
+            return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.file)
+
+    def __repr__(self) -> str:
+        return "Module {} in {}/".format(self.name, self.package)
+
+    def __str__(self) -> str:
+        """Pretty-print module path."""
+        path = re.sub(r".*/python/pencil/", "pencil/", self.file)
+        path = re.sub(r"/__init__.py$", "", path)
+        return path
+
+
+def expand_dot_notation(name: str) -> str:
+    """Expand notation like ..parent.sub to ../parent/sub ."""
+    parts = []
+    # The first leading dot points to the current directory
+    if name.startswith("."):
+        parts.append(".")
+        name = name[1:]
+    while name.startswith("."):
+        parts.append(os.path.pardir)
+        name = name[1:]
+    parts.extend(name.split("."))
+    return os.path.join(*parts)
+
+
+def find_python_files(root_dirs: Iterable[str]) -> Iterator[str]:
+    """Recursively list all .py files under the given root directories."""
+    for root_dir in root_dirs:
+        if not os.path.isdir(root_dir):
+            die("Not a directory: {}".format(root_dir))
+        for root, directories, file_names in os.walk(root_dir):
+            for file_name in file_names:
+                if file_name.endswith(".py"):
+                    yield os.path.join(root, file_name)
+
+
+def find_pencil_home(python_file: str) -> str:
+    """Find $PENCIL_HOME/python."""
+    path = os.path.realpath(python_file)
+    while path:
+        path, last = os.path.split(path)
+        if _looks_like_pencil_home(path):
+            return path
+    die(
+        "Could not find PENCIL_HOME searching upwards from {}".format(
+            python_file
+        )
+    )
+
+
+def _looks_like_pencil_home(path: str) -> bool:
+    """Does the given path contain some files typical for PENCIL_HOME?"""
+    subpaths = [
+        "python/pencil",
+        "samples",
+        "license/GNU_public_license.txt",
+    ]
+    return all([os.path.exists(os.path.join(path, s)) for s in subpaths])
 
 
 def dfs(
@@ -34,7 +480,7 @@ def dfs(
     [From: https://stackoverflow.com/a/40834276]
 
     Arguments:
-      graph : The graph ...
+      graph : A dict {module => [included modules]}
 
     Example:
       >>> graph = { 1: [2, 3, 5], 2: [1], 3: [1], 4: [2], 5: [2] }
@@ -71,6 +517,15 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Print this help text and exit.",
     )
+    levels = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+    parser.add_argument(
+        "-L",
+        "--log-level",
+        action="store",
+        default="WARNING",
+        choices=levels,
+        help="Set the log level (one of {})".format(", ".join(levels)),
+    )
     parser.add_argument(
         "path",
         nargs="*",
@@ -78,6 +533,10 @@ def parse_arguments() -> argparse.Namespace:
         " With -r|--recursive: root directory/ies to search recursively.",
     )
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=args.log_level, format="%(levelname)s %(message)s"
+    )
 
     if args.help:
         parser.print_help()
@@ -91,6 +550,20 @@ Examples:
         parser.exit()
 
     return args
+
+
+def die(*msg_lines: str) -> NoReturn:
+    print("\n".join(msg_lines))
+    sys.exit(1)
+
+
+class PackageDirectoryDoesNotExist(Exception):
+    """We have tried to treat a non-existing path as package directory"""
+
+    def __init__(self, directory: str) -> None:
+        super().__init__(
+            "Package directory '{}' does not exist".format(directory)
+        )
 
 
 if __name__ == "__main__":
