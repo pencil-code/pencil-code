@@ -19,7 +19,7 @@ noparticles_main.o: particles_main.h $(COMMON_DEPS)
 #
 #  Rules for making library files.
 #
-magnetic.a: $(MAGNETIC_OBJ) Makefile.local
+magnetic.a: $(MAGNETIC_OBJ) $(MAGNETIC_MEANFIELD_OBJ) $(MAGNETIC_MEANFIELD_DEMFDT_OBJ) Makefile.local
 	$(AR) r magnetic.a $(MAGNETIC_OBJ) $(MAGNETIC_MEANFIELD_OBJ) $(MAGNETIC_MEANFIELD_DEMFDT_OBJ)
 #
 nomagnetic.a: $(MAGNETIC_OBJ) Makefile.local
