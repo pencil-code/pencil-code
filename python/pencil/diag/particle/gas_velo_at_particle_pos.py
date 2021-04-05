@@ -13,10 +13,10 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
     OVERWRITE:		set to True to overwrite already calculated results
   """
 
-  from .. import get_sim
-  from .. import read
-  from .. import diag
-  from ..io import mkdir
+  from ... import get_sim
+  from ... import read
+  from ... import diag
+  from ...io import mkdir
   from os import listdir
   from os.path import exists, join, dirname
   import numpy as np
@@ -32,7 +32,7 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
 
   if use_IDL:
       print('? WARNING: IDL VERSION OF THIS SCRIPT BY JOHANSEN, not recommended for 2D data')
-      from ..backpack import pidly
+      from ...backpack import pidly
       print('## starting IDL engine..')
       IDL = pidly.IDL(long_delay=0.05)		# start IDL engine
 
