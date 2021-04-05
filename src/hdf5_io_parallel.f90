@@ -46,8 +46,8 @@ module HDF5_IO
 !
   interface hdf5_input_slice
     module procedure input_slice_arr
-    module procedure input_slice_scat
     module procedure input_slice_real_arr
+    module procedure input_slice_scat
   endinterface
 !
   interface output_hdf5_double
@@ -2029,6 +2029,54 @@ module HDF5_IO
 !
     endsubroutine wdim
 !***********************************************************************
+    subroutine input_aver_2D(filename, time, variables, data)
+!       
+!  Read an 2D-average file at a given time.
+!
+!  01-april-21/MR: coded
+!
+      use File_IO, only: file_exists
+      use Mpicomm, only: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,mpibarrier
+      use General, only: find_proc
+
+      character (len=*),                    intent(inout):: filename
+      character (len=*), dimension(:),      intent(in)   :: variables
+      real,                                 intent(in)   :: time
+      real,              dimension(:,:,:,:),intent(out)  :: data
+!            
+      integer :: it, nt, comm, slice_root
+      real :: tt
+      character(LEN=fnlen) :: group
+!
+      if (lroot) then
+        if (file_exists (filename)) then
+          ! find last written average
+          call file_open_hdf5(filename,global=.false.,read_only=.true.,write=.false.)
+          if (exists_in_hdf5 ('last')) then
+            call input_hdf5 ('last', nt)
+          else
+            call fatal_error('input_aver_2D','no "last" group in HDF5 file '//trim(filename))
+          endif
+        else
+          call fatal_error('input_aver_2D','no HDF5 file '//trim(filename))
+        endif
+      endif
+!
+      call mpibarrier(comm)
+      call file_open_hdf5(filename,truncate=.false.,read_only=.true.,write=.false.,comm=comm)
+
+      do it=1,nt
+        group=itoa(it)
+        call input_hdf5 (trim(group)//'/time', tt)
+
+!          call input_hdf5 (trim(group)//'data', (/nxgrid, nygrid/), (/ipx,
+!          ipy/), data(:,:,it))
+      enddo
+      data=0.
+      call file_close_hdf5
+!
+    endsubroutine input_aver_2D
+!***********************************************************************
     subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output 1D average to a file.
@@ -2344,6 +2392,30 @@ module HDF5_IO
 !  27-Oct-2018/PABourdin: no action required for HDF5 output
 !
     endsubroutine hdf5_output_slice_position
+!***********************************************************************
+    subroutine input_slice_real_arr(file, time, pos, data)
+!
+!  read a slice file
+!
+!  24-may-19/MR: coded
+!
+      use File_io, only: file_exists
+
+      character (len=*),   intent(in) :: file
+      real,                intent(out):: time
+      real,                intent(out):: pos
+      real, dimension(:,:,:),intent(out):: data
+!
+      integer :: nt, ios
+!
+      call fatal_error('input_slice_real_arr', 'not implemented for HDF5')
+
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(pos)
+      call keep_compiler_quiet(time)
+      call keep_compiler_quiet(data)
+
+    endsubroutine input_slice_real_arr
 !***********************************************************************
     subroutine input_slice_scat(file,pos,data,ind,nt)
 !       
