@@ -16,9 +16,9 @@ import re
 import sys
 
 from typing import (
-    Collection,
     Dict,
     List,
+    ItemsView,
     Iterable,
     Iterator,
     NoReturn,
@@ -89,7 +89,7 @@ def main() -> None:
     else:
         python_files = args.path
 
-    graph = {}  # type: Dict[Module, Set[Module]]
+    graph = DependencyDict()
     pencil_python_directory = os.path.join(
         find_pencil_home(python_files[0]), "python"
     )
@@ -99,12 +99,18 @@ def main() -> None:
         if deps:
             graph[Module.from_file(python_file)] = deps
 
+    # Print all dependencies:
     for file, deps in graph.items():
         print(
             "{} → [{}]".format(str(file), ", ".join(str(d) for d in deps))
         )
-
     logging.debug(graph)
+
+    cycles = [
+        [node] + path for node in graph for path in dfs(graph, node, node)
+    ]
+
+    print(cycles)
 
 
 def parse_imports(
@@ -421,6 +427,36 @@ class Module:
         return path
 
 
+class DependencyDict:
+    """A Dict[Module, Set[Module]] that returns set() for missing entries.
+
+      We cannot use defaultdict, as that leads to
+
+      RuntimeError: dictionary changed size during iteration
+
+      """
+
+    def __init__(self) -> None:
+        self.dict = dict()  # type: Dict[Module, Set[Module]]
+
+    def __setitem__(self, key: Module, item: Set[Module]) -> None:
+        if key not in self.dict:
+            self.dict[key] = set()
+        self.dict[key].update(item)
+
+    def __getitem__(self, key: Module) -> Set[Module]:
+        if key in self.dict:
+            return self.dict[key]
+        else:
+            return set()
+
+    def __iter__(self) -> Iterator[Module]:
+        return iter(self.dict)
+
+    def items(self) -> ItemsView[Module, Set[Module]]:
+        return self.dict.items()
+
+
 def expand_dot_notation(name: str) -> str:
     """Expand notation like ..parent.sub to ../parent/sub ."""
     parts = []
@@ -471,7 +507,7 @@ def _looks_like_pencil_home(path: str) -> bool:
 
 
 def dfs(
-    graph: Dict[Module, Collection[Module]], start: Module, end: Module
+    graph: DependencyDict, start: Module, end: Module
 ) -> Iterator[List[Module]]:
     """Depth-first search algorithm for finding cycles in a graph.
 
