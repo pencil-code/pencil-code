@@ -104,8 +104,8 @@ iloop:    do ii=iia,iie
                     iosr=read_part(lun_input,tmp,tmp_omit)
                     a(:,:,nghost+1,:)=sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
                     do ipz_src=1,nprocz_src-1
-                      open(lun_input1,FILE=trim(srcdir)//'/data/proc'//trim(itoa(iproc+ipz_src*nprocxy))//'/'//trim(file), &
-                          FORM='unformatted', status='old', iostat=ios)
+                      open(lun_input1,FILE=trim(srcdir)//'/data/proc'//trim(itoa(iproc+ipz_src*nprocxy))// &
+                                      '/'//trim(file), FORM='unformatted', status='old', iostat=ios)
                       iosr=read_part(lun_input1,tmp,tmp_omit)
                       a(:,:,nghost+1,:)=a(:,:,nghost+1,:)+sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
                       close(lun_input1)
@@ -122,7 +122,7 @@ iloop:    do ii=iia,iie
 !  In that case, one must regenerate the mesh with luse_oldgrid=T.
 !
                   if (ivar_omit(1)>0) allocate(tmp_omit(mx-2*nghost_read_fewer,my-2*nghost_read_fewer, &
-                      mz-2*nghost_read_fewer,ivar_omit(1):ivar_omit(2)))
+                                                        mz-2*nghost_read_fewer,ivar_omit(1):ivar_omit(2)))
                   if (ivar_omit(1)==1) then
                     read (lun_input,iostat=iosr) tmp_omit, &
                          a(1+nghost_read_fewer:mx-nghost_read_fewer, &
@@ -327,10 +327,10 @@ iloop:    do ii=iia,iie
       endif
 
 contains
-!----------------------------------------------------------------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------------------------
       subroutine prepare_zaver_on_input
 !
-!  Prepares "z-averaging input" from a snapshot in a different (the source) run directory,
+!  Prepares "z-averaging input" from a snapshot in a different (the source) run directory, 
 !  which is inferred from the contents of the link that readdir//file needs to be.
 !  Only usable for spherical coordinates by now.
 !
@@ -339,7 +339,8 @@ contains
         character(LEN=20) :: cres
 
         if (.not.islink((trim(readdir)//'/'//trim(file)))) then
-          call fatal_error('prepare_zaver_on_input',trim(readdir)//'/'//trim(file)//' must be symbolic link for lzaver_on_input=T')
+          call fatal_error('prepare_zaver_on_input',trim(readdir)//'/'//trim(file)// &
+                                                    ' must be symbolic link for lzaver_on_input=T')
         else
           if (readlink(trim(readdir)//'/'//trim(file),link)) &
           srcdir=link(1:index(trim(link),'data')-1)
@@ -347,28 +348,28 @@ contains
 !  Obtain nproc[xyz], n[xyz]grid from source run directory and check compatibility with target run.
 !
           call extract_str("grep '^[^!]*nprocx *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'",cres)
           if (nprocx/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nprocx in '//trim(srcdir))
           call extract_str("grep '^[^!]*nprocy *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'",cres)
           if (nprocy/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nprocy in '//trim(srcdir))
 
           call extract_str("grep '^[^!]*nxgrid *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nxgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nxgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
           if (nxgrid/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nxgrid in '//trim(srcdir))
           call extract_str("grep '^[^!]*nygrid *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nygrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nygrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
           if (nygrid/=atoi(cres)) call fatal_error('prepare_zaver_on_input','non-matching nygrid in '//trim(srcdir))
 
           call extract_str("grep '^[^!]*nprocz *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'",cres)
           nprocz_src=atoi(cres)
           call extract_str("grep '^[^!]*nzgrid *= *[1-9][0-9]*' "//trim(srcdir)// &
-              "/src/cparam.local | sed -e's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
+                           "/src/cparam.local | sed -e's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'",cres)
           nzgrid_src=atoi(cres)
           mz_src=nzgrid_src/nprocz_src+2*nghost
 
         endif
 
       endsubroutine prepare_zaver_on_input
-!----------------------------------------------------------------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------------------------

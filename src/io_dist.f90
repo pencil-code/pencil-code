@@ -586,7 +586,7 @@ module Io
 !                reding is tried from the (min. 11, max. 26) neighboring
 !                processors' snaphots.
 !
-      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char, mpireduce_or
       use Syscalls, only: islink, system_cmd, readlink, extract_str
@@ -623,7 +623,7 @@ module Io
 !                                                        for start
 !                                > 0, tstart specified: use this value
 !                             
-      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
                          mpisend_char, mpirecv_char
       use Syscalls, only: islink, system_cmd, readlink, extract_str
