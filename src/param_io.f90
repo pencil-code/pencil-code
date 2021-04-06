@@ -536,8 +536,9 @@ module Param_IO
 !  ivar_omit(1:2) defines a range of variables which are omitted when reading the snapshot.
 !
       if (ivar_omit(1)>0) then
-        if (ivar_omit(2)>0.and.ivar_omit(2)<ivar_omit(1)) &
+        if ((ivar_omit(2)>0).and.(ivar_omit(2)<ivar_omit(1))) then
           idum=ivar_omit(1); ivar_omit(1)=ivar_omit(2); ivar_omit(2)=idum
+        endif
       endif
 
       if (lactive_dimension(3)) lzaver_on_input=.false.
