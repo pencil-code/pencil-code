@@ -33,7 +33,7 @@ module Special
   use Cparam
   use Cdata
   use Diagnostics
-  use General, only: keep_compiler_quiet,numeric_precision
+  use General, only: keep_compiler_quiet,numeric_precision,itoa
   use Messages, only: svn_id, fatal_error, fatal_error_local, warning
   use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max,mpibarrier
 
@@ -841,8 +841,8 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 !
       real :: delt,minbeta,minbeta_,thmin,thmax,rmin,rmax,trmin,det,oldtrace,newtrace
-      integer :: i,j,k,numzeros,numcomplex,numzeros_,mm,ll,iv,iv0,ik
-      integer, dimension(:,:,:,:), allocatable :: beta_mask
+      integer :: i,j,k,numzeros,numcomplex,numzeros_,mm,ll,iv,iv0,ik,icheck
+      integer, dimension(:,:,:,:,:), allocatable :: beta_mask
       real, dimension(4) :: polcoeffs
       complex, dimension(3) :: eigenvals
       real, dimension(3,3) :: ev, beta_sav
@@ -1015,27 +1015,28 @@ module Special
 
 !if (lroot.and.lbeta) write(200,*) beta_data(1,:,:,1,:,:)
 
-           if (lbeta.and.lremove_beta_negativ) then
-             do i=1,3
-               where(beta_data(:,:,:,:,i,i)<eta*rel_eta) beta_data(:,:,:,:,i,i)=eta*rel_eta
-             enddo
-           endif
+          if (lbeta.and.lremove_beta_negativ) then
+            do i=1,3
+              where(beta_data(:,:,:,:,i,i)<eta*rel_eta) beta_data(:,:,:,:,i,i)=eta*rel_eta
+            enddo
+          endif
 
 !if (lroot.and.lbeta) write(300,*) beta_data(1,:,:,1,:,:)
 
           if (lbeta.and.lregularize_beta) then
 
-            allocate(beta_mask(dataload_len,nx,ny,nz))
+            allocate(beta_mask(dataload_len,nx,ny,nz,3))
+            beta_mask=0
+
             do i=1,3
 !
 !  Look for vanishing diagonal elements of beta.
 !
-              beta_mask=0
-              where(beta_data(:,:,:,:,i,i)+eta<=0.) beta_mask=1
-              minbeta=minval(beta_data(:,:,:,:,i,i),beta_mask==1)
-              !where(beta_mask==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta
+              where(beta_data(:,:,:,:,i,i)+eta<=0.) beta_mask(:,:,:,:,i)=1
+              minbeta=minval(beta_data(:,:,:,:,i,i),beta_mask(:,:,:,:,i)==1)
+              !where(beta_mask(:,:,:,:,i)==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta 
 
-              numzeros=sum(beta_mask)
+              numzeros=sum(beta_mask(:,:,:,:,i))
               call mpiallreduce_sum_int(numzeros,numzeros_)
               if (numzeros_>0) then
                 call mpireduce_min(minbeta,minbeta_)
@@ -1045,10 +1046,10 @@ module Special
                 endif
               endif
             enddo
-            deallocate(beta_mask)
 !
 !  Look for locations of negative definite beta.
 !
+            icheck=0
             do
 
               numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
@@ -1121,6 +1122,11 @@ module Special
                   enddo
                   newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
                   if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace (2) =', ll,mm,abs(oldtrace-newtrace)
+
+                else
+                  if (icheck==0.and.any(beta_mask(1,ll,mm,1,:)==1)) &
+                    call warning('meanfield_e_tensor','beta regularization discrepancy at iproc,l,m='//trim(itoa(iproc))//','// &
+                                                      trim(itoa(ll))//','//trim(itoa(mm)),iproc_world)
                 endif
 111 do i=1,3; do j=1,3
     if (beta_sav(i,j)/=0.) then
@@ -1135,7 +1141,7 @@ enddo; enddo
 
               call mpiallreduce_sum_int(numzeros,numzeros_)
               if (numzeros_>0) then
-                if (lroot) print'(a,i15,a)', 'beta is negative definite at', numzeros_,' positions.'
+                if (lroot) print'(a,i15,a)', 'beta+eta is negative definite at', numzeros_,' positions.'
                 if (numzeros>0) print'(4(a,f6.3),a,i4)', &
                                 'in r-theta region (',rmin,',',rmax,')x(',thmin,',',thmax,') of proc ',iproc,'.'
                 call mpireduce_min(trmin,minbeta_)
@@ -1143,8 +1149,11 @@ enddo; enddo
               else
                 exit
               endif
-!write(66) beta_data
+
+              icheck=icheck+1
             enddo
+
+            deallocate(beta_mask)
 
           endif
 
@@ -1153,7 +1162,7 @@ enddo; enddo
 !
               lregularize_kappa=.false.
 !
-! Setting kappa_floor by hand
+! Setting kappa_floor for kappa_phi,r,theta and kappa_phi,theta,r by hand.
 !
               where(kappa_data(1,:,:,1,3,2,1) < kappa_floor) &
                 kappa_data(1,:,:,1,3,2,1)= kappa_floor
@@ -1177,8 +1186,6 @@ enddo; enddo
                 enddo
               enddo
             enddo
-          else
-            field_symmetry=0
           endif
 
         end if
@@ -1215,17 +1222,16 @@ enddo; enddo
 !
 !  24-nov-04/tony: coded
 !
-!      use General, only: notanumber
-
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 !
-      integer :: i,j,k, ind(1)
-      real, dimension(nx) :: jrt,jtr
-      logical :: l0
+      integer :: i,j,k, ind(1),iii
+      real, dimension(nx) :: jrt,jtr,mask
+      character(LEN=80) :: mess
+      character(LEN=20) :: cbuf
       real :: limit=1e30
 !
       call keep_compiler_quiet(f)
@@ -1329,7 +1335,7 @@ enddo; enddo
       end if
 
       if (lkappa) then
-        ! Calculate kappa (grad B)_symm
+        ! Calculate (grad B)_symm
         do j=1,3; do i=1,3
           p%bij_symm(:,i,j)=0.5*(p%bijtilde(:,i,j)+p%bij_cov_corr(:,i,j) + &
                                  p%bijtilde(:,j,i)+p%bij_cov_corr(:,j,i))
@@ -1343,29 +1349,42 @@ enddo; enddo
           endif
         end do; end do; end do
 
-        p%kappa_emf = 0
+        ! Calculate kappa (grad B)_symm
+        p%kappa_emf = 0; mask=0
         do k=1,3; do j=1,3; do i=1,3
           if (lkappa_arr(i,j,k)) then
             if (lregularize_kappa) then
-              if (i==3.and.(j==1.and.k==2).or.(j==2.and.k==1)) then
+              if (i==3.and.j+k==3) then
 !
-! For cases where |B_x;y| << |B_y;x| or |B_y;x| << |B_x;y|: ensure that beta+kappa are positive
-! definit.
+! For cases where |B_x;y| << |B_y;x| or |B_y;x| << |B_x;y|: ensure that beta+/-kappa are positive definit.
 !
                 jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
                 jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
-l0=.false.   !.true.
-if (l0.and.any(abs(jrt)<jthresh*abs(jtr).and.p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3))) then
-  print*, 'iprocs, m=', ipx,ipy, m
-  !l0=.false.
-endif
                 where (abs(jrt)<jthresh*abs(jtr) .and. &
                        p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
                   p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
+                  mask=1
                 elsewhere (abs(jtr)<jthresh*abs(jrt) .and. &
                            p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
                   p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
+                  mask=-1
                 endwhere
+                !where ( (eta+p%beta_coefs(:,3,3))*(jtr-jrt)**2 + (jtr**2 - jrt**2)*p%kappa_coefs(:,3,j,k) < 0.) 
+                !  p%kappa_coefs(:,3,j,k)=0.
+                !  mask=1
+                !endwhere
+if (.false..and.ldiagnos.and.any(mask/=0)) then
+  mess='it,iprocs, m='//trim(itoa(it))//' '//trim(itoa(ipx))//' '//trim(itoa(ipy))//' '//trim(itoa(m))
+  write(mess,'(e12.4)') y(m)
+  
+  do iii=1,nx
+    if (mask(iii)/=0) then
+      mess=trim(mess)//'|'//trim(itoa(iii))
+      write(cbuf,'(e12.4)') x(iii)
+      write(20+iproc,*) trim(mess)//' '//trim(cbuf)
+    endif
+  enddo
+endif
               endif
             endif
             p%kappa_emf(:,i)=p%kappa_emf(:,i)+p%kappa_coefs(:,i,j,k)*p%bij_symm(:,j,k)
