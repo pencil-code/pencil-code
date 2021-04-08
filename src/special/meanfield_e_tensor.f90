@@ -226,7 +226,7 @@ module Special
              lreconstruct_tensors=.false., &
              lalt_decomp=.false.,&
              lremove_beta_negativ=.false.
-  real :: rel_eta=1e-3, jthresh=0.3, rel_kappa=1e-3    ! must be > 0
+  real :: rel_eta=1e-3, jthreshold=0.3, rel_kappa=1e-3    ! must be > 0
   real, pointer :: eta
   real :: kappa_floor=-1e-5
 
@@ -259,7 +259,7 @@ module Special
       lusecoefs, lloop, lsymmetrize, field_symmetry, &
       nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, &
       lregularize_kappa, lregularize_kappa_simple, lalt_decomp, lremove_beta_negativ, &
-      rel_eta, rel_kappa, kappa_floor, lbblimit
+      rel_eta, rel_kappa, jthreshold, kappa_floor, lbblimit
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -1360,11 +1360,11 @@ enddo; enddo
 !
                 jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
                 jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
-                where (abs(jrt)<jthresh*abs(jtr) .and. &
+                where (abs(jrt)<jthreshold*abs(jtr) .and. &
                        p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
                   p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
                   mask=1
-                elsewhere (abs(jtr)<jthresh*abs(jrt) .and. &
+                elsewhere (abs(jtr)<jthreshold*abs(jrt) .and. &
                            p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
                   p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
                   mask=-1
