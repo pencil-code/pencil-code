@@ -139,7 +139,6 @@ indices = [ $
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
-  { name:'iqx', label:'qx scalar', dims:1 }, $
   { name:'ilnrhon', label:'Log density of neutrals', dims:1 }, $
   { name:'ifx', label:'Radiation vector', dims:3 }, $
   { name:'ie', label:'Radiation scalar', dims:1 }, $
