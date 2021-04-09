@@ -169,3 +169,17 @@ io_dist        old binary files from each CPU, use with few CPUs only!
 Other format are not recommended to use. Further details are found in the
 manual or in the header of the Fortran source code.
 
+Registering new stuff in the f-array 
+------------------------------------
+
+Currently we use a range of routines to register variables in the f-array:
+
+        call farray_register_global("global_bx_ext",iglobal_bx_ext)
+        call farray_register_auxiliary('etasmag',ietasmag,communicated=.true.)
+        call farray_register_pde('aa',iaa,vector=3)
+        call farray_register_global('gg',iglobal_gg,vector=3)
+        call farray_index_append('iacc',iacc)
+        call farray_acquire_scratch_area('scratch',iscratch)
+
+Auxiliary variables can be either communicated or not.
+Some of the routines may be somewhat outdated.
