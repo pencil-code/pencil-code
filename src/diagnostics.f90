@@ -270,7 +270,7 @@ module Diagnostics
 !
 !  Write 'time_series.h5' if output format is HDF5
 !
-        if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
+        if (IO_strategy == "HDF5".and.lwrite_ts_hdf5) call output_timeseries (buffer, fname_keep)
 !
 !  Insert imaginary parts behind real ones if quantity is complex.
 !
@@ -747,7 +747,7 @@ module Diagnostics
               if (itype==ilabel_sum_log10_par)        &
                   vname(iname)=log10(fsum(isum_count)/fweight(isum_count))
 !
-              if (itype==ilabel_integrate)      &
+              if (itype==ilabel_integrate.or.itype==ilabel_sum_plain)      &
                   vname(iname)=fsum(isum_count)
 !
               if (itype==ilabel_integrate_sqrt)      &
@@ -1689,7 +1689,7 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart,lplain)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
 !                first dimension of a is 1; if it is 2 considers a to be a complex
@@ -1699,15 +1699,15 @@ module Diagnostics
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
-      logical, optional,    intent(IN) :: lsqrt, llog10, lint
+      logical, optional,    intent(IN) :: lsqrt, llog10, lint, lplain
 
       if (iname==0) return
 
       if (size(a,1)==1) then
-        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
+        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart,lplain)
       else
 
-        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart)
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart,lplain)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
         if (itype_name(iname) < ilabel_complex ) &
           itype_name(iname)=itype_name(iname)+ilabel_complex
@@ -1716,7 +1716,7 @@ module Diagnostics
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
-    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart)
+    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart,lplain)
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
@@ -1725,13 +1725,13 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, llog10, lint
+      logical, optional,   intent(IN) :: lsqrt, llog10, lint, lplain
 
-      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
+      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
 
     endsubroutine sum_mn_name_std
 !***********************************************************************
-    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
@@ -1752,15 +1752,6 @@ module Diagnostics
 !  20-aug-13/MR: derived from sum_mn_name, made array of values fname a dummy argument
 !  31-mar-15/MR: added switch for proper volume averaging
 !
-!  Note [24-may-2004, wd]:
-!    This routine should incorporate a test for iname /= 0, so instead of
-!         if (idiag_b2m/=0)    call sum_mn_name(b2,idiag_b2m)
-!    we can just use
-!         call sum_mn_name(b2,idiag_b2m)
-!  Same holds for similar routines.
-!  Update [28-Sep-2004 wd]:
-!    Done here, but not yet in all other routines
-!
       use Yinyang, only: in_overlap_mask
 
       real, dimension(nx) :: a,a_scaled
@@ -1769,9 +1760,10 @@ module Diagnostics
       real :: ppart,qpart
       integer :: iname
       integer, optional :: ipart
-      logical, optional :: lsqrt, llog10, lint
+      logical, optional :: lsqrt, llog10, lint, lplain
 !
       intent(in) :: iname
+
 !
 !  Only do something if iname is not zero.
 !
@@ -1789,6 +1781,8 @@ module Diagnostics
           itype_name(iname)=ilabel_sum_log10
         elseif (present(lint)) then
           itype_name(iname)=ilabel_integrate
+        elseif (present(lplain)) then
+          itype_name(iname)=ilabel_sum_plain
         else
           itype_name(iname)=ilabel_sum
         endif
@@ -1832,20 +1826,24 @@ module Diagnostics
 !  Initialize if one is on the first point, or add up otherwise.
 !
             if (lfirstpoint) then
-              if (lspherical_coords) then
+              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+                fname(iname)=sum(a_scaled)
+              elseif (lspherical_coords) then
                 fname(iname)=sum(r2_weight*a_scaled)*sinth_weight(m)
               elseif (lcylindrical_coords) then
                 fname(iname)=sum(rcyl_weight*a_scaled)
               else
-                fname(iname)=sum(a_scaled)
+                call fatal_error('sum_mn_name_real','not implemented')
               endif
             else
-              if (lspherical_coords) then
+              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+                fname(iname)=fname(iname)+sum(a_scaled)
+              elseif (lspherical_coords) then
                 fname(iname)=fname(iname)+sum(r2_weight*a_scaled)*sinth_weight(m)
               elseif (lcylindrical_coords) then
                 fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled)
               else
-                fname(iname)=fname(iname)+sum(a_scaled)
+                call fatal_error('sum_mn_name_real','not implemented')
               endif
             endif
           endif
