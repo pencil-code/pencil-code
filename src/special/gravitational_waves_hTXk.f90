@@ -213,7 +213,6 @@ module Special
         call farray_register_auxiliary('ggX',iggX)
         call farray_register_auxiliary('ggTim',iggTim)
         call farray_register_auxiliary('ggXim',iggXim)
-        !f(:,:,:,iggT:iggXim)=0.
       endif
 !
       if (lhhTX_as_aux) then
@@ -221,7 +220,6 @@ module Special
         call farray_register_auxiliary('hhX',ihhX)
         call farray_register_auxiliary('hhTim',ihhTim)
         call farray_register_auxiliary('hhXim',ihhXim)
-        !f(:,:,:,ihhT:ihhXim)=0.
       endif
 !
       if (lStress_as_aux) then
@@ -230,7 +228,6 @@ module Special
         call farray_register_auxiliary('StTim',iStressTim)
         call farray_register_auxiliary('StXim',iStressXim)
         call farray_register_auxiliary('Str',iStress_ij,array=6)
-        !f(:,:,:,iStressT:iStressXim)=0.
       endif
 !
 !  To get hT and hX in real space, invoke lreal_space_hTX_as_aux
@@ -1485,7 +1482,9 @@ module Special
 !
       if (lwrite_slices) then
         where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX'.or. &
-              cnamev=='h22'.or.cnamev=='h33'.or.cnamev=='h23') cformv='DEFINED'
+              cnamev=='hhTre'.or.cnamev=='hhTim'.or. &
+              cnamev=='StTre'.or.cnamev=='StTim' &
+             ) cformv='DEFINED'
       endif
 !
 !!!  write column where which magnetic variable is stored
@@ -1519,6 +1518,16 @@ module Special
             call assign_slices_scal(slices,f,ihhT)
           endif
 !
+!  hhTre
+!
+        case ('hhTre')
+          call assign_slices_scal(slices,f,ihhT)
+!
+!  hhTim
+!
+        case ('hhTim')
+          call assign_slices_scal(slices,f,ihhTim)
+!
 !  hhX
 !
         case ('hhX')
@@ -1545,6 +1554,16 @@ module Special
           else
             call assign_slices_scal(slices,f,iggX)
           endif
+!
+!  StTre
+!
+        case ('StTre')
+          call assign_slices_scal(slices,f,iStressT)
+!
+!  StTim
+!
+        case ('StTim')
+          call assign_slices_scal(slices,f,iStressTim)
 !
       endselect
 !
