@@ -189,6 +189,10 @@ module Special
   integer :: idiag_dtemf_ave=0
   integer :: idiag_dtemf_dif=0
 !
+! Regularization diagnostics.
+!
+  integer :: idiag_nkappareg=0
+!
 !  2D diagnostics
 !
   integer :: idiag_emfxmxy=0, idiag_emfymxy=0, idiag_emfzmxy=0
@@ -207,7 +211,8 @@ module Special
   integer :: idiag_kappaxyzmxy=0, idiag_kappayyzmxy=0, idiag_kappazyzmxy=0
 
 !
-  ! Interpolation parameters
+! Interpolation parameters
+!
   character (len=fnlen) :: interpname
   integer :: dataload_len=1, tensor_times_len=-1, iload=0
   real, dimension(nx)     :: tmpline
@@ -220,7 +225,7 @@ module Special
   integer :: nsmooth_rbound=0, nsmooth_thbound=0
   integer :: field_symmetry=0
 !
-! regularize beta
+! Regularization of beta and kappa.
 !
   logical :: lregularize_beta=.false., lregularize_kappa=.false., lregularize_kappa_simple=.false., &
              lreconstruct_tensors=.false., &
@@ -229,9 +234,9 @@ module Special
   real :: rel_eta=1e-3, jthreshold=0.3, rel_kappa=1e-3    ! must be > 0
   real, pointer :: eta
   real :: kappa_floor=-1e-5
+  real, dimension(nx) :: kappa_mask
 
-  ! Input dataset name
-  ! Input namelist
+! Input dataset name
 
   namelist /special_init_pars/ &
       emftensors_file, &
@@ -1229,7 +1234,7 @@ enddo; enddo
       intent(inout) :: p
 !
       integer :: i,j,k, ind(1),iii
-      real, dimension(nx) :: jrt,jtr,mask
+      real, dimension(nx) :: jrt,jtr
       character(LEN=80) :: mess
       character(LEN=20) :: cbuf
       real :: limit=1e30
@@ -1350,7 +1355,7 @@ enddo; enddo
         end do; end do; end do
 
         ! Calculate kappa (grad B)_symm
-        p%kappa_emf = 0; mask=0
+        p%kappa_emf = 0; kappa_mask=0.
         do k=1,3; do j=1,3; do i=1,3
           if (lkappa_arr(i,j,k)) then
             if (lregularize_kappa) then
@@ -1363,22 +1368,24 @@ enddo; enddo
                 where (abs(jrt)<jthreshold*abs(jtr) .and. &
                        p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
                   p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
-                  mask=1
+                  kappa_mask=1.
                 elsewhere (abs(jtr)<jthreshold*abs(jrt) .and. &
                            p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
                   p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
-                  mask=-1
+                  kappa_mask=-1.
                 endwhere
                 !where ( (eta+p%beta_coefs(:,3,3))*(jtr-jrt)**2 + (jtr**2 - jrt**2)*p%kappa_coefs(:,3,j,k) < 0.) 
                 !  p%kappa_coefs(:,3,j,k)=0.
-                !  mask=1
+                !  kappa_mask=1.
                 !endwhere
-if (.false..and.ldiagnos.and.any(mask/=0)) then
-  mess='it,iprocs, m='//trim(itoa(it))//' '//trim(itoa(ipx))//' '//trim(itoa(ipy))//' '//trim(itoa(m))
+!if (ldiagnos.and.any(kappa_mask/=0.)) then
+if (.false.) then
+  mess=''
+  !mess='it,iprocs, m='//trim(itoa(it))//' '//trim(itoa(ipx))//' '//trim(itoa(ipy))//' '//trim(itoa(m))
   write(mess,'(e12.4)') y(m)
   
   do iii=1,nx
-    if (mask(iii)/=0) then
+    if (kappa_mask(iii)/=0.) then
       mess=trim(mess)//'|'//trim(itoa(iii))
       write(cbuf,'(e12.4)') x(iii)
       write(20+iproc,*) trim(mess)//' '//trim(cbuf)
@@ -1542,6 +1549,8 @@ endif
           call dot2_mn(tmppencil,tmpline)
           call sum_mn_name(tmpline,idiag_emfdiffrms,lsqrt=.true.)
         end if
+
+        if (idiag_nkappareg/=0) call sum_mn_name(abs(kappa_mask),idiag_nkappareg,lplain=.true.)
       end if
 !
       if (l2davgfirst) then
@@ -1713,6 +1722,7 @@ endif
 !    timestep diagnostics
         idiag_dtemf_ave=0
         idiag_dtemf_dif=0
+        idiag_nkappareg=0
 !    2D diagnostics
         idiag_emfxmxy=0; idiag_emfymxy=0; idiag_emfzmxy=0
         idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
@@ -1781,6 +1791,7 @@ endif
 !    timestep diagnostics
         call parse_name(iname,cname(iname),cform(iname),'dtemf_ave',idiag_dtemf_ave)
         call parse_name(iname,cname(iname),cform(iname),'dtemf_dif',idiag_dtemf_dif)
+        call parse_name(iname,cname(iname),cform(iname),'nkappareg',idiag_nkappareg)
       enddo
 
       do iname=1,nnamexy
