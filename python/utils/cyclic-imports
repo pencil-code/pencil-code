@@ -7,9 +7,10 @@
 # To do:
 # - Produce dot files (and instructions for running dot)
 
-from abc import ABC
 import argparse
+import ast
 from collections import namedtuple
+from functools import total_ordering
 import logging
 import os
 import re
@@ -99,18 +100,26 @@ def main() -> None:
         if deps:
             graph[Module.from_file(python_file)] = deps
 
-    # Print all dependencies:
-    for file, deps in graph.items():
-        print(
-            "{} → [{}]".format(str(file), ", ".join(str(d) for d in deps))
-        )
+    # # Print all dependencies:
+    # for file, deps in graph.items():
+    #     print(
+    #         "{} → [{}]".format(str(file), ", ".join(str(d) for d in deps))
+    #     )
     logging.debug(graph)
 
-    cycles = [
-        [node] + path for node in graph for path in dfs(graph, node, node)
+    # A cycle of length N will appear N times
+    all_cycles = [
+        cycle for node in graph for cycle in dfs(graph, node, node)
     ]
+    # … so we deduplicate:
+    cycles = set([c.canonicalize() for c in all_cycles])
 
-    print(cycles)
+    if cycles:
+        # print(cycles)
+        print("Found {} cycles:".format(len(cycles)))
+        for cycle in cycles:
+            if len(cycle) == 1:
+                print([str(m) for m in cycle])
 
 
 def parse_imports(
@@ -118,119 +127,63 @@ def parse_imports(
 ) -> Set["Module"]:
     directory, _ = os.path.split(os.path.realpath(filename))
     dependencies = set()  # type: Set[Module]
-    for i, line in enumerate(open(filename)):
-        if "import" in line:
-            import_line = ImportLine.create(Line(filename, i + 1, line))
-            if import_line is not None:
-                for module in Module.from_import_line(
-                    import_line, directory, pencil_python_directory
-                ):
-                    dependencies.add(module)
+    with open(filename) as source:
+        syntax_tree = ast.parse(source.read(), filename)
+    imports, imports_from = extract_imports(syntax_tree)
+    for i_node in imports:
+        dependencies.update(
+            Module.from_import_node(
+                i_node, directory, filename, pencil_python_directory
+            )
+        )
+    for if_node in imports_from:
+        dependencies.update(
+            Module.from_import_from_node(
+                if_node, directory, filename, pencil_python_directory
+            )
+        )
+
     return dependencies
+
+
+def extract_imports(
+    syntax_tree: ast.Module
+) -> Tuple[Iterator[ast.Import], Iterator[ast.ImportFrom]]:
+    """Extract all Import and ImportFrom nodes from a Python AST.
+
+    This walks the syntax tree recursively, so in addition to imports at
+    the global module level, wa also get imports inside functions or
+    conditional blocks.
+
+    """
+    analyzer = ImportExtractor()
+    analyzer.visit(syntax_tree)
+    return analyzer.get_imports(), analyzer.get_imports_from()
 
 
 Line = namedtuple("Line", ["file", "number", "text"])
 
 
-class ImportLine(ABC):
-    """A line with an import statement.
+class ImportExtractor(ast.NodeVisitor):
+    """An AST NodeVisitor that records all import/from...import entries."""
 
-    An import line imports _names_, possibly from a _module_.
+    def __init__(self) -> None:
+        self.imports = set()  # type: Set[ast.Import]
+        self.imports_from = set()  # type: Set[ast.ImportFrom]
 
-    At this point, it is not known whether the _module_ is a module or a
-    package, nor whether the _names_ are module names or symbols like
-    functions, classes or variables.
-    """
+    def visit_Import(self, node: ast.Import) -> None:
+        self.imports.add(node)
+        self.generic_visit(node)
 
-    def __init__(self, module: Optional[str], names: List[str]):
-        self.module = module
-        self.names = names
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self.imports_from.add(node)
+        self.generic_visit(node)
 
-    @staticmethod
-    def create(line: Line) -> Optional["ImportLine"]:
-        if re.search(r"^\s*#", line.text):  # skip comment lines
-            return None
-        if re.search(r"\bfrom\b.*\bimport\b", line.text):
-            return FromImportLine(line)
-        elif re.search(r"\bimport\b", line.text):
-            return DirectImportLine(line)
-        else:
-            logging.debug(
-                "Not an import line: <{}>".format(line.text.strip())
-            )
-            return None
+    def get_imports(self) -> Iterator[ast.Import]:
+        yield from self.imports
 
-
-class DirectImportLine(ImportLine):
-    """An import like 'import math' or 'import pencil/calc'."""
-
-    def __init__(self, line: Line) -> None:
-        m = re.search(
-            r"""
-            ^ \s*
-            import
-            \s+
-            (?P<names> \S .*?)
-            \s*
-            $
-            """,
-            line.text,
-            flags=re.VERBOSE,
-        )
-        if m:
-            module = None
-            # Drop everything after 'as':
-            names = re.sub(r"\s*\bas\b.*", "", m.group("names"))
-            names = [n.strip() for n in names.split(",")]
-            super().__init__(module, names)
-        else:
-            die(
-                "Cannot parse direct import line {}:{} <{}>"
-                " – it might be time to use /ast/ for parsing"
-                " the Python files".format(
-                    line.file, line.number, line.text.strip()
-                )
-            )
-
-    def __repr__(self) -> str:
-        return "DirectImportLine[import {}]".format(", ".join(self.names))
-
-
-class FromImportLine(ImportLine):
-    """An import like 'from ..sim import simulations'."""
-
-    def __init__(sekf, line: Line) -> None:
-        m = re.search(
-            r"""
-            ^ \s*
-            from \s+
-            (?P<module> \S+) \s+
-            import
-            \s+
-            (?P<names> \S .*?)
-            \s*
-            $
-            """,
-            line.text,
-            flags=re.VERBOSE,
-        )
-        if m:
-            module = m.group("module")
-            names = [n.strip() for n in m.group("names").split(",")]
-            super().__init__(module, names)
-        else:
-            die(
-                "Cannot parse from-import line {}:{} <{}>"
-                " – it might be time to use /ast/ for parsing"
-                " the Python files".format(
-                    line.file, line.number, line.text.strip()
-                )
-            )
-
-    def __repr__(self) -> str:
-        return "FromImportLine[from {} import {}]".format(
-            self.module, self.names
-        )
+    def get_imports_from(self) -> Iterator[ast.ImportFrom]:
+        yield from self.imports_from
 
 
 class Package:
@@ -261,6 +214,7 @@ class Package:
         return "Package {}".format(self.directory)
 
 
+@total_ordering
 class Module:
     """A Python module (essentially a .py file).
 
@@ -298,115 +252,248 @@ class Module:
         return Module(Package(package_dir), basename)
 
     @staticmethod
-    def from_import_line(
-        import_line: ImportLine,
+    def from_import_node(
+        node: ast.Import,
         directory: str,
+        filename: str,
         pencil_python_directory: str,
     ) -> Iterator["Module"]:
-        logging.debug(
-            "from_import_line({}, {}, {})".format(
-                import_line, directory, pencil_python_directory
-            )
-        )
-        if isinstance(import_line, DirectImportLine):
-            for name in import_line.names:
-                start = name.split(".")[0]
-                if start == "pencil":
-                    yield Module.from_import(
-                        ".", name, pencil_python_directory
-                    )
-                elif start in KNOWN_EXTERNAL_MODULES:
-                    # Absolute import of some non-pencil module
-                    logging.info(
-                        "Non-interesting import line <import {}>".format(
-                            import_line.names
-                        )
-                    )
-                else:
-                    logging.warning(
-                        "Unknown global import {}".format(import_line)
-                    )
-        elif isinstance(import_line, FromImportLine):
-            # A FromImportLine
-            for name in import_line.names:
-                import_from = import_line.module
-                if import_from is not None:
-                    start = import_from.split(".")[0]
-                    if start == "pencil":
-                        yield Module.from_import(
-                            import_from, name, pencil_python_directory
-                        )
-                    elif start in KNOWN_EXTERNAL_MODULES:
-                        logging.info(
-                            "Non-interesting import line <{}>".format(
-                                import_line
-                            )
-                        )
-                    else:
-                        yield Module.from_import(
-                            import_from, name, directory
-                        )
-                else:
-                    raise Exception(
-                        "Can't happen: FromImportLine has no module"
-                    )
-        else:
-            raise Exception(
-                "Can't happen: import_line is a", import_line.__class__
-            )
+        """Extract Module's from an "import ..." line.
 
-    @staticmethod
-    def from_import(
-        import_from: str, importee: str, start_directory: str
-    ) -> "Module":
-        """Find a Module, based on information from an import line.
+        There are two cases:
 
-        This is non-trivial, as the import can either be an import of a
-        module from a package, or the import of a symbol from a module.
+        1. import pencil.module
+        2. import some.external.module
+
+        In the first case, we search for the imported file(s) under
+        ${PENCIL_HOME}/python/[pencil/] .
+
+        In the second case, we ignore the imports, as there cannot be
+        cycles involving external packages. Before this, however, we
+        verify that the top package from which we import is a known
+        external package.
 
         """
         logging.debug(
-            "from_import({}, {}, {}".format(
-                import_from, importee, start_directory
+            "from_import_node({}, {}, {})".format(
+                _format_import_node(node),
+                directory,
+                pencil_python_directory,
             )
         )
-        if import_from == ".":
-            subdir = "."
-        else:
-            subdir = expand_dot_notation(import_from)
-            logging.debug(
-                "from_import: expanded {} → {}".format(
-                    import_from, subdir
+        for alias in node.names:
+            name = alias.name
+            start = name.split(".")[0]
+            if start == "pencil":
+                yield Module._from_import(
+                    None, name, pencil_python_directory
+                )
+            elif start in KNOWN_EXTERNAL_MODULES:
+                # Absolute import of some non-pencil module
+                logging.info(
+                    "Non-interesting import line <import {}>".format(name)
+                )
+            else:
+                logging.warning(
+                    "Unknown global import <import {}>".format(name)
+                )
+                logging.warning(
+                    "Consider adding {} to KNOWN_EXTERNAL_MODULES.".format(
+                        start
+                    )
+                )
+
+    @staticmethod
+    def from_import_from_node(
+        node: ast.ImportFrom,
+        directory: str,
+        filename: str,
+        pencil_python_directory: str,
+    ) -> Iterator["Module"]:
+        """Extract Module's from a "from ... import ..." line.
+
+        There are three cases to distinguish:
+
+        1. from pencil.module import ...
+        2. from ..relative.package.path import ...
+        2a. from .. import ...
+        3. from some.external.module import ...
+
+        In the first case, we search for the imported file(s) under
+        ${PENCIL_HOME}/python/[pencil/] .
+
+        In the second case, we search for the imported file(s) relative
+        from the directory of the current file.
+
+        In the third case, there cannot be cycles.
+
+        """
+        logging.debug(
+            "from_import_from_node({}, {}, {}, {})".format(
+                _format_from_import_node(node),
+                directory,
+                pencil_python_directory,
+                filename,
+            )
+        )
+        for alias in node.names:
+            name = alias.name
+            import_from = node.module
+            if import_from is None:
+                # An import of the form
+                # 'from . import this' or 'from .. import that'
+                if node.level < 1:
+                    die(
+                        "Unexpected: no module, no level"
+                        " in {}, {}:{}".format(
+                            node, filename, node.lineno
+                        )
+                    )
+                yield Module._from_import(
+                    import_from, name, directory, node.level
+                )
+            else:
+                if node.level == 0:
+                    yield from Module._from_absolute_import(
+                        import_from, name, pencil_python_directory
+                    )
+                else:
+                    # Relative import of the form
+                    # 'from .here import ...' or  'from ..here import ...'
+                    yield Module._from_import(
+                        import_from, name, directory, node.level
+                    )
+
+    @staticmethod
+    def _from_absolute_import(
+        import_from: str, name: str, pencil_python_directory: str
+    ) -> Iterator["Module"]:
+        """Absolute import of the form
+
+        'from os.path import isdir'
+        or 'from pencil.io import snapshot'
+
+        """
+        start = import_from.split(".")[0]
+        if start == "pencil":
+            # 'from pencil.module import ...'
+            yield Module._from_import(
+                import_from, name, pencil_python_directory
+            )
+        elif start in KNOWN_EXTERNAL_MODULES:
+            # 'from some.external.module import ...'
+            logging.info(
+                "Non-interesting import <from {} import {}>".format(
+                    import_from, name
                 )
             )
+        else:
+            logging.warning(
+                "Unknown global import <from {} import {}>".format(
+                    import_from, name
+                )
+            )
+            logging.warning(
+                "Consider adding {} to KNOWN_EXTERNAL_MODULES.".format(
+                    start
+                )
+            )
+
+    @staticmethod
+    def _from_import(
+        import_from: Optional[str],
+        importee: str,
+        start_directory: str,
+        level: int = 0,
+    ) -> "Module":
+        """Find a Module based on information from an import line.
+
+        The Module represents either a 'module.py' file or a
+        'module/__init__.py' file. Finding it is complicated by the fact
+        that the import line can describe be an import of a module from a
+        package, or the import of a symbol from a module.
+
+        Examples of import lines are
+          'import B',
+          'from A import B',
+          'from .A import B',
+          'from ..A import B',
+          'from . import B',
+          'from .. import B'.
+
+        Arguments:
+          import_from :
+              The package name given between the 'from' and the 'import
+              keywords, without leading dots. In the examples above, "A".
+          importee :
+              The imported module or symbol. In the examples above, "B".
+          start_directory :
+              Directory from where to search for the module file.
+          level :
+              The number of leading dots prefixing the package name. In
+              the examples above, the levels are (0, 0, 1, 2, 1, 2), in
+              order.
+
+        """
+        logging.debug(
+            "_from_import({}, {}, {}, {}".format(
+                import_from, importee, start_directory, level
+            )
+        )
+        if level > 0:
+            subdir = os.path.join(".", *[".."] * (level - 1))
+        else:
+            subdir = "."
+        if import_from is not None:
+            subdir = os.path.join(subdir, *import_from.split("."))
+        logging.debug(
+            "_from_import: expanded {} → {}".format(import_from, subdir)
+        )
         directory = os.path.realpath(
             os.path.join(start_directory, subdir)
         )
         parent_dir, last_part = os.path.split(directory)
         candidates = [(directory, importee), (parent_dir, last_part)]
         logging.debug(
-            "Module.from_import(): candidates = {}".format(candidates)
+            "Module._from_import(): candidates = {}".format(candidates)
         )
         for package_dir, module_name in candidates:
             candidate_file = os.path.join(
                 package_dir, module_name + ".py"
             )
+            init_file = os.path.join(
+                package_dir, module_name, "__init__.py"
+            )
+            # NB: In Python, a symbol provided by __init__.py wins over a
+            # module.py file. So for example 'from pencil.sim import
+            # is_sim_dir' will import the function 'is_sim_dir' defined in
+            # pencil/sim/__init__.py, not the module is_sim_dir
+            # represented by the file pencil/sim/is_sim_dir.py .
+            #
+            # Here, however, we turn this logic upside down.
+            # Reason: To see what 'from pencil.sim import is_sim_dir'
+            # resolves to, we need to know the symbols loaded in
+            # pencil/sim/__init__.py -- but I don't think we can without
+            # executing the code.
+            # If we prefer pencil/sim/is_sim_dir.py if it exists, we might
+            # get false positives from our cycle check, which is better
+            # than false negatives.
+            # And, yes, we should stop defining 'function_name' in a module
+            # 'function_name.py'.
             if os.path.exists(candidate_file):
                 logging.debug("Found: {}".format(candidate_file))
                 return Module(Package(package_dir), module_name)
-            else:
-                init_file = os.path.join(
-                    package_dir, module_name, "__init__.py"
-                )
-                if os.path.exists(init_file):
-                    logging.debug("Found: {}".format(init_file))
-                    return Module(Package(package_dir), module_name)
-        logging.debug("Not found: {}".format(candidate_file))
+            elif os.path.exists(init_file):
+                logging.debug("Found: {}".format(init_file))
+                return Module(Package(package_dir), module_name)
         raise Exception(
             "Cannot resolve 'from {} import {}'".format(
                 import_from, importee
             )
         )
+
+    def __lt__(self, other: "Module") -> bool:
+        return str(self) < str(other)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Module):
@@ -425,6 +512,47 @@ class Module:
         path = re.sub(r".*/python/pencil/", "pencil/", self.file)
         path = re.sub(r"/__init__.py$", "", path)
         return path
+
+
+class Cycle:
+    def __init__(self, module_sequence: List[Module]) -> None:
+        """Arguments:
+
+            module_sequence:
+                The sequence of modules that forms a cycle. E.g. the cycle
+                A → B → C → A would be represented as [A, B, C].
+
+        """
+        self.modules = module_sequence
+        if len(self.modules) > 1 and self.modules[-1] == self.modules[0]:
+            raise Exception(
+                "Cycle() arguments must not repeat first Module as last entry"
+            )
+
+    def canonicalize(self) -> "Cycle":
+        # Find index of "smallest" module:
+        start_idx, _ = min(enumerate(self.modules), key=snd)
+        return Cycle(self.modules[start_idx:] + self.modules[:start_idx])
+
+    def __len__(self) -> int:
+        return len(self.modules)
+
+    def __iter__(self) -> Iterator[Module]:
+        return iter(self.modules)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Cycle):
+            # Assume that __str()__ encapsulates everything relevant for
+            # comparison
+            return str(self) == str(other)
+        else:
+            return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+    def __str__(self) -> str:
+        return "[" + ", ".join([str(m) for m in self.modules]) + "]"
 
 
 class DependencyDict:
@@ -508,33 +636,32 @@ def _looks_like_pencil_home(path: str) -> bool:
 
 def dfs(
     graph: DependencyDict, start: Module, end: Module
-) -> Iterator[List[Module]]:
+) -> Iterator[Cycle]:
     """Depth-first search algorithm for finding cycles in a graph.
 
     [From: https://stackoverflow.com/a/40834276]
 
     Arguments:
       graph : A dict {module => [included modules]}
-
-    Example:
-      >>> graph = { 1: [2, 3, 5], 2: [1], 3: [1], 4: [2], 5: [2] }
-      >>> cycles = [[node]+path
-                     for node in graph
-                     for path in dfs(graph, node, node)]
-      >>> print("There are {} cycles.\n".format(len(cycles)))
-      There are 7 cycles.
+      start : The start node for searching
+      end : The end mode for searching
 
     """
     fringe = [(start, [])]  # type: List[Tuple[Module, List[Module]]]
     while fringe:
         state, path = fringe.pop()
         if path and state == end:
-            yield path
+            yield Cycle(path)
             continue
         for next_state in graph[state]:
             if next_state in path:
                 continue
             fringe.append((next_state, path + [next_state]))
+
+
+def snd(tup: Tuple[int, Module]) -> Module:
+    """A type-specialized version of Haskell's 'snd' function."""
+    return tup[1]
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -593,9 +720,28 @@ Examples:
     return args
 
 
+def _format_import_node(node: ast.Import) -> str:
+    return "Import[{}]".format([a.name for a in node.names])
+
+
+def _format_from_import_node(node: ast.ImportFrom) -> str:
+    return "ImportFrom[module={}, names={}, level={}]".format(
+        node.module, [a.name for a in node.names], node.level
+    )
+
+
 def die(*msg_lines: str) -> NoReturn:
     print("\n".join(msg_lines))
     sys.exit(1)
+
+
+class AstImportException(Exception):
+    def __init__(
+        self, statement: ast.stmt, filename: str, msg: str
+    ) -> None:
+        super().__init__(
+            "{}:{} {}".format(filename, statement.lineno, msg)
+        )
 
 
 class PackageDirectoryDoesNotExist(Exception):
