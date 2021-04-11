@@ -86,48 +86,34 @@ module Special
 !
   character (len=labellen) :: initAAk='nothing'
   character (len=labellen) :: initEEk='nothing'
-  character (len=labellen) :: ctrace_factor='1/3'
-  character (len=labellen) :: cstress_prefactor='6'
-  character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
-  character (len=labellen) :: aux_stress='stress'
   real :: alpha_inflation=0.
-  real :: amplhij=0., amplgij=0., dummy=0.
-  real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
-  real :: nscale_factor_conformal=1., tshift=0.
-  real :: sigma
+  real :: sigma=0.
   logical :: lbb_as_aux=.true., lEE_as_aux=.true.
-  logical :: lno_transverse_part=.false., lgamma_factor=.false.
-  logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
-  logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
-  logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: linflation=.false., ldebug_print=.false.
   real, dimension(3) :: AAkre, AAkim, EEkre, EEkim
-  real :: c_light2=1., delk=0.
-!
+  real :: c_light2=1.
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
-  real :: alpha2_inflation, kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
-  real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
+  real :: alpha2_inflation, kscale_factor
 !
 ! input parameters
   namelist /special_init_pars/ &
-    alpha_inflation, ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    initAAk, initAAk, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
-    lggTX_as_aux, lhhTX_as_aux, linflation, sigma
+    alpha_inflation, &
+    initAAk, initEEk, &
+    linflation, sigma
 !
 ! run parameters
   namelist /special_run_pars/ &
-    alpha_inflation, ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
+    alpha_inflation, &
     ldebug_print, &
-    nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
-    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    tau_stress_kick, fac_stress_kick, delk, &
-    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation, sigma
+    cc_light, &
+    linflation, sigma
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_AA2m=0      ! DIAG_DOC: $\langle A^2\rangle$
   integer :: idiag_Akxpt=0     ! DIAG_DOC: $Akx^{pt}$
+  integer :: idiag_Ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
 !
   integer :: iAAk, iAAkim, iEEk, iEEkim
   integer :: iAkx, iAky, iAkz, iAkxim, iAkyim, iAkzim
@@ -198,7 +184,7 @@ module Special
         case ('cgs'); c_light2=c_light_cgs**2
         case default
           call fatal_error("initialize_special: No such value for cc_light:" &
-              ,trim(ctrace_factor))
+              ,trim(cc_light))
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
@@ -248,7 +234,7 @@ module Special
           if (lroot) print*,'init_special: nothing'
           f(:,:,:,iAAk:iAAkim+2)=0.
         case ('single')
-          if (lroot) print*,'init_special: nothing'
+          if (lroot) print*,'init_special for A: single'
           f(:,:,:,iAAk:iAAkim+2)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iAAk)=1.
         case ('powerlow??>')
@@ -265,6 +251,10 @@ print*,'AXEL: later'
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
           f(:,:,:,iEEk:iEEkim+2)=0.
+        case ('single')
+          if (lroot) print*,'init_special for E: single'
+          f(:,:,:,iEEk:iEEkim+2)=0.
+          if (lroot) f(l1+1,m1+1,n1+1,iEEk)=1.
 !
 !  dA/deta = -E
 !  d^2A/deta^2 = -dE/deta = -(k^2-alpha*(alpha+1)
@@ -321,11 +311,11 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
-      if (lgamma_factor) then
-        prefactor=fourthird_factor/(1.-p%u2)
-      else
-        prefactor=fourthird_factor
-      endif
+!     if (lgamma_factor) then
+!       prefactor=fourthird_factor/(1.-p%u2)
+!     else
+!       prefactor=fourthird_factor
+!     endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -341,10 +331,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  Several precalculated Pencils of information are passed for
 !  efficiency.
 !
-!  This routine computes various diagnostic quantities, but those
-!  would be more easily done further below when sign_switch is known.
-!  But this only affects the helicities. The values of EEGW and hrms are
-!  however correct and agree with those of gravitational_waves_hij6.
+!  This routine computes various diagnostic quantities.
 !
 !  06-oct-03/tony: coded
 !  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
@@ -367,15 +354,14 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  diagnostics
 !
        if (ldiagnos) then
-         if (lggTX_as_aux) then
-           if (idiag_AA2m/=0) call sum_mn_name(( &
-               f(l1:l2,m,n,iAkx  )**2+f(l1:l2,m,n,iAky  )**2+f(l1:l2,m,n,iAkz  )**2+ &
-               f(l1:l2,m,n,iAkxim)**2+f(l1:l2,m,n,iAkyim)**2+f(l1:l2,m,n,iAkzim)**2 &
+         if (idiag_AA2m/=0) call sum_mn_name(( &
+             f(l1:l2,m,n,iAkx  )**2+f(l1:l2,m,n,iAky  )**2+f(l1:l2,m,n,iAkz  )**2+ &
+             f(l1:l2,m,n,iAkxim)**2+f(l1:l2,m,n,iAkyim)**2+f(l1:l2,m,n,iAkzim)**2 &
                                                )*nwgrid,idiag_AA2m)
-         endif
 !
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
            if (idiag_Akxpt/=0) call save_name(f(lpoint,m,n,iAkx),idiag_Akxpt)
+           if (idiag_Ekxpt/=0) call save_name(f(lpoint,m,n,iEkx),idiag_Ekxpt)
          endif
        endif
       else
@@ -650,10 +636,9 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: sigmaeff
       real :: fact
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
-      real :: cosot, sinot, sinot_minus, om12, om, om1, om2
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
+!     real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       intent(inout) :: f
-      logical :: lsign_om2
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
 !  compute the Fourier transform, so we would skip the rest.
@@ -668,7 +653,6 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
-!  But call it one_over_k2.
 !
       do ikz=1,nz
         do iky=1,ny
@@ -684,9 +668,8 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
 !
-!  compute omega (but assume c=1), omega*t, etc.
+!  compute eigenvalues
 !
-            one_over_k2=1./ksqr
             sigmaeff=sigma
             discrim=sqrt(complex(sigmaeff**2-4.*ksqr,0.))
             lam1=.5*(-sigmaeff+discrim)
@@ -707,7 +690,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
-            if (om/=0.) then
+            if (ksqr/=0.) then
               explam1t=exp(lam1*dt)
               explam2t=exp(lam2*dt)
               det1=1./discrim
@@ -728,9 +711,13 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  Debug output
 !
               if (ldebug_print.and.lroot) then
-                if (ikx==2.and.iky==0.and.ikz==0) then
+                if (ikx==2.and.iky==1.and.ikz==1) then
                   print*,'AXEL: Acomplex_new=',Acomplex_new
                   print*,'AXEL: Ecomplex_new=',Ecomplex_new
+                  print*,'AXEL: cosotA=',cosotA,cos(sqrt(ksqr)*dt)
+                  print*,'AXEL: cosotE=',cosotE,cos(sqrt(ksqr)*dt)
+                  print*,'AXEL: sinotA=',sinotA,-sin(sqrt(ksqr)*dt)/sqrt(ksqr)
+                  print*,'AXEL: sinotE=',sinotE,+sin(sqrt(ksqr)*dt)*sqrt(ksqr)
                 endif
               endif
 !
@@ -790,12 +777,14 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
       if (lreset) then
         idiag_AA2m=0
         idiag_Akxpt=0
+        idiag_Ekxpt=0
         cformv=''
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'AA2m',idiag_AA2m)
         call parse_name(iname,cname(iname),cform(iname),'Akxpt',idiag_Akxpt)
+        call parse_name(iname,cname(iname),cform(iname),'Ekxpt',idiag_Ekxpt)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -816,7 +805,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Write slices for animation of Special variables.
 !
-!  26-jun-06/tony: dummy
+!  11-apr-21/axel: adapted from gravitational_waves_hTXk.f90
 !
       use Slices_methods, only: assign_slices_scal
 !
