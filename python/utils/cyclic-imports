@@ -9,7 +9,7 @@
 
 import argparse
 import ast
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from functools import total_ordering
 import logging
 import os
@@ -115,11 +115,28 @@ def main() -> None:
     cycles = set([c.canonicalize() for c in all_cycles])
 
     if cycles:
-        # print(cycles)
-        print("Found {} cycles:".format(len(cycles)))
-        for cycle in cycles:
-            if len(cycle) == 1:
-                print([str(m) for m in cycle])
+        print_cycles(cycles)
+        print("Found {} import cycles".format(len(cycles)))
+        sys.exit(1)
+    else:
+        print("No import cycles found")
+
+
+def print_cycles(cycles: Iterable["Cycle"]) -> None:
+    grouped_cycles = _group_by_length(cycles)
+    for count in sorted(grouped_cycles.keys()):
+        print("Cycles of length {}:".format(count))
+        for cycle in grouped_cycles[count]:
+            print("  " + str(cycle))
+
+
+def _group_by_length(
+    cycles: Iterable["Cycle"]
+) -> Dict[int, List["Cycle"]]:
+    grouped_cycles = defaultdict(list)
+    for cycle in cycles:
+        grouped_cycles[len(cycle)].append(cycle)
+    return grouped_cycles
 
 
 def parse_imports(
