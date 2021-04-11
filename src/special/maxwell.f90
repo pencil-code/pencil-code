@@ -8,53 +8,57 @@
 !
 !  Description                                     | Relevant function call
 !  ---------------------------------------------------------------------------
-!  Special variable registration                   | register_special
+!  Special variable registration                   | register_magnetic
 !    (pre parameter read)                          |
-!  Special variable initialization                 | initialize_special
+!  Special variable initialization                 | initialize_magnetic
 !    (post parameter read)                         |
-!  Special variable finalization                   | finalize_special
+!  Special variable finalization                   | finalize_magnetic
 !    (deallocation, etc.)                          |
 !                                                  |
-!  Special initial condition                       | init_special
+!  Special initial condition                       | init_magnetic
 !   this is called last so may be used to modify   |
 !   the mvar variables declared by this module     |
 !   or optionally modify any of the other f array  |
 !   variables.  The latter, however, should be     |
 !   avoided where ever possible.                   |
 !                                                  |
-!  Special term in the mass (density) equation     | special_calc_density
-!  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the energy equation             | special_calc_energy
-!  Special term in the induction (magnetic)        | special_calc_magnetic
+!  Special term in the mass (density) equation     | magnetic_calc_density
+!  Special term in the momentum (hydro) equation   | magnetic_calc_hydro
+!  Special term in the energy equation             | magnetic_calc_energy
+!  Special term in the induction (magnetic)        | magnetic_calc_magnetic
 !     equation                                     |
 !                                                  |
-!  Special equation                                | dspecial_dt
+!  Special equation                                | dmagnetic_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of magnetic_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .true.
+! CPARAM logical, parameter :: lmagnetic = .true.
+! CPARAM logical, parameter :: lbfield = .false.
 !
+! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 12
 !
-! PENCILS PROVIDED bb(3)
+! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
+! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3); va2
+!
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
 ! --------------------
 !
 ! Change the line above to
-!   lspecial = .true.
-! to enable use of special hooks.
+!   lmagnetic = .true.
+! to enable use of magnetic hooks.
 !
 ! The rest of this file may be used as a template for your own
-! special module.  Lines which are double commented are intended
+! magnetic module.  Lines which are double commented are intended
 ! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
-! it in the $PENCIL_HOME/src/special directory.  This path has
+! it in the $PENCIL_HOME/src/magnetic directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code SVN repository.  This may be useful if you
 ! are working on/using the additional physics with somebodyelse or
@@ -65,12 +69,13 @@
 ! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
-!   SPECIAL=special/geo_kws
+!   SPECIAL=magnetic/geo_kws
 !
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+!module Special
+module Magnetic
 !
   use Cparam
   use Cdata
@@ -80,7 +85,23 @@ module Special
 !
   implicit none
 !
-  include '../special.h'
+  include '../magnetic.h'
+  !include 'record_types.h'
+  !include 'magnetic.h'
+!
+  real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
+  real, dimension (mz,3) :: aamz
+  real, dimension (nz,3) :: bbmz,jjmz
+  real :: inertial_length=0.,linertial_2
+  logical :: lelectron_inertia=.false.
+  logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
+  logical, dimension(7) :: lresi_dep=.false. 
+  logical :: lcovariant_magnetic=.false.
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+!
+  integer :: idiag_axmz=0,idiag_aymz=0
+  integer :: idiag_bxmz=0,idiag_bymz=0
+  integer :: idiag_bsinphz=0,idiag_bcosphz=0
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -97,13 +118,15 @@ module Special
   real :: alpha2_inflation, kscale_factor
 !
 ! input parameters
-  namelist /special_init_pars/ &
+  namelist /magnetic_init_pars/ &
+! namelist /magnetic_init_pars/ &
     alpha_inflation, &
     initAAk, initEEk, &
     linflation, sigma
 !
 ! run parameters
-  namelist /special_run_pars/ &
+  namelist /magnetic_run_pars/ &
+! namelist /magnetic_run_pars/ &
     alpha_inflation, &
     ldebug_print, &
     cc_light, &
@@ -128,9 +151,10 @@ module Special
 
   contains
 !***********************************************************************
-    subroutine register_special
+    subroutine register_magnetic
+    !subroutine register_magnetic
 !
-!  Set up indices for variables in special modules.
+!  Set up indices for variables in magnetic modules.
 !  Need 2x2x3+3=5*3=15 chunks.
 !
 !  30-mar-21/axel: adapted from gravitational_waves_hTXk.f90
@@ -164,9 +188,11 @@ module Special
       if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
       if (lEE_as_aux) call farray_register_auxiliary('EE',iEE,vector=3)
 !
-    endsubroutine register_special
+!     endsubroutine register_magnetic
+    endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_magnetic(f)
+!     subroutine initialize_magnetic(f)
 !
 !  Called after reading parameters, but before the time loop.
 !
@@ -183,7 +209,7 @@ module Special
         case ('1'); c_light2=1.
         case ('cgs'); c_light2=c_light_cgs**2
         case default
-          call fatal_error("initialize_special: No such value for cc_light:" &
+          call fatal_error("initialize_magnetic: No such value for cc_light:" &
               ,trim(cc_light))
       endselect
       if (headt) print*,'c_light2=',c_light2
@@ -204,23 +230,25 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_special
+    endsubroutine initialize_magnetic
+!    endsubroutine initialize_magnetic
 !***********************************************************************
-    subroutine finalize_special(f)
+  !  subroutine finalize_magnetic(f)
 !
 !  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+  !   real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+  !   call keep_compiler_quiet(f)
 !
-    endsubroutine finalize_special
+  ! endsubroutine finalize_magnetic
 !***********************************************************************
-    subroutine init_special(f)
+    subroutine init_aa(f)
+  ! subroutine init_magnetic(f)
 !
-!  initialise special condition; called from start.f90
+!  initialise magnetic condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -231,17 +259,17 @@ module Special
 !
       select case (initAAk)
         case ('nothing')
-          if (lroot) print*,'init_special: nothing'
+          if (lroot) print*,'init_magnetic: nothing'
           f(:,:,:,iAAk:iAAkim+2)=0.
         case ('single')
-          if (lroot) print*,'init_special for A: single'
+          if (lroot) print*,'init_magnetic for A: single'
           f(:,:,:,iAAk:iAAkim+2)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iAAk)=1.
         case ('powerlow??>')
           !call powerlaw ...
 print*,'AXEL: later'
         case default
-          call fatal_error("init_special: No such value for initAAk:" &
+          call fatal_error("init_magnetic: No such value for initAAk:" &
               ,trim(initAAk))
       endselect
 !
@@ -249,10 +277,10 @@ print*,'AXEL: later'
 !
       select case (initEEk)
         case ('nothing')
-          if (lroot) print*,'init_special: nothing'
+          if (lroot) print*,'init_magnetic: nothing'
           f(:,:,:,iEEk:iEEkim+2)=0.
         case ('single')
-          if (lroot) print*,'init_special for E: single'
+          if (lroot) print*,'init_magnetic for E: single'
           f(:,:,:,iEEk:iEEkim+2)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iEEk)=1.
 !
@@ -263,24 +291,28 @@ print*,'AXEL: later'
           !call powerlaw ...
 print*,'AXEL: later'
         case default
-          call fatal_error("init_special: No such value for initEEk:" &
+          call fatal_error("init_magnetic: No such value for initEEk:" &
               ,trim(initEEk))
       endselect
 print*,'AXEL2',iAAk,iAAkim
 print*,'AXEL3',iEEk,iEEkim
 print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
-    endsubroutine init_special
+    endsubroutine init_aa
+  ! endsubroutine init_magnetic
 !***********************************************************************
-    subroutine pencil_criteria_special
+  ! subroutine pencil_criteria_magnetic
+    subroutine pencil_criteria_magnetic
 !
-!  All pencils that this special module depends on are specified here.
+!  All pencils that this magnetic module depends on are specified here.
 !
 !   1-apr-06/axel: coded
 !
-    endsubroutine pencil_criteria_special
+  ! endsubroutine pencil_criteria_magnetic
+    endsubroutine pencil_criteria_magnetic
 !***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
+  ! subroutine pencil_interdep_magnetic(lpencil_in)
+    subroutine pencil_interdep_magnetic(lpencil_in)
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
@@ -290,9 +322,10 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
       call keep_compiler_quiet(lpencil_in)
 !
-    endsubroutine pencil_interdep_special
+  ! endsubroutine pencil_interdep_magnetic
+    endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_pencils_special(f,p)
+    subroutine calc_pencils_magnetic(f,p)
 !
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -317,9 +350,10 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !       prefactor=fourthird_factor
 !     endif
 !
-    endsubroutine calc_pencils_special
+    endsubroutine calc_pencils_magnetic
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
+  ! subroutine dmagnetic_dt(f,df,p)
+    subroutine daa_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
@@ -349,7 +383,8 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  Identify module and boundary conditions.
 !
       if (lfirst) then
-        if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+   !    if (headtt.or.ldebug) print*,'dmagnetic_dt: SOLVE dmagnetic_dt'
+        if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt'
 !
 !  diagnostics
 !
@@ -365,48 +400,102 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
          endif
        endif
       else
-        if (headtt.or.ldebug) print*,'dspecial_dt: DONT SOLVE dspecial_dt'
+        if (headtt.or.ldebug) print*,'daa_dt: DONT SOLVE aa_dt'
       endif
 !
-    endsubroutine dspecial_dt
+    endsubroutine daa_dt
 !***********************************************************************
-    subroutine read_special_init_pars(iostat)
+    subroutine calc_diagnostics_magnetic(f,p)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f, p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_magnetic
+!***********************************************************************
+    subroutine time_integrals_magnetic(f,p)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine time_integrals_magnetic
+!***********************************************************************
+    subroutine df_diagnos_magnetic(df,p)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in)  ::  df, p
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine df_diagnos_magnetic
+!***********************************************************************
+    subroutine rescaling_magnetic(f)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine rescaling_magnetic
+!***********************************************************************
+    subroutine read_magnetic_init_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
-    endsubroutine read_special_init_pars
+    endsubroutine read_magnetic_init_pars
 !***********************************************************************
-    subroutine write_special_init_pars(unit)
+    subroutine write_magnetic_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=magnetic_init_pars)
 !
-    endsubroutine write_special_init_pars
+    endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(iostat)
+    subroutine read_magnetic_run_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
-    endsubroutine read_special_run_pars
+    endsubroutine read_magnetic_run_pars
 !***********************************************************************
-    subroutine write_special_run_pars(unit)
+    subroutine write_magnetic_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=magnetic_run_pars)
 !
-    endsubroutine write_special_run_pars
+    endsubroutine write_magnetic_run_pars
 !***********************************************************************
-    subroutine special_before_boundary(f)
+  ! subroutine magnetic_before_boundary(f)
+    subroutine magnetic_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
 !  communicated.
@@ -414,13 +503,64 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  Some precalculated pencils of data are passed in for efficiency
 !  others may be calculated directly from the f array
 !
-      use Sub, only: remove_mean_value
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    endsubroutine special_before_boundary
+  ! endsubroutine magnetic_before_boundary
+    endsubroutine magnetic_before_boundary
 !***********************************************************************
-    subroutine special_after_boundary(f)
+    subroutine calc_pencils_magnetic_std(f,p)
+!
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+!
+      call calc_pencils_magnetic_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_magnetic_std
+!***********************************************************************
+    subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
+!
+!  Calculate Magnetic pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
+!
+      intent(in)  :: f, lpenc_loc
+      intent(inout) :: p
+!
+      if (lpenc_loc(i_aa)) p%aa=0.0
+      if (lpenc_loc(i_bb)) p%bb=0.0
+      if (lpenc_loc(i_bbb)) p%bbb=0.0
+      if (lpenc_loc(i_bunit)) p%bunit=0.0
+      if (lpenc_loc(i_b2)) p%b2=0.0
+      if (lpenc_loc(i_jxbr)) p%jxbr=0.0
+      if (lpenc_loc(i_bij)) p%bij=0.0
+      if (lpenc_loc(i_uxb)) p%uxb=0.0
+      if (lpenc_loc(i_jj)) p%jj=0.0
+      if (lpenc_loc(i_va2)) p%va2=0.0
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_pencils_magnetic_pencpar
+!***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+! Dummy 
+!
+!  25-sep-15/MR+joern: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine update_char_vel_magnetic
+!***********************************************************************
+    subroutine magnetic_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
@@ -429,27 +569,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    endsubroutine special_after_boundary
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_,llast)
-!
-!  Possibility to modify the f and df after df is updated.
-!
-!  31-mar-21/axel: adapted from gravitational_waves_hTXk.f90
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
-      logical, intent(in) :: llast
-!
-!  Compute the transverse part of the stress tensor by going into Fourier space.
-!
-      if (lfirst) call compute_bb_from_AAk_and_EEk(f)
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(dt_)
-!
-    endsubroutine special_after_timestep
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine make_spectra(f)
 !
@@ -563,9 +683,9 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 
     endsubroutine make_spectra
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+    subroutine magnetic_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
 !
-!  Calculates GW spectra. For use with a single special module.
+!  Calculates GW spectra. For use with a single magnetic module.
 !
 !  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
 !
@@ -582,15 +702,15 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
       select case(kind)
       case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
       case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; if (lroot) call warning('special_calc_spectra', &
+      case default; if (lroot) call warning('magnetic_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
 
-    endsubroutine special_calc_spectra
+    endsubroutine magnetic_calc_spectra
 !***********************************************************************
-    subroutine special_calc_spectra_byte(f,spectrum,spectrum_hel,lfirstcall,kind,len)
+    subroutine magnetic_calc_spectra_byte(f,spectrum,spectrum_hel,lfirstcall,kind,len)
 !
-!  Calculates magnetic and electric spectra. For use with multiple special modules.
+!  Calculates magnetic and electric spectra. For use with multiple magnetic modules.
 !
 !  30-mar-21/axel: adapted from gravitational_waves_hTXk.f90
 !
@@ -612,11 +732,11 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
       select case(kindstr)
       case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
       case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; if (lroot) call warning('special_calc_spectra', &
+      case default; if (lroot) call warning('magnetic_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
       endselect
 
-    endsubroutine special_calc_spectra_byte
+    endsubroutine magnetic_calc_spectra_byte
 !***********************************************************************
     subroutine compute_bb_from_AAk_and_EEk(f)
 !
@@ -759,9 +879,9 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
     endsubroutine compute_bb_from_AAk_and_EEk
 !***********************************************************************
-    subroutine rprint_special(lreset,lwrite)
+    subroutine rprint_magnetic(lreset,lwrite)
 !
-!  Reads and registers print parameters relevant to special.
+!  Reads and registers print parameters relevant to magnetic.
 !
 !  06-oct-03/tony: coded
 !
@@ -799,9 +919,9 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !!        call farray_index_append('i_SPECIAL_DIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
 !!      endif
 !!
-    endsubroutine rprint_special
+    endsubroutine rprint_magnetic
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
+    subroutine get_slices_magnetic(f,slices)
 !
 !  Write slices for animation of Special variables.
 !
@@ -836,14 +956,120 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
       endselect
 !
-    endsubroutine get_slices_special
+    endsubroutine get_slices_magnetic
+!***********************************************************************
+    subroutine bdry_magnetic(f,quench,task)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (nx) :: quench
+      character (len=*), intent(in) :: task
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(quench)
+      call keep_compiler_quiet(task)
+      call fatal_error('bdry_magnetic','not to be called w/o B-field')
+!
+    endsubroutine bdry_magnetic
+!***********************************************************************
+    subroutine calc_mfield
+!
+!  Dummy routine
+!
+    endsubroutine calc_mfield
+!***********************************************************************
+    subroutine bb_unitvec_shock(f,bb_hat)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,3), intent (out) :: bb_hat
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bb_hat)
+!
+    endsubroutine bb_unitvec_shock
+!***********************************************************************
+    subroutine input_persistent_magnetic(id,done)
+!
+!  Dummy routine
+!
+      integer, optional :: id
+      logical, optional :: done
+!
+      if (present (id)) call keep_compiler_quiet(id)
+      if (present (done)) call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_magnetic
+!***********************************************************************
+    logical function output_persistent_magnetic()
+!
+!  Dummy routine
+!
+      output_persistent_magnetic = .false.
+!
+    endfunction output_persistent_magnetic
+!***********************************************************************
+    subroutine dynamical_resistivity(uc)
+!
+!  dummy
+!
+      real, intent(in) :: uc
+!
+      call keep_compiler_quiet(uc)
+!
+    endsubroutine dynamical_resistivity
+!***********************************************************************
+    subroutine split_update_magnetic(f)
+!
+!  dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_magnetic
+!***********************************************************************
+    subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!
+      if (lfirst) call compute_bb_from_AAk_and_EEk(f)
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine magnetic_after_timestep
+!***********************************************************************
+    subroutine expand_shands_magnetic
+!
+!  Dummy
+!
+    endsubroutine expand_shands_magnetic
+!***********************************************************************
+    subroutine get_bext(B_ext_out)
+!
+!  Dummy
+!
+      real, dimension(3), intent(out) :: B_ext_out
+!
+      B_ext_out = 0.0
+!
+    endsubroutine get_bext
+!***********************************************************************
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
-!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  copies dummy routines from nomagnetic.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+  ! include '../magnetic_dummies.inc'
 !********************************************************************
-endmodule Special
+!endmodule Special
+endmodule Magnetic
