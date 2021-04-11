@@ -107,10 +107,15 @@ def main() -> None:
     #     )
     logging.debug(graph)
 
+    progress = ProgressIndicator(downsample_by=10000)
+
     # A cycle of length N will appear N times
     all_cycles = [
-        cycle for node in graph for cycle in dfs(graph, node, node)
+        cycle
+        for node in graph
+        for cycle in dfs(graph, node, node, progress)
     ]
+    progress.finish()
     # … so we deduplicate:
     cycles = set([c.canonicalize() for c in all_cycles])
 
@@ -602,6 +607,59 @@ class DependencyDict:
         return self.dict.items()
 
 
+class ProgressIndicator:
+    """A simple progress indicator for unspecified total work."""
+
+    def __init__(self, downsample_by: int, line_length: int = 80) -> None:
+        """
+        Arguments:
+            downsample_by :
+                Only print a dot every N events.
+            line_length :
+                Print (up to) this many dots per line.
+
+        """
+        self.sample_by = 10000
+        self.line_length = line_length
+        self.count = self.sample_by
+        self.column = 0
+        self.line = 0
+        self.line_indicator = "{}:".format(self.line)
+
+    def tick(self) -> None:
+        """Increase updat count (not necessarily visible)."""
+        self.count -= 1
+        if self.count < 1:
+            self.display_tick()
+            self.count += self.sample_by
+
+    def display_tick(self) -> None:
+        """Show update."""
+        print(self.get_marker_char(), end="")
+        self.column += 1
+        if self.column >= self.line_length:
+            print()
+            self.column = 0
+            self.line += 1
+            self.line_indicator = "{}:".format(self.line)
+        else:
+            sys.stdout.flush()
+
+    def get_marker_char(self) -> str:
+        if self.line_indicator:
+            marker, self.line_indicator = (
+                self.line_indicator[0],
+                self.line_indicator[1:],
+            )
+            return marker
+        else:
+            return "."
+
+    def finish(self) -> None:
+        """Clean up"""
+        print()
+
+
 def expand_dot_notation(name: str) -> str:
     """Expand notation like ..parent.sub to ../parent/sub ."""
     parts = []
@@ -652,7 +710,10 @@ def _looks_like_pencil_home(path: str) -> bool:
 
 
 def dfs(
-    graph: DependencyDict, start: Module, end: Module
+    graph: DependencyDict,
+    start: Module,
+    end: Module,
+    progress: ProgressIndicator,
 ) -> Iterator[Cycle]:
     """Depth-first search algorithm for finding cycles in a graph.
 
@@ -666,6 +727,7 @@ def dfs(
     """
     fringe = [(start, [])]  # type: List[Tuple[Module, List[Module]]]
     while fringe:
+        progress.tick()
         state, path = fringe.pop()
         if path and state == end:
             yield Cycle(path)
