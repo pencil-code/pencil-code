@@ -9,9 +9,12 @@
 """
 Contains the simulation class which can be used to directly create, access and
 manipulate simulations.
+
 """
+
 import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
+
 
 def simulation(*args, **kwargs):
     """
@@ -46,6 +49,7 @@ def simulation(*args, **kwargs):
     """
 
     return __Simulation__(*args, **kwargs)
+
 
 class __Simulation__(object):
     """
@@ -130,14 +134,14 @@ class __Simulation__(object):
                                      in submit* files
             OVERWRITE:          Set True to overwrite no matter what happens!
         """
-        from os import listdir, symlink
-        from shutil import copyfile
         from glob import glob
         from numpy import size
-        from . import is_sim_dir
+        from os import listdir, symlink
+        from shutil import copyfile
+
         from .. import get_sim
         from ..io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
-        from ..sim import is_sim_dir
+        from pencil import is_sim_dir
 
         # set up paths
         if path_root == False or type(path_root) != type('string'):

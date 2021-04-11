@@ -11,18 +11,22 @@
       local_remesh to apply the interpolation onto a variable array
       get_dstgrid to derive the new grid layout
       src2dst_remesh to create the new simulation object and files
+
 """
+
+from fileinput import input
 import numpy as np
 from scipy.interpolate import interp1d
+import subprocess as sub
+from sys import stdout
+
 from ..math.derivatives import grad
 from ..io import open_h5, group_h5, dataset_h5
-from fileinput import input
-from sys import stdout
-import subprocess as sub
 
-def local_remesh(var,
-           xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True
-          ):
+
+def local_remesh(
+    var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True
+):
     """
     Call signature:
 
@@ -64,6 +68,7 @@ def local_remesh(var,
         tmp = interpz(zdst)
 
     return tmp
+
 
 def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                 multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
@@ -306,13 +311,15 @@ def src2dst_remesh(src, dst,
 
     """
     import h5py
-    from .. import read
-    from os.path import join, abspath
     import os
-    from ..io import mkdir
-    from . import is_sim_dir, simulation
-    from ..math import cpu_optimal
+    from os.path import join, abspath
     import time
+
+    from .. import read
+    from ..io import mkdir
+    from . import simulation
+    from ..math import cpu_optimal
+    from pencil import is_sim_dir
 
     start_time = time.time()
     print('started at {}'.format(time.ctime(start_time)))
@@ -324,7 +331,6 @@ def src2dst_remesh(src, dst,
     else:
         print('precision '+dstprecision+' not valid')
         return 1
-
 
     if is_sim_dir(src):
         srcsim = simulation(src,quiet=quiet)

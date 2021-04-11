@@ -52,7 +52,8 @@ def write_snapshot(snapshot, file_name='VAR0', datadir='data',
       Flag for the shear.
     """
 
-    from os.path import join, exists
+    import os
+    from os.path import join
     import numpy as np
     from scipy.io import FortranFile
 
@@ -265,16 +266,16 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
       rank of process with root=0.
     """
 
-    from os.path import join, exists
     import numpy as np
-    import h5py
+    from os.path import join
+
     from .. import read
-    from .. import sim
-    from ..io import open_h5, group_h5, dataset_h5, mkdir
+    from ..io import open_h5, group_h5, dataset_h5
+    from pencil import is_sim_dir
 
 
     #test if simulation directory
-    if not sim.is_sim_dir():
+    if not is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
         sys.stdout.flush()
     if indx == None:
@@ -653,7 +654,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
     We assume by default that a run simulation directory has already been
     constructed, but start has not been executed in h5 format so that
     binary sim files dim, grid and param files are already present in the sim
-    directroy, or provided from an old binary sim source directory as inputs.
+    directory, or provided from an old binary sim source directory as inputs.
 
     call signature:
 
@@ -691,16 +692,15 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
       Option to print output.
     """
 
-    from os.path import join, exists
+    from os.path import join
     import numpy as np
-    import h5py
-    from .. import read
-    from .. import sim
-    from ..io import open_h5, group_h5, dataset_h5
 
+    from .. import read
+    from ..io import open_h5, group_h5, dataset_h5
+    from pencil import is_sim_dir
 
     #test if simulation directory
-    if not sim.is_sim_dir():
+    if not is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
         sys.stdout.flush()
     #
@@ -840,16 +840,16 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
       Dim object required if the large binary files are supplied in chunks.
     """
 
+    import numpy as np
     import os
     from os.path import join, exists
-    import numpy as np
-    import h5py
+
     from .. import read
-    from .. import sim
     from ..io import open_h5, group_h5, dataset_h5
+    from pencil import is_sim_dir
 
     #test if simulation directory
-    if not sim.is_sim_dir():
+    if not is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
         sys.stdout.flush()
         return -1
@@ -1107,11 +1107,10 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
     from os.path import join, exists
     import numpy as np
     import h5py
-    from .. import read
-    from .. import sim
+    from pencil import is_sim_dir
 
     #test if simulation directory
-    if not sim.is_sim_dir():
+    if not is_sim_dir():
         print("ERROR: Directory needs to be a simulation")
         sys.stdout.flush()
         return -1

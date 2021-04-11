@@ -720,15 +720,17 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
       Number of MPI processes
     """
 
+    import glob
+    import numpy as np
     import os
     from os.path import exists, join
-    import numpy as np
-    import glob
+    import subprocess as sub
+    import sys
+
     from .. import read
     from .. import sim
     from . import write_h5_grid
-    import sys
-    import subprocess as sub
+    from pencil.util import is_sim_dir
 
     try:
         from mpi4py import MPI
@@ -759,7 +761,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     if olddir == '.':
         olddir = os.getcwd()
     os.chdir(olddir)
-    if not sim.is_sim_dir():
+    if not is_sim_dir():
         if rank == 0:
             print("ERROR: Directory ("+olddir+") needs to be a simulation")
             sys.stdout.flush()
@@ -775,7 +777,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
             if comm:
                 comm.Barrier()
         os.chdir(newdir)
-        if not sim.is_sim_dir():
+        if not is_sim_dir():
             if rank == 0:
                 print("ERROR: Directory ("+newdir+") needs to be a simulation")
                 sys.stdout.flush()
@@ -888,7 +890,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
     #check consistency between Fortran binary and h5 data
     os.chdir(newdir)
     dim = None
-    if sim.is_sim_dir():
+    if is_sim_dir():
         if rank == size-1:
             if exists(join(newdir,'data','dim.dat')):
                 try:

@@ -29,17 +29,9 @@ from . import tool_kit     # all nice workarounds get stored here (e.g., resubmi
 from . import export       # exporter (e.g., vtk, xml)
 from . import backpack     # third party modules, tribute to the author!
 from . import ism_dyn      # diagnostics for ism dynamo simulations
-
+from pencil.util import is_sim_dir
 
 # Internal routines.
-def __is_sim_dir__(path='.'):
-    """
-    Check if a path is pointing at a pencil code simulation.
-    """
-
-    return sim.is_sim_dir(path)
-
-
 def get_sim(path='.', quiet=True):
     """
     Return simulation object from 'path, if already existing, or creates new

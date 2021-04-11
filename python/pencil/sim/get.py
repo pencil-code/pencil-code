@@ -9,8 +9,10 @@ def get(path='.', quiet=False):
     """
 
     from os.path import isdir, join, exists, basename
+
     from ..io import load
     from .simulation import simulation
+    from pencil import is_sim_dir
 
     if exists(join(path, 'pc/sim.dill')):
         try:
@@ -22,8 +24,7 @@ def get(path='.', quiet=False):
             print('? Warning: sim.dill in '+path+' is not up to date, recreating simulation object..')
             os.system('rm '+join(path, 'pc/sim.dill'))
 
-    from .. import __is_sim_dir__
-    if __is_sim_dir__(path):
+    if is_sim_dir(path):
         if quiet == False: print('~ Found simulation in '+path+' and simulation object is created for the first time. May take some time.. ')
         return simulation(path, quiet=quiet)
     else:
@@ -50,7 +51,7 @@ def get_sims(path_root='.', depth=0, unhide_all=True, quiet=False):
     from ..io import save
     from ..sim import simulation
     from ..io import walklevel
-    from .is_sim_dir import is_sim_dir
+    from pencil import is_sim_dir
 
     #from pen.intern.class_simdict import Simdict
     #from intern import get_simdict
