@@ -18,6 +18,7 @@ from pencil.math import natural_sort
 from pencil.calc import calc_shocktube
 import os
 from os.path import join, exists
+import sys
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib import cm
@@ -25,8 +26,12 @@ from matplotlib import artist
 import glob
 import string
 
+_sod_tests = '/scratch/project_2001062/sod_tests'
+if not os.path.isdir(_sod_tests):
+    print("This Python file requires the directory {} to exist".format(_sod_tests))
+sys.exit(0)
 
-os.chdir('/scratch/project_2001062/sod_tests') # root dir of multiple sims 
+os.chdir(_sod_tests) # root dir of multiple sims
 wrkdir = os.getcwd() # variable used for chdir
 sims_list = natural_sort(glob.glob('*')) # ordered list of sub dirs
 sims = np.array(sims_list) # convert list to np array
@@ -44,18 +49,18 @@ for sim in sims:
 
 for sim in sims[:]:
     print('processing varfiles for'+sim)
-    os.chdir(join(wrkdir,sim)
+    os.chdir(join(wrkdir,sim))
     if exists('data/allprocs/var.h5'):
         os.chdir('data/allprocs')
     else:
         os.chdir('data/proc0')
-    varfiles = natural_sort(glob.glob('VAR*')
-    os.chdir(join(wrkdir,sim)
+    varfiles = natural_sort(glob.glob('VAR*'))
+    os.chdir(join(wrkdir,sim))
     if par.lmagnetic:
         magic = ['tt', 'pp', 'bb']
     else:
         magic = ['tt', 'pp']
-    with h5py.File(join(wrkdir,sim,'data','shocktest.h5','w'] as hf:
+    with h5py.File(join(wrkdir,sim,'data','shocktest.h5'), 'w') as hf:
         for varfile in varfiles:
             var = pc.read.var(varfile,quiet=True,magic=magic,trimall=True)
             # calc pp, uu, rho of analytic solution
@@ -90,14 +95,14 @@ figsize=[7.5,4.635255]
 
 for sim in sims:
     png='.png'
-    os.chdir(join(wrkdir,sim)
+    os.chdir(join(wrkdir,sim))
     if exists('data/allprocs/var.h5'):
         os.chdir('data/allprocs')
     else:
         os.chdir('data/proc0')
-    varfiles = natural_sort(glob.glob('VAR*')
-    os.chdir(join(wrkdir,sim)
-    with h5py.File(join(wrkdir,sim,'data','shocktest.h5','w'] as hf:
+    varfiles = natural_sort(glob.glob('VAR*'))
+    os.chdir(join(wrkdir,sim))
+    with h5py.File(join(wrkdir,sim,'data','shocktest.h5'),'w') as hf:
         narray=globals()[sim+'gd'].x.size
         n1,n2=0,narray # option to reduce plot range in x
         plt.figure(figsize=figsize)
@@ -167,7 +172,7 @@ for sim in sims:
                              hf[grp]['uu-num'][n1:n2]/np.sqrt(
                              globals()[sim+'par'].gamma*hf[grp]['pp-num'][-1]/
                              hf[grp]['rho-num'][-1],'+',label='numeric',
-                             alpha=0.5)
+                             alpha=0.5))
             plt.text(globals()[sim+'gd'].x[n1+1]-globals()[sim+'gd'].x[0],
                      1,
                      r'$t={:.2}$'.format(hf[grp]['time'][()]))

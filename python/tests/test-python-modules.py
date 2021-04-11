@@ -17,6 +17,7 @@ except ImportError:
 # Most likely the only place in the whole Pencil Code where importing '*'
 # makes sense: Import all test cases from the following modules.
 from read import *
+from imports import *
 
 
 def main() -> None:

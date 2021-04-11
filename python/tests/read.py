@@ -55,6 +55,7 @@ def _assert_equal_tuple(
 
 @test()
 def test_read_time_series() -> None:
+    """Read time series."""
     time_series = ts(data_file("time-series-1.dat"))
     expected = {
         "it": np.array([0, 50, 100, 150]),
@@ -71,6 +72,7 @@ def test_read_time_series() -> None:
 
 @test()
 def test_read_dim() -> None:
+    """Read dim.dat file."""
     global_dim = dim(DATA_DIR)
     assert_equal(global_dim.mx, 10)
     assert_equal(global_dim.my, 12)
@@ -108,6 +110,7 @@ def test_read_dim() -> None:
 
 @test()
 def test_read_param() -> None:
+    """Read param.nml file."""
     params = param(DATA_DIR)
     assert_equal(params.coord_system, "cartesian")
     assert_equal(params.lcollective_io, False)
@@ -122,10 +125,10 @@ def test_read_param() -> None:
 
 @test()
 def test_read_var() -> None:
+    """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
     import sys
 
-    print("t({}) = {:.20g}".format(type(data.t), data.t), file=sys.stderr)
     _assert_close(data.t, 3.865971)
     _assert_close(data.dx, 1.333333)
     _assert_close(np.mean(data.x), 0.0)
