@@ -398,7 +398,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     with open_h5(filename, state, driver=driver, comm=comm,
                  overwrite=overwrite, rank=rank,size=size) as ds:
         print('fred: rank {} group data'.format(rank))
-        data_grp = group_h5(ds, 'data', status=state, delete=False, 
+        data_grp = group_h5(ds, 'data', status=state, delete=False,
                             overwrite=overwrite, rank=rank, size=size)
         if not procdim:
             for key in indx.__dict__.keys():
@@ -435,7 +435,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
                 #             data_grp.__delitem__(key)
                 #if comm:
                 #    comm.Barrier()
-                dataset_h5(data_grp, key, status=state, 
+                dataset_h5(data_grp, key, status=state,
                      shape=(settings['mz'],settings['my'],settings['mx']),
                      dtype=data_type, rank=rank, comm=comm, size=size)
             #if comm:
@@ -469,7 +469,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
         #if not ds.__contains__('time'):
         #    ds.create_dataset('time', data=np.array(t), dtype=data_type)
         print('fred: rank {} adding time'.format(rank))
-        dataset_h5(ds, 'time', status=state, data=np.array(t), size=size, 
+        dataset_h5(ds, 'time', status=state, data=np.array(t), size=size,
                    dtype=data_type, rank=rank, comm=comm, overwrite=overwrite)
         # add settings
         sets_grp = group_h5(ds, 'settings', status=state, delete=False,
@@ -766,7 +766,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
         for key in ukeys:
             if 'system' in key:
                 dataset_h5(unit_grp, key, status='w', data=(param.__getattribute__('unit_'+key),))
-            else:                                   
+            else:
                 dataset_h5(unit_grp, key, status='w', data=param.__getattribute__('unit_'+key))
     #ds = h5py.File(filename, 'w')
     ## add settings
@@ -908,7 +908,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
         #    except ValueError:
         #        pass
         for it in range(0,nt):
-            group_h5(ds, str(it), status=state, delete=False, 
+            group_h5(ds, str(it), status=state, delete=False,
                             overwrite=overwrite, rank=rank, size=size)
             #if not ds.__contains__(str(it)):
             #    ds.create_group(str(it))
@@ -1066,7 +1066,7 @@ def write_h5_slices(vslice, coordinates, positions, datadir='data/slices',
     call signature:
 
     write_h5_slices(vslice, coordinates, positions,
-                   datadir='data/slices', 
+                   datadir='data/slices',
                    precision='d', indx=None, trange=None, quiet=True)
 
     Keyword arguments:

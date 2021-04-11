@@ -91,7 +91,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
       Applying MPI parallel process
 
     *driver*:
-      HDF5 file io driver either None or mpio 
+      HDF5 file io driver either None or mpio
 
     *comm*:
       MPI library calls
@@ -221,7 +221,7 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
                                     procdim=procdim, settings=settings,
                                     param=param, grid=grid, lghosts=True,
                                     indx=indx, t=var.t, x=x, y=y, z=z,
-                                    quiet=quiet, rank=rank, size=size, 
+                                    quiet=quiet, rank=rank, size=size,
                                     lshear=lshear, driver=driver, comm=comm)
                         if np.mod(proc,size) == size-1:
                             print('rank {}:'.format(rank)+'written '+file_name+
@@ -319,7 +319,7 @@ def slices2h5(newdir, olddir, grid,
       Applying MPI parallel process
 
     *driver*:
-      HDF5 file io driver either None or mpio 
+      HDF5 file io driver either None or mpio
 
     *comm*:
       MPI library calls
@@ -378,7 +378,7 @@ def slices2h5(newdir, olddir, grid,
         return -1
     for key, num in zip(lines2, lines1):
         if comm:
-            key, num = comm.bcast([key,num],root=0) 
+            key, num = comm.bcast([key,num],root=0)
         if num > 0:
             if 'xy' in key:
                 positions[key] = grid.z[num-1]
@@ -493,7 +493,7 @@ def aver2h5(newdir, olddir,
       Applying MPI parallel process
 
     *driver*:
-      HDF5 file io driver either None or mpio 
+      HDF5 file io driver either None or mpio
 
     *comm*:
       MPI library calls
@@ -665,7 +665,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
 
     *precision*:
       Single 'f' or double 'd' precision for new data.
-      
+
     *nghost*:
       Number of ghost zones.
       TODO: handle switching size of ghost zones.
@@ -708,7 +708,7 @@ def sim2h5(newdir='.', olddir='.', varfile_names=None,
       Applying MPI parallel process
 
     *driver*:
-      HDF5 file io driver either None or mpio 
+      HDF5 file io driver either None or mpio
 
     *comm*:
       MPI library calls

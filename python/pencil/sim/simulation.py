@@ -166,10 +166,10 @@ class __Simulation__(object):
             if exists(newtmp) and OVERWRITE == False:
                 raise ValueError('Data directory {0} already exists'.format(
                                   newtmp))
-            else:    
+            else:
                 path_newsim_data = newtmp
-                path_newsim_data_link = join(path_newsim, 'data') 
-        else:            
+                path_newsim_data_link = join(path_newsim, 'data')
+        else:
             link_data = False
             path_newsim_data = join(path_newsim, 'data')
 
@@ -437,7 +437,7 @@ class __Simulation__(object):
                         else:
                             try:
                                 # allow for nested param objects
-                                self.param[key] = {} 
+                                self.param[key] = {}
                                 for subkey in dir(getattr(param, key)):
                                     if subkey.startswith('_') or subkey == 'read': continue
                                     if type(getattr(getattr(param,key), subkey)) in [bool,list,float,

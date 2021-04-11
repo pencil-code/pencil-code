@@ -6,7 +6,7 @@
 """ Remesh mature simulation snapshot with [nx,ny,nz] dimensions onto new
     simulation with new grid dimensions and optionally alternate cpu layout
     copying the base simulation files, existing start output files.
- 
+
     uses:
       local_remesh to apply the interpolation onto a variable array
       get_dstgrid to derive the new grid layout
@@ -25,9 +25,9 @@ def local_remesh(var,
           ):
     """
     Call signature:
- 
+
     local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True)
- 
+
     Keyword arguments:
 
     *var*:
@@ -65,13 +65,13 @@ def local_remesh(var,
 
     return tmp
 
-def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], 
+def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                 multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
                 dtype=np.float64, lsymmetric=True, quiet=True
                ):
     """
     Call signature:
- 
+
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
                fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
                lsymmetric=True, quiet=True)
@@ -106,7 +106,7 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
       Precision used in destination simulation. Default double.
 
     *lsymmetric*:
-      Option to make non-periodic grid symmetric about old sim centre. 
+      Option to make non-periodic grid symmetric about old sim centre.
       Otherwise the lower boundary is retained from old sim grid.
 
     *quiet*:
@@ -178,12 +178,12 @@ def get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1],
                 grid['O'+mstr][()] = srcgrid['O'+mstr][()] -\
                                                          0.5*grid['d'+mstr][()]
             grid.__delitem__('d'+mstr+'_1')
-            grid.create_dataset('d'+mstr+'_1', 
+            grid.create_dataset('d'+mstr+'_1',
                                data=1./np.gradient(grid[mstr][()]), dtype=dtype)
             grid.__delitem__('d'+mstr+'_tilde')
-            grid.create_dataset('d'+mstr+'_tilde', 
+            grid.create_dataset('d'+mstr+'_tilde',
                          data=np.gradient(grid['d'+mstr+'_1'][()]), dtype=dtype)
- 
+
 def src2dst_remesh(src, dst,
                    h5in='var.h5', h5out='var.h5',
                    multxyz=[2,2,2], fracxyz=[1,1,1], srcghost=3, dstghost=3,
@@ -192,14 +192,14 @@ def src2dst_remesh(src, dst,
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
                    rename_submit_script=False, MBmin=5.0, ncpus=[1,1,1],
                    start_optionals=False, hostfile=None, submit_new=False,
-                   chunksize=1000.0, lfs=False, MB=1, count=1, 
+                   chunksize=1000.0, lfs=False, MB=1, count=1,
                    size=1, rank=0, comm=None
                   ):
     """
     Call signature:
- 
+
     src2dst_remesh(src, dst, h5in='var.h5', h5out='var.h5', multxyz=[2,2,2],
-                   fracxyz=[1,1,1], srcghost=3, dstghost=3, 
+                   fracxyz=[1,1,1], srcghost=3, dstghost=3,
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
                    dstprecision=[b'D'], lsymmetric=True, quiet=True,
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
@@ -242,7 +242,7 @@ def src2dst_remesh(src, dst,
       floating point precision settings [b'S'] or [b'D'].
 
     *lsymmetric*:
-      Option to make non-periodic grid symmetric about old sim centre. 
+      Option to make non-periodic grid symmetric about old sim centre.
       Otherwise the lower boundary is retained from old sim grid.
 
     *quiet*:
@@ -255,9 +255,9 @@ def src2dst_remesh(src, dst,
       Flag to overwrite existing simulation directory and filesin dst.
 
     *optionals*:
-      Copy simulation files with True or specify list of names (string) for 
+      Copy simulation files with True or specify list of names (string) for
       additional files from src sim directory.
- 
+
     *nmin*:
       Minimum length along coordinate after splitting by proc.
 
@@ -313,7 +313,7 @@ def src2dst_remesh(src, dst,
     from . import is_sim_dir, simulation
     from ..math import cpu_optimal
     import time
- 
+
     start_time = time.time()
     print('started at {}'.format(time.ctime(start_time)))
     # set dtype from precision
@@ -325,10 +325,10 @@ def src2dst_remesh(src, dst,
         print('precision '+dstprecision+' not valid')
         return 1
 
-     
+
     if is_sim_dir(src):
         srcsim = simulation(src,quiet=quiet)
-    else: 
+    else:
         print('src2dst_remesh ERROR: src"'+src+
               '" is not a valid simulation path')
         return 1
@@ -352,7 +352,7 @@ def src2dst_remesh(src, dst,
                         dstghost=dstghost, dtype=dtype, lsymmetric=lsymmetric,
                         quiet=quiet)
             print('get_dstgrid completed on rank {}'.format(rank))
-            #use settings to determine available proc dist then set ncpus 
+            #use settings to determine available proc dist then set ncpus
             factors = cpu_optimal(
                    dsth5['settings/nx'][0],
                    dsth5['settings/ny'][0],
@@ -424,19 +424,19 @@ def src2dst_remesh(src, dst,
             if dstchunksize > chunksize:
                 lchunks = True
                 nchunks = cpu_optimal(nx,ny,nz,mvar=1,maux=0,MBmin=chunksize)[1]
-                print('nchunks {}'.format(nchunks)) 
-                indx = np.array_split(np.arange(nx)+dstghost,nchunks[0]) 
-                indy = np.array_split(np.arange(ny)+dstghost,nchunks[1]) 
-                indz = np.array_split(np.arange(nz)+dstghost,nchunks[2]) 
+                print('nchunks {}'.format(nchunks))
+                indx = np.array_split(np.arange(nx)+dstghost,nchunks[0])
+                indy = np.array_split(np.arange(ny)+dstghost,nchunks[1])
+                indz = np.array_split(np.arange(nz)+dstghost,nchunks[2])
                 mx, my, mz = dsth5['settings']['mx'][0],\
                              dsth5['settings']['my'][0],\
                              dsth5['settings']['mz'][0]
                 if not quiet:
-                    print('nx {}, ny {}, nz {}'.format(nx, ny, nz)) 
-                    print('mx {}, my {}, mz {}'.format(mx, my, mz)) 
+                    print('nx {}, ny {}, nz {}'.format(nx, ny, nz))
+                    print('mx {}, my {}, mz {}'.format(mx, my, mz))
             group = group_h5(dsth5, 'data', status='w')
             for key in srch5['data'].keys():
-                print('remeshing '+key)     
+                print('remeshing '+key)
                 if not lchunks:
                     var = local_remesh(srch5['data'][key][()],
                                        srch5['grid']['x'],srch5['grid']['y'],
@@ -454,7 +454,7 @@ def src2dst_remesh(src, dst,
                         n1, n2 = indz[iz][ 0]-dstghost,\
                                  indz[iz][-1]+dstghost
                         srcn1 = np.max(np.where(srch5['grid/z'][()]<
-                                                dsth5['grid/z'][n1]))     
+                                                dsth5['grid/z'][n1]))
                         srcn2 = np.min(np.where(srch5['grid/z'][()]>
                                                 dsth5['grid/z'][n2]))
                         n1out = n1+dstghost
@@ -474,7 +474,7 @@ def src2dst_remesh(src, dst,
                             m1, m2 = indy[iy][ 0]-dstghost,\
                                      indy[iy][-1]+dstghost
                             srcm1 = np.max(np.where(srch5['grid/y'][()]<
-                                                    dsth5['grid/y'][m1]))     
+                                                    dsth5['grid/y'][m1]))
                             srcm2 = np.min(np.where(srch5['grid/y'][()]>
                                                     dsth5['grid/y'][m2]))
                             m1out = m1+dstghost
@@ -494,7 +494,7 @@ def src2dst_remesh(src, dst,
                                 l1, l2 = indx[ix][ 0]-dstghost,\
                                          indx[ix][-1]+dstghost
                                 srcl1 = np.max(np.where(srch5['grid/x'][()]<
-                                                        dsth5['grid/x'][l1]))     
+                                                        dsth5['grid/x'][l1]))
                                 srcl2 = np.min(np.where(srch5['grid/x'][()]>
                                                         dsth5['grid/x'][l2]))
                                 l1out = l1+dstghost
@@ -514,11 +514,11 @@ def src2dst_remesh(src, dst,
                                 if not quiet:
                                     print('remeshing '+key+' chunk {}'.format(
                                            [iz,iy,ix]))
-                                
+
                                 var = local_remesh(
                                              srch5['data'][key][srcn1:srcn2+1,
                                                                 srcm1:srcm2+1,
-                                                                srcl1:srcl2+1], 
+                                                                srcl1:srcl2+1],
                                              srch5['grid']['x'][srcl1:srcl2+1],
                                              srch5['grid']['y'][srcm1:srcm2+1],
                                              srch5['grid']['z'][srcn1:srcn2+1],
