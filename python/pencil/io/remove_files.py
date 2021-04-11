@@ -8,9 +8,8 @@ def remove_files(path, do_it=False, do_it_really=False):
         do_it, do_it_really:    to activate pass True, True
     """
 
-    import os, shutil
     import os
-    from os.path import expanduser, isdir, realpath, relpath
+    from os.path import expanduser, isdir, realpath
 
     # safety checks
     # first get all sensible paths
