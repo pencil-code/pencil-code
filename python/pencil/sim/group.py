@@ -39,7 +39,7 @@ def group(simulations, groupby, sort=True, only_started=False, reverse=False):
           sim_dict_grouped[q] = [sim]
         else:
           sim_dict_grouped[q].append(sim)
-          
+
   elif groupby in ['nx', 'ny', 'nz']:
       for sim in sim_list:
         q = str(getattr(sim.dim, groupby))

@@ -60,7 +60,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
             lshock = True
         if 'hyper3' in ivisc:
             lhyper3 = True
- 
+
     if ldel2:
         if lhyper3:
             lhyper3 = lhyper3==lmix
@@ -109,7 +109,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
         tmp2[j,nghost:-nghost,-nghost:,nghost:-nghost] = tmp2[j,nghost:-nghost, nghost: 2*nghost,nghost:-nghost]
         tmp2[j,nghost:-nghost,nghost:-nghost, :nghost] = tmp2[j,nghost:-nghost,nghost:-nghost,-2*nghost:-nghost]
         tmp2[j,nghost:-nghost,nghost:-nghost,-nghost:] = tmp2[j,nghost:-nghost,nghost:-nghost, nghost: 2*nghost]
-    #effect of compressibility             
+    #effect of compressibility
     if len(lnrho) > 0:
         divu = div(uu,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
                    coordinate_system=param.coord_system)
@@ -130,7 +130,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
             gradlnrho[j,nghost:-nghost,nghost:-nghost,-nghost:] = gradlnrho[j,nghost:-nghost,nghost:-nghost, nghost: 2*nghost]
         Sglnrho = np.zeros_like(uu)
         Sglnrho[0] = dot(tmp0,gradlnrho) +\
-                        (tmp0[0]+tmp1[0]+tmp2[0]-th2*divu)*gradlnrho[0] 
+                        (tmp0[0]+tmp1[0]+tmp2[0]-th2*divu)*gradlnrho[0]
         Sglnrho[1] = dot(tmp1,gradlnrho) +\
                         (tmp0[1]+tmp1[1]+tmp2[1]-th2*divu)*gradlnrho[1]
         Sglnrho[2] = dot(tmp2,gradlnrho) +\
@@ -207,7 +207,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
     if fvisc2.max() > 0:
         fvisc2[np.where(fvisc2==0)] = fvisc2[np.where(fvisc2>0)].min()
         Re = advec2/fvisc2
-        #set minimum floor to exclude zero-valued Re 
+        #set minimum floor to exclude zero-valued Re
         Re[np.where(Re==0)] = Re[np.where(Re>0)].min()
     else:
         Re = advec2
@@ -252,7 +252,7 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
     """
     if len(bb) ==0 and len(aa) ==0 and len(jj) ==0:
         print('magnetic_reynolds WARNING: no aa, bb nor jj provided\n'+
-              'aa or bb must be provided or aa for only hyper resistivity') 
+              'aa or bb must be provided or aa for only hyper resistivity')
     #resistive force
     lres, lhyper3 = False, False
     for iresi in param.iresistivity:
@@ -269,10 +269,10 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
             if len(aa) == 0:
                 print('magnetic_reynolds WARNING: calculating jj without aa\n',
                       'provide aa or jj directly for accurate boundary values')
-                jj = curl(bb,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+                jj = curl(bb,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
                             coordinate_system=param.coord_system)
             else:
-                jj = curl2(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+                jj = curl2(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
                             coordinate_system=param.coord_system)
             for j in range(0,3):
                 jj[j, :nghost,:,:] = jj[j,-2*nghost:-nghost,:,:]
@@ -306,7 +306,7 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
                 #del6 for non-cartesian tba
                 #del6a[j] = del6(aa[j],grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
                 #                coordinate_system=param.coord_system)
-            #effective at l > 5 grid.dx? 
+            #effective at l > 5 grid.dx?
             fresi = fresi + param.eta_hyper3*del6a
             del(del6a)
     fresi2 = np.sqrt(dot2(fresi))
@@ -318,7 +318,7 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
                   'provide aa or bb directly to proceed')
             return 1
         else:
-            bb = curl(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,    
+            bb = curl(aa,grid.dx,grid.dy,grid.dz,x=grid.x,y=grid.y,
                       coordinate_system=param.coord_system)
             for j in range(0,3):
                 bb[j, :nghost,:,:] = bb[j,-2*nghost:-nghost,:,:]
@@ -334,7 +334,7 @@ def magnetic_reynolds(uu, param, grid, aa=list(), bb=list(), jj=list(),
     if fresi2.max() > 0:
         fresi2[np.where(fresi2==0)] = fresi2[np.where(fresi2>0)].min()
         Rm = advec2/fresi2
-        #set minimum floor to exclude zero-valued Rm 
+        #set minimum floor to exclude zero-valued Rm
         if Rm.max() > 0:
             Rm[np.where(Rm==0)] = Rm[np.where(Rm>0)].min()
         else:

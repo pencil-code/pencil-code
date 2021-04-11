@@ -13,7 +13,7 @@ from .accuracy import *
 from .draglift import *
 from .tensors import *
 from .Reynolds import *
-from .shocktube import calc_shocktube 
+from .shocktube import calc_shocktube
 try:
     from .aver2h5 import *
 except:

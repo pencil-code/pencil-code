@@ -62,8 +62,8 @@ wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
 plotly.io._orca.request_image_with_retrying = wrapped
 
 def plot(
-         #field (or multiple todo) and 4 surfaces (extra todo) 
-         slice_obj, fields, xyzplane, itt, it, quiet=True,  
+         #field (or multiple todo) and 4 surfaces (extra todo)
+         slice_obj, fields, xyzplane, itt, it, quiet=True,
          #save output
          figdir='./images/', imageformat='png',
          #set color parameters
@@ -128,7 +128,7 @@ def plot(
         height= globals()['xzslice'][itt].shape[0]
         width = globals()['xyslice'][itt].shape[0]
         depth = globals()['xyslice'][itt].shape[1]
-        
+
         if xyz is None:
             xx = np.linspace(0, depth - 1, depth)
             yy = np.linspace(0, width - 1, width)
@@ -157,14 +157,14 @@ def plot(
                 z2 = np.log10(globals()['xy2slice'][itt].astype('f')).astype(dtype)
                 cmax=np.log10(cmax)
                 cmin=np.log10(cmin)
-        elif norm == 'linear': 
+        elif norm == 'linear':
             z1 = globals()['xyslice' ][itt].astype(dtype)
             y1 = globals()['xzslice' ][itt].astype(dtype)
             x1 = globals()['yzslice' ][itt].astype(dtype)
             z2 = globals()['xy2slice'][itt].astype(dtype)
             cmax = max(-cmin, cmax)
             cmin = -cmax
-        else: 
+        else:
             print("WARNING: 'norm' undefined, applying 'linear'")
             z1 = globals()['xyslice' ][itt].astype(dtype)
             y1 = globals()['xzslice' ][itt].astype(dtype)
@@ -172,7 +172,7 @@ def plot(
             z2 = globals()['xy2slice'][itt].astype(dtype)
             cmax = max(-cmin, cmax)
             cmin = -cmax
-        ratios = [width/height, depth/height, 1] 
+        ratios = [width/height, depth/height, 1]
 
         # set offsets of four slices for placing them in correct positions
         if xyz is None:
@@ -222,7 +222,7 @@ def plot(
         trace_y1.colorbar.title.side=cbar_label_pos
         trace_y1.colorbar.title.text=cbar_label
         trace_y1.colorbar.title.font.size=fontsize
- 
+
         trace_x1 = go.Surface(z=list(z_y),
                               x=list(x1_offset),
                               y=list(y_z),
@@ -333,7 +333,7 @@ def plot(
 def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #acquire the slice objects
              fields=['uu1',], datadir='./data/', proc=-1, xyzplane=[],
-             quiet=True, oldfile=False, 
+             quiet=True, oldfile=False,
              #select data to plot
              tstart=0., tend=1e38, islice=-1,
              #set image properties
@@ -341,7 +341,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #set color parameters
              colorscale='brbg_r', norm='linear',
              #color_range size 2 list cmin and cmax
-             color_range=None, color_levels=None, 
+             color_range=None, color_levels=None,
              #locate the box and axes
              viewpoint=(-1.35, -2.1, 0.5), offset=2., margin=(20,20,30,0),
              autosize=False, image_dim=(800,500),
@@ -351,7 +351,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              cbar_label=r'$u_x\,[{\rm km s}^{-1}]$', cbar_loc=1.,
              cbar_label_pos='right', #['top', 'right', 'bottom']
              cbar_thickness=10., cbar_borderwidth=None,
-             #add text for time stamp                                     
+             #add text for time stamp
              timestamp=False, textxy=(0,0), tscale=1,
              str_unit='', isd=2,  fontsize=25,
              #convert data to cgs from code units and rescale to cbar_label
@@ -405,10 +405,10 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                         cmax = max(cmax,globals()[key+'slice'][itt].max().astype('f'))
                         cmin = min(cmin,globals()[key+'slice'][itt].min().astype('f'))
                 plot(
-                     #field (or multiple todo) and 4 surfaces (extra todo) 
+                     #field (or multiple todo) and 4 surfaces (extra todo)
                      slice_obj, fields, xyzplane,
-                     itt, it, quiet=quiet,  
-                     #yz[i], xy[i], xz[i], xy2[i], 
+                     itt, it, quiet=quiet,
+                     #yz[i], xy[i], xz[i], xy2[i],
                      #save output
                      figdir=figdir, imageformat=imageformat,
                      #set color parameters
@@ -423,9 +423,9 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                      cbar_label=cbar_label, cbar_loc=cbar_loc,
                      cbar_label_pos=cbar_label_pos, cbar_thickness=cbar_thickness,
                      cbar_borderwidth=cbar_borderwidth,
-                     #add text for time stamp                               
+                     #add text for time stamp
                      time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-                     isd=isd, fontsize=fontsize, tscale=tscale, dtype=dtype  
+                     isd=isd, fontsize=fontsize, tscale=tscale, dtype=dtype
                     )
         else:
             if not isinstance(color_range, list):
@@ -433,10 +433,10 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                     cmax = max(cmax,globals()[key+'slice'][islice].max().astype('f'))
                     cmin = min(cmin,globals()[key+'slice'][islice].min().astype('f'))
             plot(
-                 #field (or multiple todo) and 4 surfaces (extra todo) 
+                 #field (or multiple todo) and 4 surfaces (extra todo)
                  slice_obj, fields, xyzplane,
-                 islice, [islice,], quiet=quiet,  
-                 #yz[i], xy[i], xz[i], xy2[i], 
+                 islice, [islice,], quiet=quiet,
+                 #yz[i], xy[i], xz[i], xy2[i],
                  #save output
                  figdir=figdir, imageformat=imageformat,
                  #set color parameters
@@ -453,7 +453,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  cbar_borderwidth=cbar_borderwidth,
                  #add text for time stamp
                  time=slice_obj.t[itt], textxy=textxy, str_unit=str_unit,
-                 isd=isd, fontsize=fontsize,  tscale=tscale, dtype=dtype 
+                 isd=isd, fontsize=fontsize,  tscale=tscale, dtype=dtype
                 )
 """
       - One of the following named colorscales:

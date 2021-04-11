@@ -7,7 +7,7 @@
 # J. Aarnes (jorgenaarnes@gmail.com)
 #
 """
-Contains classes and methods to compute drag, lift and Strouhal number 
+Contains classes and methods to compute drag, lift and Strouhal number
 for a cylinder in a cross flow
 """
 
@@ -21,7 +21,7 @@ def draglift(simulations, sortby='dx', **kwargs):
     If the flow is steady, only drag and lift coefficients are computed.
 
     Call signature:
-      draglift(simulations, d_cylinder=0.1, u_0=1.0, flow_dir='y', 
+      draglift(simulations, d_cylinder=0.1, u_0=1.0, flow_dir='y',
                t_start=-1, sortby='dx'):
 
     Keyword arguments:
@@ -92,7 +92,7 @@ class Draglift(object):
         Requires time series T as input, on the form given in the pencil code where T.t, T.c_dragx and T.c_dragy are avaliable quantities
         Cylinder diameter, fluid mean velocity , flow direction and start time of drag computations velocity should also be given as input.
         """
-    
+
         time_series = simulation.get_ts()
         time = time_series.t
         if(flow_dir=='y'):
@@ -104,38 +104,38 @@ class Draglift(object):
         else:
             print('ERROR: Incorrect flow direction specified. Must be x- or y-direction')
             return False
-        
+
         if(t_start<0):
         # Midpoint as standart start time for drag computations if nothing else is given
             t_0_ind = int(np.ceil(drag.size*0.5))
         else:
             t_0_ind = np.argmax(time_series.t>t_start)
-    
+
         maximum_drag = find_extrema(drag[t_0_ind:],1)
         minimum_drag = find_extrema(drag[t_0_ind:],-1)
-        
+
         maximum_lift = find_extrema(lift[t_0_ind:],1)
         minimum_lift = find_extrema(lift[t_0_ind:],-1)
-    
+
         if(maximum_drag==[]):
             print('ERROR: No vortex shedding detected in flow.')
             return False
-    
+
         C_d = np.mean(drag[t_0_ind+maximum_drag[0]:t_0_ind+minimum_drag[-1]])
         L_d = np.mean(lift[t_0_ind+maximum_lift[0]:t_0_ind+minimum_lift[-1]])
-    
+
         rms_drag = np.sqrt(np.mean(np.square(drag[t_0_ind+maximum_drag[0]:t_0_ind+minimum_drag[-1]])))
         rms_lift = np.sqrt(np.mean(np.square(lift[t_0_ind+maximum_lift[0]:t_0_ind+minimum_lift[-1]])))
-        
+
         freq = (maximum_lift.size-1)/(time[t_0_ind+maximum_lift[-1]]-time[t_0_ind+maximum_lift[0]])
         strouhal= freq*d_cylinder/u_0
-    
+
         # mean lift and rms drag are computed, but not returned at the moment
         # can perhaps be useful someday, so not removed from compute_drag()-routine
         self.drag = C_d
         self.lift = rms_lift
         self.st = strouhal
-    
+
 def find_extrema(series, maxmin):
     """
     Input: Data series, extrama of intereset (max or min)

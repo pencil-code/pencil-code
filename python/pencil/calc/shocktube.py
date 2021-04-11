@@ -49,7 +49,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def calc_shocktube(xarr, time, par=list(), lreference=False, 
+def calc_shocktube(xarr, time, par=list(), lreference=False,
               DEBUG=False, lplot=False
              ):
     """
@@ -64,7 +64,7 @@ def calc_shocktube(xarr, time, par=list(), lreference=False,
      Default parameters are for Sod's reference problem
     """
     if isinstance(par,list):
-        par = pc.read.param() 
+        par = pc.read.param()
     if lreference:
         print("lreference is True: running Sod's reference problem")
         par.uu_right = 0.

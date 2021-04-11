@@ -7,7 +7,7 @@
 """
 6th Order derivatives. Currently only equidistant grids are supported.
 
-FAG: added 5th derivative and filled derivative ghosts (except corners) 
+FAG: added 5th derivative and filled derivative ghosts (except corners)
      with periodic boundary values. TODO: include proper boundary conditions
      for non-internal ghosts. Add separate get_ghosts routine to handle this.
 """

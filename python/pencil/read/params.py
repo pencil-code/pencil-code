@@ -52,7 +52,7 @@ def param(*args, **kwargs):
 
     *append_units*
       Derives dimensional units from standard code units.
-    
+
     Return:
     Instance of the pencil.read.param.Param class.
     All of the selected parameters are imported as class members.

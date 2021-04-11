@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os 
+import os
 from .. import read
 import numpy as np
 import pylab as plt
@@ -25,7 +25,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
      transform --- insert arbitrary numerical code to modify the slice
      wait --- pause in seconds between animation slices
     """
-    
+
     datadir = os.path.expanduser(datadir)
     if proc < 0:
         filename = datadir+'/slice_'+field+'.'+extension
@@ -36,8 +36,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
     #param = read_param(datadir)
     param = read.param(datadir)
 
-    #dim = read_dim(datadir,proc) 
-    dim = read.dim(datadir,proc) 
+    #dim = read_dim(datadir,proc)
+    dim = read.dim(datadir,proc)
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -85,7 +85,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
             slice_z2pos = raw_data[-1]
             t = raw_data[-2]
             plane = raw_data[:-2].reshape(vsize,hsize)
-        
+
         if transform:
             exec('plane = plane'+transform)
 
@@ -94,14 +94,14 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
             ax.set_title(title)
             image.set_data(plane)
             manager.canvas.draw()
-            
+
             if ifirst:
                 print("----islice----------t---------min-------max-------delta")
             print("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min()))
-                
+
             ifirst = False
             islice += 1
 
             sleep(wait)
 
-    infile.close() 
+    infile.close()

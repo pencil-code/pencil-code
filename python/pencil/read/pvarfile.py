@@ -85,7 +85,7 @@ class ParticleData(object):
         l_h5 = False
         if os.path.exists(os.path.join(datadir,'grid.h5')):
             l_h5 = True
-            import h5py 
+            import h5py
         if not l_h5:
             try:
                 cwd = os.getcwd()

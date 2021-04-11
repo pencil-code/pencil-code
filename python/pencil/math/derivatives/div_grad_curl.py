@@ -492,7 +492,7 @@ def gij(f, dx, dy, dz, nder=6):
 
     return gij
 
-def traceless_strain(f, dx, dy, dz, x=None, y=None, z=None, 
+def traceless_strain(f, dx, dy, dz, x=None, y=None, z=None,
                      coordinate_system='cartesian'):
 
     if (f.ndim != 4 or f.shape[0] != 3):
@@ -539,7 +539,7 @@ def traceless_strain(f, dx, dy, dz, x=None, y=None, z=None,
         #  sij(:,2,1)=sij(:,2,1)+Sshear
     return sij
 
-#def sij2(f, dx, dy, dz, x=None, y=None, z=None, 
+#def sij2(f, dx, dy, dz, x=None, y=None, z=None,
 #                     coordinate_system='cartesian'):
 #
 #    if (f.ndim != 4 or f.shape[0] != 3):
@@ -549,7 +549,7 @@ def traceless_strain(f, dx, dy, dz, x=None, y=None, z=None,
 #    uij = gij(f, dx, dy, dz, nder=1)
 #! divu -> uij2
 #      call div_mn(uij,sij2,uu)
-#    sij = traceless_strain(f, dx, dy, dz, x=x, y=y, z=z, 
+#    sij = traceless_strain(f, dx, dy, dz, x=x, y=y, z=z,
 #                     coordinate_system=coordinate_system)
 #      call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
 #! sij^2

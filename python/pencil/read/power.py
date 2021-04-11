@@ -17,7 +17,7 @@ def power(*args, **kwargs):
     Signature:
 
     power(datadir='data', file_name='', quiet=False)
-    
+
     Parameters
     ----------
     *datadir*:  Directory where the data is stored.
@@ -35,7 +35,7 @@ def power(*args, **kwargs):
     Notes
     -----
     Use the attribute keys to get a list of attributes
-    
+
     Examples
     --------
     >>> pw = pc.read.power()
@@ -62,10 +62,10 @@ class Power(object):
         """
 
         self.t = []
-    
+
     def keys(self):
-        for i in self.__dict__.keys(): print(i) 
-    
+        for i in self.__dict__.keys(): print(i)
+
 
     def read(self, datadir='data', file_name='',  quiet=False):
         """
@@ -96,14 +96,14 @@ class Power(object):
         import sys
         import math
         import matplotlib as plt
-        
+
         power_list = []
         file_list = []
 
 
         if file_name:
             print('Reading only ',file_name)
-            try: 
+            try:
                 if op.isfile(op.join(datadir,file_name)):
                     print('read one file')
                     if file_name[:5] == 'power' and file_name[-4:] == '.dat':
@@ -134,7 +134,7 @@ class Power(object):
                     else:
                         power_list.append(file_name.split('.')[0][5:])
                     file_list.append(file_name)
-        
+
 
         # Determine the file and data structure.
         dim = read.dim(datadir=datadir)
@@ -147,7 +147,7 @@ class Power(object):
             infile = open(os.path.join(datadir, file_name), 'r')
             line_list = infile.readlines()
             infile.close()
-            
+
             # Extract the numbers from the file strings.
             n_blocks = int(len(line_list)/block_size)
 
@@ -166,7 +166,7 @@ class Power(object):
                 nk = 0
                 if 'k_x' in line_list[1]:
                     nkx = int(line_list[1].split()[line_list[1].split().index('k_x')+1].split(')')[0][1:])
-                    ini = 2 
+                    ini = 2
                     kx = []
                     for i in range(ini, math.ceil(nkx/8)+ini):
                         kx.append([float(j) for j in line_list[i].split()])
@@ -195,9 +195,9 @@ class Power(object):
                     ini = i+1
                     nk = max(nk,nkz)
 
-                #Now read the rest of the file  
-                print('ini', ini) 
-                line_list = line_list[ini:]    
+                #Now read the rest of the file
+                print('ini', ini)
+                line_list = line_list[ini:]
                 time = []
                 power_array = []
                 print('nk', nk)
@@ -212,7 +212,7 @@ class Power(object):
                         maxi = len(line.strip().split())
                         for j in range(0,maxi,2):
                             power_array.append(complex(real =float(line.strip().split()[j]), imag=float(line.strip().split()[j+1])))
-                time = np.array(time) 
+                time = np.array(time)
                 power_array = np.array(power_array).reshape([n_blocks, int(nk)]).astype(np.complex)
 
                 self.t = time.astype(np.float32)
@@ -267,4 +267,4 @@ class Power(object):
                 power_array = np.array(power_array).reshape([n_blocks, int(dim.nxgrid/2)]).astype(np.float32)
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
-   
+

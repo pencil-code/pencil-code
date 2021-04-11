@@ -17,7 +17,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
     along the y-direction, for runs with grid points nxgrid = n, 2n, 4n, 8n, compute
 
     || u_n - u_0 || = dy \sum\limits_{n=0}^n (sqrt(u_n(x_n)-u_0(x_8n)))
-    
+
     for all runs (except for the 8n case, used as reference).
 
     Requires that the runs have matching grids, that is, grid refined by a factor of 2m,
@@ -35,7 +35,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
       variable used in accuracy assessment
 
     *strip*:
-      index for strip along coordinate 
+      index for strip along coordinate
 
     *var_file*:
       name of varfile to read from each sim
@@ -44,11 +44,11 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
       compute two-norm along 'x' or 'y' direction
 
     *noerr*:
-      set to false if you want to return an array of maximum error along strip, in 
+      set to false if you want to return an array of maximum error along strip, in
       addition to the two-norm
 
     Returns
-      array of two-norms where the larges array is used as base 
+      array of two-norms where the larges array is used as base
     """
 
     import numpy as np
@@ -126,7 +126,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
          #for i,thissim in enumerate(sims[:-1]):
          #    strips[i]=int(thissim.dy/dx_max*strip)
          #n1_factor = int(sims[0].dx/sims[-1].dy)
- 
+
     attribute = getattr(sims[-1],field)
  #    if(field=='ux' or field=='uy'):
  #        u2 = attribute[0::n2_factor,0::n2_factor]
@@ -139,7 +139,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
             n2_factor = int(thissim.dx/dh)
         elif(direction=='y' or direction=='th'):
             n2_factor = int(thissim.dy/dh)
- 
+
         u1 = getattr(thissim,field)
         if(field=='ux' or field=='uy'):
             u2 = attribute[0::n2_factor,0::n2_factor]
@@ -148,8 +148,8 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
             u2 = attribute[0,0::n2_factor,0::n2_factor]
             u1 = u1[0,:,:]#0::n1_factor,:]
             #u1 = u1[0,0::n1_factor,:]
- 
- 
+
+
         radius_l=sims[-1].r[0::n2_factor]
         if(direction=='x' or direction=='r'):
             twonorms[i] = (twonorm(u1[:,strip*j],u2[:,strip*j],thissim.dy*sims[0].r[strip]))
@@ -202,7 +202,7 @@ def twonorm_accuracy(simulations, field='ux', strip=0, var_file='ogvar.dat',dire
 
 def order_accuracy(simulations=[], nstrips=0, twonorm_arr= [], field='ux', var_file='ogvar.dat',direction='x'):
     """
-    Compute an estimate of the order of accuracy, using two-norms where 
+    Compute an estimate of the order of accuracy, using two-norms where
     the finest grid is used as reference solution u_0.
     Return array of orders of accuracy, where each order p is for computation along one strip.
 
@@ -243,7 +243,7 @@ def order_accuracy(simulations=[], nstrips=0, twonorm_arr= [], field='ux', var_f
 
     nstrips, ntwonorms = twonorm_arr.shape
     p_arr = np.empty([nstrips,ntwonorms-1])
-    
+
     for i in range(ntwonorms-1):
         p_arr[:,i] = np.log(twonorm_arr[:,i]/twonorm_arr[:,i+1])/np.log(2)
 
@@ -302,7 +302,7 @@ def twonorm(u1,u2,dx):
 
 def maxerror(u1,u2):
     """
-    Find the larges error between values from u1 and u2 (for the 
+    Find the larges error between values from u1 and u2 (for the
     same indices).
     """
     from numpy import subtract
@@ -321,7 +321,7 @@ def twonorm_accuracy2D(simulations, field='ur', var_file='ogvar.dat',noerr=True,
     along the y-direction, for runs with grid points nxgrid = n, 2n, 4n, 8n, compute
 
     || u_n - u_0 || = dy \sum\limits_{n=0}^n (sqrt(u_n(x_n)-u_0(x_8n)))
-    
+
     for all runs (except for the 8n case, used as reference).
 
     Requires that the runs have matching grids, that is, grid refined by a factor of 2m,
@@ -342,11 +342,11 @@ def twonorm_accuracy2D(simulations, field='ur', var_file='ogvar.dat',noerr=True,
       name of varfile to read from each sim
 
     *noerr*:
-      set to false if you want to return an array of maximum error along strip, in 
+      set to false if you want to return an array of maximum error along strip, in
       addition to the two-norm
 
     Returns
-      array of two-norms where the larges array is used as base 
+      array of two-norms where the larges array is used as base
     """
 
     import numpy as np
@@ -409,7 +409,7 @@ def twonorm_accuracy2D(simulations, field='ur', var_file='ogvar.dat',noerr=True,
         u1 = getattr(thissim,field)
         if not(field=='ux' or field=='uy'):
             u1 = u1[0,:,:]
-        
+
         twonorms[i]=0.
         n2=n2_fac[i]
         r=thissim.r
@@ -439,7 +439,7 @@ def twonorm_accuracy1D(simulations, field='ur', strip=1, direction='r', varfile=
     along the y-direction, for runs with grid points nxgrid = n, 2n, 4n, 8n, compute
 
     || u_n - u_0 || = dy \sum\limits_{n=0}^n (sqrt(u_n(x_n)-u_0(x_8n)))
-    
+
     for all runs (except for the 8n case, used as reference).
 
     Requires that the runs have matching grids, that is, grid refined by a factor of 2m,
@@ -460,11 +460,11 @@ def twonorm_accuracy1D(simulations, field='ur', strip=1, direction='r', varfile=
       name of varfile to read from each sim
 
     *noerr*:
-      set to false if you want to return an array of maximum error along strip, in 
+      set to false if you want to return an array of maximum error along strip, in
       addition to the two-norm
 
     Returns
-      array of two-norms where the larges array is used as base 
+      array of two-norms where the larges array is used as base
     """
 
     import numpy as np
@@ -527,7 +527,7 @@ def twonorm_accuracy1D(simulations, field='ur', strip=1, direction='r', varfile=
         u1 = getattr(thissim,field)
         if not(field=='ux' or field=='uy'):
             u1 = u1[0,:,:]
-        
+
         dr=np.empty(thissim.r.size)
         dr[0:-1] = thissim.r[1:]-thissim.r[0:-1]
         dr[-1]=dr[-2]

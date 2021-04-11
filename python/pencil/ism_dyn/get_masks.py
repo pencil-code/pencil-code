@@ -3,20 +3,20 @@
 # 05-may-20
 # Author: F. Gent (fred.gent.ncl@gmail.com).
 #
-""" Derive auxilliary data and other diagnostics from var.h5 file and 
+""" Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
- 
+
     uses:
       compute 'data' arrays of size [nz,ny,nx] as required
       store 'time' of snapshot
       compute 'masks' for example by temperature phase
-      compute summary statistics 'stats' 
+      compute summary statistics 'stats'
       compute 'structure' functions as required
 """
 import numpy as np
 from ..math import cpu_optimal
 from ..io import open_h5, group_h5, dataset_h5
-from .. import read 
+from .. import read
 import os
 
 def thermal_decomposition(
@@ -25,7 +25,7 @@ def thermal_decomposition(
     call signature:
 
     thermal_decomposition(ss, pars, unit='unit_entropy', ent_cut=[2.32e9,])
-    
+
     Keyword arguments:
         ss:       dataset used for masks, default 'ss', alternate e.g.'tt'
         pars:     Param() object required for units rescaling
@@ -69,12 +69,12 @@ def derive_masks(sim_path, src, dst, data_key='data/ss', par=[], comm=None,
                               MBmin=chunksize,nmin=nmin,size=size)[1]
     else:
         nchunks = [1,1,1]
-    print('nchunks {}'.format(nchunks)) 
+    print('nchunks {}'.format(nchunks))
     # for mpi split chunks across processes
     # for mpi split chunks across processes
     if size > 1:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         indx = [locindx[np.mod(rank+int(rank/nchunks[2])
                                    +int(rank/nchunks[1]),nchunks[0])]]
@@ -82,11 +82,11 @@ def derive_masks(sim_path, src, dst, data_key='data/ss', par=[], comm=None,
         indz = [locindz[np.mod(rank,nchunks[2])]]
         allchunks = 1
     else:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
-        indx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        indy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        indx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        indy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         indz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # ensure derived variables are in a list
@@ -94,7 +94,7 @@ def derive_masks(sim_path, src, dst, data_key='data/ss', par=[], comm=None,
         mask_keys = mask_keys
     else:
         mask_keys = [mask_keys]
-    # initialise group 
+    # initialise group
     group = group_h5(dst, 'masks', status='a', overwrite=overwrite,
                      comm=comm, rank=rank, size=size)
     for key in mask_keys:

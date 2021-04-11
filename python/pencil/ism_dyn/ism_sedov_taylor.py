@@ -9,29 +9,29 @@ from . import read
 
 def sedov_taylor(*args, **kwargs):
     """
-    Compute analytic radial time evolution of SN blast waves for 
+    Compute analytic radial time evolution of SN blast waves for
     comparison with numerical results
-    
+
     *t_sedov*:
       Time_series object read from the simulation sn_series.dat
-    
+
     *par*:
       Param object containing the simulation parameters
-    
+
     *time*:
       list of time in code units
-    
+
     *nt*:
       Integer size of analytic arrays
-    
+
     *endt*
       Real end time in code units for the time series
-    
+
     *dims*:
       Dimension of the simulation default 3D
-    
+
     *rho0*:
-      Ambient ISM density 
+      Ambient ISM density
     """
     st_tmp = SedovTaylor()
     st_tmp.get_st(*args, **kwargs)
@@ -49,8 +49,8 @@ class SedovTaylor(object):
 
         self.t = []
         self.keys = []
-        
-        
+
+
 
 
     def get_st(self,
@@ -59,37 +59,37 @@ class SedovTaylor(object):
            lcioffi=True
         ):
         """
-        Compute analytic radial time evolution of SN blast waves for 
+        Compute analytic radial time evolution of SN blast waves for
         comparison with numerical results
-        
+
         *t_sedov*:
           Time_series object read from the simulation sn_series.dat
-        
+
         *par*:
           Param object containing the simulation parameters
-        
+
         *time*:
           list of time in code units
-        
+
         *nt*:
           Integer size of analytic arrays
-        
+
         *endt*
           Real end time in code units for the time series
-        
+
         *dims*:
           Dimension of the simulation default 3D
-        
+
         *rho0*:
-          Ambient ISM density 
- 
+          Ambient ISM density
+
         *lsnowplough:
           Include original snowplough profile
 
         *lcioffi:
           Include Cioffi et al profile
         """
-        
+
         if isinstance(par, list):
             unit_length = 3.086e21 # 1pc in cm
             unit_time = 3.1557e16 # Gyr in s
@@ -100,15 +100,15 @@ class SedovTaylor(object):
             E0 = 1e51/unit_energy # erg
             M0 = 10
         else:
-            unit_length =         par.unit_length      
-            unit_time =           par.unit_time        
-            unit_velocity =       par.unit_velocity    
-            unit_density =        par.unit_density     
+            unit_length =         par.unit_length
+            unit_time =           par.unit_time
+            unit_velocity =       par.unit_velocity
+            unit_density =        par.unit_density
             unit_energy_density = par.unit_energy_density
-            unit_energy =         par.unit_energy      
+            unit_energy =         par.unit_energy
             E0 = par.ampl_sn
             if par.lsn_mass:
-                M0=par.mass_sn 
+                M0=par.mass_sn
             else:
                 M0 = 10
         if len(time) > 0:
@@ -131,7 +131,7 @@ class SedovTaylor(object):
         setattr(self, 't', time)
         for key in self.__dict__.keys():
             print(key,self.__getattribute__(key))
- 
+
         #Sedov-Taylor
         rst  = (self.xi*self.E0/self.rho0)**(1./(self.dims+2.)
                )*self.t**(2./(self.dims+2.))
@@ -145,7 +145,7 @@ class SedovTaylor(object):
 
         def get_snpl(self, quiet):
             """
-            Compute analytic radial time evolution of SN blast waves for 
+            Compute analytic radial time evolution of SN blast waves for
             comparison of snowplough solution with numerical results
             """
             #Woltier transition to momentum conservation
@@ -156,7 +156,7 @@ class SedovTaylor(object):
                    )*ttrans**(2./(self.dims+2.))
             if not quiet:
                 print('Woltier transition to momentum conservation')
-                print('ttrans {}, rtrans {}, vtrans {}'.format(    
+                print('ttrans {}, rtrans {}, vtrans {}'.format(
                        ttrans,    rtrans,    vtrans))
             setattr(self, 'tWolt', ttrans)
             setattr(self, 'rWolt', rtrans)
@@ -175,7 +175,7 @@ class SedovTaylor(object):
 
         def get_cioffi(self, quiet):
             """
-            Compute analytic radial time evolution of SN blast waves for 
+            Compute analytic radial time evolution of SN blast waves for
             comparison with numerical results
             """
             vej=(400*self.E0/self.M0)**0.5
@@ -188,8 +188,8 @@ class SedovTaylor(object):
                   2./(2+self.dims)-1)
             if not quiet:
                 print('Pressure-driven snowplough transition')
-                print('tpds {}, rpds {}, vpds {}'.format(    
-                       tpds,    rpds,    vpds))    
+                print('tpds {}, rpds {}, vpds {}'.format(
+                       tpds,    rpds,    vpds))
             setattr(self, 'tpds', tpds)
             setattr(self, 'rpds', rpds)
             setattr(self, 'vpds', vpds)
@@ -198,8 +198,8 @@ class SedovTaylor(object):
             rmcs=self.rpds*(4./3.*tmcs/self.tpds-1./3.)**(3./10.)
             if not quiet:
                 print('Momentum conserving snowplough')
-                print('tmcs {}, rmcs {}'.format(    
-                       tmcs,    rmcs))    
+                print('tmcs {}, rmcs {}'.format(
+                       tmcs,    rmcs))
             setattr(self, 'tmcs', tmcs)
             setattr(self, 'rmcs', rmcs)
             #Cioffi et al

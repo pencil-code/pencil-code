@@ -15,7 +15,7 @@ sys_endian_code = (sys.byteorder == 'little') and '<' or '>'
 
 class npfile(object):
     ''' Class for reading and writing numpy arrays to/from files
-    
+
     Inputs:
       file_name -- The complete path name to the file to open
                    or an open file-like object
@@ -38,7 +38,7 @@ class npfile(object):
       write_raw          -- write string data to file (write method of file)
       read_array         -- read numpy array from binary file data
       write_array        -- write numpy array contents to binary file
-      
+
     Example use:
     >>> from StringIO import StringIO
     >>> import numpy as np
@@ -85,7 +85,7 @@ class npfile(object):
     def set_endian(self, endian_code):
         self._endian = self.parse_endian(endian_code)
     endian = property(get_endian, set_endian, None, 'get/set endian code')
-                                     
+
     def parse_endian(self, endian_code):
         ''' Returns valid endian code from wider input options'''
         if endian_code in ['native', 'n', 'N','default', '=']:
@@ -157,7 +157,7 @@ class npfile(object):
         if dt_endian == '=':
             dt_endian = sys_endian_code
         return dt_endian
-    
+
     def write_array(self, data, endian=None, order=None):
         ''' Write to open file object the flattened numpy array data
 
@@ -176,10 +176,10 @@ class npfile(object):
             if dt_endian != endian:
                 data = data.byteswap()
         self.file.write(data.tostring(order=order))
-        
+
     def read_array(self, dt, shape=-1, endian=None, order=None):
         '''Read data from file and return it in a numpy array.
-        
+
         Inputs
         ------
         dt        - dtype of array to be read
@@ -267,7 +267,7 @@ class npfile(object):
         note that fortran records give a 4-byte (or 8-byte if you use
         gfortran) header describing the number of bytes in a
         record. if shape does not agree with this, an error is
-        raised. 
+        raised.
 
         Inputs
         ------

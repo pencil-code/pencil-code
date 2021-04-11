@@ -3,14 +3,14 @@
 # 05-may-20
 # Author: F. Gent (fred.gent.ncl@gmail.com).
 #
-""" Derive auxilliary data and other diagnostics from var.h5 file and 
+""" Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
- 
+
     uses:
       compute 'data' arrays of size [nz,ny,nx] as required
       store 'time' of snapshot
       compute 'masks' for example by temperature phase
-      compute summary statistics 'stats' 
+      compute summary statistics 'stats'
       compute 'structure' functions as required
 """
 import numpy as np
@@ -24,7 +24,7 @@ from ..io import open_h5, group_h5, dataset_h5, mkdir
 from fileinput import input
 from sys import stdout
 import subprocess as sub
-from .. import read 
+from .. import read
 import os
 
 def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
@@ -54,11 +54,11 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
                               MBmin=chunksize,nmin=nmin,size=size)[1]
     else:
         nchunks = [1,1,1]
-    print('nchunks {}'.format(nchunks)) 
+    print('nchunks {}'.format(nchunks))
     # for mpi split chunks across processes
     if size > 1:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         indx = [locindx[np.mod(rank+int(rank/nchunks[2])
                                    +int(rank/nchunks[1]),nchunks[0])]]
@@ -66,11 +66,11 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
         indz = [locindz[np.mod(rank,nchunks[2])]]
         allchunks = 1
     else:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
-        indx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        indy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        indx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        indy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         indz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # ensure derived variables are in a list
@@ -78,7 +78,7 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
         stat_keys = stat_keys
     else:
         stat_keys = [stat_keys]
-    # initialise group 
+    # initialise group
     group = group_h5(dst, 'stats', status='a', overwrite=overwrite,
                      comm=comm, rank=rank, size=size)
     for key in stat_keys:
@@ -125,20 +125,20 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
                             mask = dst['masks'][mask_key][0,n1:n2,m1:m2,l1:l2]
                             Nmask = mask[mask==False].size
                             if Nmask > 0:
-                                mean_mask.append(var[mask==False].mean()*Nmask) 
+                                mean_mask.append(var[mask==False].mean()*Nmask)
                                 stdv_mask.append(var[mask==False].std()*Nmask)
-                            else: 
-                                mean_mask.append(0) 
+                            else:
+                                mean_mask.append(0)
                                 stdv_mask.append(0)
                             nmask_msk.append(Nmask)
                             nmask = mask[mask==True].size
                             if nmask > 0:
                                 mean_nmsk.append(var[mask==True].mean()*nmask)
                                 stdv_nmsk.append(var[mask==True].std()*nmask)
-                            else: 
+                            else:
                                 mean_nmsk.append(0)
                                 stdv_nmsk.append(0)
-                            nmask_nmk.append(nmask) 
+                            nmask_nmk.append(nmask)
                         mean_stat.append(var.mean())
                         stdv_stat.append(var.std())
         if comm:
@@ -161,14 +161,14 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
             stdv_stat = comm.bcast( stdv_stat, root=0)
         if lmask:
             summk = np.sum(nmask_msk)
-            if summk > 0: 
+            if summk > 0:
                 meanm = np.sum(mean_mask)/summk
                 stdvm = np.sum(stdv_mask)/summk
             else:
                 meanm = 0
                 stdvm = 0
             sumnk = np.sum(nmask_nmk)
-            if sumnk > 0: 
+            if sumnk > 0:
                 meann = np.sum(mean_nmsk)/sumnk
                 stdvn = np.sum(stdv_nmsk)/sumnk
             else:
@@ -200,7 +200,7 @@ def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],
                    comm=comm, size=size, rank=rank,
                    overwrite=True)
 #==============================================================================
-def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None, 
+def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
                 xbins=100, ybins=100,
                 figsize=[3.5*1.61803,3.5],
                 xlabel=r'$x$', ylabel=r'$y$',
@@ -210,7 +210,7 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
                 fontsize=14,
                ):
     """
-    xvar:     array 1D.ravel() format of variable 
+    xvar:     array 1D.ravel() format of variable
     yvar:     array length and format matching xvar of complementary variable
     par:      Param object containing simulation parameters
     xlim:     tuple with min & max bin values for xvar
@@ -243,7 +243,7 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
     plt.figure(figsize=figsize)
     plt.hist2d(xvar, yvar, cmap=cmap, bins=[xedges,yedges], density=density,
                norm=norm)
-    
+
     cbar=plt.colorbar(pad=pad)
     cbar.ax.set_ylabel(clabel,fontsize=fontsize)
     plt.tick_params(which='both',direction='in',top=True,right=True)

@@ -25,7 +25,7 @@ for (x,y) in vortices:
     rsq = (xs-x)**2+(ys-y)**2
     vectors[...,0] +=  (ys-y)/rsq
     vectors[...,1] += -(xs-x)/rsq
-    
+
 texture = np.random.rand(size,size).astype(np.float32)
 
 plt.bone()

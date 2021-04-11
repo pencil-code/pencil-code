@@ -16,7 +16,7 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
      transform --- insert arbitrary numerical code to combine the slices
      outfile --- if set, write the slice values in the text file
     """
-    
+
     datadir = os.path.expanduser(datadir)
     if outfile != "":
         outslice=file(outfile,"w")
@@ -31,7 +31,7 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
     # global dim
     param = read_param(datadir)
 
-    dim = read_dim(datadir,proc) 
+    dim = read_dim(datadir,proc)
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -51,7 +51,7 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
     infile=[]
     for i in filename:
         plane += [N.zeros((vsize,hsize),dtype=precision)]
-        
+
         infile += [npfile(i,endian=format)]
 
     ax = P.axes()
@@ -87,7 +87,7 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
             t = raw_data[0][-2]
             for i in range(len(raw_data)):
                 plane[i] = raw_data[i][:-2].reshape(vsize,hsize)
-        
+
         exec('plotplane ='+transform)
 
         if (t > tmin and t < tmax):
@@ -95,14 +95,14 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
             ax.set_title(title)
             image.set_data(plotplane)
             manager.canvas.draw()
-            
+
             if ifirst:
                 print("----islice----------t---------min-------max-------delta")
             print("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min()))
             if outfile != "":
                 outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min()))
                 outslice.write("\n")
-               
+
             ifirst = False
             islice += 1
 

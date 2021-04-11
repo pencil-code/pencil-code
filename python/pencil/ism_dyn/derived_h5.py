@@ -3,14 +3,14 @@
 # 05-may-20
 # Author: F. Gent (fred.gent.ncl@gmail.com).
 #
-""" Derive auxilliary data and other diagnostics from var.h5 file and 
+""" Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
- 
+
     uses:
       compute 'data' arrays of size [nz,ny,nx] as required
       store 'time' of snapshot
       compute 'masks' for example by temperature phase
-      compute summary statistics 'stats' 
+      compute summary statistics 'stats'
       compute 'structure' functions as required
 """
 import numpy as np
@@ -22,7 +22,7 @@ from ..io import open_h5, group_h5, dataset_h5
 from fileinput import input
 from sys import stdout
 import subprocess as sub
-from .. import read 
+from .. import read
 import os
 
 def is_vector(key):
@@ -69,11 +69,11 @@ def under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost):
 
 def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
                 gd=[], overwrite=False, rank=0, size=1, nghost=3,status='a',
-                chunksize = 1000.0, dtype=np.float64, quiet=True, nmin=32  
+                chunksize = 1000.0, dtype=np.float64, quiet=True, nmin=32
                ):
 
     if comm:
-        overwrite = False 
+        overwrite = False
     if isinstance(par, list):
         os.chdir(sim_path)
         par = read.param(quiet=True,conflicts_quiet=True)
@@ -96,11 +96,11 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
                               MBmin=chunksize,nmin=nmin,size=size)[1]
     else:
         nchunks = [1,1,1]
-    print('nchunks {}'.format(nchunks)) 
+    print('nchunks {}'.format(nchunks))
     # for mpi split chunks across processes
     if size > 1:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         indx = [locindx[np.mod(rank+int(rank/nchunks[2])
                                    +int(rank/nchunks[1]),nchunks[0])]]
@@ -108,11 +108,11 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
         indz = [locindz[np.mod(rank,nchunks[2])]]
         allchunks = 1
     else:
-        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        locindy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         locindz = np.array_split(np.arange(nz)+nghost,nchunks[2])
-        indx = np.array_split(np.arange(nx)+nghost,nchunks[0]) 
-        indy = np.array_split(np.arange(ny)+nghost,nchunks[1]) 
+        indx = np.array_split(np.arange(nx)+nghost,nchunks[0])
+        indy = np.array_split(np.arange(ny)+nghost,nchunks[1])
         indz = np.array_split(np.arange(nz)+nghost,nchunks[2])
         allchunks = nchunks[0]*nchunks[1]*nchunks[2]
     # save time
@@ -124,7 +124,7 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
         magic = magic
     else:
         magic = [magic]
-    # initialise group 
+    # initialise group
     group = group_h5(dst, 'data', status='a', overwrite=overwrite,
                      comm=comm, rank=rank, size=size)
     for key in magic:
@@ -207,7 +207,7 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
 #==============================================================================
 def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                       nghost=3):
-    """ 
+    """
     compute from src data and existing dst data derived data
     """
     #==========================================================================
@@ -216,7 +216,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             rho = src['rho'][n1:n2,m1:m2,l1:l2]
         elif 'lnrho' in src.keys():
             rho = np.exp(src['lnrho'][n1:n2,m1:m2,l1:l2])
-        else: 
+        else:
             print('no density used setting rho=1 in pressure calculation')
             rho = 1
         if not par.gamma == 1:
@@ -227,7 +227,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             cv = 1
         lnrho0 = np.log(par.rho0)
         cv1 = 1./cv
-        gamma_m1 = par.gamma-1. 
+        gamma_m1 = par.gamma-1.
 
         if 'ss' in src.keys():
             ss = src['ss'][n1:n2,m1:m2,l1:l2]
@@ -246,14 +246,14 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                       ' pressure cannot be calculated')
                 return 1
         return var
-     
+
     #==========================================================================
     def temperature(src, dst, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if 'rho' in src.keys():
             rho = src['rho'][n1:n2,m1:m2,l1:l2]
         elif 'lnrho' in src.keys():
             rho = np.exp(src['lnrho'][n1:n2,m1:m2,l1:l2])
-        else: 
+        else:
             print('no density used setting rho=1 in temperature calculation')
             rho = 1
         if 'ss' in src.keys():
@@ -284,7 +284,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             lnrho = np.log(src['rho'][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift])
         elif 'lnrho' in src.keys():
             lnrho = src['lnrho'][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift]
-        else: 
+        else:
             lnrho = list()
         if 'shock' in src.keys():
             shock = src['shock'][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift]
@@ -293,7 +293,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
         var = fluid_reynolds(uu, par, gd, lnrho=lnrho, shock=shock)
         n1r,m1r,l1r = under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost)
         return var[n1r:n2-n1+n1r,m1r:m2-m1+m1r,l1r:l2-l1+l1r]
-        
+
     #======================================================================
     def Rm_number(src, dst, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         n1shift,n2shift,m1shift,m2shift,l1shift,l2shift=der_limits(
@@ -375,7 +375,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             cs2 = par.cp*(par.gamma-1)*tt
         else:
             cs2 = par.cp*tt
-        print('tt min {} max {}'.format(tt.min(),tt.max())) 
+        print('tt min {} max {}'.format(tt.min(),tt.max()))
         var = np.sqrt(dot2(uu)/cs2)
         return var
 
@@ -389,7 +389,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             rho = src['rho'][n1:n2,m1:m2,l1:l2]
         elif 'lnrho' in src.keys():
             rho = np.exp(src['lnrho'][n1:n2,m1:m2,l1:l2])
-        else: 
+        else:
             print('no density used setting rho=1 in pressure calculation')
             rho = 1
         var = np.sqrt(dot2(bb)/(par.mu0*rho))

@@ -122,7 +122,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
             if quantity_match_tmp:
                 quantity_match = quantity_match_tmp
                 if str.count(line[0:quantity_match.start()], "'") % 2 == 0 and \
-                   str.count(line[0:quantity_match.start()], '"') % 2 == 0:            
+                   str.count(line[0:quantity_match.start()], '"') % 2 == 0:
                     if line_matches:
                         line_matches[0] = ii
                     else:
@@ -176,7 +176,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
         pos_right_comma = -1
     else:
         pos_right_comma = str.rfind(line[:pos_equal_sign_right], ',')
-    
+
     # Change the quantity in the line string.
     q = copy.copy(line[pos_equal_sign_left:pos_right_comma])
 #    qs = line.partition(quantity+SYM_ASSIGN)

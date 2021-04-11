@@ -8,8 +8,8 @@ The first call takes the parameters of each simulation and constructs an hdf5
 file containing the time and saved states of the numeric and analytic solutions.
 
 The second call produces a set of comparison plots for each variable at each
-snapshot and saves the figures in the simulation directory. From the hdf5 
-files plots could also be made combining multiple parameter compared to the 
+snapshot and saves the figures in the simulation directory. From the hdf5
+files plots could also be made combining multiple parameter compared to the
 analytic solution at a given time - not shown here.
 """
 
@@ -74,22 +74,22 @@ for sim in sims[:]:
             # calc and append to list ee
             ee = pp/rho/(globals()[sim+'par'].gamma-1)
             grp=hf.create_group(str.strip(varfile,'.h5'))
-            grp.create_dataset('pp-sol',data=pp) 
-            grp.create_dataset('uu-sol',data=uu) 
-            grp.create_dataset('ee-sol',data=ee) 
-            grp.create_dataset('rho-sol',data=rho) 
+            grp.create_dataset('pp-sol',data=pp)
+            grp.create_dataset('uu-sol',data=uu)
+            grp.create_dataset('ee-sol',data=ee)
+            grp.create_dataset('rho-sol',data=rho)
             if globals()[sim+'par'].ldensity_nolog:
-                grp.create_dataset('rho-num',data=var.rho) 
+                grp.create_dataset('rho-num',data=var.rho)
             else:
                 rho = np.exp(var.lnrho)
-                grp.create_dataset('rho-num',data=rho) 
-            grp.create_dataset('uu-num',data=var.ux) 
+                grp.create_dataset('rho-num',data=rho)
+            grp.create_dataset('uu-num',data=var.ux)
             grp.create_dataset('pp-num',data=var.pp)
             ee = var.TT/globals()[sim+'pars'].gamma*globals()[sim+'pars'].cp
-            grp.create_dataset('ee-num',data=ee) 
-            grp.create_dataset('time',data=var.t) 
+            grp.create_dataset('ee-num',data=ee)
+            grp.create_dataset('time',data=var.t)
             if globals()[sim+'par'].lmagnetic:
-                grp.create_dataset('bb-num',data=var.bb[2]) 
+                grp.create_dataset('bb-num',data=var.bb[2])
 
 figsize=[7.5,4.635255]
 

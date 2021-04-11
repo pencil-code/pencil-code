@@ -68,7 +68,7 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
     if not variables:
         variables = []
         indx = read.index()
-        for key in indx.__dict__.keys(): 
+        for key in indx.__dict__.keys():
             if 'keys' not in key:
                 variables.append(key)
         if 'uu' in variables:
@@ -322,24 +322,24 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #    Read the average file specified in *varfile* and convert the data
 #    into vtk format.
 #    Write the result in *destination*.
-#    
+#
 #    Keyword arguments:
-#    
+#
 #      *varfile*:
 #        Name of the average file. This also specifies which dimensions the
 #        averages are taken.
-#        
+#
 #      *datadir*:
 #        Directory where the data is stored.
-#       
+#
 #      *destination*:
 #        Destination file.
-#               
+#
 #    """
 #
 #    # read the grid dimensions
 #    grid = pc.read_grid(datadir = datadir, trim = True, quiet = True)
-#    
+#
 #    # read the specified average file
 #    if varfile[0:2] == 'xy':
 #        aver = pc.read_xyaver()
@@ -363,10 +363,10 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #    keys = aver.__dict__.keys()
 #    t = aver.t
 #    keys.remove('t')
-#    
+#
 #    # open the destination file
 #    fd = open(destination + '.vtk', 'wb')
-#    
+#
 #    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
 #    fd.write(varfile[0:2] + 'averages\n'.encode('utf-8'))
 #    fd.write('BINARY\n'.encode('utf-8'))
@@ -375,7 +375,7 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), l0, 0.).encode('utf-8'))
 #    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dl, 1.).encode('utf-8'))
 #    fd.write('POINT_DATA {0:9}\n'.format(len(t) * line_len))
-#                
+#
 #    # run through all variables
 #    for var in keys:
 #        fd.write(('SCALARS ' + var + ' float\n').encode('utf-8'))
@@ -383,7 +383,7 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #        for j in range(line_len):
 #            for i in range(len(t)):
 #                    fd.write(struct.pack(">f", aver.__dict__[var][i,j]))
-#                                
+#
 #    fd.close()
 #
 #
@@ -395,51 +395,51 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #    Convert power spectra from PencilCode format to vtk.
 #
 #    call signature::
-#    
+#
 #      power2vtk(powerfiles = ['power_mag.dat'],
 #            datadir = 'data/', destination = 'power.vtk', thickness = 1):
-#    
+#
 #    Read the power spectra stored in the power*.dat files
 #    and convert them into vtk format.
 #    Write the result in *destination*.
-#    
+#
 #    Keyword arguments:
-#    
+#
 #      *powerfiles*:
 #        The files containing the power spectra.
-#        
+#
 #      *datadir*:
 #        Directory where the data is stored.
-#       
+#
 #      *destination*:
 #        Destination file.
-#      
+#
 #      *thickness*:
 #        Dimension in z-direction. Setting it 2 will create n*m*2 dimensional
 #        array of data. This is useful in Paraview for visualizing the spectrum
 #        in 3 dimensions. Note that this will simply double the amount of data.
-#               
+#
 #    """
 #
 #    # this should correct for the case the user types only one variable
 #    if (len(powerfiles) > 0):
 #        if (len(powerfiles[0]) == 1):
 #            powerfiles = [powerfiles]
-#            
+#
 #    # read the grid dimensions
 #    grid = pc.read_grid(datadir = datadir, trim = True, quiet = True)
-#    
+#
 #    # leave k0 to 1 now, will fix this later
 #    k0 = 1.
 #    # leave dk to 1 now, will fix this later
 #    dk = 1.
-#    
+#
 #    # open the destination file
 #    fd = open(destination + '.vtk', 'wb')
-#    
+#
 #    # read the first power spectrum
 #    t, power = pc.read_power(datadir + powerfiles[0])
-#    
+#
 #    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
 #    fd.write('power spectra\n'.encode('utf-8'))
 #    fd.write('BINARY\n'.encode('utf-8'))
@@ -454,14 +454,14 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1]).encode('utf-8'))
 #    else:
 #        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1] * 2).encode('utf-8'))
-#    
+#
 #    for powfile in powerfiles:
 #        # read the power spectrum
 #        t, power = pc.read_power(datadir + powfile)
 #
 #        fd.write(('SCALARS ' + powfile[:-4] + ' float\n').encode('utf-8'))
 #        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
-#        
+#
 #        if (thickness == 1):
 #            for j in range(power.shape[1]):
 #                for i in range(len(t)):
@@ -471,5 +471,5 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #                for j in range(power.shape[1]):
 #                    for i in range(len(t)):
 #                            fd.write(struct.pack(">f", power[i,j]))
-#                                
+#
 #    fd.close()

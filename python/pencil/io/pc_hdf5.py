@@ -9,7 +9,7 @@
 """
 Contains optional h5 operations with and without hdf5-parallel, for exampe
 to open h5 file with/without MPI using common switches.
-TODO open h5 pencil var object etc, as alternative to var object for 
+TODO open h5 pencil var object etc, as alternative to var object for
 large datasets with memory limits.
 """
 import h5py
@@ -115,7 +115,7 @@ def dataset_h5(h5obj, dataname, status='r', data=None, shape=None, dtype=None,
         status:    open state of file 'w': write, 'r': read or 'a'/'r+': append.
         data:      h5 compatible data object; float, integer, string, array
         shape:     data shape tuple of length > 0
-        dtype:     h5 compatible data type, eg. np.float64 
+        dtype:     h5 compatible data type, eg. np.float64
         delete:    flag to remove existing group from h5 object.
         overwrite: flag to replace existing group from h5 object.
         rank:      processor rank with root = 0.

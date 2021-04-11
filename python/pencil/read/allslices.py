@@ -352,7 +352,7 @@ class SliceSeries(object):
                             print(field,"chunk_size",nchunks)
                             print("subslice_series[0].size", subslice_series[0].size)
                             sys.stdout.flush()
-                        for subslice in subslice_series: 
+                        for subslice in subslice_series:
                             ichunk_size = int(subslice.size/vsize/hsize)
                             subslice = subslice.reshape(ichunk_size, vsize, hsize)
                             slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)

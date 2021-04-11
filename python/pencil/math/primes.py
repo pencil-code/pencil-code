@@ -3,7 +3,7 @@
 # primes.py
 # Written by Fred Gent (fred.gent.ncl@gmail.com)
 """
-Find the prime factorization of the simulation grid, useful for checking 
+Find the prime factorization of the simulation grid, useful for checking
 permissible remesh parameters, parallelization options and fft compatibility.
 """
 import numpy as np
@@ -59,7 +59,7 @@ def common_factors(nx, ny, nz, nmin=8):
 def cpu_optimal(nx,ny,nz,mvar=8,maux=0,par=dict(),nmin=32,MBmin=5.0,minghosts=7,
                 quiet=True,size=1):
     xdiv, ydiv, zdiv = common_factors(nx,ny,nz,nmin=nmin)
-    
+
     nvar=mvar+maux
     #size of farray in MB
     nsize=8*nvar*nx*ny*nz/1024**2

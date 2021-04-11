@@ -44,9 +44,9 @@ def var(*args, **kwargs):
         sim:        Simulation sim object.
         precision:  Float (f), double (d) or half (half).
         lpersist:   Read the persistent variables if they exist
-    
+
     The default var file is var.dat (which is the latests snapshot of the fields)
-    
+
     Return:
     Instance of the pencil.read.var.DataCube class.
     All of the computed fields are imported as class members.
@@ -159,7 +159,7 @@ class DataCube(object):
             record_types = {}
             for key in read.record_types.keys():
                 if read.record_types[key][1] == 'd':
-                    record_types[key]=(read.record_types[key][0], 
+                    record_types[key]=(read.record_types[key][0],
                                       precision)
                 else:
                     record_types[key] = read.record_types[key]

@@ -18,18 +18,18 @@ def tensors_sph(*args, **kwargs):
 
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
-class Tensors(object):    
+class Tensors(object):
     """
-    Tensors -- Holds the calculated z-averaged tensors and code 
+    Tensors -- Holds the calculated z-averaged tensors and code
     coefficients
     """
     def __init__(self):
         """
         Fill members with default values.
         """
- 
+
         import numpy as np
- 
+
         self.t = np.array([])
 
     def calc(self,
@@ -53,7 +53,7 @@ class Tensors(object):
            from Averages object aver.z. u, acoef and bcoef and aver.t
 
            For long DNS runs the 'zaverages.dat' file can be very large
-           so MPI may be required and the data is loaded by processor 
+           so MPI may be required and the data is loaded by processor
            as default.
 
            lskip_zeros=True identifies the resetting of the testfield
@@ -62,20 +62,20 @@ class Tensors(object):
 
            iy is the index array that is computed in this MPI process, which
            may be a subset of the array on this processor
-            
+
            l_correction=True permits the pencil coefficients computed
            prior to the Pencil Code correction implemented after
            time=t_correction to be rescaled accordingly to match the new
            formulation.
 
            trargs contain optional arguments for the time treatments: mean,
-           smoothing, etc.  
+           smoothing, etc.
 
            tindex is set to limit the range of the iterations loaded from
            Averages in zaverages.dat
- 
-           The index imask, excluding the resets, can be specified to 
-           ensure all processes use the same mask 
+
+           The index imask, excluding the resets, can be specified to
+           ensure all processes use the same mask
         """
         import numpy as np
         import os
@@ -83,7 +83,7 @@ class Tensors(object):
 
         os.chdir(datatopdir) # return to working directory
         grid = read.grid(proc=proc,trim=True, quiet=True)
-        # if iy None or scalar create numpy array 
+        # if iy None or scalar create numpy array
         try:
             iy.size>0
         except:
@@ -134,12 +134,12 @@ class Tensors(object):
                         print("Resets occured at save points {0}".format(izero))
                 else:
                     imask=np.where(aver.t)[0]
-                del(rmpoints,rmbrange,rmfrange) 
+                del(rmpoints,rmbrange,rmfrange)
             else:
                 imask=np.arange(aver.t.size)
                 if rank==0:
                     print("Skipped zero removals.")
-        # update the time of the snapshots included 
+        # update the time of the snapshots included
         self.t=aver.t[imask]
 
         # Correction to Pencil Code error may be required on old data
@@ -168,7 +168,7 @@ class Tensors(object):
                 index = etaformat.format(j+1,2,2)
                 aver.z.__getattribute__(index)[itcorr] *=\
                                                -dim.nprocz/(dim.nprocz-2.)
-            
+
         # set up place holders for the Pencil Code tensor coefficients
         index = alpformat.format(1,1)
         u  =np.zeros([3,    len(imask),aver.z.__getattribute__(index).shape[-2],iy.size])
@@ -211,7 +211,7 @@ class Tensors(object):
                 else:
                     # eta[0,j,i,:,:,0] = -aver.z.__getattribute__(index1)[imask,:,iy] # JOERN, no sign correction
                     # eta[1,j,i,:,:,0] = -aver.z.__getattribute__(index2)[imask,:,iy]*r[:,0] # JOERN, no sign correction
-                    eta[0,j,i,:,:,0] = aver.z.__getattribute__(index1)[imask,:,iy]  
+                    eta[0,j,i,:,:,0] = aver.z.__getattribute__(index1)[imask,:,iy]
                     eta[1,j,i,:,:,0] = aver.z.__getattribute__(index2)[imask,:,iy]*r[:,0]
 
         # apply the specified averaging or smoothing: 'None' returns unprocessed arrays
@@ -219,11 +219,11 @@ class Tensors(object):
             u=timereducer(u,trargs)
             alp=timereducer(alp,trargs)
             eta=timereducer(eta,trargs)
-        
+
         if rank==0:
             print("Old time dimension has length: {0}".format(old_size))
             print("New time dimension has length: {0}".format(alp.shape[-3]))
-        
+
         # Create output tensors
         datatype  = alp.dtype
         datashape = [alp.shape[-3], alp.shape[-2], alp.shape[-1], 1]
@@ -238,7 +238,7 @@ class Tensors(object):
 
         """
         All tensors need to be reordered nz,ny,nx,nt for efficient writing to disk
-        """ 
+        """
         # Calculating a and b matrices
         self.acoef[:,:,:,:,:,0]   = np.copy(alp)
         self.acoef=np.swapaxes(self.acoef,-4,-1)
@@ -248,7 +248,7 @@ class Tensors(object):
         self.bcoef=np.swapaxes(self.bcoef,-3,-2)
 
         irr, ith, iph = 0,1,2
-        
+
         # u-tensor
         print("Calculating utensor on rank {}".format(rank))
         #utensor[:,:,:,:,0] = u[:,:,:,:] - np.mean(u[:,:,:,:],axis=1,keepdims=True)

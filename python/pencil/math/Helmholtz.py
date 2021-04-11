@@ -3,7 +3,7 @@
 # Helmholtz.py
 # Written by Fred Gent (fred.gent.ncl@gmail.com)
 """
-Perform a Helmholtz decomposition on a vector field returning a pair of 
+Perform a Helmholtz decomposition on a vector field returning a pair of
 orthogonal vectors with zero divergence and zero curl respectively.
 """
 
@@ -20,7 +20,7 @@ def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
     call signature:
 
     helmholz_fft(field, grid, params, )
- 
+
     Keyword arguments:
 
      *tot_field*:
@@ -152,7 +152,7 @@ def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
             print(
             'mean total field energy {} mean irrotational energy {}'.format(
             np.mean(field2), np.mean(pot2)))
-    elif rot and pot: 
+    elif rot and pot:
         if not quiet:
             print(
             'mean total field energy {} mean summed component energy {}'.format(
@@ -180,7 +180,7 @@ def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
         ret_opt = rot_field
     elif pot and not rot:
         ret_opt = pot_field
-    elif rot and pot: 
+    elif rot and pot:
         ret_opt = [rot_field, pot_field]
     else:
         print('pot and/or rot must be True, returning ones')

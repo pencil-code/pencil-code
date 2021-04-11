@@ -18,9 +18,9 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to modify the slice
     """
-    import os 
+    import os
     from .. io import npfile
-   
+
     datadir = os.path.expanduser(datadir)
     if proc < 0:
         filename = datadir+'/slice_'+field+'.'+extension
@@ -30,7 +30,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
     # global dim
     param = read_param(datadir)
 
-    dim = read_dim(datadir,proc) 
+    dim = read_dim(datadir,proc)
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -71,7 +71,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
             slice_z2pos = raw_data[-1]
             t = raw_data[-2]
             plane = raw_data[:-2].reshape(vsize,hsize)
-        
+
         if transform:
             exec('plane = plane'+transform)
 
@@ -82,11 +82,11 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
             print('Saving frame', fname)
             fig.savefig(fname)
             files.append(fname)
-            
+
             if ifirst:
                 print("----islice----------t---------min-------max-------delta")
             print("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min()))
-                
+
             ifirst = False
             islice += 1
 

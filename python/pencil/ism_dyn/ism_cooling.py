@@ -1,7 +1,7 @@
 
 import numpy as np
 import os
-try: 
+try:
     import astropy.units as u
     wsw_cooling = {
                    'beta': [2.12,1.,0.56,3.21,-0.2,-3.,-0.22,-3.,0.33,0.5],
@@ -29,8 +29,8 @@ try:
                               1.608087849e22       * u.Unit('erg g-2 s-1 cm3'),
                               9.228575532e20       * u.Unit('erg g-2 s-1 cm3')
                              ]
-                  } 
-     
+                  }
+
     gressel_cooling = {
                    'beta': [2.12,1.,0.56,3.21,-0.2,-3.,-0.22,-3.,0.33,0.5],
                    'T_k': [
@@ -71,7 +71,7 @@ except ImportError:
                            4.73e5 ,
                            2.11e6 ,
                            3.98e6 ,
-                           2.00e7 
+                           2.00e7
                           ],
                    'lambda': [
                               3.703109927416290e16,
@@ -83,10 +83,10 @@ except ImportError:
                               4.003272698e26      ,
                               1.527286104e44      ,
                               1.608087849e22      ,
-                              9.228575532e20      
+                              9.228575532e20
                              ]
-                  } 
-     
+                  }
+
     gressel_cooling = {
                    'beta': [2.12,1.,0.56,3.21,-0.2,-3.,-0.22,-3.,0.33,0.5],
                    'T_k': [
@@ -99,7 +99,7 @@ except ImportError:
                            4.73e5 ,
                            2.11e6 ,
                            3.98e6 ,
-                           2.00e7 
+                           2.00e7
                           ],
                    'lambda': [
                               3.42e16 ,
@@ -114,4 +114,4 @@ except ImportError:
                               8.706e20
                              ]
                   }
-  
+

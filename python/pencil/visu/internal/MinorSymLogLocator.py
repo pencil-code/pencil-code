@@ -2,12 +2,12 @@
 ## symlog tick helper
 from matplotlib.ticker import Locator
 
-class MinorSymLogLocator(Locator):  
+class MinorSymLogLocator(Locator):
   """
   Dynamically find minor tick positions based on the positions of
   major ticks for a symlog scaling.
   """
-  
+
   def __init__(self, linthresh):
     """
     Ticks will be placed between the major ticks.
@@ -18,7 +18,7 @@ class MinorSymLogLocator(Locator):
 
   def __call__(self):
     import numpy as np
-  
+
     'Return the locations of the ticks'
     majorlocs = self.axis.get_majorticklocs()
     majorlocs = np.append(majorlocs, majorlocs[-1]*10.)

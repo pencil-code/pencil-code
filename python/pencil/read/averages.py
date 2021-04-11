@@ -180,7 +180,7 @@ class Averages(object):
             if plane == 'xy' or plane == 'xz' or plane == 'yz':
                 t, raw_data = self.__read_2d_aver(plane, datadir, variables,
                                                   aver_file_name, n_vars,
-                                                  l_h5=l_h5, 
+                                                  l_h5=l_h5,
                                                   precision=precision)
             if plane == 'y' or plane == 'z':
                 t, raw_data = self.__read_1d_aver(plane, datadir, variables,
@@ -383,7 +383,7 @@ class Averages(object):
                         raw_data = np.zeros([len(t), 1, nv, nu],
                                                            dtype=precision)
                     else:
-                        raw_data = np.zeros([len(t), n_vars, nv, nu], 
+                        raw_data = np.zeros([len(t), n_vars, nv, nu],
                                                            dtype=precision)
                 raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = \
                                                                 proc_data.copy()
