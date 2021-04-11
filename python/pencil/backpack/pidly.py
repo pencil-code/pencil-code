@@ -1471,7 +1471,7 @@ def test():
     print("Showing (Python -> IDL time) / (IDL -> Python time).\n")
 
     import doctest
-    import pidly
+    from pencil.backpack import pidly
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPidly)
     suite.addTest(doctest.DocTestSuite(pidly))

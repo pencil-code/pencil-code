@@ -31,7 +31,7 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
 
   if use_IDL:
       print('? WARNING: IDL VERSION OF THIS SCRIPT BY JOHANSEN, not recommended for 2D data')
-      import pidly
+      from pencil.backpack import pidly
       print('## starting IDL engine..')
       IDL = pidly.IDL(long_delay=0.05)		# start IDL engine
 
