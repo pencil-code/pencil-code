@@ -730,7 +730,9 @@ def parse_arguments() -> argparse.Namespace:
 Examples:
     cyclic-imports python/pencil/sim/*.py
     cyclic-imports python/pencil/{math,read}/*.py
-    cyclic-imports --recursive python/pencil/"""
+    cyclic-imports --recursive python/pencil/
+    cd $PENCIL_HOME/python; \\
+        find pencil -name \\*.py | xargs utils/cyclic-imports"""
         )
         parser.exit()
 
