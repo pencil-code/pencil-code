@@ -1366,11 +1366,15 @@ enddo; enddo
                 jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
                 jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
                 where (abs(jrt)<jthreshold*abs(jtr) .and. &
-                       p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
+                       !!p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
+                       (1.-jthreshold**2)*p%kappa_coefs(:,3,j,k)<-(1.-jthreshold)**2*(eta+p%beta_coefs(:,3,3)) )
+                       !!!(jtr**2-jrt**2)*p%kappa_coefs(:,3,j,k)+(jrt-jtr)**2*(eta+p%beta_coefs(:,3,3))<0. )
                   p%kappa_coefs(:,3,j,k)=(-1.+rel_kappa)*(eta+p%beta_coefs(:,3,3))
                   kappa_mask=1.
                 elsewhere (abs(jtr)<jthreshold*abs(jrt) .and. &
-                           p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
+                           !!p%kappa_coefs(:,3,j,k)>eta+p%beta_coefs(:,3,3))
+                           (1.-jthreshold**2)*p%kappa_coefs(:,3,j,k)>(1.-jthreshold)**2*(eta+p%beta_coefs(:,3,3)))
+                           !!!(jrt**2-jtr**2)*p%kappa_coefs(:,3,j,k)-(jtr-jrt)**2*(eta+p%beta_coefs(:,3,3))>0.)
                   p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
                   kappa_mask=-1.
                 endwhere
