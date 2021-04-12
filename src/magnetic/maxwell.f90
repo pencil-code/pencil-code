@@ -105,24 +105,33 @@ module Magnetic
 !
 ! Declare index of new variables in f array (if any).
 !
-  character (len=labellen) :: initAAk='nothing'
-  character (len=labellen) :: initEEk='nothing'
+  character (len=labellen) :: initaak='nothing'
+  character (len=labellen) :: initeek='nothing'
   character (len=labellen) :: cc_light='1'
   real :: alpha_inflation=0.
-  real :: sigma=0.
-  logical :: lbb_as_aux=.true., lEE_as_aux=.true.
+  real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
+  logical :: lbb_as_aux=.true., lee_as_aux=.true.
   logical :: linflation=.false., ldebug_print=.false.
-  real, dimension(3) :: AAkre, AAkim, EEkre, EEkim
+  real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: alpha2_inflation, kscale_factor
+  real :: amplaa=1e-4, initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
+  real :: kpeak_aa=10., kgaussian_aa=0.
+  real :: relhel_aa=1.
+  real :: k1hel=0., k2hel=1.
+  logical :: lskip_projection_aa=.false.
+  logical :: lscale_tobox=.true.
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
     alpha_inflation, &
-    initAAk, initEEk, &
-    linflation, sigma
+    initaak, initeek, &
+    linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
+    amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
+    lscale_tobox, kgaussian_aa, lskip_projection_aa, relhel_aa, &
+    k1hel, k2hel
 !
 ! run parameters
   namelist /magnetic_run_pars/ &
@@ -130,15 +139,16 @@ module Magnetic
     alpha_inflation, &
     ldebug_print, &
     cc_light, &
-    linflation, sigma
+    linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_AA2m=0      ! DIAG_DOC: $\langle A^2\rangle$
+  integer :: idiag_aa2m=0      ! DIAG_DOC: $\langle A^2\rangle$
   integer :: idiag_Akxpt=0     ! DIAG_DOC: $Akx^{pt}$
   integer :: idiag_Ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
+  integer :: idiag_sigma=0     ! DIAG_DOC: $\sigma$
 !
-  integer :: iAAk, iAAkim, iEEk, iEEkim
+  integer :: iaak, iaakim, ieek, ieekim
   integer :: iAkx, iAky, iAkz, iAkxim, iAkyim, iAkzim
   integer :: iEkx, iEky, iEkz, iEkxim, iEkyim, iEkzim
   integer, parameter :: nk=nxgrid/2
@@ -165,28 +175,28 @@ module Magnetic
       if (lroot) call svn_id( &
            "$Id$")
 !
-!  Register AAk and EEk as auxiliary arrays
+!  Register aak and eek as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
 !
-      !call register_report_aux('AAk'  , iAAk  , iAkx  , iAky  , iAkz)
-      !call register_report_aux('EEk'  , iEEk  , iEkx  , iEky  , iEkz)
-      !call register_report_aux('AAkim', iAAkim, iAkxim, iAkyim, iAkzim)
-      !call register_report_aux('EEkim', iEEkim, iEkxim, iEkyim, iEkzim)
-      call farray_register_auxiliary('AAk',iAAk,vector=3)
-      call farray_register_auxiliary('AAkim',iAAkim,vector=3)
-      call farray_register_auxiliary('EEk',iEEk,vector=3)
-      call farray_register_auxiliary('EEkim',iEEkim,vector=3)
-      iAkx  =iAAk  ; iAky  =iAAk  +1; iAkz  =iAAk  +2
-      iAkxim=iAAkim; iAkyim=iAAkim+1; iAkzim=iAAkim+2 
-      iEkx  =iEEk  ; iEky  =iEEk  +1; iEkz  =iEEk  +2
-      iEkxim=iEEkim; iEkyim=iEEkim+1; iEkzim=iEEkim+2 
+      !call register_report_aux('aak'  , iaak  , iAkx  , iAky  , iAkz)
+      !call register_report_aux('eek'  , ieek  , iEkx  , iEky  , iEkz)
+      !call register_report_aux('aakim', iaakim, iAkxim, iAkyim, iAkzim)
+      !call register_report_aux('eekim', ieekim, iEkxim, iEkyim, iEkzim)
+      call farray_register_auxiliary('aak',iaak,vector=3)
+      call farray_register_auxiliary('aakim',iaakim,vector=3)
+      call farray_register_auxiliary('eek',ieek,vector=3)
+      call farray_register_auxiliary('eekim',ieekim,vector=3)
+      iAkx  =iaak  ; iAky  =iaak  +1; iAkz  =iaak  +2
+      iAkxim=iaakim; iAkyim=iaakim+1; iAkzim=iaakim+2 
+      iEkx  =ieek  ; iEky  =ieek  +1; iEkz  =ieek  +2
+      iEkxim=ieekim; iEkyim=ieekim+1; iEkzim=ieekim+2 
 !
 !  register B array as aux
 !
       !if (lbb_as_aux) call register_report_aux('bb', ibb, ibx, iby, ibz)
-      !if (lEE_as_aux) call register_report_aux('EE', iEE, iEEx, iEEy, iEEz)
+      !if (lee_as_aux) call register_report_aux('ee', iee, ieex, ieey, ieez)
       if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
-      if (lEE_as_aux) call farray_register_auxiliary('EE',iEE,vector=3)
+      if (lee_as_aux) call farray_register_auxiliary('ee',iee,vector=3)
 !
 !     endsubroutine register_magnetic
     endsubroutine register_magnetic
@@ -215,10 +225,10 @@ module Magnetic
       if (headt) print*,'c_light2=',c_light2
 !
       if (.not.allocated(Tpq_re)) allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_AAk_and_EEk','Could not allocate memory for Tpq_re')
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for Tpq_re')
 !
       if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_AAk_and_EEk','Could not allocate memory for Tpq_im')
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for Tpq_im')
 !
 !  calculate kscale_factor (for later binning)
 !
@@ -252,51 +262,51 @@ module Magnetic
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, parameter :: lvectorpotential=.true.
 !
       intent(inout) :: f
 !
-!  initial condition for AAk
+!  initial condition for aak
 !
-      select case (initAAk)
+      select case (initaak)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
-          f(:,:,:,iAAk:iAAkim+2)=0.
+          f(:,:,:,iaak:iaakim+2)=0.
         case ('single')
           if (lroot) print*,'init_magnetic for A: single'
-          f(:,:,:,iAAk:iAAkim+2)=0.
-          if (lroot) f(l1+1,m1+1,n1+1,iAAk)=1.
-        case ('powerlow??>')
-          !call powerlaw ...
-print*,'AXEL: later'
+          f(:,:,:,iaak:iaakim+2)=0.
+          if (lroot) f(l1+1,m1+1,n1+1,iaak)=1.
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(amplaa,initpower_aa,initpower2_aa, &
+            cutoff_aa,ncutoff_aa,kpeak_aa,f,iaak,iaak+2,relhel_aa,kgaussian_aa, &
+            lskip_projection_aa, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true.)
         case default
-          call fatal_error("init_magnetic: No such value for initAAk:" &
-              ,trim(initAAk))
+          call fatal_error("init_magnetic: No such value for initaak:" &
+              ,trim(initaak))
       endselect
 !
-!  initial condition for EEk
+!  initial condition for eek
 !
-      select case (initEEk)
+      select case (initeek)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
-          f(:,:,:,iEEk:iEEkim+2)=0.
+          f(:,:,:,ieek:ieekim+2)=0.
         case ('single')
           if (lroot) print*,'init_magnetic for E: single'
-          f(:,:,:,iEEk:iEEkim+2)=0.
-          if (lroot) f(l1+1,m1+1,n1+1,iEEk)=1.
+          f(:,:,:,ieek:ieekim+2)=0.
+          if (lroot) f(l1+1,m1+1,n1+1,ieek)=1.
 !
 !  dA/deta = -E
 !  d^2A/deta^2 = -dE/deta = -(k^2-alpha*(alpha+1)
 !
         case ('powerlow??>')
           !call powerlaw ...
-print*,'AXEL: later'
         case default
-          call fatal_error("init_magnetic: No such value for initEEk:" &
-              ,trim(initEEk))
+          call fatal_error("init_magnetic: No such value for initeek:" &
+              ,trim(initeek))
       endselect
-print*,'AXEL2',iAAk,iAAkim
-print*,'AXEL3',iEEk,iEEkim
-print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
     endsubroutine init_aa
   ! endsubroutine init_magnetic
@@ -389,14 +399,15 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !  diagnostics
 !
        if (ldiagnos) then
-         if (idiag_AA2m/=0) call sum_mn_name(( &
+         if (idiag_aa2m/=0) call sum_mn_name(( &
              f(l1:l2,m,n,iAkx  )**2+f(l1:l2,m,n,iAky  )**2+f(l1:l2,m,n,iAkz  )**2+ &
              f(l1:l2,m,n,iAkxim)**2+f(l1:l2,m,n,iAkyim)**2+f(l1:l2,m,n,iAkzim)**2 &
-                                               )*nwgrid,idiag_AA2m)
+                                               )*nwgrid,idiag_aa2m)
 !
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
            if (idiag_Akxpt/=0) call save_name(f(lpoint,m,n,iAkx),idiag_Akxpt)
            if (idiag_Ekxpt/=0) call save_name(f(lpoint,m,n,iEkx),idiag_Ekxpt)
+           if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
          endif
        endif
       else
@@ -738,7 +749,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 
     endsubroutine magnetic_calc_spectra_byte
 !***********************************************************************
-    subroutine compute_bb_from_AAk_and_EEk(f)
+    subroutine compute_bb_from_aak_and_eek(f)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
@@ -747,14 +758,14 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
       use Fourier, only: fourier_transform, fft_xyz_parallel
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (:,:,:,:), allocatable :: BBkre, BBkim
+      real, dimension (:,:,:,:), allocatable :: bbkre, bbkim
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: coefAre, coefAim, coefBre, coefBim
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       complex, dimension (3) :: Acomplex, Ecomplex, Acomplex_new, Ecomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
-      real :: sigmaeff
+      real :: discrim2, sigmaeff
       real :: fact
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
 !     real :: cosot, sinot, sinot_minus, om12, om, om1, om2
@@ -765,11 +776,11 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Allocate memory for arrays.
 !
-      allocate(BBkre(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_AAk_and_EEk','Could not allocate memory for BBkre')
+      allocate(bbkre(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for bbkre')
 !
-      allocate(BBkim(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_AAk_and_EEk','Could not allocate memory for BBkim')
+      allocate(bbkim(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for bbkim')
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -788,24 +799,36 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
 !
+!  time-dependent profile for sigma
+!
+            if (t<=t1_sigma) then
+              sigma=sigma_t1
+            elseif (t<=t2_sigma) then
+              sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
+            else
+              sigma=sigma_t2
+            endif
+!
 !  compute eigenvalues
 !
             sigmaeff=sigma
-            discrim=sqrt(complex(sigmaeff**2-4.*ksqr,0.))
+            discrim2=sigmaeff**2-4.*ksqr
+            if (discrim2==0.) discrim2=tini
+            discrim=sqrt(complex(discrim2,0.))
             lam1=.5*(-sigmaeff+discrim)
             lam2=.5*(-sigmaeff-discrim)
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
-            AAkre=f(nghost+ikx,nghost+iky,nghost+ikz,iAAk  :iAAk  +2)
-            AAkim=f(nghost+ikx,nghost+iky,nghost+ikz,iAAkim:iAAkim+2)
+            aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+            aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
 !
-            EEkre=f(nghost+ikx,nghost+iky,nghost+ikz,iEEk  :iEEk  +2)
-            EEkim=f(nghost+ikx,nghost+iky,nghost+ikz,iEEkim:iEEkim+2)
+            eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)
+            eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)
 !
             do j=1,3
-              Acomplex(j)=complex(AAkre(j),AAkim(j))
-              Ecomplex(j)=complex(EEkre(j),EEkim(j))
+              Acomplex(j)=complex(aakre(j),aakim(j))
+              Ecomplex(j)=complex(eekre(j),eekim(j))
             enddo
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
@@ -823,10 +846,10 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
               Acomplex_new=cosotA*Acomplex+sinotA*Ecomplex
               Ecomplex_new=sinotE*Acomplex+cosotE*Ecomplex
-              f(nghost+ikx,nghost+iky,nghost+ikz,iAAk  :iAAk  +2)= real(Acomplex_new)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iAAkim:iAAkim+2)=aimag(Acomplex_new)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iEEk  :iEEk  +2)= real(Ecomplex_new)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iEEkim:iEEkim+2)=aimag(Ecomplex_new)
+              f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)= real(Acomplex_new)
+              f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)=aimag(Acomplex_new)
+              f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)= real(Ecomplex_new)
+              f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)=aimag(Ecomplex_new)
 !
 !  Debug output
 !
@@ -838,6 +861,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
                   print*,'AXEL: cosotE=',cosotE,cos(sqrt(ksqr)*dt)
                   print*,'AXEL: sinotA=',sinotA,-sin(sqrt(ksqr)*dt)/sqrt(ksqr)
                   print*,'AXEL: sinotE=',sinotE,+sin(sqrt(ksqr)*dt)*sqrt(ksqr)
+                  print*,'AXEL: discrim=',discrim
                 endif
               endif
 !
@@ -845,10 +869,10 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
-              f(nghost+1,nghost+1,nghost+1,iAAk  :iAAk  +2)=0.
-              f(nghost+1,nghost+1,nghost+1,iAAkim:iAAkim+2)=0.
-              f(nghost+1,nghost+1,nghost+1,iEEk  :iEEk  +2)=0.
-              f(nghost+1,nghost+1,nghost+1,iEEkim:iEEkim+2)=0.
+              f(nghost+1,nghost+1,nghost+1,iaak  :iaak  +2)=0.
+              f(nghost+1,nghost+1,nghost+1,iaakim:iaakim+2)=0.
+              f(nghost+1,nghost+1,nghost+1,ieek  :ieek  +2)=0.
+              f(nghost+1,nghost+1,nghost+1,ieekim:ieekim+2)=0.
 !
             endif
 !
@@ -858,26 +882,47 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
         enddo
       enddo
 !
-!  back to real space
-!  Use AAk instead of BBk for now
+!  back to real space, but first compute B in Fourier space as
+!  Bk = ik x Ak, so Re(Bk) = -k x Im(Ak), Im(Bk) = +k x Re(Ak)
 !
       if (lbb_as_aux) then
-        BBkre=f(l1:l2,m1:m2,n1:n2,iAAk  :iAAk  +2)
-        BBkim=f(l1:l2,m1:m2,n1:n2,iAAkim:iAAkim+2)
-        call fft_xyz_parallel(BBkre,BBkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=BBkre
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k1=kx_fft(ikx+ipx*nx)
+              k2=ky_fft(iky+ipy*ny)
+              k3=kz_fft(ikz+ipz*nz)
+              aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+              aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+!
+!  Re(Bk) = -k x Im(Ak)
+!
+              bbkre(ikx,iky,ikz,1)=-k2*aakim(3)+k3*aakim(2)
+              bbkre(ikx,iky,ikz,2)=-k3*aakim(1)+k1*aakim(3)
+              bbkre(ikx,iky,ikz,3)=-k1*aakim(2)+k2*aakim(1)
+!
+!  Im(Bk) = +k x Re(Ak)
+!
+              bbkim(ikx,iky,ikz,1)=+k2*aakre(3)+k3*aakre(2)
+              bbkim(ikx,iky,ikz,2)=+k3*aakre(1)+k1*aakre(3)
+              bbkim(ikx,iky,ikz,3)=+k1*aakre(2)+k2*aakre(1)
+            enddo
+          enddo
+        enddo
+        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
       endif
 !
-!  EE back to real space, use the names BBkre and BBkim for EE.
+!  ee back to real space, use the names bbkre and bbkim for ee.
 !
-      if (lEE_as_aux) then
-        BBkre=f(l1:l2,m1:m2,n1:n2,iEEk  :iEEk  +2)
-        BBkim=f(l1:l2,m1:m2,n1:n2,iEEkim:iEEkim+2)
-        call fft_xyz_parallel(BBkre,BBkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iEE:iEE+2)=BBkre
+      if (lee_as_aux) then
+        bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
+        bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
       endif
 !
-    endsubroutine compute_bb_from_AAk_and_EEk
+    endsubroutine compute_bb_from_aak_and_eek
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
@@ -895,16 +940,18 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_AA2m=0
+        idiag_aa2m=0
         idiag_Akxpt=0
         idiag_Ekxpt=0
+        idiag_sigma=0
         cformv=''
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'AA2m',idiag_AA2m)
+        call parse_name(iname,cname(iname),cform(iname),'aa2m',idiag_aa2m)
         call parse_name(iname,cname(iname),cform(iname),'Akxpt',idiag_Akxpt)
         call parse_name(iname,cname(iname),cform(iname),'Ekxpt',idiag_Ekxpt)
+        call parse_name(iname,cname(iname),cform(iname),'sigma',idiag_sigma)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -1039,7 +1086,7 @@ print*,'AXEL4',f(5,5,5,iEEkim:iEEkim+2)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
-      if (lfirst) call compute_bb_from_AAk_and_EEk(f)
+      if (lfirst) call compute_bb_from_aak_and_eek(f)
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dtsub)
