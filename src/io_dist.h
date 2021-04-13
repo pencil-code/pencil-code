@@ -342,8 +342,11 @@ contains
           call fatal_error('prepare_zaver_on_input',trim(readdir)//'/'//trim(file)// &
                                                     ' must be symbolic link for lzaver_on_input=T')
         else
-          if (readlink(trim(readdir)//'/'//trim(file),link)) &
-          srcdir=link(1:index(trim(link),'data')-1)
+          if (lactive_dimension(3)) &
+            call fatal_error('prepare_zaver_on_input','z must be degenerate for lzaver_on_input=T')
+
+          if (readlink(trim(readdir)//'/'//trim(file),link)) &     ! dangerous
+            srcdir=link(1:index(trim(link),'data')-1)
 !
 !  Obtain nproc[xyz], n[xyz]grid from source run directory and check compatibility with target run.
 !
