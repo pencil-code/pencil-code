@@ -22,7 +22,7 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, dim=dim, gri
     tformat=tformat, stalk=stalk, nstalk=nstalk, swap_endian=swap_endian, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
-    colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
+    colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, single=single, $
     readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write
 ;
 COMPILE_OPT IDL2,HIDDEN
@@ -39,7 +39,7 @@ COMPILE_OPT IDL2,HIDDEN
       tformat=tformat, stalk=stalk, nstalk=nstalk, swap_endian=swap_endian, $
       tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
       xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
-      colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
+      colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, single=single, $
       readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write
 ;
 end
