@@ -60,10 +60,15 @@ module Special
                     hdf_emftensors_plist, &
                     hdf_emftensors_group, &
                     hdf_grid_group
+!
+!  dimensions of the stored coefficients, needs in general to be learned from the input HDF5-file. 
+!  nx_stored, ny_stored at the moment assumed to coincide with nx, ny.
+!
+  integer :: nx_stored=nx, ny_stored=ny, nz_stored=1
+  integer, parameter :: ntensors = 8
 
   ! Dataset HDF object ids
 
-  integer, parameter :: ntensors = 8
   integer, parameter :: id_record_SPECIAL_ILOAD=1
   integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
                                            tensor_id_S, tensor_id_memS
@@ -71,7 +76,7 @@ module Special
                                               tensor_offsets, tensor_counts, &
                                               tensor_memdims, &
                                               tensor_memoffsets, tensor_memcounts
-  integer, parameter :: nscalars = 1
+  integer, parameter :: nscalars = 4
   integer(HID_T),   dimension(nscalars) :: scalar_id_D, scalar_id_S
   integer(HSIZE_T), dimension(nscalars) :: scalar_dims, &
                                            scalar_offsets, scalar_counts, &
@@ -108,10 +113,10 @@ module Special
                        gamma_id=3, delta_id=4,   &
                        kappa_id=5, umean_id=6, &
                        acoef_id=7, bcoef_id=8
-  integer,parameter :: time_id=1
+  integer,parameter :: time_id=1, z_id=2, y_id=3, x_id=4
 
   integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5, 6, 7 /)
-  integer, dimension(nscalars),parameter :: scalar_ndims = (/ 1 /)
+  integer, dimension(nscalars),parameter :: scalar_ndims = (/ 1, 1, 1, 1 /)
 
   ! Dataset logical variables
 
@@ -133,7 +138,7 @@ module Special
                            kappa_name, umean_name, &
                            acoef_name, bcoef_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
-  character (len=fnlen), dimension(nscalars) :: scalar_names=(/'t'/)
+  character (len=fnlen), dimension(nscalars) :: scalar_names=(/'t','z','y','x'/)
   real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
 
   ! Diagnostic variables
@@ -222,8 +227,11 @@ module Special
 ! special symmetries
 !
   logical :: lsymmetrize=.false.
-  integer :: nsmooth_rbound=0, nsmooth_thbound=0
   integer :: field_symmetry=0
+!
+! smoothing near boundaries
+!
+  integer :: nsmooth_rbound=0, nsmooth_thbound=0
 !
 ! Regularization of beta and kappa.
 !
@@ -395,9 +403,19 @@ module Special
           else
 
             call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-            call openDataset_grid(time_id)
+            if (hdferr /= 0) call fatal_error('initialize special','cannot open group "grid"')
 
-            if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+            call openDataset_grid(x_id)
+            if (scalar_dims(x_id)/=nxgrid) &
+              call fatal_error('initialize_special','x extent in file ='//trim(itoa(scalar_dims(x_id)))//' different from nxgrid')
+            nx_stored=scalar_dims(x_id)/nprocx
+            
+            call openDataset_grid(y_id)
+            if (scalar_dims(y_id)/=nygrid) &
+              call fatal_error('initialize_special','y extent in file ='//trim(itoa(scalar_dims(y_id)))//' different from nygrid')
+            ny_stored=scalar_dims(y_id)/nprocy
+            
+            call openDataset_grid(time_id)
 
             call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
             call H5Tequal_f(datatype_id, hdf_memtype, flag, hdferr)
@@ -425,13 +443,13 @@ module Special
         ! Set dataset offsets
         tensor_offsets = 0
         do i=1,ntensors
-          tensor_offsets(i,1:4) = [ 0, ipx*nx, ipy*ny , ipz*nz ]
+          tensor_offsets(i,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, ipz*nz_stored ]
         end do
 
         ! Set dataset counts
         tensor_counts(:,5:) = 1
         do i=1,ntensors
-          tensor_counts(i,1:4) = [ dataload_len, nx, ny, nz ]
+          tensor_counts(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
         end do
         tensor_dims=tensor_counts
         tensor_dims(:,5:) = 3
@@ -441,18 +459,18 @@ module Special
         ! Set dataset memory counts
         tensor_memcounts = 1
         do i=1,ntensors
-          tensor_memcounts(i,1:4) = [ dataload_len, nx, ny, nz ]
+          tensor_memcounts(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
         end do
 
         ! Set memory dimensions
         tensor_memdims = 3
         do i=1,ntensors
-          tensor_memdims(i,1:4) = [ dataload_len, nx, ny, nz ]
+          tensor_memdims(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
         end do
 
         if (lalpha) then
           if (.not.allocated(alpha_data)) then
-            allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
+            allocate(alpha_data(dataload_len,nx_stored, ny_stored,nz_stored,3,3))
             call openDataset((/'alpha'/),alpha_id)
           endif
           alpha_data = 0.
@@ -463,7 +481,7 @@ module Special
 
         if (lbeta) then
           if (.not.allocated(beta_data)) then
-            allocate(beta_data(dataload_len,nx,ny,nz,3,3))
+            allocate(beta_data(dataload_len,nx_stored, ny_stored,nz_stored,3,3))
             call openDataset((/'beta'/),beta_id)
           endif
           beta_data = 0.
@@ -474,7 +492,7 @@ module Special
 
         if (lgamma) then
           if (.not.allocated(gamma_data)) then
-            allocate(gamma_data(dataload_len,nx,ny,nz,3))
+            allocate(gamma_data(dataload_len,nx_stored, ny_stored,nz_stored,3))
             call openDataset((/'gamma'/),gamma_id)
           endif
           gamma_data = 0.
@@ -485,7 +503,7 @@ module Special
 
         if (ldelta) then
           if (.not.allocated(delta_data)) then
-            allocate(delta_data(dataload_len,nx,ny,nz,3))
+            allocate(delta_data(dataload_len,nx_stored, ny_stored,nz_stored,3))
             call openDataset((/'delta'/),delta_id)
           endif
           delta_data = 0.
@@ -496,7 +514,7 @@ module Special
 
         if (lkappa) then
           if (.not.allocated(kappa_data)) then
-            allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
+            allocate(kappa_data(dataload_len,nx_stored, ny_stored,nz_stored,3,3,3))
             call openDataset((/'kappa'/),kappa_id)
           endif
           kappa_data = 0.
@@ -507,7 +525,7 @@ module Special
 
         if (lumean) then
           if (.not.allocated(umean_data)) then
-            allocate(umean_data(dataload_len,nx,ny,nz,3))
+            allocate(umean_data(dataload_len,nx_stored, ny_stored,nz_stored,3))
             call openDataset((/'umean  ','utensor'/),umean_id)
           endif
           umean_data = 0.
@@ -518,7 +536,7 @@ module Special
 
         if (lacoef) then
           if (.not.allocated(acoef_data)) then
-            allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
+            allocate(acoef_data(dataload_len,nx_stored, ny_stored,nz_stored,3,3))
             call openDataset((/'acoef'/), acoef_id)
           endif
           acoef_data = 0.
@@ -529,7 +547,7 @@ module Special
 
         if (lbcoef) then
           if (.not.allocated(bcoef_data)) then
-            allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
+            allocate(bcoef_data(dataload_len,nx_stored,ny_stored,nz_stored,3,3,3))
             call openDataset((/'bcoef'/), bcoef_id)
           endif
           bcoef_data = 0.
@@ -1030,7 +1048,7 @@ module Special
 
           if (lbeta.and.lregularize_beta) then
 
-            allocate(beta_mask(dataload_len,nx,ny,nz,3))
+            allocate(beta_mask(dataload_len,nx_stored,ny_stored,nz_stored,3))
             beta_mask=0
 
             do i=1,3
@@ -1058,7 +1076,7 @@ module Special
             do
 
               numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
-              do mm=1,ny; do ll=1,nx
+              do mm=1,ny_stored; do ll=1,nx_stored
 
                 oldtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
                 beta_sav=beta_data(1,ll,mm,1,:,:)
@@ -1233,7 +1251,7 @@ enddo; enddo
       intent(in) :: f
       intent(inout) :: p
 !
-      integer :: i,j,k, ind(1),iii
+      integer :: i,j,k, ind(1),iii,nind
       real, dimension(nx) :: jrt,jtr
       character(LEN=80) :: mess
       character(LEN=20) :: cbuf
@@ -1247,7 +1265,8 @@ enddo; enddo
         if (maxval(abs(p%bb)) > limit) call fatal_error_local('calc_pencils_special', &
           'magnetic field too big')
       endif
-!
+      
+      nind=1     !n-nghost if coefficients would be z-dependent
 !
 ! Calculate emf pencil
 !
@@ -1257,7 +1276,7 @@ enddo; enddo
         ! Calculate acoef B
         do j=1,3; do i=1,3
           if (lacoef_arr(i,j)) then
-            p%acoef_coefs(:,i,j)=emf_interpolate(acoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
+            p%acoef_coefs(:,i,j)=emf_interpolate(acoef_data(1:dataload_len,:,m-nghost,nind,i,j))
           else
             p%acoef_coefs(:,i,j)=0
           end if
@@ -1269,7 +1288,7 @@ enddo; enddo
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) then
-            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,nind,i,j,k))
           else
             p%bcoef_coefs(:,i,j,k)=0
           end if
@@ -1289,7 +1308,7 @@ enddo; enddo
         ! Calculate alpha B
         do j=1,3; do i=1,3
           if (lalpha_arr(i,j)) then
-            p%alpha_coefs(:,i,j)=emf_interpolate(alpha_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
+            p%alpha_coefs(:,i,j)=emf_interpolate(alpha_data(1:dataload_len,:,m-nghost,nind,i,j))
           else
             p%alpha_coefs(:,i,j)=0
           end if
@@ -1303,7 +1322,7 @@ enddo; enddo
         ! Calculate beta (curl B)
         do j=1,3; do i=1,3
           if (lbeta_arr(i,j)) then
-            p%beta_coefs(:,i,j)=emf_interpolate(beta_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
+            p%beta_coefs(:,i,j)=emf_interpolate(beta_data(1:dataload_len,:,m-nghost,nind,i,j))
           else
             p%beta_coefs(:,i,j)=0
           end if
@@ -1316,7 +1335,7 @@ enddo; enddo
         ! Calculate gamma x B
         do i=1,3
           if (lgamma_arr(i)) then
-            p%gamma_coefs(:,i)=emf_interpolate(gamma_data(1:dataload_len,:,m-nghost,n-nghost,i))
+            p%gamma_coefs(:,i)=emf_interpolate(gamma_data(1:dataload_len,:,m-nghost,nind,i))
           else
             p%gamma_coefs(:,i)=0
           end if
@@ -1330,7 +1349,7 @@ enddo; enddo
         ! Calculate delta x (curl B)
         do i=1,3
           if (ldelta_arr(i)) then
-            p%delta_coefs(:,i)=emf_interpolate(delta_data(1:dataload_len,:,m-nghost,n-nghost,i))
+            p%delta_coefs(:,i)=emf_interpolate(delta_data(1:dataload_len,:,m-nghost,nind,i))
           else
             p%delta_coefs(:,i)=0
           end if
@@ -1348,7 +1367,7 @@ enddo; enddo
 
         do k=1,3; do j=1,3; do i=1,3
           if (lkappa_arr(i,j,k)) then
-            p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+            p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,nind,i,j,k))
           else
             p%kappa_coefs(:,i,j,k)=0
           endif
@@ -1408,7 +1427,7 @@ endif
         ! Calculate Umean x B
         do i=1,3
           if (lumean_arr(i)) then
-            p%umean_coefs(:,i)=emf_interpolate(umean_data(1:dataload_len,:,m-nghost,n-nghost,i))
+            p%umean_coefs(:,i)=emf_interpolate(umean_data(1:dataload_len,:,m-nghost,nind,i))
           else
             p%umean_coefs(:,i)=0
           end if
@@ -1961,8 +1980,7 @@ endif
         end if
       enddo
       if (.not. lok) &
-          call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
-                          ' does not exist')
+          call fatal_error('openDataset','/emftensor/'//trim(datagroup)// ' does not exist')
 
       ! Open datagroup, returns identifier in tensor_id_G.
       call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id),hdferr)
@@ -2005,6 +2023,7 @@ endif
       elseif (tensor_times_len/=dimsizes(1)) then
         call fatal_error('openDataset','dataset emftensor/'//trim(datagroup)//'/'//trim(dataset)//' has deviating time extent')
       endif
+      
       if (hdferr /= 0) then
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
@@ -2035,6 +2054,7 @@ endif
       integer, intent(in)             :: scalar_id
 !
       integer(HSIZE_T), dimension(10) :: maxdimsizes
+      integer(HSIZE_T) :: num
       integer :: ndims
       logical :: hdf_exists
       character(len=fnlen)            :: dataset
@@ -2045,34 +2065,35 @@ endif
       call H5Lexists_F(hdf_grid_group, dataset, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call H5Gclose_F(hdf_grid_group, hdferr)
-        call fatal_error('openDataset','/grid/' &
-                          //trim(dataset)//' does not exist')
+        call fatal_error('openDataset_grid','/grid/'//trim(dataset)//' does not exist')
       end if
       ! Open dataset dataset in group, returns identifier in scalar_id_D.
       call H5Dopen_F(hdf_grid_group, dataset, scalar_id_D(scalar_id),hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(hdf_grid_group, hdferr)
-        call fatal_error('openDataset','Error opening /grid/' &
-                          //trim(dataset))
+        call fatal_error('openDataset_grid','Error opening /grid/'//trim(dataset))
       end if
       ! Get dataspace of dataset (identifier of copy of dataspace in scalar_id_S).
       call H5Dget_space_F(scalar_id_D(scalar_id), scalar_id_S(scalar_id),hdferr)
       if (hdferr /= 0) then
         call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
         call H5Gclose_F(hdf_grid_group, hdferr)
-        call fatal_error('openDataset','Error opening dataspace for/grid/' &
-                          //trim(dataset))
+        call fatal_error('openDataset_grid','Error opening dataspace for/grid/'//trim(dataset))
       end if
 
       ! Get dataspace dimensions in scalar_dims.
-      call H5Sget_simple_extent_npoints_F(scalar_id_S(scalar_id), &
-                                          scalar_dims(scalar_id), &
-                                          hdferr)
+      call H5Sget_simple_extent_dims_F(scalar_id_S(scalar_id), &
+                                       scalar_dims(scalar_id), &
+                                       maxdimsizes(1:ndims), &
+                                       hdferr)                 !MR: hdferr/=0!
+!This is to mask the error of the preceding call.
+      call H5Sget_simple_extent_npoints_F(scalar_id_S(scalar_id),num,hdferr) 
+
       if (hdferr /= 0) then
         call H5Sclose_F(scalar_id_S(scalar_id), hdferr)
         call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
         call H5Gclose_F(hdf_grid_group, hdferr)
-        call fatal_error('openDataset','Error in getting dimensions for grid/t')
+        call fatal_error('openDataset_grid','Error in getting dimensions for grid/'//trim(dataset))
       end if
 
     end subroutine openDataset_grid
