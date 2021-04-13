@@ -391,3 +391,7 @@
  LPOLYMER=F,
  LSOLID_CELLS=F,
  /
+&IO_PARS
+ LCOLLECTIVE_IO=F,
+ IO_STRATEGY='dist                                    ',
+ /
