@@ -1031,7 +1031,7 @@ else if ((($hn =~ eslogin[0-9]*) || ($hn =~ nid[0-9]*) || ($hn =~ mom[0-9]*)) &&
 #----------------------------------------------
 #else if (($hn =~ Xnid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
 #  echo "Hermit - HLRS, Stuttgart, Germany="
-else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
+else if (($hn =~ Xnid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   echo "God Damn Hermit - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
@@ -1062,11 +1062,7 @@ else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   set local_binary = 0
 #----------------------------------------------
 #else if ($hn =~ beskow-login*.pdc.kth.se*) then
-<<<<<<< HEAD
-else if ($hn =~ nid*) then
-=======
-else if ( ($hn =~ nid*) && ($masterhost =~beskow   ) )then
->>>>>>> eeca51307... old change to config for beskow
+else if (($hn =~ nid*) && ($masterhost =~ beskow)) then
   echo "*********************************"
   echo " PDC machine Beskow, Stockholm   "
   set start_x=$cwd/src/start.x
@@ -1077,10 +1073,7 @@ else if ( ($hn =~ nid*) && ($masterhost =~beskow   ) )then
   echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
   set mpi = 1
   set mpirunops = ''
-<<<<<<< HEAD
-=======
   #set mpirun = 'aprun'
->>>>>>> eeca51307... old change to config for beskow
   set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
