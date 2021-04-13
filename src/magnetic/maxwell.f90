@@ -41,6 +41,7 @@
 ! MAUX CONTRIBUTION 12
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
+! PENCILS PROVIDED b2; bf2
 ! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3); va2
 !
 !***************************************************************
@@ -74,7 +75,6 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-!module Special
 module Magnetic
 !
   use Cparam
@@ -120,6 +120,7 @@ module Magnetic
   real :: kpeak_aa=10., kgaussian_aa=0.
   real :: relhel_aa=1.
   real :: k1hel=0., k2hel=1.
+  real :: mu012=0.5 !(=1/2mu0)
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
 !
@@ -144,13 +145,18 @@ module Magnetic
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_aa2m=0      ! DIAG_DOC: $\langle A^2\rangle$
-  integer :: idiag_Akxpt=0     ! DIAG_DOC: $Akx^{pt}$
-  integer :: idiag_Ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
+  integer :: idiag_akxpt=0     ! DIAG_DOC: $Akx^{pt}$
+  integer :: idiag_ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
   integer :: idiag_sigma=0     ! DIAG_DOC: $\sigma$
+  integer :: idiag_emag=0      ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
+  integer :: idiag_bmax=0      ! DIAG_DOC: $\max(|\Bv|)$
+  integer :: idiag_brms=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
+  integer :: idiag_bfrms=0     ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
 !
   integer :: iaak, iaakim, ieek, ieekim
-  integer :: iAkx, iAky, iAkz, iAkxim, iAkyim, iAkzim
-  integer :: iEkx, iEky, iEkz, iEkxim, iEkyim, iEkzim
+  integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
+  integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
+  integer :: iex, iey, iez
   integer, parameter :: nk=nxgrid/2
   type, public :: magpectra
     real, dimension(nk) :: mag   ,ele
@@ -162,7 +168,6 @@ module Magnetic
   contains
 !***********************************************************************
     subroutine register_magnetic
-    !subroutine register_magnetic
 !
 !  Set up indices for variables in magnetic modules.
 !  Need 2x2x3+3=5*3=15 chunks.
@@ -178,31 +183,25 @@ module Magnetic
 !  Register aak and eek as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
 !
-      !call register_report_aux('aak'  , iaak  , iAkx  , iAky  , iAkz)
-      !call register_report_aux('eek'  , ieek  , iEkx  , iEky  , iEkz)
-      !call register_report_aux('aakim', iaakim, iAkxim, iAkyim, iAkzim)
-      !call register_report_aux('eekim', ieekim, iEkxim, iEkyim, iEkzim)
       call farray_register_auxiliary('aak',iaak,vector=3)
       call farray_register_auxiliary('aakim',iaakim,vector=3)
       call farray_register_auxiliary('eek',ieek,vector=3)
       call farray_register_auxiliary('eekim',ieekim,vector=3)
-      iAkx  =iaak  ; iAky  =iaak  +1; iAkz  =iaak  +2
-      iAkxim=iaakim; iAkyim=iaakim+1; iAkzim=iaakim+2 
-      iEkx  =ieek  ; iEky  =ieek  +1; iEkz  =ieek  +2
-      iEkxim=ieekim; iEkyim=ieekim+1; iEkzim=ieekim+2 
+      iakx  =iaak  ; iaky  =iaak  +1; iakz  =iaak  +2
+      iakxim=iaakim; iakyim=iaakim+1; iakzim=iaakim+2 
+      iekx  =ieek  ; ieky  =ieek  +1; iekz  =ieek  +2
+      iekxim=ieekim; iekyim=ieekim+1; iekzim=ieekim+2 
 !
 !  register B array as aux
 !
-      !if (lbb_as_aux) call register_report_aux('bb', ibb, ibx, iby, ibz)
-      !if (lee_as_aux) call register_report_aux('ee', iee, ieex, ieey, ieez)
       if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
       if (lee_as_aux) call farray_register_auxiliary('ee',iee,vector=3)
+      ibx=ibb; iby=ibb+1; ibz=ibb+2
+      iex=iee; iey=iee+1; iez=iee+2
 !
-!     endsubroutine register_magnetic
     endsubroutine register_magnetic
 !***********************************************************************
     subroutine initialize_magnetic(f)
-!     subroutine initialize_magnetic(f)
 !
 !  Called after reading parameters, but before the time loop.
 !
@@ -241,7 +240,6 @@ module Magnetic
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_magnetic
-!    endsubroutine initialize_magnetic
 !***********************************************************************
   !  subroutine finalize_magnetic(f)
 !
@@ -256,7 +254,6 @@ module Magnetic
   ! endsubroutine finalize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
-  ! subroutine init_magnetic(f)
 !
 !  initialise magnetic condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -309,19 +306,21 @@ module Magnetic
       endselect
 !
     endsubroutine init_aa
-  ! endsubroutine init_magnetic
 !***********************************************************************
-  ! subroutine pencil_criteria_magnetic
     subroutine pencil_criteria_magnetic
 !
 !  All pencils that this magnetic module depends on are specified here.
 !
 !   1-apr-06/axel: coded
 !
-  ! endsubroutine pencil_criteria_magnetic
+      if (idiag_brms/=0 .or. idiag_bfrms/=0 .or. idiag_bmax/=0 .or. &
+          idiag_emag/=0 ) &
+          lpenc_diagnos(i_b2)=.true.
+      !if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
+      if (lpenc_diagnos(i_b2)) lpenc_requested(i_bb)=.true.
+!
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
-  ! subroutine pencil_interdep_magnetic(lpencil_in)
     subroutine pencil_interdep_magnetic(lpencil_in)
 !
 !  Interdependency among pencils provided by this module are specified here.
@@ -332,37 +331,8 @@ module Magnetic
 !
       call keep_compiler_quiet(lpencil_in)
 !
-  ! endsubroutine pencil_interdep_magnetic
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_pencils_magnetic(f,p)
-!
-!  Calculate Special pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  30-mar-21/axel: adapted from gravitational_waves_hTXk.f90
-!
-      use Deriv, only: derij
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: prefactor
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-      integer :: i, j, ij
-!
-!  Construct stress tensor; notice opposite signs for u and b.
-!
-!     if (lgamma_factor) then
-!       prefactor=fourthird_factor/(1.-p%u2)
-!     else
-!       prefactor=fourthird_factor
-!     endif
-!
-    endsubroutine calc_pencils_magnetic
-!***********************************************************************
-  ! subroutine dmagnetic_dt(f,df,p)
     subroutine daa_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -396,17 +366,31 @@ module Magnetic
    !    if (headtt.or.ldebug) print*,'dmagnetic_dt: SOLVE dmagnetic_dt'
         if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt'
 !
+!  time-dependent profile for sigma
+!
+            if (t<=t1_sigma) then
+              sigma=sigma_t1
+            elseif (t<=t2_sigma) then
+              sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
+            else
+              sigma=sigma_t2
+            endif
+!
 !  diagnostics
 !
        if (ldiagnos) then
          if (idiag_aa2m/=0) call sum_mn_name(( &
-             f(l1:l2,m,n,iAkx  )**2+f(l1:l2,m,n,iAky  )**2+f(l1:l2,m,n,iAkz  )**2+ &
-             f(l1:l2,m,n,iAkxim)**2+f(l1:l2,m,n,iAkyim)**2+f(l1:l2,m,n,iAkzim)**2 &
+             f(l1:l2,m,n,iakx  )**2+f(l1:l2,m,n,iaky  )**2+f(l1:l2,m,n,iakz  )**2+ &
+             f(l1:l2,m,n,iakxim)**2+f(l1:l2,m,n,iakyim)**2+f(l1:l2,m,n,iakzim)**2 &
                                                )*nwgrid,idiag_aa2m)
+          if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
+          call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
+          call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+          call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
 !
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
-           if (idiag_Akxpt/=0) call save_name(f(lpoint,m,n,iAkx),idiag_Akxpt)
-           if (idiag_Ekxpt/=0) call save_name(f(lpoint,m,n,iEkx),idiag_Ekxpt)
+           if (idiag_akxpt/=0) call save_name(f(lpoint,m,n,iakx),idiag_akxpt)
+           if (idiag_ekxpt/=0) call save_name(f(lpoint,m,n,iekx),idiag_ekxpt)
            if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
          endif
        endif
@@ -505,7 +489,6 @@ module Magnetic
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
-  ! subroutine magnetic_before_boundary(f)
     subroutine magnetic_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
@@ -516,7 +499,6 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-  ! endsubroutine magnetic_before_boundary
     endsubroutine magnetic_before_boundary
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
@@ -534,28 +516,35 @@ module Magnetic
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
+! 
+!  Version with formal parameter lpencil_loc instead of global lpencil for cases
+!  in which not necessarily all generally needed pencil are to be calculated.
 !
-!  20-11-04/anders: coded
+!  19-nov-04/anders: coded
+!  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
+!  20-jun-16/fred: added derivative tensor option and streamlined gij_etc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-      logical, dimension(:) :: lpenc_loc
+      use Sub
+      use EquationOfState, only: rho0
 !
-      intent(in)  :: f, lpenc_loc
-      intent(inout) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+      logical, dimension(:),              intent(in)   :: lpenc_loc
 !
-      if (lpenc_loc(i_aa)) p%aa=0.0
-      if (lpenc_loc(i_bb)) p%bb=0.0
-      if (lpenc_loc(i_bbb)) p%bbb=0.0
-      if (lpenc_loc(i_bunit)) p%bunit=0.0
-      if (lpenc_loc(i_b2)) p%b2=0.0
-      if (lpenc_loc(i_jxbr)) p%jxbr=0.0
-      if (lpenc_loc(i_bij)) p%bij=0.0
-      if (lpenc_loc(i_uxb)) p%uxb=0.0
-      if (lpenc_loc(i_jj)) p%jj=0.0
-      if (lpenc_loc(i_va2)) p%va2=0.0
-!
-      call keep_compiler_quiet(f)
+      real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1
+      real, dimension(3) :: B_ext
+      real :: c,s
+      integer :: i,j,ix
+! aa
+      if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
+! bb
+      if (lpenc_loc(i_bb)) p%bb=f(l1:l2,m,n,ibx:ibz)
+! bbb
+      if (lpenc_loc(i_bbb)) p%bbb=p%bb
+! b2
+      if (lpenc_loc(i_b2)) call dot2_mn(p%bb,p%b2)
+      if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -799,16 +788,6 @@ module Magnetic
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
 !
-!  time-dependent profile for sigma
-!
-            if (t<=t1_sigma) then
-              sigma=sigma_t1
-            elseif (t<=t2_sigma) then
-              sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
-            else
-              sigma=sigma_t2
-            endif
-!
 !  compute eigenvalues
 !
             sigmaeff=sigma
@@ -941,16 +920,22 @@ module Magnetic
 !!!
       if (lreset) then
         idiag_aa2m=0
-        idiag_Akxpt=0
-        idiag_Ekxpt=0
+        idiag_akxpt=0
+        idiag_ekxpt=0
+        idiag_emag=0
+        idiag_bmax=0; idiag_brms=0; idiag_bfrms=0
         idiag_sigma=0
         cformv=''
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'aa2m',idiag_aa2m)
-        call parse_name(iname,cname(iname),cform(iname),'Akxpt',idiag_Akxpt)
-        call parse_name(iname,cname(iname),cform(iname),'Ekxpt',idiag_Ekxpt)
+        call parse_name(iname,cname(iname),cform(iname),'akxpt',idiag_akxpt)
+        call parse_name(iname,cname(iname),cform(iname),'ekxpt',idiag_ekxpt)
+        call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bfrms',idiag_bfrms)
         call parse_name(iname,cname(iname),cform(iname),'sigma',idiag_sigma)
       enddo
 !
@@ -970,7 +955,7 @@ module Magnetic
 !***********************************************************************
     subroutine get_slices_magnetic(f,slices)
 !
-!  Write slices for animation of Special variables.
+!  Write slices for animation of magnetic variables.
 !
 !  11-apr-21/axel: adapted from gravitational_waves_hTXk.f90
 !
@@ -1109,14 +1094,4 @@ module Magnetic
 !
     endsubroutine get_bext
 !***********************************************************************
-!***********************************************************************
-!************        DO NOT DELETE THE FOLLOWING       **************
-!********************************************************************
-!**  This is an automatically generated include file that creates  **
-!**  copies dummy routines from nomagnetic.f90 for any Special      **
-!**  routines not implemented in this file                         **
-!**                                                                **
-  ! include '../magnetic_dummies.inc'
-!********************************************************************
-!endmodule Special
 endmodule Magnetic
