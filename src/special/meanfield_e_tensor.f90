@@ -407,12 +407,12 @@ module Special
 
             call openDataset_grid(x_id)
             if (scalar_dims(x_id)/=nxgrid) &
-              call fatal_error('initialize_special','x extent in file ='//trim(itoa(scalar_dims(x_id)))//' different from nxgrid')
+              call fatal_error('initialize_special','x extent in file ='//trim(itoa(int(scalar_dims(x_id))))//' different from nxgrid')
             nx_stored=scalar_dims(x_id)/nprocx
             
             call openDataset_grid(y_id)
             if (scalar_dims(y_id)/=nygrid) &
-              call fatal_error('initialize_special','y extent in file ='//trim(itoa(scalar_dims(y_id)))//' different from nygrid')
+              call fatal_error('initialize_special','y extent in file ='//trim(itoa(int(scalar_dims(y_id))))//' different from nygrid')
             ny_stored=scalar_dims(y_id)/nprocy
             
             call openDataset_grid(time_id)
@@ -825,6 +825,8 @@ module Special
         if (hdf_grid_exists) then
           if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing grid'
           call closeDataset_grid(time_id)
+          call closeDataset_grid(x_id)
+          call closeDataset_grid(y_id)
           call H5Gclose_F(hdf_grid_group, hdferr)
           if (lread_time_series) then
             if (allocated(tensor_times)) deallocate(tensor_times)
