@@ -1,10 +1,8 @@
-# powers.py
+# power.py
 #
 # Read the power spectra of the simulation.
 #
-# Authors:
-# B. Dintrans (boris.dintrans@irap.omp.eu)
-# S. Candelaresi (iomsn1@gmail.com)
+
 """
 Contains the classes and methods to read the power spectra.
 """
@@ -208,16 +206,14 @@ class Power(object):
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
-
-                # Now read the rest of the file
-                print("ini", ini)
-                line_list = line_list[ini:]
+                #Now read the rest of the file  
+                #print('ini', ini) 
+                line_list = line_list[ini:]    
                 time = []
                 power_array = []
-                print("nk", nk)
-                block_size = np.ceil(int(nk * 2) / 16.0) + 1
-                n_blocks = int(len(line_list) / block_size)
-
+                #print('nk', nk)
+                block_size =  np.ceil(int(nk*2)/16.) + 1
+                n_blocks = int(len(line_list)/block_size)
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
                         # print(float(line.strip()))

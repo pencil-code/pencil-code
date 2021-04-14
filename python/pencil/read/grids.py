@@ -243,7 +243,8 @@ class Grid(object):
                     dz_tilde[i0z:i1z] = dz_tilde_loc[i0z_loc:i1z_loc]
 
                 else:
-                    x = dtype(x_loc.astype)
+                    #x = dtype(x_loc.astype)
+                    x = dtype(x_loc)
                     y = dtype(y_loc)
                     z = dtype(z_loc)
                     dx_1 = dtype(dx_1_loc)
