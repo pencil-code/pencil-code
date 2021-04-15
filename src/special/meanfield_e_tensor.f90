@@ -61,7 +61,7 @@ module Special
                     hdf_emftensors_group, &
                     hdf_grid_group
 !
-!  dimensions of the stored coefficients, needs in general to be learned from the input HDF5-file. 
+!  dimensions of the stored coefficients, needs in general to be learned from the input HDF5-file.
 !  nx_stored, ny_stored at the moment assumed to coincide with nx, ny.
 !
   integer :: nx_stored=nx, ny_stored=ny, nz_stored=1
@@ -407,14 +407,16 @@ module Special
 
             call openDataset_grid(x_id)
             if (scalar_dims(x_id)/=nxgrid) &
-              call fatal_error('initialize_special','x extent in file ='//trim(itoa(int(scalar_dims(x_id))))//' different from nxgrid')
+              call fatal_error('initialize_special', &
+              'x extent in file ='//trim(itoa(int(scalar_dims(x_id))))//' different from nxgrid')
             nx_stored=scalar_dims(x_id)/nprocx
-            
+
             call openDataset_grid(y_id)
             if (scalar_dims(y_id)/=nygrid) &
-              call fatal_error('initialize_special','y extent in file ='//trim(itoa(int(scalar_dims(y_id))))//' different from nygrid')
+              call fatal_error('initialize_special', &
+              'y extent in file ='//trim(itoa(int(scalar_dims(y_id))))//' different from nygrid')
             ny_stored=scalar_dims(y_id)/nprocy
-            
+
             call openDataset_grid(time_id)
 
             call H5Dget_type_F(scalar_id_D(time_id), datatype_id, hdferr)
@@ -1059,7 +1061,7 @@ module Special
 !
               where(beta_data(:,:,:,:,i,i)+eta<=0.) beta_mask(:,:,:,:,i)=1
               minbeta=minval(beta_data(:,:,:,:,i,i),beta_mask(:,:,:,:,i)==1)
-              !where(beta_mask(:,:,:,:,i)==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta 
+              !where(beta_mask(:,:,:,:,i)==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta
 
               numzeros=sum(beta_mask(:,:,:,:,i))
               call mpiallreduce_sum_int(numzeros,numzeros_)
@@ -1267,7 +1269,7 @@ enddo; enddo
         if (maxval(abs(p%bb)) > limit) call fatal_error_local('calc_pencils_special', &
           'magnetic field too big')
       endif
-      
+
       nind=1     !n-nghost if coefficients would be z-dependent
 !
 ! Calculate emf pencil
@@ -1399,7 +1401,7 @@ enddo; enddo
                   p%kappa_coefs(:,3,j,k)=(1.-rel_kappa)*(eta+p%beta_coefs(:,3,3))
                   kappa_mask=-1.
                 endwhere
-                !where ( (eta+p%beta_coefs(:,3,3))*(jtr-jrt)**2 + (jtr**2 - jrt**2)*p%kappa_coefs(:,3,j,k) < 0.) 
+                !where ( (eta+p%beta_coefs(:,3,3))*(jtr-jrt)**2 + (jtr**2 - jrt**2)*p%kappa_coefs(:,3,j,k) < 0.)
                 !  p%kappa_coefs(:,3,j,k)=0.
                 !  kappa_mask=1.
                 !endwhere
@@ -1408,7 +1410,7 @@ if (.false.) then
   mess=''
   !mess='it,iprocs, m='//trim(itoa(it))//' '//trim(itoa(ipx))//' '//trim(itoa(ipy))//' '//trim(itoa(m))
   write(mess,'(e12.4)') y(m)
-  
+
   do iii=1,nx
     if (kappa_mask(iii)/=0.) then
       mess=trim(mess)//'|'//trim(itoa(iii))
@@ -1659,14 +1661,6 @@ endif
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
       call parseParameters
       if (lroot) write (*,*) 'read_special_run_pars parameters parsed...'
-
-      ! For backwards compatibility, if dataset has been set,
-      ! overwrite dataset_type and give a warning.
-      if (len_trim(dataset) > 0) then
-          if (lroot) call warning('read_special_run_pars', &
-            'parameter "dataset" overwrites "dataset_type"')
-          dataset_type = dataset
-      endif
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -2025,7 +2019,7 @@ endif
       elseif (tensor_times_len/=dimsizes(1)) then
         call fatal_error('openDataset','dataset emftensor/'//trim(datagroup)//'/'//trim(dataset)//' has deviating time extent')
       endif
-      
+
       if (hdferr /= 0) then
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
@@ -2089,7 +2083,7 @@ endif
                                        maxdimsizes(1:ndims), &
                                        hdferr)                 !MR: hdferr/=0!
 !This is to mask the error of the preceding call.
-      call H5Sget_simple_extent_npoints_F(scalar_id_S(scalar_id),num,hdferr) 
+      call H5Sget_simple_extent_npoints_F(scalar_id_S(scalar_id),num,hdferr)
 
       if (hdferr /= 0) then
         call H5Sclose_F(scalar_id_S(scalar_id), hdferr)
@@ -2378,54 +2372,54 @@ endif
       lalpha_c=.false.
       lalpha_arr=.false.
       alpha_scale=1.0
-      alpha_name='data'
+      alpha_name='mean'
       ! beta
       lbeta=.false.
       lbeta_c=.false.
       lbeta_arr=.false.
       beta_scale=1.0
-      beta_name='data'
+      beta_name='mean'
       ! gamma
       lgamma=.false.
       lgamma_c=.false.
       lgamma_arr=.false.
       gamma_scale=1.0
-      gamma_name='data'
+      gamma_name='mean'
       ! delta
       ldelta=.false.
       ldelta_c=.false.
       ldelta_arr=.false.
       delta_scale=1.0
-      delta_name='data'
+      delta_name='mean'
       ! kappa
       lkappa=.false.
       lkappa_c=.false.
       lkappa_arr=.false.
       kappa_scale=1.0
-      kappa_name='data'
+      kappa_name='mean'
       ! umean
       lumean=.false.
       lumean_c=.false.
       lumean_arr=.false.
       umean_scale=1.0
-      umean_name='data'
+      umean_name='mean'
       ! acoef
       lacoef=.false.
       lacoef_c=.false.
       lacoef_arr=.false.
       acoef_scale=1.0
-      acoef_name='data'
+      acoef_name='mean'
       ! bcoef
       lbcoef=.false.
       lbcoef_c=.false.
       lbcoef_arr=.false.
       bcoef_scale=1.0
-      bcoef_name='data'
+      bcoef_name='mean'
       ! other
       interpname  = 'none'
       dataset = ''
       dataset_type = 'mean'
-      dataset_name = 'mean'
+      dataset_name = ''
       tensor_maxvals=0.0
       tensor_minvals=0.0
       lusecoefs = .false.
@@ -2579,7 +2573,9 @@ endif
 !
 ! Store names
 !
-      if (trim(dataset_name) /= '') then
+      if (len_trim(dataset_name) > 0) then
+          if (lroot) call warning('initialize_special', &
+            '"dataset_name" given, overwriting individual dataset names.')
         alpha_name  = dataset_name
         beta_name   = dataset_name
         gamma_name  = dataset_name
@@ -2597,6 +2593,14 @@ endif
       tensor_names(umean_id)  = umean_name
       tensor_names(acoef_id)  = acoef_name
       tensor_names(bcoef_id)  = bcoef_name
+
+      ! For backwards compatibility, if dataset has been set,
+      ! overwrite dataset_type and give a warning.
+      if (len_trim(dataset) > 0) then
+          if (lroot) call warning('initialize_special', &
+            'parameter "dataset" overwrites "dataset_type"')
+          dataset_type = dataset
+      endif
 
     end subroutine parseParameters
 !*****************************************************************************
