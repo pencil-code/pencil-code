@@ -121,6 +121,8 @@ module Magnetic
   real :: relhel_aa=1.
   real :: k1hel=0., k2hel=1.
   real :: mu012=0.5 !(=1/2mu0)
+  real :: phase_aa=0.
+  integer :: kx_aa=0, ky_aa=0, kz_aa=0
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
 !
@@ -132,7 +134,8 @@ module Magnetic
     linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
     lscale_tobox, kgaussian_aa, lskip_projection_aa, relhel_aa, &
-    k1hel, k2hel
+    k1hel, k2hel, &
+    kx_aa, ky_aa, kz_aa, phase_aa
 !
 ! run parameters
   namelist /magnetic_run_pars/ &
@@ -265,6 +268,7 @@ module Magnetic
 !
 !  initial condition for aak
 !
+      f(:,:,:,iaak:iaakim+2)=0.
       select case (initaak)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
@@ -273,6 +277,8 @@ module Magnetic
           if (lroot) print*,'init_magnetic for A: single'
           f(:,:,:,iaak:iaakim+2)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iaak)=1.
+        case ('Beltrami-general')
+               call beltramik_general(amplaa,f,iaak,kx_aa,ky_aa,kz_aa,phase_aa)
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa,initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iaak,iaak+2,relhel_aa,kgaussian_aa, &

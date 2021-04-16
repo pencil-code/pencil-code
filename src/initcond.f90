@@ -26,7 +26,8 @@ module Initcond
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos
   public :: ABC_field, beltrami, bessel_x, bessel_az_x
-  public :: beltrami_general, beltrami_complex, beltrami_old, bhyperz, bihelical
+  public :: beltramik_general, beltrami_general, beltrami_complex
+  public :: beltrami_old, bhyperz, bihelical
   public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: stratification_xz
@@ -1743,6 +1744,31 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine beltramik_general(ampl,f,i,kx,ky,kz,phase)
+!
+!  Beltrami field (as initial condition)
+!  Currently not additive
+!
+!  16-apr-21/axel: coded
+!
+      integer :: i,j,l,m,n
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: kx, ky, kz
+      real :: ampl, phase
+!
+      j=i+3
+      if (kx>0.and.kx<=nx-1) then
+        if (ipx==0) then
+          f(l1+kx,m1,n1,i+1)=+ampl
+          f(l1+kx,m1,n1,j+2)=-ampl
+        elseif (ipx==nprocx-1) then
+          f(l2+1-kx,m1,n1,i+1)=+ampl
+          f(l2+1-kx,m1,n1,j+2)=+ampl
+        endif
+      endif
+!
+    endsubroutine beltramik_general
 !***********************************************************************
     subroutine beltrami_general(ampl,f,i,kx,ky,kz,phase)
 !
@@ -4992,7 +5018,7 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
-      k1hel, k2hel)
+      k1hel, k2hel,lremain_in_fourier)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -5015,8 +5041,8 @@ module Initcond
 !
       use Fourier, only: fft_xyz_parallel
 !
-      logical, intent(in), optional :: lscale_tobox
-      logical :: lvectorpotential, lscale_tobox1
+      logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
+      logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
       logical :: lskip_projection
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, intent(in), optional :: k1hel, k2hel
@@ -5033,6 +5059,14 @@ module Initcond
         lscale_tobox1 = lscale_tobox
       else
         lscale_tobox1 = .true.
+      endif
+!
+!  Check whether or not we want to remain in Fourier space
+!
+      if (present(lremain_in_fourier)) then
+        lremain_in_fourier1 = lremain_in_fourier
+      else
+        lremain_in_fourier1 = .false.
       endif
 !
 !  Allocate memory for arrays.
@@ -5307,12 +5341,18 @@ module Initcond
           enddo
         endif
 !
-!  back to real space
+!  back to real space, unless lremain_in_fourier=T, in which case
+!  we assume that the imaginary part is just next to the real part.
 !
-        do i=1,3
-          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
-        enddo !i
-        f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+        if (lremain_in_fourier1) then
+          f(l1:l2,m1:m2,n1:n2,i1  :i2  )=f(l1:l2,m1:m2,n1:n2,i1  :i2  )+u_re
+          f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)=f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)+u_im
+        else
+          do i=1,3
+            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          enddo !i
+          f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+        endif
 !
 !  notification
 !
