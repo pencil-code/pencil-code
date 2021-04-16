@@ -37,10 +37,14 @@ program pc_configtest
 !
 !  Identify version.
 !
+  lstart = .false.
+  lrun = .true.
   if (lroot) call svn_id('$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
+  lrun = .false.
+  lstart = .true.
   call initialize_messages
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
@@ -99,14 +103,6 @@ program pc_configtest
   if (lroot) print *, 'Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
   if (lroot) write (*,*) 'mvar = ', mvar_io
 !
-!  Allow modules to do any physics modules do parameter dependent
-!  initialization. And final pre-timestepping setup.
-!  (must be done before need_XXXX can be used, for example)
-!
-  call construct_grid(x,y,z,dx,dy,dz)
-  call initialize_modules(f)
-  call particles_initialize_modules(f)
-!
 !  Set up flags for leading processors in each possible direction and plane
 !
   lfirst_proc_x = (ipx == 0)
@@ -130,6 +126,14 @@ program pc_configtest
 !  Set up directory names 'directory' and 'directory_snap'.
 !
   call directory_names
+!
+!  Allow modules to do any physics modules do parameter dependent
+!  initialization. And final pre-timestepping setup.
+!  (must be done before need_XXXX can be used, for example)
+!
+  call construct_grid(x,y,z,dx,dy,dz)
+  call initialize_modules(f)
+  call particles_initialize_modules(f)
 !
 !  Read coordinates.
 !
