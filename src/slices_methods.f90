@@ -231,7 +231,7 @@ module Slices_methods
       if (lwrite_slice_yz) then
         if (lyang.and..not.present(ncomp).and.size(pencil,2)==3) then
 !
-!  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
+!  On Yang grid: transform theta and phi components of vector to Yin-grid basis.
 !
           call transform_thph_yy(pencil(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmp)
           yz(m-m1+1,n-n1+1,:)=tmp(1,:)

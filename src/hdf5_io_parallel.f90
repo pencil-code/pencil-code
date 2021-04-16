@@ -2395,18 +2395,16 @@ module HDF5_IO
 !***********************************************************************
     subroutine input_slice_real_arr(file, time, pos, data)
 !
-!  read a slice file
+!  dummy
 !
 !  24-may-19/MR: coded
 !
       use File_io, only: file_exists
 
-      character (len=*),   intent(in) :: file
-      real,                intent(out):: time
-      real,                intent(out):: pos
+      character (len=*),     intent(in) :: file
+      real,                  intent(out):: time
+      real,                  intent(out):: pos
       real, dimension(:,:,:),intent(out):: data
-!
-      integer :: nt, ios
 !
       call fatal_error('input_slice_real_arr', 'not implemented for HDF5')
 
