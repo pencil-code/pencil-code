@@ -4,10 +4,11 @@
 !
 module Syscalls
 !
-  use Cparam, only: ikind8
+  !!!use Cparam, only: ikind8
 
   implicit none
 !
+  integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   external is_nan_c
   external system_c
   external sizeof_real_c
@@ -282,11 +283,19 @@ module Syscalls
 
       integer :: readlink_c
 
-      integer :: retlen
+      integer :: retlen, exists
+
+      readlink=.false.
 
       retlen=readlink_c(trim(filename)//char(0),link,len(link))
+      if (retlen==-1) return
+
       link(retlen+1:len(link))=''
-      readlink=.not.(retlen>=len(link)-1)
+
+      call directory_exists_c(trim(link)//char(0), exists)
+      if (exists==-1) return
+
+      readlink=.true.
 
     endfunction readlink 
 !***********************************************************************

@@ -38,7 +38,7 @@ void FTNIZE(extract_string_c)(char *extract_cmd, char *result)
 }
 /* ---------------------------------------------------------------------- */
 
-int FTNIZE(readlink_c) (char *linkfile, char *link, FINT *size)
+int FTNIZE(readlink_c) (const char *linkfile, char *link, const FINT *size)
 {
 //  Returns the contents of a symbolic link.
 //  31-mar-21/MR: coded

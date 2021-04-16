@@ -7,7 +7,6 @@
       integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1,kka,kke,jja,jje,iie
       integer :: nprocz_src, nzgrid_src, mz_src, ipz_src
       character(LEN=fnlen) :: readdir, srcdir
-      character(LEN=2*fnlen) :: link
       character(LEN=linelen) :: message
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
@@ -337,6 +336,7 @@ contains
 !  31-mar-21/MR: coded
 !
         character(LEN=20) :: cres
+        character(LEN=2*fnlen) :: link
 
         if (.not.islink((trim(readdir)//'/'//trim(file)))) then
           call fatal_error('prepare_zaver_on_input',trim(readdir)//'/'//trim(file)// &
@@ -345,8 +345,12 @@ contains
           if (lactive_dimension(3)) &
             call fatal_error('prepare_zaver_on_input','z must be degenerate for lzaver_on_input=T')
 
-          if (readlink(trim(readdir)//'/'//trim(file),link)) &     ! dangerous
+          if (readlink(trim(readdir)//'/'//trim(file),link)) then
             srcdir=link(1:index(trim(link),'data')-1)
+          else
+            call fatal_error('prepare_zaver_on_input','file pointed to by symbolic link '//trim(readdir)//'/'//trim(file)// &
+                             ' does not exist or string "link" too short')
+          endif
 !
 !  Obtain nproc[xyz], n[xyz]grid from source run directory and check compatibility with target run.
 !
