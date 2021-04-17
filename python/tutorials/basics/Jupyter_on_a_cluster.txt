@@ -1,11 +1,9 @@
-$Id$
-
 Tutorial: 0001_Jupyter_on_a_cluster
 
 Title: This tutorial will teach you how to use Jupyter on a distant
 cluster/computer.
 
-Author: Andreas Schreiber <ascheiber@mpia.de>
+Author: Andreas Schreiber <aschreiber@mpia.de>
 
 
 Jupyter notebooks are really powerfull since you can not only use it for doing
@@ -14,18 +12,19 @@ basically everything). So it may look easy to have Jupyter running on your
 desktop personal computer, but there is a way to use Jupyter on your computing
 cluster as well. Even more, if you like you can keep that Jupyter notebook
 running in a screen session to let it continue working for you even if you are
-not connected to the computer directly. But lets start easy!
+not connected to the computer directly.
+  But let us start easy.
 
 
 The basic idea is the following:
 
 1.) We will start a Jupyter notebook session on your cluster login node.
 
-PLEASE!!! Be a fair user and USE the INTERACTIVE login nodes of your cluster
-which are for such purpose and NOT use the login nodes which are for compiling,
-checking and submitting you runs to the queue! Also remind yourself that also
-other people are using the login nodes and dont let you notebooks open if you
-are not using them!
+Please be a fair user and use the interactive login nodes of your cluster
+which are for such purpose and do not use the login nodes which are for compiling,
+checking and submitting you runs to the queue. Also remind yourself that other
+people are using the login nodes, too, and dont let you notebooks open if you
+are not using them.
 
 2.) We will setup the Jupyter notebook to be listening to a certain port, so you
 can connect from outside to it.
@@ -34,27 +33,27 @@ can connect from outside to it.
 you computer to be forwarded to the port of you cluster node the Jupyter
 notebook is listening to.
 
-4.) We will open a Browser, e.g. Firefox, and connect to your local port, which
+4.) We will open a browser, e.g. Firefox, and connect to your local port, which
 directs us to you Jupyter session on your cluster.
 
-5.) We make the connection safe! You do not want to have your credentials and
-notebook beeing open to the whole internet!!
+5.) We make the connection safe. You do not want to have your credentials and
+notebook beeing open to the whole internet,
 
 
-Lets start!
+Let us start
 
 
-## First: NO security version: ##
+## First: No security version: ##
 
 1.	How to start a Jupyter server on hydra.
-a.	Login to hydra cluster via gate, e.g. 
+a.	Login to hydra cluster via gate, e.g.
 >> ssh gate.rzg.mpg.de
 >> ssh hydra08i
 
 b.	Then start a screen session in which the server can stay alive, even if the connection is closed. Checkout screen commands first, if you are not familiar with screen: screen –S, screen –list, screen –r, Strg+A – d, Strg+A – c, Strg+A – space
 >> screen –S jupyter
 >> jupyter notebook --no-browser --port=9876 --ip='*'
-You might want to bind the command above, and some other like the ssh tunnel to an alias!! 
+You might want to bind the command above, and some other like the ssh tunnel to an alias.
 
 2.	Create a SSH Tunnel, which let you access the jupyter notebook directly via a port on your pc.
 a.	>> ssh -L 9876:hydra08i.rzg.mpg.de:9876 USERNAME@gate.rzg.mpg.de
@@ -63,7 +62,7 @@ This will bind to you localhost:9876 port a connection via ssh (so this small pa
 3.	Connect to your jupyter notebook via a suiting browser
 a.	Open firefox and type in: localhost:9876, or something similar, like http://127.0.0.1:9876
 b.	You should now see your jupyter notebook
-BEWARE: This is not a completely secure connection and all data streams, e.g. passwords, might be transported in clear text! Also, till now EVERYBODY (with login rights to hydra) has access to your notebook and all rights of your account by hijacking your notebook!!! So let us fix that in step 4 and 5.
+Beware: This is not a completely secure connection and all data streams, e.g. passwords, might be transported in clear text. Also, till now everybody with login rights to hydra has access to your notebook and all rights of your account by hijacking your notebook. So let us fix that in step 4 and 5.
 
 ## Second: Good security version: ##
 
@@ -75,7 +74,7 @@ b.	Exit ipython and go to ~/.jupyter and call
 >> jupyter notebook --generate-config
 In this config file add your sha1 key in the line that says:
 c.NotebookApp.password = u''"
-Uncomment that line to activate it! If you connect again as above (1-3), you will be asked for your password. But this might be transmitted in clear text at least part of your connection! 
+Uncomment that line to activate it. If you connect again as above (1-3), you will be asked for your password. But this might be transmitted in clear text at least part of your connection.
 5.	To not transmit any data (i.e. passwords) in clear text, i.e. cleartext on the way to your local port, we shall create a certificate file, that allows us to activate https:// instead of http:// from above.
 a.	Go to you ~/.jupyter directory on your cluster, e.g. hydra08i, and produce a certificate:
 >> openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout mykey.key -out mycert.pem
@@ -84,12 +83,10 @@ b.	Tell the next time you start your jupyter notebook server that he shall use y
 
 ## Things are not as supposed? You want to know more? ##
 
-i)	Not working..  
+i)	Not working.. 
 Have you installed anaconda? Try >> module load anaconda/3
-ii)	I see a strange directory when connecting to my notebook..  Check if you notebook server is running from your home directory, you might accidentally started jupyter in your ~/.jupyter directory! 
+ii)	I see a strange directory when connecting to my notebook..  Check if you notebook server is running from your home directory, you might accidentally started jupyter in your ~/.jupyter directory.
 iii)	If you are tired of passwords, try and set a static access tokes for your notebook server: http://jupyter-notebook.readthedocs.io/en/latest/security.html
 iv)	If nothing helps or to learn more: check out https://jupyter-notebook.readthedocs.io/en/latest/public_server.html
 
-That should be it! Have fun!
-
-Questions?
+That should be it. Have fun.
