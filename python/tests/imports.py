@@ -43,7 +43,7 @@ def import_stuff() -> None:
     from pencil.sim import simulation
     from pencil import sim
 
-    from pencil.sim import is_sim_dir
+    from pencil.util import is_sim_dir
     from pencil.calc import Reynolds
     from pencil import calc
     from pencil.calc import accuracy
