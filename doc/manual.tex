@@ -1507,7 +1507,8 @@ produce results like that shown in Fig.~\ref{Fig-pvert1}.
 The same can be achieved using \name{Python}
 (see Sect.~\ref{Python} for details) with
 \begin{alltt}
-  \prompt{unix > } python
+  \prompt{unix > } ipython3  # (or 'ipython', or just 'python')
+  \prompt{python >  } import pencil as pc
   \prompt{python >  } from matplotlib import pylab as plt
   \prompt{python >  } var = pc.read.var(trimall=True)
   \prompt{python >  } plt.imshow(var.uu[0, 0, :, : ].T, origin='lower')
