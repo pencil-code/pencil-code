@@ -6554,6 +6554,11 @@ module Magnetic
 !
       call fatal_error("magnetic_calc_spectra","impossible: iaakim=0, ieekim=0")
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum,spectrum_hel)
+      call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
+!
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
     subroutine eta_shell(p,eta_mn,geta)
