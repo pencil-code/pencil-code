@@ -328,7 +328,7 @@ module Cosmicrayflux
       use Sub
 
       integer :: iname, inamez, ixy, irz
-      logical :: lreset, lwr
+      logical :: lreset
       logical, optional :: lwrite
 
       ! Reset everything in case of RELOAD.
