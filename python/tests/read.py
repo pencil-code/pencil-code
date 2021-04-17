@@ -53,7 +53,7 @@ def _assert_equal_tuple(
     assert_true(expected == actual, "{} ≠ {}".format(expected, actual))
 
 
-@test()
+@test
 def test_read_time_series() -> None:
     """Read time series."""
     time_series = ts(data_file("time-series-1.dat"))
@@ -70,7 +70,7 @@ def test_read_time_series() -> None:
         assert_true(np.allclose(val, getattr(time_series, key)))
 
 
-@test()
+@test
 def test_read_dim() -> None:
     """Read dim.dat file."""
     global_dim = dim(DATA_DIR)
@@ -108,7 +108,7 @@ def test_read_dim() -> None:
         )
 
 
-@test()
+@test
 def test_read_param() -> None:
     """Read param.nml file."""
     params = param(DATA_DIR)

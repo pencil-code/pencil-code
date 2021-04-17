@@ -30,7 +30,7 @@ except ImportError:
     from proboscis_dummy import test, assert_equal, assert_true
 
 
-@test()
+@test
 def import_stuff() -> None:
     """Import a number of modules.
 
@@ -88,7 +88,7 @@ def import_stuff() -> None:
     pass
 
 
-@test()
+@test
 def import_visu_stuff() -> None:
     """Import modules (or symbols?) related to visu. [commented out]
 
@@ -108,7 +108,7 @@ def import_visu_stuff() -> None:
     pass
 
 
-@test()
+@test
 def import_pencil() -> None:
     """Import the pencil module currently [commented out].
 
