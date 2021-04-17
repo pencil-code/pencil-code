@@ -215,7 +215,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lEE_as_aux=.false.
+  logical :: lee_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
@@ -244,7 +244,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,& 
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,& 
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -979,9 +979,9 @@ module Magnetic
 !
 ! register EE as auxilliary array if asked for.
 !
-      if (lEE_as_aux) then
-        call farray_register_auxiliary('EE',iEE,vector=3)
-        iEEx=iEE; iEEy=iEE+1; iEEz=iEE+2
+      if (lee_as_aux) then
+        call farray_register_auxiliary('ee',iee,vector=3)
+        iex=iee; iey=iee+1; iez=iee+2
 !
 !  Writing files for use with IDL
 !
@@ -5125,7 +5125,7 @@ module Magnetic
 !
 ! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !
-      if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
+      if (lee_as_aux ) f(l1:l2,m,n,iex:iez)= -dAdt
 !
 !  Magnetic field in spherical coordinates from a Cartesian simulation
 !  for sphere-in-a-box setups
