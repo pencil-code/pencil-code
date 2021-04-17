@@ -28,7 +28,7 @@ The tutorials are grouped as follows:
 
 basics                Using 'pencil' and Jupyter/Python in general.
                       Basics and neat tricks await you here.
-red                   Using 'pencil' to read in your simulation data.
+read                  Using 'pencil' to read in your simulation data.
 visualize             Using 'pencil' to visualize your data.
 simulation_objects    Using the full capacity of the 'pencil' simulation
                       objects.
