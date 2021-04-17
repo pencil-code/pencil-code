@@ -243,6 +243,8 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, parameter :: lvectorpotential=.true.
+      real :: k1, k2, k3, ksqr, k
+      integer :: ikx, iky, ikz
 !
       intent(inout) :: f
 !
@@ -287,6 +289,28 @@ module Magnetic
 !  dA/deta = -E
 !  d^2A/deta^2 = -dE/deta = -(k^2-alpha*(alpha+1)
 !
+        case ('ikA')
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+!
+!  collect k vector and compute k^2 at each point
+!
+                k1=kx_fft(ikx+ipx*nx)
+                k2=ky_fft(iky+ipy*ny)
+                k3=kz_fft(ikz+ipz*nz)
+                ksqr=k1**2+k2**2+k3**2
+                k=sqrt(ksqr)
+!
+!  Compute Ek = ik*Ak
+!
+                f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)=-k* &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)=+k* &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+              enddo
+            enddo
+          enddo
         case ('powerlow??>')
           !call powerlaw ...
         case default
