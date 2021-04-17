@@ -1,37 +1,40 @@
-Dear Pencil Code User,
+This directory contains tutorials for using Python with your Pencil Code
+simulations. They are mostly written as Jupyter documents.
 
-this directory contains tutorials for using Python with your Pencil Code
-simulations. They are mostly written as Jupyter documents. If you dont know
-Jupyter yet you should definitly check it out before you continue!
+While Jupyter is /not/ a requirement for using the Pencil Code Python scripts
+and modules, we will assume here that you know how to use it.
 
 
 ~ Task 1: Get yourself informed on Jupyter
 
 
 Now that you know what Jupyter is, ensure you have it installed on your
-computer. You get it by default when using Anaconda as you Python distribution,
-what is what I do recommend to you.
+computer. You get it by default when using Anaconda as your Python
+distribution.
 
 
 ~ Task 2: Check if Jupyter is running correctly. Normally this should be possible
-by using 'ipython notebook' (or 'jupyter-notebook') in your bash shell.
+by using 'ipython notebook' (or 'jupyter-notebook') from your shell prompt.
 
 
-Note: If you are trying to do these tutorials on a distant cluster you are connected
-to via ssh, this may not work. Instead try what is written in the tutorial basics/Jupyter_on_a_cluster.
+Note: If you are trying to run these tutorials on a distant cluster you are
+connected to via ssh, this may not work. Instead try what is written in the
+tutorial basics/Jupyter_on_a_cluster.
 
 
 TUTORIAL OVERVIEW:
 
 The tutorials are grouped as follows:
 
-basics                On using pencil and Jupyter/Python in general.
+basics                Using 'pencil' and Jupyter/Python in general.
                       Basics and neat tricks await you here.
-red                   On using pencil to READ in your simulation data.
-visualize             On using pencil to VISUALIZE your data.
-simulation_objects    On using the full capacity of the pencil simulation objects.
+red                   Using 'pencil' to read in your simulation data.
+visualize             Using 'pencil' to visualize your data.
+simulation_objects    Using the full capacity of the 'pencil' simulation
+                      objects.
 
-Now go and check them out! Feel free to add you own tutorials or request them from the Pencil Code Community! 
+You can now go and check them out. Feel free to add you own tutorials or request
+them from the Pencil Code Community.
 
 Tutorials may use dummy/sample simulations. You find them in the
 sample_simulations folder.
