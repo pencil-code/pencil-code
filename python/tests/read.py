@@ -56,7 +56,7 @@ def _assert_equal_tuple(
 @test
 def test_read_time_series() -> None:
     """Read time series."""
-    time_series = ts(data_file("time-series-1.dat"))
+    time_series = ts(data_file("time-series-1.dat"), quiet=True)
     expected = {
         "it": np.array([0, 50, 100, 150]),
         "t": np.array([0.000, 0.441, 0.939, 1.480]),
