@@ -41,8 +41,8 @@
 ! MAUX CONTRIBUTION 12
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
-! PENCILS PROVIDED b2; bf2
-! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3); va2
+! PENCILS PROVIDED el(3); e2; b2; bf2
+! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3); bunit(3); va2
 !
 !***************************************************************
 !
@@ -87,7 +87,6 @@ module Magnetic
 !
   include '../magnetic.h'
   !include 'record_types.h'
-  !include 'magnetic.h'
 !
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
@@ -148,6 +147,7 @@ module Magnetic
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_aa2m=0      ! DIAG_DOC: $\langle A^2\rangle$
+  integer :: idiag_ee2m=0      ! DIAG_DOC: $\langle E^2\rangle$
   integer :: idiag_akxpt=0     ! DIAG_DOC: $Akx^{pt}$
   integer :: idiag_ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
   integer :: idiag_sigma=0     ! DIAG_DOC: $\sigma$
@@ -156,10 +156,9 @@ module Magnetic
   integer :: idiag_brms=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bfrms=0     ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
 !
-  integer :: iaak, iaakim, ieek, ieekim
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
   integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
-  integer :: iex, iey, iez
+  !integer :: iex, iey, iez
   integer, parameter :: nk=nxgrid/2
   type, public :: magpectra
     real, dimension(nk) :: mag   ,ele
@@ -269,6 +268,9 @@ module Magnetic
 !  initial condition for aak
 !
       f(:,:,:,iaak:iaakim+2)=0.
+      f(:,:,:,ieek:ieekim+2)=0.
+      f(:,:,:,iee :iee   +2)=0.
+      f(:,:,:,ibb :ibb   +2)=0.
       select case (initaak)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
@@ -319,10 +321,11 @@ module Magnetic
 !
 !   1-apr-06/axel: coded
 !
+   !  if (idiag_ee2m/=0) lpenc_requested(i_e2)=.true.
       if (idiag_brms/=0 .or. idiag_bfrms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
-      !if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
+      if (lpenc_diagnos(i_e2)) lpenc_requested(i_el)=.true.
       if (lpenc_diagnos(i_b2)) lpenc_requested(i_bb)=.true.
 !
     endsubroutine pencil_criteria_magnetic
@@ -369,8 +372,7 @@ module Magnetic
 !  Identify module and boundary conditions.
 !
       if (lfirst) then
-   !    if (headtt.or.ldebug) print*,'dmagnetic_dt: SOLVE dmagnetic_dt'
-        if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt'
+        if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt using aak and eek'
 !
 !  time-dependent profile for sigma
 !
@@ -385,6 +387,10 @@ module Magnetic
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_ee2m/=0) call sum_mn_name(( &
+             f(l1:l2,m,n,iekx  )**2+f(l1:l2,m,n,ieky  )**2+f(l1:l2,m,n,iekz  )**2+ &
+             f(l1:l2,m,n,iekxim)**2+f(l1:l2,m,n,iekyim)**2+f(l1:l2,m,n,iekzim)**2 &
+                                               )*nwgrid,idiag_ee2m)
          if (idiag_aa2m/=0) call sum_mn_name(( &
              f(l1:l2,m,n,iakx  )**2+f(l1:l2,m,n,iaky  )**2+f(l1:l2,m,n,iakz  )**2+ &
              f(l1:l2,m,n,iakxim)**2+f(l1:l2,m,n,iakyim)**2+f(l1:l2,m,n,iakzim)**2 &
@@ -542,12 +548,16 @@ module Magnetic
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
+! ee
+      if (lpenc_loc(i_el)) p%el=f(l1:l2,m,n,iex:iez)
 ! aa
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! bb
       if (lpenc_loc(i_bb)) p%bb=f(l1:l2,m,n,ibx:ibz)
 ! bbb
       if (lpenc_loc(i_bbb)) p%bbb=p%bb
+! e2
+      if (lpenc_loc(i_e2)) call dot2_mn(p%el,p%e2)
 ! b2
       if (lpenc_loc(i_b2)) call dot2_mn(p%bb,p%b2)
       if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
@@ -620,20 +630,51 @@ module Magnetic
 !
             if (ik <= nk) then
 !
-!  Electromagnetic wave spectrum computed from hdot (=g)
+!  Electromagnetic wave spectrum computed from aak
 !
-  !           if (GWs_spec) then
-  !             spectra%GWs(ik)=spectra%GWs(ik) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)**2
-  !             spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-  !                -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
-  !           endif
+              if (ab_spec) then
+                spectra%mag(ik)=spectra%mag(ik) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)**2
+                spectra%maghel(ik)=spectra%maghel(ik)+2*( &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(+k3) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(-k2)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(+k1) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(-k3)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(+k2) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(-k1)) &
+                                                        )
+              endif
+!
+!  Electric field spectrum computed from eek
+!
+              if (ele_spec) then
+                spectra%ele(ik)=spectra%ele(ik) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)**2
+                spectra%elehel(ik)=spectra%elehel(ik)+2*( &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(+k3) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(-k2)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(+k1) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(-k3)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2) &
+                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(+k2) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(-k1)) &
+                                                        )
+              endif
 !
   !           if (GWs_spec_complex) then
   !             if (k2==0. .and. k3==0.) then
@@ -691,9 +732,9 @@ module Magnetic
 !***********************************************************************
     subroutine magnetic_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
 !
-!  Calculates GW spectra. For use with a single magnetic module.
+!  Calculates magnetic spectra. For use with a single magnetic module.
 !
-!  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
+!  16-apr-21/axel: adapted from gravitational_waves_hTXk.f90
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spectrum,spectrum_hel
@@ -704,14 +745,14 @@ module Magnetic
         call make_spectra(f)
         lfirstcall=.false.
       endif
-
+!
       select case(kind)
       case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
       case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
       case default; if (lroot) call warning('magnetic_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
-
+!
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
     subroutine magnetic_calc_spectra_byte(f,spectrum,spectrum_hel,lfirstcall,kind,len)
@@ -763,7 +804,6 @@ module Magnetic
       real :: discrim2, sigmaeff
       real :: fact
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
-!     real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -925,7 +965,7 @@ module Magnetic
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_aa2m=0
+        idiag_ee2m=0; idiag_aa2m=0
         idiag_akxpt=0
         idiag_ekxpt=0
         idiag_emag=0
@@ -935,6 +975,7 @@ module Magnetic
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ee2m',idiag_ee2m)
         call parse_name(iname,cname(iname),cform(iname),'aa2m',idiag_aa2m)
         call parse_name(iname,cname(iname),cform(iname),'akxpt',idiag_akxpt)
         call parse_name(iname,cname(iname),cform(iname),'ekxpt',idiag_ekxpt)
