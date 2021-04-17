@@ -113,7 +113,6 @@ module Magnetic
   logical :: linflation=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
-  real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: alpha2_inflation, kscale_factor
   real :: amplaa=1e-4, initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0.
@@ -225,12 +224,6 @@ module Magnetic
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
-      if (.not.allocated(Tpq_re)) allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for Tpq_re')
-!
-      if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for Tpq_im')
-!
 !  calculate kscale_factor (for later binning)
 !
       kscale_factor=2*pi/Lx
@@ -242,18 +235,6 @@ module Magnetic
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_magnetic
-!***********************************************************************
-  !  subroutine finalize_magnetic(f)
-!
-!  Called right before exiting.
-!
-!  14-aug-2011/Bourdin.KIS: coded
-!
-  !   real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-  !   call keep_compiler_quiet(f)
-!
-  ! endsubroutine finalize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
 !
@@ -363,7 +344,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: scale_factor, stress_prefactor2, sign_switch=0, fac_stress_comp
+      real :: scale_factor, stress_prefactor2, fac_stress_comp
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -593,9 +574,8 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-      integer :: ikx, iky, ikz, q, p, pq, ik
-      real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
-      real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
+      integer :: ikx, iky, ikz, q, p, ik
+      real :: k1, k2, k3, ksqr
 
       spectra%mag=0.; spectra%maghel=0.
       spectra%ele=0.; spectra%elehel=0.
@@ -611,17 +591,9 @@ module Magnetic
             k3=kz_fft(ikz+ipz*nz)
 !
             ksqr=k1**2+k2**2+k3**2
-!
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              one_over_k2=0.
-            else
-              one_over_k2=1./ksqr
-            endif
-            one_over_k4=one_over_k2**2
-!
             ik=1+nint(sqrt(ksqr)/kscale_factor)
 !
-!  Debug output
+!  Debug output.
 !
             if (ldebug_print) then
               if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
@@ -630,7 +602,7 @@ module Magnetic
 !
             if (ik <= nk) then
 !
-!  Electromagnetic wave spectrum computed from aak
+!  Electromagnetic wave spectrum computed from aak.
 !
               if (ab_spec) then
                 spectra%mag(ik)=spectra%mag(ik) &
@@ -675,55 +647,7 @@ module Magnetic
                    +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(-k1)) &
                                                         )
               endif
-!
-  !           if (GWs_spec_complex) then
-  !             if (k2==0. .and. k3==0.) then
-  !               spectra%complex_Str_T(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
-  !                                                f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim))
-  !               spectra%complex_Str_X(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
-  !                                                f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
-  !             else
-  !               spectra%complex_Str_T(ikx)=0.
-  !               spectra%complex_Str_X(ikx)=0.
-  !             endif
-  !           endif
-!
-!  Gravitational wave strain spectrum computed from h
-!
-  !           if (GWh_spec) then
-  !             spectra%GWh(ik)=spectra%GWh(ik) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2
-  !             spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-  !                -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-  !           endif
-!
-!  Gravitational wave mixed spectrum computed from h and g
-!
-  !           if (GWm_spec) then
-  !             spectra%GWm(ik)=spectra%GWm(ik) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
-  !             spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-  !                +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-  !                -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-  !                -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-  !                *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-  !           endif
-!
             endif
-
           enddo
         enddo
       enddo
@@ -791,19 +715,17 @@ module Magnetic
 !
 !  07-aug-17/axel: coded
 !
-      use Fourier, only: fourier_transform, fft_xyz_parallel
-      use SharedVariables, only: put_shared_variable
+      use Fourier, only: fft_xyz_parallel
 !
       real, dimension (:,:,:,:), allocatable :: bbkre, bbkim
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: coefAre, coefAim, coefBre, coefBim
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,ip,jq,jStress_ij
       complex, dimension (3) :: Acomplex, Ecomplex, Acomplex_new, Ecomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: discrim2, sigmaeff
-      real :: fact
-      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      real :: ksqr, ksqr_eff, k1, k2, k3
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -829,15 +751,20 @@ module Magnetic
             k1=kx_fft(ikx+ipx*nx)
             k2=ky_fft(iky+ipy*ny)
             k3=kz_fft(ikz+ipz*nz)
-            k1sqr=k1**2
-            k2sqr=k2**2
-            k3sqr=k3**2
-            ksqr=k1sqr+k2sqr+k3sqr
+            ksqr=k1**2+k2**2+k3**2
+!
+!  Define effective squared wavenumber, which can be negative when t is small.
+!
+            if (linflation) then
+              ksqr_eff=ksqr-alpha2_inflation/t**2
+            else
+              ksqr_eff=ksqr
+            endif
 !
 !  compute eigenvalues
 !
             sigmaeff=sigma
-            discrim2=sigmaeff**2-4.*ksqr
+            discrim2=sigmaeff**2-4.*ksqr_eff
             if (discrim2==0.) discrim2=tini
             discrim=sqrt(complex(discrim2,0.))
             lam1=.5*(-sigmaeff+discrim)
@@ -858,7 +785,7 @@ module Magnetic
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
-            if (ksqr/=0.) then
+            if (ksqr_eff/=0.) then
               explam1t=exp(lam1*dt)
               explam2t=exp(lam2*dt)
               det1=1./discrim
@@ -882,10 +809,10 @@ module Magnetic
                 if (ikx==2.and.iky==1.and.ikz==1) then
                   print*,'AXEL: Acomplex_new=',Acomplex_new
                   print*,'AXEL: Ecomplex_new=',Ecomplex_new
-                  print*,'AXEL: cosotA=',cosotA,cos(sqrt(ksqr)*dt)
-                  print*,'AXEL: cosotE=',cosotE,cos(sqrt(ksqr)*dt)
-                  print*,'AXEL: sinotA=',sinotA,-sin(sqrt(ksqr)*dt)/sqrt(ksqr)
-                  print*,'AXEL: sinotE=',sinotE,+sin(sqrt(ksqr)*dt)*sqrt(ksqr)
+                  print*,'AXEL: cosotA=',cosotA,cos(sqrt(ksqr_eff)*dt)
+                  print*,'AXEL: cosotE=',cosotE,cos(sqrt(ksqr_eff)*dt)
+                  print*,'AXEL: sinotA=',sinotA,-sin(sqrt(ksqr_eff)*dt)/sqrt(ksqr_eff)
+                  print*,'AXEL: sinotE=',sinotE,+sin(sqrt(ksqr_eff)*dt)*sqrt(ksqr_eff)
                   print*,'AXEL: discrim=',discrim
                 endif
               endif
