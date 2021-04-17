@@ -11,7 +11,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
-! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3); va2
+! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3), bunit(3); va2
+! PENCILS PROVIDED el(3); e2
 !
 !***************************************************************
 module Magnetic
@@ -149,6 +150,11 @@ module Magnetic
       if (lpenc_loc(i_uxb)) p%uxb=0.0
       if (lpenc_loc(i_jj)) p%jj=0.0
       if (lpenc_loc(i_va2)) p%va2=0.0
+!
+!  Dummy pencils
+!
+      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
+          "Electric field is not currently computed in magnetic")
 !
       call keep_compiler_quiet(f)
 !
