@@ -11,27 +11,33 @@ from __future__ import print_function
 
 import sys
 
-from typing import Any, Callable
+from typing import Any, Callable, Optional, TypeVar
+
+F = TypeVar('F', bound=Callable[..., Any])
 
 
 functions = []
 errors = []
 
 
-def register(*args, **kwargs) -> None:
-    functions.append(args[0])
 
 
-def test(*args: Callable[..., None], **kwargs) -> Callable[..., None]:
-    return register
+def register(function: F, **kwargs: Any) -> F:
+    functions.append(function)
+    return function
 
 
-def run_all_tests():
+def test(function: F, **kwargs: Any) -> F:
+    return register(function, **kwargs)
+
+
+def run_all_tests() -> None:
     for f in functions:
-        print("\n********** Test: ", f, "**********")
+        print("Testing {} ... ".format(_identify(f)), end="")
         sys.stdout.flush()
         try:
             f()
+            print("ok")
         except Exception as e:
             errors.append((f, e))
     if errors:
@@ -40,13 +46,19 @@ def run_all_tests():
         print("Success")
 
 
-def assert_equal(expected, actual, message=None):
+def _identify(f: F) -> str:
+    if f.__doc__ and len(f.__doc__) > 0:
+        return f.__doc__.splitlines()[0]
+    else:
+        return f.__name__
+
+def assert_equal(expected:Any , actual: Any, message: Optional[str]=None) -> None:
     if message is None:
         message = "{} ≠ {}".format(expected, actual)
     assert expected == actual, message
 
 
-def assert_true(actual, message=None):
+def assert_true(actual: bool, message: Optional[str]=None) -> None:
     if message is None:
         assert bool(actual)
     else:
@@ -54,5 +66,7 @@ def assert_true(actual, message=None):
 
 
 class TestProgram(object):
-    def run_and_exit(*args):
+    """The class that runs the tests."""
+
+    def run_and_exit(*args: Any) -> None:
         run_all_tests()
