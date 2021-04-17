@@ -460,10 +460,10 @@ module Special
 !  Take electric field from f-array.
 !
       if (lelectmag) then
-        if (iEEx==0) then
-          call fatal_error('calc_pencils_special','iEEx==0 for lelectmag not OK')
+        if (iex==0) then
+          call fatal_error('calc_pencils_special','iee==0 for lelectmag not OK')
         else
-          EEEE=f(l1:l2,m,n,iEEx:iEEz)
+          EEEE=f(l1:l2,m,n,iex:iez)
           call dot2_mn(EEEE,EEE2)
         endif
       endif
