@@ -1762,7 +1762,7 @@ module Initcond
 !  phase_factor is the phase factor.
 !
       j=i+3
-      phase_factor_x=exp(complex(0.,phase+xyz0(1)))
+      phase_factor_x=exp(cmplx(0.,phase+xyz0(1)))
 !
       if (kx>0.and.kx<=nx-1) then
         if (ipx==0) then
