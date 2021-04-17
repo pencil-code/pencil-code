@@ -234,6 +234,25 @@ module Magnetic
 !
     endsubroutine magnetic_after_boundary
 !***********************************************************************
+    subroutine magnetic_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrum_hel
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+!
+      call fatal_error("magnetic_calc_spectra","impossible: iaakim=0, ieekim=0")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum)
+      call keep_compiler_quiet(spectrum_hel)
+      call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
+!
+    endsubroutine magnetic_calc_spectra
+!***********************************************************************
     subroutine rescaling_magnetic(f)
 !
 !  Dummy routine

@@ -530,7 +530,7 @@ module Snapshot
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
-      logical :: lfirstcall, lsqrt=.true.
+      logical :: lfirstcall, lfirstcall_powerhel, lsqrt=.true.
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -549,6 +549,7 @@ module Snapshot
       if (lspec.or.llwrite_only) then
 
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
+        lfirstcall_powerhel=.true.
 
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
@@ -558,8 +559,8 @@ module Snapshot
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
         if (j_spec)   call power_vec(f,'j')
-        if (jb_spec)  call powerhel(f,'j.b') !(not ready yet) ! ready now
-        if (ja_spec)  call powerhel(f,'j.a') !(for now, use this instead) ! now does j.b spectra
+        if (jb_spec)  call powerhel(f,'j.b',lfirstcall_powerhel) !(not ready yet) ! ready now
+        if (ja_spec)  call powerhel(f,'j.a',lfirstcall_powerhel) !(for now, use this instead) ! now does j.b spectra
         if (Lor_spec) call powerLor(f,'Lor')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
@@ -574,20 +575,21 @@ module Snapshot
         if (SCL_spec) call powerGWs(f,'SCL',lfirstcall)
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
-        if (GWd_spec) call powerhel(f,'GWd')
-        if (GWe_spec) call powerhel(f,'GWe')
-        if (GWf_spec) call powerhel(f,'GWf')
-        if (GWg_spec) call powerhel(f,'GWg')
-        if (uxj_spec) call powerhel(f,'uxj')
-        if (ou_spec)  call powerhel(f,'kin')
-        if (oun_spec) call powerhel(f,'neu')
-        if (ab_spec)  call powerhel(f,'mag')
-        if (ub_spec)  call powerhel(f,'u.b')
-        if (azbz_spec)call powerhel(f,'mgz')
-        if (bb2_spec) call powerhel(f,'bb2')
-        if (jj2_spec) call powerhel(f,'jj2')
-        if (uzs_spec) call powerhel(f,'uzs')
-        if (EP_spec)  call powerhel(f,'bEP')
+        if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)
+        if (GWe_spec) call powerhel(f,'GWe',lfirstcall_powerhel)
+        if (GWf_spec) call powerhel(f,'GWf',lfirstcall_powerhel)
+        if (GWg_spec) call powerhel(f,'GWg',lfirstcall_powerhel)
+        if (uxj_spec) call powerhel(f,'uxj',lfirstcall_powerhel)
+        if (ou_spec)  call powerhel(f,'kin',lfirstcall_powerhel)
+        if (oun_spec) call powerhel(f,'neu',lfirstcall_powerhel)
+        if (ele_spec) call powerhel(f,'ele',lfirstcall_powerhel)
+        if (ab_spec)  call powerhel(f,'mag',lfirstcall_powerhel)
+        if (ub_spec)  call powerhel(f,'u.b',lfirstcall_powerhel)
+        if (azbz_spec)call powerhel(f,'mgz',lfirstcall_powerhel)
+        if (bb2_spec) call powerhel(f,'bb2',lfirstcall_powerhel)
+        if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
+        if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
+        if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
         if (ro_spec)  call powerscl(f,'ro')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')

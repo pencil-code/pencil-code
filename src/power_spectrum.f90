@@ -925,7 +925,7 @@ module power_spectrum
   !
   endsubroutine power_xy
 !***********************************************************************
-  subroutine powerhel(f,sp)
+  subroutine powerhel(f,sp,lfirstcall)
 !
 !  Calculate power and helicity spectra (on spherical shells) of the
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
@@ -940,6 +940,7 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use Chiral, only: iXX_chiral, iYY_chiral
+    use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
@@ -959,6 +960,7 @@ module power_spectrum
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+  logical :: lfirstcall
 !
 !  passive scalar contributions (hardwired for now)
 !
@@ -967,6 +969,12 @@ module power_spectrum
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! Select cases where spectra are precomputed
+!
+  if (iaakim>0.or.ieekim>0) then
+    call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
+  else
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -1352,6 +1360,10 @@ module power_spectrum
     endif
     !
   enddo !(from loop over ivec)
+!
+!  end from communicated versus computed spectra (magnetic)
+!
+  endif
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -2484,7 +2496,7 @@ module power_spectrum
       enddo
     enddo
 !
-!  end from communicated versus computed spectra
+!  end from communicated versus computed spectra (GW spectra)
 !
   endif
 !

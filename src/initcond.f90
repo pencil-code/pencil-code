@@ -1756,15 +1756,23 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: kx, ky, kz
       real :: ampl, phase
+      complex :: phase_factor_x
+!
+!  preparations; j is the first index of the array for the complex part.
+!  phase_factor is the phase factor.
 !
       j=i+3
+      phase_factor_x=exp(complex(0.,phase+xyz0(1)))
+!
       if (kx>0.and.kx<=nx-1) then
         if (ipx==0) then
-          f(l1+kx,m1,n1,i+1)=+ampl
-          f(l1+kx,m1,n1,j+2)=-ampl
-        elseif (ipx==nprocx-1) then
-          f(l2+1-kx,m1,n1,i+1)=+ampl
-          f(l2+1-kx,m1,n1,j+2)=+ampl
+          f(l1+kx,m1,n1,i+1)=+ampl*real(phase_factor_x)
+          f(l1+kx,m1,n1,j+2)=-ampl*real(phase_factor_x)
+        endif
+!
+        if (ipx==nprocx-1) then
+          f(l2+1-kx,m1,n1,i+1)=+ampl*aimag(phase_factor_x)
+          f(l2+1-kx,m1,n1,j+2)=+ampl*aimag(phase_factor_x)
         endif
       endif
 !

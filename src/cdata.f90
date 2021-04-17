@@ -349,6 +349,7 @@ module Cdata
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: ibb_sph=0, ibb_sphr=0, ibb_spht=0, ibb_sphp=0
   integer :: inusmag=0, ietasmag=0
+  integer :: iaak, iaakim, ieek, ieekim
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0,ialfven=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
              iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
@@ -563,7 +564,7 @@ module Cdata
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: sp_spec=.false., ssp_spec=.false., sssp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
-  logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false.
+  logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false., ele_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
