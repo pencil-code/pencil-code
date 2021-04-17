@@ -19,15 +19,10 @@ can be removed in the code, provided these tests get adapted.
 
 """
 
-import numpy as np
-import os
-from typing import Any, Tuple
-
 try:
     from proboscis import test
-    from proboscis.asserts import assert_equal, assert_true
 except ImportError:
-    from proboscis_dummy import test, assert_equal, assert_true
+    from proboscis_dummy import test
 
 
 @test

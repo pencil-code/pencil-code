@@ -6,7 +6,7 @@
 
 import numpy as np
 import os
-from typing import Any, Tuple
+from typing import Tuple
 
 try:
     from proboscis import test
@@ -123,12 +123,10 @@ def test_read_param() -> None:
     assert_equal(params.ltemperature, False)
 
 
-@test()
+@test
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
-    import sys
-
     _assert_close(data.t, 3.865971)
     _assert_close(data.dx, 1.333333)
     _assert_close(np.mean(data.x), 0.0)
