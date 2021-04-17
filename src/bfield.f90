@@ -534,6 +534,21 @@ module Magnetic
 !
     endsubroutine magnetic_after_boundary
 !***********************************************************************
+    subroutine magnetic_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+!
+!  Calculates magnetic spectra. For use with a single magnetic module.
+!
+!  16-apr-21/axel: adapted from gravitational_waves_hTXk.f90
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spectrum,spectrum_hel
+      logical :: lfirstcall
+      character(LEN=3) :: kind
+!
+      call fatal_error("magnetic_calc_spectra","impossible: iaakim=0, ieekim=0")
+!
+    endsubroutine magnetic_calc_spectra
+!***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
 !  Standard version (_std): global variable lpencil contains information about needed pencils.
