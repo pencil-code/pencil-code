@@ -415,6 +415,13 @@ module Special
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
+!  Electric field needed for Maxwell stress
+!
+      if (lelectmag) then
+        lpenc_requested(i_el)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_e2)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -457,17 +464,6 @@ module Special
         prefactor=fourthird_factor
       endif
 !
-!  Take electric field from f-array.
-!
-      if (lelectmag) then
-        if (iex==0) then
-          call fatal_error('calc_pencils_special','iee==0 for lelectmag not OK')
-        else
-          EEEE=f(l1:l2,m,n,iex:iez)
-          call dot2_mn(EEEE,EEE2)
-        endif
-      endif
-!
 !  Construct stress tensor; notice opposite signs for u and b.
 !
       p%stress_ij=0.0
@@ -476,14 +472,14 @@ module Special
         ij=ij_table(i,j)
         if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-EEEE(:,i)*EEEE(:,j)
+        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
           if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*EEE2
+          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
         endif
       enddo
       enddo

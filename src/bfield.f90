@@ -19,7 +19,7 @@
 ! COMMUNICATED AUXILIARIES 6
 !
 ! PENCILS PROVIDED bb(3); bbb(3); b2
-! PENCILS PROVIDED bij(3,3); jj(3); j2; divb
+! PENCILS PROVIDED el(3); e2; bij(3,3); jj(3); j2; divb
 ! PENCILS PROVIDED curle(3); jxbr(3)
 ! PENCILS PROVIDED beta; va2
 ! PENCILS PROVIDED bunit(3)
@@ -208,9 +208,9 @@ module Magnetic
 !
       call farray_register_auxiliary('ee', iee, vector=3, communicated=.true., ierr=istat)
       if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable ee. ')
-      ieex = iee
-      ieey = ieex + 1
-      ieez = ieey + 1
+      iex = iee
+      iey = iex + 1
+      iez = iey + 1
 !
 !  Request auxiliary variable for the current density.
 !
@@ -459,7 +459,7 @@ module Magnetic
         call mesh_hyper_resistivity(f)
 !       Note: The jj field contains some garbage after this call.
       else
-        f(:,:,:,ieex:ieez) = 0.0
+        f(:,:,:,iex:iez) = 0.0
       endif
 !
 !  Find the current density J.
@@ -493,7 +493,7 @@ module Magnetic
         zscan1: do n = 1, mz
           yscan1: do m = 1, my
             call get_resistivity(f, eta_penc)
-            f(:,m,n,ieex:ieez) = f(:,m,n,ieex:ieez) + spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
+            f(:,m,n,iex:iez) = f(:,m,n,iex:iez) + spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
 !           Time-step constraint
             timestep: if (lfirst .and. ldt) then
               if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
@@ -526,9 +526,9 @@ module Magnetic
             uum = 0.0
           endif
           if (lshear) uum(:,2) = uum(:,2) + uy0
-          f(:,m,n,ieex) = f(:,m,n,ieex) - (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
-          f(:,m,n,ieey) = f(:,m,n,ieey) - (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
-          f(:,m,n,ieez) = f(:,m,n,ieez) - (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
+          f(:,m,n,iex) = f(:,m,n,iex) - (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
+          f(:,m,n,iey) = f(:,m,n,iey) - (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
+          f(:,m,n,iez) = f(:,m,n,iez) - (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
         enddo yscan2
       enddo zscan2
 !
@@ -605,7 +605,7 @@ module Magnetic
 !
       curle: if (lpenc_loc(i_curle)) then
         call gij(f, iee, eij, 1)
-        call curl_mn(eij, p%curle, f(:,m,n,ieex:ieez))
+        call curl_mn(eij, p%curle, f(:,m,n,iex:iez))
       endif curle
 !
       if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
@@ -617,6 +617,9 @@ module Magnetic
       if (lpenc_loc(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
 !
       if (lpenc_loc(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
+!
+      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
+          "Electric field is not currently computed in magnetic")
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -962,10 +965,10 @@ module Magnetic
           call farray_index_append('ibx',ibx)
           call farray_index_append('iby',iby)
           call farray_index_append('ibz',ibz)
-          call farray_index_append('iEE',iEE)
-          call farray_index_append('iEEx',iEEx)
-          call farray_index_append('iEEy',iEEy)
-          call farray_index_append('iEEz',iEEz)
+          call farray_index_append('iee',iee)
+          call farray_index_append('iex',iex)
+          call farray_index_append('iey',iey)
+          call farray_index_append('iez',iez)
           call farray_index_append('ijj',ijj)
           call farray_index_append('ijx',ijx)
           call farray_index_append('ijy',ijy)
@@ -1319,7 +1322,7 @@ module Magnetic
           call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
           pv(:,j) = eta3 * pv(:,j)
         enddo comp
-        f(l1:l2,m,n,ieex:ieez) = pv
+        f(l1:l2,m,n,iex:iez) = pv
 !       Time-step constraint
 !MR: this to be moved to dbb_dt!
         timestep: if (lfirst .and. ldt) then
@@ -1330,8 +1333,8 @@ module Magnetic
 !
 !  Communicate the E field.
 !
-      call zero_ghosts(f, ieex, ieez)
-      call update_ghosts(f, ieex, ieez)
+      call zero_ghosts(f, iex, iez)
+      call update_ghosts(f, iex, iez)
 !
     endsubroutine mesh_hyper_resistivity
 !***********************************************************************

@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlB(3); e3xa(3)
-! PENCILS PROVIDED bijtilde(3,3),bij_cov_corr(3,3)
+! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
@@ -3826,6 +3826,11 @@ module Magnetic
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
+!
+!  Dummy pencils
+!
+      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
+          "Electric field is not currently computed in magnetic")
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
