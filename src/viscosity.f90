@@ -903,6 +903,8 @@ module Viscosity
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fviscrsphmphi',idiag_fviscrsphmphi)
       enddo
 !
+      call keep_compiler_quiet(lwrite)
+!
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity
