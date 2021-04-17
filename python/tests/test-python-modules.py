@@ -18,6 +18,7 @@ except ImportError:
 # makes sense: Import all test cases from the following modules.
 from read import *
 from imports import *
+from basics import *
 
 
 def main() -> None:

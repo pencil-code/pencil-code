@@ -68,6 +68,9 @@ def test_read_time_series() -> None:
     }
     for key, val in expected.items():
         assert_true(np.allclose(val, getattr(time_series, key)))
+    _assert_close(time_series.rhom[2], 1.0)
+    _assert_close(time_series.urms[3], 0.26)
+    _assert_close(time_series.ecrmax[3], 1.835)
 
 
 @test
