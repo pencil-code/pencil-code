@@ -1,0 +1,55 @@
+###### Meeting 14 April 21 Summary #######
+Participants: Illa, Fred, Simon, Wolfgang,
+
+* Topics
+--------
+* Wolfgang: updated us on the following topics:
+1. import cycle: 
+-he develop a script to check this isue 'python/utils/cyclic-imports'
+-he did a lot of clean-up
+-extracted 'is_sim_dir()' to a new package 'pencil/util' that must not import from other packages.
+-removed 'lapack/pidly/pidly.py'
+2. started to write tests
+3. tried to fix 'pencil/calc/example_shocktube.py'
+4. reformatted 'pencil/calc/streamlines', 'pencil/calc/tensors' and 'pencil/read/power' with *black*
+We discussed the usage of *black* to format the python files, and agreed on using it as a default.
+*black* can be used by default in several text editors.
+
+5. Imports
+We discussed the replacement of
+'from ..sim import simulations' with 'from pencil.sim import simulations'
+the only problem this might have is any change of jerarchy on the different modules.
+
+6. Backpack:
+the current definition of this library is "Check for standard library"
+we discussed to rename it to 'third_party'
+
+7. Problems of 'import pencil as pc'
+Currently it takes ~4 seg to import the pencil package, and this might be a problem if one just
+want to run a test.
+We discuss the idea of having a separate package structrue for an interactive 
+use.
+
+8. Description of submodules:
+We expend quite some time discussing if we should move the description of submodules into respective `__init__.py` (from `pencil/__init__.py`)
+
+-use of black
+-rename backpack to third party?
+-Replace 'from ..sim import simulations' with 'from pencil.sim import simulations'
+-Distinguish between interactive and library usage ?
+
+*Illa
+9. Mailing list: 
+we encourage everyone interested to join out mailing list
+
+10. Newsletter:
+We discussed the contents of the newsletter and the information we want to write
+
+11. Files Documentation:
+We discussed a general idea for the formatting of a python file documentation.
+I suggested to follow the outline of 'python/pencil/read/power.py'
+
+
+* Simon
+12. He remove the file npfile.py, as discussed in previous meetings.
+13. He changed read.var
