@@ -6,14 +6,9 @@
 
 import numpy as np
 import os
-from typing import Tuple
+from typing import Any, Tuple
 
-try:
-    from proboscis import test
-    from proboscis.asserts import assert_equal, assert_true
-except ImportError:
-    from proboscis_dummy import test, assert_equal, assert_true
-
+from test_utils import test, assert_equal, assert_true
 
 from pencil.read.timeseries import ts
 from pencil.read.dims import dim
@@ -67,7 +62,14 @@ def test_read_time_series() -> None:
         "ecrmax": np.array([1.000, 1.930, 2.492, 1.835]),
     }
     for key, val in expected.items():
-        assert_true(np.allclose(val, getattr(time_series, key)))
+        expect = val
+        actual = getattr(time_series, key)
+        assert_true(
+            np.allclose(expect, actual),
+            "time_series.{}: expected {}, got {}".format(
+                key, expect, actual
+            ),
+        )
     _assert_close(time_series.rhom[2], 1.0)
     _assert_close(time_series.urms[3], 0.26)
     _assert_close(time_series.ecrmax[3], 1.835)
@@ -130,20 +132,30 @@ def test_read_param() -> None:
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
-    _assert_close(data.t, 3.865971)
-    _assert_close(data.dx, 1.333333)
-    _assert_close(np.mean(data.x), 0.0)
-    _assert_close(data.dx, 1.3333334)
-    _assert_close(np.mean(data.z), 1.6332519)
-    _assert_close(np.std(data.z), 5.918408)
     _assert_equal_tuple(data.f.shape, (5, 11, 12, 10))
-    _assert_close(np.mean(data.f[0, :, :, :]), 0.0)
-    _assert_close(np.mean(data.f[1, :, :, :]), -1.668_489e-16, 1.0e-22)
-    _assert_close(np.mean(data.f[2, :, :, :]), -7.817_168e-11, 1.0e-17)
-    _assert_close(np.mean(data.f[3, :, :, :]), 1.763_629e-9, 1.0e-15)
-    _assert_close(np.mean(data.f[4, :, :, :]), 2.544_411e-19, 1.0e-25)
-    _assert_close(np.std(data.f[0, :, :, :]), 0.0)
-    _assert_close(np.std(data.f[1, :, :, :]), 1.705_128e-9, 1.0e-15)
-    _assert_close(np.std(data.f[2, :, :, :]), 1.171_468e-9, 1.0e-15)
-    _assert_close(np.std(data.f[3, :, :, :]), 2.497_441e-9, 1.0e-15)
-    _assert_close(np.std(data.f[4, :, :, :]), 2.047_645e-19, 1.0e-25)
+
+    def ident(x: Any) -> Any:
+        return x
+
+    expected = [
+        # (key, extractor, expected, eps)
+        ("t", ident, 3.865971, 1.0e-6),
+        ("dx", ident, 1.333333, 1.0e-6),
+        ("x", np.mean, 0.0, 1.0e-6),
+        ("dx", ident, 1.3333334, 1.0e-6),
+        ("z", np.mean, 1.6332519, 1.0e-6),
+        ("z", lambda z: np.std(z), 5.918408, 1.0e-6),
+        ("f", lambda f: np.mean(f[0, :, :, :]), 0.0, 1.0e-6),
+        ("f", lambda f: np.mean(f[1, :, :, :]), -1.668_489e-16, 1.0e-22),
+        ("f", lambda f: np.mean(f[2, :, :, :]), -7.817_168e-11, 1.0e-17),
+        ("f", lambda f: np.mean(f[3, :, :, :]), 1.763_629e-9, 1.0e-15),
+        ("f", lambda f: np.mean(f[4, :, :, :]), 2.544_411e-19, 1.0e-25),
+        ("f", lambda f: np.std(f[0, :, :, :]), 0.0, 1.0e-6),
+        ("f", lambda f: np.std(f[1, :, :, :]), 1.705_128e-9, 1.0e-15),
+        ("f", lambda f: np.std(f[2, :, :, :]), 1.171_468e-9, 1.0e-15),
+        ("f", lambda f: np.std(f[3, :, :, :]), 2.497_441e-9, 1.0e-15),
+        ("f", lambda f: np.std(f[4, :, :, :]), 2.047_645e-19, 1.0e-25),
+    ]
+    for key, extract, expect, eps in expected:
+        actual = extract(getattr(data, key))
+        _assert_close(expect, actual, eps)

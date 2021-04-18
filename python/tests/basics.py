@@ -9,16 +9,9 @@ import os
 import sys
 from typing import Any
 
-try:
-    from proboscis import test
-    from proboscis.asserts import assert_equal
-except ImportError:
-    from proboscis_dummy import test, assert_equal
+from test_utils import test, assert_equal
 
 from pencil.sim.simulation import __Simulation__
-
-
-PENCIL_HOME = os.getenv("PENCIL_HOME")
 
 
 @test
@@ -31,15 +24,6 @@ def neat_short_tricks() -> None:
     import pencil as pc
 
     # Obtain sim object
-    assert PENCIL_HOME is not None
-    run_dir = os.path.join(
-        PENCIL_HOME,
-        "samples",
-        "2d-tests",
-        "2d_methane_flame",
-        "turbulent_field",
-    )
-
     try:
         import dill  # noqa
     except ModuleNotFoundError as e:
@@ -52,7 +36,7 @@ def neat_short_tricks() -> None:
             file=sys.stderr,
         )
         raise Exception(e)
-    sim = pc.get_sim(run_dir)
+    sim = pc.get_sim(get_run_dir())
 
     # Access a value from start.in / run.in
     _assert_sim_parameter(sim, "inituu", "gaussian-noise")
@@ -63,6 +47,21 @@ def neat_short_tricks() -> None:
     assert_equal(sim.get_varlist(), [])
     assert_equal(sim.get_varlist(particle=True), [])
     assert_equal(sim.get_varlist(pos="last10"), [])
+
+
+def get_run_dir() -> str:
+    pencil_home = os.getenv("PENCIL_HOME")
+    assert pencil_home is not None
+    run_dir = os.path.join(
+        pencil_home,
+        "samples",
+        "2d-tests",
+        "2d_methane_flame",
+        "turbulent_field",
+    )
+    if not os.path.isdir(run_dir):
+        raise Exception("Run directory {} does not exist".format(run_dir))
+    return run_dir
 
 
 def _assert_sim_parameter(

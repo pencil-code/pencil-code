@@ -13,13 +13,11 @@ import sys
 
 from typing import Any, Callable, Optional, TypeVar
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 functions = []
 errors = []
-
-
 
 
 def register(function: F, **kwargs: Any) -> F:
@@ -52,17 +50,24 @@ def _identify(f: F) -> str:
     else:
         return f.__name__
 
-def assert_equal(expected:Any , actual: Any, message: Optional[str]=None) -> None:
+
+def assert_equal(
+    expected: Any, actual: Any, message: Optional[str] = None
+) -> None:
     if message is None:
         message = "{} ≠ {}".format(expected, actual)
     assert expected == actual, message
 
 
-def assert_true(actual: bool, message: Optional[str]=None) -> None:
+def assert_true(actual: bool, message: Optional[str] = None) -> None:
     if message is None:
         assert bool(actual)
     else:
         assert bool(actual), message
+
+
+def fail(message: str) -> None:
+    assert False, message
 
 
 class TestProgram(object):

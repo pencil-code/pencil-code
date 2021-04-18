@@ -19,10 +19,7 @@ can be removed in the code, provided these tests get adapted.
 
 """
 
-try:
-    from proboscis import test
-except ImportError:
-    from proboscis_dummy import test
+from test_utils import test
 
 
 @test
