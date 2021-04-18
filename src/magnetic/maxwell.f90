@@ -32,7 +32,9 @@
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of magnetic_dummies.inc) the number of f array
-! variables and auxiliary variables added by this module
+! variables and auxiliary variables added by this module.
+! Need 3*2 for Ak, 3*2 for Ek, and then 3+3 for E and B, so 3*6=18.
+! However, the space for E and B needs to be allocated in cparam.local.
 !
 ! CPARAM logical, parameter :: lmagnetic = .true.
 ! CPARAM logical, parameter :: lbfield = .false.
@@ -88,6 +90,7 @@ module Magnetic
   include '../magnetic.h'
   !include 'record_types.h'
 !
+  real, dimension(3) :: B_ext = 0.0
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
@@ -110,7 +113,7 @@ module Magnetic
   real :: alpha_inflation=0.
   real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
   logical :: lbb_as_aux=.true., lee_as_aux=.true.
-  logical :: linflation=.false., ldebug_print=.false.
+  logical :: lemf=.false., linflation=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
   real :: alpha2_inflation, kscale_factor
@@ -132,6 +135,7 @@ module Magnetic
     linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
     lscale_tobox, kgaussian_aa, lskip_projection_aa, relhel_aa, &
+    lemf, B_ext, &
     k1hel, k2hel, &
     kx_aa, ky_aa, kz_aa, phase_aa
 !
@@ -141,6 +145,7 @@ module Magnetic
     alpha_inflation, &
     ldebug_print, &
     cc_light, &
+    lemf, B_ext, &
     linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -270,6 +275,7 @@ module Magnetic
             lskip_projection_aa, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true.)
+        case ('Alfven-x'); call alfvenk_x(amplaa,f,iuu,iaak,kx_aa)
         case default
           call fatal_error("init_magnetic: No such value for initaak:" &
               ,trim(initaak))
@@ -550,9 +556,9 @@ module Magnetic
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1
-      real, dimension(3) :: B_ext
-      real :: c,s
-      integer :: i,j,ix
+  !   real :: c,s
+  !   integer :: i,j !,ix
+      integer :: j
 ! ee
       if (lpenc_loc(i_el)) p%el=f(l1:l2,m,n,iex:iez)
 ! aa
@@ -740,16 +746,18 @@ module Magnetic
 !  07-aug-17/axel: coded
 !
       use Fourier, only: fft_xyz_parallel
+      use Sub, only: cross_mn
 !
       real, dimension (:,:,:,:), allocatable :: bbkre, bbkim
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: uu, bb, uxb
       real, dimension (3) :: coefAre, coefAim, coefBre, coefBim
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,ip,jq,jStress_ij
       complex, dimension (3) :: Acomplex, Ecomplex, Acomplex_new, Ecomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: discrim2, sigmaeff
-      real :: ksqr, ksqr_eff, k1, k2, k3
+      real :: ksqr, ksqr_eff, k1, k2, k3, fact
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -762,6 +770,22 @@ module Magnetic
 !
       allocate(bbkim(nx,ny,nz,3),stat=stat)
       if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for bbkim')
+!
+!  Compute electromotive force in real space, and go then to Fourier space.
+!  We use the temporary variables bbkre,bbkim for this.
+!
+      if (lemf) then
+        do m=m1,m2
+        do n=n1,n2
+          uu=f(l1:l2,m,n,iux:iuz)
+          bb=f(l1:l2,m,n,ibx:ibz)
+          call cross_mn(uu,bb,uxb)
+          bbkre(:,m-m1+1,n-n1+1,:)=uxb
+          bbkim(:,m-m1+1,n-n1+1,:)=0.
+        enddo
+        enddo
+        call fft_xyz_parallel(bbkre,bbkim)
+      endif
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -787,29 +811,39 @@ module Magnetic
 !
 !  compute eigenvalues
 !
-            sigmaeff=sigma
-            discrim2=sigmaeff**2-4.*ksqr_eff
-            if (discrim2==0.) discrim2=tini
-            discrim=sqrt(complex(discrim2,0.))
-            lam1=.5*(-sigmaeff+discrim)
-            lam2=.5*(-sigmaeff-discrim)
+            if (ksqr_eff/=0.) then
+              sigmaeff=sigma
+              discrim2=sigmaeff**2-4.*ksqr_eff
+              if (discrim2==0.) discrim2=tini
+              discrim=sqrt(complex(discrim2,0.))
+              lam1=.5*(-sigmaeff+discrim)
+              lam2=.5*(-sigmaeff-discrim)
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
-            aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
-            aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+              aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+              aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
 !
-            eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)
-            eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)
+              eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)
+              eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)
 !
-            do j=1,3
-              Acomplex(j)=complex(aakre(j),aakim(j))
-              Ecomplex(j)=complex(eekre(j),eekim(j))
-            enddo
+!  Add electromotive force to Ak
+!
+              if (lemf) then
+                fact=sigmaeff/ksqr_eff
+                bbkre(ikx,iky,ikz,:)=fact*bbkre(ikx,iky,ikz,:)
+                bbkim(ikx,iky,ikz,:)=fact*bbkim(ikx,iky,ikz,:)
+                aakre=aakre+bbkre(ikx,iky,ikz,:)
+                aakim=aakim+bbkim(ikx,iky,ikz,:)
+              endif
+!
+              do j=1,3
+                Acomplex(j)=complex(aakre(j),aakim(j))
+                Ecomplex(j)=complex(eekre(j),eekim(j))
+              enddo
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
-            if (ksqr_eff/=0.) then
               explam1t=exp(lam1*dt)
               explam2t=exp(lam2*dt)
               det1=1./discrim
@@ -826,6 +860,16 @@ module Magnetic
               f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)=aimag(Acomplex_new)
               f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)= real(Ecomplex_new)
               f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)=aimag(Ecomplex_new)
+!
+!  Subtract electromotive force from Ak.
+!  After this, bbkre and bbrim can be used for other purposes.
+!
+              if (lemf) then
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)= &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)-bbkre(ikx,iky,ikz,:)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)= &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)-bbkim(ikx,iky,ikz,:)
+              endif
 !
 !  Debug output
 !
@@ -887,6 +931,14 @@ module Magnetic
         enddo
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
+!
+!  Imposed field
+!
+        if (any(B_ext/=0.)) then
+          forall(j = 1:3, B_ext(j) /= 0.0) &
+              f(l1:l2,m1:m2,n1:n2,ibb-1+j)=f(l1:l2,m1:m2,n1:n2,ibb-1+j)+B_ext(j)
+          if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
+        endif
       endif
 !
 !  ee back to real space, use the names bbkre and bbkim for ee.
@@ -940,7 +992,7 @@ module Magnetic
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX'.or. &
+        where(cnamev=='bb'.or.cnamev=='ee'.or.cnamev=='jj'.or. &
               cnamev=='h22'.or.cnamev=='h33'.or.cnamev=='h23') cformv='DEFINED'
       endif
 !
@@ -957,7 +1009,7 @@ module Magnetic
 !
 !  11-apr-21/axel: adapted from gravitational_waves_hTXk.f90
 !
-      use Slices_methods, only: assign_slices_scal
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -966,23 +1018,10 @@ module Magnetic
 !
       select case (trim(slices%name))
 !
-!  hhT
+!  bb
 !
-   !    case ('hhT')
-   !      if (lreal_space_hTX_as_aux) then
-   !        call assign_slices_scal(slices,f,ihhT_realspace)
-   !      else
-   !        call assign_slices_scal(slices,f,ihhT)
-   !      endif
-!
-!  hhX
-!
-   !    case ('hhX')
-   !      if (lreal_space_hTX_as_aux) then
-   !        call assign_slices_scal(slices,f,ihhX_realspace)
-   !      else
-   !        call assign_slices_scal(slices,f,ihhX)
-   !      endif
+        case ('bb')
+          if (lbb_as_aux) call assign_slices_vec(slices,f,ibb)
 !
       endselect
 !
@@ -1091,5 +1130,55 @@ module Magnetic
       B_ext_out = 0.0
 !
     endsubroutine get_bext
+!***********************************************************************
+    subroutine alfvenk_x(ampl,f,iuu,iaak,kx)
+!
+!  Alfven wave propagating in the x-direction
+!
+!  uy = +sink(x-vA*t)
+!  Az = -cosk(x-vA*t)*sqrt(rho*mu0)/k
+!
+!  Alfven and slow magnetosonic are the same here and both incompressible, and
+!  a fast magnetosonic (compressible) wave is also excited, but decoupled.
+!
+!  satisfies the four equations
+!  duy/dt = B0*By'  ==>  duy/dt = -B0*Az''
+!  dBy/dt = B0*uy'  ==>  dAz/dt = -B0*ux
+!
+!   8-nov-03/axel: coded
+!  29-apr-03/axel: added sqrt(rho*mu0)/k factor
+!   7-aug-17/axel: added sqrt(.75) for lrelativistic_eos=T
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rho,ampl_Az
+      real :: ampl,ampl_uy
+      integer :: iuu,iaak,kx
+!
+!  Amplitude factors
+!
+      ampl_uy=+ampl
+!
+!  ux and Ay.
+!  Don't overwrite the density, just add to the log of it.
+!
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+1)=ampl_uy*sin(kx*x(l1:l2))
+      enddo; enddo
+!
+!  preparations; j is the first index of the array for the complex part.
+!
+!
+      if (kx>0.and.kx<=nx-1) then
+        if (ipx==0) then
+          f(l1+kx,m1,n1,iaak+2)=+.5*ampl
+        endif
+!
+        if (ipx==nprocx-1) then
+          f(l2+1-kx,m1,n1,iaak+2)=+.5*ampl
+        endif
+      endif
+      if (lroot) print*,'alfven_x: kx, ampl=',kx, ampl
+!
+    endsubroutine alfvenk_x
 !***********************************************************************
 endmodule Magnetic
