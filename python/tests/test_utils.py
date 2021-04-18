@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import re
 import subprocess
 from typing import Any, Callable, List, Tuple
 
@@ -78,6 +79,24 @@ def standalone_test(python_code: List[str]) -> List[str]:
     return stdout.splitlines()
 
 
+def read_and_check_type(
+    python_code: List[str], variable: str, expected_type: str, method: str
+) -> None:
+    """Read quantity in a spearate Python process and check type."""
+    standalone_test(
+        python_code
+        + [
+            "assert isinstance({}, {}), \\".format(
+                variable, expected_type
+            ),
+            "    '{} result: expected a {}, got a {})'"
+            + ".format('{}', '{}', type({}))".format(
+                method, expected_type, variable
+            ),
+        ]
+    )
+
+
 def test_extracted(
     value: np.ndarray,
     extract: Callable[[np.ndarray], float],
@@ -102,4 +121,17 @@ def test_extracted(
     actual = extract(value)
     _assert_close(
         expected, actual, "{}(var.{})".format(extract.__name__, tag), eps
+    )
+
+
+def get_docstring_standalone(symbol: str, marker: str) -> None:
+    """In separate Python process, get doc string and compare to marker"""
+    doc_lines = standalone_test(["print({}.__doc__)".format(symbol)])
+    for line in doc_lines:
+        if re.search(marker, line):
+            return
+    fail(
+        "Line '{}' not found in pc.math.dot.__doc__:\n  {}".format(
+            marker, "\n  ".join(doc_lines)
+        )
     )

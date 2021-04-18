@@ -3,8 +3,8 @@
 
 """Examples from the manual
 
-Currently, this test requires that there is a run directory with very
-specific data in samples/conv-slab-noequi/ .
+Currently, this test requires that there are run directories with very
+specific data in samples/conv-slab-noequi/ and samples/conv-slab/ .
 
 """
 
@@ -22,6 +22,8 @@ from test_utils import (
     fail,
     _assert_close,
     _assert_equal_tuple,
+    get_docstring_standalone,
+    read_and_check_type,
     standalone_test,
     test_extracted,
 )
@@ -72,15 +74,8 @@ def get_help() -> None:
 @test
 def get_help_standalone() -> None:
     """Get doc string in a separate Python process."""
-    math_dot_help = standalone_test(["print(pc.math.dot.__doc__)"])
-    marker = r"Take dot product of two pencil-code vectors"
-    for line in math_dot_help:
-        if re.search(marker, line):
-            return
-    fail(
-        "Line '{}' not found in pc.math.dot.__doc__:\n  {}".format(
-            marker, "\n  ".join(math_dot_help)
-        )
+    get_docstring_standalone(
+        "pc.math.dot", r"Take dot product of two pencil-code vectors"
     )
 
 
@@ -136,24 +131,6 @@ def read_slices_standalone() -> None:
 def remesh() -> None:
     """Remeshing: [Not yet implemented]."""
     pass
-
-
-def read_and_check_type(
-    python_code: List[str], variable: str, expected_type: str, method: str
-) -> None:
-    """Read quantity in a spearate Python process and check type."""
-    standalone_test(
-        python_code
-        + [
-            "assert isinstance({}, {}), \\".format(
-                variable, expected_type
-            ),
-            "    '{} result: expected a {}, got a {})'"
-            + ".format('{}', '{}', type({}))".format(
-                method, expected_type, variable
-            ),
-        ]
-    )
 
 
 def get_data_dir() -> str:
