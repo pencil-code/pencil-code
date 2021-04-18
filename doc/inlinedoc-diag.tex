@@ -34,6 +34,7 @@
 %%   lorenz_gauge.f90
 %%   lucky_droplet.f90
 %%   magnetic_shearboxJ.f90
+%%   maxwell.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
 %%   neutralvelocity.f90
@@ -1427,6 +1428,18 @@
   \var{Exmxy}     & $\left<{\cal E}_x\right>_{z}$ \\
   \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
   \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{maxwell.f90}} \\
+\midrule
+  \var{aa2m}      & $\langle A^2\rangle$ \\
+  \var{ee2m}      & $\langle E^2\rangle$ \\
+  \var{akxpt}     & $Akx^{pt}$ \\
+  \var{ekxpt}     & $Ekx^{pt}$ \\
+  \var{sigma}     & $\sigma$ \\
+  \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
+  \var{bmax}      & $\max(|\Bv|)$ \\
+  \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{bfrms}     & $\left<{\Bv'}^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{meanfield.f90}} \\
 \midrule
