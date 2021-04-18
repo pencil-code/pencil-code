@@ -1,8 +1,6 @@
-################
-##
-##   ism_dyn
-##
-################
+"""
+Diagnostics for interstellar-medium dynamo simulations.
+"""
 
 from .derived_h5 import *
 from .get_masks import *

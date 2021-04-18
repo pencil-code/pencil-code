@@ -1,8 +1,6 @@
-################
-##
-##	io
-##
-################
+"""
+Math functions and further calculations.
+"""
 
 from .streamlines import *
 

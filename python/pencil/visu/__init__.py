@@ -1,6 +1,6 @@
-'''
-Visualization routine.
-'''
+"""
+Visualization routines.
+"""
 
 from .animate_interactive import animate_interactive
 

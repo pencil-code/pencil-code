@@ -18,17 +18,17 @@ except:
     import h5py
 
 # Load sub-modules.
-from . import io           # input und output functions, like save data or call IDL scripts
-from . import diag         # diagnostic scripts and functions
-from . import visu         # visualization routines
-from . import calc         # math functions and further calculations
-from . import math         # basic math functions, like products and derivatives
-from . import sim          # handling simulations as python objects
-from . import read         # read data and parameters from pencil code directory
-from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
-from . import export       # exporter (e.g., vtk, xml)
-from . import backpack     # third party modules, tribute to the author!
-from . import ism_dyn      # diagnostics for ism dynamo simulations
+from . import io
+from . import diag
+from . import visu
+from . import calc
+from . import math
+from . import sim
+from . import read
+from . import tool_kit
+from . import export
+from . import backpack
+from . import ism_dyn
 from pencil.util import is_sim_dir
 
 # Internal routines.

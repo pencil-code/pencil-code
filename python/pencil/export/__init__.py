@@ -1,6 +1,6 @@
-'''
-Mostly routines for exporting data into different formats.
-'''
+"""
+Export data into different formats, like vtk or xml.
+"""
 
 from .arrays2d_to_vtk import arrays2d_to_vtk
 from .arrays3d_to_vtk import arrays3d_to_vtk

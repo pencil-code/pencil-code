@@ -1,3 +1,7 @@
+"""
+Handle simulations (run directories with data) as Python objects.
+"""
+
 from .simulation import *
 from .simulation import __Simulation__
 from .simulations import *

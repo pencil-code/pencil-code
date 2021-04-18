@@ -1,6 +1,6 @@
-'''
-Reading routines for the pencil code data.
-'''
+"""
+Read data and parameters from data directories.
+"""
 
 from .pdims import pdim, PDim
 from .indices import index

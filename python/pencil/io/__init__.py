@@ -1,8 +1,6 @@
-################
-##
-##	io
-##
-################
+"""
+Input und output functions, like saving data.
+"""
 
 from .npfile import npfile
 from .mkdir import mkdir

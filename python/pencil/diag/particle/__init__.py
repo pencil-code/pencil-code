@@ -1,8 +1,6 @@
-################
-##
-##	diag.particle
-##
-################
+"""
+Diagnostics for particles.
+"""
 
 from .diffusion import *
 from .dispersion_and_drift import *
