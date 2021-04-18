@@ -9,7 +9,7 @@ import os
 import sys
 from typing import Any
 
-from test_utils import test, assert_equal
+from test_utils import test, assert_equal, _pretty_print
 
 from pencil.sim.simulation import __Simulation__
 
@@ -49,21 +49,6 @@ def neat_short_tricks() -> None:
     assert_equal(sim.get_varlist(pos="last10"), [])
 
 
-def get_run_dir() -> str:
-    pencil_home = os.getenv("PENCIL_HOME")
-    assert pencil_home is not None
-    run_dir = os.path.join(
-        pencil_home,
-        "samples",
-        "2d-tests",
-        "2d_methane_flame",
-        "turbulent_field",
-    )
-    if not os.path.isdir(run_dir):
-        raise Exception("Run directory {} does not exist".format(run_dir))
-    return run_dir
-
-
 def _assert_sim_parameter(
     sim: __Simulation__, parameter: str, expected: Any
 ) -> None:
@@ -78,11 +63,16 @@ def _assert_sim_parameter(
     )
 
 
-def _pretty_print(value: Any) -> str:
-    if isinstance(value, str):
-        if '"' in value:
-            return "'{}'".format(value)
-        else:
-            return '"{}"'.format(value)
-    else:
-        return str(value)
+def get_run_dir() -> str:
+    pencil_home = os.getenv("PENCIL_HOME")
+    assert pencil_home is not None
+    run_dir = os.path.join(
+        pencil_home,
+        "samples",
+        "2d-tests",
+        "2d_methane_flame",
+        "turbulent_field",
+    )
+    if not os.path.isdir(run_dir):
+        raise Exception("Run directory {} does not exist".format(run_dir))
+    return run_dir

@@ -16,24 +16,15 @@ from typing import Any, List, Tuple
 
 import pencil as pc
 
-from test_utils import test, assert_true, standalone_test, fail
-
-
-def _assert_close(
-    expected: float, actual: float, variable: str, eps: float = 1.0e-6
-) -> None:
-    """Assert that actual and expected differ by at most eps."""
-    assert_true(
-        abs(actual - expected) <= eps,
-        "{}: |{} - {}| > {}".format(variable, expected, actual, eps),
-    )
-
-
-def _assert_equal_tuple(
-    expected: Tuple[int, ...], actual: Tuple[int, ...]
-) -> None:
-    """Assert that actual and expected differ by at most eps."""
-    assert_true(expected == actual, "{} ≠ {}".format(expected, actual))
+from test_utils import (
+    test,
+    assert_true,
+    fail,
+    _assert_close,
+    _assert_equal_tuple,
+    standalone_test,
+    test_extracted,
+)
 
 
 @test
@@ -61,14 +52,8 @@ def read_var() -> None:
         ("f", lambda f: np.mean(f[1, :, :, :]), -5.983_958e-11, 1.0e-17),
         ("f", lambda f: np.std(f[1, :, :, :]), 0.002_251_669, 1.0e-9),
     ]
-    for key, extract, expect, eps in expected:
-        actual = extract(getattr(var, key))
-        _assert_close(
-            expect,
-            actual,
-            "{}(var.{})".format(extract.__name__, key),
-            eps,
-        )
+    for (key, extract, expect, eps) in expected:
+        test_extracted(getattr(var, key), extract, expect, key, eps)
     os.chdir(pwd)
 
 

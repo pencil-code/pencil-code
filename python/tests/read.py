@@ -8,7 +8,14 @@ import numpy as np
 import os
 from typing import Any, Tuple
 
-from test_utils import test, assert_equal, assert_true
+from test_utils import (
+    test,
+    assert_equal,
+    assert_true,
+    _assert_close,
+    _assert_equal_tuple,
+    test_extracted,
+)
 
 from pencil.read.timeseries import ts
 from pencil.read.dims import dim
@@ -29,23 +36,6 @@ def data_file(file_name: str) -> str:
         return path
     else:
         raise Exception("File {} not found.".format(path))
-
-
-def _assert_close(
-    expected: float, actual: float, eps: float = 1.0e-6
-) -> None:
-    """Assert that actual and expected differ by at most eps."""
-    assert_true(
-        abs(actual - expected) <= eps,
-        "|{} - {}| > {}".format(expected, actual, eps),
-    )
-
-
-def _assert_equal_tuple(
-    expected: Tuple[int, ...], actual: Tuple[int, ...]
-) -> None:
-    """Assert that actual and expected differ by at most eps."""
-    assert_true(expected == actual, "{} ≠ {}".format(expected, actual))
 
 
 @test
@@ -70,9 +60,9 @@ def test_read_time_series() -> None:
                 key, expect, actual
             ),
         )
-    _assert_close(time_series.rhom[2], 1.0)
-    _assert_close(time_series.urms[3], 0.26)
-    _assert_close(time_series.ecrmax[3], 1.835)
+    _assert_close(time_series.rhom[2], 1.0, "rhom[2]")
+    _assert_close(time_series.urms[3], 0.26, "urms[3]")
+    _assert_close(time_series.ecrmax[3], 1.835, "ecrmax[3]")
 
 
 @test
@@ -156,6 +146,5 @@ def test_read_var() -> None:
         ("f", lambda f: np.std(f[3, :, :, :]), 2.497_441e-9, 1.0e-15),
         ("f", lambda f: np.std(f[4, :, :, :]), 2.047_645e-19, 1.0e-25),
     ]
-    for key, extract, expect, eps in expected:
-        actual = extract(getattr(data, key))
-        _assert_close(expect, actual, eps)
+    for (key, extract, expect, eps) in expected:
+        test_extracted(getattr(data, key), extract, expect, key, eps)
