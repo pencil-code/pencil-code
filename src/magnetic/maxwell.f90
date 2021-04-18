@@ -95,6 +95,7 @@ module Magnetic
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
+  real :: ux_const=0., ampl_uy=0.
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical, dimension(7) :: lresi_dep=.false. 
@@ -107,6 +108,7 @@ module Magnetic
 !
 ! Declare index of new variables in f array (if any).
 !
+  character (len=labellen) :: conductivity='const'
   character (len=labellen) :: initaak='nothing'
   character (len=labellen) :: initeek='nothing'
   character (len=labellen) :: cc_light='1'
@@ -130,9 +132,10 @@ module Magnetic
 ! input parameters
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
-    alpha_inflation, &
+    linflation, alpha_inflation, &
     initaak, initeek, &
-    linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
+    ux_const, ampl_uy, &
+    conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
     lscale_tobox, kgaussian_aa, lskip_projection_aa, relhel_aa, &
     lemf, B_ext, &
@@ -142,11 +145,11 @@ module Magnetic
 ! run parameters
   namelist /magnetic_run_pars/ &
 ! namelist /magnetic_run_pars/ &
-    alpha_inflation, &
+    linflation, alpha_inflation, &
     ldebug_print, &
     cc_light, &
     lemf, B_ext, &
-    linflation, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
+    conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -385,15 +388,28 @@ module Magnetic
       if (lfirst) then
         if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt using aak and eek'
 !
-!  time-dependent profile for sigma
+!  Choice of conductivity profiles.
 !
-            if (t<=t1_sigma) then
-              sigma=sigma_t1
-            elseif (t<=t2_sigma) then
-              sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
-            else
-              sigma=sigma_t2
-            endif
+      select case (conductivity)
+        case ('const')
+          if (headtt.or.ldebug) print*,'sigma=const=',sigma
+!
+!  Time-dependent profile for sigma.
+!
+        case ('t-dep')
+          if (t<=t1_sigma) then
+            sigma=sigma_t1
+          elseif (t<=t2_sigma) then
+            sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
+          else
+            sigma=sigma_t2
+          endif
+!
+!  Default.
+!
+        case default
+          call fatal_error("daa_dt: No such value for conductivity:",trim(conductivity))
+      endselect
 !
 !  diagnostics
 !
@@ -757,7 +773,7 @@ module Magnetic
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: discrim2, sigmaeff
-      real :: ksqr, ksqr_eff, k1, k2, k3, fact
+      real :: ksqr, ksqr_eff, k1, k2, k3, fact, kdotEMF
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -830,11 +846,34 @@ module Magnetic
 !  Add electromotive force to Ak
 !
               if (lemf) then
+!
+!  Do projection (in 3-D) of (bbkre,bbkim).
+!  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+                kdotEMF=k1*bbkre(ikx,iky,ikz,1) &
+                       +k2*bbkre(ikx,iky,ikz,2) &
+                       +k3*bbkre(ikx,iky,ikz,3)
+                bbkre(ikx,iky,ikz,1)=bbkre(ikx,iky,ikz,1)-k1*kdotEMF
+                bbkre(ikx,iky,ikz,2)=bbkre(ikx,iky,ikz,2)-k2*kdotEMF
+                bbkre(ikx,iky,ikz,3)=bbkre(ikx,iky,ikz,3)-k3*kdotEMF
+!
+!  Do the same for the imaginary part
+!
+                kdotEMF=k1*bbkim(ikx,iky,ikz,1) &
+                       +k2*bbkim(ikx,iky,ikz,2) &
+                       +k3*bbkim(ikx,iky,ikz,3)
+                bbkim(ikx,iky,ikz,1)=bbkim(ikx,iky,ikz,1)-k1*kdotEMF
+                bbkim(ikx,iky,ikz,2)=bbkim(ikx,iky,ikz,2)-k2*kdotEMF
+                bbkim(ikx,iky,ikz,3)=bbkim(ikx,iky,ikz,3)-k3*kdotEMF
+!
+!  Prepare Atilde = A - (sig/k^2)*EMF
+!
                 fact=sigmaeff/ksqr_eff
                 bbkre(ikx,iky,ikz,:)=fact*bbkre(ikx,iky,ikz,:)
                 bbkim(ikx,iky,ikz,:)=fact*bbkim(ikx,iky,ikz,:)
-                aakre=aakre+bbkre(ikx,iky,ikz,:)
-                aakim=aakim+bbkim(ikx,iky,ikz,:)
+                aakre=aakre-bbkre(ikx,iky,ikz,:)
+                aakim=aakim-bbkim(ikx,iky,ikz,:)
               endif
 !
               do j=1,3
@@ -866,9 +905,9 @@ module Magnetic
 !
               if (lemf) then
                 f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)= &
-                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)-bbkre(ikx,iky,ikz,:)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)+bbkre(ikx,iky,ikz,:)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)= &
-                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)-bbkim(ikx,iky,ikz,:)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)+bbkim(ikx,iky,ikz,:)
               endif
 !
 !  Debug output
@@ -1151,17 +1190,18 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,ampl_Az
-      real :: ampl,ampl_uy
+      real :: ampl
       integer :: iuu,iaak,kx
 !
 !  Amplitude factors
 !
-      ampl_uy=+ampl
+   !  ampl_uy=+ampl
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
 !
       do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0)=ux_const
         f(l1:l2,m,n,iuu+1)=ampl_uy*sin(kx*x(l1:l2))
       enddo; enddo
 !
