@@ -3999,7 +3999,7 @@ For some examples on how to use these routines, see Sect.~\ref{S-GDL}.
 \subsubsection{Python}
 \label{Python}
 
-Pencil supports reading, processing and the visualization of data
+The Pencil Code supports reading, processing and the visualization of data
 using \name{python}.
 A number of scripts are placed in the subfolder \file{\$PENCIL_HOME/python}.
 A {\rm README} file placed under that subfolder contains the information
@@ -4012,34 +4012,52 @@ If not, it can be installed via your preferred package manager or downloaded
 from the website \url{https://www.python.org/}.
 For convenience, it is strongly recommend to also install IPython, which is a
 more convenient console for Python.
-You will also need the NumPy, matplotlib, h5py and Tk library.
+You will also need the Python packages NumPy, matplotlib, h5py, Tk and often Dill.
 
 Perhaps the easiest way to obtain all the required software mentioned above
-is to install either Continuum's Anaconda or Enthought's Canopy.
+is to install either Continuum's \name{Anaconda} or Enthought's \name{Canopy}.
 These Python distributions also provide (or indeed are) integrated graphical
 development environments.
 
-Another way of installing libraries, particularly on a cluster without root
-privileges you can use pip or pip3: \texttt{pip install h5py} or \texttt{pip3 install h5py}.
+Another way of installing libraries, particularly on a cluster without
+root privileges, is to use pip or pip3: \texttt{pip install h5py} or
+\texttt{pip3 install h5py}.
 
-In order for Python to find the Pencil Code commands you will have to add to your
-\texttt{.bashrc}:
+\bigskip
+
+In order for Python to find the Pencil Code commands, you will have to set
+the environment variable \var{PYTHONPATH}:
 \begin{alltt}
-export PYTHONPATH=\$PENCIL_HOME/python
+export PYTHONPATH=\$\{PENCIL_HOME\}/python
+# or
+export PYTHONPATH=\$\{PENCIL_HOME\}/python:\$\{PYTHONPATH\}
+\end{alltt}
+Normally, you will add one of these lines to your \texttt{.bashrc} file.
+
+In addition, you have to import the \texttt{pencil} module each time you
+start a Python shell:
+\begin{alltt}
+import pencil as pc
 \end{alltt}
 
+The next two paragraphs show how you can include this and some other
+imports into your Python interpreter setup, so they are automatically run
+when you start IPython or the Python REPL.
+
 \subparagraph{ipythonrc}
-If you use IPython, for convenience, you should modify your
-\texttt{.ipython/ipythonrc} (create it if it doesn't exist) and add:
+When using IPython, some Pencil Code users add the following line to their
+\texttt{.ipython/ipythonrc} (create the file if it doesn't exist):
 \begin{alltt}
 import_all pencil
 \end{alltt}
-Additional, add to your \texttt{.ipython/profile_default/startup/init.py}
-the following lines:
+and in addition add to their
+\texttt{.ipython/profile_default/startup/init.py}
+the lines
 \begin{alltt}
+import pencil as pc
+
 import numpy as np
 import pylab as plt
-import pencil as pc
 import matplotlib
 from matplotlib import rc
 
@@ -4048,8 +4066,8 @@ matplotlib.rcParams['savefig.directory'] = ''
 \end{alltt}
 
 \subparagraph{.pythonrc}
-In case you are on a cluster and don't have access to
-IPython you can edit your \texttt{.pythonrc}:
+If you don't have IPython and cannot install it (e.g. on some cluster),
+you can instead edit your \texttt{.pythonrc}:
 \begin{alltt}
 #!/usr/bin/python
 import numpy as np
@@ -4059,7 +4077,7 @@ import atexit
 #import readline
 import rlcompleter
 
-# enables search with CTR+r in the history
+# enables search with Ctrl+r in the history
 try:
     import readline
 except ImportError:
@@ -4079,10 +4097,14 @@ del os, atexit, readline, rlcompleter, save_history, historyPath
 
 plt.ion()
 \end{alltt}
-create the file \texttt{.pythonhistory} and add to your \texttt{.bashrc}:
+and create the file \texttt{.pythonhistory} and add to your \texttt{.bashrc}:
 \begin{alltt}
 export PYTHONSTARTUP=~/.pythonrc
 \end{alltt}
+
+\bigskip
+
+However, none of this is required to use the Pencil Code Python modules.
 
 \paragraph{Pencil Code Commands in General}
 For a list of all Pencil Code commands start IPython and type
@@ -4118,7 +4140,7 @@ In [1]: ts = pc.read.ts()
 Most commands take some arguments.
 For most of them there is a default value, e.g.
 \begin{alltt}
-In [1]: pc.read.ts(file_name='time_series.dat', datadir='data').
+In [1]: pc.read.ts(file_name='time_series.dat', datadir='data')
 \end{alltt}
 
 \paragraph{Reading and Plotting Time Series}
