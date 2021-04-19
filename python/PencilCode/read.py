@@ -1,11 +1,12 @@
-#! /usr/bin/env python3
-# Last Modification: $Id$
+#!/usr/bin/env python3
 #=======================================================================
 # read.py
 #
 # Facilities for reading the Pencil Code data.
 #
-# Chao-Chin Yang, 2013-05-06
+# Author: Chao-Chin Yang
+# Created: 2013-05-06
+# Last Modified: 2021-04-19
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
@@ -1274,6 +1275,43 @@ def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
     for i, v in enumerate(var):
         data[v] = f[:,:,:,i].ravel().reshape(fdim)
     return Dict(**data)
+#=======================================================================
+def varlist(datadir="./data", listname="varN.list"):
+    """Reads and returns the names and times of the snapshots.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        listname
+            Name of the file containing the list of snapshots.
+
+    Returned Values
+        varfile
+            A list of file names.
+        time
+            A list of the corresponding times.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2021-04-19
+    # Last Modified: 2021-04-19
+    from pathlib import Path
+
+    # Determine where the file list should be located.
+    p = Path(datadir.strip()) / "allprocs" / listname.strip()
+    if not p.exists():
+        p = Path(datadir.strip()) / "proc0" / listname.strip()
+        if not p.exists():
+            raise RuntimeError("cannot find the list of snapshots. ")
+
+    # Parse the file.
+    varfile, time = [], []
+    with open(p) as f:
+        for line in f:
+            v, t = line.split()
+            varfile.append(v)
+            time.append(float(t))
+
+    return varfile, time
 #=======================================================================
 def varname(datadir='./data', filename='varname.dat'):
     """Returns the names of variables.
