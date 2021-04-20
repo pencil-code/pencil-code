@@ -103,18 +103,20 @@ module Special
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
-  logical :: linflation=.false.
+  logical :: linflation=.false., lnonlinear_source=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
+  real :: nonlinear_source_fact=0.
 !
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
+    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation
 !
 ! run parameters
@@ -125,7 +127,8 @@ module Special
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation
+    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation, &
+    lnonlinear_source, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -391,6 +394,18 @@ module Special
           call fatal_error("init_special: No such value for initgij:" &
               ,trim(initgij))
       endselect
+!
+      if (lStress_as_aux) then
+        f(:,:,:,iStressT)=0.
+        f(:,:,:,iStressX)=0.
+        f(:,:,:,iStressTim)=0.
+        f(:,:,:,iStressXim)=0.
+      endif
+!
+      if (lreal_space_gTX_as_aux) then
+        f(:,:,:,iggT_realspace)=0.
+        f(:,:,:,iggX_realspace)=0.
+      endif
 !
     endsubroutine init_special
 !***********************************************************************
@@ -1074,7 +1089,7 @@ module Special
       use Fourier, only: fourier_transform, fft_xyz_parallel
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (3) :: e1, e2, kvec
@@ -1124,6 +1139,20 @@ module Special
         Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
         Tpq_im=0.0
         call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
+      endif
+!
+!  Possibility of nonlinear source
+!
+      if (lnonlinear_source) then
+        allocate(g2T_re(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for g2T_re')
+!
+        allocate(g2T_im(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for g2T_im')
+!
+        g2T_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggT_realspace)**2
+        g2T_im=0.
+        call fft_xyz_parallel(g2T_re(:,:,:),g2T_im(:,:,:))
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1302,8 +1331,13 @@ module Special
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-              coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
-              coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
+              if (lnonlinear_source) then
+                coefAre=(hhTre-om12*(S_T_re(ikx,iky,ikz)+g2T_re(ikx,iky,ikz)))
+                coefAim=(hhTim-om12*(S_T_im(ikx,iky,ikz)+g2T_im(ikx,iky,ikz)))
+              else
+                coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
+                coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
+              endif
               coefBre=ggTre*om1
               coefBim=ggTim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
