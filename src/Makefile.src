@@ -236,16 +236,30 @@ ifeq ($(FOURIER),fourier_fftpack)
   LD_FOURIER     = fftpack.o
 endif
 #
+MODULE_CMD := $(shell command -v module 2> /dev/null)
+#
 # For gsl library.
 #
 ifeq ($(GSL),gsl_wrapper)
+  ifneq ($(MODULE_CMD),)
+    GSL_LOADED := $(shell (module list |& grep -i gsl) )
+    ifeq ($(GSL_LOADED),)
+no_gsl_message:
+	@echo ";;;"
+	@echo ";;; No GSL module seems to be loaded! Exit."
+	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') )"
+	@echo ";;;"
+	@exit 1
+
+    endif
+  endif
   LD_GSL = -lgsl -lgslcblas
 endif
 #
 #  For LSODE
 #
 ifeq ($(TIMESTEP),timestep_LSODE)
-  LSODE_FC          =   lsode_for_chemistry
+  LSODE_FC = lsode_for_chemistry
 endif
 #
 # Set up MPI-communication if overlapping grids are used with solid_cells
@@ -403,8 +417,6 @@ special_message:
   endif
 endif
 #
-MODULE_CMD := $(shell command -v module 2> /dev/null)
-#
 LIBGPU =
 GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
@@ -415,6 +427,7 @@ ifeq ($(GPU),gpu_astaroth)
 no_cuda_message:
 	@echo ";;;"
 	@echo ";;; No CUDA module seems to be loaded! Exit."
+	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') )"
 	@echo ";;;"
 	@exit 1
 
@@ -461,6 +474,7 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 no_hdf5_message:
 	@echo ";;;"
 	@echo ";;; No HDF5 module seems to be loaded! Exit."
+	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') )"
 	@echo ";;;"
 	@exit 1
 
