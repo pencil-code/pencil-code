@@ -1089,7 +1089,7 @@ module Special
       use Fourier, only: fourier_transform, fft_xyz_parallel
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im 
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (3) :: e1, e2, kvec
@@ -1145,14 +1145,23 @@ module Special
 !
       if (lnonlinear_source) then
         allocate(g2T_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for g2T_re')
+        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_re')
 !
         allocate(g2T_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for g2T_im')
+        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_im')
+!
+        allocate(g2X_re(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_re')
+!
+        allocate(g2X_im(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_im')
 !
         g2T_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggT_realspace)**2
         g2T_im=0.
         call fft_xyz_parallel(g2T_re(:,:,:),g2T_im(:,:,:))
+        g2X_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggX_realspace)**2
+        g2X_im=0.
+        call fft_xyz_parallel(g2X_re(:,:,:),g2X_im(:,:,:))
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1355,8 +1364,13 @@ module Special
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-              coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
-              coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
+              if (lnonlinear_source) then
+                coefAre=(hhXre-om12*(S_X_re(ikx,iky,ikz)+g2X_re(ikx,iky,ikz)))
+                coefAim=(hhXim-om12*(S_X_im(ikx,iky,ikz)+g2X_im(ikx,iky,ikz)))
+              else
+                coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
+                coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
+              endif
               coefBre=ggXre*om1
               coefBim=ggXim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
