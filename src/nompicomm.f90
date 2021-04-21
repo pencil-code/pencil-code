@@ -118,6 +118,11 @@ module Mpicomm
     module procedure mpibcast_cmplx_arr_sgl
   endinterface
 !
+  interface mpiscatter
+    module procedure mpiscatter_real_arr
+    module procedure mpiscatter_real_arr2
+  endinterface
+!
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
@@ -1248,6 +1253,35 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_cmplx_arr_sgl
+!***********************************************************************
+    subroutine mpiscatter_real_arr(src_array,dest_array,proc,comm)
+!
+!  Scatter real 1D-array between processors of communicator comm from rank proc.
+!
+      use General, only: ioptest
+
+      real, dimension(:) :: src_array, dest_array
+      integer, optional :: proc,comm
+
+      if (ALWAYS_FALSE) print*, proc, comm
+      dest_array=src_array
+!
+    endsubroutine mpiscatter_real_arr
+!***********************************************************************
+    subroutine mpiscatter_real_arr2(src_array,dest_array,proc,comm)
+!
+!  Scatter real 2D-array between processors of communicator comm from rank proc.
+!
+      use General, only: ioptest, indgen
+
+      real, dimension(:,:) :: src_array
+      real, dimension(:,:) :: dest_array
+      integer, optional :: proc,comm
+
+      if (ALWAYS_FALSE) print*, proc, comm
+      dest_array=src_array
+
+    endsubroutine mpiscatter_real_arr2
 !***********************************************************************
     subroutine mpiwait(bwait)
 !
