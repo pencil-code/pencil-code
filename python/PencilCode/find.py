@@ -42,6 +42,148 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
+def particle_displacement(datadir="./data", save_to=None):
+    """Finds the displacement of each particle as a function of time.
+
+    Keyword Arguments:
+        datadir
+            Path to the data directory.
+        save_to
+            If not None, a string of the filename (without .npz
+            extension) to save the results (t and dxp) to a numpy data
+            file under datadir.
+
+    Returned Values:
+        t
+            A numpy array of times, starting from zero.
+        dxp, dyp, dzp
+            A 2D numpy array, where dxp[i,j], dyp[i,j], and dzp[i,j] are
+            the components of the displacement of particle j at t[i].  A
+            component is returned None if the dimension is neither
+            active nor periodic.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2018-01-16
+    # Last Modified: 2021-04-20
+    import numpy as np
+    from . import read
+
+    # Safe factor for detecting jumps.
+    SAFE = 1.1
+
+    # Determine numbers of particles and snapshots.
+    pdim = read.pardim(datadir=datadir)
+    pvarfiles, t = read.varlist(datadir=datadir, listname="pvarN.list")
+    npar = pdim.npar
+    nt = len(pvarfiles)
+    print(f"Total number of particles: {npar}")
+    print(f"Total number of snapshots: {nt}")
+
+    # Determine which dimension(s) should be considered.
+    par = read.parameters(datadir=datadir)
+    dim = read.dimensions(datadir=datadir)
+    active = (dim.nxgrid > 1 and par.lperi[0],
+              dim.nygrid > 1 and par.lperi[1],
+              dim.nzgrid > 1 and par.lperi[2])
+    print(f"Active dimensions: {active}")
+
+    # Allocate memory.
+    t = np.empty(nt,)
+    dxp = np.empty((nt,npar)) if active[0] else None
+    dyp = np.empty((nt,npar)) if active[1] else None
+    dzp = np.empty((nt,npar)) if active[2] else None
+    vpxmin, vpxmax = float("inf"), -float("inf")
+    vpymin, vpymax = float("inf"), -float("inf")
+    vpzmin, vpzmax = float("inf"), -float("inf")
+
+    for i, pvarfile in enumerate(pvarfiles):
+        # Read in the particle data.
+        print("\rReading PVAR files ({:6.1%})......".format((i+1)/nt),
+              end='', flush=True)
+        fp = read.pvar(datadir=datadir, pvarfile=pvarfile, verbose=False)
+
+        # Record time, positions, and monitor velocity extrema.
+        t[i] = fp.t
+        if active[0]:
+            dxp[i] = fp.xp
+            vpxmin, vpxmax = min(vpxmin, min(fp.vpx)), max(vpxmax, max(fp.vpx))
+        if active[1]:
+            dyp[i] = fp.yp
+            vpymin, vpymax = min(vpymin, min(fp.vpy)), max(vpymax, max(fp.vpy))
+        if active[2]:
+            dzp[i] = fp.zp
+            vpzmin, vpzmax = min(vpzmin, min(fp.vpz)), max(vpzmax, max(fp.vpz))
+    print("Done. ")
+
+    # Check the dimensions.
+    dtmax = max(t[1:] - t[:-1])
+    if ((active[0] and SAFE * (vpxmax - vpxmin) * dtmax > par.lxyz[0]) or
+        (active[1] and SAFE * (vpymax - vpymin) * dtmax > par.lxyz[1]) or
+        (active[2] and SAFE * (vpzmax - vpzmin) * dtmax > par.lxyz[2])):
+        print(f"dtmax = {dtmax}")
+        if active[0]: print("vpxmin, vpxmax = ", vpxmin, vpxmax)
+        if active[1]: print("vpymin, vpymax = ", vpymin, vpymax)
+        if active[2]: print("vpzmin, vpzmax = ", vpzmin, vpzmax)
+        print("Warning: Boundary jumping may not be properly detected. ")
+
+    # Remove duplicate data.
+    print("Removing duplicate data......", end='', flush=True)
+    t, indices = np.unique(t, return_index=True)
+    if active[0]: dxp = dxp[indices]
+    if active[1]: dyp = dyp[indices]
+    if active[2]: dzp = dzp[indices]
+    nt = len(t)
+    print("Done. ")
+
+    # Find the displacement.
+    print("Computing the displacement......", end='', flush=True)
+    if active[0]:
+        dx = dxp[1:] - dxp[:-1]
+        dxp -= dxp[0]
+    if active[1]:
+        dy = dyp[1:] - dyp[:-1]
+        dyp -= dyp[0]
+    if active[2]:
+        dz = dzp[1:] - dzp[:-1]
+        dzp -= dzp[0]
+
+    # Detect boundary jumps.
+    for i in range(nt-1):
+        dt = t[i+1] - t[i]
+        if active[0]:
+            if vpxmin < 0:
+                dxp[i+1:, dx[i] > vpxmax * dt] -= par.lxyz[0]
+            if vpxmax > 0:
+                dxp[i+1:, dx[i] < vpxmin * dt] += par.lxyz[0]
+        if active[1]:
+            if vpymin < 0:
+                dyp[i+1:, dy[i] > vpymax * dt] -= par.lxyz[1]
+            if vpymax > 0:
+                dyp[i+1:, dy[i] < vpymin * dt] += par.lxyz[1]
+        if active[2]:
+            if vpzmin < 0:
+                dzp[i+1:, dz[i] > vpzmax * dt] -= par.lxyz[2]
+            if vpzmax > 0:
+                dzp[i+1:, dz[i] < vpzmin * dt] += par.lxyz[2]
+
+    # Reset the starting time to zeo.
+    t -= t[0]
+    print("Done. ")
+
+    # Save the results if requested.
+    if save_to is not None:
+        file = datadir + '/' + save_to
+        print("Saving the results to " + file + ".npz......",
+              end='', flush=True)
+        kw = dict(t=t)
+        if active[0]: kw["dxp"] = dxp
+        if active[1]: kw["dyp"] = dyp
+        if active[2]: kw["dzp"] = dzp
+        np.savez(file, **kw)
+        print("Done. ")
+
+    return t, dxp, dyp, dzp
+#=======================================================================
 def eta_z(z, datadir="./data"):
     """Finds the vertical profile of the resistivity, if any.
 
