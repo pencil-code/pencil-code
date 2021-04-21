@@ -169,6 +169,11 @@ module Mpicomm
     module procedure mpibcast_char_arr
   endinterface
 !
+  interface mpiscatter
+    module procedure mpiscatter_real_arr
+    module procedure mpiscatter_real_arr2
+  endinterface
+!
   interface mpiallreduce_sum
     module procedure mpiallreduce_sum_scl
     module procedure mpiallreduce_sum_arr
@@ -4124,6 +4129,85 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
                      MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_sgl
+!***********************************************************************
+    subroutine mpiscatter_real_arr(src_array,dest_array,proc,comm)
+!
+!  Scatter real 1D-array between processors of communicator comm from rank proc.
+!
+      use General, only: ioptest
+
+      real, dimension(:) :: src_array, dest_array
+      integer, optional :: proc,comm
+
+      integer :: count,comm_,np
+
+      comm_=ioptest(comm,MPI_COMM_PENCIL)
+
+      call MPI_COMM_SIZE(comm_,np,mpierr)
+      count=size(src_array)/np
+      if (size(dest_array)<count) &
+        call stop_fatal('mpiscatter_real_arr:'// &
+                        'ERROR - sizes of source/destination arrays/number of processors not compatibel')
+
+      call MPI_SCATTER(src_array,count,MPI_REAL,dest_array,count,MPI_REAL,ioptest(proc,root),comm_,mpierr)
+
+    endsubroutine mpiscatter_real_arr
+!***********************************************************************
+    subroutine mpiscatter_real_arr2(src_array,dest_array,proc,comm)
+!
+!  Scatter real 2D-array between processors of communicator comm from rank proc.
+!
+      use General, only: ioptest, indgen
+
+      real, dimension(:,:) :: src_array
+      real, dimension(:,:) :: dest_array
+      integer, optional :: proc,comm
+
+      integer :: count1,count2,comm_,np,sizeofreal
+      integer, dimension(:), allocatable :: sendcounts,displs
+      integer :: block, segment
+      integer :: src_sz1, src_sz2, dest_sz1, dest_sz2, locrank, i2
+
+      comm_=ioptest(comm,MPI_COMM_PENCIL)
+
+      dest_sz1=size(dest_array,1); dest_sz2=size(dest_array,2)
+      call MPI_COMM_RANK(comm_,locrank,mpierr)
+
+      if (locrank==0) then
+
+        src_sz1=size(src_array,1)
+        src_sz2=size(src_array,2)
+        count1=src_sz1/dest_sz1
+        count2=src_sz2/dest_sz2
+
+        call MPI_COMM_SIZE(comm_,np,mpierr)
+        if (np/=count1*count2) &
+          call stop_fatal('mpiscatter_real_arr2:'// &
+                          'ERROR - sizes of source/destination arrays/number of processors not compatibel')
+
+        allocate(sendcounts(np),displs(np))
+        sendcounts=1
+
+        do i2=0,count2-1
+          displs(1+i2*count1:(i2+1)*count1)=indgen(count1)-1+count1*dest_sz2*i2
+        enddo
+
+      else
+        src_sz1=dest_sz1; src_sz2=dest_sz2
+      endif
+
+      call MPI_TYPE_CREATE_SUBARRAY(2, (/src_sz1,src_sz2/), (/dest_sz1,dest_sz2/), (/0,0/), &
+                                    MPI_ORDER_FORTRAN, MPI_REAL, block, mpierr)
+
+      call MPI_TYPE_SIZE(MPI_REAL, sizeofreal, mpierr)
+      call MPI_TYPE_CREATE_RESIZED(block, 0, dest_sz1*sizeofreal, segment, mpierr)
+      call MPI_TYPE_COMMIT(segment,mpierr)
+
+      call MPI_SCATTERV(src_array,sendcounts,displs,segment,dest_array,dest_sz1*dest_sz2, &
+                        MPI_REAL,ioptest(proc,root),comm_,mpierr)
+      call MPI_TYPE_FREE(segment,mpierr)
+
+    endsubroutine mpiscatter_real_arr2
 !***********************************************************************
     subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir,comm)
 !
