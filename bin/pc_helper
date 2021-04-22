@@ -13,13 +13,18 @@ if (-e $0:t.f90) then
 else
   set dir=pre_and_post_processing
   if (!(-e $dir/$0:t.f90)) then
-    ln -s $PENCIL_HOME/src/$dir/$0:t.f90 $dir/$0:t.f90 
-    #echo "No helper executable $0:t.x known."
-    #exit
+    if (-e $PENCIL_HOME/src/$dir/$0:t.f90) then
+      ln -s $PENCIL_HOME/src/$dir/$0:t.f90 $dir/$0:t.f90 
+    else
+      echo "No source for helper $0:t available."
+      exit
+    endif
   endif
 endif
 
-make $dir/$0:t.x > /dev/null
+echo "Building executable $0:t.x ..."
+#make $dir/$0:t.x > /dev/null
+cd ..; pc_build -s -t $0:t.x > /dev/null; cd src
 if ( $? != 0) then
   echo "Build of executable $0:t.x failed."
   exit
