@@ -13,8 +13,9 @@ if (-e $0:t.f90) then
 else
   set dir=pre_and_post_processing
   if (!(-e $dir/$0:t.f90)) then
-    echo "No helper executable $0:t.x known."
-    exit
+    ln -s $PENCIL_HOME/src/$dir/$0:t.f90 $dir/$0:t.f90 
+    #echo "No helper executable $0:t.x known."
+    #exit
   endif
 endif
 
