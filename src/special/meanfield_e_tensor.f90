@@ -814,14 +814,14 @@ module Special
 
         if (lroot.and.(headtt.or.ldebug)) print *,'finalize_special: Closing datasets'
 
-        if (lalpha)   call closeDataset(alpha_id)
-        if (lbeta)    call closeDataset(beta_id)
-        if (lgamma)   call closeDataset(gamma_id)
-        if (ldelta)   call closeDataset(delta_id)
-        if (lkappa)   call closeDataset(kappa_id)
-        if (lumean)   call closeDataset(umean_id)
-        if (lacoef)   call closeDataset(acoef_id)
-        if (lbcoef)   call closeDataset(bcoef_id)
+        if (lalpha) call closeDataset(alpha_id)
+        if (lbeta)  call closeDataset(beta_id)
+        if (lgamma) call closeDataset(gamma_id)
+        if (ldelta) call closeDataset(delta_id)
+        if (lkappa) call closeDataset(kappa_id)
+        if (lumean) call closeDataset(umean_id)
+        if (lacoef) call closeDataset(acoef_id)
+        if (lbcoef) call closeDataset(bcoef_id)
 
 
         if (hdf_grid_exists) then
@@ -1235,8 +1235,11 @@ enddo; enddo
 !  All pencils that this special module depends on are specified here.
 !
       lpenc_requested(i_bb)=.true.
-      !lpenc_requested(i_bij)=.true.
-      lpenc_requested(i_bijtilde)=.true.
+      if (lactive_dimension(3)) then    ! 3D-case
+        lpenc_requested(i_bij)=.true.
+      else                              ! 2D-case
+        lpenc_requested(i_bijtilde)=.true.
+      endif
       lpenc_requested(i_jj)=.true.
       !if (lbcoef.and.lusecoefs) lpenc_requested(i_bijtilde)=.true.
 !
@@ -1304,7 +1307,7 @@ enddo; enddo
 !
         do k=1,2; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) &
-            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)
+            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)    !!! tb done: 3D case
         end do; end do; end do
       end if
 !
@@ -1364,10 +1367,16 @@ enddo; enddo
 
       if (lkappa) then
         ! Calculate (grad B)_symm
-        do j=1,3; do i=1,3
-          p%bij_symm(:,i,j)=0.5*(p%bijtilde(:,i,j)+p%bij_cov_corr(:,i,j) + &
-                                 p%bijtilde(:,j,i)+p%bij_cov_corr(:,j,i))
-        end do; end do
+        if (lactive_dimension(3)) then
+          do j=1,3; do i=1,3
+            p%bij_symm(:,i,j)=0.5*(p%bij(:,i,j) + p%bij(:,j,i))
+          end do; end do
+        else
+          do j=1,3; do i=1,3
+            p%bij_symm(:,i,j)=0.5*(p%bijtilde(:,i,j)+p%bij_cov_corr(:,i,j) + &
+                                   p%bijtilde(:,j,i)+p%bij_cov_corr(:,j,i))
+          end do; end do
+        endif
 
         do k=1,3; do j=1,3; do i=1,3
           if (lkappa_arr(i,j,k)) then
@@ -1386,8 +1395,14 @@ enddo; enddo
 !
 ! For cases where |B_x;y| << |B_y;x| or |B_y;x| << |B_x;y|: ensure that beta+/-kappa are positive definit.
 !
-                jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
-                jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
+                if (lactive_dimension(3)) then
+                  jrt=p%bij(:,1,2)
+                  jtr=p%bij(:,2,1)
+                else             
+                  jrt=p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)
+                  jtr=p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)
+                endif
+
                 where (abs(jrt)<jthreshold*abs(jtr) .and. &
                        !!p%kappa_coefs(:,3,j,k)<-eta-p%beta_coefs(:,3,3) )
                        (1.-jthreshold**2)*p%kappa_coefs(:,3,j,k)<-(1.-jthreshold)**2*(eta+p%beta_coefs(:,3,3)) )
