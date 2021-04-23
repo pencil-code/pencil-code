@@ -407,15 +407,13 @@ module Special
 
             call openDataset_grid(x_id)
             if (scalar_dims(x_id)/=nxgrid) &
-              call fatal_error('initialize_special', &
-              'x extent in file ='//trim(itoa(int(scalar_dims(x_id))))//' different from nxgrid')
-            nx_stored=scalar_dims(x_id)/nprocx
+              call warning('initialize_special', &
+              'x extent '//trim(itoa(int(scalar_dims(x_id))))//' in dataset "grid" different from nxgrid')
 
             call openDataset_grid(y_id)
             if (scalar_dims(y_id)/=nygrid) &
-              call fatal_error('initialize_special', &
-              'y extent in file ='//trim(itoa(int(scalar_dims(y_id))))//' different from nygrid')
-            ny_stored=scalar_dims(y_id)/nprocy
+              call warning('initialize_special', &
+              'y extent '//trim(itoa(int(scalar_dims(y_id))))//' in dataset "grid" different from nygrid')
 
             call openDataset_grid(time_id)
 
@@ -442,38 +440,18 @@ module Special
           endif
         endif
 
-        ! Set dataset offsets
+        ! Preset dataset offsets, counts and dimensions
         tensor_offsets = 0
-        do i=1,ntensors
-          tensor_offsets(i,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, ipz*nz_stored ]
-        end do
-
-        ! Set dataset counts
         tensor_counts(:,5:) = 1
-        do i=1,ntensors
-          tensor_counts(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
-        end do
-        tensor_dims=tensor_counts
         tensor_dims(:,5:) = 3
-
-        ! Set dataset memory offsets
         tensor_memoffsets = 0
-        ! Set dataset memory counts
         tensor_memcounts = 1
-        do i=1,ntensors
-          tensor_memcounts(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
-        end do
-
-        ! Set memory dimensions
         tensor_memdims = 3
-        do i=1,ntensors
-          tensor_memdims(i,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
-        end do
 
         if (lalpha) then
           if (.not.allocated(alpha_data)) then
-            allocate(alpha_data(dataload_len,nx_stored, ny_stored,nz_stored,3,3))
             call openDataset((/'alpha'/),alpha_id)
+            allocate(alpha_data(dataload_len,nx_stored,ny_stored,nz_stored,3,3))
           endif
           alpha_data = 0.
         elseif (allocated(alpha_data)) then
@@ -1988,7 +1966,7 @@ endif
         if (hdf_exists) then
           lok=.true.
           exit
-        end if
+        endif
       enddo
       if (.not. lok) &
           call fatal_error('openDataset','/emftensor/'//trim(datagroup)// ' does not exist')
@@ -2028,7 +2006,25 @@ endif
                                        hdferr)                 !MR: hdferr/=0!
 !print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
       call H5Sget_simple_extent_npoints_F(tensor_id_S(tensor_id),num,hdferr) ! This is to mask the error of the preceding call.
+
       tensor_dims(tensor_id,1:ndims)=dimsizes(1:ndims)
+      if (tensor_dims(tensor_id,2)/=nxgrid) &
+        call fatal_error('initialize_special', &
+        'x extent in dataset "'//trim(datagroup)//'" '//trim(itoa(int(tensor_dims(tensor_id,2))))//' different from nxgrid')
+      if (tensor_dims(tensor_id,3)/=nygrid) &
+        call fatal_error('initialize_special', &
+        'y extent in dataset "'//trim(datagroup)//'" '//trim(itoa(int(tensor_dims(tensor_id,3))))//' different from nygrid')
+
+      nx_stored=tensor_dims(tensor_id,2)/nprocx
+      ny_stored=tensor_dims(tensor_id,3)/nprocy
+
+      ! Set dataset counts, memory offsets, counts and dimensions
+
+      tensor_counts(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
+      tensor_memcounts(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
+      tensor_memdims(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
+      tensor_offsets(tensor_id,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, ipz*nz_stored ]
+
       if (tensor_times_len==-1) then
         tensor_times_len=dimsizes(1)
       elseif (tensor_times_len/=dimsizes(1)) then
