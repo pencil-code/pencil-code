@@ -28,6 +28,8 @@
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
 #                   config file based on a host ID.
+#                   If not provided and the environment variable PENCIL_CONFIG_FILES is set,
+#                   the value of the latter is taken over for <files>.
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
@@ -179,6 +181,13 @@ if ($show_host_ids) {
 my @config_files;
 mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
+
+if (!defined $config_files) {
+    if (defined $ENV{'PENCIL_CONFIG_FILES'}) {
+        $config_files = $ENV{'PENCIL_CONFIG_FILES'};
+    }
+}
+
 if (defined $config_files) {
     my @files = split(/[,\s\+]+/s, $config_files);
     @config_files = Pencil::ConfigFinder::locate_config_files(@files);
