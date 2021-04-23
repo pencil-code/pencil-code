@@ -6,4 +6,4 @@ solvers, algorithms, boundary conditions, etc.
 
 For more general implementation notes, see the manual (or the source code ;-)
 
-to remove sample (hyper check Nils)
+to remove sample (hyper check Nils...)
