@@ -203,10 +203,12 @@ module Magnetic
 !
 !  register B array as aux
 !
-      if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
       if (lee_as_aux) call farray_register_auxiliary('ee',iee,vector=3)
-      ibx=ibb; iby=ibb+1; ibz=ibb+2
+      if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
+      if (ljj_as_aux) call farray_register_auxiliary('jj',ijj,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
+      ibx=ibb; iby=ibb+1; ibz=ibb+2
+      ijx=ijj; ijy=ijj+1; ijz=ijj+2
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -758,6 +760,9 @@ module Magnetic
     subroutine compute_bb_from_aak_and_eek(f)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
+!  This is currently only called in magnetic_after_timestep, and by that time,
+!  some real-space variables haven't been computed yet. Could fix this by
+!  calling it also once after start (and from start).
 !
 !  07-aug-17/axel: coded
 !
@@ -825,7 +830,8 @@ module Magnetic
               ksqr_eff=ksqr
             endif
 !
-!  compute eigenvalues
+!  Compute eigenvalues; see implementation documentation.
+!  Prevent singularity of discrim2 by resetting it to tini if zero.
 !
             if (ksqr_eff/=0.) then
               sigmaeff=sigma
@@ -843,11 +849,11 @@ module Magnetic
               eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)
               eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)
 !
-!  Add electromotive force to Ak
+!  Prepare electromotive force EMF, but first project out solenoidal part
 !
               if (lemf) then
 !
-!  Do projection (in 3-D) of (bbkre,bbkim).
+!  Do projection (in 3-D) of (bbkre,bbkim). Use bbk as dummy name.
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
@@ -867,7 +873,7 @@ module Magnetic
                 bbkim(ikx,iky,ikz,2)=bbkim(ikx,iky,ikz,2)-k2*kdotEMF
                 bbkim(ikx,iky,ikz,3)=bbkim(ikx,iky,ikz,3)-k3*kdotEMF
 !
-!  Prepare Atilde = A - (sig/k^2)*EMF
+!  Prepare Atilde = A - (sig/k^2)*EMF. Define fact=sig/k^2.
 !
                 fact=sigmaeff/ksqr_eff
                 bbkre(ikx,iky,ikz,:)=fact*bbkre(ikx,iky,ikz,:)
@@ -900,7 +906,7 @@ module Magnetic
               f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)= real(Ecomplex_new)
               f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)=aimag(Ecomplex_new)
 !
-!  Subtract electromotive force from Ak.
+!  Add back electromotive force to Ak.
 !  After this, bbkre and bbrim can be used for other purposes.
 !
               if (lemf) then
@@ -910,7 +916,7 @@ module Magnetic
                 f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)+bbkim(ikx,iky,ikz,:)
               endif
 !
-!  Debug output
+!  Debug output: check matrix elements in vacuum limit.
 !
               if (ldebug_print.and.lroot) then
                 if (ikx==2.and.iky==1.and.ikz==1) then
@@ -941,8 +947,9 @@ module Magnetic
         enddo
       enddo
 !
-!  back to real space, but first compute B in Fourier space as
-!  Bk = ik x Ak, so Re(Bk) = -k x Im(Ak), Im(Bk) = +k x Re(Ak)
+!  Back to real space, but first compute B in Fourier space as
+!  Bk = ik x Ak, so Bk'+iBk'' = ik*(Ak'+iAk'') = ik*Ak'-k*Ak''.
+!  Therefore Re(Bk) = -k x Im(Ak), Im(Bk) = +k x Re(Ak)
 !
       if (lbb_as_aux) then
         do ikz=1,nz
@@ -971,7 +978,9 @@ module Magnetic
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
 !
-!  Imposed field
+!  do similarily for J
+!
+!  Add external (imposed) field B_ext, if nonvanishing.
 !
         if (any(B_ext/=0.)) then
           forall(j = 1:3, B_ext(j) /= 0.0) &
