@@ -11,138 +11,10 @@ module Mpicomm
 !
   implicit none
 !
-  integer, parameter :: MPI_COMM_WORLD=0, MPI_ANY_TAG=0
+  integer, parameter :: MPI_COMM_WORLD=0, MPI_ANY_TAG=0, MPI_INFO_NULL=0
   integer :: nprocs=1
 
   include 'mpicomm.h'
-!
-  interface mpirecv_logical
-     module procedure mpirecv_logical_scl
-     module procedure mpirecv_logical_arr
-  endinterface
-!
-  interface mpisend_char
-    module procedure mpisend_char_scl
-  endinterface
-!
-  interface mpirecv_char
-    module procedure mpirecv_char_scl
-  endinterface
-!
-  interface mpirecv_real
-    module procedure mpirecv_real_scl
-    module procedure mpirecv_real_arr
-    module procedure mpirecv_real_arr2
-    module procedure mpirecv_real_arr3
-    module procedure mpirecv_real_arr4
-    module procedure mpirecv_real_arr5
-  endinterface
-!
-  interface mpirecv_int
-    module procedure mpirecv_int_scl
-    module procedure mpirecv_int_arr
-    module procedure mpirecv_int_arr2
-  endinterface
-!
-  interface mpisend_logical
-     module procedure mpisend_logical_scl
-     module procedure mpisend_logical_arr
-  endinterface
-!
-  interface mpisend_real
-    module procedure mpisend_real_scl
-    module procedure mpisend_real_arr
-    module procedure mpisend_real_arr2
-    module procedure mpisend_real_arr3
-    module procedure mpisend_real_arr4
-    module procedure mpisend_real_arr5
-  endinterface
-!
-  interface mpisendrecv_real
-    module procedure mpisendrecv_real_scl
-    module procedure mpisendrecv_real_arr
-    module procedure mpisendrecv_real_arr2
-    module procedure mpisendrecv_real_arr3
-    module procedure mpisendrecv_real_arr4
-  endinterface
-!
-  interface mpisend_int
-    module procedure mpisend_int_scl
-    module procedure mpisend_int_arr
-    module procedure mpisend_int_arr2
-  endinterface
-!
-  interface mpibcast
-    module procedure mpibcast_logical_scl
-    module procedure mpibcast_logical_arr
-    module procedure mpibcast_logical_arr2
-    module procedure mpibcast_int_scl
-    module procedure mpibcast_int_arr
-    module procedure mpibcast_int_arr2
-    module procedure mpibcast_real_scl
-    module procedure mpibcast_real_arr
-    module procedure mpibcast_real_arr2
-    module procedure mpibcast_real_arr3
-    module procedure mpibcast_real_arr4
-    module procedure mpibcast_cmplx_arr_sgl
-    module procedure mpibcast_char_scl
-    module procedure mpibcast_char_arr
-  endinterface
-!
-  interface mpibcast_logical
-    module procedure mpibcast_logical_scl
-    module procedure mpibcast_logical_arr
-    module procedure mpibcast_logical_arr2
-  endinterface
-!
-  interface mpibcast_int
-    module procedure mpibcast_int_scl
-    module procedure mpibcast_int_arr
-    module procedure mpibcast_int_arr2
-  endinterface
-!
-  interface mpibcast_real
-    module procedure mpibcast_real_scl
-    module procedure mpibcast_real_arr
-    module procedure mpibcast_real_arr2
-    module procedure mpibcast_real_arr3
-    module procedure mpibcast_real_arr4
-  endinterface
-!
-  interface mpibcast_double
-    module procedure mpibcast_double_scl
-    module procedure mpibcast_double_arr
-  endinterface
-!
-  interface mpibcast_cmplx
-    module procedure mpibcast_cmplx_arr_sgl
-  endinterface
-!
-  interface mpiscatter
-    module procedure mpiscatter_real_arr
-    module procedure mpiscatter_real_arr2
-  endinterface
-!
-  interface mpibcast_char
-    module procedure mpibcast_char_scl
-    module procedure mpibcast_char_arr
-  endinterface
-!
-  interface mpireduce_sum_int
-    module procedure mpireduce_sum_int_scl
-    module procedure mpireduce_sum_int_arr
-    module procedure mpireduce_sum_int_arr2
-    module procedure mpireduce_sum_int_arr3
-    module procedure mpireduce_sum_int_arr4
-  endinterface
-!
-  interface mpireduce_sum
-    module procedure mpireduce_sum_scl
-    module procedure mpireduce_sum_arr
-    module procedure mpireduce_sum_arr2
-    module procedure mpireduce_sum_arr3
-    module procedure mpireduce_sum_arr4
-  endinterface
 !
   interface mpireduce_sum_double
     module procedure mpireduce_sum_double_scl
@@ -152,186 +24,10 @@ module Mpicomm
     module procedure mpireduce_sum_double_arr4
   endinterface
 !
-  interface mpireduce_max
-    module procedure mpireduce_max_scl
-    module procedure mpireduce_max_arr
-  endinterface
-!
-  interface mpireduce_max_int
-    module procedure mpireduce_max_scl_int
-  endinterface
-!
-  interface mpiallreduce_sum
-    module procedure mpiallreduce_sum_scl
-    module procedure mpiallreduce_sum_arr
-    module procedure mpiallreduce_sum_arr2
-    module procedure mpiallreduce_sum_arr3
-    module procedure mpiallreduce_sum_arr4
-    module procedure mpiallreduce_sum_arr5
-  endinterface
-!
-  interface mpiallreduce_sum_int
-    module procedure mpiallreduce_sum_int_scl
-    module procedure mpiallreduce_sum_int_arr
-  endinterface
-!
-  interface mpiallreduce_max
-    module procedure mpiallreduce_max_scl_sgl
-    module procedure mpiallreduce_max_scl_dbl
-    module procedure mpiallreduce_max_scl_int
-    module procedure mpiallreduce_max_arr
-  endinterface
-!
-  interface mpiallreduce_min
-    module procedure mpiallreduce_min_scl_sgl
-    module procedure mpiallreduce_min_scl_dbl
-    module procedure mpiallreduce_min_scl_int
-  endinterface
-!
-  interface mpiallreduce_or
-    module procedure mpiallreduce_or_scl
-  endinterface
-!
-  interface mpireduce_min
-    module procedure mpireduce_min_scl
-    module procedure mpireduce_min_arr
-  endinterface
-!
-  interface mpireduce_or
-    module procedure mpireduce_or_scl
-    module procedure mpireduce_or_arr
-  endinterface
-!
-  interface mpireduce_and
-    module procedure mpireduce_and_scl
-    module procedure mpireduce_and_arr
-  endinterface
-!
-  interface distribute_xy
-    module procedure distribute_xy_0D
-    module procedure distribute_xy_2D
-    module procedure distribute_xy_3D
-    module procedure distribute_xy_4D
-  endinterface
-!
-  interface collect_xy
-    module procedure collect_xy_0D
-    module procedure collect_xy_2D
-    module procedure collect_xy_3D
-    module procedure collect_xy_4D
-  endinterface
-!
-  interface distribute_z
-    module procedure distribute_z_3D
-    module procedure distribute_z_4D
-  endinterface
-!
-  interface collect_z
-    module procedure collect_z_3D
-    module procedure collect_z_4D
-  endinterface
-!
-  interface distribute_to_pencil_xy
-    module procedure distribute_to_pencil_xy_2D
-  endinterface
-!
-  interface collect_from_pencil_xy
-    module procedure collect_from_pencil_xy_2D
-  endinterface
-!
-  interface remap_to_pencil_y
-    module procedure remap_to_pencil_y_1D
-    module procedure remap_to_pencil_y_2D
-    module procedure remap_to_pencil_y_3D
-    module procedure remap_to_pencil_y_4D
-  endinterface
-!
-  interface unmap_from_pencil_y
-    module procedure unmap_from_pencil_y_1D
-    module procedure unmap_from_pencil_y_2D
-    module procedure unmap_from_pencil_y_3D
-    module procedure unmap_from_pencil_y_4D
-  endinterface
-!
-  interface remap_to_pencil_z
-    module procedure remap_to_pencil_z_1D
-    module procedure remap_to_pencil_z_2D
-    module procedure remap_to_pencil_z_3D
-    module procedure remap_to_pencil_z_4D
-  endinterface
-!
-  interface unmap_from_pencil_z
-    module procedure unmap_from_pencil_z_1D
-    module procedure unmap_from_pencil_z_2D
-    module procedure unmap_from_pencil_z_3D
-    module procedure unmap_from_pencil_z_4D
-  endinterface
-!
-  interface remap_to_pencil_xy
-    module procedure remap_to_pencil_xy_2D
-    module procedure remap_to_pencil_xy_3D
-    module procedure remap_to_pencil_xy_4D
-  endinterface
-!
-  interface unmap_from_pencil_xy
-    module procedure unmap_from_pencil_xy_2D
-    module procedure unmap_from_pencil_xy_3D
-    module procedure unmap_from_pencil_xy_4D
-  endinterface
-!
-  interface transp_pencil_xy
-    module procedure transp_pencil_xy_2D
-    module procedure transp_pencil_xy_3D
-    module procedure transp_pencil_xy_4D
-  endinterface
-!
-  interface remap_to_pencil_yz
-    module procedure remap_to_pencil_yz_3D
-    module procedure remap_to_pencil_yz_4D
-  endinterface
-!
-  interface unmap_from_pencil_yz
-    module procedure unmap_from_pencil_yz_3D
-    module procedure unmap_from_pencil_yz_4D
-  endinterface
-!
-  interface mpirecv_nonblock_real
-    module procedure mpirecv_nonblock_real_arr
-    module procedure mpirecv_nonblock_real_arr3
-    module procedure mpirecv_nonblock_real_arr4
-    module procedure mpirecv_nonblock_real_arr5
-  endinterface
-!
-  interface mpisend_nonblock_real
-    module procedure mpisend_nonblock_real_arr
-    module procedure mpisend_nonblock_real_arr2
-    module procedure mpisend_nonblock_real_arr3
-    module procedure mpisend_nonblock_real_arr4
-    module procedure mpisend_nonblock_real_arr5
-  endinterface
-!
-  interface mpirecv_nonblock_int
-    module procedure mpirecv_nonblock_int_scl
-    module procedure mpirecv_nonblock_int_arr
-    module procedure mpirecv_nonblock_int_arr2
-  endinterface
-!
-  interface mpisend_nonblock_int
-    module procedure mpisend_nonblock_int_scl
-    module procedure mpisend_nonblock_int_arr
-    module procedure mpisend_nonblock_int_arr2
-  endinterface
-!
 !  interface mpigather_and_out
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
-!
-  integer :: mpi_precision
-  integer :: MPI_COMM_PENCIL=0, MPI_COMM_GRID=0, &
-             MPI_COMM_XYPLANE=0, MPI_COMM_XZPLANE=0,  MPI_COMM_YZPLANE=0, &
-             MPI_COMM_XBEAM=0,MPI_COMM_YBEAM=0,MPI_COMM_ZBEAM=0, &
-             MPI_INFO_NULL=0
 !
   contains
 !***********************************************************************
@@ -826,6 +522,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_nonblock_real_arr
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+      integer, dimension(2) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+!
+      if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id, ireq
+!
+    endsubroutine mpirecv_nonblock_real_arr2
+!***********************************************************************
     subroutine mpirecv_nonblock_real_arr3(bcast_array,nb,proc_src,ireq,tag_id,comm)
 !
       integer, dimension(3) :: nb
@@ -1129,12 +835,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_int_arr2(ibcast_array,nbcast_array,proc,comm)
 !
-!  Communicate integer array(:,:) to other processors.
-!
-!  30-apr-17/Jorgen: adapted
-!
-      use General, only: ioptest
-
       integer, dimension(2) :: nbcast_array
       integer, dimension(nbcast_array(1),nbcast_array(2)) :: ibcast_array
       integer, optional :: proc,comm
@@ -1256,29 +956,21 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiscatter_real_arr(src_array,dest_array,proc,comm)
 !
-!  Scatter real 1D-array between processors of communicator comm from rank proc.
-!
-      use General, only: ioptest
-
       real, dimension(:) :: src_array, dest_array
       integer, optional :: proc,comm
 
-      if (ALWAYS_FALSE) print*, proc, comm
+      if (ALWAYS_FALSE) print*, present(proc), present(comm)
       dest_array=src_array
 !
     endsubroutine mpiscatter_real_arr
 !***********************************************************************
     subroutine mpiscatter_real_arr2(src_array,dest_array,proc,comm)
 !
-!  Scatter real 2D-array between processors of communicator comm from rank proc.
-!
-      use General, only: ioptest, indgen
-
       real, dimension(:,:) :: src_array
       real, dimension(:,:) :: dest_array
       integer, optional :: proc,comm
 
-      if (ALWAYS_FALSE) print*, proc, comm
+      if (ALWAYS_FALSE) print*, present(proc), present(comm)
       dest_array=src_array
 
     endsubroutine mpiscatter_real_arr2
@@ -1356,6 +1048,21 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
+    subroutine mpiallreduce_sum_arr_inplace(fsum, n)
+!
+!  Calculate total sum for each array element and return to all
+!  processors in place.
+!
+!  14-nov-20/ccyang: coded
+!
+      real, dimension(:), intent(inout) :: fsum
+      integer, intent(in) :: n
+!
+      if (n <= 0) return
+      if (ALWAYS_FALSE) print*, fsum
+!
+    endsubroutine mpiallreduce_sum_arr_inplace
+!***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
       integer :: fsum_tmp, fsum
@@ -1376,6 +1083,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, present(idir), present(comm)
 !
     endsubroutine mpiallreduce_sum_int_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_arr_inplace(fsum, n)
+!
+      integer, dimension(:), intent(inout) :: fsum
+      integer, intent(in) :: n
+!
+      if (n <= 0) return
+      if (ALWAYS_FALSE) print*, fsum
+      
+    endsubroutine mpiallreduce_sum_int_arr_inplace
 !***********************************************************************
     subroutine mpiallreduce_max_scl_sgl(fmax_tmp,fmax,comm)
 !
@@ -1401,8 +1118,6 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: imax_tmp,imax
       integer, optional :: comm
 !
@@ -1446,8 +1161,6 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: imin_tmp,imin
       integer, optional :: comm
 !
@@ -1466,6 +1179,17 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, present(comm)
 !
     endsubroutine mpiallreduce_or_scl
+!***********************************************************************
+    subroutine mpiallreduce_or_arr_inplace(lor, n, comm)
+!
+      logical, dimension(:), intent(inout) :: lor
+      integer, intent(in) :: n
+      integer, intent(in), optional :: comm
+!
+      if (n <= 0) return
+      if (ALWAYS_FALSE) print*, lor, present(comm)
+!
+    endsubroutine mpiallreduce_or_arr_inplace
 !***********************************************************************
     subroutine mpireduce_max_scl_int(fmax_tmp,fmax,comm)
 !
