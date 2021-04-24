@@ -432,6 +432,16 @@ no_cuda_message:
 	@exit 1
 
     endif
+    CMAKE_LOADED := $(shell (module list |& grep -i cmake) )
+    ifeq ($(CMAKE_LOADED),)
+no_cmake_message:
+	@echo ";;;"
+	@echo ";;; No CMake module seems to be loaded! Exit."
+	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i cmake | sed -e's/^.* \([^ ]*[Cc][Mm][Aa][Kk][Ee][^ ]*\) .*$$/\1/') )"
+	@echo ";;;"
+	@exit 1
+
+    endif
   endif
 #
   FFLAGS_GENERAL += -mcmodel=medium
@@ -2669,7 +2679,10 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 #
 $(IO_OBJ):
 ifneq ($(IO),io_wrapper)
-	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC))
+	@grep '^ *[^!]*module  *Io_' $(IO_SRC) >& /dev/null; \
+	if [ "$$?" == "0" ]; then \
+	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC)); \
+	fi
 endif
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
 #
