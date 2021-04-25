@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED EEE2; EEE(3)
+! PENCILS PROVIDED e2; el(3)
 !***************************************************************
 !
 module disp_current
@@ -30,19 +30,19 @@ module disp_current
 !
   ! input parameters
   real :: ampl=1e-3, constf=1. !,etaphi=0.,kx=1., ky=0., kz=0.
-  real :: ampl_Ex=0.0, ampl_Ey=0.0, ampl_Ez=0.0
-  real :: kx_Ex=0.0, kx_Ey=0.0, kx_Ez=0.0
-  real :: ky_Ex=0.0, ky_Ey=0.0, ky_Ez=0.0
-  real :: kz_Ex=0.0, kz_Ey=0.0, kz_Ez=0.0
-  real :: phase_Ex=0.0, phase_Ey=0.0, phase_Ez=0.0
-  character(len=50) :: initEE='zero'
+  real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0
+  real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
+  real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
+  real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
+  real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
+  character(len=50) :: initee='zero'
   namelist /disp_current_init_pars/ &
-    initEE, constf, &
-    ampl_Ex, ampl_Ey, ampl_Ez, &
-    kx_Ex, kx_Ey, kx_Ez, &
-    ky_Ex, ky_Ey, ky_Ez, &
-    kz_Ex, kz_Ey, kz_Ez, &
-    phase_Ex, phase_Ey, phase_Ez
+    initee, constf, &
+    ampl_ex, ampl_ey, ampl_ez, &
+    kx_ex, kx_ey, kx_ez, &
+    ky_ex, ky_ey, ky_ez, &
+    kz_ex, kz_ey, kz_ez, &
+    phase_ex, phase_ey, phase_ez
 !
   ! run parameters
   namelist /disp_current_run_pars/ &
@@ -54,14 +54,14 @@ module disp_current
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_EErms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
-  integer :: idiag_EEmax=0       ! DIAG_DOC: $\max(|\Ev|)$
+  integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
+  integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
-  integer :: idiag_EExmz=0       ! XYAVG_DOC: $\left<{\cal E}_x\right>_{xy}$
-  integer :: idiag_EEymz=0       ! XYAVG_DOC: $\left<{\cal E}_y\right>_{xy}$
-  integer :: idiag_EEzmz=0       ! XYAVG_DOC: $\left<{\cal E}_z\right>_{xy}$
+  integer :: idiag_exmz=0       ! XYAVG_DOC: $\left<{\cal E}_x\right>_{xy}$
+  integer :: idiag_eymz=0       ! XYAVG_DOC: $\left<{\cal E}_y\right>_{xy}$
+  integer :: idiag_ezmz=0       ! XYAVG_DOC: $\left<{\cal E}_z\right>_{xy}$
 !
   contains
 !
@@ -76,11 +76,10 @@ module disp_current
       use FArrayManager
 !
 !  It would have been more consistent to call the indices to the
-!  three components iex, iey, and iez, but the names
-!  iEEx, iEEy, and iEEz were already in use.
+!  three components iex, iey, and iez
 !
-      call farray_register_pde('ee',iEE,vector=3)
-      iEEx=iEE; iEEy=iEEx+1; iEEz=iEEx+2
+      call farray_register_pde('ee',iee,vector=3)
+      iex=iee; iey=iee+1; iez=iee+2
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -121,19 +120,19 @@ module disp_current
 !
 !  SAMPLE IMPLEMENTATION
 !
-      select case (initEE)
-        case ('nothing'); if (lroot) print*,'initEE: nothing'
-        case ('zero'); f(:,:,:,iEEx:iEEz)=0.
+      select case (initee)
+        case ('nothing'); if (lroot) print*,'initee: nothing'
+        case ('zero'); f(:,:,:,iex:iez)=0.
         case ('coswave-phase')
-          call coswave_phase(f,iEEx,ampl_Ex,kx_Ex,ky_Ex,kz_Ex,phase_Ex)
-          call coswave_phase(f,iEEy,ampl_Ey,kx_Ey,ky_Ey,kz_Ey,phase_Ey)
-          call coswave_phase(f,iEEz,ampl_Ez,kx_Ez,ky_Ez,kz_Ez,phase_Ez)
+          call coswave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
+          call coswave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
+          call coswave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
 !
         case default
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'initEE: No such value for initEE: ', trim(initEE)
+          if (lroot) print*,'initee: No such value for initee: ', trim(initee)
           call stop_it("")
       endselect
 !
@@ -148,12 +147,12 @@ module disp_current
 !  25-feb-07/axel: adapted
 !
       lpenc_requested(i_aa)=.true.
-      lpenc_requested(i_EEE)=.true.
+      lpenc_requested(i_el)=.true.
       lpenc_requested(i_curlB)=.true.
       lpenc_requested(i_del2a)=.true.
 
-      if (idiag_EErms/=0 .or. idiag_EEmax/=0) lpenc_diagnos(i_EEE2)=.true.
-      if (idiag_EExmz/=0 .or. idiag_EEymz/=0 .or. idiag_EEzmz/=0 ) lpenc_diagnos(i_EEE)=.true.
+      if (idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
+      if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -185,10 +184,10 @@ module disp_current
       intent(in) :: f
       intent(inout) :: p
 !
-! EEE
-      p%EEE=f(l1:l2,m,n,iEEx:iEEz)
-! EEE2
-      call dot2_mn(p%EEE,p%EEE2)
+! el
+      p%el=f(l1:l2,m,n,iex:iez)
+! e2
+      call dot2_mn(p%el,p%e2)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -223,15 +222,15 @@ module disp_current
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-      if (headtt) call identify_bcs('EE',iEE)
+      if (headtt) call identify_bcs('ee',iee)
 !
 !  solve: dE/dt = curlB - (const/t^2)*aa
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
         if (t==0.) call fatal_error('disp_current: dspecial_dt', 't=0 not allowed')
-        df(l1:l2,m,n,iEEx:iEEz)=df(l1:l2,m,n,iEEx:iEEz)-c_light2*p%del2a-constf/t**2*p%aa
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%EEE
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-constf/t**2*p%aa
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
       endif
 !
 !  timestep constraint
@@ -241,12 +240,12 @@ module disp_current
 !  diagnostics
 !
       if (ldiagnos) then
-        call sum_mn_name(p%EEE2,idiag_EErms,lsqrt=.true.)
-        call max_mn_name(p%EEE2,idiag_EEmax,lsqrt=.true.)
+        call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
+        call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
 !
-        call xysum_mn_name_z(p%EEE(:,1),idiag_EExmz)
-        call xysum_mn_name_z(p%EEE(:,2),idiag_EEymz)
-        call xysum_mn_name_z(p%EEE(:,3),idiag_EEzmz)
+        call xysum_mn_name_z(p%el(:,1),idiag_exmz)
+        call xysum_mn_name_z(p%el(:,2),idiag_eymz)
+        call xysum_mn_name_z(p%el(:,3),idiag_ezmz)
 !
       endif
 !
@@ -311,27 +310,27 @@ module disp_current
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_EErms=0; idiag_EEmax=0
+        idiag_erms=0; idiag_emax=0
         cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'EErms',idiag_EErms)
-        call parse_name(iname,cname(iname),cform(iname),'EEmax',idiag_EEmax)
+        call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
+        call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
       enddo
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EExmz',idiag_EExmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EEymz',idiag_EEymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EEzmz',idiag_EEzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'exmz',idiag_exmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eymz',idiag_eymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ezmz',idiag_ezmz)
       enddo
 !
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='EE') cformv='DEFINED'
+        where(cnamev=='ee') cformv='DEFINED'
       endif
 !
 !  write column where which magnetic variable is stored
@@ -360,7 +359,7 @@ module disp_current
 !
 !  Electric field.
 !
-      case ('EE'); call assign_slices_vec(slices,f,iEE)
+      case ('ee'); call assign_slices_vec(slices,f,iee)
 !
       endselect
 !
