@@ -3,7 +3,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2020/02/23 20:50:00 xiangyu Exp $',
   nt=201, it1=20, isave=50, itorder=3
-  dsnap=0.5, dvid=500.
+  dsnap=50., dvid=500.
   dspec=1., ou_spec=T
   lpencil_check=T
   dtmin=1e-10
