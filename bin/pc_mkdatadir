@@ -137,6 +137,9 @@ else if ($hn =~ *stampede*) then #stampede.tacc.utexas.edu
   else
     set str='s/home1/scratch/g'
   endif
+else if ($USER =~ ccyang) then
+  echo "Special entry for Chao-Chin Yang"
+  set str='s/devel/scratch/'
 else if ($hn =~ login*) then
   echo $cwd/data >! .tmp
   set str='s/home/disk\/global/g'
