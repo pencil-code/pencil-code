@@ -3829,8 +3829,10 @@ module Magnetic
 !
 !  Dummy pencils
 !
-      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
-          "Electric field is not currently computed in magnetic")
+   !  if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
+   !      "Electric field is not currently computed in magnetic")
+      if ((lpenc_loc(i_el).or.lpenc_loc(i_e2)).and.headt) &
+          print*,'lets hope p%el and p%e2 are computed elsewhere...'
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -7870,6 +7872,7 @@ module Magnetic
         ampl_Az=-ampl*sqrt(rho*mu0)/kx
         f(l1:l2,m,n,iaa+2 )=ampl_Az*cos(kx*x(l1:l2))
       enddo; enddo
+      if (lroot) print*,'alfven_x: mu0, kx, ampl_Az(1)=',mu0, kx, ampl_Az(1)
 !
     endsubroutine alfven_x
 !***********************************************************************
