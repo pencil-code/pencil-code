@@ -432,7 +432,7 @@ module Snapshot
 !
 !  Read data without hydro or density, but with electric field
 !
-      elseif (lread_oldsnap_nohydro_but_efield) then
+      elseif (lread_oldsnap_nohydro_efield) then
         if (lroot) print*,'read old snapshot file nohydro_but_efield mvar,msnap=',mvar,msnap
         call input_snap(chsnap,f,msnap-1,mode)
         !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)

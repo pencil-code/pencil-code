@@ -194,7 +194,7 @@ module Cdata
   logical :: lwrite_last_powersnap=.false.
   logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
-  logical :: lread_oldsnap_nohydro_but_efield=.false.
+  logical :: lread_oldsnap_nohydro_efield=.false.
   logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
