@@ -114,7 +114,7 @@ module Magnetic
   character (len=labellen) :: cc_light='1'
   real :: alpha_inflation=0.
   real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
-  logical :: lbb_as_aux=.true., lee_as_aux=.true.
+  logical :: laa_as_aux=.false., lbb_as_aux=.true., lee_as_aux=.true., ljj_as_aux=.false.
   logical :: lemf=.false., linflation=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
@@ -135,6 +135,7 @@ module Magnetic
     linflation, alpha_inflation, &
     initaak, initeek, &
     ux_const, ampl_uy, &
+    laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
     lscale_tobox, kgaussian_aa, lskip_projection_aa, relhel_aa, &
@@ -204,9 +205,11 @@ module Magnetic
 !  register B array as aux
 !
       if (lee_as_aux) call farray_register_auxiliary('ee',iee,vector=3)
+      if (laa_as_aux) call farray_register_auxiliary('aa',iaa,vector=3)
       if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
       if (ljj_as_aux) call farray_register_auxiliary('jj',ijj,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
+      iax=iaa; iay=iaa+1; iaz=iaa+2
       ibx=ibb; iby=ibb+1; ibz=ibb+2
       ijx=ijj; ijy=ijj+1; ijz=ijj+2
 !
@@ -262,8 +265,10 @@ module Magnetic
 !
       f(:,:,:,iaak:iaakim+2)=0.
       f(:,:,:,ieek:ieekim+2)=0.
-      f(:,:,:,iee :iee   +2)=0.
-      f(:,:,:,ibb :ibb   +2)=0.
+      if (lee_as_aux) f(:,:,:,iee :iee   +2)=0.
+      if (laa_as_aux) f(:,:,:,iaa :iaa   +2)=0.
+      if (lbb_as_aux) f(:,:,:,ibb :ibb   +2)=0.
+      if (ljj_as_aux) f(:,:,:,ijj :ijj   +2)=0.
       select case (initaak)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
@@ -583,6 +588,8 @@ module Magnetic
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! bb
       if (lpenc_loc(i_bb)) p%bb=f(l1:l2,m,n,ibx:ibz)
+! jj
+      if (lpenc_loc(i_jj)) p%jj=f(l1:l2,m,n,ijx:ijz)
 ! bbb
       if (lpenc_loc(i_bbb)) p%bbb=p%bb
 ! e2
@@ -946,6 +953,43 @@ module Magnetic
           enddo
         enddo
       enddo
+!
+!  ee back to real space, use the names bbkre and bbkim for ee.
+!
+      if (lee_as_aux) then
+        bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
+        bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
+      endif
+!
+!  aa back to real space, use the names bbkre and bbkim for aa.
+!
+      if (laa_as_aux) then
+        bbkre=f(l1:l2,m1:m2,n1:n2,iaak  :iaak  +2)
+        bbkim=f(l1:l2,m1:m2,n1:n2,iaakim:iaakim+2)
+        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
+      endif
+!
+!  jj back to real space, use the names bbkre and bbkim for jj.
+!
+      if (ljj_as_aux) then
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k1=kx_fft(ikx+ipx*nx)
+              k2=ky_fft(iky+ipy*ny)
+              k3=kz_fft(ikz+ipz*nz)
+              ksqr=k1**2+k2**2+k3**2
+              bbkre(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+              bbkim(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+            enddo
+          enddo
+        enddo
+        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,ijj:ijj+2)=bbkre
+      endif
 !
 !  Back to real space, but first compute B in Fourier space as
 !  Bk = ik x Ak, so Bk'+iBk'' = ik*(Ak'+iAk'') = ik*Ak'-k*Ak''.
