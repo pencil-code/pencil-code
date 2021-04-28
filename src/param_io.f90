@@ -88,7 +88,7 @@ module Param_IO
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
-      lread_oldsnap_nohydro_efield, &
+      lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &

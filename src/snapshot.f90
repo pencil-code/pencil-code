@@ -449,6 +449,26 @@ module Snapshot
           f(:,:,:,ivar)=0.
         enddo
 !
+!  Read data without hydro or density, but with electric field (spectral)
+!  A(16-18), GW(22-39) --> u,lnrho(1-4), A(5-7), GW(8-25)
+!
+      elseif (lread_oldsnap_nohydro_ekfield) then
+        if (lroot) print*,'read old snapshot file nohydro_ekfield mvar,msnap=',mvar,msnap
+        call input_snap(chsnap,f,msnap+14,mode)
+        !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        do ivar=1,4
+          f(:,:,:,ivar)=0.
+        enddo
+        do ivar=5,7
+          f(:,:,:,ivar)=f(:,:,:,ivar+11)
+        enddo
+        do ivar=8,msnap
+          f(:,:,:,ivar)=f(:,:,:,ivar+14)
+        enddo
+!
 !  Use default input configuration.
 !
       else
