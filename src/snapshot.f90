@@ -333,6 +333,7 @@ module Snapshot
       logical :: lread_nogrid
       integer :: msnap, mode,ipscalar
       real, dimension (mx,my,mz,msnap) :: f
+      real, dimension (:,:,:,:), allocatable :: f_oversize
       character (len=*) :: chsnap
 !
       integer :: ivar
@@ -454,8 +455,8 @@ module Snapshot
 !
       elseif (lread_oldsnap_nohydro_ekfield) then
         if (lroot) print*,'read old snapshot file nohydro_ekfield mvar,msnap=',mvar,msnap
-        call input_snap(chsnap,f,msnap+14,mode)
-        !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)
+        allocate(f_oversize(mx,my,mz,msnap+14))
+        call input_snap(chsnap,f_oversize,msnap+14,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -463,11 +464,12 @@ module Snapshot
           f(:,:,:,ivar)=0.
         enddo
         do ivar=5,7
-          f(:,:,:,ivar)=f(:,:,:,ivar+11)
+          f(:,:,:,ivar)=f_oversize(:,:,:,ivar+11)
         enddo
         do ivar=8,msnap
-          f(:,:,:,ivar)=f(:,:,:,ivar+14)
+          f(:,:,:,ivar)=f_oversize(:,:,:,ivar+14)
         enddo
+        deallocate(f_oversize)
 !
 !  Use default input configuration.
 !
