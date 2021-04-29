@@ -76,8 +76,6 @@
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
             MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
             MPI_INFO_NULL, MPI_ANY_TAG, lyang
-
-  integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, IYZPLANE=23
 !
   interface mpirecv_logical
     module procedure mpirecv_logical_scl
