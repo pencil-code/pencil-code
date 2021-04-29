@@ -50,7 +50,7 @@ module Timestep
       use Boundcond, only: update_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
-      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use PointMasses, only: pointmasses_timestep_first, &

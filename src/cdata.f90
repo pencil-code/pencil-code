@@ -107,9 +107,9 @@ module Cdata
 !
 !  Polar grid
 !
-  integer :: ncoarse=8
-  logical :: lcoarse=.false.
-  integer, dimension(2) :: mexts=(/m1,m1+ny-1/)
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn
+  integer, dimension(2) :: mexts=(/-1,-1/)
   integer, dimension(:), allocatable :: nphis
   real, dimension(:), allocatable :: nphis1, nphis2
   integer, dimension(:,:), allocatable :: nexts
@@ -312,7 +312,7 @@ module Cdata
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
-  integer :: nvar,naux,naux_com
+  integer :: nvar,naux,naux_com     !,nscratch,nglobal
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0

@@ -98,6 +98,9 @@ iloop:    do ii=iia,iie
                 if (nghost_read_fewer==0) then
 
                   if (lzaver_on_input) then
+!
+!  Read data from all processors in z direction in source directory and average them.
+!
                     allocate(tmp(mx,my,mz_src,nv))
                     if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,mz_src,ivar_omit(1):ivar_omit(2)))
                     iosr=read_part(lun_input,tmp,tmp_omit)

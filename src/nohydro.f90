@@ -84,8 +84,7 @@ module Hydro
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
 !
-      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_hydro','there was a problem sharing lpressuregradient_gas')
+      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
 !
     endsubroutine register_hydro
 !***********************************************************************

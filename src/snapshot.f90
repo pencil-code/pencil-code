@@ -250,20 +250,13 @@ module Snapshot
       real :: time1
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: enum_
       character (len=fnlen) :: file
       character (len=intlen) :: ch
-!
-      if (present(enum)) then
-        enum_=enum
-      else
-        enum_=.false.
-      endif
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
 !
-      if (enum_) then
+      if (loptest(enum)) then
         call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
 !
 !  At first call, need to initialize tsnap.
@@ -301,7 +294,7 @@ module Snapshot
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         endif
         ! update ghosts, because 'update_auxiliaries' may change the data
-        if (.not. loptest(noghost)) call update_ghosts(a)
+        if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
         call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)

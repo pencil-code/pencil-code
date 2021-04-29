@@ -35,6 +35,7 @@ module Grid
   public :: grid_bound_data
   public :: set_coorsys_dimmask
   public :: construct_serial_arrays
+  public :: coarsegrid_interp
 !
   public :: find_star
   public :: calc_bound_coeffs
@@ -914,9 +915,11 @@ module Grid
       use Sub, only: remove_prof
       use Mpicomm
       use IO, only: lcollective_IO
+      use General, only: indgen, itoa
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
-      integer :: xj,yj,zj,itheta
+      integer :: xj,yj,zj,itheta,nphi_max,nphi,na,ne,mm,nn,nni
+      integer, dimension(3) :: idzl,idzr
 !
       call construct_serial_arrays
 !
@@ -1284,6 +1287,94 @@ module Grid
         if (llast_proc_z ) dVol_z(n2)=.5*dVol_z(n2)
       endif
 !
+! Check max possible ncoarse.
+!
+      if (ncoarse>nz/3) then
+        ncoarse=nz/3
+        call warning('initialize_grid','there are jumped-over processors due to grid coarsening'// &
+                     ' -> ncoarse reduced to floor(nz/3)='//trim(itoa(ncoarse)))
+      endif
+!
+!  Set lcoarse for coarsening grid near poles.
+!
+      lcoarse=lspherical_coords .and. lpole(2) .and. ncoarse>1 .and. nprocy>1
+      if (.not.lcoarse) ncoarse=1
+   
+      if (lcoarse.and.(lfirst_proc_y.or.llast_proc_y)) then
+
+!  TB generalized to more than two procs, in which coarsening happens.
+
+        if (lfirst_proc_y) then
+          mexts=(/m1,m1+ncoarse-2/)
+        elseif (llast_proc_y) then
+          mexts=(/m2-ncoarse+2,m2/)
+        endif
+!write(iproc+30,*) 'mexts=', mexts
+!
+!MR: missing - nprocy=1 case: two m intervals in one proc!
+!
+        allocate(nphis(mexts(1):mexts(2)), nphis1(mexts(1):mexts(2)), &
+                 nphis2(mexts(1):mexts(2)))
+        allocate(nexts(mexts(1):mexts(2),2))
+        allocate(ninds(-nghost:nghost,mexts(1):mexts(2),n1:n2))
+        ninds=0
+
+        do mm=mexts(1),mexts(2)
+
+          if (lfirst_proc_y) then
+            nphi = ceiling(ncoarse/(mm-m1+1.))
+          else
+            nphi = ceiling(ncoarse/(m2-mm+1.))
+          endif
+
+          if (mod(nzgrid,nphi)/=0) &
+            call warning('initialize_grid','coarsened grid non-periodic: nphi(m='// &
+                         trim(itoa(mm))//')='//trim(itoa(nphi)))
+
+          nphis(mm)=nphi
+          nphis1(mm)=1./nphi
+          nphis2(mm)=1./(nphi*nphi)
+          na=n1 + mod((nphi-mod(nz,nphi))*ipz,nphi)
+
+          do nn=na,n2,nphi
+            ninds(0,mm,nn)=nn
+
+            ninds(-1:-nghost:-1,mm,nn)=nn-indgen(nghost)*nphi
+            where(ninds(-nghost:-1,mm,nn)<n1) &
+              ninds(-nghost:-1,mm,nn)=(ninds(-nghost:-1,mm,nn)-n1+1)/nphi-1+n1
+
+            ninds(+1:+nghost,mm,nn)=nn+indgen(nghost)*nphi
+
+            where(ninds(+1:+nghost,mm,nn)>n2) &
+              ninds(+1:+nghost,mm,nn)=(ninds(+1:+nghost,mm,nn)-n2-1)/nphi+1+n2
+
+            ne=nn
+
+            do nni=nn+1,min(n2,nn+nphi-1)
+              idzl=nni-nn+(indgen(nghost)-1)*nphi
+              idzr=nn+nphi-nni+(indgen(nghost)-1)*nphi
+              ninds(:,mm,nni)=(/idzl(nghost:1:-1),-nn,idzr/)
+            enddo
+
+          enddo
+
+          do nni=n1,na-1
+
+            idzl=nphis(mm)-na+nni+(indgen(nghost)-1)*nphis(mm)
+            idzr=na-nni+(indgen(nghost)-1)*nphis(mm)
+            ninds(:,mm,nni)=(/idzl(nghost:1:-1),0,idzr/)
+
+          enddo
+
+          nexts(mm,:)=(/na,ne/)
+        enddo
+!write(iproc+30,*) 'nexts=', nexts(:,:)
+!write(iproc+30,*) 'nphis=', nphis(:)
+!write(iproc+30,'(7(i4,1x))')  (ninds(:,mm,:), mm=mexts(1),mexts(2))
+      else
+        lcoarse=.false.    ! now processor-dependent!
+      endif
+!
 !  Print the value for which output is being produced.
 !  (Have so far only bothered about single processor output.)
 !  This is now done on all the processors.
@@ -1306,6 +1397,83 @@ module Grid
       endif
 !
     endsubroutine initialize_grid
+!***********************************************************************
+    subroutine coarsegrid_interp(f,ivar1,ivar2)
+
+      use General, only: ioptest
+
+      real, dimension(:,:,:,:) :: f
+      integer, optional :: ivar1,ivar2
+
+      integer :: mm,ll,nn,coarse_neigh,iv,iv1,iv2
+      integer, dimension(3), parameter :: left_inds=(/-3,-2,-1/), right_inds=(/1,2,3/)
+      integer, dimension(6) :: neighs,dists
+      real, dimension(6) :: ws
+      real :: fac
+
+      iv1=ioptest(ivar1,1)
+      iv2=ioptest(ivar2,size(f,4))
+
+      do mm=mexts(1),mexts(2)
+
+        do nn=n1,n2
+          if (ninds(0,mm,nn)<=0) then
+!
+!  Interpolation neighbors and distances:
+!
+            if (ninds(0,mm,nn)==0) then
+              coarse_neigh=nexts(mm,1)             ! right coarsegrid neighbor
+              neighs=(/ninds(left_inds,mm,coarse_neigh),coarse_neigh,ninds(right_inds(1:2),mm,coarse_neigh)/)
+            else
+              coarse_neigh=-ninds(0,mm,nn)         ! left coarsegrid neighbor
+              neighs=(/ninds(left_inds(2:3),mm,coarse_neigh),coarse_neigh,ninds(right_inds,mm,coarse_neigh)/)
+            endif
+
+            dists=(/ninds(left_inds,mm,nn),-ninds(right_inds,mm,nn)/)
+
+!  should be precalculated
+            fac=1./nphis(mm)**5
+            ws(1)=-0.0083333333333333*(dists(2)*dists(3)*dists(4)*dists(5)*dists(6))*fac
+            ws(2)= 0.041666666666667 *(dists(1)*dists(3)*dists(4)*dists(5)*dists(6))*fac
+            ws(3)=-0.083333333333333 *(dists(1)*dists(2)*dists(4)*dists(5)*dists(6))*fac
+            ws(4)= 0.083333333333333 *(dists(1)*dists(2)*dists(3)*dists(5)*dists(6))*fac
+            ws(5)=-0.041666666666667 *(dists(1)*dists(2)*dists(3)*dists(4)*dists(6))*fac
+            ws(6)= 0.0083333333333333*(dists(1)*dists(2)*dists(3)*dists(4)*dists(5))*fac
+if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
+            do ll=l1,l2
+              do iv=iv1,iv2
+                f(ll,mm,nn,iv) = sum(ws*f(ll,mm,neighs,iv))
+if (ll==0.and.iv==1) then
+  write(iproc+50,'(i3,7(e14.7,1x))') nn, f(ll,mm,nn,iv), sum(ws*f(ll,mm,neighs,iv)), f(ll,mm,neighs,iv)
+endif
+              enddo
+            enddo
+          endif
+        enddo
+
+      enddo
+
+    endsubroutine coarsegrid_interp
+!***********************************************************************
+    subroutine quintic_interp(nn,a,ninds)
+
+      integer :: nn
+      real, dimension(:,:) :: a
+      integer, dimension(:) :: ninds
+! interpolation weights: 1/([-120,24,-12,12,-24,120]*dx^5) =
+! [-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333]*dx^-5
+
+      integer :: iv,izu
+      real, dimension(6) :: coefs
+
+      izu=ipz*nz+nghost
+
+ !     dels=zgrid(inds)-zgrid(nn)
+      do iv=1,mvar
+        a(nn,iv) = sum(a(ninds,iv)*coefs)
+      enddo
+
+    endsubroutine quintic_interp
 !***********************************************************************
     subroutine save_grid(lrestore)
 !
@@ -2349,40 +2517,24 @@ module Grid
 !
 !      else obsolete
 !
-      integer :: nphi
-      real :: tmp
-!
-        dline: if (lspherical_coords) then
+        if (lspherical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = r1_mn * dy_1(m)
-          tmp = sin1th(m) * dz_1(n)
-!
-          if (lpole(2) .and. lcoarse) then
-            if (lfirst_proc_y .and. m<m1+ncoarse-1 .and. m>=m1) then
-              nphi = int(ncoarse/(m-m1+1))
-              tmp = tmp/nphi
-!if (n==n1) print*, 'first:m,nphi=',m,nphi 
-            elseif (llast_proc_y .and. m>m2-ncoarse+1 .and. m<=m2) then
-              nphi = int(ncoarse/(m2-m+1))
-              tmp = tmp/nphi
-!if (n==n1) print*, 'last:m,nphi=',m,nphi 
-            endif
-          endif
-          dline_1(:,3) = r1_mn * tmp
-!
-        else if (lcylindrical_coords) then dline
+          dline_1(:,3) = r1_mn * sin1th(m) * dz_1(n)
+          if (lcoarse_mn) dline_1(:,3) = dline_1(:,3)*nphis1(m)
+        else if (lcylindrical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = rcyl_mn1 * dy_1(m)
           dline_1(:,3) = dz_1(n)
-        else if (lcartesian_coords) then dline
+        else if (lcartesian_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = dy_1(m)
           dline_1(:,3) = dz_1(n)
-        else if (lpipe_coords) then dline
+        else if (lpipe_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = dy_1(m)
           dline_1(:,3) = dz_1(n)
-        endif dline
+        endif
 !
         dxmax_pencil = 0.
         if (nxgrid /= 1) dxmax_pencil =     1.0 / dline_1(:,1)

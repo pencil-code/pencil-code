@@ -2556,7 +2556,7 @@ module Sub
 !***********************************************************************
     subroutine bij_tilde(f,bb,bijtilde,bij_cov_corr)
 !
-! Calculates \partial B_[r,\theta,\phi]/ \partial r, B_[r,\theta,\phi]/(r \theta),
+! Calculates \partial B_[r,\theta,\phi]/ \partial r, (\partial B_[r,\theta,\phi]/\partial \theta)/r,
 ! and optionally the correction, needed for covariant derivatives, in bij_cov_corr.
 !
 ! 20-nov-16/MR: coded
@@ -4329,7 +4329,6 @@ module Sub
 
     end function ylm
 !***********************************************************************
-      
     recursive function ylm_core(cost,sint,cosp,sinp,ell,emm,der) result (sph_har)
 !
 !  Spherical harmonic

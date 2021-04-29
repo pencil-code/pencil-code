@@ -110,15 +110,9 @@ module InitialCondition
 !
 !     Retrieve cp, cv, and gravx
 !
-      call get_shared_variable('cp', cp, ierr)
-      if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-           "there was a problem when getting cp")
-      call get_shared_variable('cv', cv, ierr)
-      if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-           "there was a problem when getting cv")
-      call get_shared_variable('gravx', gravx, ierr)
-      if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-           "there was a problem when getting gravx")
+      call get_shared_variable('cp', cp, caller='initial_condition_all')
+      call get_shared_variable('cv', cv)
+      call get_shared_variable('gravx', gravx)
 !
 !  Select type of stratification
 !

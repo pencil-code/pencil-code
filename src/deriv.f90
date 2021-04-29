@@ -175,11 +175,17 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-!!          if (lpole(2) .and. lcoarse) then
-          if (withdx) facs = a * dz_1(n)
-          df=facs*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                   -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          if (lcoarse_mn) then
+            if (withdx) facs = a * dz_1(n) * nphis1(m)
+            df=facs*(+45.0*(f(l1:l2,m,ninds(+1,m,n),k)-f(l1:l2,m,ninds(-1,m,n),k)) &
+                     - 9.0*(f(l1:l2,m,ninds(+2,m,n),k)-f(l1:l2,m,ninds(-2,m,n),k)) &
+                     +     (f(l1:l2,m,ninds(+3,m,n),k)-f(l1:l2,m,ninds(-3,m,n),k)) )
+          else
+            if (withdx) facs = a * dz_1(n)
+            df=facs*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                     -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                     +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          endif
           if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
         else
           df=0.
@@ -343,7 +349,7 @@ module Deriv
           endif
         elseif (j==3) then
           if (nzgrid/=1) then
-!!            if (lpole(2) .and. lcoarse) then
+!            if (lcoarse_mn) then
             facs = (1./60.) * dz_1(n)
             df=facs*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
                      -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
@@ -483,12 +489,19 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-!!          if (lpole(2) .and. lcoarse) then
-          facs=dz_1(n)**2
-          df2=facs*( der2_coef0* f(l1:l2,m,n  ,k) &
-                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                    +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
+          if (lcoarse_mn) then
+            facs=dz_1(n)**2*nphis2(m)
+            df2=facs*( der2_coef0* f(l1:l2,m,n  ,k) &
+                      +der2_coef1*(f(l1:l2,m,ninds(+1,m,n),k)+f(l1:l2,m,ninds(-1,m,n),k)) &
+                      +der2_coef2*(f(l1:l2,m,ninds(+2,m,n),k)+f(l1:l2,m,ninds(-2,m,n),k)) &
+                      +der2_coef3*(f(l1:l2,m,ninds(+3,m,n),k)+f(l1:l2,m,ninds(-3,m,n),k))  )
+          else
+            facs=dz_1(n)**2
+            df2=facs*( der2_coef0* f(l1:l2,m,n  ,k) &
+                      +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                      +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                      +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) )
+          endif
           if (.not.loptest(lwo_line_elem).and.lspherical_coords) &
             df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
@@ -559,7 +572,7 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-!          if (lpole(2) .and. lcoarse) then
+!          if (lcoarse_mn) then
           facs=(1./180)*dz_1(n)**2
           df2=facs*(-490.0*f(l1:l2,m,n) &
                     +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
@@ -953,7 +966,7 @@ module Deriv
         endif        
       elseif (j==3) then
         if (nzgrid/=1) then
-!!          if (lpole(2) .and. lcoarse) then
+!          if (lcoarse_mn) then
           if (igndx) then
             facs=1.
           else if (upwnd) then
@@ -1291,6 +1304,8 @@ module Deriv
       intent(in) :: f,k,i,j
       intent(out) :: df
 !
+      real :: facs
+!
 ! crash if this is called with i=j
 !
 !      if (i.eq.j) call fatal_error('derij_main','i=j, no derivative calculated')
@@ -1298,7 +1313,7 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
-      if (lbidiagonal_derij) then   !!.and..not.lcoarse) then
+      if (lbidiagonal_derij .and. .not.lcoarse_mn) then
         !
         ! Use bidiagonal mixed-derivative operator, i.e.
         ! employ only the three neighbouring points on each of the four
@@ -1322,15 +1337,15 @@ module Deriv
           endif
         elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./720.)*dy_1(m)*dz_1(n)
-            df=fac*( &
+            facs=(1./720.)*dy_1(m)*dz_1(n)
+            df=facs*( &
                         270.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
                               +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
                        - 27.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
                               +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
                        +  2.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
                               +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
-                   )
+                    )
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
@@ -1385,27 +1400,51 @@ module Deriv
           endif
         elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./60.**2)*dy_1(m)*dz_1(n)
-            df=fac*( &
-              45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
-                    -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
-                       +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                  -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
-                    -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
-                       +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-              -9.*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
-                    -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
-                       +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                  -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
-                    -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
-                       +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-                 +((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
-                    -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
-                       +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                  -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
-                    -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
-                       +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
-                  ) 
+            facs=(1./60.**2)*dy_1(m)*dz_1(n)
+            if (lcoarse_mn) then
+              facs=facs*nphis1(m)
+              df=facs*( &
+                45.*((45.*(f(l1:l2,m+1,ninds(+1,m,n),k)-f(l1:l2,m-1,ninds(+1,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(+1,m,n),k)-f(l1:l2,m-2,ninds(+1,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(+1,m,n),k)-f(l1:l2,m-3,ninds(+1,m,n),k))) &
+                    -(45.*(f(l1:l2,m+1,ninds(-1,m,n),k)-f(l1:l2,m-1,ninds(-1,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(-1,m,n),k)-f(l1:l2,m-2,ninds(-1,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(-1,m,n),k)-f(l1:l2,m-3,ninds(-1,m,n),k))))&
+                -9.*((45.*(f(l1:l2,m+1,ninds(+2,m,n),k)-f(l1:l2,m-1,ninds(+2,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(+2,m,n),k)-f(l1:l2,m-2,ninds(+2,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(+2,m,n),k)-f(l1:l2,m-3,ninds(+2,m,n),k))) &
+                    -(45.*(f(l1:l2,m+1,ninds(-2,m,n),k)-f(l1:l2,m-1,ninds(-2,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(-2,m,n),k)-f(l1:l2,m-2,ninds(-2,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(-2,m,n),k)-f(l1:l2,m-3,ninds(-2,m,n),k))))&
+                   +((45.*(f(l1:l2,m+1,ninds(+3,m,n),k)-f(l1:l2,m-1,ninds(+3,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(+3,m,n),k)-f(l1:l2,m-2,ninds(+3,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(+3,m,n),k)-f(l1:l2,m-3,ninds(+3,m,n),k))) &
+                    -(45.*(f(l1:l2,m+1,ninds(-3,m,n),k)-f(l1:l2,m-1,ninds(-3,m,n),k))  &
+                      -9.*(f(l1:l2,m+2,ninds(-3,m,n),k)-f(l1:l2,m-2,ninds(-3,m,n),k))  &
+                         +(f(l1:l2,m+3,ninds(-3,m,n),k)-f(l1:l2,m-3,ninds(-3,m,n),k))))&
+                    )
+            else
+              df=facs*( &
+                45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+                      -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
+                         +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
+                    -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                      -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
+                         +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
+                -9.*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+                      -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
+                         +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
+                    -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                      -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
+                         +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
+                   +((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+                      -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
+                         +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
+                    -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                      -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
+                         +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
+                    )
+            endif
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
@@ -1413,26 +1452,50 @@ module Deriv
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
             fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
-            df=fac*( &
-              45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
-                    -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
-                       +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
-                    -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
-                       +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-              -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
-                    -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
-                       +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
-                    -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
-                       +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-                 +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
-                    -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
-                       +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                  -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
-                    -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
-                       +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
-                   )
+            if (lcoarse_mn) then
+              fac=fac*nphis1(m)
+              df=fac*( &
+                45.*((45.*(f(l1+1:l2+1,m,ninds(+1,m,n),k)-f(l1-1:l2-1,m,ninds(+1,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(+1,m,n),k)-f(l1-2:l2-2,m,ninds(+1,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(+1,m,n),k)-f(l1-3:l2-3,m,ninds(+1,m,n),k))) &
+                    -(45.*(f(l1+1:l2+1,m,ninds(-1,m,n),k)-f(l1-1:l2-1,m,ninds(-1,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(-1,m,n),k)-f(l1-2:l2-2,m,ninds(-1,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(-1,m,n),k)-f(l1-3:l2-3,m,ninds(-1,m,n),k))))&
+                -9.*((45.*(f(l1+1:l2+1,m,ninds(+2,m,n),k)-f(l1-1:l2-1,m,ninds(+2,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(+2,m,n),k)-f(l1-2:l2-2,m,ninds(+2,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(+2,m,n),k)-f(l1-3:l2-3,m,ninds(+2,m,n),k))) &
+                    -(45.*(f(l1+1:l2+1,m,ninds(-2,m,n),k)-f(l1-1:l2-1,m,ninds(-2,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(-2,m,n),k)-f(l1-2:l2-2,m,ninds(-2,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(-2,m,n),k)-f(l1-3:l2-3,m,ninds(-2,m,n),k))))&
+                   +((45.*(f(l1+1:l2+1,m,ninds(+3,m,n),k)-f(l1-1:l2-1,m,ninds(+3,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(+3,m,n),k)-f(l1-2:l2-2,m,ninds(+3,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(+3,m,n),k)-f(l1-3:l2-3,m,ninds(+3,m,n),k))) &
+                    -(45.*(f(l1+1:l2+1,m,ninds(-3,m,n),k)-f(l1-1:l2-1,m,ninds(-3,m,n),k))  &
+                      -9.*(f(l1+2:l2+2,m,ninds(-3,m,n),k)-f(l1-2:l2-2,m,ninds(-3,m,n),k))  &
+                         +(f(l1+3:l2+3,m,ninds(-3,m,n),k)-f(l1-3:l2-3,m,ninds(-3,m,n),k))))&
+                     )
+            else
+              df=fac*( &
+                45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+                      -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
+                         +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
+                    -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                      -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                         +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
+                -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+                      -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
+                         +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
+                    -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                      -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
+                         +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
+                   +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+                      -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
+                         +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
+                    -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                      -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
+                         +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
+                     )
+            endif
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
@@ -1451,7 +1514,7 @@ module Deriv
         if (i==1.and.j==3 .or. i==3.and.j==1) df=df*r1_mn*sin1th(m) !(minus extra terms)
         if (i+j==5) df=df*r2_mn*sin1th(m)           !(minus extra terms)
       elseif (lcylindrical_coords) then
-        if ( i==2 .or. j==2 ) df=df*rcyl_mn1
+        if ( i==2 .or. j==2 ) df=df*rcyl_mn1        ! not correct for i=j
       endif
 !
     endsubroutine derij_main

@@ -806,33 +806,35 @@ print*, '-----------------'
 endif
 !          size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
 
-          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         zlneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowz,mpierr)
-                                !tolowz
           call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
                          zlneigh,zlneigh,MPI_COMM_PENCIL,irecv_rq_fromlowz,mpierr)
                                 !MPI_ANY_TAG
+          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         zlneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowz,mpierr)
+                                !tolowz
           if (llcorn>=0) then
+!
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+                           llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', llcorn
 !if (.not.lyang) write(iproc+200,*) iproc, 'sends', size_corn/(2*nghost), 'to ', llcorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to right corner neighbor
                            llcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
                                   !TOll
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
-                           llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
-                                  !MPI_ANY_TAG
           endif
 
           if (ulcorn>=0) then
+!
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~ 
+                           ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', ulcorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to left corner neighbor
                            ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
                                   !TOul
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~ 
-                           ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
-                                  !MPI_ANY_TAG
           endif
         endif
 
@@ -882,33 +884,33 @@ endif
 
 !if (lcorner_yz) print*, 'proc ',iproc_world,', sends thphprime_strip to ', zuneigh, &
 !size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
-          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         zuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppz,mpierr)
-                                !touppz
           call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
                          zuneigh,zuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppz,mpierr)
                                 !MPI_ANY_TAG
+          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         zuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppz,mpierr)
+                                !touppz
           if (lucorn>=0) then
+
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+                           lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', lucorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
 !  send strip (without corner part) to left corner neighbor
                            lucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
                                   !TOlu
-
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
-                           lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
-                                  !MPI_ANY_TAG
           endif
 
           if (uucorn>=0) then
+!
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+                           uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', uucorn
             call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              ! send strip to right corner neighbor
                            uucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
                                   !TOuu
-
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
-                           uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
-                                  !MPI_ANY_TAG
           endif
         endif
       endif
@@ -994,31 +996,31 @@ endif
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', yuneigh
 
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', ylneigh
-          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
-                         ylneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowy,mpierr)
-                                !tolowy
           call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
                          ylneigh,ylneigh,MPI_COMM_PENCIL,irecv_rq_fromlowy,mpierr)
                                 !MPI_ANY_TAG
+          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         ylneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowy,mpierr)
+                                !tolowy
           if (llcorn>=0) then
+!
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+                           llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', llcorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to left corner neighbor
                            llcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
                                   !TOll
-
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
-                           llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
-                                  !MPI_ANY_TAG
           endif
 
           if (lucorn>=0) then
+!
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~ 
+                           lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', lucorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to right corner neighbor
                            lucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
                                   !TOlu
-
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~ 
-                           lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
                                   !MPI_ANY_TAG
           endif
         endif
@@ -1077,36 +1079,36 @@ endif
             call transpose_mn(tmp,thphprime_strip_y)
             deallocate(tmp)
           endif
+!print*, 'at IRECV: proc ,',iproc_world,',  from ', yuneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)
+          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &          ! receive strip from ~
+                         yuneigh,yuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppy,mpierr)
+                                !MPI_ANY_TAG
+
 !print*, 'proc ',iproc_world,', sends thphprime_strip to ', yuneigh, &
 !size(thphprime_strip_y,1), size(thphprime_strip_y,2), size(thphprime_strip_y,3)
 
           call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                    ! send strip to direct neighbor
                          yuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppy,mpierr)
                                 !touppy
-
-!print*, 'at IRECV: proc ,',iproc_world,',  from ', yuneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)
-          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &          ! receive strip from ~
-                         yuneigh,yuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppy,mpierr)
-                                !MPI_ANY_TAG
           if (ulcorn>=0) then
-!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        
-                           ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
-                                  !TOul
 ! send strip to right corner neighbor
 
             call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &     ! receive strip from ~
                            ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
                                   !MPI_ANY_TAG
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
+            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        
+                           ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
+                                  !TOul
           endif
           if (uucorn>=0) then
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &       ! receive strip from ~
+                           uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
+                                  !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', uucorn
             call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        ! send strip to left corner neighbor
                            uucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
                                   !TOuu
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &       ! receive strip from ~
-                           uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
-                                  !MPI_ANY_TAG
           endif
         endif
 
@@ -1293,7 +1295,7 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !
       integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
       integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir, mm
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
 
@@ -1342,17 +1344,15 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  Interpolate variables ivar1 ... ivar2 for lower y neighbor in other grid.
 !  Result in lbufyo.
 !
-
           call interpolate_yy(f,ivar1,ivar2,lbufyo,MIDZ,iyinyang_intpol_type) !
 if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
           comm=MPI_COMM_PENCIL; touppyr=ylneigh; tolowys=iproc_world   !touppyr=MPI_ANY_TAG
         else
-          lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2)         !(lower y-zone)
-          if (lcommunicate_y) then
-            if (lfirst_proc_y) then                                       !N-pole
-              lbufyo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n2,ivar1:ivar2)
-              tolowys=shiftn; touppyr=shiftn; ylneigh=poleneigh
-            endif
+          if (lcommunicate_y.and.lfirst_proc_y) then                        !N-pole
+            lbufyo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n2,ivar1:ivar2)
+            tolowys=shiftn; touppyr=shiftn; ylneigh=poleneigh
+          else
+            lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2)         !(lower y-zone)
           endif
           comm=MPI_COMM_GRID
         endif
@@ -1375,16 +1375,15 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
           comm=MPI_COMM_PENCIL; tolowyr=yuneigh; touppys=iproc_world  !tolowyr=MPI_ANY_TAG
         else
-          ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
+          if (lcommunicate_y.and.llast_proc_y) then                         !S-pole
 !
 !  North/south-pole y-plane buffers and message tags. NB N:0/S:pi radians.
 !  Swap N(S) lower(upper) buffers between pi-shifted iprocz same y-plane.
 !
-          if (lcommunicate_y) then
-            if (llast_proc_y) then !S-pole
-              ubufyo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n2,ivar1:ivar2)
-              tolowyr=shifts; touppys=shifts; yuneigh=poleneigh
-            endif
+            ubufyo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n2,ivar1:ivar2)
+            tolowyr=shifts; touppys=shifts; yuneigh=poleneigh
+          else
+            ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2)         !(upper y-zone)
           endif
           comm=MPI_COMM_GRID
         endif
@@ -1409,6 +1408,16 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           call interpolate_yy(f,ivar1,ivar2,lbufzo,MIDY,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; touppzr=zlneigh; tolowzs=iproc_world  !touppzr=MPI_ANY_TAG
+        elseif (lcoarse) then
+          do mm=mexts(1),mexts(2)
+            lbufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,1):nexts(mm,1)+(nghost-1)*nphis(mm):nphis(mm),ivar1:ivar2) 
+          enddo
+          if (lfirst_proc_y.and.mexts(2)<m2) then
+            lbufzo(:,mexts(2)-nghost+1:,:,ivar1:ivar2)=f(:,mexts(2)+1:m2,n1:n1i,ivar1:ivar2)
+          elseif (llast_proc_y.and.mexts(1)>m1) then
+            lbufzo(:,:mexts(1)-nghost-1,:,ivar1:ivar2)=f(:,m1:mexts(1)-1,n1:n1i,ivar1:ivar2)
+          endif
+          comm=MPI_COMM_PENCIL
         else
           lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
           comm=MPI_COMM_GRID
@@ -1430,6 +1439,16 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           call interpolate_yy(f,ivar1,ivar2,ubufzo,MIDY,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; tolowzr=zuneigh; touppzs=iproc_world   !tolowzr=MPI_ANY_TAG
+        elseif (lcoarse) then
+          do mm=mexts(1),mexts(2)
+            ubufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,2)-(nghost-1)*nphis(mm):nexts(mm,2):nphis(mm),ivar1:ivar2) 
+          enddo
+          if (lfirst_proc_y.and.mexts(2)<m2) then
+            ubufzo(:,mexts(2)-nghost+1:,:,ivar1:ivar2)=f(:,mexts(2)+1:m2,n2i:n2,ivar1:ivar2)
+          elseif (llast_proc_y.and.mexts(1)>m1) then
+            ubufzo(:,:mexts(1)-nghost-1,:,ivar1:ivar2)=f(:,m1:mexts(1)-1,n2i:n2,ivar1:ivar2)
+          endif
+          comm=MPI_COMM_PENCIL
         else
           ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
           comm=MPI_COMM_GRID
@@ -1460,14 +1479,36 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
         if (lcommunicate_y) then
           if (lfirst_proc_y) then !N-pole
-            lubufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n2i:n2,ivar1:ivar2)
-            llbufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n1i,ivar1:ivar2)
+            if (lcoarse) then
+              do mm=min(mexts(2),m1i),m1,-1
+                lubufo(:,2*nghost-mm+1,:,ivar1:ivar2)=f(:,mm,nexts(mm,2)-(nghost-1)*nphis(mm):nexts(mm,2):nphis(mm),ivar1:ivar2)
+                llbufo(:,2*nghost-mm+1,:,ivar1:ivar2)=f(:,mm,nexts(mm,1):nexts(mm,1)+(nghost-1)*nphis(mm):nphis(mm),ivar1:ivar2)
+              enddo
+              if (m1i>mexts(2)) then
+                lubufo(:,:m1i-mexts(2),:,ivar1:ivar2)= f(:,m1i:mexts(2)+1:-1,n2i:n2,ivar1:ivar2)
+                llbufo(:,:m1i-mexts(2),:,ivar1:ivar2)= f(:,m1i:mexts(2)+1:-1,n1:n1i,ivar1:ivar2)
+              endif
+            else
+              lubufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n2i:n2,ivar1:ivar2)
+              llbufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n1i,ivar1:ivar2)
+            endif
             lucorns=pnfcrn;lucornr=pnbcrn;llcornr=pnfcrn;llcorns=pnbcrn
             TOlus  =TOnf;  TOulr  =TOnf;  TOuur  =TOnb;  TOlls  =TOnb
           endif
           if (llast_proc_y) then !S-pole
-            ulbufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n1i,ivar1:ivar2)
-            uubufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n2i:n2,ivar1:ivar2)
+            if (lcoarse) then
+              do mm=m2,max(mexts(1),m2i),-1
+                ulbufo(:,m2-mm+1,:,ivar1:ivar2)=f(:,mm,nexts(mm,1):nexts(mm,1)+(nghost-1)*nphis(mm):nphis(mm),ivar1:ivar2)
+                uubufo(:,m2-mm+1,:,ivar1:ivar2)=f(:,mm,nexts(mm,2)-(nghost-1)*nphis(mm):nexts(mm,2):nphis(mm),ivar1:ivar2)
+              enddo
+              if (m2i<mexts(1)) then
+                ulbufo(:,m2-mexts(1)+2:,:,ivar1:ivar2)=f(:,mexts(1)-1:m2i:-1,n1:n1i,ivar1:ivar2)
+                uubufo(:,m2-mexts(1)+2:,:,ivar1:ivar2)=f(:,mexts(1)-1:m2i:-1,n2i:n2,ivar1:ivar2)
+              endif
+            else
+              ulbufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n1i,ivar1:ivar2)
+              uubufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n2i:n2,ivar1:ivar2)
+            endif
             uucorns=psfcrn;uucornr=psbcrn;ulcornr=psfcrn;ulcorns=psbcrn
             TOuus  =TOsf;  TOllr  =TOsf;  TOlur  =TOsb;  TOuls  =TOsb
           endif
@@ -1955,7 +1996,6 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !
      call mpibarrier
 !call mpifinalize
-!stop
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************

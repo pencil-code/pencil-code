@@ -73,6 +73,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: viscosity_after_boundary
+      use Grid, only: coarsegrid_interp
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -149,7 +150,8 @@ module Equ
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
 !                     lslope_limit_diff .or. lvisc_smag .or. &
                      lvisc_smag .or. &
-                     lyinyang !!!.or.lgpu
+                     lyinyang .or. & !!!.or.lgpu &
+                     ncoarse>1
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -217,10 +219,11 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-      if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
+      if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
+        if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
         call boundconds_y(f)
         call boundconds_z(f)
       endif
@@ -675,6 +678,14 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
+!
+!  Skip points not belonging to coarse grid.
+!
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
@@ -858,6 +869,14 @@ module Equ
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 
         !if (imn_array(m,n)==0) cycle
+!
+!  Skip points not belonging to coarse grid.
+!
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.

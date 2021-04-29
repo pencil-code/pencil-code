@@ -687,6 +687,7 @@ module EquationOfState
             lpencil_in(i_pp)=.true.
           endif
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         else
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.

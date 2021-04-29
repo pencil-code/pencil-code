@@ -64,6 +64,8 @@ module Boundcond
 !  21-sep-02/wolf: extracted from wsnaps
 !  28-mar-17/MR: added registration of already communicated variable ranges in f. 
 !
+      use Grid, only: coarsegrid_interp
+
       real, dimension (:,:,:,:) :: f
 !
       if (ighosts_updated>=0) then
@@ -77,6 +79,7 @@ module Boundcond
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
+      if (lcoarse) call coarsegrid_interp(f)
       call boundconds_y(f)
       call boundconds_z(f)
 !
@@ -90,6 +93,7 @@ module Boundcond
 !  28-mar-17/MR: added registration of already communicated variable ranges in f. 
 !
       use General, only: add_merge_range
+      use Grid, only: coarsegrid_interp
 !
       real, dimension (:,:,:,:) :: f
       integer  :: ivar1,ivar2
@@ -113,6 +117,8 @@ module Boundcond
             call boundconds_x(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
             call initiate_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
             call finalize_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            if (lcoarse) &
+              call coarsegrid_interp(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
             call boundconds_y(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
             call boundconds_z(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
           enddo
@@ -122,6 +128,7 @@ module Boundcond
         call boundconds_x(f,ivar1,ivar2)
         call initiate_isendrcv_bdry(f,ivar1,ivar2)
         call finalize_isendrcv_bdry(f,ivar1,ivar2)
+        if (lcoarse) call coarsegrid_interp(f)
         call boundconds_y(f,ivar1,ivar2)
         call boundconds_z(f,ivar1,ivar2)
       endif

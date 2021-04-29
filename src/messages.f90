@@ -254,7 +254,7 @@ module Messages
                     endif
                   endif
                   if (trim(messages(i))/='') then
-                    write(*,'(a)',advance='no') 'processor(s) '//trim(itoa(i-1))
+                    write(*,'(a)',advance='no') ' processor(s) '//trim(itoa(i-1))
                     istart=i
                   else
                     istart=0
