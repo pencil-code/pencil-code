@@ -197,6 +197,7 @@ module Testfield
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_h0rms=0      ! DIAG_DOC: $\left<h_{0}^2\right>^{1/2}$
+  integer :: idiag_rho0m=0      ! DIAG_DOC: $\left<\exp h_{0}\right>$
   integer :: idiag_u0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$
   integer :: idiag_b0max=0      ! DIAG_DOC: $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$
   integer :: idiag_h0max=0      ! DIAG_DOC: $\operatorname{max}h_{0}$
@@ -1399,6 +1400,7 @@ module Testfield
         endif
         if (idiag_h0rms/=0) call sum_mn_name(hpq(:,iE0)**2,idiag_h0rms,lsqrt=.true.)
         call max_mn_name(hpq(:,iE0),idiag_h0max)
+        if (idiag_rho0m/=0) call sum_mn_name(exp(hpq(:,iE0)),idiag_rho0m)
 !
         if (idiag_b0rms/=0) then
           call dot2(bpq(:,:,iE0),bpq2)
@@ -2194,7 +2196,7 @@ mn:   do n=n1,n2
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
         idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0
-        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0; idiag_bhrms=0
+        idiag_u0max=0; idiag_b0max=0; idiag_h0max=0; idiag_rho0m=0; idiag_bhrms=0
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
@@ -2300,6 +2302,7 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'h0rms',idiag_h0rms)
+        call parse_name(iname,cname(iname),cform(iname),'rho0m',idiag_rho0m)
         call parse_name(iname,cname(iname),cform(iname),'u0max',idiag_u0max)
         call parse_name(iname,cname(iname),cform(iname),'b0max',idiag_b0max)
         call parse_name(iname,cname(iname),cform(iname),'h0max',idiag_h0max)
