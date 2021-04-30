@@ -11,8 +11,7 @@ make_links()
     dir=`dirname $1`
     current=`basename $1`
     oldname=`echo $current | perl -pe "s/slice_$new/slice_$old/;"`
-
-    (cd $dir; [ -h "$oldname" ] && rm -f "$oldname"; ln -sf $current $oldname)
+    (cd $dir; [ -h "$oldname" ] && rm -f "$oldname"; ln -sf $current $oldname) > /dev/null
     shift
   done
 }
@@ -28,7 +27,6 @@ slices=`find $datadir -name "slice_$new.*" -type f 2> /dev/null`
 
 make_links $old $new $slices
 }
-
 
 link_slices ux uu1
 link_slices uy uu2
