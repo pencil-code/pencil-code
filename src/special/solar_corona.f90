@@ -1398,11 +1398,9 @@ module Special
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
             else
               if (lconv_vel_set_to_zero .and. (z(n) .lt. z_ff(1))) then
-                call gaunoise_number(f(l1:l2,m,n,iux:iuy))
-                f(l1:l2,m,n,iux)=uu_drive(3)*f(l1:l2,m,n,iux)
-                call gaunoise_number(f(l1:l2,m,n,iuy:iuz))
-                f(l1:l2,m,n,iuy)=uu_drive(3)*f(l1:l2,m,n,iuy)
-                f(l1:l2,m,n,iuz)=uu_drive(3)*f(l1:l2,m,n,iuz)
+                call gaunoise_number(gn)
+                f(l1:l2,m,n,iux)=uu_drive(3)*gn(1)
+                f(l1:l2,m,n,iuz)=uu_drive(3)*gn(2)
               endif
             endif
           enddo
