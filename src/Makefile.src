@@ -430,6 +430,7 @@ no_cuda_message:
 	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') )"
 	@echo ";;;"
 	@exit 1
+
     endif
   endif
 #
@@ -2668,17 +2669,26 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 #
 $(IO_OBJ):
 ifneq ($(IO),io_wrapper)
-	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC))
+	@grep '^ *[^!]*module  *[Ii][Oo]_' $(IO_SRC) > /dev/null; \
+	if [ "$$?" == "0" ]; then \
+	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC)); \
+	fi
 endif
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
 #
 ifneq ($(IO_IN),)
 $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
-	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC))
+	@grep '^ *[^!]*module  *[Ii][Oo]_in' $(IO_SRC) > /dev/null; \
+	if [ "$$?" != "0" ]; then \
+	  @$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC)); \
+	fi
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC) 
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_in/\1Io/",$(IO_IN_SRC))
 $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
-	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/",$(IO_OUT_SRC))
+	@grep '^ *[^!]*module  *[Ii][Oo]_out' $(IO_SRC) > /dev/null; \
+	if [ "$$?" != "0" ]; then \
+	  @$(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/",$(IO_OUT_SRC)); \
+	fi
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_out/\1Io/",$(IO_OUT_SRC))
 endif

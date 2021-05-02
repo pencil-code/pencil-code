@@ -1289,10 +1289,10 @@ module Grid
 !
 ! Check max possible ncoarse.
 !
-      if (ncoarse>nz/3) then
-        ncoarse=nz/3
+      if (ncoarse>nz/nghost) then
+        ncoarse=nz/nghost
         call warning('initialize_grid','there are jumped-over processors due to grid coarsening'// &
-                     ' -> ncoarse reduced to floor(nz/3)='//trim(itoa(ncoarse)))
+                     ' -> ncoarse reduced to floor(nz/nghost)='//trim(itoa(ncoarse)))
       endif
 !
 !  Set lcoarse for coarsening grid near poles.
