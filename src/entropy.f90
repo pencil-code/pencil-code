@@ -1137,7 +1137,7 @@ module Energy
           if (lhcond_global) then
             if (file_exists('hcond_glhc.dat').or.file_exists('hcond_glhc.ascii')) then
               call warning('initialize_energy','lhcond_global=T, but file hcond_glhc.* exists:'// &
-                           ' assuming lread_hcond=T and lhcond_global=F !!!')
+                           ' assuming lread_hcond=T and lhcond_global=F')
               lhcond_global=.false.; lread_hcond=.true.
             endif
           endif
