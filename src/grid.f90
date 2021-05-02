@@ -1309,7 +1309,8 @@ module Grid
         elseif (llast_proc_y) then
           mexts=(/m2-ncoarse+2,m2/)
         endif
-!write(iproc+30,*) 'mexts=', mexts
+        print*, 'On processor '//trim(itoa(iproc))//' the grid is coarsened for m='// &
+                trim(itoa(mexts(1)))//'...'//trim(itoa(mexts(2)))//'.'
 !
 !MR: missing - nprocy=1 case: two m intervals in one proc!
 !
