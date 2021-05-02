@@ -1534,7 +1534,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (llcorns>=0) call interpolate_yy(f,ivar1,ivar2,llbufo,dir,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; TOuur=llcornr; TOlls=iproc_world   !TOuur=MPI_ANY_TAG
-        elseif (.not.lcommunicate_y) then
+        elseif (.not.(lcommunicate_y.and.(lfirst_proc_y.or.llast_proc_y))) then
           llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
         endif
@@ -1565,7 +1565,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (ulcorns>=0) call interpolate_yy(f,ivar1,ivar2,ulbufo,dir,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; TOlur=ulcornr; TOuls=iproc_world   !TOlur=MPI_ANY_TAG
-        elseif (.not.lcommunicate_y) then
+        elseif (.not.(lcommunicate_y.and.(lfirst_proc_y.or.llast_proc_y))) then
           ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
         endif
@@ -1596,7 +1596,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (uucorns>=0) call interpolate_yy(f,ivar1,ivar2,uubufo,dir,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; TOllr=uucornr; TOuus=iproc_world   !TOllr=MPI_ANY_TAG
-        elseif (.not.lcommunicate_y) then
+        elseif (.not.(lcommunicate_y.and.(lfirst_proc_y.or.llast_proc_y))) then
           uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
         endif
@@ -1625,7 +1625,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (lucorns>=0) call interpolate_yy(f,ivar1,ivar2,lubufo,dir,iyinyang_intpol_type)
           comm=MPI_COMM_PENCIL; TOulr=lucornr; TOlus=iproc_world   !TOulr=MPI_ANY_TAG
-        elseif (.not.lcommunicate_y) then
+        elseif (.not.(lcommunicate_y.and.(lfirst_proc_y.or.llast_proc_y))) then
           lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
         endif
@@ -1778,8 +1778,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not. lfirst_proc_z .or. bcz12(j,1)=='p'.or.lyinyang) then
             if (lfirst_proc_z.and.lyinyang) then
               if (lcorner_yz) then
-if (notanumber(lbufzi(:,:my,:,j))) print*, 'lbufzi(1:my): iproc,j=', iproc, iproc_world, j
-if (notanumber(lbufzi(:,my+1:,:,j))) print*, 'lbufzi(my+1:): iproc,j=', iproc, iproc_world, j
 ! fill lower horizontal ghost strip 
                 if (.not.lcutoff_corners) f(:,:,:n1-1,j)=f(:,:,:n1-1,j)+lbufzi(:,:my,:,j)                         
                 if (lfirst_proc_y) then
@@ -1803,8 +1801,6 @@ if (notanumber(lbufzi(:,my+1:,:,j))) print*, 'lbufzi(my+1:): iproc,j=', iproc, i
           if (.not. llast_proc_z .or. bcz12(j,2)=='p'.or.lyinyang) then 
             if (llast_proc_z.and.lyinyang) then
               if (lcorner_yz) then
-if (notanumber(ubufzi(:,:my,:,j))) print*, 'ubufzi(1:my): iproc,j=', iproc, iproc_world, j
-if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, iproc_world, j
 ! fill upper horizontal ghost strip
                 if (.not.lcutoff_corners) f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+ubufzi(:,:my,:,j)
                 if (lfirst_proc_y) then
@@ -1973,7 +1969,6 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
                 f(:,m2+1:,n2+1:,j)=-ulbufi(:,:,:,j)  !(set uu corner)
               endif
             endif
-
           endif
         enddo
         
@@ -1995,7 +1990,6 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
 !  which could be mistaken for an earlier time
 !
      call mpibarrier
-!call mpifinalize
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
