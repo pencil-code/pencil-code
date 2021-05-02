@@ -966,18 +966,30 @@ module Deriv
         endif        
       elseif (j==3) then
         if (nzgrid/=1) then
-!          if (lcoarse_mn) then
           if (igndx) then
             facs=1.
           else if (upwnd) then
-            facs=(1.0/60)*dz_1(n)
+            facs=(1./60.)*dz_1(n)
+            if (lcoarse_mn) facs=facs*nphis1(m)
           else
-            facs=dz_1(n)**6
+            if (lcoarse_mn) then
+              facs=(dz_1(n)*nphis1(m))**6
+            else
+              facs=dz_1(n)**6
+            endif
           endif
-          df=facs*(- 20.0* f(l1:l2,m,n  ,k) &
-                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+
+          if (lcoarse_mn) then
+            df=facs*(- 20.0* f(l1:l2,m,n,k) &
+                     + 15.0*(f(l1:l2,m,ninds(+1,m,n),k)+f(l1:l2,m,ninds(-1,m,n),k)) &
+                     -  6.0*(f(l1:l2,m,ninds(+2,m,n),k)+f(l1:l2,m,ninds(-2,m,n),k)) &
+                     +      (f(l1:l2,m,ninds(+3,m,n),k)+f(l1:l2,m,ninds(-3,m,n),k)))
+          else
+            df=facs*(- 20.0* f(l1:l2,m,n  ,k) &
+                     + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                     -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                     +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          endif
           if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
             df = df * (r1_mn * sin1th(m))**6
         else
@@ -5167,6 +5179,11 @@ module Deriv
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
 !
+      if (.not. lequidist(j)) &
+          call fatal_error('der_onesided_4_slice_main','NOT IMPLEMENTED for non-equidistant grid')
+      if (.not. lcartesian_coords) &
+          call fatal_error('der_onesided_4_slice_main','NOT IMPLEMENTED for curvilinear coordinates')
+
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -5222,6 +5239,11 @@ module Deriv
       intent(in)  :: f,k,lll,mmm,nnn,sgn,j
       intent(out) :: df
 !
+      if (.not. lequidist(j)) &
+          call fatal_error('der_onesided_4_slice_main_pt','NOT IMPLEMENTED for non-equidistant grid')
+      if (.not. lcartesian_coords) &
+          call fatal_error('der_onesided_4_slice_main_pt','NOT IMPLEMENTED for curvilinear coordinates')
+
       if (j==1) then
        pos=lll
         if (nxgrid/=1) then
@@ -5287,6 +5309,11 @@ module Deriv
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
 !
+      if (.not. lequidist(j)) &
+          call fatal_error('der_onesided_4_slice_other','NOT IMPLEMENTED for non-equidistant grid')
+      if (.not. lcartesian_coords) &
+          call fatal_error('der_onesided_4_slice_other','NOT IMPLEMENTED for curvilinear coordinates')
+
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -5345,6 +5372,11 @@ module Deriv
       intent(in)  :: f,lll,mmm,nnn,sgn,j
       intent(out) :: df
 !
+      if (.not. lequidist(j)) &
+          call fatal_error('der_onesided_4_slice_other_pt','NOT IMPLEMENTED for non-equidistant grid')
+      if (.not. lcartesian_coords) &
+          call fatal_error('der_onesided_4_slice_other_pt','NOT IMPLEMENTED for curvilinear coordinates')
+
       if (j==1) then
         pos=lll
         if (nxgrid/=1) then
