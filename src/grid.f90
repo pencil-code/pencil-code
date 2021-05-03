@@ -915,7 +915,7 @@ module Grid
       use Sub, only: remove_prof
       use Mpicomm
       use IO, only: lcollective_IO
-      use General, only: indgen, itoa
+      use General, only: indgen, itoa, find_proc
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta,nphi_max,nphi,na,ne,mm,nn,nni
@@ -1309,8 +1309,6 @@ module Grid
         elseif (llast_proc_y) then
           mexts=(/m2-ncoarse+2,m2/)
         endif
-        print*, 'On processor '//trim(itoa(iproc))//' the grid is coarsened for m='// &
-                trim(itoa(mexts(1)))//'...'//trim(itoa(mexts(2)))//'.'
 !
 !MR: missing - nprocy=1 case: two m intervals in one proc!
 !
@@ -1369,6 +1367,15 @@ module Grid
 
           nexts(mm,:)=(/na,ne/)
         enddo
+
+        if (lfirst_proc_z) then
+          print*, 'On processors '//trim(itoa(iproc))//' ...(iprocy='//trim(itoa(ipy))// &
+                  ')... '//trim(itoa(find_proc(nprocx-1,ipy,nprocz-1)))// &
+                  ' the grid is coarsened for m = '// &
+                  trim(itoa(mexts(1)))//' ... '//trim(itoa(mexts(2)))
+          print*, 'with coarsening factors:'
+          print'(25(1x,i2))', nphis
+        endif
 !write(iproc+30,*) 'nexts=', nexts(:,:)
 !write(iproc+30,*) 'nphis=', nphis(:)
 !write(iproc+30,'(7(i4,1x))')  (ninds(:,mm,:), mm=mexts(1),mexts(2))
