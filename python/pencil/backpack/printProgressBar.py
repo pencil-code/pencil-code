@@ -15,8 +15,8 @@ def printProgressBar(iteration, total, pbar=False, prefix = '', suffix = '', dec
     Example:
         pbar = False; Nt = np.size(varlist)
         for ii, varname in enumerate(varlist):
-            pbar = pcn.backpack.printProgressBar(ii, Nt, pbar=pbar)
-            var = pcn.read.var(varname, trim_all=True)
+            pbar = pc.backpack.printProgressBar(ii, Nt, pbar=pbar)
+            var = pc.read.var(varname, trim_all=True)
             ...
 
     Non-tqdm Example:
