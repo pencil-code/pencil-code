@@ -1302,7 +1302,7 @@ module Grid
    
       if (lcoarse.and.(lfirst_proc_y.or.llast_proc_y)) then
 
-!  TB generalized to more than two procs, in which coarsening happens.
+!MR: TB generalized to more than two procs, in which coarsening happens.
 
         if (lfirst_proc_y) then
           mexts=(/m1,m1+ncoarse-2/)
@@ -1368,13 +1368,13 @@ module Grid
           nexts(mm,:)=(/na,ne/)
         enddo
 
-        if (lfirst_proc_z) then
+        if (lfirst_proc_x.and.lfirst_proc_z) then
           print*, 'On processors '//trim(itoa(iproc))//' ...(iprocy='//trim(itoa(ipy))// &
                   ')... '//trim(itoa(find_proc(nprocx-1,ipy,nprocz-1)))// &
                   ' the grid is coarsened for m = '// &
                   trim(itoa(mexts(1)))//' ... '//trim(itoa(mexts(2)))
           print*, 'with coarsening factors:'
-          print'(25(1x,i2))', nphis
+          print'(30(1x,i2))', nphis
         endif
 !write(iproc+30,*) 'nexts=', nexts(:,:)
 !write(iproc+30,*) 'nphis=', nphis(:)

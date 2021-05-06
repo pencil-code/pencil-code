@@ -114,7 +114,7 @@ module Param_IO
       lnoghost_strati, ichannel1, ichannel2, tag_foreign
 !
   namelist /run_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1start, it1d, it_rmv, dt, cdt, ddt, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
