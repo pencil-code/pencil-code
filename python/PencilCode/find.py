@@ -58,10 +58,10 @@ def par_disp(datadir="./data", save_to=None):
         t
             A numpy array of times, starting from zero.
         dxp, dyp, dzp
-            A 2D numpy array, where dxp[i,j], dyp[i,j], and dzp[i,j] are
-            the components of the displacement of particle j at t[i].  A
-            component is returned None if the dimension is neither
-            active nor periodic.
+            A tuple of three 2D numpy arrays, where dxp[i,j], dyp[i,j],
+            and dzp[i,j] are the components of the displacement of
+            particle j at t[i].  A component is returned None if the
+            dimension is neither active nor periodic.
     """
     # Author: Chao-Chin Yang
     # Created: 2018-01-16
@@ -183,7 +183,7 @@ def par_disp(datadir="./data", save_to=None):
         np.savez(file, **kw)
         print("Done. ")
 
-    return t, dxp, dyp, dzp
+    return t, (dxp, dyp, dzp)
 #=======================================================================
 def eta_z(z, datadir="./data"):
     """Finds the vertical profile of the resistivity, if any.
