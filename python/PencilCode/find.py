@@ -1,11 +1,12 @@
-#! /usr/bin/env python3
-# Last Modification: $Id$
+#!/usr/bin/env python3
 #=======================================================================
 # find.py
 #
 # Facilities for analyzing the Pencil Code data.
 #
-# Chao-Chin Yang, 2013-10-21
+# Author: Chao-Chin Yang
+# Created: 2013-10-21
+# Last Modified: 2021-05-07
 #=======================================================================
 def avgt1d(tmin=None, **kwarg):
     """Finds the time average of the 1D averages.
@@ -42,7 +43,7 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
-def particle_displacement(datadir="./data", save_to=None):
+def par_disp(datadir="./data", save_to=None):
     """Finds the displacement of each particle as a function of time.
 
     Keyword Arguments:
@@ -64,7 +65,7 @@ def particle_displacement(datadir="./data", save_to=None):
     """
     # Author: Chao-Chin Yang
     # Created: 2018-01-16
-    # Last Modified: 2021-04-20
+    # Last Modified: 2021-05-07
     import numpy as np
     from . import read
 
