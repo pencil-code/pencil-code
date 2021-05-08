@@ -22,7 +22,7 @@ o=a(3,*)
 print,n
 print
 print,total(n)
-plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2020.7]
+plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2021.7]
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55
 print,'total(n)=',fix(total(n))
