@@ -103,7 +103,7 @@ module Special
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
-  logical :: linflation=.false., lnonlinear_source=.false.
+  logical :: linflation=.false., lreheating=.false., lnonlinear_source=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -117,7 +117,7 @@ module Special
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -127,7 +127,8 @@ module Special
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, linflation, &
+    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
+    linflation, lreheating, &
     lnonlinear_source, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -1205,6 +1206,10 @@ module Special
               one_over_k2=1./ksqr
               if (linflation) then
                 om2=4.*ksqr-2./t**2
+                lsign_om2=(om2 >= 0.)
+                om=sqrt(abs(om2))
+              elseif (lreheating) then
+                om2=ksqr-2./(t+1.)**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
               else

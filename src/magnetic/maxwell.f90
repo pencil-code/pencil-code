@@ -115,7 +115,7 @@ module Magnetic
   real :: alpha_inflation=0.
   real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
   logical :: laa_as_aux=.false., lbb_as_aux=.true., lee_as_aux=.true., ljj_as_aux=.false.
-  logical :: lemf=.false., linflation=.false., ldebug_print=.false.
+  logical :: lemf=.false., linflation=.false., lreheating=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
   real :: alpha2_inflation, kscale_factor
@@ -132,7 +132,7 @@ module Magnetic
 ! input parameters
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
-    linflation, alpha_inflation, &
+    linflation, lreheating, alpha_inflation, &
     initaak, initeek, &
     ux_const, ampl_uy, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
@@ -146,7 +146,7 @@ module Magnetic
 ! run parameters
   namelist /magnetic_run_pars/ &
 ! namelist /magnetic_run_pars/ &
-    linflation, alpha_inflation, &
+    linflation, lreheating, alpha_inflation, &
     ldebug_print, &
     cc_light, &
     lemf, B_ext, &
@@ -833,6 +833,8 @@ module Magnetic
 !
             if (linflation) then
               ksqr_eff=ksqr-alpha2_inflation/t**2
+            elseif (lreheating) then
+              ksqr_eff=ksqr-alpha2_inflation*2./(t+1.)**2
             else
               ksqr_eff=ksqr
             endif
