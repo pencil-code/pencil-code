@@ -113,64 +113,66 @@ endif
 ;
 ; Define filenames of slices, declare arrays for reading and storing, open slice files.
 ;
+one_ = single ? 1.e0 : one
+
 on_ioerror, data_file_missing
 if (s.xyread) then begin
   tag='xy'
   file_slice1=readdir+'/slice_'+field+'.xy'
   xy_tmp =fltarr(dim.nx,dim.ny)*one
-  xy =fltarr(dim.nx,dim.ny,nt)*one
+  xy =fltarr(dim.nx,dim.ny,nt)*one_
   openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.xy2read) then begin
   tag='xy2'
   file_slice2=readdir+'/slice_'+field+'.xy2'
   xy2_tmp=fltarr(dim.nx,dim.ny)*one
-  xy2=fltarr(dim.nx,dim.ny,nt)*one
+  xy2=fltarr(dim.nx,dim.ny,nt)*one_
   openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.xy3read) then begin
   tag='xy3'
   file_slice3=readdir+'/slice_'+field+'.xy3'
   xy3_tmp=fltarr(dim.nx,dim.ny)*one
-  xy3=fltarr(dim.nx,dim.ny,nt)*one
+  xy3=fltarr(dim.nx,dim.ny,nt)*one_
   openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.xy4read) then begin
   tag='xy4'
   file_slice4=readdir+'/slice_'+field+'.xy4'
   xy4_tmp=fltarr(dim.nx,dim.ny)*one
-  xy4=fltarr(dim.nx,dim.ny,nt)*one
+  xy4=fltarr(dim.nx,dim.ny,nt)*one_
   openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.xzread) then begin
   tag='xz'
   file_slice5=readdir+'/slice_'+field+'.xz'
   xz_tmp =fltarr(dim.nx,dim.nz)*one
-  xz =fltarr(dim.nx,dim.nz,nt)*one
+  xz =fltarr(dim.nx,dim.nz,nt)*one_
   openr, lun_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.xz2read) then begin
   tag='xz2'
   file_slice6=readdir+'/slice_'+field+'.xz2'
   xz2_tmp=fltarr(dim.nx,dim.nz)*one
-  xz2=fltarr(dim.nx,dim.nz,nt)*one
+  xz2=fltarr(dim.nx,dim.nz,nt)*one_
   openr, lun_6, file_slice6, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (s.yzread) then begin
   tag='yz'
   file_slice7=readdir+'/slice_'+field+'.yz'
   yz_tmp =fltarr(dim.ny,dim.nz)*one
-  yz =fltarr(dim.ny,dim.nz,nt)*one
+  yz =fltarr(dim.ny,dim.nz,nt)*one_
   openr, lun_7, file_slice7, /f77, /get_lun, swap_endian=swap_endian
 endif
 on_ioerror, NULL
 ;
-t_tmp=one & t=fltarr(nt)*one
+t_tmp=one & t=fltarr(nt)*one_
 ;
 ; Possible to skip njump slices.
 ;
 if (njump gt 0) then begin
-  dummy=zero
+  dummy1=zero
   for ijump=0,njump-1 do begin
     if (s.xyread)  then begin 
       tag='xy'
