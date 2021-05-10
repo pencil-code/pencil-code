@@ -21,17 +21,19 @@ else
     endif
   endif
 endif
+cd ..
 
-echo "Building executable $0:t.x ..."
-#make $dir/$0:t.x > /dev/null
-cd ..; pc_build -s -t $0:t.x > /dev/null; cd src
+echo "Building" $0:t.x "(if necessary)"
+
+#make $0:t > /dev/null
+pc_build -s -t $0:t > /dev/null
+
 if ( $? != 0) then
   echo "Build of executable $0:t.x failed."
   exit
 endif
 
 set dir=src/$dir
-cd ..
 if ($# == 0) then
   $dir/$0:t.x
 else
