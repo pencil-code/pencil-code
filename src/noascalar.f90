@@ -11,6 +11,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED acc; ssat 
+!
 !***************************************************************
 module Ascalar
 !
