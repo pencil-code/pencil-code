@@ -41,8 +41,7 @@ module Shock
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
   real    :: shock_div_pow = 1.
-  logical :: lrewrite_shock_boundary=.false., &
-             lconvergence_only=.true.
+  logical :: lrewrite_shock_boundary=.false., lconvergence_only=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
@@ -460,7 +459,7 @@ module Shock
 !  Cut off small divergence if requested.
 !
       if (div_threshold > 0.0) &
-          where(f(:,:,:,ishock) < div_threshold) f(:,:,:,ishock) = 0.0
+          where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
 !
 !  Take maximum over a number of grid cells
 !

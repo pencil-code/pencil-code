@@ -651,18 +651,18 @@ module Dustdensity
           f(:,:,:,ind(spot_number)) = nd0
           if (eps_dtog/=0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
         case ('firsttwo')
-          print*, 'init_nd: All dust particles in first and second bin.'
+          if (lroot) print*, 'init_nd: All dust particles in first and second bin.'
           f(:,:,:,ind) = 0.
           do k=1,2
             f(:,:,:,ind(k)) = nd0/2
           enddo
         case ('lucky')
-          print*, 'init_nd: only 1 particle with radius 12.6'
+          if (lroot) print*, 'init_nd: only 1 particle with radius 12.6'
           f(:,:,:,ind) = 0.
           f(:,:,:,ind(1)) = nd0
           f(:,:,:,ind(2)) = nd0_luck
         case ('replicate_bins')
-          if (headtt) then
+          if (lroot) then
             print*, 'init_nd: replicate particles from first to other bins.'
             print*, 'init_nd: amplnd_rel=',amplnd_rel
           endif
@@ -670,7 +670,7 @@ module Dustdensity
             f(:,:,:,ind(k))=f(:,:,:,ind(k))+amplnd_rel(k)*f(:,:,:,ind(1))
           enddo
         case ('gaussian')
-          if (headtt) then
+          if (lroot) then
             print*, 'init_nd: Gaussian distribution in particle radius'
             print*, 'init_nd: amplnd   =',amplnd
             print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
@@ -700,7 +700,6 @@ module Dustdensity
               f(:,:,:,ind(k)) = 0
             endif
           enddo
-
 !
 !  lognormal initial condition
 !
@@ -3593,7 +3592,7 @@ module Dustdensity
 !
 !  Impose the density floor.
 !
-      if (headtt) then
+      if (lroot) then
         print*, 'init_nd: lognormal distribution in particle radius'
         print*, 'init_nd: amplnd   =',amplnd
         print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad

@@ -450,16 +450,13 @@ program run
 !
 !  Prepare particles.
 !
-  if (lparticles) then
-    !!!call particles_rprint_list(.false.) ! already done
-    call particles_initialize_modules(f)
-  endif
+  if (lparticles) call particles_initialize_modules(f)
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
 !
   call wgrid('grid.dat')
-  if (.not.luse_oldgrid.or.lwrite_dim_again) then
+  if (.not.luse_oldgrid .or. lwrite_dim_again) then
     call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
@@ -676,6 +673,7 @@ program run
     lpencil = lpenc_requested
 !  MR: the following should only be done in the first substep, shouldn't it?
 !  AB: yes, so this is the right place, right?
+!  MR: I mean, it should be reversed to lpencil = lpenc_requested for 2nd and further substeps.
     if (l1davg.or.lout) lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
@@ -691,7 +689,7 @@ program run
 !  advance warning so the relevant components of the f-array
 !  can be filled.
 !
-    call powersnap_prepare
+    if (dspec/=impossible) call powersnap_prepare
 !
 !  Time advance.
 !

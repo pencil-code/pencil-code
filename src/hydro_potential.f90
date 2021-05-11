@@ -1722,9 +1722,7 @@ module Hydro
 !
       call timing('duu_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'duu_dt: SOLVE'
-      if (headtt) then
-        call identify_bcs('phiuu',iphiuu)
-      endif
+      if (headtt) call identify_bcs('phiuu',iphiuu)
 !
 !  Advection term.
 !
@@ -3993,39 +3991,6 @@ module Hydro
 !
     endsubroutine hydro_clean_up
 !***********************************************************************
-    subroutine kinematic_random_phase
-!
-!  This is a dummy routine.
-!
-!  16-feb-2010/bing: coded
-!
-      call fatal_error('kinematic_random_phase', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_phase
-!***********************************************************************
-    subroutine kinematic_random_ampl
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_ampl', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_ampl
-!***********************************************************************
-    subroutine kinematic_random_wavenumber
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_wavenumber', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_wavenumber
-!***********************************************************************
     subroutine expand_shands_hydro
 !
 !  Expands shorthand labels of hydro diagnostics.
@@ -4062,16 +4027,16 @@ module Hydro
 !
     nyz=ny*nz
     do imn=1,nyz
-       n=nn(imn)
-       m=mm(imn)
-       lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
-       llastpoint=(imn==nyz) 
-       call gij(f,iuu,gradu,1)
-       jk=0
-       do jj=1,3; do kk=1,3
-         f(l1:l2,m,n,iguij+jk) = gradu(:,jj,kk)
-         jk=jk+1
-       enddo;enddo
+      n=nn(imn)
+      m=mm(imn)
+      lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
+      llastpoint=(imn==nyz) 
+      call gij(f,iuu,gradu,1)
+      jk=0
+      do jj=1,3; do kk=1,3
+        f(l1:l2,m,n,iguij+jk) = gradu(:,jj,kk)
+        jk=jk+1
+      enddo;enddo
     enddo
 !
     endsubroutine calc_gradu

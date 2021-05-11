@@ -43,7 +43,6 @@ module Viscosity
       use FArrayManager
       use Sub
 !
-      lvisc_LES  = .true.
       lvisc_smagorinsky = .true.
 !
       call farray_register_auxiliary('smagorinsky',ismagorinsky,communicated=.true.)

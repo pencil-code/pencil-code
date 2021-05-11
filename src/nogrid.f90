@@ -158,7 +158,6 @@ module Grid
       real, optional                        :: param
       real, optional, dimension(3) :: dxyz
       real, optional, dimension(2) :: xistep,delta
-      real :: m
 !
     endsubroutine grid_profile_1D
 !***********************************************************************

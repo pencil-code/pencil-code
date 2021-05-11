@@ -11,11 +11,6 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED acc
-! PENCILS PROVIDED gacc(3); ugacc
-! PENCILS PROVIDED del2acc
-! PENCILS PROVIDED ssat
-!
 !***************************************************************
 module Ascalar
 !

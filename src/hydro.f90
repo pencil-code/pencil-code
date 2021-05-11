@@ -69,7 +69,6 @@ module Hydro
 !  Cosine and sine function for setting test fields and analysis.
 !
   real, dimension (mz) :: c2z,s2z,cz,sz
-  real, dimension (nx) :: Remz
 !
 !  Profiles for setting differential rotation
 !  (analogously to hydro_kinematic.f90).
@@ -116,12 +115,8 @@ module Hydro
 ! variables for expansion into spherical harmonics
 !
   integer,parameter :: lSH_max=2
-! Nmodes_SH=(lSH_max+1)*(lSH_max+1)
   integer, parameter :: Nmodes_SH=(lSH_max+1)*(lSH_max+1)
-  real, dimension(nx,Nmodes_SH) :: urlm
-  !--integer :: index_rSH=nx/2
-!AB: dhruba, this does still not work for nx=1, so how about:
-  integer :: index_rSH=1
+  integer :: index_rSH=ceiling(nx/2)
   real, dimension(nx) :: profile_SH=0.
 !
   real, dimension (5) :: om_rings=0.
@@ -750,6 +745,7 @@ module Hydro
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
   real, dimension(nx) :: Fmax,advec_uu=0.
+!$omp THREADPRIVATE(advec_uu)
 !
   contains
 !***********************************************************************
@@ -3202,7 +3198,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3442,6 +3438,7 @@ module Hydro
       real, dimension (nx,3) :: uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask
       real :: kx
       integer :: k
@@ -3831,7 +3828,7 @@ module Hydro
       type(pencil_case) :: p
 
       real, dimension (nx,3) :: curlru
-      real, dimension (nx) :: uus, curlru2, uzmask
+      real, dimension (nx) :: uus, curlru2, Remz, uzmask
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -7487,39 +7484,6 @@ module Hydro
       if (ldebug) call warning('hydro_clean_up','Nothing to do for hydro.f90')
 !
     endsubroutine hydro_clean_up
-!***********************************************************************
-    subroutine kinematic_random_phase
-!
-!  This is a dummy routine.
-!
-!  16-feb-2010/bing: coded
-!
-      call fatal_error('kinematic_random_phase', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_phase
-!***********************************************************************
-    subroutine kinematic_random_ampl
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_ampl', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_ampl
-!***********************************************************************
-    subroutine kinematic_random_wavenumber
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_wavenumber', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_wavenumber
 !***********************************************************************
     subroutine expand_shands_hydro
 !
