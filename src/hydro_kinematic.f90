@@ -2640,6 +2640,12 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
+!  Random phase, amplitude and wavenumber.
+!
+      call kinematic_random_phase
+      call kinematic_random_ampl
+      call kinematic_random_wavenumber
+!
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
