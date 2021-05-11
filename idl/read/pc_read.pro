@@ -66,7 +66,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
                 failed=0
 		for pos = 1, num_quantities-1 do begin
 			tmp = pc_read (quantity[pos], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, single=single)
-                        if (size(tmp))[0] eq 0 then begin
+                        if (not is_defined(tmp)) then begin
                           failed+=1
                           continue
                         endif
