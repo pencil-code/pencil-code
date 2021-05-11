@@ -243,7 +243,7 @@ module Magnetic
 !
 !  compute alpha*(alpha+1) from Sharma+17 paper
 !
-      alpha2_inflation=alpha_inflation*(alpha_inflation)
+      alpha2_inflation=alpha_inflation*(alpha_inflation+1.)
 !
       call keep_compiler_quiet(f)
 !
