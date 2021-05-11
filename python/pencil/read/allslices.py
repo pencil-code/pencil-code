@@ -182,7 +182,7 @@ class SliceSeries(object):
                     #Compose the file name according to field & extension.
                     file_name = os.path.join(slice_dir,
                                              field+'_'+extension+'.h5')
-                    with h5py.File(file_name, 'a') as ds:
+                    with h5py.File(file_name, 'r') as ds:
                         if tstart > 0 or tend:
                             iter_list = []; it = 0
                             while it < ds['last'][0]:
