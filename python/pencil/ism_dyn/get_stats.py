@@ -241,7 +241,7 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
     if not norm:
         norm=colors.LogNorm()
     plt.figure(figsize=figsize)
-    plt.hist2d(xvar, yvar, cmap=cmap, bins=[xedges,yedges], density=density,
+    hist=plt.hist2d(xvar, yvar, cmap=cmap, bins=[xedges,yedges], density=density,
                norm=norm)
 
     cbar=plt.colorbar(pad=pad)
@@ -249,4 +249,4 @@ def plot_hist2d(xvar, yvar, par=[], xlim=None, ylim=None,
     plt.tick_params(which='both',direction='in',top=True,right=True)
     plt.ylabel(ylabel,fontsize=fontsize)
     plt.xlabel(xlabel,fontsize=fontsize)
-    return plt, xedges, yedges
+    return plt, xedges, yedges, hist
