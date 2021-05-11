@@ -1021,7 +1021,7 @@ incomplete:
 ;
   if not arg_present(object) then begin
     if (keyword_set(trimxyz)) then begin
-      xyzstring=(((xyzstring.Replace[',',' & ']).Replace['x','x=x']).Replace['y','y=y']).Replace['z','z=z']
+      xyzstring=(((xyzstring.Replace(',',' & ')).Replace('x','x=x')).Replace('y','y=y')).Replace('z','z=z')
       res=execute(xyzstring)
     endif
     message, 'WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.' 
