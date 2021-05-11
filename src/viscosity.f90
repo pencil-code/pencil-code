@@ -208,7 +208,6 @@ module Viscosity
 ! Module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
-  real, dimension(nx) :: diffus_nu=0.,diffus_nu2=0.,diffus_nu3=0.
 !
   contains
 !***********************************************************************
@@ -484,17 +483,14 @@ module Viscosity
           lvisc_hyper3_nu_const=.true.
         case ('smagorinsky')
           if (lroot) print*,'viscous force: Smagorinsky'
-          if (lroot) lvisc_LES=.true.
           lpenc_requested(i_sij)=.true.
           lvisc_smag=.true.
         case ('smagorinsky-simplified','smagorinsky_simplified')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
-          if (lroot) lvisc_LES=.true.
           lpenc_requested(i_sij)=.true.
           lvisc_smag_simplified=.true.
         case ('smagorinsky-cross-simplif','smagorinsky_cross_simplif')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
-          if (lroot) lvisc_LES=.true.
           lvisc_smag_cross_simplified=.true.
 !        case ('snr-damp','snr_damp')
 !          if (lroot) print*,'viscous force: SNR damping'
@@ -587,7 +583,11 @@ module Viscosity
                "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh' "// &
                "'hyper3-mesh-residual', or 'hyper3-csmesh'")
         endif
-!
+        if (.not.ldensity) then
+          if (lvisc_smag.or.lvisc_smag_simplified.or.lvisc_smag_cross_simplified) &
+            call warning('initialize_viscosity', &
+                         "ldensity better be .true. for ivisc='smagorinsky*'")
+        endif
       endif
 
       if (lyinyang) then
@@ -2080,9 +2080,6 @@ module Viscosity
           endif
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
-        else
-          if (lfirstpoint) print*, 'calc_viscous_force: '// &
-                                   "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
 !
@@ -2109,10 +2106,7 @@ module Viscosity
           p%fvisc=p%fvisc+2*tmp2+tmp
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
-        else
-          if (lfirstpoint) print*, 'calc_viscous_force: '// &
-                                   "ldensity better be .true. for ivisc='smagorinsky'"
-!AB: not yet programmed
+
         endif
       endif
 !
@@ -2135,9 +2129,6 @@ module Viscosity
             endif
           endif
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
-        else
-          if (lfirstpoint) print*, 'calc_viscous_force: '// &
-                                   "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
 !
@@ -2148,6 +2139,9 @@ module Viscosity
 !
 !       tmp3 :  divergence of flux
 !       tmp4 :  heating, switch to turn on heating calc.
+!
+        !p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)            ! old implementation
+        !p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)  ! old implementation
 !
 !       use sld only in last sub timestep
 !
@@ -2513,13 +2507,16 @@ module Viscosity
       use Sub, only: cross, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Reshock,fvisc2,uus
-      real, dimension (nx,3) :: nuD2uxb,fluxv
+
       type (pencil_case) :: p
-      integer :: i
 !
       intent (in) :: p
       intent (inout) :: df
+!
+      real, dimension (nx)  :: Reshock,fvisc2,uus
+      real, dimension (nx,3):: nuD2uxb,fluxv
+      real, dimension (nx)  :: diffus_nu,diffus_nu2,diffus_nu3
+      integer :: i
 !
 !  Add viscosity to equation of motion
 !
@@ -2544,6 +2541,8 @@ module Viscosity
         maxdiffus=max(maxdiffus,diffus_nu)
         maxdiffus2=max(maxdiffus2,diffus_nu2)
         maxdiffus3=max(maxdiffus3,diffus_nu3)
+        if (ldiagnos.and.idiag_dtnu/=0) &
+           call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
       endif
 !
 !  Diagnostic output
@@ -2556,8 +2555,6 @@ module Viscosity
 !        if (lvisc_smag_cross_simplified) then
 !          if (ldensity) nu_smag=(C_smag*dxmax)**2.*p%ss12
 !        endif
-        if (idiag_dtnu/=0) &
-            call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
           Reshock(:) = 0.
@@ -2843,18 +2840,18 @@ module Viscosity
           (sinth(m)*x(l1:l2)*x(l1:l2))
 !
       lver = -(Lambda_V0*LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m) &
-          *LV1_rprof(l1:l2) )
+               *LV1_rprof(l1:l2) )
       lhor = -Lambda_H1*sinth(m)*sinth(m)*LH1_rprof(l1:l2)
 !
       dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2)+Lambda_V1 &
-          *sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
+                   *sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
       dlhor_dtheta = -Lambda_H1*LH1_rprof(l1:l2)*2.*costh(m)*sinth(m)/x(l1:l2)
 !
       div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1) &
-          +3.*sinth(m)*lomega/x(l1:l2) + sinth(m)*dlomega_dr) &
-          +lomega*sinth(m)*dlver_dr + lhor*(costh(m)*lomega*p%glnrho(:,2) &
-          -sinth(m)*lomega/x(l1:l2) + 2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
-          +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
+                         +3.*sinth(m)*lomega/x(l1:l2) + sinth(m)*dlomega_dr) &
+                  +lomega*sinth(m)*dlver_dr + lhor*(costh(m)*lomega*p%glnrho(:,2) &
+                  -sinth(m)*lomega/x(l1:l2) + 2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
+                  +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
 !
     endsubroutine calc_lambda
 !***********************************************************************
