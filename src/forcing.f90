@@ -2838,7 +2838,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
         a_ell = -anum/adenom
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
-        do l=l1-nghost,l2+nghost
+        do l=1,mx
           alphar=Balpha*x(l)
           call sp_besselj_l(jlm_ff,Legendrel,alphar)
           call sp_bessely_l(ylm_ff,Legendrel,alphar)
