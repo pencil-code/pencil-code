@@ -75,8 +75,8 @@ module Forcing
   real :: equator=0.
   real :: kx_2df=0.,ky_2df=0.,xminf=0.,xmaxf=0.,yminf=0.,ymaxf=0.
 ! For helical forcing in spherical polar coordinate system
-  real,allocatable,dimension(:,:,:) :: psif
-  real,allocatable,dimension(:,:) :: cklist
+  real, allocatable, dimension(:,:,:) :: psif
+  real, allocatable, dimension(:,:) :: cklist
   logical :: lfastCK=.false.,lsamesign=.true.
 ! allocated only if we have lfastCK=T
   real,allocatable,dimension(:,:,:) :: Zpsi_list
@@ -182,10 +182,8 @@ module Forcing
   real, dimension(:), allocatable :: kkx,kky,kkz
   real, dimension(:), allocatable :: kkx2,kky2,kkz2
 !
-  real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field
-!for each wavenumber?
-  real, allocatable, dimension (:) :: KS_omega !or through whole field for each
-!wavenumber?
+  real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
+  real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 25
 !
   contains
@@ -219,14 +217,14 @@ module Forcing
 !                  -> nk, kav, kk[xyz] and nk2, kav2, kk2[xyz], respectively, now module 
 !                  variables.
 !
-      use General, only: bessj
+      use General, only: bessj,itoa
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs0
 !
-      real :: zstar
-      integer :: l,i
+      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,Legendrel
+      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex
       logical :: lk_dot_dat_exists
 !
       if (lstart) then
@@ -771,8 +769,72 @@ module Forcing
             close(9)
           else
             call inevitably_fatal_error ('initialize_forcing', &
-                'you must give an input k_double.dat file')
+                                         'you must give an input k_double.dat file')
           endif
+        endif
+!
+      elseif (iforce=='chandra_kendall'.or.iforce=='cktest') then
+!
+        if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
+                        'Chandrasekhar-Kendall forcing works only in spherical coordinates!')
+!
+        if (abs(helsign)/=1) &
+          call fatal_error("initialize_forcing", "CK forcing: helsign must be +1 or -1")
+!
+        if (iforce=='cktest') then
+          lhelical_test=.true.
+          icklist=0
+        endif
+
+        if (lroot) print*,'Chandrasekhar-Kendall forcing in spherical polar coordinates'
+        if (.not.allocated(psif)) allocate(psif(mx,my,mz),cklist(nlist_ck,5))
+!
+! Read the list of values for emm, ell and alpha from file "alpha_in.dat". This code is designed for 25 such.
+!
+        open(unit=76,file="alpha_in.dat",status="old")
+        read(76,*) ckno,rmin,rmax
+        if (ckno/=nlist_ck) &
+          call fatal_error("initialize_forcing", &
+               "Number of entries in alpha_in.dat "//trim(itoa(ckno))//" unequal nlist_ck="//trim(itoa(nlist_ck))//".")
+
+        do ilread=1,nlist_ck
+          read(76,*) (cklist(ilread,ilm),ilm=1,5)
+        enddo
+        close(76)
+
+        if (lfastCK) then
+
+          if (.not.allocated(Zpsi_list)) then
+            allocate(Zpsi_list(mx,nlist_ck,3))
+            allocate(RYlm_list(my,mz,nlist_ck),IYlm_list(my,mz,nlist_ck))
+          endif
+
+          do ilist=1,nlist_ck
+            emm = cklist(ilist,1)
+            Legendrel = cklist(ilist,2)
+            do n=1,mz
+              do m=1,my
+                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
+                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+                RYlm_list(m,n,ilist)=RYlm
+                IYlm_list(m,n,ilist)=IYlm
+              enddo
+            enddo
+
+            do aindex=1,3
+              Balpha = cklist(ilist,2+aindex)
+              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+             call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+              a_ell = -anum/adenom
+              do l=1,mx
+                alphar=Balpha*x(l)
+                call sp_besselj_l(jlm_ff,Legendrel,alphar)
+                call sp_bessely_l(ylm_ff,Legendrel,alphar)
+                Zpsi_list(l,ilist,aindex) = (a_ell*jlm_ff+ylm_ff)
+              enddo
+            enddo
+          enddo
+
         endif
       endif
 
@@ -963,8 +1025,7 @@ module Forcing
         case ('ABC');             call forcing_ABC(f)
         case ('blobs');           call forcing_blobs(f)
         case ('blobHS_random');   call forcing_blobHS_random(f)
-        case ('chandra_kendall'); call forcing_chandra_kendall(f)
-        case ('cktest');          call forcing_cktest(f)
+        case ('chandra_kendall','cktest'); call forcing_chandra_kendall(f)
         case ('diffrot');         call forcing_diffrot(f,force)
         case ('fountain', '3');   call forcing_fountain(f)
         case ('hillrain');        call forcing_hillrain(f,force)
@@ -1144,7 +1205,7 @@ module Forcing
 !  14-feb-2011/ dhruba : coded
 !
       use EquationOfState, only: cs0
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, itoa
       use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2722,321 +2783,80 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it
       use Sub
 !
-      logical, save :: lfirst_call=.true.
+      real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
-                 aindex,ckno,ilist
+      integer :: emm,l,j,jf,Legendrel,lmindex,aindex
       real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,&
-              rmin,rmax,rphase2
+      real :: rz,rindex,ralpha,rphase2
       real, dimension(mx) :: Z_psi
 !
-      if (.not. lspherical_coords) call warning('chandra-kendall forcing:', &
-                                   'This forcing works only in spherical coordinates!')
-      if (lfirst_call) then
+! This is designed for 5 emm values and for each one 5 ell values. Total 25 values.
 !
-! If this is the first time this function is being called allocate \psi.
-! Next read from file "alpha_in.dat" the two values of \ell. If this two
-! matches Legendrel_min and Legendrel_max proceed.
-!
-        if (lroot) print*,'Helical forcing in spherical polar coordinate'
-        if (lroot) print*,'allocating psif ..'
-        allocate(psif(mx,my,mz))
-! Read the list of values for emm, ell and alpha. This code is designed for 25 such
-        allocate(cklist(nlist_ck,5))
-        if (lroot) print*, '..done'
-        open(unit=76,file="alpha_in.dat",status="old")
-        read(76,*) ckno,rmin,rmax
-        if (.not. (ckno==nlist_ck)) then
-          call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
-        else
-        endif
-        if (lroot) then
-          if (.not.((helsign==1).or.(helsign==-1))) &
-            call stop_it("CK forcing: helsign must be +1 or -1, aborting")
-        else
-        endif
-! ----------
-        do ilread=1,nlist_ck
-          read(76,*) (cklist(ilread,ilm),ilm=1,5)
-        enddo
-        close(76)
-        if (lfastCK) then
-          allocate(Zpsi_list(mx,nlist_ck,3))
-          allocate(RYlm_list(my,mz,nlist_ck),IYlm_list(my,mz,nlist_ck))
-          do ilist=1,nlist_ck
-            emm = cklist(ilist,1)
-            Legendrel = cklist(ilist,2)
-            do n=n1-nghost,n2+nghost
-              do m=m1-nghost,m2+nghost
-                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
-                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-                RYlm_list(m,n,ilist)=RYlm
-                IYlm_list(m,n,ilist)=IYlm
-              enddo
-            enddo
-            do aindex=1,3
-              Balpha = cklist(ilist,2+aindex)
-              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-             call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-              a_ell = -anum/adenom
-              do l=l1-nghost,l2+nghost
-                alphar=Balpha*x(l)
-                call sp_besselj_l(jlm_ff,Legendrel,alphar)
-                call sp_bessely_l(ylm_ff,Legendrel,alphar)
-                Zpsi_list(l,ilist,aindex) = (a_ell*jlm_ff+ylm_ff)
-              enddo
-            enddo
-          enddo
-          lfirst_call=.false.
-        endif
-        if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
+      if (lhelical_test) then
+        if (icklist==nlist_ck) &
+                 call fatal_error("forcing_chandra_kendall","CK testing: no more values in list")
+        icklist=icklist+1
+        lmindex=icklist
       else
-      endif
-! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
-   call random_number_wrapper(rindex,CHANNEL=channel_force)
-   lmindex=nint(rindex*(nlist_ck-1))+1
-   emm = cklist(lmindex,1)
-   Legendrel = cklist(lmindex,2)
-   call random_number_wrapper(ralpha,CHANNEL=channel_force)
-   aindex=nint(ralpha*2)
-   Balpha = cklist(lmindex,3+aindex)
-! Now calculate the "potential" for the helical forcing. The expression
-! is taken from Chandrasekhar and Kendall.
-! Now construct the Z_psi(r)
-   call random_number_wrapper(rphase1,CHANNEL=channel_force)
-   rphase1=rphase1*2*pi
-   if (lfastCK) then
-     do n=n1-nghost,n2+nghost
-       do m=m1-nghost,m2+nghost
-         psilm=0.
-         psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
-           IYlm_list(m,n,lmindex)*sin(rphase1)
-         psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
-         if (ck_equator_gap/=0)&
-           psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
-             step(y(m),pi/2+ck_equator_gap,ck_gap_step))
-       enddo
-     enddo
-   else
-     call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-     call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-     a_ell = -anum/adenom
-!        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
-     do l=l1-nghost,l2+nghost
-       alphar=Balpha*x(l)
-       call sp_besselj_l(jlm_ff,Legendrel,alphar)
-       call sp_bessely_l(ylm_ff,Legendrel,alphar)
-       Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
-     enddo
-!-------
-     do n=n1-nghost,n2+nghost
-       do m=m1-nghost,m2+nghost
-         psilm=0.
-         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
-         call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-         psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
-         psif(:,m,n) = Z_psi*psilm
-         if (ck_equator_gap/=0)&
-           psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
-           step(y(m),pi/2+ck_equator_gap,ck_gap_step))
-       enddo
-     enddo
-   endif
-! ----- Now calculate the force from the potential and add this to
-! velocity
-! get a random unit vector with three components ee_r, ee_theta, ee_phi
-! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
-! get random psi.
-!      write(*,*) 'mmin=',mmin
-!! ----------now generate and add the force ------------
-   call random_number_wrapper(rz,CHANNEL=channel_force)
-   ee(3) = rz
-   call random_number_wrapper(rphase2,CHANNEL=channel_force)
-   rphase2 = pi*rphase2
-   ee(1) = sqrt(1-rz*rz)*cos(rphase2)
-   ee(2) = sqrt(1-rz*rz)*sin(rphase2)
-   fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
-!     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
-   do n=n1,n2
-     do m=m1,m2
-       psi(:,1) = psif(l1:l2,m,n)*ee(1)
-       psi(:,2) = psif(l1:l2,m,n)*ee(2)
-       psi(:,3) = psif(l1:l2,m,n)*ee(3)
-       call gij_psi(psif,ee,psi_ij)
-       call curl_mn(psi_ij,capitalT,psi)
-       call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
-       call curl_mn(Tij,capitalS,capitalT)
-       if ((y(m)<pi/2.).or.(lsamesign)) then
-         capitalS = float(helsign)*(1./Balpha)*capitalS
-       else
-         capitalS = -float(helsign)*(1./Balpha)*capitalS
-       endif
-       capitalH = capitalT + capitalS
-       do j=1,3
-         jf = iuu+j-1
-         if (r_ff /= 0.) then
-            capitalH(:,j)=profx_ampl*capitalH(:,j)
-         endif
-         if (lhelical_test) then
-           if (lwrite_psi) then
-             f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
-           else
-             f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
-           endif
-       else
-! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm]
-           f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
-         endif
-       enddo
-     enddo
-   enddo
-!
-    endsubroutine forcing_chandra_kendall
-!***********************************************************************
-    subroutine forcing_cktest(f)
-!
-! Testing the Chandrasekhar-Kendall forcing function
-!  22-june-08/dhruba: adapted from forcing_chandrasekhar_kendall
-!
-      use EquationOfState, only: cs0
-      use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it
-      use Sub
-!
-      logical, save :: lfirst_call=.true.
-      real, dimension(3) :: ee
-      real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
-      real, dimension(nx,3,3) :: psi_ij,Tij
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
-                 aindex,ckno,ilist
-      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,&
-              psilm,RYlm,IYlm
-      real :: rz,ralpha,&
-              rmin,rmax,rphase2
-      real, dimension(mx) :: Z_psi
-!
-      if (.not. lspherical_coords) call warning('forcing_cktest:', &
-                                   'This forcing works only in spherical coordinates!')
-      if (lfirst_call) then
-!
-! If this is the first time this function is being called allocate \psi.
-! Next read from file "alpha_in.dat" the two values of \ell. If this two
-! matches Legendrel_min and Legendrel_max proceed.
-!
-        if (lroot) print*,'Testing helical forcing in spherical polar coordinate'
-        if (lroot) print*,'allocating psif ..'
-        allocate(psif(mx,my,mz))
-! Read the list of values for emm, ell and alpha. This code is designed for 25 such
-        allocate(cklist(nlist_ck,5))
-        if (lroot) print*, '..done'
-        open(unit=76,file="alpha_in.dat",status="old")
-        read(76,*) ckno,rmin,rmax
-        if (.not. (ckno==nlist_ck)) then
-          call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
-        else
-        endif
-        if (lroot) then
-          if (.not.((helsign==1).or.(helsign==-1))) &
-            call stop_it("CK forcing: helsign must be +1 or -1, aborting")
-        else
-        endif
-! ----------
-        do ilread=1,nlist_ck
-          read(76,*) (cklist(ilread,ilm),ilm=1,5)
-        enddo
-        close(76)
-        if (lfastCK) then
-          allocate(Zpsi_list(mx,nlist_ck,3))
-          allocate(RYlm_list(my,mz,nlist_ck),IYlm_list(my,mz,nlist_ck))
-          do ilist=1,nlist_ck
-            emm = cklist(ilist,1)
-            Legendrel = cklist(ilist,2)
-            do n=n1-nghost,n2+nghost
-              do m=m1-nghost,m2+nghost
-                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
-                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-                RYlm_list(m,n,ilist)=RYlm
-                IYlm_list(m,n,ilist)=IYlm
-              enddo
-            enddo
-            do aindex=1,3
-              Balpha = cklist(ilist,2+aindex)
-              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-              a_ell = -anum/adenom
-              do l=l1-nghost,l2+nghost
-                alphar=Balpha*x(l)
-                call sp_besselj_l(jlm_ff,Legendrel,alphar)
-                call sp_bessely_l(ylm_ff,Legendrel,alphar)
-                Zpsi_list(l,ilist,aindex) = (a_ell*jlm_ff+ylm_ff)
-              enddo
-            enddo
-          enddo
-          lfirst_call=.false.
-        endif
-        icklist=0
-        if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
-      else
+        call random_number_wrapper(rindex,CHANNEL=channel_force)
+        lmindex=nint(rindex*(nlist_ck-1))+1
       endif
 !
-! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
+      emm = cklist(lmindex,1)
+      Legendrel = cklist(lmindex,2)
 !
-   icklist=icklist+1
-   if (icklist==(nlist_ck+1)) &
-            call stop_it("CK testing: no more values in list; ending")
-   lmindex=icklist
-   emm = cklist(lmindex,1)
-   Legendrel = cklist(lmindex,2)
-   call random_number_wrapper(ralpha,CHANNEL=channel_force)
-   aindex=nint(ralpha*2)
-   Balpha = cklist(lmindex,3)
+      call random_number_wrapper(ralpha,CHANNEL=channel_force)
+      aindex=nint(ralpha*2)
+      Balpha = cklist(lmindex,3+aindex)
 !
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
-! Now construct the Z_psi(r)
+! Now construct Z_psi(r)
 !
-   call random_number_wrapper(rphase1,CHANNEL=channel_force)
-   rphase1=rphase1*2*pi
-   if (lfastCK) then
-     do n=n1-nghost,n2+nghost
-       do m=m1-nghost,m2+nghost
-         psilm=0.
-         psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
-           IYlm_list(m,n,lmindex)*sin(rphase1)
-         psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
-       enddo
-     enddo
-   else
-     call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-     call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-     a_ell = -anum/adenom
+      call random_number_wrapper(rphase1,CHANNEL=channel_force)
+      rphase1=rphase1*2*pi
+
+      if (lfastCK) then
+        do n=1,mz
+          do m=1,my
+            psilm = RYlm_list(m,n,lmindex)*cos(rphase1)- &
+                    IYlm_list(m,n,lmindex)*sin(rphase1)
+            psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
+            if (ck_equator_gap/=0) &
+              psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step) &
+                                         +step(y(m),pi/2.+ck_equator_gap,ck_gap_step))
+          enddo
+        enddo
+      else
+        call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+        call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+        a_ell = -anum/adenom
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
-     do l=l1-nghost,l2+nghost
-       alphar=Balpha*x(l)
-       call sp_besselj_l(jlm_ff,Legendrel,alphar)
-       call sp_bessely_l(ylm_ff,Legendrel,alphar)
-       Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
-     enddo
-!-------
-     do n=n1-nghost,n2+nghost
-       do m=m1-nghost,m2+nghost
-         psilm=0.
-         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
-         call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-         psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
-         psif(:,m,n) = Z_psi*psilm
-       enddo
-     enddo
-   endif
+        do l=l1-nghost,l2+nghost
+          alphar=Balpha*x(l)
+          call sp_besselj_l(jlm_ff,Legendrel,alphar)
+          call sp_bessely_l(ylm_ff,Legendrel,alphar)
+          Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
+        enddo
+!
+        do n=1,mz
+          do m=1,my
+            call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
+            call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+            psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
+            psif(:,m,n) = Z_psi*psilm
+            if (ck_equator_gap/=0)&
+              psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step) &
+                                         +step(y(m),pi/2.+ck_equator_gap,ck_gap_step))
+          enddo
+        enddo
+      endif
 !
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
@@ -3044,35 +2864,55 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
 ! get random psi.
 !      write(*,*) 'mmin=',mmin
+!
 ! ----------now generate and add the force ------------
 !
-   call random_number_wrapper(rz,CHANNEL=channel_force)
-   ee(3) = rz
-   call random_number_wrapper(rphase2,CHANNEL=channel_force)
-   rphase2 = pi*rphase2
-   ee(1) = sqrt(1-rz*rz)*cos(rphase2)
-   ee(2) = sqrt(1-rz*rz)*sin(rphase2)
-   fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+      call random_number_wrapper(rz,CHANNEL=channel_force)
+      ee(3) = rz
+      call random_number_wrapper(rphase2,CHANNEL=channel_force)
+      rphase2 = pi*rphase2
+      ee(1) = sqrt(1.-rz*rz)*cos(rphase2)
+      ee(2) = sqrt(1.-rz*rz)*sin(rphase2)
+      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
 !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
-   do n=n1,n2
-     do m=m1,m2
-       psi(:,1) = psif(l1:l2,m,n)*ee(1)
-       psi(:,2) = psif(l1:l2,m,n)*ee(2)
-       psi(:,3) = psif(l1:l2,m,n)*ee(3)
-       call gij_psi(psif,ee,psi_ij)
-       call curl_mn(psi_ij,capitalT,psi)
-       call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
-       call curl_mn(Tij,capitalS,capitalT)
-       capitalS = float(helsign)*(1./Balpha)*capitalS
-       capitalH = capitalT + capitalS
-       do j=1,3
-         jf = iuu+j-1
-         f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
-       enddo
-     enddo
-   enddo
+
+      do n=n1,n2
+        do m=m1,m2
+          psi(:,1) = psif(l1:l2,m,n)*ee(1)
+          psi(:,2) = psif(l1:l2,m,n)*ee(2)
+          psi(:,3) = psif(l1:l2,m,n)*ee(3)
+          call gij_psi(psif,ee,psi_ij)
+          call curl_mn(psi_ij,capitalT,psi)
+          call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+          call curl_mn(Tij,capitalS,capitalT)
+          capitalS = float(helsign)*(1./Balpha)*capitalS
+          if ((y(m)<pi/2.).or.(lsamesign)) then
+            capitalH = capitalT + capitalS
+          else
+            capitalH = capitalT - capitalS
+          endif
+          do j=1,3
+            jf = iuu+j-1
+            if (r_ff /= 0.) then
+               capitalH(:,j)=profx_ampl*capitalH(:,j)
+            endif
+            if (lhelical_test) then
+              if (lwrite_psi) then
+                f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
+              else
+                f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
+              endif
+            else
 !
-    endsubroutine forcing_cktest
+! stochastic euler scheme of integration [sqrt(dt) is already included in fnorm]
+!
+              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
+            endif
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine forcing_chandra_kendall
 !***********************************************************************
     subroutine forcing_GP(f)
 !
@@ -6058,10 +5898,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !   12-aug-09/dhruba: coded
 !
-      if (iforce=='chandra-kendall') then
-        print*,'Deallocating arrays relevant to Chanrasekhar-Kendall forcing.'
+      if (iforce=='chandra-kendall' .or. iforce=='cktest') then
         deallocate(psif,cklist)
-        if (lfastCK)  deallocate(Zpsi_list,RYlm_list)
+        if (lfastCK) deallocate(Zpsi_list,RYlm_list,IYlm_list)
       endif
 !
     endsubroutine forcing_clean_up
