@@ -402,6 +402,7 @@ module File_io
       use Cparam, only: nx,ny,nz,l1,l2,m1,m2,n1,n2,lactive_dimension
       use Cdata, only: directory_snap
       use General, only: directory_names_std, loptest, ioptest
+      use Messages, only: warning
 
       real, dimension(:,:,:,:), intent(OUT) :: f
       integer, intent(IN) :: k1,k2,nav,indav
@@ -419,12 +420,9 @@ module File_io
       klen=k2-k1+1
       call directory_names_std(.true.)
 
-      if (file_exists(trim(directory_snap)//'/zaverages0.dat')) then
-        open(unit,FILE=trim(directory_snap)//'/zaverages0.dat',FORM='unformatted', STATUS='old')
-        !read(unit) tav0, tav
-        !read(unit) aTens,bTens,uTens
-        !close(unit)
-      else
+      !if (file_exists(trim(directory_snap)//'/zaverages0.dat')) then
+      !  open(unit,FILE=trim(directory_snap)//'/zaverages0.dat',FORM='unformatted', STATUS='old')
+      if (file_exists(trim(source)//trim(directory_snap)//'/zaverages.dat')) then
         nstart=ioptest(nstart_,-1)
         allocate(buffer(nx,ny,klen))
         if (loptest(ltaver)) then
@@ -474,6 +472,9 @@ module File_io
             f(l1:l2,m1:m2,n1:n2,k) = spread(buffer(:,:,k),3,nz)
           enddo
         endif
+      else
+        call warning('read_zaver','file "'// &
+                     trim(source)//trim(directory_snap)//'/zaverages.dat" does not exist')
       endif
 
     endsubroutine read_zaver
