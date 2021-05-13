@@ -33,7 +33,7 @@ void FTNIZE(extract_string_c)(char *extract_cmd, char *result)
         perror("popen");
         exit(EXIT_FAILURE);
     }
-    fgets(result, sizeof(result), pipe);
+    char* ret=fgets(result, sizeof(result), pipe);
     pclose(pipe);
 }
 /* ---------------------------------------------------------------------- */

@@ -69,7 +69,7 @@ module File_io
             'parallel_read', 'file "'//trim(file)//'" is empty', force=.true.)
 
         ! Allocate internal file parallel_unit.
-        allocate(character(len=bytes) :: parallel_unit)
+        allocate(character(LEN=bytes) :: parallel_unit)
 !
         ! Read file content into buffer.
         if (loptest(lbinary)) then
