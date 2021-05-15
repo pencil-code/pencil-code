@@ -141,7 +141,7 @@ fi
 #  Do this at the very end, in case this step fails.
 #
   test -h src
-  if [ $status ]; then
+  if [ $? ]; then
 	$add_cmd src
     	cd src
 	$add_cmd *.local .build-history .moduleinfo
