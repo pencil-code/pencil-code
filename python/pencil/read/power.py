@@ -102,7 +102,7 @@ class Power(object):
             print("Reading only ", file_name)
             try:
                 if op.isfile(op.join(datadir, file_name)):
-                    print("read one file")
+                    # print("read one file")
                     if file_name[:5] == "power" and file_name[-4:] == ".dat":
                         if file_name[:6] == "power_":
                             power_list.append(file_name.split(".")[0][6:])
@@ -161,6 +161,8 @@ class Power(object):
                 or file_name == "poweruy_xy.dat"
                 or file_name == "poweruz_xy.dat"
             ):
+                # This file has a different number of k
+
                 # This files has the k vector, and irrational numbers
                 # Get k vectors:
                 nk = 0
@@ -206,27 +208,44 @@ class Power(object):
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
-                #Now read the rest of the file  
-                #print('ini', ini) 
-                line_list = line_list[ini:]    
+                # Now read the rest of the file
+                # print('ini', ini)
+                line_list = line_list[ini:]
+                if line_list[0].strip() == "-Infinity":
+                    line_list = line_list[1:]
+                if line_list[0][0] == "z":
+                    line_list = line_list[2:]
                 time = []
                 power_array = []
-                #print('nk', nk)
-                block_size =  np.ceil(int(nk*2)/16.) + 1
-                n_blocks = int(len(line_list)/block_size)
+                # print('nk', nk)
+                block_size = np.ceil(int(nk * 2) / 16.0) + 1
+                n_blocks = int(len(line_list) / block_size)
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
                         # print(float(line.strip()))
                         time.append(float(line.strip()))
+                        # print("line_idx", line_idx)
                     else:
                         maxi = len(line.strip().split())
                         for j in range(0, maxi, 2):
-                            power_array.append(
-                                complex(
-                                    real=float(line.strip().split()[j]),
-                                    imag=float(line.strip().split()[j + 1]),
+                            if "E" in line.strip().split()[j]:
+                                a = line.strip().split()[j]
+                            else:
+                                a = (
+                                    line.strip().split()[j][:-4]
+                                    + "E"
+                                    + line.strip().split()[j][-4:]
                                 )
-                            )
+                            if "E" in line.strip().split()[j + 1]:
+                                b = line.strip().split()[j + 1]
+                            else:
+                                b = (
+                                    line.strip().split()[j + 1][:-4]
+                                    + "E"
+                                    + line.strip().split()[j + 1][-4:]
+                                )
+
+                            power_array.append(complex(real=float(a), imag=float(b)))
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
