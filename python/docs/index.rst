@@ -1,105 +1,20 @@
-.. _api:
+.. PCPython documentation master file, created by
+   sphinx-quickstart on Mon Jan 18 11:03:17 2021.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-:mod:`pencil`: Pencil package
-=============================
+Welcome to PCPython's documentation!
+====================================
 
-.. automodule:: pencil
-   :members:
-   :undoc-members:
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-:mod:`pencil.backpack`: backpack
-================================
 
-.. automodule:: pencil.backpack
-   :members:
-   :undoc-members:
-   :imported-members:
 
-:mod:`pencil.calc`: calc
-========================
+Indices and tables
+==================
 
-.. automodule:: pencil.calc
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.diag`: diag
-========================
-
-.. automodule:: pencil.diag
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.export`: export
-============================
-
-.. automodule:: pencil.export
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.pio`: io
-=====================
-
-.. automodule:: pencil.pio
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.ism_dyn`: ism_dyn
-==============================
-
-.. automodule:: pencil.ism_dyn
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.pmath`: math
-=========================
-
-.. automodule:: pencil.pmath
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.read`: read
-========================
-
-.. automodule:: pencil.read
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.sim`: sim
-======================
-
-.. automodule:: pencil.sim
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.tool_kit`: tool_kit
-================================
-
-.. automodule:: pencil.tool_kit
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.util`: util
-========================
-
-.. automodule:: pencil.util
-   :members:
-   :undoc-members:
-   :imported-members:
-
-:mod:`pencil.visu`: visu
-========================
-
-.. automodule:: pencil.visu
-   :members:
-   :undoc-members:
-   :imported-members:
-
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
