@@ -9,8 +9,8 @@
    equations using the ratio of advective to diffusive expressions.
 """
 
-from ..math import dot, dot2, cross
-from ..math.derivatives import div, curl, curl2, grad, del2, del6
+from ..pmath import dot, dot2, cross
+from ..pmath.derivatives import div, curl, curl2, grad, del2, del6
 import numpy as np
 
 def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,

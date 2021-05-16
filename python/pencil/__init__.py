@@ -18,11 +18,11 @@ except:
     import h5py
 
 # Load sub-modules.
-from . import io
+from . import pio
 from . import diag
 from . import visu
 from . import calc
-from . import math
+from . import pmath
 from . import sim
 from . import read
 from . import tool_kit

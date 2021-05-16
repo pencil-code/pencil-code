@@ -270,7 +270,7 @@ def write_h5_snapshot(snapshot, file_name='VAR0', datadir='data/allprocs',
     from os.path import join
 
     from .. import read
-    from ..io import open_h5, group_h5, dataset_h5
+    from ..pio import open_h5, group_h5, dataset_h5
     from pencil import is_sim_dir
 
 
@@ -696,7 +696,7 @@ def write_h5_grid(file_name='grid', datadir='data', precision='d', nghost=3,
     import numpy as np
 
     from .. import read
-    from ..io import open_h5, group_h5, dataset_h5
+    from ..pio import open_h5, group_h5, dataset_h5
     from pencil import is_sim_dir
 
     #test if simulation directory
@@ -845,7 +845,7 @@ def write_h5_averages(aver, file_name='xy', datadir='data/averages', nt=None,
     from os.path import join, exists
 
     from .. import read
-    from ..io import open_h5, group_h5, dataset_h5
+    from ..pio import open_h5, group_h5, dataset_h5
     from pencil import is_sim_dir
 
     #test if simulation directory

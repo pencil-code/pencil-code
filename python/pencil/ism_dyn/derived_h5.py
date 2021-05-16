@@ -15,10 +15,10 @@
 """
 import numpy as np
 from scipy.interpolate import interp1d
-from ..math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
-from ..math.derivatives import curl, div, curl2, grad
+from ..pmath import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
+from ..pmath.derivatives import curl, div, curl2, grad
 from ..calc import fluid_reynolds, magnetic_reynolds
-from ..io import open_h5, group_h5, dataset_h5
+from ..pio import open_h5, group_h5, dataset_h5
 from fileinput import input
 from sys import stdout
 import subprocess as sub

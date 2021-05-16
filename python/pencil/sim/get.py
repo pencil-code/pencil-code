@@ -10,7 +10,7 @@ def get(path='.', quiet=False):
 
     from os.path import isdir, join, exists, basename
 
-    from ..io import load
+    from ..pio import load
     from .simulation import simulation
     from pencil import is_sim_dir
 
@@ -47,10 +47,10 @@ def get_sims(path_root='.', depth=0, unhide_all=True, quiet=False):
     from os.path import join, basename
     import numpy as np
 
-    from ..io import load
-    from ..io import save
+    from ..pio import load
+    from ..pio import save
     from ..sim import simulation
-    from ..io import walklevel
+    from ..pio import walklevel
     from pencil import is_sim_dir
 
     #from pen.intern.class_simdict import Simdict

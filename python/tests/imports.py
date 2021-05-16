@@ -33,9 +33,9 @@ def import_stuff() -> None:
     from pencil.diag.particle import dispersion_and_drift  # noqa
     from pencil.diag.particle import diffusion # noqa
     from pencil.diag.particle import gas_velo_at_particle_pos # noqa
-    from pencil.io import remove_files # noqa
-    from pencil.io import fort2h5 # noqa
-    from pencil.io import snapshot # noqa
+    from pencil.pio import remove_files # noqa
+    from pencil.pio import fort2h5 # noqa
+    from pencil.pio import snapshot # noqa
     from pencil.sim import remesh # noqa
     from pencil.sim import simulation # noqa
     from pencil import sim # noqa
@@ -49,21 +49,21 @@ def import_stuff() -> None:
     from pencil.calc import __init__ # noqa
     from pencil.calc import shocktube # noqa
     from pencil.export import pc2vtk # noqa
-    from pencil.io import get_value_from_file # noqa
-    from pencil.io import mkdir # noqa
-    from pencil.io import npfile # noqa
+    from pencil.pio import get_value_from_file # noqa
+    from pencil.pio import mkdir # noqa
+    from pencil.pio import npfile # noqa
 
-    from pencil.io import pc_hdf5 # noqa
+    from pencil.pio import pc_hdf5 # noqa
     from pencil.ism_dyn import derived_h5 # noqa
     from pencil.ism_dyn import get_masks # noqa
     from pencil.ism_dyn import get_stats # noqa
     from pencil.ism_dyn import ism_cooling # noqa
     from pencil.ism_dyn import ism_sedov_taylor # noqa
-    from pencil.math import Helmholtz # noqa
-    from pencil.math.derivatives import der_6th_order_w_ghosts # noqa
-    from pencil.math.derivatives import div_grad_curl # noqa
+    from pencil.pmath import Helmholtz # noqa
+    from pencil.pmath.derivatives import der_6th_order_w_ghosts # noqa
+    from pencil.pmath.derivatives import div_grad_curl # noqa
 
-    from pencil.math import primes # noqa
+    from pencil.pmath import primes # noqa
     from pencil.read import allslices # noqa
     from pencil.read import averages # noqa
     from pencil.read import indices # noqa

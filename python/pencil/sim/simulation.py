@@ -140,7 +140,7 @@ class __Simulation__(object):
         from shutil import copyfile
 
         from .. import get_sim
-        from ..io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
+        from ..pio import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
         from pencil import is_sim_dir
 
         # set up paths
@@ -344,8 +344,8 @@ class __Simulation__(object):
         from os import listdir
         from os.path import exists, join, isdir
         import glob
-        from ..math import is_int
-        from ..io import mkdir
+        from ..pmath import is_int
+        from ..pio import mkdir
 
         def copyfile(src, dst, DEBUG=False):
             from shutil import copy2
@@ -514,7 +514,7 @@ class __Simulation__(object):
 
     def export(self):
         """Export simulation object to its root/.pc-dir"""
-        from ..io import save
+        from ..pio import save
         if self == False:
             print('! ERROR: Simulation object is bool object and False!')
 
@@ -631,7 +631,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from ..io import remove_files as remove
+        from ..pio import remove_files as remove
 
         folder = join(self.path,'src')
         keeps = [f.split('/')[-1] for f in self.components+self.optionals]
@@ -655,7 +655,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from ..io import remove_files as remove
+        from ..pio import remove_files as remove
 
         folder = join(self.path,'data')
         keeps = []
@@ -681,7 +681,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join
-        from ..io import remove_files as remove
+        from ..pio import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
         if remove_data:
@@ -741,7 +741,7 @@ class __Simulation__(object):
         import glob
         from os.path import join as join
         from os.path import basename
-        from ..math import natural_sort
+        from ..pmath import natural_sort
 
         key = 'VAR'
         if particle == True: key = 'PVAR'
@@ -800,7 +800,7 @@ class __Simulation__(object):
 
         if DEBUG:
             print('~ DEBUG: Searching through simulation.quantity_searchables ...')
-        from ..io import get_value_from_file
+        from ..pio import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, sim=self,
                                                        DEBUG=DEBUG, silent=True)
@@ -838,7 +838,7 @@ class __Simulation__(object):
     def change_value_in_file(self, filename, quantity, newValue, filepath=False,
                              DEBUG=False):
         """Same as pencil.io.change_value_in_file."""
-        from ..io import change_value_in_file
+        from ..pio import change_value_in_file
 
         return change_value_in_file(filename, quantity, newValue, sim=self,
                                     filepath=filepath, DEBUG=DEBUG)

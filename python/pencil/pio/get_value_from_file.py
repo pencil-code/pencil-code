@@ -22,8 +22,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     import numpy as np
     from os.path import join, abspath, exists, split, isfile
     from .. import get_sim
-    from ..math import is_number, is_float, is_int
-    from ..io import timestamp, debug_breakpoint, mkdir
+    from ..pmath import is_number, is_float, is_int
+    from ..pio import timestamp, debug_breakpoint, mkdir
     import re
     import copy
 

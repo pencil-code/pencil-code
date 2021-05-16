@@ -102,7 +102,7 @@ class ParticleStalkData(object):
                 from ..backpack import pidly
                 IDL = pidly.IDL(long_delay=0.05)	# start IDL engine
                 from scipy.io.idl import readsav
-                from ..io import mkdir
+                from ..pio import mkdir
 
                 ## read tstalk file
                 print('## reading particle stalker file..')

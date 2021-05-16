@@ -72,11 +72,11 @@ class __Simulations__(object):
             - simulations object
         """
 
-        from ..math import is_iterable
+        from ..pmath import is_iterable
         from .simulation import __Simulation__
         from .simulation import simulation
         import numpy as np
-        from ..io import debug_breakpoint
+        from ..pio import debug_breakpoint
         from .. import get_sim
 
         for arg in args:

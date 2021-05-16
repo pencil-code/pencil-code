@@ -7,7 +7,7 @@ def pkl_save(obj, name, folder='.pc', ascii=True):
     name:		name of pkl file, '.pkl' will be added automatically if missing
     ascii:		if you dont want to save pkl file in ascii set this to false
     """
-    from ..io.mkdir import mkdir
+    from ..pio.mkdir import mkdir
     from os.path import join
     import pickle
 

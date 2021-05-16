@@ -13,7 +13,7 @@ def group(simulations, groupby, sort=True, only_started=False, reverse=False):
   """
 
   from collections import OrderedDict
-  from ..math import natural_sort
+  from ..pmath import natural_sort
 
   sim_dict_grouped = {}
 

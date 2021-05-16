@@ -73,7 +73,7 @@ class ParticleData(object):
         import numpy as np
         import os
         from .. import get_sim
-        from ..math import is_number
+        from ..pmath import is_number
         from sys import byteorder
 
         ####### interpret parameters
