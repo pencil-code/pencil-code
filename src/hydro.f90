@@ -24,6 +24,7 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
+! PENCILS PROVIDED lorentz_gamma; ss_relativistic2; ss_relativistic(3)
 !***************************************************************
 !
 module Hydro
@@ -126,7 +127,8 @@ module Hydro
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
   logical :: loo_as_aux = .false.
-  logical :: luut_as_aux=.false.,loot_as_aux=.false.
+  logical :: luut_as_aux=.false., luust_as_aux=.false.
+  logical :: loot_as_aux=.false., loost_as_aux=.false.
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lscale_tobox=.true.
@@ -165,7 +167,8 @@ module Hydro
       lrelativistic, lskip_projection, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
-      loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
+      loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
+      mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
@@ -247,7 +250,8 @@ module Hydro
       lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz,lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
-      loo_as_aux, luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
+      loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
+      loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
@@ -760,6 +764,7 @@ module Hydro
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
+      use Sub, only: register_report_aux
 !
 !  indices to access uu
 !
@@ -769,6 +774,35 @@ module Hydro
         call farray_register_auxiliary('uu0',iuu0,vector=3)
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
       endif
+!
+!  Register an extra aux slot for uut if requested. This is needed
+!  for calculating the correlation time from <u.intudt>. For this to work
+!  you must reserve enough auxiliary workspace by setting, for example,
+!     ! MAUX CONTRIBUTION 3
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!  29-oct-20/hongzhe: added uust
+!
+      if (luut_as_aux) then
+        call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
+        ltime_integrals=.true.
+      endif
+      if (luust_as_aux) then
+        call register_report_aux('uust', iuust, iuxst, iuyst, iuzst)
+        ltime_integrals=.true.
+      endif
+      if (loot_as_aux) then
+        call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
+        ltime_integrals=.true.
+      endif
+      if (loost_as_aux) then
+        call register_report_aux('oost', ioost, ioxst, ioyst, iozst)
+        ltime_integrals=.true.
+      endif
+!
+!  omega as aux
+!
+      if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.
@@ -1094,26 +1128,6 @@ module Hydro
         print*,'xmask_hyd=',xmask_hyd
         print*,'zmask_hyd=',zmask_hyd
       endif
-!
-!  Register an extra aux slot for uut if requested. This is needed
-!  for calculating the correlation time from <u.intudt>. For this to work
-!  you must reserve enough auxiliary workspace by setting, for example,
-!     ! MAUX CONTRIBUTION 3
-!  in the beginning of your src/cparam.local file, *before* setting
-!  ncpus, nprocy, etc.
-!  29-oct-20/hongzhe: added uust
-!
-      if (luut_as_aux) then
-        call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
-        call register_report_aux('uust', iuust, iuxst, iuyst, iuzst)
-        ltime_integrals=.true.
-      endif
-      if (loot_as_aux) then
-        call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
-        call register_report_aux('oost', ioost, ioxst, ioyst, iozst)
-        ltime_integrals=.true.
-      endif
-      if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
         call put_shared_variable('ampl_forc', ampl_forc)
@@ -2692,7 +2706,16 @@ module Hydro
       intent(out):: p
 
 ! uu
-      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      if (lpenc_loc(i_uu)) then
+        if (lrelativistic) then
+          p%ss_relativistic=f(l1:l2,m,n,iux:iuz)
+          call dot2_mn(p%ss_relativistic,p%ss_relativistic2)
+          p%lorentz_gamma=0.
+          p%uu=f(l1:l2,m,n,iux:iuz)
+        else
+          p%uu=f(l1:l2,m,n,iux:iuz)
+        endif
+      endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
@@ -4349,9 +4372,9 @@ module Hydro
 !
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
-      if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu*fact_cos
+      if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
       if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
-      if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo*fact_cos
+      if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
       if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
 !
     endsubroutine time_integrals_hydro
@@ -5796,18 +5819,15 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
-
+!
       if (idiag_u2tm/=0) then
         if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
-        idiag_u2tm=0
       endif
       if (idiag_outm/=0) then
         if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
-        idiag_outm=0
       endif
       if (idiag_uotm/=0) then
         if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
-        idiag_uotm=0
       endif
 !
 !  Loop over spherical harmonic modes.
