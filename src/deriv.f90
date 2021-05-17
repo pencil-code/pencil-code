@@ -349,11 +349,17 @@ module Deriv
           endif
         elseif (j==3) then
           if (nzgrid/=1) then
-!            if (lcoarse_mn) then
-            facs = (1./60.) * dz_1(n)
-            df=facs*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                     -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                     +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            if (lcoarse_mn) then
+              facs = (1./60.) * dz_1(n) * nphis1(m)
+              df=facs*(+ 45.0*(f(l1_:l2_,m,ninds(+1,m,n))-f(l1_:l2_,m,ninds(-1,m,n))) &
+                       -  9.0*(f(l1_:l2_,m,ninds(+2,m,n))-f(l1_:l2_,m,ninds(-2,m,n))) &
+                       +      (f(l1_:l2_,m,ninds(+3,m,n))-f(l1_:l2_,m,ninds(-3,m,n))) )
+            else
+              facs = (1./60.) * dz_1(n)
+              df=facs*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+                       -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+                       +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            endif
             if (lspherical_coords) df=df*r1_mn*sin1th(m)
           else
             df=0.
