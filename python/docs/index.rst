@@ -1,3 +1,18 @@
+Welcome to Python for Pencil's documentation!
+=============================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
 .. _api:
 
 :mod:`pencil`: Pencil package
