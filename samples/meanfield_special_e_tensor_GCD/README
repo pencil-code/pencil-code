@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/meanfield_special_e_tensor_GCD
+SVN Id:
+    $Id$
+Maintainer:
+    Jörn Warnecke <joern[dot]warnecke/gmail[dot]de>
+    Matthias Rheinhardt <mreinhardt/nordita[dot]org>
+Added:
+    17-May-2021
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Sample for using the test-field coefficients of a global convective dynamo simulation
+    in a mean-field model.
+
+References:
+    Warnecke, J., Rheinhardt, M., Viviani, M., Gent, F., Tuomisto, S. 
+    and Käpylä, M. J.:2021, "Investigating global convective dynamos 
+    with mean-field models: full spectrum of turbulent effects required", 
+    Astrophys. J. Lett., submitted

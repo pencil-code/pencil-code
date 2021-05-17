@@ -1,0 +1,74 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2021/04/01 11:33:46 joern Exp $',
+  nt=20, it1=1, isave=5000, itorder=3
+  dsnap=10, dvid=0, ialive=0, dtmin=1e-8
+  cdtv=0.3, d2davg=1, cdt=0.9
+  lpencil_check=T, lpencil_check_small=T
+/
+&magnetic_run_pars
+  eta=5e-5
+  lcovariant_magnetic=T
+/
+&special_run_pars
+  dataset='mean' ! mean or time series
+!
+  lalpha=T
+  lalpha_c=T,T,T,T,T,T
+  alpha_scale=1.5 ! growing for 1.5
+!
+  lumean=T
+  lumean_c=T,T,T
+  umean_scale=1.0
+!
+  lgamma=T
+  lgamma_c=T,T,T
+  gamma_scale=1.0
+!
+  lbeta=T
+  lbeta_c=T,T,T,T,T,T
+  beta_scale=1.0
+
+  ldelta=T
+  ldelta_c=T,T,T
+  delta_scale=1.0
+!
+  lkappa=T
+!        k=--------1--------|-----2-----|--3--
+!        j=--1--|--2--|--3--|--2--|--3--|--3--
+!        i=1-2-3|1-2-3|1-2-3|1-2-3|1-2-3|1-2-3 
+  lkappa_c=T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T
+  kappa_scale=1.0
+
+! use a and b from emftensor  
+  lacoef=T, lbcoef=T
+! calculate emf from a and b directly
+  lusecoefs=F
+! use alternative decomposition from Viviani et al. 2019
+  lalt_decomp=T
+! for debugging
+  lreconstruct_tensors=F
+!
+  lregularize_beta=F
+  lremove_beta_negativ=T
+  rel_eta=0.0 ! minimum for diagonal betas: eta*rel_eta
+!
+! remove large negative values (below kappa_floor)
+!  in kappa_{\phi r \theta} and kappa_{\phi\theta r} 
+  lregularize_kappa_simple=T
+  kappa_floor=-3.5e-4 
+!
+! symmetrize coefficients over equator
+  lsymmetrize=T
+!
+! fix field symmetry across equator
+! 0 : no resctriction
+! 1 : symmetric
+! 2 : antisymmetric
+  field_symmetry=0
+/
+&eos_run_pars
+/

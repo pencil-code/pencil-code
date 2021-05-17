@@ -1,0 +1,21 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+FILE_IO   =   file_io_f2003
+IO        =   io_dist
+GLOBAL    = noglobal
+FFT       = nofft
+FFTPACK   = nofftpack
+MAGNETIC  =   magnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+VISCOSITY = noviscosity
+
+FORCING   = noforcing
+SHEAR     = noshear
+SPECIAL   = special/meanfield_e_tensor
+REAL_PRECISION = double
+

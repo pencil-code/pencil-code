@@ -1,0 +1,20 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&init_pars
+  coord_system='spherical'
+  lperi=F, F, T
+  xyz0=0.7,0.261799,0.
+  xyz1=1.0,2.87979 ,1.57080
+  bcx='s:a','spr:nfr','spr:nfr'
+  bcy='a'  ,'s'  ,'a'
+
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-8
+/
+&special_init_pars
+/
+&eos_init_pars
+/
