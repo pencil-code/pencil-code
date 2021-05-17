@@ -2369,7 +2369,7 @@ module Special
 !  14-oct-18/joern: add vector magnetogram
 !
       use File_io, only: file_exists
-      use Fourier, only: fourier_transform_other
+      use Fourier, only: fourier_transform_other, kx_fft, ky_fft
       use Mpicomm, only: mpibcast_real, stop_it_if_any
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -3840,7 +3840,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Fourier, only: fft_xy_parallel, fft_x_parallel
+      use Fourier, only: fft_xy_parallel, fft_x_parallel, kx_fft, ky_fft
 !
       real, dimension(nx,ny), intent(out) :: frx_r,fry_r
       real, dimension(nx,ny) :: kx,ky,k2,filter

@@ -167,7 +167,7 @@ module ImplicitDiffusion
 !
 ! 25-sep-14/ccyang: coded.
 !
-      use Fourier, only: fft_xyz_parallel
+      use Fourier, only: fft_xyz_parallel, kx_fft, ky_fft, kz_fft
 !
       interface
         subroutine get_diffus_coeff(ndc, dc, iz)
@@ -251,7 +251,7 @@ module ImplicitDiffusion
 !
 ! 05-sep-14/ccyang: coded.
 !
-      use Fourier, only: fft_xy_parallel
+      use Fourier, only: fft_xy_parallel, kx_fft, ky_fft
 !
       interface
         subroutine get_diffus_coeff(ndc, dc, iz)

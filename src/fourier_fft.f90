@@ -53,6 +53,8 @@ module Fourier
 !
   contains
 !
+  include 'fourier_common.h'
+!
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
 !

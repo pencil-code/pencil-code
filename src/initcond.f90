@@ -5693,7 +5693,7 @@ module Initcond
 !
 !  13-dec-05/bing : coded.
 !
-      use Fourier, only: fourier_transform_other
+      use Fourier, only: fourier_transform_other, kx_fft, ky_fft
       use Mpicomm, only: mpibcast_real,stop_it_if_any
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f

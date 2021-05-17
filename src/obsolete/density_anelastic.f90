@@ -2615,7 +2615,7 @@ module Density
 !
       use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx
-      use Fourier, only: fourier_transform_xy,fourier_transform_x
+      use Fourier, only: fourier_transform_xy, fourier_transform_x, kx_fft, ky_fft
       use Gravity, only: gravz
 !
       real, dimension (nx,ny,nz) :: phi, b1, pold

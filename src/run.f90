@@ -106,7 +106,7 @@ program run
   double precision :: time1, time2, tvar1
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
-  integer :: icount, i, mvar_in, isave_shift=0
+  integer :: icount, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
@@ -220,35 +220,6 @@ program run
 !  Inform about verbose level.
 !
   if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
-!
-!  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
-!
-  if (nxgrid/=1) then
-    kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-    kx_fft2=kx_fft**2
-    kx_nyq=nxgrid/2 * 2*pi/Lx
-  else
-    kx_fft=0.0
-    kx_nyq=0.0
-  endif
-!
-  if (nygrid/=1) then
-    ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-    ky_fft2=ky_fft**2
-    ky_nyq=nygrid/2 * 2*pi/Ly
-  else
-    ky_fft=0.0
-    ky_nyq=0.0
-  endif
-!
-  if (nzgrid/=1) then
-    kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
-    kz_fft2=kz_fft**2
-    kz_nyq=nzgrid/2 * 2*pi/Lz
-  else
-    kz_fft=0.0
-    kz_nyq=0.0
-  endif
 !
 !  Position of equator (if any).
 !

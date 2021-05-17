@@ -223,6 +223,7 @@ module Register
       use Opacity,          only: initialize_opacity
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
+      use Fourier,          only: initialize_fourier
       use Gravity,          only: initialize_gravity
       use Heatflux,         only: initialize_heatflux
       use Hydro,            only: initialize_hydro
@@ -389,6 +390,7 @@ module Register
       call initialize_density(f)
       call initialize_hydro(f)
       call initialize_forcing
+      call initialize_fourier
       call initialize_energy(f)
       call initialize_opacity
 !      call initialize_conductivity(f)
@@ -1272,6 +1274,8 @@ module Register
 !  the output positions processor-dependent. At the moment,
 !  those positions are in that part of the mesh that is on
 !  the root processor.
+!
+      use Fourier, only: kx_fft, ky_fft, kz_fft
 !
       integer, parameter :: unit = 3
       integer :: ikx, iky, ikz

@@ -4698,7 +4698,7 @@ module EquationOfState
 !
 !  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
-      use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
+      use Fourier, only: fourier_transform_xy_xy, fourier_transform_other, kx_fft, ky_fft
       use Gravity, only: potential
 !
       real, dimension (:,:,:,:), intent (inout) :: f

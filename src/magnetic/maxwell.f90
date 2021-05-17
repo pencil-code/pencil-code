@@ -261,6 +261,8 @@ module Magnetic
 !
       intent(inout) :: f
 !
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+!
 !  initial condition for aak
 !
       f(:,:,:,iaak:iaakim+2)=0.
@@ -628,10 +630,12 @@ module Magnetic
 !  31-mar-21/axel: adapted from gravitational_waves_hTXk.f90
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       integer :: ikx, iky, ikz, q, p, ik
       real :: k1, k2, k3, ksqr
-
+!
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+!
       spectra%mag=0.; spectra%maghel=0.
       spectra%ele=0.; spectra%elehel=0.
 !
@@ -773,7 +777,7 @@ module Magnetic
 !
 !  07-aug-17/axel: coded
 !
-      use Fourier, only: fft_xyz_parallel
+      use Fourier, only: fft_xyz_parallel, kx_fft, ky_fft, kz_fft
       use Sub, only: cross_mn
 !
       real, dimension (:,:,:,:), allocatable :: bbkre, bbkim

@@ -28,9 +28,9 @@ module Cdata
   real :: dx,dy,dz,dxmin,dxmax
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
   real, dimension (-nghost:nghost) :: dx2_bound=0., dy2_bound=0., dz2_bound=0.
-  real, dimension (nxgrid) :: kx_fft, kx_fft2, xgrid, dx1grid, dxtgrid
-  real, dimension (nygrid) :: ky_fft, ky_fft2, ygrid, dy1grid, dytgrid
-  real, dimension (nzgrid) :: kz_fft, kz_fft2, zgrid, dz1grid, dztgrid
+  real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
+  real, dimension (nygrid) :: ygrid, dy1grid, dytgrid
+  real, dimension (nzgrid) :: zgrid, dz1grid, dztgrid
   real, dimension(mxgrid) :: xglobal
   real, dimension(mygrid) :: yglobal
   real, dimension(mzgrid) :: zglobal

@@ -1163,7 +1163,7 @@ module Density
 !
 !  02-mar-2012/dintrans+dubuffet: coded
 !
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fourier_transform_xy, kx_fft, ky_fft
       use General, only: tridag
 !
       real, dimension (mx,my,mz,mfarray) :: f

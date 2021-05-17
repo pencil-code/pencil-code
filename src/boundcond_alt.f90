@@ -5743,7 +5743,7 @@ module Boundcond
 !
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
-      use Fourier, only: fourier_transform_xy_xy
+      use Fourier, only: fourier_transform_xy_xy, kx_fft, ky_fft
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
@@ -6814,7 +6814,7 @@ module Boundcond
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !
-      use Fourier, only: vect_pot_extrapol_z_parallel
+      use Fourier, only: vect_pot_extrapol_z_parallel, kx_fft, ky_fft
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
@@ -6901,7 +6901,7 @@ module Boundcond
 !
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
-      use Fourier, only: fourier_transform_xy_xy
+      use Fourier, only: fourier_transform_xy_xy, kx_fft, ky_fft
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
@@ -7033,7 +7033,7 @@ module Boundcond
 !
 !  10-oct-06/tobi: Coded
 !
-      use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
+      use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y, kx_fft, ky_fft
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
@@ -7260,7 +7260,7 @@ module Boundcond
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
 !  29-sep-06/axel: removed multiple calls, removed normalization, non-para
 !
-      use Fourier, only: fourier_transform_xy_xy
+      use Fourier, only: fourier_transform_xy_xy, kx_fft, ky_fft
 !
       real, dimension (:,:,:) :: fz
       real, dimension (:,:) :: f2,f3
@@ -7803,7 +7803,7 @@ module Boundcond
 !
 !  27-Oct-10/bing: coded
 !
-      use Fourier, only: fourier_transform_other
+      use Fourier, only: fourier_transform_other, kx_fft
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot

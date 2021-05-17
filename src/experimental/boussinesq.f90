@@ -442,7 +442,7 @@ module Density
 !  Fourth-order in the vertical direction that uses pendag().
 !  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fourier_transform_xy, kx_fft, ky_fft
       use Mpicomm, only: transp_xz, transp_zx
       use General, only: pendag
 !
@@ -545,7 +545,7 @@ module Density
 !  Second-order version in the vertical direction that uses tridag().
 !  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fourier_transform_xy, kx_fft, ky_fft
       use Mpicomm, only: transp_xz, transp_zx
       use General, only: tridag
 !
