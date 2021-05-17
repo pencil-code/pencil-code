@@ -1,10 +1,15 @@
 Welcome to Python for Pencil documentation!
 =======================================================
 
-Contents:
 
-.. toctree::
-   :maxdepth: 2
+Module contents
+---------------
+
+.. automodule:: pencil
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Indices and tables
 ==================
