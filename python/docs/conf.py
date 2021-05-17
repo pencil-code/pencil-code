@@ -16,15 +16,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-# -- Mocking ---------
-from mock import Mock as MagicMock
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.linalg', 'scipy.signal']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
 
 # -- Project information -----------------------------------------------------
 
@@ -33,7 +24,7 @@ copyright = '2021, Illa R. Losada'
 author = 'Illa R. Losada'
 
 # The short X.Y version
-version = '2.0'
+version = ''
 # The full version, including alpha/beta/rc tags
 release = ''
 
