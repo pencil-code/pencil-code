@@ -21,6 +21,6 @@
   public :: ky_fft, ky_fft2
   public :: kz_fft, kz_fft2
 !
-  real, dimension (nygrid) :: kx_fft, kx_fft2
+  real, dimension (nxgrid) :: kx_fft, kx_fft2
   real, dimension (nygrid) :: ky_fft, ky_fft2
   real, dimension (nzgrid) :: kz_fft, kz_fft2
