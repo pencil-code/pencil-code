@@ -580,7 +580,7 @@ module Poisson
 !  Second-order version in the vertical direction that uses tridag_neumann.
 !  On input: phi=div(U), on output: phi=potential of the irrotational flow.
 !
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fourier_transform_xy, kx_fft2, ky_fft2
       use Mpicomm, only: transp_xz, transp_zx
       !!!use Sub, only: tridag_neumann
 !
