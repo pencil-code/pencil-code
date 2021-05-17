@@ -12,6 +12,8 @@ Indices and tables
 .. _api:
 
 Module contents
+==================
+:mod:`pencil`: Pencil package
 ---------------
 
 .. automodule:: pencil
