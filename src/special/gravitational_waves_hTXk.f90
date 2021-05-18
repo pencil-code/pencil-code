@@ -771,14 +771,14 @@ module Special
 !
 !  16-oct-19/MR: carved out from special_calc_spectra
 !
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: ikx, iky, ikz, q, p, pq, ik
       real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
       real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
       real, dimension(3) :: VCT_re, VCT_im, kvec
-!
-      use Fourier, only: kx_fft, ky_fft, kz_fft
 !
       spectra%GWs=0.; spectra%GWshel=0.
       spectra%GWh=0.; spectra%GWhhel=0.
