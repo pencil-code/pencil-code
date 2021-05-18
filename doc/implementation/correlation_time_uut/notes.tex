@@ -1,6 +1,6 @@
 % $Id: notes.tex,v 1.94 2021/03/23 17:18:17 brandenb Exp $
-\documentclass{article}
-%\documentclass[twocolumn]{article}
+%\documentclass{article}
+\documentclass[twocolumn]{article}
 \setlength{\textwidth}{160mm}
 \setlength{\oddsidemargin}{-0mm}
 \setlength{\textheight}{220mm}
@@ -27,9 +27,23 @@
 
 Compute
 \begin{equation}
-\tau(t)=\int_0^t \bra{\uu(t)\cdot\uu(t')}\,\dd t'/\bra{\uu^2}.
+\tau_{\uu^2}(t)=\int_0^t \bra{\uu(t)\cdot\uu(t')}\,\dd t'/\bra{\uu^2}.
+\end{equation}
+\begin{equation}
+\tau_{\oo\cdot\uu}(t)=\int_0^t \bra{\oo(t)\cdot\uu(t')}\,\dd t'/\bra{\oo\cdot\uu}.
+\end{equation}
+\begin{equation}
+\tau_{\uu\cdot\oo}(t)=\int_0^t \bra{\uu(t)\cdot\oo(t')}\,\dd t'/\bra{\oo\cdot\uu}.
+\end{equation}
+\begin{equation}
+\tau_{\uu\cdot\oo}(t)=\bbra{\uu(t)\cdot\int_0^t \oo(t')\,\dd t'}/\bra{\oo\cdot\uu}.
 \end{equation}
 see \Fig{pcortime} for a case where $\kf=10$ and $\urms=0.1$.
+$\bra{\uu^2}$
+\begin{equation}
+\tau(t,k)=\int_0^t \Sp_k\left[\uu(t),\uu(t')\right]\,\dd t'/\bra{F(k)},
+\end{equation}
+where $\Sp(a,b)=a_k b_b^* + \mbox{c.c.}$ and $F(k)$ is the helicity spectrum.
 
 \begin{figure}[h!]\begin{center}
 \includegraphics[width=\columnwidth]{pcortime}
