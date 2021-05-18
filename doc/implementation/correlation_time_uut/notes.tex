@@ -1,0 +1,58 @@
+% $Id: notes.tex,v 1.94 2021/03/23 17:18:17 brandenb Exp $
+\documentclass{article}
+%\documentclass[twocolumn]{article}
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
+\usepackage{graphicx,natbib,bm,url,color}
+\graphicspath{{./fig/}{./png/}}
+\thispagestyle{empty}
+\input macros
+\def\red{\textcolor{red}}
+\def\blue{\textcolor{blue}}
+\title{Measuring the correlation time}
+\author{Axel Brandenburg}
+\date{\today,~ $ $Revision: 1.94 $ $}
+\begin{document}
+\maketitle
+
+%\section{}
+
+%Use $(r,\phi,z)$ coordinates and
+
+%\begin{itemize}\itemsep-0.2mm
+%\item
+%\end{itemize}
+
+Compute
+\begin{equation}
+\tau(t)=\int_0^t \bra{\uu(t)\cdot\uu(t')}\,\dd t'/\bra{\uu^2}.
+\end{equation}
+see \Fig{pcortime} for a case where $\kf=10$ and $\urms=0.1$.
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pcortime}
+\end{center}\caption[]{
+\url{pcortime}
+}\label{pcortime}\end{figure}
+
+%\begin{table}[htb]\caption{
+%}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+%$R$ & $T$ & $\kf$ & $\omf$ & $\EEGW$ & $\hrms$ & $k_{\rm peak}$ \\
+%\hline
+%\label{Ttimescale}\end{tabular}}\end{table}
+
+%r e f
+%\begin{thebibliography}{}
+
+%\bibitem[Biskamp \& M\"uller(1999)]{BM99}
+%Biskamp, D., \& M\"uller, W.-C.\yprl{1999}{83}{2195}
+
+%\end{thebibliography}
+
+%\vfill\bigskip\noindent\tiny\begin{verbatim}
+%$Header: /var/cvs/brandenb/tex/etc/notes.tex,v 1.94 2021/03/23 17:18:17 brandenb Exp $
+%\end{verbatim}
+
+\end{document}
