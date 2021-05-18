@@ -254,14 +254,14 @@ module Magnetic
 !  initialise magnetic condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical, parameter :: lvectorpotential=.true.
       real :: k1, k2, k3, ksqr, k
       integer :: ikx, iky, ikz
 !
       intent(inout) :: f
-!
-      use Fourier, only: kx_fft, ky_fft, kz_fft
 !
 !  initial condition for aak
 !
@@ -629,12 +629,12 @@ module Magnetic
 !
 !  31-mar-21/axel: adapted from gravitational_waves_hTXk.f90
 !
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: ikx, iky, ikz, q, p, ik
       real :: k1, k2, k3, ksqr
-!
-      use Fourier, only: kx_fft, ky_fft, kz_fft
 !
       spectra%mag=0.; spectra%maghel=0.
       spectra%ele=0.; spectra%elehel=0.
