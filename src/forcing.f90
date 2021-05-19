@@ -223,8 +223,8 @@ module Forcing
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs0
 !
-      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,Legendrel
-      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex
+      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm
+      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel
       logical :: lk_dot_dat_exists
 !
       if (lstart) then
@@ -824,7 +824,7 @@ module Forcing
             do aindex=1,3
               Balpha = cklist(ilist,2+aindex)
               call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-             call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
               a_ell = -anum/adenom
               do l=1,mx
                 alphar=Balpha*x(l)
@@ -835,7 +835,7 @@ module Forcing
             enddo
           enddo
 
-        endif
+        endif 
       endif
 
       if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
@@ -2833,6 +2833,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                                          +step(y(m),pi/2.+ck_equator_gap,ck_gap_step))
           enddo
         enddo
+
       else
         call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
         call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
