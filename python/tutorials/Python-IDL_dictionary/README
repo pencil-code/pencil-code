@@ -23,4 +23,11 @@ pc_read_param,obj=param                                                    pc.re
 help,param
 
 Example:
+print,param.tstart                       print(pc.read.param.tstart)
+
+error analysis:
+
+Example:
+pc_error_range,t(good),grav_k1t(good),mean=grav_k1m,err=grav_k1e
+
 print,param.tstart                                                         print(pc.read.param.tstart)
