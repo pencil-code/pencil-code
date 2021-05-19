@@ -20,7 +20,7 @@ for pdir in  $dirlist ; do
   cd "$pdir"
 
 #IL
-if [[ "$(basename $0)" == "tar_run" ]] ; then
+if [[ "$(basename $0)" == "tar_run_bash" ]] ; then
         cvsci=0
         add_cmd="tar -f $PWD.a --ignore-failed-read --append"
         add_data_opt=('--transform s,^,data/,')
