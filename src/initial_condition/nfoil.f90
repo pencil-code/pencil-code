@@ -283,7 +283,9 @@ module InitialCondition
                 ee_phi(3) = tangent(1)*(circle_pos(2)-knot_pos(2)) - tangent(2)*(circle_pos(1)-knot_pos(1))
                 ee_phi = ee_phi/sqrt(ee_phi(1)**2 + ee_phi(2)**2 + ee_phi(3)**2)
             else
-                ee_phi = [0, 0, 0]
+                ee_phi(1) = 0
+                ee_phi(2) = 0
+                ee_phi(3) = 0
             endif
 !
 !  Correct for the loop curvature with fields inside being weakend and outside being strengthend.
