@@ -10515,7 +10515,7 @@ omitting unwanted variables (not yet implemented).
 \begin{enumerate}
 \item
   First set up the new run.
-  One option will be to navigate to the path of the existing 
+  One option is to navigate to the path of the existing 
   run \$path-to-old-run and apply the command
   \begin{alltt}
     \prompt{\$path-to-old-run> }pc_newrun \$path-to-new-run
@@ -10539,7 +10539,7 @@ omitting unwanted variables (not yet implemented).
   Once the new run has been started successfully, create in the new run
   directory a python script
   called \file{local\_remesh.py} or similar, as described in the notes at the
-  end of \file{\$PENCIL\_HOME/python/pencil/files/remesh.py}.
+  end of \file{\$PENCIL\_HOME/python/pencil/files/sim/remesh.py}.
   Add \texttt{import pencil as pc} at the start of the file.
 
 \item
@@ -10547,17 +10547,17 @@ omitting unwanted variables (not yet implemented).
   complete f-array object \texttt{fnew},
   add to the \file{local\_remesh.py} the lines
   \begin{alltt}
-    \prompt{} fnew=pc.interp_var(
-    \prompt{}                    source_path=\$path-to-old-run,
-    \prompt{}                    target_path=\$path-to-new-run,
-    \prompt{}                    arrs=[`uu',`rho',`lnrho',`ss',`aa',
-    \prompt{}                          `shock',`netheat',`cooling'],
-    \prompt{}                   )
+    \prompt{} fnew = pc.interp_var(
+    \prompt{}                      source_path=\$path-to-old-run,
+    \prompt{}                      target_path=\$path-to-new-run,
+    \prompt{}                      arrs=[`uu',`rho',`lnrho',`ss',`aa',
+    \prompt{}                            `shock',`netheat',`cooling'],
+    \prompt{}                     )
   \end{alltt}
   By default this will read in the data from the old run \file{var.dat} files.
   If another source file is required add the line \file{oldvar=\$VAR,}
   between the brackets, where \texttt{\$VAR} is one of the snapshots with
-  suffix \file{VAR}.
+  prefix \file{VAR}.
   Replace the default list of variables \texttt{arrs} with the variables used
   in the old run listed in f-array index order.
   For other options inspect \file{\$PENCIL\_HOME/python/pencil/files/remesh.py}.
