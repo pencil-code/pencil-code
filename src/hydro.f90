@@ -217,6 +217,7 @@ module Hydro
   logical :: lfargoadvection_as_shift=.true.
   logical :: lhelmholtz_decomp=.false.
   logical :: limpose_only_horizontal_uumz=.false.
+  logical :: ltime_integrals_always=.true.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -262,7 +263,8 @@ module Hydro
       lcdt_tauf, cdt_tauf, ulev, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
-      limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux
+      limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
+      ltime_integrals_always
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -802,7 +804,8 @@ module Hydro
 !
 !  omega as aux
 !
-      if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
+      !if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
+      if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.
@@ -4372,10 +4375,22 @@ module Hydro
 !
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
-      if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
-      if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
-      if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
-      if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
+!
+!if (m==m1.and.n==n1) print*,'AXEL2',it
+      if (ltime_integrals_always) then
+        if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
+        if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
+        if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
+        if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
+      else
+        if (it==1) then
+!if (m==m1.and.n==n1) print*,'AXEL1',f(l1,m,n,iux:iuz),f(l1,m,n,iuxt:iuzt)
+          f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
+          f(l1:l2,m,n,iuxst:iuzst)=0.
+          f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
+          f(l1:l2,m,n,ioxst:iozst)=0.
+        endif
+      endif
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
