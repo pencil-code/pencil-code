@@ -55,6 +55,10 @@
 \subsection{\name{Linux}}
 A \name{Fortran} and a \name{C} compiler are needed to compile the code.
 Both compilers should belong to the same distribution package and version (e.g. GNU GCC or Intel).
+For HDF5 and MPI support, you need to install the package \directory{libhdf5-openmpi-dev} that automatically pulls in the GNU compilers and OpenMPI. On a recent ubuntu system this is done with:
+\begin{verbatim}
+  sudo apt install libhdf5-openmpi-dev
+\end{verbatim}
 
 \subsection{\name{MacOS X}}
 For \name{Mac}, you first need to install \name{Xcode} from the
