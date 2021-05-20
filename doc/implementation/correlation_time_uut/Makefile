@@ -1,4 +1,4 @@
 default:
-	latex notes
-	latex notes
+	pdflatex notes
+	pdflatex notes
 	dvipdf notes
