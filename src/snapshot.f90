@@ -752,6 +752,7 @@ module Snapshot
 !  azimuthally averaged spectra in polar coorinates
 !
         if (ou_omega) call polar_spectrum(f,'kin_omega')
+        if (uut_cor)  call polar_spectrum(f,'uut_cor')
         if (cor_uu)   call polar_spectrum(f,'uucor')
         if (ou_polar) call polar_spectrum(f,'kin')
         if (ab_polar) call polar_spectrum(f,'mag')

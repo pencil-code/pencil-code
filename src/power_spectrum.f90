@@ -3789,6 +3789,13 @@ endsubroutine pdf
         b_im=f(l1:l2,m1:m2,n1:n2,iuust+ivec-1)   ! the imaginary part of u(\vec x,\omega)
         a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)    ! the real part of omega(\vec x,\omega)
         a_im=f(l1:l2,m1:m2,n1:n2,ioost+ivec-1)   ! the imaginary part of omega(\vec x,\omega)
+      elseif (sp=='uut_cor') then
+        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)    ! the real part of u(\vec x,\omega)
+        b_im=0.
+        a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)    ! the real part of omega(\vec x,\omega)
+        a_im=0.
       elseif (sp=='kin') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
         do n=n1,n2
