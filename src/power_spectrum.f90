@@ -943,10 +943,11 @@ module power_spectrum
     use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,ny,nz) :: h_re,ht_re
   real, dimension(nx) :: bbi, jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
@@ -1300,6 +1301,51 @@ module power_spectrum
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
+!
+!   Spectrum of h.ht; h=u.curl(u) and ht=uut.curl(uut)
+!
+    elseif (sp=='hkt') then
+        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        h_re=0.
+        ht_re=0.
+        !  helicity is a scalar and thus only computed at ivec=1
+        if (ivec==1) then
+          do jvec=1,3
+            do n=n1,n2
+            do m=m1,m2
+              call curli(f,iuu,bbi,jvec)
+              im=m-nghost
+              in=n-nghost
+              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+            enddo
+            enddo
+            b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
+            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+              h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+            enddo; enddo; enddo
+          enddo
+          do jvec=1,3
+            do n=n1,n2
+            do m=m1,m2
+              call curli(f,iuut,bbi,jvec)
+              im=m-nghost
+              in=n-nghost
+              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+            enddo
+            enddo
+            b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
+            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+              ht_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+            enddo; enddo; enddo
+          enddo
+          a_re=ht_re; b_re=h_re
+        else
+          a_re=0.; b_re=0.
+        endif
+        a_im=0.; b_im=0.
     endif
 !
 !  Doing the Fourier transform
@@ -3564,7 +3610,7 @@ endsubroutine pdf
 
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, ivec, im, in
+  integer :: i, k, ikx, iky, ikz, jkz, ivec, jvec, im, in
   integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
   real, allocatable, dimension(:,:) :: kmu, dmu
@@ -3575,6 +3621,7 @@ endsubroutine pdf
   real, dimension(nx,ny,nz) :: ux_re, ux_im
   real, dimension(nx,ny,nz) :: uy_re, uy_im
   real, dimension(nx,ny,nz) :: uz_re, uz_im
+  real, dimension(nx,ny,nz) :: h_re, ht_re
   real, allocatable, dimension(:,:) :: vxx, vxy, vzz
   real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
@@ -3806,6 +3853,48 @@ endsubroutine pdf
         b_im=0.
         a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
         a_im=0.
+      elseif (sp=='hkt') then
+        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        h_re=0.
+        ht_re=0.
+        !  helicity is a scalar and thus only computed at ivec=1
+        if (ivec==1) then
+          do jvec=1,3
+            do n=n1,n2
+            do m=m1,m2
+              call curli(f,iuu,bbi,jvec)
+              im=m-nghost
+              in=n-nghost
+              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+            enddo
+            enddo
+            b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
+            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+              h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+            enddo; enddo; enddo
+          enddo
+          do jvec=1,3
+            do n=n1,n2
+            do m=m1,m2
+              call curli(f,iuut,bbi,jvec)
+              im=m-nghost
+              in=n-nghost
+              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+            enddo
+            enddo
+            b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
+            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+              ht_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+            enddo; enddo; enddo
+          enddo
+          a_re=ht_re; b_re=h_re
+        else
+          a_re=0.; b_re=0.
+        endif
+        a_im=0.; b_im=0.
       elseif (sp=='kin') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
         do n=n1,n2
