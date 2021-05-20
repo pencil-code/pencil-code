@@ -96,10 +96,9 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
+  use Farray_alloc
 !
   implicit none
-!
-  include "run.h"
 !
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
@@ -213,15 +212,8 @@ program run
 !  Register physics modules.
 !
   call register_modules
-
-  if (ldynamic) then
-    !print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
-    !allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate memory for f')
-    allocate(df(mx,my,mz,nvar),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate memory for df')
-  endif
-
+  call alloc
+!
   if (lparticles) call particles_register_modules
 !
   call register_gpu(f) 

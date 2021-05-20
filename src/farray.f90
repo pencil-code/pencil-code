@@ -12,7 +12,7 @@
 module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
-  use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux,lreloading
+  use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading
   use HDF5_IO
   use Messages
 !
@@ -92,11 +92,6 @@ module FArrayManager
 !
   logical, dimension(mscratch+1) :: scratch_used
 !
-! Type counters (need to move nvar, naux and naux_com here too)
-!
-  integer :: nscratch=0
-  integer :: nglobal=0
-
   contains
 
 !***********************************************************************

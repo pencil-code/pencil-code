@@ -108,7 +108,7 @@ module Cdata
 !  Polar grid
 !
   integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn
+  logical :: lcoarse=.false., lcoarse_mn=.false.
   integer, dimension(2) :: mexts=(/-1,-1/)
   integer, dimension(:), allocatable :: nphis
   real, dimension(:), allocatable :: nphis1, nphis2
@@ -288,7 +288,6 @@ module Cdata
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
-  !logical :: lascalar=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
@@ -310,9 +309,12 @@ module Cdata
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
 !
+!  Type counters.
+!
+  integer :: nvar,naux,naux_com,nscratch,nglobal
+!
 !  Variable indices (default zero, set later by relevant physics modules).
 !
-  integer :: nvar,naux,naux_com     !,nscratch,nglobal
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0

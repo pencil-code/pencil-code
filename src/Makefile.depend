@@ -39,6 +39,8 @@ noshock.o: shock.h noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OB
 #
 $(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FILE_IO_OBJ) $(IO_OBJ) $(HDF5_IO_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(YINYANG_MPI_OBJ)
 #
+$(FARRAY_ALLOC_OBJ): $(FARRAY_ALLOC_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ)
+#
 $(FILE_IO_OBJ): file_io.h file_io_common.inc $(FILE_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o Makefile.src Makefile.local
 #
 nolorenz_gauge.o: lorenz_gauge.h nolorenz_gauge.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
