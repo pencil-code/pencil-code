@@ -8,7 +8,7 @@ version: 2
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    builder: html
-   configuration: python/docs/conf.py
+   configuration: doc/readthedocs/conf.py
 
 # Optionally build your docs in additional formats such as PDF
 formats:
@@ -18,6 +18,6 @@ formats:
 python:
    version: 3.6
    install:
-      - requirements: python/docs/requirements.txt
+      - requirements: doc/readthedocs/requirements.txt
       - method: setuptools
         path: python
