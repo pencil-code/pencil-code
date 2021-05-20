@@ -3031,11 +3031,13 @@ file_io_f95.o: file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
 run.o: run.f90
-#ifeq ($(DYNAMIC_ALLOC),true)
-#	$(FC) $(ALL_COMP_FLAGS) -DDYNAMIC_ALLOC=1 -fpp -o run.o -c run.f90
-#else
-#	$(FC) $(ALL_COMP_FLAGS) -fpp -o run.o -c run.f90
-#endif
+ifeq ($(DYNAMIC_ALLOC),true)
+	cp -f run_dynamic.h run.h
+else
+	cp -f run_static.h run.h
+endif
+	$(FC) $(ALL_COMP_FLAGS) -o run.o -c run.f90
+
 #
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we

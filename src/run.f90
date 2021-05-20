@@ -99,13 +99,8 @@ program run
 !
   implicit none
 !
-!#ifdef DYNAMIC_ALLOC
-!  real, dimension (:,:,:,:), allocatable :: f,df
-!  integer :: stat
-!#else
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,mvar) :: df
-!#endif
+  include "run.h"
+!
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
   double precision :: time1, time2, tvar1
