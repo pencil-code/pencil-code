@@ -215,8 +215,8 @@ program run
   call register_modules
 
   if (ldynamic) then
-    print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
-    allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
+    !print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
+    !allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
     if (stat>0) call fatal_error('start','Could not allocate memory for f')
     allocate(df(mx,my,mz,nvar),STAT=stat)
     if (stat>0) call fatal_error('start','Could not allocate memory for df')
