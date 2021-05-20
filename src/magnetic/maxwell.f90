@@ -320,7 +320,9 @@ module Magnetic
                 ksqr=k1**2+k2**2+k3**2
                 k=sqrt(ksqr)
 !
-!  Compute Ek = ik*Ak
+!  Compute Ek = -ik*Ak
+!  Re Ek = -k*Im(A)
+!  Im Ek = +k*Re(A)
 !
                 f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)=-k* &
                 f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
