@@ -4384,10 +4384,18 @@ module Hydro
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
       else
         if (it==1) then
-          f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
-          f(l1:l2,m,n,iuxst:iuzst)=0.
-          f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
-          f(l1:l2,m,n,ioxst:iozst)=0.
+          if (iuxt/=0) then
+            f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
+            f(l1:l2,m,n,iuxst:iuzst)=0.
+          else
+            if (lroot) print*,'iuut not allocated'
+          endif
+          if (ioxt/=0.and.iox/=0) then
+            f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
+            f(l1:l2,m,n,ioxst:iozst)=0.
+          else
+            if (lroot) print*,'ioot and ioo not allocated'
+          endif
         endif
       endif
 !
