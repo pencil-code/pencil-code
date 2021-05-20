@@ -63,7 +63,9 @@ def var(*args, **kwargs):
             break
 
     if 'sim' in kwargs.keys():
-        started = kwargs['sim'].started()
+        #started = kwargs['sim'].started()
+        
+        started = True
     elif 'datadir' in kwargs.keys():
         from os.path import join, exists
         if exists(join(kwargs['datadir'], 'time_series.dat')):
