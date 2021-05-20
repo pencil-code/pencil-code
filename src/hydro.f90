@@ -4363,6 +4363,7 @@ module Hydro
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to hydro
 !  29-oct-20/hongzhe: coding for computing frequency-fft'ed u(x,y,z,omega_fourier)
+!  19-may-21/axel: possibility of ltime_integrals_always=F to compute <u(t,x).u(t0,x)>
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -4376,7 +4377,6 @@ module Hydro
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
 !
-!if (m==m1.and.n==n1) print*,'AXEL2',it
       if (ltime_integrals_always) then
         if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
         if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
@@ -4384,7 +4384,6 @@ module Hydro
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
       else
         if (it==1) then
-!if (m==m1.and.n==n1) print*,'AXEL1',f(l1,m,n,iux:iuz),f(l1,m,n,iuxt:iuzt)
           f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
           f(l1:l2,m,n,iuxst:iuzst)=0.
           f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
