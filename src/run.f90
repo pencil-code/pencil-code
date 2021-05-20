@@ -214,15 +214,13 @@ program run
 !
   call register_modules
 
-!#ifdef DYNAMIC_ALLOC
-!  print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
-!  allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
-!  if (stat>0) call fatal_error('start','Could not allocate memory for f')
-!  !allocate( f(mx,my,mz,mfarray),STAT=stat)
-!  !allocate(df(mx,my,mz,mvar)   ,STAT=stat)
-!  allocate(df(mx,my,mz,nvar),STAT=stat)
-!  if (stat>0) call fatal_error('start','Could not allocate memory for df')
-!#endif
+  if (ldynamic) then
+    print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
+    allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
+    if (stat>0) call fatal_error('start','Could not allocate memory for f')
+    allocate(df(mx,my,mz,nvar),STAT=stat)
+    if (stat>0) call fatal_error('start','Could not allocate memory for df')
+  endif
 
   if (lparticles) call particles_register_modules
 !

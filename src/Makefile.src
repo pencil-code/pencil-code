@@ -3032,11 +3032,14 @@ file_io_dist.o: file_io_dist.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
 run.o: run.f90
 ifeq ($(DYNAMIC_ALLOC),true)
-	cp -f run_dynamic.h run.h
+	@sed -e's/^ *include *"run.h"/  include "run_dynamic.h"/' run.f90 > tmp.f90
+	$(FC) $(ALL_COMP_FLAGS) -o run.o -c tmp.f90
+	@rm -f tmp.f90
 else
-	cp -f run_static.h run.h
+	@sed -e'/^ *allocate *( *[dD]*[fF] *(/ d' -e's/^ *include *"run.h"/  include "run_static.h"/' run.f90 > tmp.f90
+	$(FC) $(ALL_COMP_FLAGS) -o run.o -c tmp.f90
+	@rm -f tmp.f90
 endif
-	$(FC) $(ALL_COMP_FLAGS) -o run.o -c run.f90
 
 #
 #  TAGS file for Emacs.

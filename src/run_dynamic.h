@@ -1,3 +1,3 @@
   real, dimension(:,:,:,:), allocatable :: f,df
   integer :: stat
-  logical :: ldynamical=.true.
+  logical :: ldynamic=.true.
