@@ -209,12 +209,11 @@ program run
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-!  Register physics modules.
+!  Register physics (incl. particles) modules.
 !
   call register_modules
-  call alloc
-!
   if (lparticles) call particles_register_modules
+  call alloc
 !
   call register_gpu(f) 
 !
