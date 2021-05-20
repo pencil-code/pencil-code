@@ -99,8 +99,13 @@ program run
 !
   implicit none
 !
+!#ifdef DYNAMIC_ALLOC
+!  real, dimension (:,:,:,:), allocatable :: f,df
+!  integer :: stat
+!#else
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
+!#endif
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
   double precision :: time1, time2, tvar1
@@ -213,6 +218,17 @@ program run
 !  Register physics modules.
 !
   call register_modules
+
+!#ifdef DYNAMIC_ALLOC
+!  print*, 'mfarry,nfarray=', mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
+!  allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
+!  if (stat>0) call fatal_error('start','Could not allocate memory for f')
+!  !allocate( f(mx,my,mz,mfarray),STAT=stat)
+!  !allocate(df(mx,my,mz,mvar)   ,STAT=stat)
+!  allocate(df(mx,my,mz,nvar),STAT=stat)
+!  if (stat>0) call fatal_error('start','Could not allocate memory for df')
+!#endif
+
   if (lparticles) call particles_register_modules
 !
   call register_gpu(f) 
@@ -934,6 +950,7 @@ program run
   call chemistry_clean_up
   call NSCBC_clean_up
   if (lparticles) call particles_cleanup
+  !deallocate(f,df)
 !
 endprogram run
 !**************************************************************************
