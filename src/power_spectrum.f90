@@ -1321,7 +1321,7 @@ module power_spectrum
             enddo
             enddo
             b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
-            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
               h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
                   a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
@@ -1336,8 +1336,8 @@ module power_spectrum
             enddo
             enddo
             b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
-            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
-              ht_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+              ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
                   a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
           enddo
@@ -3870,7 +3870,7 @@ endsubroutine pdf
             enddo
             enddo
             b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
-            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
+            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
               h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
                   a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
@@ -3885,8 +3885,8 @@ endsubroutine pdf
             enddo
             enddo
             b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
-            do ikx=l1,l2; do iky=m1,m2; do ikz=n1,n2
-              ht_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+              ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
                   a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
           enddo
