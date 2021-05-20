@@ -104,6 +104,7 @@ module Special
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: linflation=.false., lreheating=.false., lnonlinear_source=.false.
+  logical :: lonly_mag=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -117,7 +118,7 @@ module Special
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating, lonly_mag
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -486,16 +487,24 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
-        if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-        if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+        if (lonly_mag) then
+          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+        else
+          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+        endif
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
-          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+          if (lonly_mag) then  
+            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+          else
+            if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
+            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+            if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+          endif
         endif
       enddo
       enddo
