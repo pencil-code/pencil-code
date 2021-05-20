@@ -624,6 +624,7 @@ module Snapshot
         if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
         if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
+        if (uut_spec) call powerhel(f,'uut',lfirstcall_powerhel)
         if (ro_spec)  call powerscl(f,'ro')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
@@ -752,7 +753,7 @@ module Snapshot
 !  azimuthally averaged spectra in polar coorinates
 !
         if (ou_omega) call polar_spectrum(f,'kin_omega')
-        if (uut_cor)  call polar_spectrum(f,'uut_cor')
+        if (uut_polar)call polar_spectrum(f,'uut')
         if (cor_uu)   call polar_spectrum(f,'uucor')
         if (ou_polar) call polar_spectrum(f,'kin')
         if (ab_polar) call polar_spectrum(f,'mag')
