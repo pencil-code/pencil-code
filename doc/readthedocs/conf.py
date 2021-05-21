@@ -207,7 +207,7 @@ todo_include_todos = True
 fortran_src = [
     "../../src/ascalar.f90",
     #    "../../src/bfield.f90",
-    "../../src/magnetic.f90",
+    # "../../src/magnetic.f90",
 ]
 fortran_ext = ["f90"]
 

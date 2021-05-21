@@ -58,7 +58,7 @@ ________________________________
    :undoc-members:
    :imported-members:
 
-:mod:`pencil.pmath`: math
+:mod:`pencil.math`: math
 ________________________________
 
 .. automodule:: pencil.math
