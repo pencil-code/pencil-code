@@ -956,6 +956,7 @@ module Magnetic
 !  15-oct-15/MR: changes for slope-limited diffusion
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
+      use Sub, only: register_report_aux
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
@@ -985,6 +986,46 @@ module Magnetic
         call farray_register_auxiliary('ee',iee,vector=3)
         iex=iee; iey=iee+1; iez=iee+2
 !
+!  Register an extra aux slot for bb if requested (so bb and jj are written
+!  to snapshots and can be easily analyzed later). For this to work you
+!  must reserve enough auxiliary workspace by setting, for example,
+!     ! MAUX CONTRIBUTION 6
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
+!
+      if (lbb_as_aux .or. lbb_as_comaux) &
+        call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
+      if (ljj_as_aux .or. ljj_as_comaux) &
+        call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
+!
+print*,'AXEL3: ',lbbt_as_aux,ibbt
+      if (lbbt_as_aux) then
+        call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
+        ltime_integrals=.true.
+      endif
+print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
+!
+      if (ljjt_as_aux) then
+        call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
+        ltime_integrals=.true.
+      endif
+!
+      if (lua_as_aux ) call register_report_aux('ua',iua)
+      if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
+!
+      if (lbb_sph_as_aux) &
+        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
+!
+!  Register va as auxilliary array if asked for also requires
+!  ! MAUX CONTRIBUTION 1
+!  ! COMMUNICATED AUXILIARIES 1
+!  in cparam.local
+!
+      if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
+!
 !  Writing files for use with IDL
 !
         if (lroot) write(4,*) ',ee $'
@@ -1003,7 +1044,6 @@ module Magnetic
           aux_count=aux_count+1
         endif
       endif
-
 !
 !  Register nusmag as auxilliary variable
 !
@@ -1041,7 +1081,7 @@ module Magnetic
 !  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !  28-feb-18/piyali: moved back the calculation of clight2_zdep to calc_pencils to use va2 pencil
 !
-      use Sub, only: register_report_aux, write_zprof, step, get_smooth_kernel
+      use Sub, only: write_zprof, step, get_smooth_kernel
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -1652,44 +1692,6 @@ module Magnetic
       do j=1,3
         if (borderaa(j)/='nothing') call request_border_driving(borderaa(j))
       enddo
-!
-!  Register an extra aux slot for bb if requested (so bb and jj are written
-!  to snapshots and can be easily analyzed later). For this to work you
-!  must reserve enough auxiliary workspace by setting, for example,
-!     ! MAUX CONTRIBUTION 6
-!  in the beginning of your src/cparam.local file, *before* setting
-!  ncpus, nprocy, etc.
-!
-!  After a reload, we need to rewrite index.pro, but the auxiliary
-!  arrays are already allocated and must not be allocated again.
-!
-      if (lbb_as_aux .or. lbb_as_comaux) &
-        call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
-      if (ljj_as_aux .or. ljj_as_comaux) &
-        call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
-!
-      if (lbbt_as_aux) then
-        call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
-        ltime_integrals=.true.
-      endif
-!
-      if (ljjt_as_aux) then
-        call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
-        ltime_integrals=.true.
-      endif
-!
-      if (lua_as_aux ) call register_report_aux('ua',iua)
-      if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
-!
-      if (lbb_sph_as_aux) &
-        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
-!
-!  Register va as auxilliary array if asked for also requires
-!  ! MAUX CONTRIBUTION 1
-!  ! COMMUNICATED AUXILIARIES 1
-!  in cparam.local
-!
-      if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
 !
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.
