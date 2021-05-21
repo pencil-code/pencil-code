@@ -12,3 +12,8 @@ Module magnetic
 __________________
 .. f:automodule:: magnetic
 
+
+Module magnetic2
+__________________
+.. f:automodule:: magnetic
+

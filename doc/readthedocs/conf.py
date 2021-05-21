@@ -204,6 +204,10 @@ epub_exclude_files = ["search.html"]
 todo_include_todos = True
 
 ## Fortran configuration
-fortran_src = ["../../src/ascalar.f90", "../../src/bfield.f90"]
+fortran_src = [
+    "../../src/ascalar.f90",
+    "../../src/bfield.f90",
+    "../../src/magnetic.f90",
+]
 fortran_ext = ["f90"]
 
