@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 3
 !
-! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3); curlo(3)
+! PENCILS PROVIDED divu; oo(3); o2; ou; oxu2; oxu(3); u2; uij(3,3); uu(3); curlo(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
 ! PENCILS PROVIDED d2uidxj(3,3), uijk(3,3,3); ogu(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
@@ -23,6 +23,7 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
+! PENCILS PROVIDED lorentz_gamma; ss_relativistic2; ss_relativistic(3)
 !
 !***************************************************************
 !
@@ -105,6 +106,7 @@ module Hydro
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
+  real :: omega_fourier=0.
 !
   integer :: igradu
   logical :: llinearized_hydro=.false.
@@ -121,6 +123,7 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false., lno_second_ampl=.true.
+  logical :: lrelativistic=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -656,6 +659,12 @@ module Hydro
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
         write(15,*) 'phiuu = fltarr(mx,my,mz,1)*one'
       endif
+!
+!  shared variable of lrelativistic for density
+!
+      if (ldensity) &
+        call put_shared_variable('lrelativistic', &
+            lrelativistic, caller='register_density')
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
