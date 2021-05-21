@@ -65,10 +65,10 @@ class FixedPoint(object):
         import numpy as np
         import multiprocessing as mp
         from .. import read
-        from .. import pmath
+        from pencil import math
         from ..diag.tracers import Tracers
         from ..calc.streamlines import Stream
-        from ..pmath.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         if (self.params.int_q == 'curly_A'):
             self.curly_A = []
@@ -112,7 +112,7 @@ class FixedPoint(object):
         field = getattr(var, trace_field)
         param2 = read.param(datadir=datadir, quiet=True)
         if (self.params.int_q == 'ee'):
-            ee = var.jj*param2.eta - pmath.cross(var.uu, var.bb)
+            ee = var.jj*param2.eta - math.cross(var.uu, var.bb)
         self.params.datadir = datadir
         self.params.var_file = var_file
         self.params.trace_field = trace_field

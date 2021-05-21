@@ -22,7 +22,7 @@ from . import pio
 from . import diag
 from . import visu
 from . import calc
-from . import pmath
+from . import math
 from . import sim
 from . import read
 from . import tool_kit

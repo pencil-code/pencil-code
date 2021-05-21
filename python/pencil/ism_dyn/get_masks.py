@@ -14,7 +14,7 @@
       compute 'structure' functions as required
 """
 import numpy as np
-from ..pmath import cpu_optimal
+from pencil.math import cpu_optimal
 from ..pio import open_h5, group_h5, dataset_h5
 from .. import read
 import os

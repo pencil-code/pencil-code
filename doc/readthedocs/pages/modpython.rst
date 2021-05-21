@@ -61,7 +61,7 @@ ________________________________
 :mod:`pencil.pmath`: math
 ________________________________
 
-.. automodule:: pencil.pmath
+.. automodule:: pencil.math
    :members:
    :undoc-members:
    :imported-members:
