@@ -72,7 +72,7 @@ class __Simulations__(object):
             - simulations object
         """
 
-        from ..math import is_iterable
+        from pencil.math import is_iterable
         from .simulation import __Simulation__
         from .simulation import simulation
         import numpy as np

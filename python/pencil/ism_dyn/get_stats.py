@@ -17,8 +17,8 @@ import numpy as np
 import scipy
 from . import is_vector
 from scipy.interpolate import interp1d
-from ..math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
-from ..math.derivatives import curl, div, curl2, grad
+from pencil.math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
+from pencil.math.derivatives import curl, div, curl2, grad
 from ..calc import fluid_reynolds, magnetic_reynolds
 from ..io import open_h5, group_h5, dataset_h5, mkdir
 from fileinput import input

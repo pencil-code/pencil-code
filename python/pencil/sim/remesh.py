@@ -20,7 +20,7 @@ from scipy.interpolate import interp1d
 import subprocess as sub
 from sys import stdout
 
-from ..math.derivatives import grad
+from pencil.math.derivatives import grad
 from ..io import open_h5, group_h5, dataset_h5
 
 
@@ -318,7 +318,7 @@ def src2dst_remesh(src, dst,
     from .. import read
     from ..io import mkdir
     from . import simulation
-    from ..math import cpu_optimal
+    from pencil.math import cpu_optimal
     from pencil import is_sim_dir
 
     start_time = time.time()

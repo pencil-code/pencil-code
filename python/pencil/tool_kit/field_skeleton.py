@@ -582,7 +582,7 @@ class NullPoint(object):
         """
 
         import numpy as np
-        from ..math.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         gf = np.zeros((3, 3))
         gf[0, :] = (vec_int(xyz+np.array([dd, 0, 0]), var, field) -
@@ -694,7 +694,7 @@ class Separatrix(object):
         """
 
         import numpy as np
-        from ..math.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         separatrices = []
         connectivity = []
@@ -983,7 +983,7 @@ class Spine(object):
         """
 
         import numpy as np
-        from ..math.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         spines = []
         for null_idx in range(len(null_point.nulls)):

@@ -145,7 +145,7 @@ class DataCube(object):
 
         import os
         from scipy.io import FortranFile
-        from ..math.derivatives import curl, curl2
+        from pencil.math.derivatives import curl, curl2
         from .. import read
         from ..sim import __Simulation__
 

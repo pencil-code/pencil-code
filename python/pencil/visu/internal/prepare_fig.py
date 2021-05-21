@@ -10,7 +10,7 @@ def preparePlot(x_datasets, y_datasets,
   import matplotlib
   import matplotlib.pyplot as plt
   plt.ioff()
-  from .. import io
+  from pencil import io
   from ...visu.internal import calc_lims
   from ...visu.internal import MinorSymLogLocator
 

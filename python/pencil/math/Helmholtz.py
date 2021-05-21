@@ -8,8 +8,8 @@ orthogonal vectors with zero divergence and zero curl respectively.
 """
 
 import numpy as np
-from ..math import dot, dot2, cross
-from ..math.derivatives import div, curl, grad
+from pencil.math import dot, dot2, cross
+from pencil.math.derivatives import div, curl, grad
 
 def helmholtz_fft(tot_field, grid, params, nghost=3, pot=True, rot=True,
                   lno_mean=False, nonperi_bc=None, field_scalar=[], s=None,

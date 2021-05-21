@@ -56,7 +56,7 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
     import numpy as np
     import sys
     from .. import read
-    from .. import math
+    from pencil import math
 
     # Determine of we want an animation.
     if ti < 0 or tf < 0:

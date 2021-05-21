@@ -86,7 +86,7 @@ class Stream(object):
         import numpy as np
         from scipy.integrate import ode
         from scipy.integrate import solve_ivp
-        from ..math.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         if params.interpolation == "tricubic":
             try:

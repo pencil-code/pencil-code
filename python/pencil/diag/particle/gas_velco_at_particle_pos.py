@@ -14,9 +14,9 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
   """
 
   import os
-  from .. import io
-  from .. import read
-  from .. import get_sim
+  from pencil import io
+  from pencil import read
+  from pencil import get_sim
   from os.path import exists
   import numpy as np
 

@@ -65,10 +65,10 @@ class FixedPoint(object):
         import numpy as np
         import multiprocessing as mp
         from .. import read
-        from .. import math
+        from pencil import math
         from ..diag.tracers import Tracers
         from ..calc.streamlines import Stream
-        from ..math.interpolation import vec_int
+        from pencil.math.interpolation import vec_int
 
         if (self.params.int_q == 'curly_A'):
             self.curly_A = []

@@ -344,7 +344,7 @@ class __Simulation__(object):
         from os import listdir
         from os.path import exists, join, isdir
         import glob
-        from ..math import is_int
+        from pencil.math import is_int
         from ..io import mkdir
 
         def copyfile(src, dst, DEBUG=False):
@@ -544,7 +544,7 @@ class __Simulation__(object):
             verbose:      activate for verbosity
             fast:         set True for fast compilation
         """
-        from .. import io
+        from pencil import io
         from os.path import join
 
         timestamp = io.timestamp()
@@ -577,7 +577,7 @@ class __Simulation__(object):
                            True = all output
         """
         import subprocess
-        from .. import io
+        from pencil import io
         from os.path import join, realpath
 
         timestamp = io.timestamp()
@@ -741,7 +741,7 @@ class __Simulation__(object):
         import glob
         from os.path import join as join
         from os.path import basename
-        from ..math import natural_sort
+        from pencil.math import natural_sort
 
         key = 'VAR'
         if particle == True: key = 'PVAR'
