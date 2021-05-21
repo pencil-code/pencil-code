@@ -326,6 +326,7 @@ module Magnetic
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
+  logical :: ltime_integrals_always=.true.
   real :: h_sld_magn=2.0,nlf_sld_magn=1.0,fac_sld_magn=1.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
@@ -388,7 +389,7 @@ module Magnetic
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
-      lbb_sph_as_aux
+      lbb_sph_as_aux, ltime_integrals_always
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -6234,6 +6235,7 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
 !  28-jun-07/axel+mreinhard: coded
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to magnetic
+!  21-may-21/alberto: possibility of ltime_integrals_always=F to compute <b(t,x).b(t0,x)> adapted from hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -6241,8 +6243,24 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
       intent(inout) :: f
       intent(in) :: p
 !
-      if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
-      if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+      if (ltime_integrals_always) then
+        if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
+        if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+      else
+        if (it==1) then
+          if (ibxt/=0) then
+            f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
+          else
+            if (lroot) print*,'ibbt not allocated'
+          endif
+          if (ijxt/=0.and.ijx/=0) then
+            f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
+          else
+            if (lroot) print*,'ijjt and ijj not allocated'
+          endif
+        endif
+      endif
+
 !
     endsubroutine time_integrals_magnetic
 !***********************************************************************
