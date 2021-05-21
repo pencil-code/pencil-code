@@ -717,6 +717,8 @@ module Magnetic
   integer :: idiag_hjperpm=0    ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
+  integer :: idiag_b2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \Bv^2 dV$,
+                                ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_brmsx=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the magnetic_xaver_range
   integer :: idiag_brmsz=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
@@ -2857,9 +2859,10 @@ module Magnetic
           idiag_bm2/=0 .or. idiag_EEM/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
-          idiag_brms/=0 .or. idiag_bmax/=0 .or. &
+          idiag_brms/=0 .or. idiag_bmax/=0 .or. idiag_b2sphm/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
+      if (idiag_b2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
       if (idiag_bfrms/=0 .or.idiag_bf2m/=0 .or.  idiag_bf4m/=0 .or. &
           idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
@@ -5319,6 +5322,7 @@ module Magnetic
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: uj,phi,dub,dob,jdel2a,epsAD
+      real, dimension (nx) :: rmask
 
       call sum_mn_name(p%beta1,idiag_beta1m)
       call max_mn_name(p%beta1,idiag_beta1max)
@@ -5417,6 +5421,14 @@ module Magnetic
       if (idiag_abumz/=0) call sum_mn_name(p%uu(:,3)*p%ab,idiag_abumz)
       if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
       if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
+      if (idiag_b2sphm/=0) then
+        where (p%r_mn <= 1.)
+          rmask = 1.
+        elsewhere
+          rmask = 0.
+        endwhere
+        call integrate_mn_name(rmask*p%b2,idiag_b2sphm)
+      endif
 !
 !  Hemispheric magnetic helicity of total field.
 !  North means 1 and south means 2.
@@ -9248,6 +9260,7 @@ module Magnetic
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
         ivid_aps=0; ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
         ivid_jb=0; ivid_beta1=0; ivid_poynting=0; ivid_bb_sph=0; idiag_dteta3=0
+        idiag_b2sphm=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -9508,6 +9521,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'coshjbm',idiag_coshjbm)
         call parse_name(iname,cname(iname),cform(iname),'hjparallelm',idiag_hjparallelm)
         call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
+        call parse_name(iname,cname(iname),cform(iname),'b2sphm',idiag_b2sphm)
       enddo
 !
       if (idiag_exabot/=0) call set_type(idiag_exabot,lint=.true.)
