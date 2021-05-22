@@ -305,7 +305,7 @@ module Special
       select case (cstress_prefactor)
         case ('1'); stress_prefactor=1.; EGWpref=8.*pi
         case ('6'); stress_prefactor=6.; EGWpref=1./6.
-        case ('24'); stress_prefactor=24.; EGWpref=1./24.
+        case ('24'); stress_prefactor=24.; EGWpref=1./6.
         case ('6old'); stress_prefactor=6.; EGWpref=1./(32.*pi)
         case ('16pi'); stress_prefactor=16.*pi; EGWpref=1./(32.*pi)
         case ('16pi_corr'); stress_prefactor=16.*pi; EGWpref=1./(16.*pi)
