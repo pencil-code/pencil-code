@@ -242,6 +242,7 @@ module Density
 !
 ! z averaged diagnostics given in zaver.in
   integer :: idiag_rhomxy=0     ! ZAVG_DOC: $\left<\varrho\right>_{z}$
+  integer :: idiag_rho2mxy=0    ! ZAVG_DOC: $\left<\varrho^2\right>_{z}$
   integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
 !
   interface calc_pencils_density
@@ -2054,7 +2055,7 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
-           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
+           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. idiag_inertiazz_car/=0 .or. &
@@ -2063,6 +2064,7 @@ module Density
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0) &
            lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhomxy/=0 .or. idiag_rho2mxy/=0) lpenc_diagnos2d(i_rho)=.true.
 !AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
 !PJK: The up/down averages should actually appear above as well and they
 !PJK: need the velocity too. idiag_rhof2mz does not, however.
@@ -2769,6 +2771,7 @@ module Density
         call phisum_mn_name_rz(p%rho,idiag_rhomphi)
         call ysum_mn_name_xz(p%rho,idiag_rhomxz)
         call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        call zsum_mn_name_xy(p%rho**2,idiag_rho2mxy)
         call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
       endif
 
@@ -3431,7 +3434,7 @@ module Density
         idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
         idiag_inertiazz=0; idiag_inertiaxx_car=0; idiag_inertiayy_car=0
         idiag_inertiazz_car=0; idiag_rhomxmask=0; idiag_rhomzmask=0
-        idiag_sigma=0
+        idiag_sigma=0; idiag_rho2mxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -3519,6 +3522,7 @@ module Density
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rho2mxy',idiag_rho2mxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'sigma',idiag_sigma)
       enddo
 !
