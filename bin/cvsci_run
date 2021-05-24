@@ -9,7 +9,7 @@
 #  then first go into this directory and continue from there
 #
 #  When invoked as tar_run, a corresponding tarball is created
-#  as <working directory>.a in the parent directory.
+#  as <working directory>.tar in the parent directory.
 #  Tested for only one argument.
 #
 if ( $#argv >= 1 ) then
@@ -20,11 +20,11 @@ endif
 
 if ( $0:t == 'tar_run' ) then
   set cvsci=0
-  set add_cmd="tar -f $cwd.a --ignore-failed-read --append"
+  set add_cmd="tar -f $cwd.tar --ignore-failed-read --append"
   set add_data_opt=(--transform 's,^,data/,')
   set add_cmd_bin="$add_cmd"
-  tar cf $cwd.a run.in
-  tar --delete --file=$cwd.a run.in
+  tar cf $cwd.tar run.in
+  tar --delete --file=$cwd.tar run.in
 else
   set cvsci=1
   set add_cmd="cvs add"
