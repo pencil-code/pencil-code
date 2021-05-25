@@ -5,7 +5,7 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1e-24
+  unit_density=1.6728e-24
   xyz0=-0.048,-0.048,-0.048
   xyz1=+0.048,+0.048,+0.048
   lperi=T,T,T
@@ -18,7 +18,7 @@
 &hydro_init_pars
 /
 &density_init_pars
-  initlnrho='const_rho', rho_const=1.6726
+  initlnrho='const_rho', rho_const=1.
   ldensity_nolog=T
 /
 &entropy_init_pars
@@ -31,18 +31,11 @@
   center_SN_y=0.0
   center_SN_z=0.0
   lSN_scale_rad=T
-  N_mass=25.0
-  rfactor_SN=4.5
-  lSN_mass=T
-  mass_width_ratio=1.75
-  mass_profile='gaussian3'
-  energy_width_ratio=1.0
-  thermal_profile='gaussian2'
+  N_mass=100.0
+  rfactor_SN=5.
   frac_kin=0.0
   frac_ecr=0.0
   lSN_ecr=F
   cooling_select='off'
   heating_select='off'
-  !cooling_select='WSW'
-  !heating_select='wolfire'
 / 
