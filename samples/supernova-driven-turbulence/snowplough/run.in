@@ -16,31 +16,31 @@
 &eos_run_pars
 /
 &hydro_run_pars
-  lupw_uu=T
   lcdt_tauf=T
   cdt_tauf=1.0
   ulev = 20.0
 /
+&viscosity_run_pars
+  ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
+  nu_shock=5.0
+  nu=4e-3
+  nu_hyper3=5e-12 !~dx^5
+/
 &density_run_pars
-  lupw_rho=T
   diffrho_shock=1.0
-  lmassdiff_fix=T
   idiff='shock'
 /
 &entropy_run_pars
-  lupw_ss=T
-  iheatcond='shock'
-  chi_shock=4.0
-  lthdiff_Hmax=T
+  iheatcond='shock','hyper3'
+  chi_hyper3=5e-12
+  chi_shock=2.0
+  lthdiff_Hmax=T !time constraint on magnitude of RHS
 /
 &interstellar_run_pars
   lSNII=F, l_persist_overwrite_lSNII=T
   lSNI=F, l_persist_overwrite_lSNI=T 
 /
-&viscosity_run_pars
-  ivisc='nu-const','nu-shock'
-  nu=4e-5,nu_shock=4.0
-/
 &shock_run_pars
   ishock_max=2
+  lgaussian_smooth=T
 /
