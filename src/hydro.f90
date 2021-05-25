@@ -4386,13 +4386,13 @@ module Hydro
         if (it==1) then
           if (iuxt/=0) then
             f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
-            f(l1:l2,m,n,iuxst:iuzst)=0.
+            if (iuxst/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
           else
             if (lroot) print*,'iuut not allocated'
           endif
           if (ioxt/=0.and.iox/=0) then
             f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
-            f(l1:l2,m,n,ioxst:iozst)=0.
+            if (ioxst/=0) f(l1:l2,m,n,ioxst:iozst)=0.
           else
             if (lroot) print*,'ioot and ioo not allocated'
           endif
