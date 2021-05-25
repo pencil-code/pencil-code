@@ -108,7 +108,7 @@ module Density
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lrho_flucz_as_aux=.false.
-  logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
+  logical :: lmassdiff_fix = .true.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
