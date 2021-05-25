@@ -3083,6 +3083,7 @@ distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
 	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile-standard.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
+	find .. -type l -print0 | xargs -0 rm -f
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.
 #
