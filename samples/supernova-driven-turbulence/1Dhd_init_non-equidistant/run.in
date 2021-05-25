@@ -9,44 +9,41 @@
   cdt=0.3, cdtv=0.3, dtmin=1e-10, cdts=0.3
   dsnap=0.2, dvid=20., 
   ip=20
-  lignore_nonequi=T
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  lignore_nonequi=T
   lproper_averages=T
 /
 &eos_run_pars
 /
 &hydro_run_pars
-  lupw_uu=T
   cdt_tauf=1.0
   lcdt_tauf=T
   ulev = 20.0
 /
 &viscosity_run_pars
-  ivisc='nu-shock','nu-const'
-  nu_shock=5.2, nu=1e-1
+  ivisc='nu-shock', 'nu-const'!, 'hyper3-nu-const'
+  nu_shock=5.2
+  nu=1e-1
+  !nu_hyper3=5e-12 !~dx^5
 /
 &density_run_pars
-  lupw_rho=T
   diffrho_shock=1.0
-  lmassdiff_fix=T
   idiff='shock'
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  lupw_ss=T
   lthdiff_Hmax=T
   !note thermodynamic equilibrium depends on chi so
   !as simulation approaches convergence, adopt chi 
   !to be used in 3D model
-  iheatcond='shock','shock2','chi-const'
-  chi_shock=1.2, chi_shock2=5.5, chi=5e-2
-  !iheatcond='shock','shock2'
-  !chi_shock=1.2, chi_shock2=5.5
+  iheatcond='shock','hyper3','chi-const'
+  chi_shock=1.2, chi_hyper3=5e-12, chi=5e-2
+  !iheatcond='shock','hyper3'
+  !chi_shock=1.2, chi_hyper3=5e-12
 /
 &interstellar_run_pars
-  SN_interval_rhom=6.64e-2
   laverage_SNII_heating=F
   laverage_SNI_heating=T
   heatingfunction_scalefactor=6.75
@@ -58,4 +55,5 @@
 /
 &shock_run_pars
   ishock_max=2
+  lgaussian_smooth=T
 /
