@@ -218,6 +218,7 @@ module Hydro
   logical :: lhelmholtz_decomp=.false.
   logical :: limpose_only_horizontal_uumz=.false.
   logical :: ltime_integrals_always=.true.
+  real :: dtcor=0.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -264,7 +265,7 @@ module Hydro
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
-      ltime_integrals_always
+      ltime_integrals_always, dtcor
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4373,6 +4374,7 @@ module Hydro
 !
       real :: fact_cos
       real :: fact_sin
+      logical :: lrecord_at_t0=.false.
 !
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
@@ -4383,20 +4385,26 @@ module Hydro
         if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
       else
-        if (it==1) then
+        if (nint(dtcor)<=0.) then  !  only record uut, oot, etc. at it==1
+          if (it==1) lrecord_at_t0=.true.
+        else  !  otherwise every dtcor time
+          if (mod(nint(t),nint(dtcor))==1) lrecord_at_t0=.true.
+        endif
+        if (lrecord_at_t0) then  !  record at t0
           if (iuxt/=0) then
             f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
             if (iuxst/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
           else
             if (lroot) print*,'iuut not allocated'
           endif
-          if (ioxt/=0.and.iox/=0) then
+          if (ioxt/=0 .and. iox/=0) then
             f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
             if (ioxst/=0) f(l1:l2,m,n,ioxst:iozst)=0.
           else
             if (lroot) print*,'ioot and ioo not allocated'
           endif
         endif
+        lrecord_at_t0=.false.
       endif
 !
     endsubroutine time_integrals_hydro
