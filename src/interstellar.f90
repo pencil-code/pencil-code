@@ -264,7 +264,7 @@ module Interstellar
 !
   logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.false., &
       lSN_velocity=.false., lSN_fcr=.false., lSN_autofrackin=.true., & 
-      lSN_smooth=.false., lSN_momentum=.false.
+      lSN_smooth=.false., lSN_momentum=.true.
 !
 !  Total mass added by a SNe
 !
