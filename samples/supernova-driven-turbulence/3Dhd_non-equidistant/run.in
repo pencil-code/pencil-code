@@ -21,42 +21,42 @@
 &eos_run_pars
 /
 &hydro_run_pars
-  lupw_uu=T
   Omega=25.0
   cdt_tauf=1.0
-  lcdt_tauf=T
+  lcdt_tauf=T !time constraint on magnitude of RHS
   ulev = 20.0
 /
 &viscosity_run_pars
   ivisc='nu-shock', 'nu-const'
-  nu_shock=5.0, nu=4e-3
+  nu_shock=5.0
+  nu=4e-3
 /
 &density_run_pars
-  lupw_rho=T
   idiff='shock'
   diffrho_shock=2.0
-  lmassdiff_fix=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  lupw_ss=T
-  iheatcond='shock'
+  iheatcond='shock','hyper3'
+  chi_hyper3=5e-12
   chi_shock=2.0
-  lthdiff_Hmax=T
+  lthdiff_Hmax=T !time constraint on magnitude of RHS
 /
 &interstellar_run_pars
+!! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
   N_mass=100.0
   rfactor_SN=5.0
+!! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+!  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
+!! rest random number after crash for new SN site 
 !  lreset_ism_seed=T
 !  seed_reset=1245
-!! vary rate of SN with loss/gain of mass through boundary
-  lscale_SN_interval=T
-  SN_interval_rhom=6.66e-2
+!! if 1D profile uses average heating decrease smoothly for stable disk
   laverage_SNII_heating=F
   laverage_SNI_heating=T
   heatingfunction_scalefactor=5.0
@@ -67,4 +67,5 @@
 /
 &shock_run_pars
   ishock_max=2
+  lgaussian_smooth=T
 /

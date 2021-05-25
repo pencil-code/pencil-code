@@ -46,7 +46,6 @@
   lSNI=T
   lSN_scale_rad=T
   N_mass=100.0
-  !rfactor should set minimum radius to 18pc
   rfactor_SN=5.0
 /
 &shear_init_pars
