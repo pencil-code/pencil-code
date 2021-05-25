@@ -15,7 +15,6 @@
 &eos_run_pars
 /
 &hydro_run_pars
-  lupw_uu=T
   cdt_tauf=1.0
   lcdt_tauf=T
   ulev = 20.0
