@@ -5718,6 +5718,12 @@ module Energy
             df(l1:l2,m,n,iss_run_aver) = df(l1:l2,m,n,iss_run_aver) + thdiff1
           endif
 !
+!  Get profile of chit_fluct
+!
+          call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,lsphere_in_a_box,chi_t1, &
+                               chit_fluct_prof1,chit_fluct_prof2,xbot,xtop,p,f, &
+                               stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
+!
           call grad(f(:,:,:,iss_run_aver),gss1)
           do j=1,3
             gss0(:,j)=p%gss(:,j)-gss1(:,j)
