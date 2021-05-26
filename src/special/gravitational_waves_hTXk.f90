@@ -103,7 +103,7 @@ module Special
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
-  logical :: linflation=.false., lreheating=.false., lnonlinear_source=.false.
+  logical :: linflation=.false., lreheating_GW=.false., lnonlinear_source=.false.
   logical :: lonly_mag=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
@@ -118,7 +118,7 @@ module Special
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating, lonly_mag
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -129,7 +129,7 @@ module Special
     lelectmag, tau_stress_kick, fac_stress_kick, delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
-    linflation, lreheating, &
+    linflation, lreheating_GW, &
     lnonlinear_source, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -554,10 +554,14 @@ module Special
 !  If that is not the case either, we put scale_factor=1.
 !  At the next timestep, this will no longer be a problem.
 !
-      if (t+tshift==0.) then
-        scale_factor=1.
+      if (lreheating_GW) then
+        scale_factor=.25*(t+1.)**2
       else
-        scale_factor=(t+tshift)**nscale_factor_conformal
+        if (t+tshift==0.) then
+          scale_factor=1.
+        else
+          scale_factor=(t+tshift)**nscale_factor_conformal
+        endif
       endif
       stress_prefactor2=stress_prefactor/scale_factor
 !
@@ -1219,7 +1223,7 @@ module Special
                 om2=4.*ksqr-2./t**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
-              elseif (lreheating) then
+              elseif (lreheating_GW) then
                 om2=ksqr-2./(t+1.)**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
