@@ -1002,12 +1002,10 @@ module Magnetic
       if (ljj_as_aux .or. ljj_as_comaux) &
         call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
 !
-print*,'AXEL3: ',lbbt_as_aux,ibbt
       if (lbbt_as_aux) then
         call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
         ltime_integrals=.true.
       endif
-print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
 !
       if (ljjt_as_aux) then
         call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
@@ -1017,8 +1015,9 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
       if (lua_as_aux ) call register_report_aux('ua',iua)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
 !
-      if (lbb_sph_as_aux) &
-        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
+!PJK: moved back to initialize_magnetic at least temporarily
+!      if (lbb_sph_as_aux) &
+!        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
 !
 !  Register va as auxilliary array if asked for also requires
 !  ! MAUX CONTRIBUTION 1
@@ -1082,7 +1081,7 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
 !  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !  28-feb-18/piyali: moved back the calculation of clight2_zdep to calc_pencils to use va2 pencil
 !
-      use Sub, only: write_zprof, step, get_smooth_kernel
+      use Sub, only: register_report_aux, write_zprof, step, get_smooth_kernel
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -1096,6 +1095,10 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,myl,nycap
       real :: J_ext2, eta_zdep_exponent
+
+!PJK: moved from register_magnetic at least temporarily
+      if (lbb_sph_as_aux) &
+        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
 !
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
@@ -2024,7 +2027,6 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case ('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-!PJK
         case ('Bzcosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -4195,7 +4197,7 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
       endif
 !
       if (lresi_rdep) then
-        call eta_rdep(eta_r,geta_r,rdep_profile)
+        call eta_rdep(eta_r,geta_r,rdep_profile,p)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_r*p%del2a(:,j)+geta_r(:,j)*p%diva
         enddo
@@ -8878,7 +8880,7 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
 !
     endsubroutine eta_xdep
 !***********************************************************************
-    subroutine eta_rdep(eta_r,geta_r,rdep_profile)
+    subroutine eta_rdep(eta_r,geta_r,rdep_profile,p)
 !
 !  creates a r-dependent resistivity
 !
@@ -8905,6 +8907,7 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
 !
            if (eta_rwidth == 0.) eta_rwidth = 5.*dx
            tmp1=p%r_mn
+!           tmp1=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
            eta_r = eta + eta*(eta_jump-1.)*step(tmp1,eta_r0,-eta_rwidth)
 !
 !  its gradient:
@@ -8931,14 +8934,13 @@ print*,'AXEL4: ',lbbt_as_aux,ibbt,ibbt
            if (eta_rwidth0 == 0.) eta_rwidth0 = 5.*dx
            if (eta_rwidth1 == 0.) eta_rwidth1 = 5.*dx
 !
-           eta_r = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-             (step(p%r_mn,eta_r0,eta_rwidth0)-step(p%r_mn,eta_r1,eta_rwidth1))
+           eta_r = eta + eta*(eta_jump - 1.)* &
+             (step(p%r_mn,eta_r0,eta_rwidth0) - step(p%r_mn,eta_r1,eta_rwidth1))
 !
-!  ... and its gradient. Note that the sign of the second term enters
-!  with the opposite sign, because we have used negative eta_rwidth.
+!  ... and its gradient.
 !
-           tmp1 = eta*(eta_jump-two_step_factor)*( &
-             der_step(p%r_mn,eta_r0,-eta_rwidth0)+der_step(p%r_mn,eta_r1,eta_rwidth1))
+           tmp1 = eta*(eta_jump-1.)*( &
+             der_step(p%r_mn,eta_r0,eta_rwidth0) - der_step(p%r_mn,eta_r1,eta_rwidth1))
            geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
            geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
            geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
