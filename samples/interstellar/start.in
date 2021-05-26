@@ -4,31 +4,23 @@
 !
 &init_pars
   cvsid='$Id$'
-  unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
-  xyz0=-0.032,-0.032,-0.126
-  xyz1=+0.032,+0.032,+0.126
+  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
+  unit_density=1.6737236e-24
+  xyz0=-0.032,-0.032,-1.998
+  xyz1=+0.032,+0.032,+1.998
   lperi=T,T,F
-  bcz = 's','s','ubs','cdz','ctz','s','s','a','cop','cop'
+  bcz = 's','s','ubs','ism','ism','s','s'
   lwrite_aux=T
   lfix_unit_std=T
 /
 &initial_condition_pars
-  ! for RBN cooling
-  rho0ts=3.5
-  T_init=15.8421
-  !for WSW cooling
-  !rho0ts=2.75
-  !T_init=20.259
-  !lthermal_hse=T
-  !amplaa=0.01
-  !initaa='Ferriere-uniform-By'
 /
 &eos_init_pars
-  mu=0.62
+  mu=0.531
 /
 &hydro_init_pars
-  Omega=25.
   inituu='nothing'
+  Omega=25.0
 /
 &density_init_pars
   initlnrho='nothing'
@@ -40,18 +32,15 @@
 &entropy_init_pars
   initss='nothing'
 /
-&magnetic_init_pars
-  initaa='nothing'
-/
 &interstellar_init_pars
-  lSNII=T
+  initinterstellar='multiple'
+  initial_SNI = 1
+  lSNII=F
   lSNI=T
-  rho0ts=3.5
-  T_init=15.8421
-  cooling_select='RBNr'
-  heating_select='thermal-hs'
-  lthermal_hse=T
+  lSN_scale_rad=T
+  N_mass=100.0
+  rfactor_SN=5.0
 /
 &shear_init_pars
-  qshear=1.0
-/ 
+  Sshear=-25.0
+/

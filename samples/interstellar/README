@@ -1,33 +1,43 @@
 Directory:
-    ${PENCIL_HOME}/samples/interstellar
+    ${PENCIL_HOME}/samples/supernova-driven-turbulence/3Dhd_equidistant
 SVN Id:
     $Id$
 Maintainer:
-    Axel Brandenburg <brandenb/nordita[dot]org>
     Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 Added:
-    29-Aug-2003
+    21-Jun-2016
 Status:
-    has been working in this form since 3-Jun-2006
+    has been working in this form since 21-Jun-2016
+    revised 27-Sep-2016
+    revised 21-Mar-2018: upwind used to replace cs-dep diffusivities
+                         constant low diffusivities can be included, which no
+                         longer affect code stability. Stability is now 
+                         controlled by shock mass diffusion and shock viscosity
 Recommended resolution:
-    at least 64x64x128
+    at least 16x16x1000 (maintain grid resolution <= 0.004 for larger Lx,Ly)
 Comments:
-    This model tests supernova energy injection and the cooling function
-    This setup mirrors the model used in 3. and 4. below.
-    Recommended up to date use templates at samples/supernova-driven-turbulence/...
+    Use the 1D model (an example is given in sample ../1D_ism_init) to obtain
+    the file init_ism.dat containing density and temperatue profiles for the 
+    initial condition in this 3D supernova driven turbulence model of the ISM.
+    The 1D model has identical vertical grid and hydrodynamic run parameters.
+    Magnetic field and cosmic rays can be added to this 3D model
+    
+    The averaged SN heating substitutes for the SN driven turbulence and will be
+    smoothly superceded by the SN explosions as the turbulence evolves.
+    
+    SN are spatially distributed according to a uniform distribution in the 
+    horizontal plane and gaussian distribution vertically centred about the 
+    centre of mass, which fluctuates near to the midlplane. Default SN frequency
+    rates are milky way estimates and default mass and gravitional acceleration
+    are taken from the solar vicinity.
+    
+    To obtain the 1D data file run
+    > python ism_save.dat
+    from the command line then copy the init_ism.dat file into the new 3D run
+    directory
 References:
-    1. Brandenburg, A., Korpi, M. J., & Mee, A. J.: 2007, ``Thermal
-       instability in shearing and periodic turbulence,''
-       Astrophys. J. 654, 945-954
-    2. Korpi, M. J., Brandenburg, A., Shukurov, A., Tuominen, I.,
-       & Nordlund, Å.: 1999, ``A supernova regulated interstellar
-       medium: simulations of the turbulent multiphase medium,''
-       Astrophys. J. Lett. 514, L99-L102
-    3. Gent, F.A., Shukurov, A., Fletcher, A., Sarson, G.R.S., &
+    1. Gent, F.A., Shukurov, A., Fletcher, A., Sarson, G.R.S., &
        Mantere, M.J.: ``Supernova Driven Turbulence. I. The Multiphase
        Structure'',
-       MNRAS, 432, 1396-1423 
-    4. Gent, F.A., Shukurov, A., Sarson, G.R.S., Fletcher, A., &
-       Mantere, M.J.: ``Supernova Driven Turbulence. II. The Mean
-       Magnetic Field'',
-       MNRAS, 430, L40-L44 
+       MNRAS, 432, 1396-1423
+

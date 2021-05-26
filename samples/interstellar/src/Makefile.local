@@ -3,21 +3,15 @@
 ### Included by `Makefile'
 ###
 
-#================================
-# Please uncomment one IO option:
-#================================
-#IO           =   io_hdf5
-#MPICOMM      =   mpicomm
-#--------------------------------
-IO           =   io_dist
-#================================
+MPICOMM      =   mpicomm
+IO           =   io_hdf5
 
-INITIAL_CONDITION = initial_condition/hs_equilibrium_ism
+INITIAL_CONDITION = initial_condition/ths_equilibrium_ism
 HYDRO        =   hydro
-SHOCK        =   shock
+SHOCK        =   shock_highorder
 DENSITY      =   density
 ENTROPY      =   entropy
-MAGNETIC     =   magnetic
+MAGNETIC     = nomagnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
 INTERSTELLAR =   interstellar

@@ -4,9 +4,13 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=15, it1=2, isave=50, itorder=3
-  cdt=0.2, cdtv=0.2, dtmin=1e-9, cdts=0.2
-  dsnap=2., dvid=2., 
+!  nt=645000, it1=250, isave=1000, it1d=5000, itorder=3, tmax=0.5
+  nt=5, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.5
+  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.2
+  dsnap=.0005, dvid=.00025, slice_position='m' 
+  !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
+  !dsnap=2., dvid=2., slice_position='m' 
+  bcz = 's','s','ubs','ism','ism','cop','cop'
   ip=1963
   lpencil_check=F
   lpencil_check_small=F
@@ -15,42 +19,52 @@
 &eos_run_pars
 /
 &hydro_run_pars
+  Omega=25.0
+  cdt_tauf=1.0
+  lcdt_tauf=T !time constraint on magnitude of RHS
+  ulev = 20.0
+/
+&viscosity_run_pars
+  ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
+  nu_shock=5.0
+  nu=4e-3
+  nu_hyper3=5e-12 !~dx^5
 /
 &density_run_pars
-  diffrho_shock=2.0
-  lmassdiff_fix=T
   idiff='shock'
+  diffrho_shock=2.0
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='shock'
+  iheatcond='shock','hyper3'
+  chi_hyper3=5e-12
   chi_shock=2.0
-/
-&magnetic_run_pars
-!  llorentzforce=F
-  iresistivity='eta-const'
-  eta=0.000196
+  lthdiff_Hmax=T !time constraint on magnitude of RHS
 /
 &interstellar_run_pars
-  width_SN=0.032
-  lSNII=T
-  lSNI=T
-  t_next_SNII=0.0
-  t_next_SNI=0.0
-  mass_SN=2.531673204e-7 !4 solar masses
-  heatcool_shock_cutoff_rate=0.01
-  cooling_select='RBNr'
-  lthermal_hse=T
-  heating_select='thermal-hs'
+!! adjust SN radius above rfactor_SN for diffuse ISM
+  lSN_scale_rad=T
+  N_mass=100.0
+  rfactor_SN=5.0
+!! override persistent variables read in from varfile
+!  lSNII=T, l_persist_overwrite_lSNII=T
+!  lSNI=T, l_persist_overwrite_lSNI=T 
+  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+!  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
+!! rest random number after crash for new SN site 
+!  lreset_ism_seed=T
+!  seed_reset=1245
+!! if 1D profile uses average heating decrease smoothly for stable disk
+  laverage_SNII_heating=F
+  laverage_SNI_heating=T
+  heatingfunction_scalefactor=5.0
+  heatingfunction_fadefactor=25.0
 /
 &shear_run_pars
-/
-&viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=0.2,nu_shock=5.0
+  Sshear = -25.0
 /
 &shock_run_pars
-  lshock_first=T
-  lshock_max5=F
+  ishock_max=2
+  lgaussian_smooth=T
 /
