@@ -112,13 +112,13 @@ module Magnetic
   character (len=labellen) :: initaak='nothing'
   character (len=labellen) :: initeek='nothing'
   character (len=labellen) :: cc_light='1'
-  real :: alpha_inflation=0.
+  real :: alpha_inflation=0., beta_inflation=0.
   real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
   logical :: laa_as_aux=.false., lbb_as_aux=.true., lee_as_aux=.true., ljj_as_aux=.false.
   logical :: lemf=.false., linflation=.false., lreheating=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
-  real :: alpha2_inflation, kscale_factor
+  real :: alpha2_inflation, beta2_inflation, kscale_factor
   real :: amplaa=1e-4, initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0.
   real :: relhel_aa=1.
@@ -128,11 +128,12 @@ module Magnetic
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
+  logical :: lalpha_inflation, lbeta_inflation
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
-    linflation, lreheating, alpha_inflation, &
+    linflation, lreheating, alpha_inflation, beta_inflation, &
     initaak, initeek, &
     ux_const, ampl_uy, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
@@ -146,7 +147,7 @@ module Magnetic
 ! run parameters
   namelist /magnetic_run_pars/ &
 ! namelist /magnetic_run_pars/ &
-    linflation, lreheating, alpha_inflation, &
+    linflation, lreheating, alpha_inflation, beta_inflation, &
     ldebug_print, &
     cc_light, &
     lemf, B_ext, &
@@ -156,12 +157,14 @@ module Magnetic
 !
   integer :: idiag_aa2m=0      ! DIAG_DOC: $\langle A^2\rangle$
   integer :: idiag_ee2m=0      ! DIAG_DOC: $\langle E^2\rangle$
+  integer :: idiag_EEEM=0      ! DIAG_DOC: $\langle(E^2+B^2)/2\rangle$
   integer :: idiag_akxpt=0     ! DIAG_DOC: $Akx^{pt}$
   integer :: idiag_ekxpt=0     ! DIAG_DOC: $Ekx^{pt}$
   integer :: idiag_sigma=0     ! DIAG_DOC: $\sigma$
   integer :: idiag_emag=0      ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_bmax=0      ! DIAG_DOC: $\max(|\Bv|)$
   integer :: idiag_brms=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
+  integer :: idiag_erms=0      ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_bfrms=0     ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
 !
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
@@ -243,7 +246,18 @@ module Magnetic
 !
 !  compute alpha*(alpha+1) from Sharma+17 paper
 !
-      alpha2_inflation=alpha_inflation*(alpha_inflation+1.)
+      if (beta_inflation/=0.) then
+        beta2_inflation=2.*beta_inflation*(2.*beta_inflation+1.)
+        lbeta_inflation=.true.
+      endif
+!
+      if (alpha_inflation/=0.) then
+        alpha2_inflation=alpha_inflation*(alpha_inflation+1.)
+        lalpha_inflation=.true.
+      endif
+!
+      if (lalpha_inflation.and.lbeta_inflation) &
+        call fatal_error("initialize_magnetic","only alpha or beta /= 0")
 !
       call keep_compiler_quiet(f)
 !
@@ -305,7 +319,8 @@ module Magnetic
           if (lroot) f(l1+1,m1+1,n1+1,ieek)=1.
 !
 !  dA/deta = -E
-!  d^2A/deta^2 = -dE/deta = -(k^2-alpha*(alpha+1)
+!  d^2A/deta^2 = -dE/deta = -(k^2-alpha*(alpha+1), or
+!  d^2A/deta^2 = -dE/deta = -(k^2-2beta*(2beta+1)
 !
         case ('ikA')
           do ikz=1,nz
@@ -347,8 +362,8 @@ module Magnetic
 !   1-apr-06/axel: coded
 !
    !  if (idiag_ee2m/=0) lpenc_requested(i_e2)=.true.
-      if (idiag_brms/=0 .or. idiag_bfrms/=0 .or. idiag_bmax/=0 .or. &
-          idiag_emag/=0 ) &
+      if (idiag_brms/=0 .or. idiag_EEEM/=0 .or. idiag_bfrms/=0 .or. &
+          idiag_bmax/=0 .or. idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
       if (lpenc_diagnos(i_e2)) lpenc_requested(i_el)=.true.
       if (lpenc_diagnos(i_b2)) lpenc_requested(i_bb)=.true.
@@ -436,6 +451,8 @@ module Magnetic
           if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
           call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
           call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+          call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
+          call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
           call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
 !
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
@@ -840,7 +857,8 @@ module Magnetic
             if (linflation) then
               ksqr_eff=ksqr-alpha2_inflation/t**2
             elseif (lreheating) then
-              ksqr_eff=ksqr-alpha2_inflation*2./(t+1.)**2
+              if (lalpha_inflation) ksqr_eff=ksqr-alpha2_inflation*2./(t+1.)**2
+              if (lbeta_inflation) ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
             else
               ksqr_eff=ksqr
             endif
@@ -1072,7 +1090,7 @@ module Magnetic
         idiag_akxpt=0
         idiag_ekxpt=0
         idiag_emag=0
-        idiag_bmax=0; idiag_brms=0; idiag_bfrms=0
+        idiag_bmax=0; idiag_brms=0; idiag_erms=0; idiag_EEEM=0; idiag_bfrms=0
         idiag_sigma=0
         cformv=''
       endif
@@ -1085,6 +1103,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
+        call parse_name(iname,cname(iname),cform(iname),'EEEM',idiag_EEEM)
         call parse_name(iname,cname(iname),cform(iname),'bfrms',idiag_bfrms)
         call parse_name(iname,cname(iname),cform(iname),'sigma',idiag_sigma)
       enddo
