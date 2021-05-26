@@ -92,7 +92,6 @@ class Power(object):
         import numpy as np
         from .. import read
         import sys
-        import math
         import matplotlib as plt
 
         power_list = []
@@ -174,7 +173,7 @@ class Power(object):
                     )
                     ini = 2
                     kx = []
-                    for i in range(ini, math.ceil(nkx / 8) + ini):
+                    for i in range(ini, np.ceil(nkx / 8) + ini):
                         kx.append([float(j) for j in line_list[i].split()])
                     kx = np.array(list(plt.cbook.flatten(kx)))
                     setattr(self, "kx", kx)
@@ -188,7 +187,7 @@ class Power(object):
                         .split(")")[0][1:]
                     )
                     ky = []
-                    for i in range(ini, math.ceil(nky / 8) + ini):
+                    for i in range(ini, np.ceil(nky / 8) + ini):
                         ky.append([float(j) for j in line_list[i].split()])
                     ky = np.array(list(plt.cbook.flatten(ky)))
                     setattr(self, "ky", ky)
@@ -202,7 +201,7 @@ class Power(object):
                         .split(")")[0][1:]
                     )
                     kz = []
-                    for i in range(ini, math.ceil(nkz / 8) + ini):
+                    for i in range(ini, np.ceil(nkz / 8) + ini):
                         kz.append([float(j) for j in line_list[i].split()])
                     kz = np.array(list(plt.cbook.flatten(ky)))
                     setattr(self, "kz", kz)

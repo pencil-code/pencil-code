@@ -20,4 +20,4 @@ python:
    install:
    - requirements: doc/readthedocs/requirements.txt
    - method: setuptools
-     path: python/pencil/
+     path: python
