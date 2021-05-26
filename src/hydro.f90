@@ -999,7 +999,7 @@ module Hydro
       endif
 !
 !  damping parameters for damping velocities outside an embedded sphere
-!  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
+!  04-feb-2008/dintrans: corrected because otherwise rdampext=r_ext all the time
 !
       if (dampuext /= 0.0) then
 !       if (r_ext < impossible) then
@@ -1009,13 +1009,13 @@ module Hydro
 !       endif
         if (rdampext == impossible) then
           if (r_ext < impossible) then
-            write(*,*) 'initialize_hydro: set outer radius rdampext=r_ext'
+            if (lroot) write(*,*) 'initialize_hydro: set outer radius rdampext=r_ext'
             rdampext = r_ext
           else
-            write(*,*) 'initialize_hydro: cannot set outer radius rdampext=r_ext'
+            if (lroot) write(*,*) 'initialize_hydro: cannot set outer radius rdampext=r_ext'
           endif
         else
-          write(*,*) 'initialize_hydro: outer radius rdampext=',rdampext
+          if (lroot) write(*,*) 'initialize_hydro: outer radius rdampext=',rdampext
         endif
       endif
 !
