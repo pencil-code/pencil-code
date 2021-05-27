@@ -870,7 +870,7 @@ module Magnetic
               sigmaeff=sigma
               discrim2=sigmaeff**2-4.*ksqr_eff
               if (discrim2==0.) discrim2=tini
-              discrim=sqrt(complex(discrim2,0.))
+              discrim=sqrt(cmplx(discrim2,0.))
               lam1=.5*(-sigmaeff+discrim)
               lam2=.5*(-sigmaeff-discrim)
 !
@@ -916,8 +916,8 @@ module Magnetic
               endif
 !
               do j=1,3
-                Acomplex(j)=complex(aakre(j),aakim(j))
-                Ecomplex(j)=complex(eekre(j),eekim(j))
+                Acomplex(j)=cmplx(aakre(j),aakim(j))
+                Ecomplex(j)=cmplx(eekre(j),eekim(j))
               enddo
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
