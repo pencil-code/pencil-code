@@ -230,4 +230,14 @@ module power_spectrum
 !
   endsubroutine power1d_plane
 !***********************************************************************
+  subroutine power_cor(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power_cor
+!***********************************************************************
 endmodule power_spectrum

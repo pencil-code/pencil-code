@@ -943,11 +943,10 @@ module power_spectrum
     use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz) :: h_re,ht_re
   real, dimension(nx) :: bbi, jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
@@ -1291,61 +1290,6 @@ module power_spectrum
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       a_im=0.
       b_im=0.
-!
-!   Spectrum of uu.uut
-!
-    elseif (sp=='uut') then
-      if (iuu==0) call fatal_error('powerhel','iuu=0')
-      if (iuut==0) call fatal_error('powerhel','iuut=0')
-      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-      b_im=0.
-      a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
-      a_im=0.
-!
-!   Spectrum of h.ht; h=u.curl(u) and ht=uut.curl(uut)
-!
-    elseif (sp=='hkt') then
-        if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
-        if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
-        h_re=0.
-        ht_re=0.
-        !  helicity is a scalar and thus only computed at ivec=1
-        if (ivec==1) then
-          do jvec=1,3
-            do n=n1,n2
-            do m=m1,m2
-              call curli(f,iuu,bbi,jvec)
-              im=m-nghost
-              in=n-nghost
-              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
-            enddo
-            enddo
-            b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
-            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-              h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
-                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-            enddo; enddo; enddo
-          enddo
-          do jvec=1,3
-            do n=n1,n2
-            do m=m1,m2
-              call curli(f,iuut,bbi,jvec)
-              im=m-nghost
-              in=n-nghost
-              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
-            enddo
-            enddo
-            b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
-            do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-              ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
-                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-            enddo; enddo; enddo
-          enddo
-          a_re=ht_re; b_re=h_re
-        else
-          a_re=0.; b_re=0.
-        endif
-        a_im=0.; b_im=0.
     endif
 !
 !  Doing the Fourier transform
@@ -3853,7 +3797,7 @@ endsubroutine pdf
         b_im=0.
         a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
         a_im=0.
-      elseif (sp=='hkt') then
+      elseif (sp=='ouout') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
         if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
         h_re=0.
@@ -4202,4 +4146,291 @@ endsubroutine pdf
   endif
   !
   endsubroutine power1d_plane
+  !***********************************************************************
+  subroutine power_cor(f,sp)
+!
+!  Calculate power spectra (on spherical shells) of two-time correlations
+!  of the variable specified by `sp', i.e. either the spectra of u(t')u(t)
+!  and that of kinetic helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   28-may-21/hongzhe: adapted from powerhel
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral
+    use Magnetic, only: magnetic_calc_spectra
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,ny,nz) :: h_re,ht_re
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, jj
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=*) :: sp
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  if (lcylindrical_spectra) then
+    cyl_spectrum=0.
+    cyl_spectrum_sum=0.
+    cyl_spectrumhel=0.
+    cyl_spectrumhel_sum=0.
+  endif
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    !
+    !  In fft, real and imaginary parts are handled separately.
+    !
+    !
+    !  Spectrum of iuu.iuut
+    !
+    if (sp=='uut') then
+      if (iuu==0) call fatal_error('power_cor','iuu=0')
+      if (iuut==0) call fatal_error('power_cor','iuut=0')
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+      b_im=0.
+      a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
+      a_im=0.
+    !
+    !   Spectrum of h.ht; h=u.curl(u) and ht=uut.curl(uut)
+    !
+    elseif (sp=='ouout') then
+      if (iuu==0) call fatal_error('power_cor','iuu=0')
+      if (iuut==0) call fatal_error('power_cor','iuut=0')
+      h_re=0.
+      ht_re=0.
+      !  helicity is a scalar and thus only computed at ivec=1
+      if (ivec==1) then
+        do jvec=1,3
+          do n=n1,n2
+          do m=m1,m2
+            call curli(f,iuu,bbi,jvec)
+            im=m-nghost
+            in=n-nghost
+            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          enddo
+          enddo
+          b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
+          do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+            h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
+                a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+          enddo; enddo; enddo
+        enddo
+        do jvec=1,3
+          do n=n1,n2
+          do m=m1,m2
+            call curli(f,iuut,bbi,jvec)
+            im=m-nghost
+            in=n-nghost
+            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          enddo
+          enddo
+          b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
+          do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+            ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
+                a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+          enddo; enddo; enddo
+        enddo
+        a_re=ht_re; b_re=h_re
+      else
+        a_re=0.; b_re=0.
+      endif
+      a_im=0.; b_im=0.
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +b_re(ikx,iky,ikz)**2 &
+               +b_im(ikx,iky,ikz)**2
+            spectrumhel(k+1)=spectrumhel(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+!
+!  allow for possibility of cylindrical spectral
+!
+    if (lcylindrical_spectra) then
+      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+            jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+            k=nint(sqrt(k2))
+            if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+              cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+                 +b_re(ikx,iky,ikz)**2 &
+                 +b_im(ikx,iky,ikz)**2
+              cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  end of loop through all points
+!
+            endif
+          enddo
+        enddo
+      enddo
+    endif
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !
+  if (lcylindrical_spectra) then
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+  endif
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power_cor spectrum ',sp &
+         ,' to ',trim(datadir)//'/powercor_'//trim(sp)//'.dat'
+    !
+    open(1,file=trim(datadir)//'/powercor_auto_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powercor_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lcylindrical_spectra) then
+      if (ip<10) print*,'Writing cylindrical power_cor spectrum ',sp &
+           ,' to ',trim(datadir)//'/cyl_powercor_'//trim(sp)//'.dat'
+    !
+      open(1,file=trim(datadir)//'/cyl_powercor_auto_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrum_sum(k,jkz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrum_sum
+      endif
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cyl_powercor_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do jkz = 1, nzgrid
+        do k = 1, nk
+          write(1,'(2i4,3p,8e10.2)') k, jkz, cyl_spectrumhel_sum(k,jkz)
+        enddo
+        enddo
+      else
+        write(1,*) t
+        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
+      endif
+      close(1)
+    endif
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/powercor_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine power_cor
+!***********************************************************************
 endmodule power_spectrum

@@ -4385,24 +4385,16 @@ module Hydro
         if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
       else
-        if (nint(dtcor)<=0.) then  !  only record uut, oot, etc. at it==1
+        if (nint(dtcor)<=0.) then
           if (it==1) lrecord_at_t0=.true.
-        else  !  otherwise every dtcor time
+        else
           if (mod(nint(t),nint(dtcor))==1) lrecord_at_t0=.true.
         endif
-        if (lrecord_at_t0) then  !  record at t0
-          if (iuxt/=0) then
-            f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
-            if (iuxst/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
-          else
-            if (lroot) print*,'iuut not allocated'
-          endif
-          if (ioxt/=0 .and. iox/=0) then
-            f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
-            if (ioxst/=0) f(l1:l2,m,n,ioxst:iozst)=0.
-          else
-            if (lroot) print*,'ioot and ioo not allocated'
-          endif
+        if (lrecord_at_t0) then
+          if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
+          if (iuxst/=0)             f(l1:l2,m,n,iuxst:iuzst)=0.
+          if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
+          if (ioxst/=0)             f(l1:l2,m,n,ioxst:iozst)=0.
         endif
         lrecord_at_t0=.false.
       endif
