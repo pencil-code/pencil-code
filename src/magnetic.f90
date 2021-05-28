@@ -9551,7 +9551,7 @@ module Magnetic
 
       if (idiag_b2tm/=0) then
         if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
-        idiag_b2tm=0
+        !idiag_b2tm=0
       endif
       if (idiag_jbtm/=0) then
         if (ibbt==0) call stop_it("Cannot calculate jbtm if ibbt==0")
