@@ -366,9 +366,9 @@ module Magnetic
       if (idiag_brms/=0 .or. idiag_EEEM/=0 .or. idiag_bfrms/=0 .or. &
           idiag_bmax/=0 .or. idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
+      if (idiag_erms/=0 .or. idiag_EEEM/=0) lpenc_requested(i_e2)=.true.
       if (idiag_arms/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_erms/=0) lpenc_diagnos(i_e2)=.true.
-          lpenc_diagnos(i_b2)=.true.
       if (lpenc_diagnos(i_a2)) lpenc_requested(i_aa)=.true.
       if (lpenc_diagnos(i_b2)) lpenc_requested(i_bb)=.true.
       if (lpenc_diagnos(i_e2)) lpenc_requested(i_el)=.true.
