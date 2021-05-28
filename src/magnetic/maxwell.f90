@@ -43,7 +43,7 @@
 ! MAUX CONTRIBUTION 12
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
-! PENCILS PROVIDED el(3); e2; b2; bf2
+! PENCILS PROVIDED el(3); e2; a2; b2; bf2
 ! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3); bunit(3); va2
 !
 !***************************************************************
@@ -164,6 +164,7 @@ module Magnetic
   integer :: idiag_emag=0      ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_bmax=0      ! DIAG_DOC: $\max(|\Bv|)$
   integer :: idiag_brms=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
+  integer :: idiag_arms=0      ! DIAG_DOC: $\left<\Av^2\right>^{1/2}$
   integer :: idiag_erms=0      ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_bfrms=0     ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
 !
@@ -208,9 +209,9 @@ module Magnetic
 !  register B array as aux
 !
       if (lee_as_aux) call farray_register_auxiliary('ee',iee,vector=3)
-      if (laa_as_aux) call farray_register_auxiliary('aa',iaa,vector=3)
       if (lbb_as_aux) call farray_register_auxiliary('bb',ibb,vector=3)
       if (ljj_as_aux) call farray_register_auxiliary('jj',ijj,vector=3)
+      if (laa_as_aux) call farray_register_auxiliary('aa',iaa,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
       iax=iaa; iay=iaa+1; iaz=iaa+2
       ibx=ibb; iby=ibb+1; ibz=ibb+2
@@ -365,8 +366,12 @@ module Magnetic
       if (idiag_brms/=0 .or. idiag_EEEM/=0 .or. idiag_bfrms/=0 .or. &
           idiag_bmax/=0 .or. idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
-      if (lpenc_diagnos(i_e2)) lpenc_requested(i_el)=.true.
+      if (idiag_arms/=0) lpenc_diagnos(i_a2)=.true.
+      if (idiag_erms/=0) lpenc_diagnos(i_e2)=.true.
+          lpenc_diagnos(i_b2)=.true.
+      if (lpenc_diagnos(i_a2)) lpenc_requested(i_aa)=.true.
       if (lpenc_diagnos(i_b2)) lpenc_requested(i_bb)=.true.
+      if (lpenc_diagnos(i_e2)) lpenc_requested(i_el)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -451,6 +456,7 @@ module Magnetic
           if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
           call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
           call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+          call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
           call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
           call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
           call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
@@ -615,6 +621,8 @@ module Magnetic
       if (lpenc_loc(i_bbb)) p%bbb=p%bb
 ! e2
       if (lpenc_loc(i_e2)) call dot2_mn(p%el,p%e2)
+! a2
+      if (lpenc_loc(i_a2)) call dot2_mn(p%aa,p%a2)
 ! b2
       if (lpenc_loc(i_b2)) call dot2_mn(p%bb,p%b2)
       if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
@@ -1090,7 +1098,8 @@ module Magnetic
         idiag_akxpt=0
         idiag_ekxpt=0
         idiag_emag=0
-        idiag_bmax=0; idiag_brms=0; idiag_erms=0; idiag_EEEM=0; idiag_bfrms=0
+        idiag_bmax=0; idiag_brms=0; idiag_arms=0; idiag_erms=0
+        idiag_EEEM=0; idiag_bfrms=0
         idiag_sigma=0
         cformv=''
       endif
@@ -1103,6 +1112,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
         call parse_name(iname,cname(iname),cform(iname),'EEEM',idiag_EEEM)
         call parse_name(iname,cname(iname),cform(iname),'bfrms',idiag_bfrms)
