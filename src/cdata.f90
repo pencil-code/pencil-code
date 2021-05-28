@@ -186,7 +186,7 @@ module Cdata
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
-  integer :: isave=100,ialive=0,isaveglobal=0
+  integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
   logical :: lwrite_ts_hdf5=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lwrite_avg1d_binary = .false.
@@ -194,6 +194,7 @@ module Cdata
   logical :: lwrite_last_powersnap=.false.
   logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
+  logical :: lread_oldsnap_nohydro=.false.
   logical :: lread_oldsnap_nohydro_efield=.false., lread_oldsnap_nohydro_ekfield=.false.
   logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.

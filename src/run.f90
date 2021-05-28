@@ -756,7 +756,10 @@ program run
     if (lpointmasses) &
         call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
-    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
+!  Added possibility of outputting only the chunks starting
+!  from nv1_capitalvar in the capitalvar file.
+!
+    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !

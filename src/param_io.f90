@@ -88,7 +88,7 @@ module Param_IO
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
-      lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
+      lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
@@ -146,7 +146,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, lwrite_ts_hdf5, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, &
-      lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
+      lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
       lread_aux, comment_char, ix, iy, iy2, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
@@ -164,6 +164,7 @@ module Param_IO
       lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
+      nv1_capitalvar, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       iproc_pt, iproc_p2, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &

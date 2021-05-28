@@ -219,7 +219,7 @@ module Snapshot
 !
     endsubroutine wsnap_down
 !***********************************************************************
-    subroutine wsnap(chsnap,a,msnap,enum,flist,noghost)
+    subroutine wsnap(chsnap,a,msnap,enum,flist,noghost,nv1)
 !
 !  Write snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used for var.dat).
@@ -230,6 +230,7 @@ module Snapshot
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !  28-jun-10/julien: added different file formats
 !   8-mar-13/MR  : made a assumed-size to work properly with calls in run.f90
+!  28-may-21/axel: added nv1_capitalvar
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
@@ -245,6 +246,7 @@ module Snapshot
       character(len=*), intent(in) :: chsnap
       character(len=*), intent(in), optional :: flist
       logical, intent(in), optional :: enum, noghost
+      integer, intent(in), optional :: nv1
 !
       real, save :: tsnap
       real :: time1
@@ -252,6 +254,7 @@ module Snapshot
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file
       character (len=intlen) :: ch
+      integer :: nv1_capitalvar
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
@@ -267,6 +270,15 @@ module Snapshot
           lfirst_call=.false.
         endif
 !
+!  It is sometimes of interest to output only last part of the data
+!  in the capital var files.
+!
+        if (present(nv1)) then
+          nv1_capitalvar=nv1
+        else
+          nv1_capitalvar=1
+        endif
+!
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
@@ -276,7 +288,7 @@ module Snapshot
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
-          call output_snap(a,nv2=msnap,file=file)
+          call output_snap(a,nv1=nv1_capitalvar,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
           call output_snap_finalize
           if (present(flist)) call log_filename_to_file(file,flist)
@@ -423,6 +435,22 @@ module Snapshot
           enddo
           f(:,:,:,icctest:icctest+ntestscalar-1)=0.
         endif
+!
+!  Read data without hydro or density
+!
+      elseif (lread_oldsnap_nohydro) then
+        if (lroot) print*,'read old snapshot file nohydro mvar,msnap=',mvar,msnap
+        call input_snap(chsnap,f,msnap-4,mode)
+        !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        do ivar=msnap,5,-1
+          f(:,:,:,ivar)=f(:,:,:,ivar-4)
+        enddo
+        do ivar=1,4
+          f(:,:,:,ivar)=0.
+        enddo
 !
 !  Read data without hydro or density, but with electric field
 !
