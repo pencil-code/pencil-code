@@ -97,15 +97,15 @@ source $PENCIL_HOME/sourceme.csh
 [hourly]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/gfortran_hourly.html
 [daily]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/g95_debug.html
 [conduct]: https://github.com/pencil-code/pencil-code/blob/master/license/CODE_OF_CONDUCT.md
-[manual]: https://github.com/pencil-code/website/blob/master/doc/manual.pdf
-[quick_start]: https://github.com/pencil-code/website/blob/master/doc/quick_start.pdf
+[manual]: https://github.com/pencil-code/website/raw/master/doc/manual.pdf
+[quick_start]: https://github.com/pencil-code/website/raw/master/doc/quick_start.pdf
 [license]: https://github.com/pencil-code/pencil-code/blob/master/license/GNU_public_license.txt
 [contributors]: https://github.com/pencil-code/pencil-code/graphs/contributors
 [wiki]: https://github.com/pencil-code/pencil-code/wiki
 [PythonCodingStyle]: https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
 [PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
 [newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
-[citations]: https://github.com/pencil-code/website/blob/master/doc/citations.pdf
+[citations]: https://github.com/pencil-code/website/raw/master/doc/citations.pdf
 [PCSC]: https://www.nordita.org/~brandenb/pencil-code/PCSC/
 [meetings]: http://pencil-code.nordita.org/meetings.php
 
