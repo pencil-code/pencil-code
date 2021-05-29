@@ -80,7 +80,7 @@ source $PENCIL_HOME/sourceme.csh
 
 * If you have write access: check in your changes and make sure you can
   fix possible problems emerging on [travis-ci.com][travis] as well as the
-  [hourly][hourly] and [daily][daily] auto-tests.
+  minutely, hourly, and daily [auto-tests][auto-tests].
 
 * If you have only read access: fork this repository and use pull requests to contribute.
 
@@ -94,8 +94,7 @@ source $PENCIL_HOME/sourceme.csh
 * The Pencil Code is under the [GNU public license agreement][license].
 
 [travis]: https://www.travis-ci.com/github/pencil-code/pencil-code
-[hourly]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/gfortran_hourly.html
-[daily]: http://norlx51.nordita.org/~brandenb/pencil-code/tests/g95_debug.html
+[auto-tests]: http://pencil-code.nordita.org/tests.php
 [conduct]: https://github.com/pencil-code/pencil-code/blob/master/license/CODE_OF_CONDUCT.md
 [manual]: https://github.com/pencil-code/website/raw/master/doc/manual.pdf
 [quick_start]: https://github.com/pencil-code/website/raw/master/doc/quick_start.pdf
