@@ -189,7 +189,7 @@ module Cdata
   integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
   logical :: lwrite_ts_hdf5=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
-  logical :: lwrite_avg1d_binary = .false.
+  logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
   logical :: lwrite_last_powersnap=.false.
   logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.

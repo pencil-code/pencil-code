@@ -828,7 +828,7 @@ module FArrayManager
 !
 !  24-nov-2020/ccyang: coded
 !
-      use Cdata, only: lstart, lwrite_aux
+      use Cdata, only: lstart, lwrite_aux, lenforce_maux_check
 !
       character(len=*), parameter :: NEWLINE = achar(10) // achar(9) // "| "
       character(len=*), parameter :: ROUTINE = "farray_check_maux"
@@ -842,7 +842,7 @@ module FArrayManager
 !
       neq: if (naux /= maux) then
         if (lroot) print *, "farray_check_maux: naux, maux = ", naux, maux
-        if (.not.lstart.and.lwrite_aux) then
+        if (.not.lstart.and.lwrite_aux.and.lenforce_maux_check) then
           call fatal_error(ROUTINE, MESSAGE)
         else
           call warning(ROUTINE, MESSAGE)

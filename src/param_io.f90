@@ -90,7 +90,8 @@ module Param_IO
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       ireset_tstart, tstart, lghostfold_usebspline, &
-      lread_aux, lwrite_aux, lkinflow_as_aux, pretend_lnTT, lprocz_slowest, &
+      lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
+      pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       tstart, lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -164,7 +165,7 @@ module Param_IO
       lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
-      nv1_capitalvar, &
+      lenforce_maux_check, nv1_capitalvar, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       iproc_pt, iproc_p2, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
