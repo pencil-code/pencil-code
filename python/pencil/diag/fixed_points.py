@@ -18,7 +18,7 @@ class FixedPoint(object):
         Fill members with default values.
         """
 
-        from ..diag.tracers import TracersParameterClass
+        from pencil.diag.tracers import TracersParameterClass
 
         self.params = TracersParameterClass()
         self.t = None
@@ -64,10 +64,10 @@ class FixedPoint(object):
 
         import numpy as np
         import multiprocessing as mp
-        from .. import read
+        from pencil import read
         from pencil import math
-        from ..diag.tracers import Tracers
-        from ..calc.streamlines import Stream
+        from pencil.diag.tracers import Tracers
+        from pencil.calc.streamlines import Stream
         from pencil.math.interpolation import vec_int
 
         if (self.params.int_q == 'curly_A'):
@@ -243,7 +243,7 @@ class FixedPoint(object):
     # Return the fixed points for a subset of the domain.
     def __sub_fixed(self, queue, ix0, iy0, field, tracers, tidx, var, i_proc):
         import numpy as np
-        from ..calc.streamlines import Stream
+        from pencil.calc.streamlines import Stream
 
         diff = np.zeros((4, 2))
         fixed = []
@@ -350,7 +350,7 @@ class FixedPoint(object):
     # Compute rotation along one edge.
     def __edge(self, field, sx, sy, diff1, diff2, rec):
         import numpy as np
-        from ..calc.streamlines import Stream
+        from pencil.calc.streamlines import Stream
 
         phi_min = np.pi/8.
         dtot = np.arctan2(diff1[0]*diff2[1] - diff2[0]*diff1[1],
@@ -378,7 +378,7 @@ class FixedPoint(object):
     # Finds the null point of the mapping, i.e. fixed point, using Newton's method.
     def __null_point(self, point, var, field):
         import numpy as np
-        from ..calc.streamlines import Stream
+        from pencil.calc.streamlines import Stream
 
         dl = np.min([var.dx, var.dy])/30.
         it = 0
@@ -596,8 +596,8 @@ class FixedPoint(object):
             import h5py
         except:
             print('Error in diag/fixed_points.py: Dependency of h5py not fullfilled.')
-        from ..diag.tracers import TracersParameterClass
-        from ..diag.tracers import Tracers
+        from pencil.diag.tracers import TracersParameterClass
+        from pencil.diag.tracers import Tracers
 
         # Open the file.
         f = h5py.File(os.path.join(datadir, file_name), 'r')
