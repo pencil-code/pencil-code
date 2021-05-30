@@ -12,7 +12,7 @@ for a cylinder in a cross flow
 """
 
 import numpy as np
-from .. import sim
+from pencil import sim
 
 def draglift(simulations, sortby='dx', **kwargs):
     """

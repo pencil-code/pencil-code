@@ -13,10 +13,10 @@ def gas_velo_at_particle_pos(varfiles='last4', sim=False, scheme='tsc', use_IDL=
     OVERWRITE:		set to True to overwrite already calculated results
   """
 
-  from ... import get_sim
-  from ... import read
-  from ... import diag
-  from ...io import mkdir
+  from pencil import get_sim
+  from pencil import read
+  from pencil import diag
+  from pencil.io import mkdir
   from os import listdir
   from os.path import exists, join, dirname
   import numpy as np

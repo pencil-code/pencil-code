@@ -55,7 +55,7 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
 
     import numpy as np
     import sys
-    from .. import read
+    from pencil import read
     from pencil import math
 
     # Determine of we want an animation.
@@ -217,7 +217,7 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 
     import sys
     import numpy as np
-    from .. import read
+    from pencil import read
 
     # Convert single variable string into length 1 list of arrays.
     if (len(field) > 0):

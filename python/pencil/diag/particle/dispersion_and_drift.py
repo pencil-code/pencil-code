@@ -20,7 +20,7 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
     from pencil import get_sim
     from pencil import io
     from pencil import read
-    from .. import gas_velo_at_particle_pos
+    from pencil.diag.particle import gas_velo_at_particle_pos
     from scipy.io import readsav
     from os import listdir
     from os.path import exists, join, dirname

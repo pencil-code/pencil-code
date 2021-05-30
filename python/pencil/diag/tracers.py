@@ -65,7 +65,7 @@ class Tracers(object):
 
         import numpy as np
         import multiprocessing as mp
-        from .. import read
+        from pencil import read
         from pencil import math
 
         # Write the tracing parameters.
@@ -197,7 +197,7 @@ class Tracers(object):
     # Return the tracers for the specified starting locations.
     def __sub_tracers(self, queue, field, t_idx, i_proc, n_proc):
         import numpy as np
-        from ..calc.streamlines import Stream
+        from pencil.calc.streamlines import Stream
         from pencil.math.interpolation import vec_int
 
         # Prepare the splines for the tricubis interpolation.

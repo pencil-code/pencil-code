@@ -41,7 +41,7 @@ Do better visualizations:
 
 Check functions:
 *Remove temporarely the ones that are not working, maybe to a developers folder.
-*Every file should works independently, even if the environment is not loaded.
+*Every file should work independently, even if the environment is not loaded.
 *Check duplicate functions names: for instance, I think having "io/npfile.py" locally, whereas you als have scipy.io.npfile is not a good idea.
 
 

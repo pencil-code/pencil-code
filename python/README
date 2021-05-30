@@ -14,14 +14,14 @@ Once you've done so,
 
 reads the 'time_series.dat' file and
 
-  var = pc.read.var(datadir='data/')
+  var = pc.read.var()
 
 returns an object with the entire f array as well as some handy constants.
 
 Note that because python is C-indexed instead of fortran-indexed, and
-matplotlib assumes [y,x] ordering for 2D plotting, the f array returned is in
+matplotlib assumes [y, x] ordering for 2D plotting, the f array returned is in
 the opposite order from how it is in pencil: var.f.shape will return
-(nvar,nz,ny,nx).
+[nvar, nz, ny, nx].
 
 -----------------------------------------------------------------------------
 
@@ -30,6 +30,6 @@ To get started with visualizing Pencil-Code data in Python:
 1. Install the matplotlib library (a package often called
   python-matplotlib), which should install numpy as a dependency.
 1a. You may also want to install ipython.
-2. Initialize you PYTHONPATH environment variable by sourcing 'sourceme.*'.
+2. Initialize your PYTHONPATH environment variable by sourcing 'source ~/.bashrc'.
 3. Load all of the Python pencil modules using 'import pencil as pc'
-4. Load data using 'pc.read_ts()', etc.
+4. Load data using 'pc.read.ts()', etc.

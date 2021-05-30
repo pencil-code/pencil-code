@@ -22,8 +22,8 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
     """
 
     import numpy as np
-    from .. import get_sim
-    from ..calc import fill_gaps_in_grid
+    from pencil import get_sim
+    from pencil.calc import fill_gaps_in_grid
 
     if not xp.shape == yp.shape and yp.shape == xp.shape and yp.shape == zp.shape:
         print('! ERROR: Shape of xp, yp, zp and quantity needs to be equal!')

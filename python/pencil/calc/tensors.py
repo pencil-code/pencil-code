@@ -82,7 +82,7 @@ class Tensors(object):
         """
         import numpy as np
         import os
-        from .. import read
+        from pencil import read
 
         os.chdir(datatopdir)  # return to working directory
         grid = read.grid(proc=proc, trim=True, quiet=True)

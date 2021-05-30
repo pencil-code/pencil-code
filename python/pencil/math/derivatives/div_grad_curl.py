@@ -33,7 +33,7 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from .der import xder, yder, zder
+    from pencil.math.derivatives.der import xder, yder, zder
 
     if f.ndim != 4:
         print("div: must have vector 4-D array f[mvar, mz, my, mx] for divergence.")
@@ -84,7 +84,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from .der import xder, yder, zder
+    from pencil.math.derivatives.der import xder, yder, zder
 
     if f.ndim != 3:
         print("grad: must have scalar 3-D array f[mz, my, mx] for gradient.")
@@ -147,7 +147,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
     """
 
     import numpy as np
-    from .der import xder, yder, zder
+    from pencil.math.derivatives.der import xder, yder, zder
 
     if f.shape[0] != 3:
         print("curl: must have vector 4-D array f[3, mz, my, mx] for curl.")
@@ -207,7 +207,7 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from .der import xder, yder, zder, xder2, yder2, zder2
+    from pencil.math.derivatives.der import xder, yder, zder, xder2, yder2, zder2
 
     if (f.ndim != 4 or f.shape[0] != 3):
         print("curl2: must have vector 4-D array f[3, mz, my, mx] for curl2.")
@@ -268,7 +268,7 @@ def del2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from .der import xder2, yder2, zder2, xder, yder
+    from pencil.math.derivatives.der import xder2, yder2, zder2, xder, yder
 
     if coordinate_system == 'cartesian':
         del2_value = xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
@@ -312,7 +312,7 @@ def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         raise ValueError
 
     import numpy as np
-    from .der import xder2, yder2, zder2, yder, zder
+    from pencil.math.derivatives.der import xder2, yder2, zder2, yder, zder
 
     del2v_value = np.zeros(f.shape)
 
@@ -363,7 +363,7 @@ def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from .der import xder, yder, zder, xder2, yder2, zder2, xder3, yder3, zder3
+    from pencil.math.derivatives.der import xder, yder, zder, xder2, yder2, zder2, xder3, yder3, zder3
 
     if (f.ndim != 4 or f.shape[0] != 3):
         print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
@@ -443,7 +443,7 @@ def del6(f, dx, dy, dz):
     than del2^3) of a scalar f for hyperdiffusion.
     """
 
-    from .der import xder6, yder6, zder6
+    from pencil.math.derivatives.der import xder6, yder6, zder6
 
     return xder6(f, dx) + yder6(f, dy) + zder6(f, dz)
 
@@ -460,32 +460,32 @@ def gij(f, dx, dy, dz, nder=6):
     gij = np.array(f,f,f)
     for i in range(3):
         if nder == 1:
-            from .der import xder, yder, zder
+            from pencil.math.derivatives.der import xder, yder, zder
             gij[i,0] = xder(f[j], dx, dy, dz)
             gij[i,1] = yder(f[j], dx, dy, dz)
             gij[i,2] = zder(f[j], dx, dy, dz)
         elif nder == 2:
-            from .der import xder2, yder2, zder2
+            from pencil.math.derivatives.der import xder2, yder2, zder2
             gij[i,0] = xder2(f[j], dx, dy, dz)
             gij[i,1] = yder2(f[j], dx, dy, dz)
             gij[i,2] = zder2(f[j], dx, dy, dz)
         elif nder == 3:
-            from .der import xder3, yder3, zder3
+            from pencil.math.derivatives.der import xder3, yder3, zder3
             gij[i,0] = xder3(f[j], dx, dy, dz)
             gij[i,1] = yder3(f[j], dx, dy, dz)
             gij[i,2] = zder3(f[j], dx, dy, dz)
         elif nder == 4:
-            from .der import xder4, yder4, zder4
+            from pencil.math.derivatives.der import xder4, yder4, zder4
             gij[i,0] = xder4(f[j], dx, dy, dz)
             gij[i,1] = yder4(f[j], dx, dy, dz)
             gij[i,2] = zder4(f[j], dx, dy, dz)
         elif nder == 5:
-            from .der import xder5, yder5, zder5
+            from pencil.math.derivatives.der import xder5, yder5, zder5
             gij[i,0] = xder5(f[j], dx, dy, dz)
             gij[i,1] = yder5(f[j], dx, dy, dz)
             gij[i,2] = zder5(f[j], dx, dy, dz)
         elif nder == 6:
-            from .der import xder6, yder6, zder6
+            from pencil.math.derivatives.der import xder6, yder6, zder6
             gij[i,0] = xder6(f[j], dx, dy, dz)
             gij[i,1] = yder6(f[j], dx, dy, dz)
             gij[i,2] = zder6(f[j], dx, dy, dz)

@@ -48,12 +48,12 @@ def zav2h5(
     timereducers needs to be expanded to include various smoothing options
     """
     import numpy as np
-    from .. import read
-    from ..read import aver
-    from ..export import create_h5, fvars, create_aver_sph
-#    from ..export import create_h5.fvars as fvars
-#    from ..export import create_aver_sph
-    from ..calc import tensors_sph
+    from pencil import read
+    from pencil.read import aver
+    from pencil.export import create_h5, fvars, create_aver_sph
+#    from pencil.export import create_h5.fvars as fvars
+#    from pencil.export import create_aver_sph
+    from pencil.calc import tensors_sph
     import h5py
     import copy
 
