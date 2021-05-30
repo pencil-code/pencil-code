@@ -11,7 +11,7 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
     """
 
     from pencil import get_sim
-    from ..sim import sim
+    from pencil.sim import sim
     from pencil import io
     from os.path import exists, join
     import numpy as np
