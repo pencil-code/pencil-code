@@ -26,8 +26,8 @@ def printProgressBar(iteration, total, pbar=False, prefix = '', suffix = '', dec
             http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     """
 
-    from .module_exists import module_exists
-    from .in_ipynb import in_ipynb
+    from pencil.backpack.module_exists import module_exists
+    from pencil.backpack.in_ipynb import in_ipynb
 
     if module_exists('tqdm'):
         if type(pbar) == bool:

@@ -139,8 +139,8 @@ class __Simulation__(object):
         from os import listdir, symlink
         from shutil import copyfile
 
-        from .. import get_sim
-        from ..io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
+        from pencil import get_sim
+        from pencil.io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
         from pencil import is_sim_dir
 
         # set up paths
@@ -345,7 +345,7 @@ class __Simulation__(object):
         from os.path import exists, join, isdir
         import glob
         from pencil.math import is_int
-        from ..io import mkdir
+        from pencil.io import mkdir
 
         def copyfile(src, dst, DEBUG=False):
             from shutil import copy2
@@ -415,7 +415,7 @@ class __Simulation__(object):
         """
         from os.path import exists
         from os.path import join
-        from ..read import param, grid, dim
+        from pencil.read import param, grid, dim
 
         REEXPORT = False
 
@@ -514,7 +514,7 @@ class __Simulation__(object):
 
     def export(self):
         """Export simulation object to its root/.pc-dir"""
-        from ..io import save
+        from pencil.io import save
         if self == False:
             print('! ERROR: Simulation object is bool object and False!')
 
@@ -631,7 +631,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from ..io import remove_files as remove
+        from pencil.io import remove_files as remove
 
         folder = join(self.path,'src')
         keeps = [f.split('/')[-1] for f in self.components+self.optionals]
@@ -655,7 +655,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join, exists
-        from ..io import remove_files as remove
+        from pencil.io import remove_files as remove
 
         folder = join(self.path,'data')
         keeps = []
@@ -681,7 +681,7 @@ class __Simulation__(object):
         """
         from os import listdir
         from os.path import join
-        from ..io import remove_files as remove
+        from pencil.io import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
         if remove_data:
@@ -800,7 +800,7 @@ class __Simulation__(object):
 
         if DEBUG:
             print('~ DEBUG: Searching through simulation.quantity_searchables ...')
-        from ..io import get_value_from_file
+        from pencil.io import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, sim=self,
                                                        DEBUG=DEBUG, silent=True)
@@ -820,7 +820,7 @@ class __Simulation__(object):
         Args:
             unique_clean:  set True, np.unique is used to clean up the ts,
                            e.g. remove errors at the end of crashed runs"""
-        from ..read import ts
+        from pencil.read import ts
 
         # check if already loaded
         if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] ==\
@@ -838,7 +838,7 @@ class __Simulation__(object):
     def change_value_in_file(self, filename, quantity, newValue, filepath=False,
                              DEBUG=False):
         """Same as pencil.io.change_value_in_file."""
-        from ..io import change_value_in_file
+        from pencil.io import change_value_in_file
 
         return change_value_in_file(filename, quantity, newValue, sim=self,
                                     filepath=filepath, DEBUG=DEBUG)

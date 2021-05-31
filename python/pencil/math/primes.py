@@ -6,8 +6,10 @@
 Find the prime factorization of the simulation grid, useful for checking
 permissible remesh parameters, parallelization options and fft compatibility.
 """
+
 import numpy as np
-from . import natural_sort
+from pencil.math import natural_sort
+
 def prime_factors(n):
     i = 2
     factors = list()

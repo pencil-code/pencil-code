@@ -13,7 +13,7 @@ def sort(simulations, sortby, only_started=False, reverse=False):
     a list with simulation objects in their sorted order
   """
 
-  from ..sim import group
+  from pencil.sim import group
 
   def flatten(l):
       al = []

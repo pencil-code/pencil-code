@@ -106,9 +106,9 @@ def var2h5(newdir, olddir, allfile_names, todatadir, fromdatadir, snap_by_proc,
     from os.path import exists, join
     import numpy as np
     import glob
-    from .. import read
-    from .. import sim
-    from . import write_h5_snapshot
+    from pencil import read
+    from pencil import sim
+    from pencil.io import write_h5_snapshot
     import sys
     import time
     import subprocess as sub

@@ -53,7 +53,7 @@ def var(*args, **kwargs):
 
     """
 
-    from ..sim import __Simulation__
+    from pencil.sim import __Simulation__
 
     started = None
 
@@ -148,8 +148,8 @@ class DataCube(object):
         import os
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
-        from .. import read
-        from ..sim import __Simulation__
+        from pencil import read
+        from pencil.sim import __Simulation__
 
         def persist(self, infile=None, precision='d', quiet=quiet):
             """An open Fortran file potentially containing persistent variables appended

@@ -226,7 +226,7 @@ class Averages(object):
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from .. import read
+        from pencil import read
 
         # Read the data
         if l_h5:
@@ -404,7 +404,7 @@ class Averages(object):
 
         import os
         import numpy as np
-        from .. import read
+        from pencil import read
 
         if l_h5:
             import h5py

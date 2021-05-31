@@ -97,7 +97,7 @@ class Grid(object):
         import numpy as np
         import os
         from scipy.io import FortranFile
-        from .. import read
+        from pencil import read
 
         if precision == 'f':
             dtype = np.float32

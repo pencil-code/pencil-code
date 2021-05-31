@@ -97,7 +97,7 @@ class TimeSeries(object):
         import re
 
         if sim:
-            from ..sim import __Simulation__
+            from pencil.sim import __Simulation__
 
             if isinstance(sim, __Simulation__):
                 datadir = sim.datadir

@@ -3,10 +3,13 @@
 # Read phi-average files.
 #
 # Adapted from averages.py by P. Kaepylae (pkaepyl@uni-goettingen.de)
+
 """
 Contains the classes and methods to read phi-averaged files.
 """
+
 import sys
+
 
 def phiaver(*args, **kwargs):
     """
@@ -148,7 +151,7 @@ class Averages(object):
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from .. import read
+        from pencil import read
 
         # Read the data
         if l_h5:

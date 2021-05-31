@@ -5,7 +5,7 @@
 #
 import numpy as np
 import os
-from . import read
+from pencil import read
 
 def sedov_taylor(*args, **kwargs):
     """

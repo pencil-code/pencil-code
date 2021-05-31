@@ -15,16 +15,16 @@
 """
 import numpy as np
 import scipy
-from . import is_vector
+from pencil.ism_dyn import is_vector
 from scipy.interpolate import interp1d
 from pencil.math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
 from pencil.math.derivatives import curl, div, curl2, grad
-from ..calc import fluid_reynolds, magnetic_reynolds
-from ..io import open_h5, group_h5, dataset_h5, mkdir
+from pencil.calc import fluid_reynolds, magnetic_reynolds
+from pencil.io import open_h5, group_h5, dataset_h5, mkdir
 from fileinput import input
 from sys import stdout
 import subprocess as sub
-from .. import read
+from pencil import read
 import os
 
 def derive_stats(sim_path, src, dst, stat_keys=['Rm', 'uu', 'Ms'], par=[],

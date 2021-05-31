@@ -17,12 +17,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 from pencil.math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
 from pencil.math.derivatives import curl, div, curl2, grad
-from ..calc import fluid_reynolds, magnetic_reynolds
-from ..io import open_h5, group_h5, dataset_h5
+from pencil.calc import fluid_reynolds, magnetic_reynolds
+from pencil.io import open_h5, group_h5, dataset_h5
 from fileinput import input
 from sys import stdout
 import subprocess as sub
-from .. import read
+from pencil import read
 import os
 
 def is_vector(key):

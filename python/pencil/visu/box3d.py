@@ -179,7 +179,7 @@ class Box3d(object):
 #        Read the slice files.
 #        """
 #
-#        from ..read import slices
+#        from pencil.read import slices
 #
 #        self.slices = slices(field=self.field, extension=['xy', 'xz', 'yz', 'xy2'],
 #                             datadir=self.datadir)

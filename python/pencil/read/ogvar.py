@@ -14,7 +14,7 @@ some simulation attributes and the data cube.
 """
 
 
-from .varfile import DataCube
+from pencil.read.varfile import DataCube
 
 
 def ogvar(*args, **kwargs):
@@ -48,7 +48,7 @@ def ogvar(*args, **kwargs):
         precision:  Precision of the data. Either float 'f' or double 'd'.
     """
 
-    from ..sim import __Simulation__
+    from pencil.sim import __Simulation__
 
     started = None
 

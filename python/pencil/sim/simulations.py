@@ -73,11 +73,11 @@ class __Simulations__(object):
         """
 
         from pencil.math import is_iterable
-        from .simulation import __Simulation__
-        from .simulation import simulation
+        from pencil.sim.simulation import __Simulation__
+        from pencil.sim.simulation import simulation
         import numpy as np
-        from ..io import debug_breakpoint
-        from .. import get_sim
+        from pencil.io import debug_breakpoint
+        from pencil import get_sim
 
         for arg in args:
 

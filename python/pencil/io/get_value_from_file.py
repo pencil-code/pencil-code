@@ -21,9 +21,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, 
     import os
     import numpy as np
     from os.path import join, abspath, exists, split, isfile
-    from .. import get_sim
+    from pencil import get_sim
     from pencil.math import is_number, is_float, is_int
-    from ..io import timestamp, debug_breakpoint, mkdir
+    from pencil.io import timestamp, debug_breakpoint, mkdir
     import re
     import copy
 

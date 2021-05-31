@@ -71,7 +71,7 @@ class Index(object):
         import os
         import re
         import numpy as np
-        from .. import read
+        from pencil import read
 
         if param is None:
             param = read.param(datadir=datadir, quiet=True)

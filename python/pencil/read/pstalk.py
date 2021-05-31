@@ -40,7 +40,7 @@ class ParticleStalkData(object):
         import numpy as np
         import os
         from os.path import join
-        from .. import get_sim
+        from pencil import get_sim
 
         if datadir == False:
             if sim == False:
@@ -99,10 +99,10 @@ class ParticleStalkData(object):
                 print('! ')
                 print('~ BACKUP SOLUTION: reading pstalk via pidly, starting IDL..')
 
-                from ..backpack import pidly
+                from pencil.backpack import pidly
                 IDL = pidly.IDL(long_delay=0.05)	# start IDL engine
                 from scipy.io.idl import readsav
-                from ..io import mkdir
+                from pencil.io import mkdir
 
                 ## read tstalk file
                 print('## reading particle stalker file..')

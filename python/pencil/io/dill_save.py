@@ -6,7 +6,7 @@ def dill_save(obj, name, folder='pc'):
         obj:		object you want to save in an pkl file
         name:		name of pkl file, '.pkl' will be added automatically if missing
     """
-    from .mkdir import mkdir
+    from pencil.io.mkdir import mkdir
     from os import remove
     from os.path import join, exists
     import dill

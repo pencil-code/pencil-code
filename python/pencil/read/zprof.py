@@ -77,7 +77,7 @@ class ZProfile(object):
 
         import os as os
         import numpy as np
-        from .. import read
+        from pencil import read
 
         if not dim:
             dim = read.dim()

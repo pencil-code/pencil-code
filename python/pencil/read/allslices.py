@@ -119,7 +119,7 @@ class SliceSeries(object):
         import sys
         import numpy as np
         from scipy.io import FortranFile
-        from .. import read
+        from pencil import read
 
         if os.path.exists(os.path.join(datadir, 'grid.h5')):
             l_h5 = True

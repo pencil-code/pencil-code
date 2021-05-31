@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-from .. import read
+from pencil import read
 import numpy as np
 import pylab as plt
 from scipy.io import FortranFile

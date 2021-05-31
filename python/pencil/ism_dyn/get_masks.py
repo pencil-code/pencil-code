@@ -15,8 +15,8 @@
 """
 import numpy as np
 from pencil.math import cpu_optimal
-from ..io import open_h5, group_h5, dataset_h5
-from .. import read
+from pencil.io import open_h5, group_h5, dataset_h5
+from pencil import read
 import os
 
 def thermal_decomposition(

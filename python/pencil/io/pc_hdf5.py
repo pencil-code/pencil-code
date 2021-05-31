@@ -14,7 +14,7 @@ large datasets with memory limits.
 """
 import h5py
 import numpy as np
-from . import mkdir
+from pencil.io import mkdir
 from os.path import exists, join
 from os import remove
 import subprocess as sub

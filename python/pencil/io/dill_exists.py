@@ -8,7 +8,7 @@ def dill_exists(name, folder=False, sim=False):
     sim:        specific simulation where the dill file should be
   """
 
-  from .. import sim
+  from pencil import sim
   from os.path import join, exists
 
   if (not name.endswith('.dill')):	name = name+'.dill'

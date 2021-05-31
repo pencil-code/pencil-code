@@ -2,7 +2,7 @@
 def rename_in_submit_script(new_name, submit_script_path=False, sim=False, old_name=False):
     import os
     from os.path import exists, join, abspath, dirname
-    from ..io import timestamp, get_systemid, mkdir
+    from pencil.io import timestamp, get_systemid, mkdir
 
     if submit_script_path != False:
         path = dirname(abspath(submit_script_path))

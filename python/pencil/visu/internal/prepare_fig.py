@@ -11,8 +11,8 @@ def preparePlot(x_datasets, y_datasets,
   import matplotlib.pyplot as plt
   plt.ioff()
   from pencil import io
-  from ...visu.internal import calc_lims
-  from ...visu.internal import MinorSymLogLocator
+  from pencil.visu.internal import calc_lims
+  from pencil.visu.internal import MinorSymLogLocator
 
   ## ESTIMATE LIMITS
   if np.any(x_errors) and np.shape(x_errors) == np.shape(x_datasets):

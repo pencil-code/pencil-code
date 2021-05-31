@@ -21,7 +21,7 @@ import subprocess as sub
 from sys import stdout
 
 from pencil.math.derivatives import grad
-from ..io import open_h5, group_h5, dataset_h5
+from pencil.io import open_h5, group_h5, dataset_h5
 
 
 def local_remesh(
@@ -315,9 +315,9 @@ def src2dst_remesh(src, dst,
     from os.path import join, abspath
     import time
 
-    from .. import read
-    from ..io import mkdir
-    from . import simulation
+    from pencil import read
+    from pencil.io import mkdir
+    from pencil.sim import simulation
     from pencil.math import cpu_optimal
     from pencil import is_sim_dir
 

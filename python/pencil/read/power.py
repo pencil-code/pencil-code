@@ -90,7 +90,7 @@ class Power(object):
         import os
         import os.path as op
         import numpy as np
-        from .. import read
+        from pencil import read
         import sys
         import matplotlib as plt
 
