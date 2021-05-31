@@ -105,6 +105,7 @@ module Special
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lnonlinear_source=.false.
   logical :: lonly_mag=.false.
+  logical :: lstress=.true.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0.
 !
@@ -129,7 +130,7 @@ module Special
     lelectmag, tau_stress_kick, fac_stress_kick, delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
-    linflation, lreheating_GW, &
+    lstress, linflation, lreheating_GW, &
     lnonlinear_source, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -484,30 +485,32 @@ module Special
 !  Construct stress tensor; notice opposite signs for u and b.
 !
       p%stress_ij=0.0
-      do j=1,3
-      do i=1,j
-        ij=ij_table(i,j)
-        if (lonly_mag) then
-          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-        else
-          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
-          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-          if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-        endif
+      if (lstress) then
+        do j=1,3
+        do i=1,j
+          ij=ij_table(i,j)
+          if (lonly_mag) then
+            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+          else
+            if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+            if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+          endif
 !
 !  Remove trace.
 !
-        if (i==j) then
-          if (lonly_mag) then  
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-          else
-            if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-            if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+          if (i==j) then
+            if (lonly_mag) then  
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+            else
+              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+              if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+            endif
           endif
-        endif
-      enddo
-      enddo
+        enddo
+        enddo
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
