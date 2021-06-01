@@ -156,6 +156,7 @@ my %tests = (
                          testfield_nonlin_z
                          spherical-convection
                          spherical-convection-corona
+                         meanfield_special_e_tensor_GCD
 			 dust-accretion
 			 superparticle_condensation
 			 superparticle-coagulation
