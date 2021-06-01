@@ -208,6 +208,7 @@ module Testfield
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
   integer :: idiag_E22rms=0     ! DIAG_DOC: $\left<{\cal E}_{22}^2\right>^{1/2}$
   integer :: idiag_E0rms=0      ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
+  integer :: idiag_E0mrms=0     ! DIAG_DOC: $\left<\mean{{\cal E}_{0}}^2\right>^{1/2}$
   integer :: idiag_Ex11pt=0     ! DIAG_DOC: ${\cal E}_x^{11}$
   integer :: idiag_Ex21pt=0     ! DIAG_DOC: ${\cal E}_x^{21}$
   integer :: idiag_Ex12pt=0     ! DIAG_DOC: ${\cal E}_x^{12}$
@@ -1345,6 +1346,7 @@ module Testfield
                                              +uxbtestmz(nl,2,iE0)*p%oo(:,2) &
                                              +uxbtestmz(nl,3,iE0)*p%oo(:,3),idiag_E0Wm)
         endif
+        if (iE0/=0.and.idiag_E0mrms/=0) call sum_mn_name(sum(uxbtestmz(nl,:,iE0)**2)*unity,idiag_E0mrms,lsqrt=.true.)
 !
 !  diagnostics for delta function driving, but doesn't seem to work
 !
@@ -2195,7 +2197,7 @@ mn:   do n=n1,n2
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0
+        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0; idiag_E0mrms=0
         idiag_u0max=0; idiag_b0max=0; idiag_h0max=0; idiag_rho0m=0; idiag_bhrms=0
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
@@ -2312,6 +2314,7 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'E12rms',idiag_E12rms)
         call parse_name(iname,cname(iname),cform(iname),'E22rms',idiag_E22rms)
         call parse_name(iname,cname(iname),cform(iname),'E0rms',idiag_E0rms)
+        call parse_name(iname,cname(iname),cform(iname),'E0mrms',idiag_E0mrms)
         call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
         call parse_name(iname,cname(iname),cform(iname),'E0Um',idiag_E0Um)
         call parse_name(iname,cname(iname),cform(iname),'E0Wm',idiag_E0Wm)
