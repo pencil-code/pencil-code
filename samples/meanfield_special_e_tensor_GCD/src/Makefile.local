@@ -4,7 +4,7 @@
 ###
 
 MPICOMM   =   mpicomm
-FILE_IO   =   file_io_f2003
+FILE_IO   =   file_io_f95
 IO        =   io_dist
 GLOBAL    = noglobal
 FFT       = nofft
