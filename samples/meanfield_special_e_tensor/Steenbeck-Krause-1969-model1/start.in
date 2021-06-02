@@ -6,7 +6,7 @@
   coord_system='spherical'
   lperi=F, F, T
   xyz0=0.625,0.261799,0.
-  xyz1=1.0,2.87979,0.
+  xyz1=1.0,2.87979,6.2831855
   bcx='s:a','spr:nfr','spr:nfr'
   bcy='s','a','a'
 /

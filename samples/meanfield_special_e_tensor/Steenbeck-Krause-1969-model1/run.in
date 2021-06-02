@@ -7,6 +7,7 @@
   nt=50001, it1=1000, dt=2.5e-5, isave=50000, itorder=3
   d2davg=5.0e-2, 
   slice_position='s', xtop_slice=0.98, ytop_slice=1.57
+  lpencil_check_small=F ! works for me only with F
 /
 &eos_run_pars
 /
@@ -18,9 +19,9 @@
 
 &special_run_pars
   lalpha=T
-  lutensor=T
+  lumean=T
   alpha_name='Steenbeck-Krause-1969-model1'
   alpha_scale=0.4e-1
-  utensor_name='Steenbeck-Krause-1969-model1'
-  utensor_scale=51750e-1
+  umean_name='Steenbeck-Krause-1969-model1'
+  umean_scale=51750e-1
 /
