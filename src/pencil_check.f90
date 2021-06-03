@@ -132,8 +132,10 @@ module Pencil_check
       endif
       call stop_it_if_any(.false.,'')
 !
-      if (notanumber(dt1_max_ref)) &
+      if (ldt) then
+        if (notanumber(dt1_max_ref)) &
           print*, 'pencil_consistency_check: NaNs in "dt1_max_ref"'
+      endif
 !
       nite=npencils
       if ((.not.lpencil_check).and.lpencil_check_small) nite=0
@@ -186,12 +188,14 @@ module Pencil_check
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
-        do i=1,nx
-          if (dt1_max(i)/=dt1_max_ref(i)) then
-            lconsistent=.false.
-            exit
-          endif
-        enddo
+        if (ldt) then
+          do i=1,nx
+            if (dt1_max(i)/=dt1_max_ref(i)) then
+              lconsistent=.false.
+              exit
+            endif
+          enddo
+        endif
         if (lconsistent) then
 f_loop:   do iv=1,mvar
             do k=n1,n2; do j=m1,m2; do i=l1,l2
@@ -280,12 +284,14 @@ f_loop:   do iv=1,mvar
 !
       lconsistent=.true.
       lconsistent_allproc=.false.
-      do i=1,nx
-        if (dt1_max(i)/=dt1_max_ref(i)) then
-          lconsistent=.false.
-          exit
-        endif
-      enddo
+      if (ldt) then
+        do i=1,nx
+          if (dt1_max(i)/=dt1_max_ref(i)) then
+            lconsistent=.false.
+            exit
+          endif
+        enddo
+      endif
       if (lconsistent) then
 f_lop:  do iv=1,mvar
           do k=n1,n2; do j=m1,m2; do i=l1,l2
