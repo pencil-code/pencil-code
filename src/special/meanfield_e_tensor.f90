@@ -45,7 +45,7 @@ module Special
 !
   include '../special.h'
 
-  real, dimension(nx) :: diffus_special, advec_special
+  real, dimension(nx) :: diffus_special=0., advec_special=0.
 
   ! HDF debug parameters:
 
@@ -1885,9 +1885,6 @@ endif
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
-
-        advec_special=0.0
-        diffus_special=0.0
 !
 ! Calculate advec_special
 !
@@ -2023,7 +2020,11 @@ endif
       tensor_counts(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
       tensor_memcounts(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
       tensor_memdims(tensor_id,1:4) = [ dataload_len, nx_stored, ny_stored, nz_stored ]
-      tensor_offsets(tensor_id,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, ipz*nz_stored ]
+      if (nz_stored == 1) then
+        tensor_offsets(tensor_id,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, 0 ]
+      else
+        tensor_offsets(tensor_id,1:4) = [ 0, ipx*nx_stored, ipy*ny_stored, ipz*nz_stored ]
+      endif
 
       if (tensor_times_len==-1) then
         tensor_times_len=dimsizes(1)
