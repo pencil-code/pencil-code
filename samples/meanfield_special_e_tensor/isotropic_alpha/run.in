@@ -1,3 +1,4 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  isotropic alpha
 !
@@ -12,7 +13,7 @@
 &magnetic_run_pars
   eta=1.0e-1
   llorentzforce=F
-  lweyl_gauge=T
+!  lweyl_gauge=T
   lcovariant_magnetic=T
 /
 &special_run_pars
