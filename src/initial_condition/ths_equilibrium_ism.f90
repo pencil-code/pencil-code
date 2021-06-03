@@ -86,8 +86,10 @@ module InitialCondition
 !  Includes neutral hydrogen and warm ionized hydrogen plus helium 
 !  proportionately. Multiply by m_u_cgs for gas density
 !
-  real, parameter, dimension(5) :: nfraction_cgs = (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/) ! particles per cm cubed normalized to 1 at midplane 
-  real, parameter, dimension(5) :: hscale_cgs = (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/) ! scale height in cm
+  real, parameter, dimension(5) :: nfraction_cgs = & ! particles per cm cubed normalized to 1 at midplane 
+                                      (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/)
+  real, parameter, dimension(5) :: hscale_cgs = & ! scale height in cm
+                       (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
   real, dimension(5) :: rho_fraction, hscale 
 !
 !  Heating function, cooling function and mass movement
