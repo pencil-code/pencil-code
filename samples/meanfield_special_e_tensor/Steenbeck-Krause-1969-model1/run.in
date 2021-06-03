@@ -7,14 +7,15 @@
   nt=50001, it1=1000, dt=2.5e-5, isave=50000, itorder=3
   d2davg=5.0e-2, 
   slice_position='s', xtop_slice=0.98, ytop_slice=1.57
-  lpencil_check_small=F ! works for me only with F
+  lpencil_check=T
+
 /
 &eos_run_pars
 /
 &magnetic_run_pars
   eta=1.0e-1
   llorentzforce=F
-  lweyl_gauge=T
+!  lweyl_gauge=T
 /
 
 &special_run_pars
