@@ -65,7 +65,7 @@ program run
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu
   use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
@@ -213,7 +213,7 @@ program run
 !
   call register_modules
   if (lparticles) call particles_register_modules
-  call alloc
+  call initialize
 !
   call register_gpu(f) 
 !
@@ -815,8 +815,7 @@ program run
 !  and won't be saved!
 !
     if ((it<nt) .and. (dt<dtmin)) then
-      if (lroot) &
-          write(*,*) ' Time step has become too short: dt = ', dt
+      if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
       save_lastsnap=.false.
       exit Time_loop
     endif
@@ -860,6 +859,16 @@ program run
   endif
 !
   if (.not.lnowrite) then
+
+    if (ncoarse>1) then
+      call update_ghosts(f)
+      if (lcoarse) then
+        call coarsegrid_interp(f)
+        lcoarse=.false.
+      endif
+      call update_ghosts(f)
+    endif
+
     if (save_lastsnap) then
       if (lparticles) &
           call write_snapshot_particles(f,ENUM=.false.)
@@ -937,7 +946,7 @@ program run
   call chemistry_clean_up
   call NSCBC_clean_up
   if (lparticles) call particles_cleanup
-  !deallocate(f,df)
+  call finalize 
 !
 endprogram run
 !**************************************************************************
