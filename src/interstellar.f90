@@ -3284,7 +3284,7 @@ module Interstellar
       integer :: i, mpiierr
 !
       SNR%indx%state=SNstate_exploding
-      c_SN=0.;cmass_SN=0.;cvelocity_SN=0.;ecr_SN=0.
+      c_SN=0.;cmass_SN=0.;cvelocity_SN=0.;ecr_SN=0.;cmass_tmp=0.
 !
 !  Identifier
 !
@@ -3374,7 +3374,7 @@ module Interstellar
 !  losses correction ref Simpson et al. 2015 ApJ 809:69 Eq. 16.
 !
       etmp=eampl_SN; ktmp=kampl_SN
-      if (RPDS<1.5*SNR%feat%radius.and.lSN_autofrackin) then
+      if (RPDS<SNR%feat%radius.and.lSN_autofrackin) then
         if (SNR%feat%rhom>0.8*m_H_cgs/unit_density.and.&
             SNR%feat%dr>pc_cgs/unit_length) then
           frackin = kfrac_norm*SNR%feat%rhom*RPDS**7/ampl_SN/&
@@ -3505,7 +3505,7 @@ module Interstellar
 !
 !  Get the unperturbed energy and then add thermal energy if lSN_eth.
 !  Check max temperature in dense remnant does not exceed TT_SN_max.
-!  Check max temperature within 3 sigma of any remant does
+!  Check max temperature within Nsigma of any remant does
 !  not exceed TT_SN_max*SN_TT_ratio.
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
@@ -3515,59 +3515,45 @@ module Interstellar
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
           maskedlnTT=lnTT
+          where (dr2_SN>energy_Nsigma**2*radius2) maskedlnTT=-10.0
+          maxTT=maxval(exp(maskedlnTT))
           if (SNR%feat%radius<=1.1*rfactor_SN*SNR%feat%dr) then
-            where (dr2_SN>energy_Nsigma**2*radius2) maskedlnTT=-10.0 !dense remnant
-            maxTT=maxval(exp(maskedlnTT))
+            !dense remnant
             if (maxTT>TT_SN_max) then
+              if (present(ierr)) then
+                ierr=iEXPLOSION_TOO_HOT
+                maxlnTT=max(log(maxTT),maxlnTT)
+                if (.not.lSN_list) exit
+              endif
+            endif
+            maxlnTT=max(log(maxTT),maxlnTT)
+          else
+            !diffuse remnants
+            if (maxTT>SN_TT_ratio*TT_SN_max) then
               if (lSN_coolingmass) then
-                rho_max=maxval(rho_old)*maxTT/TT_SN_max
+                rho_max=maxval(rho_old)*maxTT/SN_TT_ratio/TT_SN_max
                 do i=1,nx
                   if (exp(maskedlnTT(i))==maxTT) then
-                    if (rho_old(i)*maxTT/TT_SN_max<=rho_max) then
-                      rho_max=rho_old(i)*maxTT/TT_SN_max
-                      rho_hot=rho_old(i)*maxTT/TT_SN_max - rho_old(i)
+                    if (rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max<=rho_max) then
+                      rho_max=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max
                       rad_hot=dr2_SN(i)
+                      rho_hot=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max - rho_old(i)
                       call getmass_SN(rho_hot,rad_hot,width_mass,cmass_tmp)
                     endif
                   endif
                 enddo
                 max_cmass=max(max_cmass,cmass_tmp)
-                maxTT=TT_SN_max
+                maxTT=SN_TT_ratio*TT_SN_max
               else
                 if (present(ierr)) then
                   ierr=iEXPLOSION_TOO_HOT
+                  maxlnTT=max(log(maxTT),maxlnTT)
                   if (.not.lSN_list) exit
                 endif
               endif
             endif
+            maxlnTT=max(log(maxTT),maxlnTT)
           endif
-          maxlnTT=max(log(maxTT),maxlnTT)
-          maskedlnTT=lnTT
-          where (dr2_SN>energy_Nsigma**2*radius2) maskedlnTT=-10.0 !all remnants
-          maxTT=maxval(exp(maskedlnTT))
-          if (maxTT>SN_TT_ratio*TT_SN_max) then
-            if (lSN_coolingmass) then
-              rho_max=maxval(rho_old)*maxTT/SN_TT_ratio/TT_SN_max
-              do i=1,nx
-                if (exp(maskedlnTT(i))==maxTT) then
-                  if (rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max<=rho_max) then
-                    rho_max=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max
-                    rad_hot=dr2_SN(i)
-                    rho_hot=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max - rho_old(i)
-                    call getmass_SN(rho_hot,rad_hot,width_mass,cmass_tmp)
-                  endif
-                endif
-              enddo
-              max_cmass=max(max_cmass,cmass_tmp)
-              maxTT=SN_TT_ratio*TT_SN_max
-            else
-              if (present(ierr)) then
-                ierr=iEXPLOSION_TOO_HOT
-                if (.not.lSN_list) exit
-              endif
-            endif
-          endif
-          maxlnTT=max(log(maxTT),maxlnTT)
         endif
       enddo
       enddo
