@@ -564,6 +564,7 @@ module Magnetic
   integer :: idiag_bxbzm=0      ! DIAG_DOC:
   integer :: idiag_bybzm=0      ! DIAG_DOC:
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
+  integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two mplementations of covariant derivatives                                  
   integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $yz$-averaged
@@ -1139,7 +1140,7 @@ module Magnetic
 !  Shear of B_ext,x is not implemented.
 !
       if (lshear .and. B_ext(1) /= 0.0) &
-        call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
+        call warning('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
@@ -1905,7 +1906,7 @@ module Magnetic
       real, dimension (:,:), allocatable :: yz
 
       real :: beq2,RFPradB12,RFPradJ12
-      real :: s,c,sph_har_der
+      real :: s,c,sph,sph_har_der
       real :: cosalp, sinalp
       integer :: j,iyz,llp1
       logical :: lvectorpotential=.true.
@@ -2304,7 +2305,6 @@ module Magnetic
             iyz=1
             do m=m1,m2
               do n=n1,n2
-!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
                 bb(:,1)=amplaa(j)*llp1*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
                 bb(:,2)=amplaa(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) then
@@ -2319,10 +2319,11 @@ module Magnetic
           else
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,iax) = amplaa(j)*llp1*tmpx*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                sph=ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                f(l1:l2,m,n,iax) = amplaa(j)*llp1*tmpx*sph
                 f(l1:l2,m,n,iay) = amplaa(j)*prof*sph_har_der
-                if (mm_sh(j)/=0) &      ! tb improved!
-                  f(l1:l2,m,n,iaz) = -amplaa(j)*prof*mm_sh(j)/sinth(m)*sinph(n)/cosph(n)
+                if (mm_sh(j)/=0) &      ! as phi-dependence is cos(m*phi)
+                  f(l1:l2,m,n,iaz) = -amplaa(j)*prof*mm_sh(j)*sph/sinth(m)*sin(mm_sh(j)*z(n))/cos(mm_sh(j)*z(n))
               enddo
             enddo
           endif
@@ -2792,6 +2793,12 @@ module Magnetic
           .or. idiag_b1b32m/=0 .or. idiag_b1b23m/=0 &
           .or. idiag_b2b13m/=0 .or. idiag_b2b31m/=0 ) &
           lpenc_diagnos(i_bij)=.true.
+!
+      if (lcovariant_magnetic.and.idiag_bij_cov_diffmax/=0) then
+        lpenc_diagnos(i_bij)=.true.
+        lpenc_diagnos(i_bijtilde)=.true.
+        lpenc_diagnos(i_bij_cov_corr)=.true.
+      endif
 !
       if (idiag_divamz/=0 .or. idiag_bzdivamz/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_bzdivamz/=0) lpenc_diagnos(i_bb)=.true.
@@ -4681,6 +4688,11 @@ module Magnetic
         dAdt = dAdt-LLambda_aa*p%aa
       endif
 !
+!SLD      if (lmagnetic_slope_limited.and.llast) then
+!SLD        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
+!SLD        if (lohmic_heat) then
+!SLD          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
+!SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
 !   Slope limited diffusion for magnetic field
 !
         if (lmagnetic_slope_limited.and.llast) then
@@ -5789,6 +5801,15 @@ module Magnetic
         call sum_mn_name(tmp1,idiag_vmagfricrms,lsqrt=.true.)
       endif
 !
+!  Maximum difference of covariant B_i,j from bij and from bijtilde+bij_cov_corr
+! 
+      if (idiag_bij_cov_diffmax/=0) &
+        call max_mn_name(maxval(maxval(abs(p%bij-(p%bijtilde+p%bij_cov_corr)),3),2),idiag_bij_cov_diffmax)   !not ok
+        !call max_mn_name(maxval(abs(p%bij(:,:,3)-(p%bijtilde(:,:,3)+p%bij_cov_corr(:,:,3))),2),idiag_bij_cov_diffmax) !ok
+        !call max_mn_name(maxval(abs(p%bij(:,:,2)-(p%bijtilde(:,:,2)+p%bij_cov_corr(:,:,2))),2),idiag_bij_cov_diffmax) !ok
+        !call max_mn_name(maxval(abs(p%bij(:,2:3,1)-(p%bijtilde(:,2:3,1)+p%bij_cov_corr(:,2:3,1))),2),idiag_bij_cov_diffmax) !ok
+        !call max_mn_name(abs(p%bij(:,1,1)-(p%bijtilde(:,1,1)+p%bij_cov_corr(:,1,1))),idiag_bij_cov_diffmax) !not ok
+!
 !  Magnetic triple correlation term (for imposed field).
 !
       if (idiag_jxbxbm/=0) then
@@ -6491,6 +6512,27 @@ module Magnetic
           enddo
         enddo
       endif
+!
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the
+!  auxilaries variables in the f array (done above).
+!
+!SLD      if (lmagnetic_slope_limited.and.llast) then
+!
+!SLD        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!
+!SLD        do j=1,3
+
+!SLD          call calc_all_diff_fluxes(f,iaa+j-1,islope_limiter,h_slope_limited)
+
+!SLD          do n=n1,n2; do m=m1,m2
+!SLD            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
+!SLD          enddo; enddo
+
+!SLD        enddo
+
+!SLD      endif
 !
 !  Compute eta_smag and put into auxilliary variable
 !
@@ -9192,6 +9234,7 @@ module Magnetic
         idiag_jxmax=0; idiag_jymax=0; idiag_jzmax=0
         idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
         idiag_divarms = 0
+        idiag_bij_cov_diffmax=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_betamz = 0; idiag_beta2mz = 0
@@ -9426,6 +9469,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
         call parse_name(iname,cname(iname),cform(iname),'djuidjbim',idiag_djuidjbim)
+        call parse_name(iname,cname(iname),cform(iname),'bij_cov_diffmax',idiag_bij_cov_diffmax)
         call parse_name(iname,cname(iname),cform(iname),'jxbrxm',idiag_jxbrxm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrym',idiag_jxbrym)
         call parse_name(iname,cname(iname),cform(iname),'jxbrzm',idiag_jxbrzm)
@@ -9548,7 +9592,8 @@ module Magnetic
 !
       if (idiag_exabot/=0) call set_type(idiag_exabot,lint=.true.)
       if (idiag_exatop/=0) call set_type(idiag_exatop,lint=.true.)
-
+!
+      if (lactive_dimension(3)) idiag_bij_cov_diffmax=0
       if (idiag_b2tm/=0) then
         if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
         !idiag_b2tm=0
