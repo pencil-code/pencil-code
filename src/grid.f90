@@ -1289,7 +1289,9 @@ module Grid
 !
 ! Check max possible ncoarse.
 !
-      if (ncoarse>nz/nghost) then
+      if (nzgrid==1) then       ! switch off coarsening if no z-extent
+        ncoarse=0
+      elseif (ncoarse>nz/nghost) then
         ncoarse=nz/nghost
         call warning('initialize_grid','there are jumped-over processors due to grid coarsening'// &
                      ' -> ncoarse reduced to floor(nz/nghost)='//trim(itoa(ncoarse)))
@@ -1451,9 +1453,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
             do ll=l1,l2
               do iv=iv1,iv2
                 f(ll,mm,nn,iv) = sum(ws*f(ll,mm,neighs,iv))
-if (ll==0.and.iv==1) then
-  write(iproc+50,'(i3,7(e14.7,1x))') nn, f(ll,mm,nn,iv), sum(ws*f(ll,mm,neighs,iv)), f(ll,mm,neighs,iv)
-endif
+!if (ll==0.and.iv==5) then
+!  write(iproc+50,'(i3,7(e14.7,1x))') nn, f(ll,mm,nn,iv), sum(ws*f(ll,mm,neighs,iv)), f(ll,mm,neighs,iv)
+!endif
               enddo
             enddo
           endif
