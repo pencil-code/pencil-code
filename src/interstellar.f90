@@ -3595,13 +3595,15 @@ module Interstellar
           call mpiallreduce_sum(dmpi2_tmp,dmpi2,3)
           SNR%feat%MM=dmpi2(1)
           if (SNR%feat%MM>Nsol_added*solar_mass) then
-            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f11.3)',Nsol_added,SNR%feat%MM/solar_mass
+            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f11.3)', &
+                                          Nsol_added,SNR%feat%MM/solar_mass
             ierr=iEXPLOSION_TOO_HOT
             if (.not.lSN_list) return
             cmass_SN = cmass_SN*Nsol_added*solar_mass/SNR%feat%MM
           else
             ierr=iEXPLOSION_OK 
-            if (lroot.and.ip==1963) print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')",SNR%feat%MM/solar_mass
+            if (lroot.and.ip==1963) print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')", &
+                                            SNR%feat%MM/solar_mass
           endif
         endif
       endif
