@@ -2,13 +2,20 @@
 
   use Cparam
 
-  real, dimension (mx,my,mz,mfarray), public :: f
-  real, dimension (mx,my,mz,mvar), public :: df
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,mvar) :: df
+
+  public :: f,df
+  public :: initialize, finalize
 
   contains
-!***********************************************'
-  subroutine alloc 
+!***********************************************
+  subroutine initialize
 
-  endsubroutine alloc 
-!***********************************************'
+  endsubroutine initialize
+!***********************************************
+  subroutine finalize
+
+  endsubroutine finalize
+!***********************************************
   endmodule
