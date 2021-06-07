@@ -2669,6 +2669,8 @@ module Sub
       do i=1,3
         do j=1,3
           call der2(f,iref1+i,d2A(:,j,j,i),j)
+!if (maxval(abs(d2A(:,j,j,i)))>0) print*, 'd2A:iproc,m,n,i,j,iref1+i=', &
+!iproc,m,n,i,j,iref1+i
         enddo
         call derij(f,iref1+i,d2A(:,2,3,i),2,3); d2A(:,3,2,i)=d2A(:,2,3,i)
         call derij(f,iref1+i,d2A(:,3,1,i),3,1); d2A(:,1,3,i)=d2A(:,3,1,i)
@@ -3037,7 +3039,7 @@ module Sub
 !
 !  13-jun-05/anders: adapted from del6
 !
-      use Deriv, only: der6_other
+      use Deriv, only: der6
 !
       intent(in) :: f
       intent(out) :: del6f
@@ -3045,9 +3047,9 @@ module Sub
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
 !
-      call der6_other(f,d6fdx,1)
-      call der6_other(f,d6fdy,2)
-      call der6_other(f,d6fdz,3)
+      call der6(f,d6fdx,1)
+      call der6(f,d6fdy,2)
+      call der6(f,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
 !
 !  Exit if this is requested for non-cartesian runs.
@@ -6791,7 +6793,7 @@ nameloop: do
         else
 !
           if (lequidist(j) .or. lignore_nonequi) then
-            call der6(f,k,del6f(1,j),j,UPWIND=.true.)
+            call der6(f,k,del6f(:,j),j,UPWIND=.true.)
           else
             where(hh(:,j)>=0)
               indxs = 7
