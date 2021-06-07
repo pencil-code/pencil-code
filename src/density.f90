@@ -344,7 +344,7 @@ module Density
 !
       use EquationOfState, only: select_eos_variable
       use BorderProfiles, only: request_border_driving
-      use Deriv, only: der_pencil,der2_pencil
+      use Deriv, only: der,der2
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc,step
@@ -649,7 +649,7 @@ module Density
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
           call warning('initialize_density', &
-              'Depricated: lmassdiff_fix now the default!', 0)
+              'Deprecated: lmassdiff_fix now the default!', 0)
         endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
@@ -715,8 +715,8 @@ module Density
 !  Need to precalculate some terms for anti shock diffusion.
 !
         if (lanti_shockdiffusion) then
-          call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
-          call der2_pencil(3,lnrho_init_z,del2lnrho_glnrho2_init_z(n1:n2))
+          call der(3,lnrho_init_z,dlnrhodz_init_z)
+          call der2(3,lnrho_init_z,del2lnrho_glnrho2_init_z(n1:n2))
           del2lnrho_glnrho2_init_z=del2lnrho_glnrho2_init_z+dlnrhodz_init_z**2
         endif
       endif
