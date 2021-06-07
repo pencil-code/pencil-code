@@ -18,8 +18,8 @@ module Deriv
 !
   public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
-  public :: der6_other, der_pencil, der2_pencil, der6_pencil
   public :: der4i2j,der2i2j2k,der3i3j,der3i2j1k,der4i1j1k
+  public :: der_pencil, der2_pencil, der6_pencil
   public :: deri_3d_inds
   public :: der_x,der2_x
   public :: der_z,der2_z
@@ -45,11 +45,19 @@ module Deriv
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
+    module procedure der_pencil ! derivative of a pencil
   endinterface
 !
-  interface der2                 ! Overload the der function
+  interface der2                 ! Overload the der2 function
     module procedure der2_main   ! derivative of an 'mvar' variable
     module procedure der2_other  ! derivative of another field
+    module procedure der2_pencil ! derivative of a penci
+  endinterface
+!
+  interface der6                 ! Overload the der6 function
+    module procedure der6_main   ! derivative of an 'mvar' variable
+    module procedure der6_other  ! derivative of another field
+    module procedure der6_pencil ! derivative of a pencil
   endinterface
 !
   interface derij                 ! Overload the der function
@@ -893,7 +901,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind)
 !
 !  Calculate 6th derivative of a scalar, get scalar.
 !  Used for hyperdiffusion that affects small wave numbers as little as
@@ -927,7 +935,7 @@ module Deriv
 !
       if (present(upwind)) then
         if (.not. lequidist(j).and..not.lignore_nonequi) &
-          call fatal_error('der6','upwind cannot be used with '//&
+          call fatal_error('der6_main','upwind cannot be used with '//&
                            'non-equidistant grid.')
         upwnd = upwind
       else
@@ -1003,7 +1011,7 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der6
+    endsubroutine der6_main
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
