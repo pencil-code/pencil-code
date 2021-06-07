@@ -34,7 +34,7 @@ module power_spectrum
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
-  logical :: lread_gauss_quadrature=.false.
+  logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
@@ -51,7 +51,7 @@ module power_spectrum
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
-      lread_gauss_quadrature, legendre_lmax
+      lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation
 !
   contains
 !***********************************************************************
@@ -4165,6 +4165,7 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
+  integer :: nshear, jkx,jky
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
@@ -4175,6 +4176,8 @@ endsubroutine pdf
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: correlation,correlation_sum
+  real, dimension(nxgrid) :: correlationhel,correlationhel_sum
   real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
   real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   real, dimension(nxgrid) :: kx
@@ -4203,6 +4206,10 @@ endsubroutine pdf
   spectrum_sum=0.
   spectrumhel=0.
   spectrumhel_sum=0.
+  correlation=0.
+  correlation_sum=0.
+  correlationhel=0.
+  correlationhel_sum=0.
   !
   if (lcylindrical_spectra) then
     cyl_spectrum=0.
@@ -4235,7 +4242,7 @@ endsubroutine pdf
       if (iuut==0) call fatal_error('power_cor','iuut=0')
       h_re=0.
       ht_re=0.
-      !  helicity is a scalar and thus only computed at ivec=1
+      !  helicity or helicity density is a scalar and only computed at ivec=1
       if (ivec==1) then
         do jvec=1,3
           do n=n1,n2
@@ -4267,12 +4274,46 @@ endsubroutine pdf
                 a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
           enddo; enddo; enddo
         enddo
-        a_re=ht_re; b_re=h_re
+        a_re=ht_re
+        b_re=h_re
       else
-        a_re=0.; b_re=0.
+        a_re=0.
+        b_re=0.
       endif
-      a_im=0.; b_im=0.
+      a_im=0.
+      b_im=0.
     endif
+!
+!  Transform b_re to the shear frame. a_re has been recorded and
+!  transformed at some previous time using lvart_in_shear_frame=T.
+!  Because we shift in the y direction, we need nprocy=1.
+!
+    if (lshear_frame_correlation) then
+      if (.not. lshear) call fatal_error('powerhel','lshear=F; cannot do frame transform')
+      if (nprocy/=1) call fatal_error('powerhel','nprocy=1 required for lshear_frame_correlation')
+      do ikx=l1,l2
+        nshear=nint( deltay/dy * x(ikx)/Lx )
+        do iky=1,ny
+          jky=mod(iky-nshear,ny)
+          if (jky<=0) jky=jky+ny
+          b_im(ikx-nghost,iky,:)=b_re(ikx-nghost,jky,:)
+        enddo
+      enddo
+      b_re=b_im
+      b_im(:,:,:)=0.
+    endif
+!
+!  before doing fft, compute real-space correlation
+!
+    do ikx=1,nx
+      do iky=1,ny
+        do ikz=1,nz
+          jkx=ikx+ipx*nx
+          correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+          correlationhel(jkx)= correlationhel(jkx) +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+        enddo
+      enddo
+    enddo
 !
 !  Doing the Fourier transform
 !
@@ -4348,6 +4389,9 @@ endsubroutine pdf
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !  real-space correlation
+  call mpireduce_sum(correlation,correlation_sum,nxgrid)
+  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid)
   !
   if (lcylindrical_spectra) then
     call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
@@ -4388,6 +4432,33 @@ endsubroutine pdf
     else
       write(1,*) t
       write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    !  real-space correlation
+    !
+    if (ip<10) print*,'Writing power_cor correlation ',sp &
+        ,' to ',trim(datadir)//'/correlation_'//trim(sp)//'.dat'
+    !
+    open(1,file=trim(datadir)//'/correlation_auto_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do ikx=1,nxgrid
+        write(1,'(i4,3p,8e10.2)') ikx, correlation_sum(ikx)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') correlation_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/correlation_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do ikx=1,nxgrid
+        write(1,'(i4,3p,8e10.2)') ikx, correlationhel_sum(ikx)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') correlationhel_sum
     endif
     close(1)
     !

@@ -652,8 +652,6 @@ module Snapshot
         if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
         if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
-        if (uut_spec) call power_cor(f,'uut')
-        if (ouout_spec) call power_cor(f,'ouout')
         if (ro_spec)  call powerscl(f,'ro')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
@@ -793,6 +791,11 @@ module Snapshot
 !
         if (ou_kzspec) call power1d_plane(f,'kin')
         if (ab_kzspec) call power1d_plane(f,'mag')
+!
+!  spectra of two-time correlations
+!
+        if (uut_spec)   call power_cor(f,'uut')
+        if (ouout_spec) call power_cor(f,'ouout')
 !
         lspec=.false.
       endif

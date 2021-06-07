@@ -218,6 +218,7 @@ module Hydro
   logical :: lhelmholtz_decomp=.false.
   logical :: limpose_only_horizontal_uumz=.false.
   logical :: ltime_integrals_always=.true.
+  logical :: lvart_in_shear_frame=.false.
   real :: dtcor=0.
   character (len=labellen) :: uuprof='nothing'
 !
@@ -265,7 +266,7 @@ module Hydro
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
-      ltime_integrals_always, dtcor
+      ltime_integrals_always, dtcor, lvart_in_shear_frame
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4372,32 +4373,67 @@ module Hydro
       intent(inout) :: f
       intent(in) :: p
 !
+      integer :: ikx, nshear, iky
       real :: fact_cos
       real :: fact_sin
-      logical :: lrecord_at_t0=.false.
+      logical :: lreset_vart=.false.
 !
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
 !
+!  reset uut etc. if lreset_vart=.true.
+!
       if (ltime_integrals_always) then
-        if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
-        if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
-        if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
-        if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
+        if (it==1) lreset_vart=.true.
       else
         if (nint(dtcor)<=0.) then
-          if (it==1) lrecord_at_t0=.true.
+          if (it==1) lreset_vart=.true.
         else
-          if (mod(nint(t),nint(dtcor))==1) lrecord_at_t0=.true.
+          if (mod(nint(t),nint(dtcor))==1) lreset_vart=.true.
         endif
-        if (lrecord_at_t0) then
-          if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
-          if (iuxst/=0)             f(l1:l2,m,n,iuxst:iuzst)=0.
-          if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
-          if (ioxst/=0)             f(l1:l2,m,n,ioxst:iozst)=0.
-        endif
-        lrecord_at_t0=.false.
       endif
+!
+!  assign values to uut etc.
+!
+      if (ltime_integrals_always) then
+        if (lreset_vart) then
+          if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =0.
+          if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
+          if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =0.
+          if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=0.
+        else
+          if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
+          if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
+          if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)  +dt*p%oo*fact_cos
+          if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
+        endif
+      else
+        if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
+        if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=0.
+        if (lreset_vart) then
+          if (lvart_in_shear_frame) then
+            !
+            !  store iuut etc. in the shear frame
+            !  Must have nprocy=1 because we shift in the y direction
+            !
+            if (.not. lshear) call fatal_error('time_integrals_hydro',&
+                'lshear=F; cannot do frame transform')
+            if (nprocy/=1) call fatal_error&
+                ('time_integrals_hydro','nprocy=1 required for lvart_in_shear_frame')
+            do ikx=l1,l2
+              nshear=nint( deltay/dy * x(ikx)/Lx )
+              iky=mod(m-nshear,ny)
+              if (iky<=0) iky=iky+ny
+              if (iuxt/=0)              f(ikx,m,n,iuxt:iuzt) = f(ikx,iky,n,iux:iuz)
+              if (ioxt/=0 .and. iox/=0) f(ikx,m,n,ioxt:iozt) = f(ikx,iky,n,iox:ioz)
+            enddo
+          else
+            if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
+            if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
+          endif
+        endif
+      endif
+      lreset_vart=.false.
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
