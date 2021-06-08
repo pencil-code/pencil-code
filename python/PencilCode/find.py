@@ -65,12 +65,9 @@ def par_disp(datadir="./data", save_to=None):
     """
     # Author: Chao-Chin Yang
     # Created: 2018-01-16
-    # Last Modified: 2021-05-07
+    # Last Modified: 2021-06-08
     import numpy as np
     from . import read
-
-    # Safe factor for detecting jumps.
-    SAFE = 1.1
 
     # Determine numbers of particles and snapshots.
     pdim = read.pardim(datadir=datadir)
@@ -88,43 +85,74 @@ def par_disp(datadir="./data", save_to=None):
               dim.nzgrid > 1 and par.lperi[2])
     print(f"Active dimensions: {active}")
 
+    # Define function to detect boundary jumping.
+    @np.vectorize
+    def jump(xp1, xp2, lx):
+        if 2 * abs(xp2 - xp1) > lx:
+            return -1 if xp2 > xp1 else +1
+        else:
+            return 0
+
+    # Define function to record positions.
+    def record(xp, xp_old, xshift, lx):
+        xshift += jump(xp_old, xp, lx)
+        return xp + xshift * lx, xp, xshift
+
     # Allocate memory.
     t = np.empty(nt,)
-    dxp = np.empty((nt,npar)) if active[0] else None
-    dyp = np.empty((nt,npar)) if active[1] else None
-    dzp = np.empty((nt,npar)) if active[2] else None
+    def alloc(switch):
+        if switch:
+            dxp = np.empty((nt,npar))
+            xshift = np.zeros((npar,), dtype=int)
+        else:
+            dxp, xshift = None, None
+        return dxp, xshift
+    dxp, xshift = alloc(active[0])
+    dyp, yshift = alloc(active[1])
+    dzp, zshift = alloc(active[2])
     vpxmin, vpxmax = float("inf"), -float("inf")
     vpymin, vpymax = float("inf"), -float("inf")
     vpzmin, vpzmax = float("inf"), -float("inf")
 
+    # Process each snapshot of particles.
     for i, pvarfile in enumerate(pvarfiles):
-        # Read in the particle data.
-        print("\rReading PVAR files ({:6.1%})......".format((i+1)/nt),
+        print("\rProcessing PVAR files ({:6.1%})......".format((i+1)/nt),
               end='', flush=True)
         fp = read.pvar(datadir=datadir, pvarfile=pvarfile, verbose=False)
 
-        # Record time, positions, and monitor velocity extrema.
+        # Monitor velocity extrema.
+        vpxmin, vpxmax = min(vpxmin, min(fp.vpx)), max(vpxmax, max(fp.vpx))
+        vpymin, vpymax = min(vpymin, min(fp.vpy)), max(vpymax, max(fp.vpy))
+        vpzmin, vpzmax = min(vpzmin, min(fp.vpz)), max(vpzmax, max(fp.vpz))
+
+        # Record time and positions.
         t[i] = fp.t
-        if active[0]:
-            dxp[i] = fp.xp
-            vpxmin, vpxmax = min(vpxmin, min(fp.vpx)), max(vpxmax, max(fp.vpx))
-        if active[1]:
-            dyp[i] = fp.yp
-            vpymin, vpymax = min(vpymin, min(fp.vpy)), max(vpymax, max(fp.vpy))
-        if active[2]:
-            dzp[i] = fp.zp
-            vpzmin, vpzmax = min(vpzmin, min(fp.vpz)), max(vpzmax, max(fp.vpz))
+        if i == 0:
+            if active[0]: dxp[0] = xp_old = fp.xp
+            if active[1]: dyp[0] = yp_old = fp.yp
+            if active[2]: dzp[0] = zp_old = fp.zp
+        else:
+            if active[0]:
+                dxp[i], xp_old, xshift = record(
+                        fp.xp, xp_old, xshift, par.lxyz[0])
+            if active[1]:
+                dyp[i], yp_old, yshift = record(
+                        fp.yp, yp_old, yshift, par.lxyz[1])
+            if active[2]:
+                dzp[i], zp_old, zshift = record(
+                        fp.zp, zp_old, zshift, par.lxyz[2])
+
     print("Done. ")
 
     # Check the dimensions.
     dtmax = max(t[1:] - t[:-1])
-    if ((active[0] and SAFE * (vpxmax - vpxmin) * dtmax > par.lxyz[0]) or
-        (active[1] and SAFE * (vpymax - vpymin) * dtmax > par.lxyz[1]) or
-        (active[2] and SAFE * (vpzmax - vpzmin) * dtmax > par.lxyz[2])):
+    if (active[0] and 2 * max(abs(vpxmax), abs(vpxmin)) * dtmax > par.lxyz[0] or
+        active[1] and 2 * max(abs(vpymax), abs(vpymin)) * dtmax > par.lxyz[1] or
+        active[2] and 2 * max(abs(vpzmax), abs(vpzmin)) * dtmax > par.lxyz[2]):
         print(f"dtmax = {dtmax}")
-        if active[0]: print("vpxmin, vpxmax = ", vpxmin, vpxmax)
-        if active[1]: print("vpymin, vpymax = ", vpymin, vpymax)
-        if active[2]: print("vpzmin, vpzmax = ", vpzmin, vpzmax)
+        if active[0]: print(f"vpxmin, vpxmax = {vpxmin}, {vpxmax}")
+        if active[1]: print(f"vpymin, vpymax = {vpymin}, {vpymax}")
+        if active[2]: print(f"vpzmin, vpzmax = {vpzmin}, {vpzmax}")
         print("Warning: Boundary jumping may not be properly detected. ")
 
     # Remove duplicate data.
@@ -138,37 +166,10 @@ def par_disp(datadir="./data", save_to=None):
 
     # Find the displacement.
     print("Computing the displacement......", end='', flush=True)
-    if active[0]:
-        dx = dxp[1:] - dxp[:-1]
-        dxp -= dxp[0]
-    if active[1]:
-        dy = dyp[1:] - dyp[:-1]
-        dyp -= dyp[0]
-    if active[2]:
-        dz = dzp[1:] - dzp[:-1]
-        dzp -= dzp[0]
-
-    # Detect boundary jumps.
-    for i in range(nt-1):
-        dt = t[i+1] - t[i]
-        if active[0]:
-            if vpxmin < 0:
-                dxp[i+1:, dx[i] > vpxmax * dt] -= par.lxyz[0]
-            if vpxmax > 0:
-                dxp[i+1:, dx[i] < vpxmin * dt] += par.lxyz[0]
-        if active[1]:
-            if vpymin < 0:
-                dyp[i+1:, dy[i] > vpymax * dt] -= par.lxyz[1]
-            if vpymax > 0:
-                dyp[i+1:, dy[i] < vpymin * dt] += par.lxyz[1]
-        if active[2]:
-            if vpzmin < 0:
-                dzp[i+1:, dz[i] > vpzmax * dt] -= par.lxyz[2]
-            if vpzmax > 0:
-                dzp[i+1:, dz[i] < vpzmin * dt] += par.lxyz[2]
-
-    # Reset the starting time to zeo.
     t -= t[0]
+    if active[0]: dxp -= dxp[0]
+    if active[1]: dyp -= dyp[0]
+    if active[2]: dzp -= dzp[0]
     print("Done. ")
 
     # Save the results if requested.
