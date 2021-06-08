@@ -17,58 +17,7 @@ module Deriv
 !
   private
 !
-  public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j,der3i3j,der3i2j1k,der4i1j1k
-  public :: der4i2j, der2i2j2k
-  public :: der6_other, der_pencil, der2_pencil, der6_pencil
-  public :: deri_3d_inds
-  public :: der_upwind1st
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der_z, der2_z
-  public :: der2_minmod
-  public :: heatflux_deriv_x
-  public :: set_ghosts_for_onesided_ders
-  public :: bval_from_neumann, bval_from_3rd, bval_from_4th_scl
-!
-!debug  integer, parameter :: icount_der   = 1         !DERCOUNT
-!debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
-!debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
-!debug  integer, parameter :: icount_der5  = 4         !DERCOUNT
-!debug  integer, parameter :: icount_der6  = 5         !DERCOUNT
-!debug  integer, parameter :: icount_derij = 6         !DERCOUNT
-!debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
-!debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-!
-  interface der                 ! Overload the der function
-    module procedure der_main   ! derivative of an 'mvar' variable
-    module procedure der_other  ! derivative of another field
-  endinterface
-!
-  interface der2                 ! Overload the der function
-    module procedure der2_main   ! derivative of an 'mvar' variable
-    module procedure der2_other  ! derivative of another field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module procedure derij_main   ! derivative of an 'mvar' variable
-    module procedure derij_other  ! derivative of another field
-  endinterface
-!
-  interface  der_onesided_4_slice                ! Overload the der function
-    module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
-    module procedure  der_onesided_4_slice_other ! derivative of another field
-  endinterface
-!
-  interface bval_from_neumann
-    module procedure bval_from_neumann_scl
-    module procedure bval_from_neumann_arr
-  endinterface
-!
-  interface bval_from_3rd
-    module procedure bval_from_3rd_scl
-    module procedure bval_from_3rd_arr
-  endinterface
+  include 'deriv.h'
 !
   contains
 !
@@ -713,7 +662,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind)
 !
 !  Calculate 6th derivative of a scalar, get scalar
 !    Used for hyperdiffusion that affects small wave numbers as little as
@@ -814,7 +763,7 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der6
+    endsubroutine der6_main
 !***********************************************************************
     subroutine der6_other(f,df,j,ignoredx,upwind)
 !
@@ -1016,6 +965,20 @@ module Deriv
       endif
 !
     endsubroutine der6_pencil
+!***********************************************************************
+    real function der5_single(f,j,dc1)
+!
+!  computes 5th order derivative of function given by f at position j
+!
+!   3-oct-12/MR: coded
+!
+      real, dimension(:),  intent(in) :: f, dc1
+      integer           ,  intent(in) :: j
+
+      call not_implemented('der5_single','')
+      der5_single=0.
+
+    endfunction der5_single
 !***********************************************************************
     subroutine derij_main(f, k, df, i, j, lwo_line_elem)
 !
@@ -1789,7 +1752,8 @@ module Deriv
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
+
+    endsubroutine der_onesided_4_slice_main
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
 !
@@ -1852,7 +1816,53 @@ module Deriv
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
+
+    endsubroutine der_onesided_4_slice_other
+!***********************************************************************
+    subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
+!
+!  made using der_onesided_4_slice_main. One sided derivative is calculated
+!  at one point (lll,mmm,nnn)
+!
+!  15-oct-09/Natalia: coded.
+!
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real  :: df
+      real :: fac
+      integer :: lll,mmm,nnn,k,sgn,j
+!
+      intent(in)  :: f,k,lll,mmm,nnn,sgn,j
+      intent(out) :: df
+
+      call not_implemented('der_onesided_4_slice_main_pt','')
+      call keep_compiler_quiet(df)
+
+   endsubroutine der_onesided_4_slice_main_pt
+!***********************************************************************
+   subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
+!
+!  One sided derivative is calculated
+!  at one point (lll,mmm,nnn).
+!
+!  15-oct-09/Natalia: coded.
+!  15-oct-09/axel: changed file name to shorter version
+!
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz) :: f
+      real :: df
+      real :: fac
+      integer :: lll,mmm,nnn,sgn,j
+!
+      intent(in)  :: f,lll,mmm,nnn,sgn,j
+      intent(out) :: df
+
+      call not_implemented('der_onesided_4_slice_other_pt','')
+      call keep_compiler_quiet(df)
+
+   endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
     subroutine der_z(f,df)
 !
@@ -1908,6 +1918,42 @@ module Deriv
           call fatal_error('der2_z','not implemented for spherical coords')
 !
     endsubroutine der2_z
+!***********************************************************************
+    subroutine der_x(f,df)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df
+!
+      call not_implemented("der_x","")
+!
+! To avoid compiler warnings:
+!
+      df=f(n1:n2)
+!
+    endsubroutine der_x
+!***********************************************************************
+    subroutine der2_x(f,df2)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df2
+!
+      call not_implemented("der2_x","")
+!
+! To avoid compiler warnings:
+!
+      df2=f(n1:n2)
+!
+    endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
@@ -2050,10 +2096,27 @@ module Deriv
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
-      real, dimension(:,:) :: val
+      real :: val
 
       call fatal_error('bval_from_4th_scl','Not implemented for 2nd order.')
 
     endsubroutine bval_from_4th_scl
+!***********************************************************************
+    subroutine bval_from_4th_arr(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f
+!  employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  09-feb-17/Ivan: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      call not_implemented('bval_from_4th_arr','')
+
+    endsubroutine bval_from_4th_arr
 !***********************************************************************
 endmodule Deriv
