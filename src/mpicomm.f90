@@ -71,7 +71,7 @@ module Mpicomm
 !
 !  For f-array processor boundaries
 !
-  real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
+  real, dimension (:,:,:,:), allocatable :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (:,:,:,:), allocatable :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (:,:,:,:), allocatable :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (:,:,:,:), allocatable :: llbufi,lubufi,uubufi,ulbufi
@@ -392,19 +392,27 @@ module Mpicomm
 !
 !  Allocations for Yin-Yang grid are done later in yyinit.
 !
-        allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
-                  lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom),ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom), &
-                  lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
-                  lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom)   )
+        if (nprocx>1) &
+          allocate( lbufxi(nghost,ny,nz,mcom),ubufxi(nghost,ny,nz,mcom), &
+                    lbufxo(nghost,ny,nz,mcom),ubufxo(nghost,ny,nz,mcom))
+
+        if (nprocy>1 .or. lcommunicate_y .or. lyinyang) &
+          allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
+                    lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom),ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
+
+        if (nprocz>1) &
+          allocate( lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
+                    lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
   
-        allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
-                  llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
-                  lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
-                  lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom), &
-                  ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
-                  ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom), &
-                  uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom), &
-                  uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom)   )
+        if ((nprocy>1 .or. lcommunicate_y .or. lyinyang).and.nprocz>1) &
+          allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
+                    llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
+                    lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
+                    lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom), &
+                    ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
+                    ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom), &
+                    uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom), &
+                    uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom)   )
       endif
 !
 !  Set standard processor ids
@@ -1295,7 +1303,7 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !
       integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
       integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir, mm
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir,mm,j
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
 
@@ -1461,7 +1469,12 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         nbufz=bufact*bufsizes_yz(INZU,ISND)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
                        zuneigh,touppzs,comm,isend_rq_touppz,mpierr)
-
+!do j=ivar1,ivar2
+!if (notanumber(ubufzo(:,:,:,j))) print*, 'ubufzo: iproc,j=', iproc,j
+!if (notanumber(lbufzo(:,:,:,:))) print*, 'lbufzo: iproc,j=', iproc
+!if (notanumber(ubufyo(:,:,:,j))) print*, 'ubufyo: iproc,j=', iproc,j
+!if (notanumber(lbufyo(:,:,:,:))) print*, 'lbufyo: iproc,j=', iproc
+!enddo
       endif
 !
 !  The four corners (in counter-clockwise order).
@@ -1664,7 +1677,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !                  added yz corner communication
 !  20-dec-15/MR: modified for Yin-Yang grid
 !
-      use General, only: transpose_mn, notanumber, copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
+      use General, only: transpose_mn, notanumber, copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle, notanumber
 
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
       integer, optional,                 intent(in)   :: ivar1_opt, ivar2_opt
@@ -1815,12 +1828,15 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               else
                 f(:,:,n2+1:,j)=ubufzi(:,:my,:,j)  ! fill upper horizontal ghost strip 
               endif
-!if (notanumber(f(:,:,:,j))) print*, 'ubufzi: iproc,j=', iproc, iproc_world, j
             else
               f(:,m1:m2,n2+1:,j)=ubufzi(:,:,:,j)  ! set upper z-ghostzone
             endif
           endif
 
+!if (notanumber(ubufzi(:,:,:,j))) print*, 'ubufzi: iproc,j=', iproc, j
+!if (notanumber(lbufzi(:,:,:,j))) print*, 'lbufzi: iproc,j=', iproc, j
+!if (notanumber(ubufyi(:,:,:,j))) print*, 'ubufyi: iproc,j=', iproc, j
+!if (notanumber(lbufyi(:,:,:,j))) print*, 'lbufyi: iproc,j=', iproc, j
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)

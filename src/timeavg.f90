@@ -77,7 +77,7 @@ module Timeavg
       weight = min(dt/tavg,1.)
       do i=1,mtavg
         idx = idx_tavg(i)
-        if (idx > 0) then       ! should always be the case
+        if (idx > 0) then       ! should always be the case; MR: if so then idx_tavg is not needed
           if (init1) then
             f_tavg(:,:,:,i) = a(:,:,:,idx)
           else

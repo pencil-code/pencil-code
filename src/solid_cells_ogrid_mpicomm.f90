@@ -33,9 +33,9 @@ module Solid_Cells_Mpicomm
   integer, parameter :: n2i_ogrid=mz_ogrid-2*nghost+1
 
   ! MPI variables and parameters
-  real, dimension (nghost,ny_ogrid,nz_ogrid,mcom) :: lbufxi_og,ubufxi_og,lbufxo_og,ubufxo_og
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
 
+  real, dimension (:,:,:,:), allocatable :: lbufxi_og,ubufxi_og,lbufxo_og,ubufxo_og
   real, dimension (:,:,:,:), allocatable :: lbufyi_og,ubufyi_og,lbufyo_og,ubufyo_og
   real, dimension (:,:,:,:), allocatable :: lbufzi_og,ubufzi_og,lbufzo_og,ubufzo_og
   real, dimension (:,:,:,:), allocatable :: llbufi_og,lubufi_og,uubufi_og,ulbufi_og
@@ -78,6 +78,9 @@ module Solid_Cells_Mpicomm
 !
       if (lroot) print *, 'initialize_mpicomm_ogrid: enabled MPI on overlapping grid'
 !
+      if (nprocz>1 .and. lpole(2)) &
+        call not_implemented('initialize_mpicomm_ogrid','communication across poles')
+
 !  Set corners and neighbours. These are the same as those set in mpicomm.f90
 !
 !  Am I a yz corner?
@@ -103,33 +106,43 @@ module Solid_Cells_Mpicomm
       bufsizes_yz_og(:,IRCV)=(/nz_ogrid,ny_ogrid,nz_ogrid,ny_ogrid/) 
       bufsizes_yz_og(:,ISND)=(/nz_ogrid,ny_ogrid,nz_ogrid,ny_ogrid/) 
 !
-      allocate( lbufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,IRCV),mcom), &
-                ubufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,IRCV),mcom), &
-                lbufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,ISND),mcom), &
-                ubufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,ISND),mcom), &
-                lbufzi_og(mx_ogrid,bufsizes_yz_og(INZL,IRCV),nghost,mcom), &
-                ubufzi_og(mx_ogrid,bufsizes_yz_og(INZU,IRCV),nghost,mcom), &
-                lbufzo_og(mx_ogrid,bufsizes_yz_og(INZL,ISND),nghost,mcom), &
-                ubufzo_og(mx_ogrid,bufsizes_yz_og(INZU,ISND),nghost,mcom)   )
+      if (nprocx>1) &
+        allocate( lbufxi_og(nghost,ny_ogrid,nz_ogrid,mcom), &
+                  ubufxi_og(nghost,ny_ogrid,nz_ogrid,mcom), &
+                  lbufxo_og(nghost,ny_ogrid,nz_ogrid,mcom), &
+                  ubufxo_og(nghost,ny_ogrid,nz_ogrid,mcom)   )
+
+      if (nprocy>1) &
+        allocate( lbufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,IRCV),mcom), &
+                  ubufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,IRCV),mcom), &
+                  lbufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,ISND),mcom), &
+                  ubufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,ISND),mcom), &
+                  lbufzi_og(mx_ogrid,bufsizes_yz_og(INZL,IRCV),nghost,mcom), &
+                  ubufzi_og(mx_ogrid,bufsizes_yz_og(INZU,IRCV),nghost,mcom), &
+                  lbufzo_og(mx_ogrid,bufsizes_yz_og(INZL,ISND),nghost,mcom), &
+                  ubufzo_og(mx_ogrid,bufsizes_yz_og(INZU,ISND),nghost,mcom)   )
 !  
-      allocate( llbufi_og(mx_ogrid,nghost,nghost,mcom), &
-                llbufo_og(mx_ogrid,nghost,nghost,mcom), &
-                lubufi_og(mx_ogrid,nghost,nghost,mcom), &
-                lubufo_og(mx_ogrid,nghost,nghost,mcom), &
-                ulbufi_og(mx_ogrid,nghost,nghost,mcom), &
-                ulbufo_og(mx_ogrid,nghost,nghost,mcom), &
-                uubufi_og(mx_ogrid,nghost,nghost,mcom), &
-                uubufo_og(mx_ogrid,nghost,nghost,mcom)   )
+      if (nprocy>1.and.nprocz>1) &
+        allocate( llbufi_og(mx_ogrid,nghost,nghost,mcom), &
+                  llbufo_og(mx_ogrid,nghost,nghost,mcom), &
+                  lubufi_og(mx_ogrid,nghost,nghost,mcom), &
+                  lubufo_og(mx_ogrid,nghost,nghost,mcom), &
+                  ulbufi_og(mx_ogrid,nghost,nghost,mcom), &
+                  ulbufo_og(mx_ogrid,nghost,nghost,mcom), &
+                  uubufi_og(mx_ogrid,nghost,nghost,mcom), &
+                  uubufo_og(mx_ogrid,nghost,nghost,mcom)   )
 !
-      if(lfilter_solution) then
-        allocate( lbufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
-                  ubufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
-                  lbufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
-                  ubufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom)  )
-        allocate( lbufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
-                  ubufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
-                  lbufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
-                  ubufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom)  )
+      if (lfilter_solution) then
+        if (nprocy>1) &
+          allocate( lbufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                    ubufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                    lbufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                    ubufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom)  )
+        if (nprocx>1) &
+          allocate( lbufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                    ubufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                    lbufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                    ubufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom)  )
       endif
 !
     endsubroutine initialize_mpicomm_ogrid

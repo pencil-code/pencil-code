@@ -150,17 +150,14 @@ module Energy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde
       use SharedVariables, only: get_shared_variable
-!
-      integer :: ierr
 !
       call farray_register_pde('eth',ieth)
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_energy')
 !
 !  Identify version number.
 !

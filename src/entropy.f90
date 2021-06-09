@@ -3364,7 +3364,7 @@ module Energy
       if (lenergy_slope_limited.and.llast) then
         call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp1,div_sld_ene)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp1
-     endif
+      endif
 !
 !  Explicit heating/cooling terms.
 !
