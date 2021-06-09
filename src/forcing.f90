@@ -802,6 +802,9 @@ module Forcing
         enddo
         close(76)
 
+        if (ck_equator_gap/=0) &
+          profy_ampl=1.-step(y,pi/2.-ck_equator_gap,ck_gap_step)+step(y,pi/2.+ck_equator_gap,ck_gap_step)
+
         if (lfastCK) then
 
           if (.not.allocated(Zpsi_list)) then
@@ -2800,7 +2803,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       if (lhelical_test) then
         if (icklist==nlist_ck) &
-                 call fatal_error("forcing_chandra_kendall","CK testing: no more values in list")
+          call fatal_error("forcing_chandra_kendall","CK testing: no more values in list")
         icklist=icklist+1
         lmindex=icklist
       else
@@ -2828,9 +2831,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
             psilm = RYlm_list(m,n,lmindex)*cos(rphase1)- &
                     IYlm_list(m,n,lmindex)*sin(rphase1)
             psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
-            if (ck_equator_gap/=0) &
-              psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step) &
-                                         +step(y(m),pi/2.+ck_equator_gap,ck_gap_step))
+            if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
           enddo
         enddo
 
@@ -2852,20 +2853,15 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
             call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
             psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
             psif(:,m,n) = Z_psi*psilm
-            if (ck_equator_gap/=0)&
-              psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step) &
-                                         +step(y(m),pi/2.+ck_equator_gap,ck_gap_step))
+            if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
           enddo
         enddo
       endif
 !
-! ----- Now calculate the force from the potential and add this to
-! velocity
+! ----- Now calculate the force from the potential and add this to velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
 ! get random psi.
-!      write(*,*) 'mmin=',mmin
-!
 ! ----------now generate and add the force ------------
 !
       call random_number_wrapper(rz,CHANNEL=channel_force)
@@ -2894,9 +2890,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           endif
           do j=1,3
             jf = iuu+j-1
-            if (r_ff /= 0.) then
-               capitalH(:,j)=profx_ampl*capitalH(:,j)
-            endif
+            if (r_ff /= 0.) capitalH(:,j)=profx_ampl*capitalH(:,j)
             if (lhelical_test) then
               if (lwrite_psi) then
                 f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
@@ -2907,7 +2901,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 ! stochastic euler scheme of integration [sqrt(dt) is already included in fnorm]
 !
-              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
+              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) + fnorm*capitalH(:,j)
             endif
           enddo
         enddo

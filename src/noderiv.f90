@@ -5,6 +5,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM integer, parameter :: nghost = 0
+! nghost=0 creates trouble, as then mx=nx, creating conflicts in case constructs etc.
 !
 !***************************************************************
 module Deriv
@@ -16,59 +17,7 @@ module Deriv
 !
   private
 !
-  public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
-  public :: der6_other, der_pencil, der2_pencil
-  public :: der4i2j,der2i2j2k,der3i3j,der3i2j1k,der4i1j1k
-  public :: deri_3d_inds
-  public :: der_x,der2_x
-  public :: der_z,der2_z
-  public :: der_upwind1st
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2_minmod
-  public :: heatflux_deriv_x
-  public :: set_ghosts_for_onesided_ders
-  public :: bval_from_neumann, bval_from_3rd, bval_from_4th
-!
-  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
-!
-  interface der                 ! Overload the der function
-    module procedure der_main   ! derivative of an 'mvar' variable
-    module procedure der_other  ! derivative of another field
-  endinterface
-!
-  interface der2                 ! Overload the der function
-    module procedure der2_main   ! derivative of an 'mvar' variable
-    module procedure der2_other  ! derivative of another field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module procedure derij_main   ! derivative of an 'mvar' variable
-    module procedure derij_other  ! derivative of another field
-  endinterface
-!
-  interface  der_onesided_4_slice                ! Overload the der function
-    module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
-    module procedure  der_onesided_4_slice_main_pt
-    module procedure  der_onesided_4_slice_other ! derivative of another field
-    module procedure  der_onesided_4_slice_other_pt
-  endinterface
-!
-  interface bval_from_neumann
-    module procedure bval_from_neumann_scl
-    module procedure bval_from_neumann_arr
-  endinterface
-!
-  interface bval_from_3rd
-    module procedure bval_from_3rd_scl
-    module procedure bval_from_3rd_arr
-  endinterface
-!
-  interface bval_from_4th
-    module procedure bval_from_4th_scl
-    module procedure bval_from_4th_arr
-  endinterface
+  include 'deriv.h'
 !
   contains
 !
@@ -222,7 +171,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind)
 !
 !  Dummy routine
 !
@@ -233,7 +182,7 @@ module Deriv
       logical :: igndx,upwnd
       intent(in)  :: f,k,df,j,ignoredx,upwind
 !
-    endsubroutine der6
+    endsubroutine der6_main
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
@@ -270,6 +219,18 @@ module Deriv
       intent(in)  :: f,df,j,ignoredx,upwind
 !
     endsubroutine der6_other
+!***********************************************************************
+    subroutine der6_pencil(j,pencil,df6,ignoredx,upwind)
+!
+!  Calculate 6th derivative of any x, y or z pencil.
+!
+!  20-jul-20/wlyra: adapted from der2_pencil
+!
+      real, dimension (:) :: pencil,df6
+      integer :: j
+      logical, optional :: ignoredx,upwind
+!
+    endsubroutine der6_pencil
 !***********************************************************************
     real function der5_single(f,j,dc1)
 !
