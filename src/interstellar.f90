@@ -3266,10 +3266,10 @@ module Interstellar
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, optional :: ierr
 !
-      real :: c_SN,cmass_SN,cvelocity_SN,ecr_SN,cmass_tmp
+      real :: c_SN,cmass_SN,cvelocity_SN,ecr_SN,cmass_tmp,c_SNmax
       real :: width_energy, width_mass, width_velocity
       real :: rhom, rhomin, ekintot, radius_best
-      real ::  rhom_new, ekintot_new, ambient_mass
+      real :: ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov, rad_hot, rho_hot, rho_max
       real :: radius2, SNvol
@@ -3405,18 +3405,24 @@ module Interstellar
         c_SN=etmp/(cnorm_SN(dimensionality)*width_energy**dimensionality)
         if (frac_ecr>0.) &
             ecr_SN=campl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+        c_SNmax=ampl_SN/(cnorm_SN(dimensionality)*rfactor_SN*&
+            SNR%feat%dr**dimensionality)
       elseif (thermal_profile=="gaussian2") then
         c_SN=etmp/(cnorm_gaussian2_SN(dimensionality)* &
             width_energy**dimensionality)
         if (frac_ecr>0.) &
             ecr_SN=campl_SN/(cnorm_gaussian2_SN(dimensionality)* &
             width_energy**dimensionality)
+        c_SNmax=ampl_SN/(cnorm_gaussian2_SN(dimensionality)*rfactor_SN*&
+            SNR%feat%dr**dimensionality)
       elseif (thermal_profile=="gaussian") then
         c_SN=etmp/(cnorm_gaussian_SN(dimensionality)* &
             width_energy**dimensionality)
         if (frac_ecr>0.) &
             ecr_SN=campl_SN/(cnorm_gaussian_SN(dimensionality)* &
             width_energy**dimensionality)
+        c_SNmax=ampl_SN/(cnorm_gaussian_SN(dimensionality)*rfactor_SN*&
+            SNR%feat%dr**dimensionality)
       endif
       if (lroot.and.ip==1963) print "(1x,'explode_SN: c_SN =',e10.3)",c_SN
 !
@@ -3510,6 +3516,7 @@ module Interstellar
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT,ee=ee_old)
+        deltaEE=0.
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
@@ -3602,8 +3609,13 @@ module Interstellar
             cmass_SN = cmass_SN*Nsol_added*solar_mass/SNR%feat%MM
           else
             ierr=iEXPLOSION_OK 
-            if (lroot.and.ip==1963) print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')", &
-                                            SNR%feat%MM/solar_mass
+            if (lroot.and.ip==1963) &
+                print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')",&
+                SNR%feat%MM/solar_mass
+            call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
+            if (ekintot_new-ekintot>ktmp) then
+              c_SN = c_SN*(ktmp+ekintot-ekintot_new+etmp)/(etmp+ktmp)
+            endif
           endif
         endif
       endif
@@ -3614,7 +3626,14 @@ module Interstellar
       if (lSN_velocity.and.ktmp>0) then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
         if (ekintot_new-ekintot<ktmp) then
-          if (lSN_eth) c_SN = c_SN*(ktmp+ekintot-ekintot_new+etmp)/etmp
+          if (lSN_eth) then
+            if (ekintot_new-ekintot>0) then
+              c_SN = min(c_SNmax,&
+                                 c_SN*(ktmp+ekintot-ekintot_new+etmp)/etmp)
+            else
+              c_SN=c_SNmax
+            endif
+          endif
         else
           cvelocity_SN=cvelocity_SN*sqrt(ktmp/(ekintot_new-ekintot))
         endif
@@ -3659,6 +3678,7 @@ module Interstellar
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT,ee=ee_old)
+        deltaEE=0.
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
         if (lSN_eth) then
           call eosperturb &
@@ -3679,7 +3699,9 @@ module Interstellar
 !
         if (lSN_velocity) then
           uu=f(l1:l2,m,n,iux:iuz)
-          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,&
+          deltauu=0.
+          if (cvelocity_SN>0.) &
+              call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,&
                                  rho_old)
           f(l1:l2,m,n,iux:iuz)=uu+deltauu
         endif
@@ -3703,7 +3725,7 @@ module Interstellar
       enddo
       enddo
 !
-      call get_properties(f,SNR,rhom_new,ekintot_new,rhomin)
+      call get_properties(f,SNR,rhom,ekintot_new,rhomin)
       if (lroot.and.ip==1963) print &
           "(1x,'explode_SN: total kinetic energy change =',e10.3)",ekintot_new-ekintot
       if (lroot.and.ip==1963) then
@@ -3726,7 +3748,12 @@ module Interstellar
 ! FAG need to consider effect of CR and fcr on total energy for data collection
 ! and the energy budget applied to the SNR similar to kinetic energy?
 !
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: SNR%feat%MM = ',f7.3)",SNR%feat%MM/solar_mass
+      if (lroot.and.ip==1963) then
+        print "(1x,'explode_SN: SNR%feat%MM = ',f7.3)",SNR%feat%MM/solar_mass
+        print "(1x,'explode_SN: SNR%feat%EE = ',f7.3)",SNR%feat%EE/ampl_SN
+        print "(1x,'explode_SN: SNR%feat%EK = ',f7.3)",(ekintot_new-ekintot)/ampl_SN
+        print "(1x,'explode_SN: SNR%feat%CR = ',f7.3)",SNR%feat%CR/ampl_SN
+      endif
       if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
           call set_next_SNI(t_interval_SN)
@@ -3765,7 +3792,7 @@ module Interstellar
             call warning('sn_series.dat','new columns added_Nsol 27.05.21 '//&
             'continuation of old data may need header and extra columns appended')
         print "(1x,'explode_SN:    step, time = ',i8,e10.3)",it,t
-        print "(1x,'explode_SN:          dVol = ',    f6.3)",dVol(1)
+        print "(1x,'explode_SN:          dVol = ',   e10.3)",dVol(1)
         print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
         print "(1x,'explode_SN: proc, l, m, n = ',     4i6)",SNR%indx%iproc,&
             SNR%indx%l,SNR%indx%m,SNR%indx%n
@@ -3843,7 +3870,7 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant), intent(inout) :: remnant
+      type (SNRemnant), intent(in) :: remnant
       integer, optional :: ierr
       real, intent(out) :: rhom, ekintot, rhomin
       real :: rhotmp, rhomax, radius2
@@ -3950,7 +3977,7 @@ module Interstellar
       use EquationOfState, only: eoscalc, irho_ss
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant), intent(inout) :: remnant
+      type (SNRemnant), intent(in) :: remnant
       real, intent(in) :: cvelocity_SN, cmass_SN
       real :: radius2
       real :: rhom, ekintot, MMtot
@@ -4122,7 +4149,7 @@ module Interstellar
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
 !
-      type (SNRemnant), intent(inout) :: SNR
+      type (SNRemnant), intent(in) :: SNR
 !
       real,dimension(nx) :: dx_SN, dr_SN
       real :: dy_SN
