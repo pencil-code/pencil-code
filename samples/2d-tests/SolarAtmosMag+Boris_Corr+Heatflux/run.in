@@ -81,7 +81,6 @@
 &special_run_pars
   cool_RTV=1 ! radiative losses
   cool_RTV_cutoff=2 ! radiative losses
-  nvor=0
   luse_vel_field=F
   lslope_limited_special=F
   lnrho_min=-22.9,lnrho_min_tau=10.0
