@@ -1264,7 +1264,6 @@ module Special
                          finalize_isendrcv_bdry
       use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn,step
-      use General, only: gaunoise_number
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1398,9 +1397,9 @@ module Special
                f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
             else
               if (lconv_vel_set_to_zero .and. (z(n) .lt. z_ff(1))) then
-                call gaunoise_number(gn)
-                f(l1:l2,m,n,iux)=uu_drive(3)*gn(1)
-                f(l1:l2,m,n,iuz)=uu_drive(3)*gn(2)
+                f(l1:l2,m,n,iux)=0.0
+                f(l1:l2,m,n,iuy)=0.0
+                f(l1:l2,m,n,iuz)=0.0 
               endif
             endif
           enddo
