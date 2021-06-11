@@ -110,6 +110,7 @@ module Special
   real :: c_light2=1., delk=0., tstress_ramp=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
+  real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0.
@@ -190,7 +191,7 @@ module Special
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
-    real, dimension(nk) :: SCL, VCT, Tpq
+    real, dimension(nk) :: SCL, VCT, Tpq, TGW
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
   endtype GWspectra
 
@@ -346,6 +347,13 @@ module Special
 !
       if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
+    if (lnonlinear_source) then
+      if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
+!
+      if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+    endif
 !
 !  calculate kscale_factor (for later binning)
 !
@@ -810,6 +818,7 @@ module Special
       spectra%Str=0.; spectra%Strhel=0.
       spectra%Stg=0.; spectra%Stghel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
+      spectra%TGW=0.
 !
 !  Define negative Nyquist wavenumbers if lswitch_symmetric
 !
@@ -1028,11 +1037,20 @@ module Special
                 enddo
               endif
 !
+! Added for nonlinear GW memory effect
+            if (TGW_spec) then
+              do q=1,3
+              do p=1,3
+                pq=ij_table(p,q)
+                spectra%TGW(ik)=spectra%TGW(ik)+.5*(nonlinear_Tpq_re(ikx,iky,ikz,pq)**2+nonlinear_Tpq_im(ikx,iky,ikz,pq)**2)
+              enddo
+              enddo
             endif
-
-          enddo
+            
+          endif   
         enddo
       enddo
+    enddo
 
     endsubroutine make_spectra
 !***********************************************************************
@@ -1061,6 +1079,7 @@ module Special
       case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case ('StT'); spectrum=real(spectra%complex_Str_T)
                     spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
@@ -1101,6 +1120,7 @@ module Special
       case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
       endselect
@@ -1119,6 +1139,7 @@ module Special
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact
@@ -1151,6 +1172,14 @@ module Special
       allocate(S_X_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_X_im')
 !
+      if (lnonlinear_source) then
+        allocate(Hijkre(nx,ny,nz,3,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkre')
+!
+        allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkim')
+      endif
+!
 !  set delta_ij
 !
       delij(1:3)=1.
@@ -1159,6 +1188,130 @@ module Special
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
+
+!
+! Added for computation of Hijk
+!
+   if (lnonlinear_source) then
+      do ikz=1,nz
+        do iky=1,ny
+          do ikx=1,nx
+
+!
+!  compute e_T and e_X; determine first preferred direction,
+!  which is a component with the smallest component by modulus.
+!
+            k1=kx_fft(ikx+ipx*nx)
+            k2=ky_fft(iky+ipy*ny)
+            k3=kz_fft(ikz+ipz*nz)
+            kvec(1)=k1
+            kvec(2)=k2
+            kvec(3)=k3
+            k1sqr=k1**2
+            k2sqr=k2**2
+            k3sqr=k3**2
+            ksqr=k1sqr+k2sqr+k3sqr
+
+            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+              e1=0.
+              e2=0.
+            else
+!
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                  e1=(/0.,-k3,+k2/)
+                  e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              else !(k2 smaller than k1)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1=(/-k3,0.,+k1/)
+                  e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              endif
+              e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+              e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+            endif
+
+!
+!  compute e_T and e_X
+!
+            do j=1,3
+            do i=1,3
+              ij=ij_table(i,j)
+              e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+              e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+            enddo
+            enddo
+
+!
+!  possibility of swapping the sign of e_X
+!
+            if (lswitch_sign_e_X) then
+              if (k3<0.) then
+                e_X=-e_X
+              elseif (k3==0.) then
+                if (k2<0.) then
+                  e_X=-e_X
+                elseif (k2==0.) then
+                  if (k1<0.) then
+                    e_X=-e_X
+                  endif
+                endif
+              endif
+            endif
+
+!
+!  Compute exact solution for hT, hX, gT, and gX in Fourier space.
+!
+            hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+            hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+            hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+            hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+!
+! compute Hijk for nonlinear GW memory effect
+!             
+               do i=1,3 
+               do j=1,6 
+                 Hijkim(ikx,iky,ikz,i,j)=kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre) 
+                 Hijkre(ikx,iky,ikz,i,j)=-kvec(i)*(e_T(j)*hhTim+e_X(j)*hhXim)
+               enddo
+               enddo
+!
+!  end of ikx, iky, and ikz loops
+!
+
+          enddo
+        enddo
+      enddo
+      do i=1,3
+      do j=1,6
+        call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j))
+      enddo
+      enddo
+
+      do i=1,3
+      do j=1,3
+        ij=ij_table(i,j)
+      do p=1,3
+      do q=1,3
+        pq=ij_table(p,q)
+        nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
+            -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
+        nonlinear_Tpq_im(:,:,:,pq)=nonlinear_Tpq_im(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkim(:,:,:,q,ij) &
+            +Hijkim(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
+      enddo
+      enddo
+      enddo
+      enddo
+   
+! end of if condition for nonlinear_source
+   endif
 !
 !  Assemble stress, Tpq
 !
@@ -1166,30 +1319,33 @@ module Special
         Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
         Tpq_im=0.0
         call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
+        if (lnonlinear_source) then
+          call fft_xyz_parallel(nonlinear_Tpq_re(:,:,:,:),nonlinear_Tpq_im(:,:,:,:))
+        endif
       endif
 !
 !  Possibility of nonlinear source
 !
-      if (lnonlinear_source) then
-        allocate(g2T_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_re')
+!!      if (lnonlinear_source) then
+!!        allocate(g2T_re(nx,ny,nz),stat=stat)
+!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_re')
 !
-        allocate(g2T_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_im')
+!!        allocate(g2T_im(nx,ny,nz),stat=stat)
+!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_im')
 !
-        allocate(g2X_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_re')
+!!        allocate(g2X_re(nx,ny,nz),stat=stat)
+!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_re')
 !
-        allocate(g2X_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_im')
+!!        allocate(g2X_im(nx,ny,nz),stat=stat)
+!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_im')
 !
-        g2T_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggT_realspace)**2
-        g2T_im=0.
-        call fft_xyz_parallel(g2T_re(:,:,:),g2T_im(:,:,:))
-        g2X_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggX_realspace)**2
-        g2X_im=0.
-        call fft_xyz_parallel(g2X_re(:,:,:),g2X_im(:,:,:))
-      endif
+!!        g2T_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggT_realspace)**2
+!!        g2T_im=0.
+!!        call fft_xyz_parallel(g2T_re(:,:,:),g2T_im(:,:,:))
+!!        g2X_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggX_realspace)**2
+!!        g2X_im=0.
+!!        call fft_xyz_parallel(g2X_re(:,:,:),g2X_im(:,:,:))
+!!      endif
 !
 !  Set ST=SX=0 and reset all spectra.
 !
@@ -1316,6 +1472,10 @@ module Special
               jq=ij_table(j,q)
               Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikx,iky,ikz,pq)
               Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikx,iky,ikz,pq)
+              if (lnonlinear_source) then
+                 Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_re(ikx,iky,ikz,pq)
+                 Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_im(ikx,iky,ikz,pq)
+              endif
             enddo
             enddo
             enddo
@@ -1371,13 +1531,13 @@ module Special
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-              if (lnonlinear_source) then
-                coefAre=(hhTre-om12*(S_T_re(ikx,iky,ikz)+g2T_re(ikx,iky,ikz)))
-                coefAim=(hhTim-om12*(S_T_im(ikx,iky,ikz)+g2T_im(ikx,iky,ikz)))
-              else
+!!              if (lnonlinear_source) then
+!!                coefAre=(hhTre-om12*(S_T_re(ikx,iky,ikz)+g2T_re(ikx,iky,ikz)))
+!!                coefAim=(hhTim-om12*(S_T_im(ikx,iky,ikz)+g2T_im(ikx,iky,ikz)))
+!!              else
                 coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
                 coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
-              endif
+!!              endif
               coefBre=ggTre*om1
               coefBim=ggTim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
@@ -1395,13 +1555,13 @@ module Special
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-              if (lnonlinear_source) then
-                coefAre=(hhXre-om12*(S_X_re(ikx,iky,ikz)+g2X_re(ikx,iky,ikz)))
-                coefAim=(hhXim-om12*(S_X_im(ikx,iky,ikz)+g2X_im(ikx,iky,ikz)))
-              else
+!!              if (lnonlinear_source) then
+!!                coefAre=(hhXre-om12*(S_X_re(ikx,iky,ikz)+g2X_re(ikx,iky,ikz)))
+!!                coefAim=(hhXim-om12*(S_X_im(ikx,iky,ikz)+g2X_im(ikx,iky,ikz)))
+!!              else
                 coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
                 coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
-              endif
+!!              endif
               coefBre=ggXre*om1
               coefBim=ggXim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
