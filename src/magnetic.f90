@@ -988,6 +988,12 @@ module Magnetic
         call farray_register_auxiliary('ee',iee,vector=3)
         iex=iee; iey=iee+1; iez=iee+2
 !
+!  Writing files for use with IDL
+!
+        if (lroot) write(4,*) ',ee $'
+        if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -1026,12 +1032,6 @@ module Magnetic
 !  in cparam.local
 !
       if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
-!
-!  Writing files for use with IDL
-!
-        if (lroot) write(4,*) ',ee $'
-        if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
-      endif
 !
       if (any(iresistivity=='eta-slope-limited')) then
         lslope_limit_diff = .true.
