@@ -2559,7 +2559,7 @@ module power_spectrum
     endif
     close(1)
     !
-    if ( all(sp.ne.(/'SCL','VCT','Tpq'/)) ) then
+    if ( all(sp.ne.(/'SCL','VCT','Tpq','TGW'/)) ) then
       open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
       if (lformat) then
         do k = 1, nk
