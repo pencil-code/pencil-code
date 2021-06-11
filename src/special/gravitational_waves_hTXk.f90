@@ -515,7 +515,7 @@ module Special
 !  Possibility of gradually ramping up the stress on time scale tstress_ramp.
 !
         if (lstress_ramp) then
-          fact=min((t-tstart)/tstress_ramp, 1.)
+          fact=min(real(t-tstart)/tstress_ramp, 1.)
           p%stress_ij(:,:)=p%stress_ij(:,:)*fact
         endif
       endif
