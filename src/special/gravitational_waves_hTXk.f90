@@ -1324,29 +1324,6 @@ module Special
         endif
       endif
 !
-!  Possibility of nonlinear source
-!
-!!      if (lnonlinear_source) then
-!!        allocate(g2T_re(nx,ny,nz),stat=stat)
-!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_re')
-!
-!!        allocate(g2T_im(nx,ny,nz),stat=stat)
-!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2T_im')
-!
-!!        allocate(g2X_re(nx,ny,nz),stat=stat)
-!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_re')
-!
-!!        allocate(g2X_im(nx,ny,nz),stat=stat)
-!!        if (stat>0) call fatal_error('compute_g2T_and_g2X_from_gij','Could not allocate memory for g2X_im')
-!
-!!        g2T_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggT_realspace)**2
-!!        g2T_im=0.
-!!        call fft_xyz_parallel(g2T_re(:,:,:),g2T_im(:,:,:))
-!!        g2X_re=nonlinear_source_fact*f(l1:l2,m1:m2,n1:n2,iggX_realspace)**2
-!!        g2X_im=0.
-!!        call fft_xyz_parallel(g2X_re(:,:,:),g2X_im(:,:,:))
-!!      endif
-!
 !  Set ST=SX=0 and reset all spectra.
 !
       S_T_re=0. ; S_T_im=0.
@@ -1531,13 +1508,8 @@ module Special
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-!!              if (lnonlinear_source) then
-!!                coefAre=(hhTre-om12*(S_T_re(ikx,iky,ikz)+g2T_re(ikx,iky,ikz)))
-!!                coefAim=(hhTim-om12*(S_T_im(ikx,iky,ikz)+g2T_im(ikx,iky,ikz)))
-!!              else
-                coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
-                coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
-!!              endif
+              coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
+              coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
               coefBre=ggTre*om1
               coefBim=ggTim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
@@ -1555,13 +1527,8 @@ module Special
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-!!              if (lnonlinear_source) then
-!!                coefAre=(hhXre-om12*(S_X_re(ikx,iky,ikz)+g2X_re(ikx,iky,ikz)))
-!!                coefAim=(hhXim-om12*(S_X_im(ikx,iky,ikz)+g2X_im(ikx,iky,ikz)))
-!!              else
-                coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
-                coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
-!!              endif
+              coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
+              coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
               coefBre=ggXre*om1
               coefBim=ggXim*om1
               f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
