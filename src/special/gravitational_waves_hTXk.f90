@@ -105,9 +105,9 @@ module Special
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lnonlinear_source=.false.
   logical :: lonly_mag=.false.
-  logical :: lstress=.true.
+  logical :: lstress=.true., lstress_ramp=.false.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0.
+  real :: c_light2=1., delk=0., tstress_ramp=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
@@ -130,7 +130,7 @@ module Special
     lelectmag, tau_stress_kick, fac_stress_kick, delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
-    lstress, linflation, lreheating_GW, &
+    lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lnonlinear_source, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -473,6 +473,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
       integer :: i, j, ij
+      real :: fact
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
@@ -510,6 +511,13 @@ module Special
           endif
         enddo
         enddo
+!
+!  Possibility of gradually ramping up the stress on time scale tstress_ramp.
+!
+        if (lstress_ramp) then
+          fact=min((t-tstart)/tstress_ramp, 1.)
+          p%stress_ij(:,:)=p%stress_ij(:,:)*fact
+        endif
       endif
 !
     endsubroutine calc_pencils_special
