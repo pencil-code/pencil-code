@@ -74,16 +74,25 @@ def calc_shocktube(xarr, time, par=list(), lreference=False,
         par.gamma = 1.4
         par.ss_right = np.log(0.1)/par.gamma - np.log(0.125) #pressure=0.1
         par.ss_left = np.log(3.0)/par.gamma - np.log(1.0) #pressure=3.0
-    par.__setattr__('pp_left',np.exp(par.gamma*(par.ss_left+
-                     np.log(par.rho_left[0]))))
-    par.__setattr__('pp_right',np.exp(par.gamma*(par.ss_right+
-                     np.log(par.rho_right[0]))))
+    cv1 = par.gamma/par.cp
+    cv = par.cp/par.gamma
+    gamma_m1 = par.gamma-1.
+    if par.gamma == 1.0:
+        lnTT0 = np.log(par.cs0**2/par.cp)
+    else:
+        lnTT0 = np.log(par.cs0**2/(par.cp*gamma_m1))
+    lnrho0 = np.log(par.rho0)
+    lnTT_l = lnTT0+cv1*par.ss_left +gamma_m1*(np.log(par.rho_left[0] )-lnrho0)
+    lnTT_r = lnTT0+cv1*par.ss_right+gamma_m1*(np.log(par.rho_right[0])-lnrho0)
+    par.__setattr__('pp_left',
+                     (par.cp-cv)*np.exp(lnTT_l+np.log(par.rho_left[0] )))
+    par.__setattr__('pp_right',
+                     (par.cp-cv)*np.exp(lnTT_r+np.log(par.rho_right[0])))
     ## Warn about imperfections:
     if not par.uu_left == 0. or not par.uu_right == 0.:
         print("Case initially not at rest not yet implemented"+
               " -- results not valid")
 
-    gamm1=par.gamma-1.
 
     csl=np.sqrt(par.gamma*par.pp_left/par.rho_left[0])       # left sound speed
 
@@ -96,9 +105,9 @@ def calc_shocktube(xarr, time, par=list(), lreference=False,
 
     p3=par.pp_left*(par.pp_right/par.pp_left)**0.2             # initial guess
     for i in range(1,21):
-        u3 = csl*2/gamm1*(1-(p3/par.pp_left)**(gamm1/2/par.gamma))
+        u3 = csl*2/gamma_m1*(1-(p3/par.pp_left)**(gamma_m1/2/par.gamma))
         p3 = par.pp_right + (u3-par.uu_right)*np.sqrt(
-             par.rho_right[0]/2*((par.gamma+1)*p3+gamm1*par.pp_right))
+             par.rho_right[0]/2*((par.gamma+1)*p3+gamma_m1*par.pp_right))
 
         if DEBUG:
             print("p3/pl {}, u3 {}".format(p3/par.pp_left, u3))
@@ -114,6 +123,8 @@ def calc_shocktube(xarr, time, par=list(), lreference=False,
 
     ##   positions of separating faces
     x1 = (par.uu_left-csl)*time
+    if DEBUG:
+        print("x1 {}, csl {}, par.uu_left {}".format(x1, csl, par.uu_left))
     x2 = (u3-cs3)*time
     x3 = u4*time
     x4 = us*time
@@ -149,9 +160,9 @@ def calc_shocktube(xarr, time, par=list(), lreference=False,
         rho[left] = par.rho_left[0]
 
     if len(reg2)>0:                                    # expansion region
-        uu[reg2]   = 2/(par.gamma+1)*(csl+xarr[reg2]/time+gamm1/2*par.uu_right)
-        pp[reg2]   = par.pp_left*(1-gamm1/2*uu[reg2]/csl)**(2*par.gamma/gamm1)
-        rho[reg2] = par.rho_left[0]*(1-gamm1/2*uu[reg2]/csl)**(2/gamm1)
+        uu[reg2]   = 2/(par.gamma+1)*(csl+xarr[reg2]/time+gamma_m1/2*par.uu_right)
+        pp[reg2]   = par.pp_left*(1-gamma_m1/2*uu[reg2]/csl)**(2*par.gamma/gamma_m1)
+        rho[reg2] = par.rho_left[0]*(1-gamma_m1/2*uu[reg2]/csl)**(2/gamma_m1)
 
     if len(reg3)>0:
         uu[reg3] = u3
