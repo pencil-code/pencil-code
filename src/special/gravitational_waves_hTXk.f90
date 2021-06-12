@@ -347,13 +347,16 @@ module Special
 !
       if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
-    if (lnonlinear_source) then
-      if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
 !
-      if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
-    endif
+!  Allocate memory for nonlinear source
+!
+      if (lnonlinear_source) then
+        if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
+!
+        if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+      endif
 !
 !  calculate kscale_factor (for later binning)
 !
@@ -1038,6 +1041,7 @@ module Special
               endif
 !
 ! Added for nonlinear GW memory effect
+!
             if (TGW_spec) then
               do q=1,3
               do p=1,3
@@ -1172,6 +1176,8 @@ module Special
       allocate(S_X_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_X_im')
 !
+!  Allocate 18 chunks of memory for nonlinear source
+!
       if (lnonlinear_source) then
         allocate(Hijkre(nx,ny,nz,3,6),stat=stat)
         if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkre')
@@ -1188,130 +1194,128 @@ module Special
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
-
+!  Added for computation of Hijk
 !
-! Added for computation of Hijk
-!
-   if (lnonlinear_source) then
-      do ikz=1,nz
-        do iky=1,ny
-          do ikx=1,nx
-
+      if (lnonlinear_source) then
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
 !
 !  compute e_T and e_X; determine first preferred direction,
 !  which is a component with the smallest component by modulus.
+!  Note: this is duplicated code and any changes here need to be done also elsewhere.
 !
-            k1=kx_fft(ikx+ipx*nx)
-            k2=ky_fft(iky+ipy*ny)
-            k3=kz_fft(ikz+ipz*nz)
-            kvec(1)=k1
-            kvec(2)=k2
-            kvec(3)=k3
-            k1sqr=k1**2
-            k2sqr=k2**2
-            k3sqr=k3**2
-            ksqr=k1sqr+k2sqr+k3sqr
-
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              e1=0.
-              e2=0.
-            else
+              k1=kx_fft(ikx+ipx*nx)
+              k2=ky_fft(iky+ipy*ny)
+              k3=kz_fft(ikz+ipz*nz)
+              kvec(1)=k1
+              kvec(2)=k2
+              kvec(3)=k3
+              k1sqr=k1**2
+              k2sqr=k2**2
+              k3sqr=k3**2
+              ksqr=k1sqr+k2sqr+k3sqr
 !
-              if(abs(k1)<abs(k2)) then
-                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
-                  e1=(/0.,-k3,+k2/)
-                  e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
-                else !(k3 is pref dir)
-                  e1=(/k2,-k1,0./)
-                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+              if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+                e1=0.
+                e2=0.
+              else
+!
+                if(abs(k1)<abs(k2)) then
+                  if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                    e1=(/0.,-k3,+k2/)
+                    e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                  else !(k3 is pref dir)
+                    e1=(/k2,-k1,0./)
+                    e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                  endif
+                else !(k2 smaller than k1)
+                  if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                    e1=(/-k3,0.,+k1/)
+                    e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                  else !(k3 is pref dir)
+                    e1=(/k2,-k1,0./)
+                    e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                  endif
                 endif
-              else !(k2 smaller than k1)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
-                  e1=(/-k3,0.,+k1/)
-                  e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
-                else !(k3 is pref dir)
-                  e1=(/k2,-k1,0./)
-                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
-                endif
+                e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+                e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
               endif
-              e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
-              e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
-            endif
-
 !
 !  compute e_T and e_X
 !
-            do j=1,3
-            do i=1,3
-              ij=ij_table(i,j)
-              e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
-              e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
-            enddo
-            enddo
-
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+                e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+              enddo
+              enddo
 !
 !  possibility of swapping the sign of e_X
 !
-            if (lswitch_sign_e_X) then
-              if (k3<0.) then
-                e_X=-e_X
-              elseif (k3==0.) then
-                if (k2<0.) then
+              if (lswitch_sign_e_X) then
+                if (k3<0.) then
                   e_X=-e_X
-                elseif (k2==0.) then
-                  if (k1<0.) then
+                elseif (k3==0.) then
+                  if (k2<0.) then
                     e_X=-e_X
+                  elseif (k2==0.) then
+                    if (k1<0.) then
+                      e_X=-e_X
+                    endif
                   endif
                 endif
               endif
-            endif
-
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
-            hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
-            hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
-            hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
-            hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+              hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+              hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+              hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+              hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
 !
-! compute Hijk for nonlinear GW memory effect
+! compute Hijk for nonlinear GW memory effect (still in Fourier space)
 !             
-               do i=1,3 
-               do j=1,6 
-                 Hijkim(ikx,iky,ikz,i,j)=kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre) 
-                 Hijkre(ikx,iky,ikz,i,j)=-kvec(i)*(e_T(j)*hhTim+e_X(j)*hhXim)
-               enddo
-               enddo
+              do i=1,3 
+              do j=1,6 
+                Hijkim(ikx,iky,ikz,i,j)=+kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre) 
+                Hijkre(ikx,iky,ikz,i,j)=-kvec(i)*(e_T(j)*hhTim+e_X(j)*hhXim)
+              enddo
+              enddo
 !
 !  end of ikx, iky, and ikz loops
 !
-
+            enddo
           enddo
         enddo
-      enddo
-      do i=1,3
-      do j=1,6
-        call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j))
-      enddo
-      enddo
-
-      do i=1,3
-      do j=1,3
-        ij=ij_table(i,j)
-      do p=1,3
-      do q=1,3
-        pq=ij_table(p,q)
-        nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
-            -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
-        nonlinear_Tpq_im(:,:,:,pq)=nonlinear_Tpq_im(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkim(:,:,:,q,ij) &
-            +Hijkim(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
-      enddo
-      enddo
-      enddo
-      enddo
-   
+!
+!  Go back with Hijkre into real space:
+!
+        do i=1,3
+        do j=1,6
+          call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j))
+        enddo
+        enddo
+!
+        do i=1,3
+        do j=1,3
+          ij=ij_table(i,j)
+        do p=1,3
+        do q=1,3
+          pq=ij_table(p,q)
+          nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
+              -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
+          nonlinear_Tpq_im(:,:,:,pq)=nonlinear_Tpq_im(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkim(:,:,:,q,ij) &
+              +Hijkim(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
+        enddo
+        enddo
+        enddo
+        enddo
+!
 ! end of if condition for nonlinear_source
-   endif
+!
+      endif
 !
 !  Assemble stress, Tpq
 !
@@ -1450,8 +1454,8 @@ module Special
               Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikx,iky,ikz,pq)
               Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikx,iky,ikz,pq)
               if (lnonlinear_source) then
-                 Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_re(ikx,iky,ikz,pq)
-                 Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_im(ikx,iky,ikz,pq)
+                 Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_re(ikx,iky,ikz,pq)*nonlinear_source_fact
+                 Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_im(ikx,iky,ikz,pq)*nonlinear_source_fact
               endif
             enddo
             enddo
