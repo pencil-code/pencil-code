@@ -5,7 +5,7 @@ from astropy.constants import au
 #
 datadir = '../data'
 unit_length=au.to('cm').value
-par=pc.read_param(datadir=datadir)
+par=pc.read.param(datadir=datadir)
 #
 # According to the RADMC3D manual, the way the variable coordsystem works is
 #
@@ -14,7 +14,7 @@ par=pc.read_param(datadir=datadir)
 # If 200<=coordsystem<300 the coordinate system is cylindrical.
 #
 xdim=unit_length
-print par.coord_system
+print(par.coord_system)
 if (par.coord_system == 'cartesian'):
     coordsystem = 99
     ydim=unit_length
@@ -28,11 +28,11 @@ elif (par.coord_system == 'spherical'):
     ydim=1.
     zdim=1.
 else:
-    print "the world is flat and we never got here"
+    print("the world is flat and we never got here")
     #break
             
-grid=pc.read_grid(trim=True,datadir=datadir)
-dim=pc.read_dim(datadir=datadir)
+grid=pc.read.grid(trim=True,datadir=datadir)
+dim=pc.read.dim(datadir=datadir)
 
 iformat=1
 grid_style=0
