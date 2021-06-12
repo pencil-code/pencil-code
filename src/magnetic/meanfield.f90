@@ -435,6 +435,13 @@ module Magnetic_meanfield
           detat_x= meanfield_etat*0.5*(1.-0.01)*exp(-((x(l1:l2)-0.7)/0.02)**2)
           detat_y= 0.
           detat_z= 0.
+        case ('sinx**2*exp(-z/H)')
+          etat_x=sin(x(l1:l2))**2
+          etat_y=meanfield_etat
+          etat_z=exp(-z/meanfield_etat_height)
+          detat_x=2.*sin(x(l1:l2))*cos(x(l1:l2))
+          detat_y=0.
+          detat_z=-etat_z/meanfield_etat_height
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile profile')
