@@ -71,7 +71,7 @@ module Testfield
   logical :: luse_main_run=.true., lvisc_simplified_testfield=.false.
   logical :: lremove_meanaa0x_test=.false., lremove_meanaa0y_test=.false., &
              lremove_meanuu0x_test=.false., lremove_meanuu0y_test=.false., &
-             lzero_only=.false., lremove_E0=.false., lremove_F0=.false.
+             lzero_only=.false., lremove_E0=.false., lremove_F0=.false., lremove_Q0=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -117,7 +117,7 @@ module Testfield
        lugutest, lfprestest, lSghtest, &
        lremove_meanaa0x_test, lremove_meanaa0y_test, &
        lremove_meanuu0x_test, lremove_meanuu0y_test, &
-       damp_uxb, lzero_only, lremove_E0, lremove_F0
+       damp_uxb, lzero_only, lremove_E0, lremove_F0, lremove_Q0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -544,6 +544,7 @@ module Testfield
 !
       lremove_E0 = lremove_E0 .and. lmagnetic
       lremove_F0 = lremove_F0 .and. lhydro
+      lremove_Q0 = lremove_Q0 .and. ldensity
 !
       if (ivid_bb11/=0) then
         !call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
@@ -803,6 +804,7 @@ module Testfield
       integer, parameter :: i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       logical,save :: ltest_ugu=.false.,ltest_ugh=.false., ltest_Sgh=.false.
+      real :: fac
 !
       intent(in)   :: f,p
       intent(inout):: df
@@ -1151,12 +1153,17 @@ module Testfield
 !
 !  evaluate different contributions to <uxb>, <jxb>/rho0 + <u.gradu> + 2*nu*<S'*grad h> and u.grad h.
 !
-          Eipq(:,:,jtest)=uxbtest*bamp1
+          if (jtest==iE0) then
+            fac=1.
+          else
+            fac=bamp1
+          endif
+          Eipq(:,:,jtest)=uxbtest*fac
           Fipq(:,:,jtest)=rho0test1*jxbtest
           if (lugutest) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest
           if (.not.lvisc_simplified_testfield.and.lSghtest) Fipq(:,:,jtest)=Fipq(:,:,jtest)+2.*nutest*Sghtest
-          Fipq(:,:,jtest)=Fipq(:,:,jtest)*bamp1
-          Rpq(:,jtest)=ughtest*bamp1
+          Fipq(:,:,jtest)=Fipq(:,:,jtest)*fac
+          Rpq(:,jtest)=-ughtest*fac
         endif
 !
         if (lfirst.and.ldt) then
@@ -1185,9 +1192,22 @@ module Testfield
         call dot(B_ext_inv,jxbtestMK,phiMK)
       endif
 !
-      if (lremove_E0) df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - Eipq(:,:,iE0)
-      if (lremove_F0) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - Fipq(:,:,iE0)
-
+      if (lremove_E0) then
+        do j=1,3 
+          df(l1:l2,m,n,iax+j-1) = df(l1:l2,m,n,iax+j-1)-uxbtestmz(nl,j,iE0)
+        enddo
+      endif
+      if (lremove_F0) then
+!if (ldiagnos.and.m==m1.and.lroot) print*, 'maxmin(ugutestmz etc.)=', &
+!maxval(abs(ugutestmz(nl,:,iE0)-jxbtestmz(nl,:,iE0)*rho0test1-2.*nutest*Sghtestmz(nl,:,iE0)))
+        do j=1,3 
+          df(l1:l2,m,n,iux+j-1) = df(l1:l2,m,n,iux+j-1)+ugutestmz(nl,j,iE0)-jxbtestmz(nl,j,iE0)*rho0test1-2.*nutest*Sghtestmz(nl,j,iE0)
+        enddo
+      endif
+      if (lremove_Q0) then
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho)+ughtestmz(nl,iE0)
+      endif
+!
       if (lfirst.and.ldt) then
         maxadvec=maxadvec+advec_uu
         advec2=advec2+advec_va2
