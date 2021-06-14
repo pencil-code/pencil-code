@@ -687,10 +687,20 @@ sub parse {
     my $dups_ok = ($args{dups_ok} || '' );
     my $broken  = ($args{broken}  || 0  );
     my $format  = ($args{format}  || 'f90' );
+    my $double  = ($args{double}  || 0 );
 
     if (lc($format) eq 'idl' || lc($format) eq 'python' ) {
-        ${cmplx_pref} = "complex"; # complex number prefix
+        if ($double) {
+            if (lc($format) eq 'python') {
+              $cmplx_pref = "double complex"; # double complex number prefix
+            } else {
+              $cmplx_pref = "dcomplex"; # double complex number prefix
+            }
+        } else {
+            $cmplx_pref = "complex"; # complex number prefix
+        }
     }
+
     # Get text from file if necessary
     $text      = ($args{text}  || $text );
     if (!defined($text)) {
@@ -980,7 +990,11 @@ sub output {
         $last_suff = "$newline";
         $foot_pref = "";
         $foot_suff = "";
-        $cmplx_pref = "complex"; # complex number prefix
+        if ($double) {
+            $cmplx_pref = "double complex"; # double complex number prefix
+        } else {
+            $cmplx_pref = "complex"; # complex number prefix
+        }
     } elsif (lc($format) eq 'idl') {
         $header = "$name = {";
         $footer = "}";
@@ -1000,7 +1014,11 @@ sub output {
             $last_suff = "$newline";
         }
         #
-        $cmplx_pref = "complex"; # complex number prefix
+        if ($double) {
+            $cmplx_pref = "dcomplex"; # double complex number prefix
+        } else {
+            $cmplx_pref = "complex"; # complex number prefix
+        }
     } else                         {
         croak "output(): Format <$format> unknown";
     }

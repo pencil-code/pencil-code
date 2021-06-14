@@ -32,6 +32,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   --output=<file>       Output file, or stdout if not given
 #   -d
 #   --double              Mark floating-point values as double precision
+#   -u
+#   --udate               Force update of output (when precision is changed)
 #   -M <N>
 #   --maxtags=<N>         Like '-1', but split result in blocks of up to <N>
 #                         tags: { block1} {block 2} ..
@@ -68,6 +70,7 @@ GetOptions(\%opts,
                -f=s --function=s
                -o=s --output=s
                -d   --double
+               -u   --update
                -M=i --maxtags=i
                -q   --quiet
                -v   --version )
@@ -85,6 +88,7 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $function = ($opts{'f'} || $opts{'function'} || 'param');
 my $out_file = ($opts{'o'} || $opts{'output'}   || '');
 my $double   = ($opts{'d'} || $opts{'double'}   || 0);
+my $force    = ($opts{'u'} || $opts{'update'}   || 0);
 my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
 my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
@@ -97,13 +101,16 @@ if (!@ARGV) { @ARGV = ('-'); }
 if ($out_file) {
     if (-e $out_file) {
         my $need_update = 0;
-        my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_out, $ctime, $blksize, $blocks) = stat ($out_file);
-        foreach my $file (@ARGV) {
-            if (-e $file) {
-                my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_in, $ctime, $blksize, $blocks) = stat ($file);
-                if ($mtime_in >= $mtime_out) { $need_update = 1; }
+        if (!$force) {
+            my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_out, $ctime, $blksize, $blocks) = stat ($out_file);
+            foreach my $file (@ARGV) {
+                if (-e $file) {
+                    my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_in, $ctime, $blksize, $blocks) = stat ($file);
+                    if ($mtime_in >= $mtime_out) { $need_update = 1; }
+                }
             }
-        }
+        } else {$need_update = 1};
+
         if (!$need_update) {
             open (OUT_FILE, "< ".$out_file) or die ("Error while reading '".$out_file."' ($!)\n");
             while (!eof (OUT_FILE)) {
@@ -125,8 +132,9 @@ if ($out_file) {
 my $nl  = Fortran::F90Namelist->new();
 my $nl2 = Fortran::F90Namelist->new();
 $nl2->debug(1) if ($debug);
+
 foreach my $file (@ARGV) {
-    $nl2->parse(file => $file, all => 1, merge => 1, format => 'idl')
+    $nl2->parse(file => $file, all => 1, merge => 1, format => 'idl', double => $double)
         or die "Couldn't parse file <$file>\n";
     $nl->merge($nl2);
 }

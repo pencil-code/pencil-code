@@ -13,7 +13,7 @@
 ;  REQUIRES: external 'nl2idl' perl script (WD)
 ;  
 pro pc_read_param, object=object, dim=dim, datadir=datadir, $
-    param2=param2, run_param=run_param, print=print, quiet=quiet, help=help
+    param2=param2, run_param=run_param, print=print, quiet=quiet, help=help, single=single, update=update
 COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -24,7 +24,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, "pc_read_param, object=object,"
     print, "               datadir=datadir, proc=proc,"
-    print, "               /print, /quiet, /help,"
+    print, "               /single, /update, /print, /quiet, /help,"
     print, "               /run_param"
     print, ""
     print, "Returns the parameters of a Pencil-Code run."
@@ -35,6 +35,8 @@ COMPILE_OPT IDL2,HIDDEN
     print, "   object : optional structure in which to return all the above as tags  [struct]"
     print, ""
     print, "   /run_param: for reading param2.nml (synonym: /param2)"
+    print, "   /single: instruction to create all variables in single precision"
+    print, "   /update: instruction to update output after precision change"
     print, "   /print : instruction to print all variables to standard output"
     print, "   /quiet : instruction not to print any 'helpful' information"
     print, "   /help  : display this usage information, and exit"
@@ -45,6 +47,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default parameters.
 ;
   default, quiet, 0
+  default, single, 0
+  default, update, 0
 ;
 ; Default data directory.
 ;
@@ -77,10 +81,14 @@ COMPILE_OPT IDL2,HIDDEN
   if (pencil_home eq "") then $
       message, "ERROR: please 'source sourceme.sh', before using this function."
 ;
-; If double precision, force input to be doubles.
+; If run is in double precision and single precision not requested, force input to be doubles.
 ;
-  nl2idl_d_opt = ''
-  if (data_type eq 'double') then nl2idl_d_opt += ' -d'
+  be_double=not keyword_set(single) and data_type eq 'double'
+  if (be_double) then $
+    nl2idl_d_opt = ' -d' $
+  else $
+    nl2idl_d_opt = ''
+  if keyword_set(update) then nl2idl_d_opt += ' -u '
 ;
 ; Read the parameter namelist file.
 ;
@@ -108,7 +116,6 @@ COMPILE_OPT IDL2,HIDDEN
       if strlen(line) gt 500 then begin
         startind=strpos(line,'[')+1
         if startind gt 0 then begin 
-;if startind gt 0 then print, 'line=', line
           ok=1
           stopind=strpos(line,']')-1
           if strpos(line,"'") ge 0 then $
@@ -118,21 +125,20 @@ COMPILE_OPT IDL2,HIDDEN
             tmparr=strsplit(strmid(line,startind,stopind-startind+1),') *, *complex\(',/REGEX,/EXTRACT)
             tmparr=strjoin(tmparr,' ')
             startpos=strpos(tmparr,'(')+1 & stoppos=strpos(tmparr,')')-1
-            isdble=strpos(tmparr,'D') ge 0
-            if isdble ge 0 then $
+            if be_double then $
               tmparr=double(strsplit(strmid(tmparr,startpos,stoppos-startpos+1),', ', /EXTRACT)) $
             else $
               tmparr=float(strsplit(strmid(tmparr,startpos,stoppos-startpos+1),', ', /EXTRACT))
             ncompl=n_elements(tmparr)/2
             tmparr=reform(tmparr,2,ncompl)
-            if isdble then $
+            if be_double then $
               tmparr=reform(dcomplex(tmparr[0,*],tmparr[1,*])) $
             else $
               tmparr=reform(complex(tmparr[0,*],tmparr[1,*]))
           endif else if strpos(line,'L') ge 0 then $
             tmparr=long(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
           else if strpos(line,'.') ge 0 then begin
-            if strpos(line,'D') ge 0 then $
+            if be_double then $
               tmparr=double(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
             else $
               tmparr=float(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT))
