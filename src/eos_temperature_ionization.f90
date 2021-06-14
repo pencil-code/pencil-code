@@ -57,7 +57,16 @@ module EquationOfState
   real :: va2max_eos=huge1
   integer :: va2power_eos=5
   real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
-! input parameters
+  real :: cs0=impossible, rho0=impossible, cp=impossible,cv=impossible
+  real :: cs20=impossible, lnrho0=impossible
+  logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
+  logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs_as_aux=.false.
+  logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
+  logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
+  real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
+!
+! init parameters
+!
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                            lrevise_chiH_eV, chiH_eV, &
                            lrevise_chiHminus_eV, chiHminus_eV, &
@@ -66,7 +75,9 @@ module EquationOfState
                            lcs_as_aux,lgamma_as_aux,lnabad_as_aux, &
                            ldelta_as_aux, &
                            lHminus_opacity_correction, TTbot, TTtop
+!
 ! run parameters
+!
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                           lrevise_chiH_eV, chiH_eV, &
                           lrevise_chiHminus_eV, chiHminus_eV, &
@@ -76,15 +87,10 @@ module EquationOfState
                           ldelta_as_aux, &
                           lHminus_opacity_correction
 !
-  real :: cs0=impossible, rho0=impossible, cp=impossible,cv=impossible
-  real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
-  logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs_as_aux=.false.
-  logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
-  logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
-  real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
   real :: cs2bot=impossible, cs2top=impossible
+!
 ! Allocatable 3D-array for cp
+!
   real, dimension (:,:,:), allocatable :: cp_full
 !
   real, dimension(nchemspec,18) :: species_constants
