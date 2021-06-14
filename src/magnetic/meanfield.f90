@@ -1207,38 +1207,35 @@ module Magnetic_meanfield
 !
 !  apply pumping effect: EMF=...-.5*grad(etat) x B
 !
-!AB: indentation?
-          if (lmeanfield_pumping) then
-            fact=.5*meanfield_pumping
-            call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
-            p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
-          endif
+        if (lmeanfield_pumping) then
+          fact=.5*meanfield_pumping
+          call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
+          p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
+        endif
 !
 !  apply pumping effect in spherical coordinates
 !
-          if (gamma_effect/=0.) then
-            fact=gamma_effect
-            p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*p%bb(:,3)
-            p%mf_EMF(:,3)=p%mf_EMF(:,3)+fact*p%bb(:,2)
-          endif
+        if (gamma_effect/=0.) then
+          fact=gamma_effect
+          p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*p%bb(:,3)
+          p%mf_EMF(:,3)=p%mf_EMF(:,3)+fact*p%bb(:,2)
+        endif
 !
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
 !
-          if (lweyl_gauge) then
-            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
-          else
-            call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
-            call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
-          endif
+        if (lweyl_gauge) then
+          call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
+        else
+          call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
+          call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
+        endif
 !
 !  Allow for possibility of variable etat from the f-array.
 !
-          if (ietat/=0) then
-            call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
-          endif
-!???    endif
-!AB: end of indentation problem
+        if (ietat/=0) then
+          call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
+        endif
 !
 !  Possibility of adding contribution from large-scale velocity.
 !
