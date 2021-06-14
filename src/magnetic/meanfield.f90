@@ -748,7 +748,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_etaB2, g2, chit_prof !, quench_chiB
       real, dimension (nx) :: oneQbeta02, oneQbeta2, XXj_BBj, BjBzj
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
-      real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho, glnchit2
+      real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
       real :: kx,fact
       integer :: i,j,l
 !
@@ -1205,13 +1205,13 @@ module Magnetic_meanfield
           endif
         endif
 !
-!  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
+!  apply pumping effect: EMF=...-.5*grad(etat) x B
 !
 !AB: indentation?
           if (lmeanfield_pumping) then
             fact=.5*meanfield_pumping
-            p%mf_EMF(:,1)=p%mf_EMF(:,1)+fact*meanfield_getat_tmp(:,3)*p%bb(:,2)
-            p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*meanfield_getat_tmp(:,3)*p%bb(:,1)
+            call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
+            p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
           endif
 !
 !  apply pumping effect in spherical coordinates
