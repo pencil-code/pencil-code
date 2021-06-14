@@ -38,7 +38,7 @@ make_rad_dir()
   fi
 }
 #
-generate_amr_grid_inp()
+generate_amr_grid()
 {
     old_dir="`pwd`"
     cd $radmc
@@ -51,7 +51,20 @@ generate_amr_grid_inp()
     cd $old_dir
 }
 #
-generate_stars_inp()
+generate_wavelength_micron()
+{
+    old_dir="`pwd`"
+    cd $radmc
+    if [ ! -f write_wavelength_micron.py ]; then
+	ln -s $PENCIL_HOME/python/radmc/write_wavelength_micron.py .
+    fi
+    if [ ! -f wavelength_micron.inp ]; then
+	ipython write_wavelength_micron.py
+    fi
+    cd $old_dir
+}
+#
+generate_stars()
 {
     old_dir="`pwd`"
     cd $radmc
@@ -62,6 +75,30 @@ generate_stars_inp()
 	ipython write_stars.py
     fi
     cd $old_dir
+}
+#
+generate_dust_density()
+{
+    old_dir="`pwd`"
+    cd $radmc
+    if [ ! -f write_dust_density.py ]; then
+	ln -s $PENCIL_HOME/python/radmc/write_dust_density.py .
+    fi
+    if [ ! -f dust_density.inp ]; then
+	ipython write_dust_density.py -o
+    fi
+    cd $old_dir
+}
+#
+link_mctherm()
+{
+  old_dir="`pwd`"
+  cd $radmc
+
+   if [ ! -f mctherm.py ]; then
+	ln -s $PENCIL_HOME/python/radmc/mctherm.py .
+   fi
+  cd $old_dir
 }
 #
 link_wavelenghts_stars_inp()
@@ -215,9 +252,13 @@ radmcdir=$pencil_home_path/radmc
 echo "Files will be linked to the root code directory '$pencil_home_path'."
 #
 make_rad_dir
-generate_amr_grid_inp
-generate_stars_inp
-link_wavelenghts_stars_inp
+generate_amr_grid
+generate_wavelength_micron
+generate_stars
+generate_dust_density
+link_mctherm
+#link_wavelenghts_stars_inp
+
 #remove_broken_links
 #link_scripts
 #make_src_dir
