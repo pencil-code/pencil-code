@@ -3,7 +3,9 @@
 ##  $Id$
 ##
 #  Creates a new run directory for continuation of an existing run, but with
-#  restricted z extent, according to the range of z processors provided.
+#  restricted z extent, according to the range of z processors [from-z-proc,to-z-proc] provided.
+#  If to-z-proc < from-z-proc and the z boundary condition is periodic, the z-extent is interpreted to 
+#  stretch across the upper z boundary.
 #  Invokes pc_newrun. cparam.local, run.in and param.nml are modified to render the
 #  new run compile-and-run ready. start.x must not be executed.
 #
@@ -30,12 +32,39 @@ fi
 srcdir=src
 datadir=data
 
-nprocx=`grep '^[^!]*nprocx *=' $srcdir/cparam.local | sed 's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'`
-nprocy=`grep '^[^!]*nprocy *=' $srcdir/cparam.local | sed 's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'`
-nprocz=`grep '^[^!]*nprocz *=' $srcdir/cparam.local | sed 's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'`
+nprocx=`grep -i '^[^!]*nprocx *=' $srcdir/cparam.local | sed 's/^.*nprocx *= *\([1-9][0-9]*\).*$/\1/'`
+nprocy=`grep -i '^[^!]*nprocy *=' $srcdir/cparam.local | sed 's/^.*nprocy *= *\([1-9][0-9]*\).*$/\1/'`
+nprocz=`grep -i '^[^!]*nprocz *=' $srcdir/cparam.local | sed 's/^.*nprocz *= *\([1-9][0-9]*\).*$/\1/'`
 nprocxy=$(($nprocx*$nprocy))
+ncpus=$(($nprocxy*$nprocz))
 
-nzgrid=`grep '^[^!]*nzgrid *=' $srcdir/cparam.local | sed 's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'`
+if (($kprocz_from > $nprocz-1)); then
+  echo "Error: <from-z-proc> >= z processors number."
+  exit
+fi
+
+if (($kprocz_to > $nprocz-1)); then
+  echo "Error: <to-z-proc> >= z processors number."
+  exit
+fi
+
+lperiz=`grep -i '^[^0-9a-zA-Z_]*LPERI *=' $datadir/param.nml | sed 's/^.*[ ,*]\([tTfF]\) *, *$/\1/'`
+
+if (($kprocz_from > $kprocz_to)); then
+  if [[ $lperiz =~ [fF] ]]; then
+    echo "Error: <from-z-proc> larger than <to-z-proc>, but z-BC not periodic."
+    exit
+  else
+    kprocz_to=$(($kprocz_to+$nprocz))
+  fi
+fi
+
+if (($kprocz_to-$kprocz_from+1 == $nprocz)); then
+  echo "Error: Range $kprocz_from to $2 covers all z processors = no restriction."
+  exit
+fi
+
+nzgrid=`grep -i '^[^!]*nzgrid *=' $srcdir/cparam.local | sed 's/^.*nzgrid *= *\([1-9][0-9]*\).*$/\1/'`
 nz=$(($nzgrid/$nprocz))
 zstart=`grep -i '^[^0-9A-Za-z_]*XYZ0 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
 zend=`grep -i '^[^0-9A-Za-z_]*XYZ1 *=' $datadir/param2.nml | sed 's/^[^,][^,]*,[^,][^,]*,\([ 0-9.EeDd+-][ 0-9.EeDd+-]*\).*$/\1/'`
@@ -51,7 +80,7 @@ find_proc(){
 }
 
 edit_iz(){
-  iz=`grep '^[^!]*[^_0-9a-zA-Z!]*iz'$1' *=' run.in | sed -e's/^.*[^_0-9a-zA-Z]*iz'$1' *= *\([1-9][0-9]*\).*$/\1/'`
+  iz=`grep -i '^[^!]*[^_0-9a-zA-Z!]*iz'$1' *=' run.in | sed -e's/^.*[^_0-9a-zA-Z]*iz'$1' *= *\([1-9][0-9]*\).*$/\1/'`
   if (( $iz -ne '')); then
     sed -i -e's/\(^[^!]*[^_0-9a-zA-Z!]*iz'$1' *= *\)[1-9][0-9]*/\1'$(($iz-$izshift))'/' run.in
   fi
@@ -74,7 +103,7 @@ for k in `seq $kprocz_from $kprocz_to`;
         mkdir ../$dest_dir/$datadir/proc$iproc_new
         cp -r $datadir/proc$iproc/var.dat ../$dest_dir/$datadir/proc$iproc_new
         cp -r $datadir/proc$iproc/global.dat ../$dest_dir/$datadir/proc$iproc_new >& /dev/null
-        iproc=$(($iproc+1))
+        iproc=$((($iproc+1)%$ncpus))
       done    
     done    
   done    
