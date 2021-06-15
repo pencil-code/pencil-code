@@ -103,11 +103,12 @@ module Special
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
-  logical :: linflation=.false., lreheating_GW=.false., lnonlinear_source=.false.
+  logical :: linflation=.false., lreheating_GW=.false.
   logical :: lonly_mag=.false.
-  logical :: lstress=.true., lstress_ramp=.false.
+  logical :: lstress=.true., lstress_ramp=.false., ldelkt=.false.
+  logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0., tstress_ramp=0.
+  real :: c_light2=1., delk=0., tdelk=0., tstress_ramp=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -128,11 +129,11 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    lelectmag, tau_stress_kick, fac_stress_kick, delk, &
+    lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
-    lnonlinear_source, nonlinear_source_fact
+    lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -354,8 +355,12 @@ module Special
         if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
         if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
 !
-        if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+!  Need imaginary part only if lnonlinear_Tpq_trans=T
+!
+        if (lnonlinear_Tpq_trans) then
+          if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
+          if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+        endif
       endif
 !
 !  calculate kscale_factor (for later binning)
@@ -793,8 +798,6 @@ module Special
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
-      !if (llast) call compute_gT_and_gX_from_gij(f,'St')
-!AB: 16-aug-20 changed
       if (lfirst) call compute_gT_and_gX_from_gij(f,'St')
 !
       call keep_compiler_quiet(df)
@@ -1043,6 +1046,7 @@ module Special
 ! Added for nonlinear GW memory effect
 !
             if (TGW_spec) then
+              if (.not.lnonlinear_Tpq_trans.and.lroot) print*,'WARNING: TGW_spec incorrect; nonlinear_Tpq is still in real space'
               do q=1,3
               do p=1,3
                 pq=ij_table(p,q)
@@ -1146,7 +1150,7 @@ module Special
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
-      real :: fact
+      real :: fact, delkt
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
@@ -1195,8 +1199,10 @@ module Special
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !  Added for computation of Hijk
+!  Begin by setting nonlinear_Tpq_re=0.
 !
       if (lnonlinear_source) then
+        nonlinear_Tpq_re=0.
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -1301,15 +1307,14 @@ module Special
         do i=1,3
         do j=1,3
           ij=ij_table(i,j)
-        do p=1,3
-        do q=1,3
-          pq=ij_table(p,q)
-          nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
-              -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
-          nonlinear_Tpq_im(:,:,:,pq)=nonlinear_Tpq_im(:,:,:,pq)+Hijkre(:,:,:,p,ij)*Hijkim(:,:,:,q,ij) &
-              +Hijkim(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
-        enddo
-        enddo
+          do p=1,3
+          do q=1,3
+            pq=ij_table(p,q)
+            nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq) &
+                +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
+                -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
+          enddo
+          enddo
         enddo
         enddo
 !
@@ -1317,15 +1322,29 @@ module Special
 !
       endif
 !
-!  Assemble stress, Tpq
+!  Assemble stress, Tpq, and transform to Fourier space.
+!  Add nonlinear source here, before transforming
 !
       if (label=='St') then
         Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
         Tpq_im=0.0
-        call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
         if (lnonlinear_source) then
-          call fft_xyz_parallel(nonlinear_Tpq_re(:,:,:,:),nonlinear_Tpq_im(:,:,:,:))
+          if (nonlinear_source_fact/=0.) nonlinear_Tpq_re=nonlinear_Tpq_re*nonlinear_source_fact
+          if (lnonlinear_Tpq_trans) then
+            nonlinear_Tpq_im=0.
+            call fft_xyz_parallel(nonlinear_Tpq_re(:,:,:,:),nonlinear_Tpq_im(:,:,:,:))
+          else
+            Tpq_re(:,:,:,:)=Tpq_re(:,:,:,:)+nonlinear_Tpq_re(:,:,:,:)
+          endif
         endif
+        call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
+      endif
+!
+!  determine time-dependent delkt
+!
+      delkt=delk
+      if (ldelkt) then
+        if (t>tdelk) delkt=0.
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1376,8 +1395,8 @@ module Special
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
               else
-                if (delk/=0.) then
-                  om=sqrt(ksqr+delk**2)
+                if (delkt/=0.) then
+                  om=sqrt(ksqr+delkt**2)
                 else
                   om=sqrt(ksqr)
                 endif
@@ -1453,9 +1472,9 @@ module Special
               jq=ij_table(j,q)
               Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikx,iky,ikz,pq)
               Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikx,iky,ikz,pq)
-              if (lnonlinear_source) then
-                 Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_re(ikx,iky,ikz,pq)*nonlinear_source_fact
-                 Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_im(ikx,iky,ikz,pq)*nonlinear_source_fact
+              if (lnonlinear_source.and.lnonlinear_Tpq_trans) then
+                Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_re(ikx,iky,ikz,pq)
+                Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*nonlinear_Tpq_im(ikx,iky,ikz,pq)
               endif
             enddo
             enddo
