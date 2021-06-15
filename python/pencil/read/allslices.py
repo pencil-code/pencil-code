@@ -169,12 +169,16 @@ class SliceSeries(object):
                 tstart = 0; tend = None
             else:
                 nt = None
+            pos_object = Foo()
+            ind_object = Foo()
             for extension in extension_list:
                 if not quiet:
                     print('Extension: ' + str(extension))
                     sys.stdout.flush()
                 # This one will store the data.
                 ext_object = Foo()
+                pos_list=[]
+                ind_list=[]
                 for field in field_list:
                     if not quiet:
                         print('  -> Field: ' + str(field))
@@ -207,14 +211,29 @@ class SliceSeries(object):
                             else:
                                 print('no data at {} in '.format(it+1)+
                                       file_name)
+                        add_pos = len(pos_list)==0
                         if self.t.size == 0:
                             self.t = []
                             for it in iter_list:
                                 self.t.append(ds[str(it+1)+'/time'][()])
+                                if add_pos:
+                                    ind_list.append(ds[str(it+1)+'/coordinate'][0])
+                                    pos_list.append(ds[str(it+1)+'/position'][()])
                             self.t = np.array(self.t).astype(precision)
+                            setattr(pos_object, extension, np.array(pos_list))
+                            setattr(ind_object, extension, np.array(ind_list))
+                        else:
+                            if add_pos:
+                                for it in iter_list:
+                                    ind_list.append(ds[str(it+1)+'/coordinate'][0])
+                                    pos_list.append(ds[str(it+1)+'/position'][()])
+                                setattr(pos_object, extension, np.array(pos_list))
+                                setattr(ind_object, extension, np.array(ind_list))
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
+                setattr(self, 'position', pos_object)
+                setattr(self, 'coordinate', ind_object)
         else:
             # Define the directory that contains the slice files.
             if proc < 0:
