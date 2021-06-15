@@ -38,10 +38,12 @@ endif
 #  (i) it checks for LOCK file, and
 # (ii) it sets $datadir/directory_snap
 newdir:
+    echo "AXEL4:"
 
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
+    echo "AXEL5:"
 
 # ====================================================================== #
 #  Assume that if data/proc0/var.dat exists, we are not supposed
@@ -55,54 +57,55 @@ if (-e "$datadir"/proc0/var.dat) then
 #  If necessary, distribute var.dat from the server to the various nodes
 #  Don't indent these lines so that it is easier to vimdiff against run.csh
 #
-if ($local_disc) then
-  if ($one_local_disc) then     # one common local disc
-    foreach node ($nodelist)
-      foreach d (`cd $datadir; ls -d proc* allprocs`)
-        if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
-        if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
-        if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
-        if ($lpointmasses) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
-        $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+  if ($local_disc) then
+    if ($one_local_disc) then     # one common local disc
+      foreach node ($nodelist)
+        foreach d (`cd $datadir; ls -d proc* allprocs`)
+          if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+          if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
+          if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
+          if ($lpointmasses) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
+          $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+        end
+        if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
       end
-      if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
-    end
-  else # one local disc per MPI process (Horseshoe, etc);
-       # still doesn't cover Copson
-    set i = -1
-    foreach node ($nodelist)
-      set i=`expr $i + 1`
-      echo "i = $i"
-      set j = 0
-      while ($j != $nprocpernode)
-        set k = `expr $nprocpernode \* $i + $j`
-        if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
-        $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
-        if (-e $datadir/proc$k/global.dat) then
-          $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
+    else # one local disc per MPI process (Horseshoe, etc);
+         # still doesn't cover Copson
+      set i = -1
+      foreach node ($nodelist)
+        set i=`expr $i + 1`
+        echo "i = $i"
+        set j = 0
+        while ($j != $nprocpernode)
+          set k = `expr $nprocpernode \* $i + $j`
+          if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
+          $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+          if (-e $datadir/proc$k/global.dat) then
+            $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
+          endif
+          if ($lparticles) then
+            $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
+          endif
+          if ($lpointmasses) then
+            $SCP $datadir/proc$k/qvar.dat ${node}:$SCRATCH_DIR/proc$k/
+          endif
+          echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
+          if (-e $datadir/proc$k/timeavg.dat) then
+            $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
+          endif
+          set j=`expr $j + 1`
+        end
+        if (-e $datadir/allprocs/dxyz.dat) then
+          $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/
         endif
-        if ($lparticles) then
-          $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
-        endif
-        if ($lpointmasses) then
-          $SCP $datadir/proc$k/qvar.dat ${node}:$SCRATCH_DIR/proc$k/
-        endif
-        echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
-        if (-e $datadir/proc$k/timeavg.dat) then
-          $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
-        endif
-        set j=`expr $j + 1`
       end
-      if (-e $datadir/allprocs/dxyz.dat) then
-        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/
-      endif
-    end
+    endif
   endif
-endif
 #
 # goto rerun instead of producing a new initial condition
 #
-goto rerun
+    echo "AXEL6:"
+  goto rerun
 endif
 
 # First, check if NEWDIR is set and if yes, go there.
@@ -229,6 +232,7 @@ if ($start_status2) exit $start_status2 # propagate error status
 
 # ---------------------------------------------------------------------- #
 rerun:
+    echo "AXEL7:"
 
 # if the file ADDITIONAL_RUN_COMMAND.csh exist, execute it.
 # common file content could be:
@@ -264,6 +268,7 @@ if ($local_binary) then
   echo "ls $run_x $SCRATCH_DIR after copying:"
   ls -lt $run_x $SCRATCH_DIR
 endif
+    echo "AXEL8:"
 
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
 # (important when run is migrated within the same job)
@@ -284,6 +289,7 @@ if ($?SP_JID) then
   echo $SP_JID " # RUN STARTED on " `date` >> $datadir/jobid.dat
 endif
 
+    echo "AXEL9:"
 # Write time and current working directory into log file
 (date; echo $cwd; echo "")>> $PENCIL_HOME/.run_directories.log
 
@@ -302,6 +308,7 @@ time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status          # save for exit
 date
 
+    echo "AXEL10:"
 # Create symlinks for deprecated slices
 pc_deprecated_slice_links
 
@@ -317,11 +324,13 @@ if ($?SP_JID) then
   echo $SP_JID " # RUN FINISHED on " `date` >> $datadir/jobid.dat
 endif
 
+    echo "AXEL11:"
 # look for RERUN file
 # With this method one can only reload a new executable.
 # One cannot change directory, nor are the var.dat files returned to server.
 # See the NEWDIR method below for more options.
 if (-e "RERUN") then
+    echo "AXEL12:"
   rm -f RERUN
   echo
   echo "======================================================================="
@@ -367,8 +376,11 @@ checknewdir:
 # look for NEWDIR file
 # if NEWDIR contains a directory name, then continue run in that directory
 if (-e "NEWDIR") then
+  echo "AXEL1:"
   if (-s "NEWDIR") then
+    echo "AXEL2:"
     # Remove LOCK files before going to other directory
+    # but why?
     rm -f LOCK data/LOCK
     set olddir=$cwd
     cd `cat NEWDIR`
@@ -385,6 +397,7 @@ if (-e "NEWDIR") then
     echo
     goto newdir
   else
+    echo "AXEL3:"
     rm -f NEWDIR LOCK data/LOCK
     echo
     echo "====================================================================="
