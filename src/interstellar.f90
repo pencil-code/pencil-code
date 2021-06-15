@@ -3243,7 +3243,7 @@ module Interstellar
           "(1x,'share_SN_parameters: rho, ss, TT =',3e10.3)", &
           SNR%site%rho,SNR%site%ss,SNR%site%TT
       if (lroot.and.ip==1963) print &
-          "(1x,'share_SN_parameters: SN radius, SN dr =',2f7.3)", &
+          "(1x,'share_SN_parameters: SN radius, SN dr =',2f8.5)", &
           SNR%feat%radius,SNR%feat%dr
 !
     endsubroutine share_SN_parameters
@@ -3326,10 +3326,10 @@ module Interstellar
           endif
           if (lroot.and.ip==1963) then
             print "(1x,'explode_SN: i          ',   i6)",i
-            print "(1x,'explode_SN: radius_min ', f7.4)",radius_min
-            print "(1x,'explode_SN: radius_max ', f7.4)",radius_max
+            print "(1x,'explode_SN: radius_min ', f9.6)",radius_min
+            print "(1x,'explode_SN: radius_max ', f9.6)",radius_max
             print "(1x,'explode_SN: Rmax-Rmin  ',e10.3)",radius_max-radius_min
-            print "(1x,'explode_SN: radius_best', f7.4)",radius_best
+            print "(1x,'explode_SN: radius_best', f9.6)",radius_best
             print "(1x,'explode_SN: Nsol       ',e10.3)",Nsol_ratio*sol_mass_tot/solar_mass
           endif
           if (radius_max-radius_min<SNR%feat%dr*0.04) exit
@@ -3348,7 +3348,7 @@ module Interstellar
       SNR%feat%rhom=rhom
       endif
       radius2=SNR%feat%radius**2
-      call get_properties(f,SNR,rhom,ekintot,rhomin)
+      call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
       SNR%feat%rhom=rhom
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
@@ -3365,7 +3365,7 @@ module Interstellar
       RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
       if (lroot.and.ip==1963) then
         print "(1x,'explode_SN: Shell forming start t_SF',e10.3)",SNR%feat%t_SF
-        print "(1x,'explode_SN: Elapsed shell formation',e10.3)", &
+        print "(1x,'explode_SN: Elapsed shell formation',e11.3)", &
             SNR%feat%t_sedov-SNR%feat%t_SF
         print "(1x,'explode_SN: Shell forming radius RPDS',f7.4)",RPDS
       endif
@@ -3386,12 +3386,12 @@ module Interstellar
         frackin=min(kin_max,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
-        if (lroot.and.ip==1963) print &
-            "(1x,'explode_SN: Reset fractions SNE frackin',f7.4)",frackin
-        if (lroot.and.ip==1963) print &
-            "(1x,'explode_SN: SNE fractional energy kampl_SN, eampl_SN',2e9.2)", &
-            ktmp, etmp
       endif
+      if (lroot.and.ip==1963) print &
+          "(1x,'explode_SN: Reset fractions SNE frackin',f7.4)",frackin
+      if (lroot.and.ip==1963) print &
+          "(1x,'explode_SN: SNE fractional energy kampl_SN, eampl_SN',2e9.2)", &
+          ktmp, etmp
 !
 !  Adjust radial scale if different from SNR%feat%radius.
 !
@@ -3424,7 +3424,7 @@ module Interstellar
         c_SNmax=ampl_SN/(cnorm_gaussian_SN(dimensionality)*rfactor_SN*&
             SNR%feat%dr**dimensionality)
       endif
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: c_SN =',e10.3)",c_SN
+      if (lroot.and.ip==1963) print "(1x,'explode_SN: c_SN =',e11.4)",c_SN
 !
 !  Mass insertion normalization.
 !
@@ -3601,35 +3601,49 @@ module Interstellar
           dmpi2_tmp=(/ SNR%feat%MM, SNR%feat%EE, SNR%feat%CR /)
           call mpiallreduce_sum(dmpi2_tmp,dmpi2,3)
           SNR%feat%MM=dmpi2(1)
+          SNR%feat%EE=dmpi2(2) !without added kinetic energy
           if (SNR%feat%MM>Nsol_added*solar_mass) then
             if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f11.3)', &
                                           Nsol_added,SNR%feat%MM/solar_mass
+            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%EE = ",f7.3," SNE")', &
+                SNR%feat%EE/ampl_SN
             ierr=iEXPLOSION_TOO_HOT
             if (.not.lSN_list) return
             cmass_SN = cmass_SN*Nsol_added*solar_mass/SNR%feat%MM
           else
-            ierr=iEXPLOSION_OK 
+            ierr=iEXPLOSION_OK
             if (lroot.and.ip==1963) &
                 print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')",&
                 SNR%feat%MM/solar_mass
-            call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
-            if (ekintot_new-ekintot>ktmp) then
-              c_SN = c_SN*(ktmp+ekintot-ekintot_new+etmp)/(etmp+ktmp)
+          endif
+        endif
+        call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
+        if (ktmp>0) then
+          if (ekintot_new-ekintot>ktmp) then
+            cvelocity_SN=cvelocity_SN*sqrt(ktmp/(ekintot_new-ekintot))
+          else
+            if (ekintot_new-ekintot>0) then
+              c_SN = min(c_SNmax,&
+                             c_SN*(ktmp+ekintot-ekintot_new+etmp)/(ktmp+etmp))
+            else
+              c_SN=c_SNmax
             endif
           endif
+        else
+          if (ekintot_new-ekintot>0) c_SN = c_SN*etmp/(etmp+ekintot_new-ekintot)
         endif
       endif
 !
 !  Rescale cvelocity_SN if density distribution yields excessively high
 !  kinetic energy to approximate kinetic energy = ktmp.
 !
-      if (lSN_velocity.and.ktmp>0) then
+      if (lSN_velocity.and.ktmp>0.and..not.lSN_coolingmass) then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
         if (ekintot_new-ekintot<ktmp) then
           if (lSN_eth) then
             if (ekintot_new-ekintot>0) then
               c_SN = min(c_SNmax,&
-                                 c_SN*(ktmp+ekintot-ekintot_new+etmp)/etmp)
+                                 c_SN*(ktmp+ekintot-ekintot_new+etmp)/(ktmp+etmp))
             else
               c_SN=c_SNmax
             endif
@@ -3697,12 +3711,10 @@ module Interstellar
 !  Apply changes to the velocity field if lSN_velocity.
 !  Save changes to f-array.
 !
-        if (lSN_velocity) then
+        if (lSN_velocity.and.cvelocity_SN>0.) then
           uu=f(l1:l2,m,n,iux:iuz)
           deltauu=0.
-          if (cvelocity_SN>0.) &
-              call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,&
-                                 rho_old)
+          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,rho_old)
           f(l1:l2,m,n,iux:iuz)=uu+deltauu
         endif
 !
@@ -3725,11 +3737,11 @@ module Interstellar
       enddo
       enddo
 !
-      call get_properties(f,SNR,rhom,ekintot_new,rhomin)
+      call get_properties(f,SNR,rhom,ekintot_new,rhomin,ierr)
       if (lroot.and.ip==1963) print &
           "(1x,'explode_SN: total kinetic energy change =',e10.3)",ekintot_new-ekintot
       if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN:         c_SN finally =',e10.3)",c_SN
+        print "(1x,'explode_SN:         c_SN finally =',e11.4)",c_SN
         print "(1x,'explode_SN:     cmass_SN finally =',e10.3)",cmass_SN
         print "(1x,'explode_SN: cvelocity_SN finally =',e10.3)",cvelocity_SN
       endif
@@ -3959,6 +3971,7 @@ module Interstellar
           print "(1x,'get_properties: rhomin =',e10.3)",rhomin
           print "(1x,'get_properties: ierr   =',   i3)",ierr
           print "(1x,'get_properties: radius =', f7.3)",remnant%feat%radius
+          print "(1x,'get_properties: ekintot =', f7.3)",ekintot
         endif
       endif
 !
@@ -3979,8 +3992,9 @@ module Interstellar
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: remnant
       real, intent(in) :: cvelocity_SN, cmass_SN
+      real, intent(out) :: ekintot, rhom
       real :: radius2
-      real :: rhom, ekintot, MMtot
+      real :: MMtot
       real :: width_mass, width_velocity
       real, dimension(nx) :: rho, u2, deltarho, ee_tmp, yH
       real, dimension(nx,3) :: uu
@@ -4050,6 +4064,10 @@ module Interstellar
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
         rhom=tmp2(1)*0.75*pi_1/radius2**1.5
+      endif
+      if (lroot.and.ip==1963) then
+        print "(1x,'get_props_check: rhom =',e10.3)",rhom
+        print "(1x,'get_props_check: ekintot =', f7.3)",ekintot
       endif
 !
     endsubroutine get_props_check
