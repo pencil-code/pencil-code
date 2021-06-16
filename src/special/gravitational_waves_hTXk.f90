@@ -1304,6 +1304,9 @@ module Special
         enddo
         enddo
 !
+!  Now we compute nonlinear_Tpq_re in real space, so the imaginary
+!  part must be zero and is not used.
+!
         do i=1,3
         do j=1,3
           ij=ij_table(i,j)
@@ -1311,8 +1314,9 @@ module Special
           do q=1,3
             pq=ij_table(p,q)
             nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq) &
-                +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
-                -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
+                +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
+! -             +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
+! -             -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
           enddo
           enddo
         enddo
