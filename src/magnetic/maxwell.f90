@@ -129,15 +129,15 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: phase_aa=0.
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
-  logical :: lpolarization_basis=.false., lskip_projection_aa=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lpolarization_basis=.false., lswitch_sign_e2=.true.
+  logical :: lscale_tobox=.true., lskip_projection_aa=.false.
   logical :: lalpha_inflation, lbeta_inflation
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    lpolarization_basis, initaak, initeek, &
+    lpolarization_basis, lswitch_sign_e2, initaak, initeek, &
     ux_const, ampl_uy, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
@@ -331,6 +331,22 @@ module Magnetic
                 endif
                 e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
                 e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+              endif
+!
+!  possibility of swapping the sign of e2
+!
+              if (lswitch_sign_e2) then
+                if (k3<0.) then
+                  e2=-e2
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    e2=-e2
+                  elseif (k2==0.) then
+                    if (k1<0.) then
+                      e2=-e2
+                    endif
+                  endif
+                endif
               endif
 !
 !  compute epol=(-i/sqrt(2))*(e1+i*e2)
