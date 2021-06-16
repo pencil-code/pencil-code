@@ -13,39 +13,55 @@ def slices(*args, **kwargs):
     """
     Read Pencil Code slice data.
 
-    call signature:
+    Signature:
 
-    read(field='', extension='', datadir='data', proc=-1,
-         old_file=False, precision='f', iter_list=list, quiet=True)
+    read(field='', extension='', datadir='data', proc=-1, old_file=False,
+         precision='f', iter_list=list(), vlarge=1000000000, quiet=True,
+         tstart=0, tend=None)
 
-    Keyword arguments:
+    Parameters
+    ----------
+    *field*: Name of the field(s) to be read (string or string list).
 
-    *field*:
-      Name of the field(s) to be read.
+    *extension*: Specifies the plane slice(s).
 
-    *extension*
-      Specifies the slice(s).
+    *datadir*: Directory where the data is stored.
 
-    *datadir*:
-      Directory where the data is stored.
+    *proc*: Processor to be read. If -1 read all and assemble to one array.
 
-    *proc*:
-      Processor to be read. If -1 read all and assemble to one array.
+    *old_file*: Flag for reading old file format.
 
-    *old_file*
-      Flag for reading old file format.
+    *precision*: Precision of the data. Either float 'f' or double 'd'.
 
-    *precision*:
-      Precision of the data. Either float 'f' or double 'd'.
+    *iter_list*: List of iteration indices for which to sample the slices.
 
-   *iter_list*
-     list of iteration indices for which to sample the slices
+    *vlarge*: Size of arrays over which to apply memory limits reshaping.
 
-   *vlarge*
-     size of arrays over which memory limits reshaping
+    *quiet*: Flag for switching off output.
 
-    *quiet*:
-      Print progress if False
+    *tstart*: Start time interval from which to sample slices.
+
+    *tend*: End time interval from which to sample slices.
+
+    Returns 
+    ------- 
+    Class containing the fields and slices as attributes. 
+
+    Notes
+    -----
+    Use the attribute keys to get a list of attributes
+
+    Examples
+    --------
+    >>> vsl = pc.read.slices()
+    >>> vsl.keys()
+    t
+    xy
+    xy2
+    xz
+    yz
+    position
+    coordinate
     """
 
     slices_tmp = SliceSeries()
@@ -65,6 +81,9 @@ class SliceSeries(object):
 
         self.t = np.array([])
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
 
     def read(self, field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f',
@@ -76,43 +95,34 @@ class SliceSeries(object):
 
         call signature:
 
-        read(field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', quiet=True)
+        read(field='', extension='', datadir='data', proc=-1, old_file=False,
+             precision='f', iter_list=list(), vlarge=1000000000, quiet=True,
+             tstart=0, tend=None)
 
         Keyword arguments:
 
-        *field*:
-          Name of the field(s) to be read.
+        *field*: Name of the field(s) to be read (string or string list).
 
-        *extension*
-          Specifies the slice(s).
+        *extension*: Specifies the plane slice(s).
 
-        *datadir*:
-          Directory where the data is stored.
+        *datadir*: Directory where the data is stored.
 
-        *proc*:
-          Processor to be read. If -1 read all and assemble to one array.
+        *proc*: Processor to be read. If -1 read all and assemble to one array.
 
-        *old_file*
-          Flag for reading old file format.
+        *old_file*: Flag for reading old file format.
 
-        *precision*:
-          Precision of the data. Either 'half', float 'f' or double 'd'.
+        *precision*: Precision of the data. Either float 'f' or double 'd'.
 
-        *iter_list*
-          list of iteration indices for which to sample the slices
+        *iter_list*: List of iteration indices for which to sample the slices.
 
-        *tstart*
-          lower time range from which to sample the slices
+        *vlarge*: Size of arrays over which to apply memory limits reshaping.
 
-        *tend*
-          upper time range from which to sample the slices
+        *quiet*: Flag for switching off output.
 
-        *vlarge*
-          size of arrays over which memory limits reshaping
+        *tstart*: Start time interval from which to sample slices.
 
-        *quiet*:
-          Print progress
+        *tend*: End time interval from which to sample slices.
+
         """
 
         import os

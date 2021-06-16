@@ -118,7 +118,7 @@ class Power(object):
 
         else:
 
-            # Find the exsisting power files.
+            # Find the existing power files.
 
             # power_list = []
             # file_list = []
