@@ -35,12 +35,14 @@
 ! variables and auxiliary variables added by this module.
 ! Need 3*2 for Ak, 3*2 for Ek, and then 3+3 for E and B, so 3*6=18.
 ! However, the space for E and B needs to be allocated in cparam.local.
+! Need to allocate 12 basic chunks (if full 3-D fields are used),
+! or 8 chunks (if lpolarization_basis=T).
 !
 ! CPARAM logical, parameter :: lmagnetic = .true.
 ! CPARAM logical, parameter :: lbfield = .false.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 12
+! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
 ! PENCILS PROVIDED el(3); e2; a2; b2; bf2
@@ -126,7 +128,7 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: phase_aa=0.
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
-  logical :: lskip_projection_aa=.false.
+  logical :: lpolarization_basis=.false., lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
   logical :: lalpha_inflation, lbeta_inflation
 !
@@ -134,7 +136,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
 ! namelist /magnetic_init_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    initaak, initeek, &
+    lpolarization_basis, initaak, initeek, &
     ux_const, ampl_uy, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
@@ -196,15 +198,28 @@ module Magnetic
 !
 !  Register aak and eek as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
+!  Need 8 chunks if lpolarization_basis=T and 12 otherwise.
+!  In the former case, define iakz=iaky, etc.
 !
-      call farray_register_auxiliary('aak',iaak,vector=3)
-      call farray_register_auxiliary('aakim',iaakim,vector=3)
-      call farray_register_auxiliary('eek',ieek,vector=3)
-      call farray_register_auxiliary('eekim',ieekim,vector=3)
-      iakx  =iaak  ; iaky  =iaak  +1; iakz  =iaak  +2
-      iakxim=iaakim; iakyim=iaakim+1; iakzim=iaakim+2 
-      iekx  =ieek  ; ieky  =ieek  +1; iekz  =ieek  +2
-      iekxim=ieekim; iekyim=ieekim+1; iekzim=ieekim+2 
+      if (lpolarization_basis) then
+        call farray_register_auxiliary('aak',iaak)
+        call farray_register_auxiliary('aakim',iaakim)
+        call farray_register_auxiliary('eek',ieek)
+        call farray_register_auxiliary('eekim',ieekim)
+        iakx  =iaak  ; iakz  =iaak
+        iakxim=iaakim; iakzim=iaakim
+        iekx  =ieek  ; iekz  =ieek
+        iekxim=ieekim; iekzim=ieekim
+      else
+        call farray_register_auxiliary('aak',iaak,vector=3)
+        call farray_register_auxiliary('aakim',iaakim,vector=3)
+        call farray_register_auxiliary('eek',ieek,vector=3)
+        call farray_register_auxiliary('eekim',ieekim,vector=3)
+        iakx  =iaak  ; iaky  =iaak  +1; iakz  =iaak  +2
+        iakxim=iaakim; iakyim=iaakim+1; iakzim=iaakim+2 
+        iekx  =ieek  ; ieky  =ieek  +1; iekz  =ieek  +2
+        iekxim=ieekim; iekyim=ieekim+1; iekzim=ieekim+2 
+      endif
 !
 !  register B array as aux
 !
@@ -280,8 +295,8 @@ module Magnetic
 !
 !  initial condition for aak
 !
-      f(:,:,:,iaak:iaakim+2)=0.
-      f(:,:,:,ieek:ieekim+2)=0.
+      f(:,:,:,iaak:iakzim)=0.
+      f(:,:,:,ieek:iekzim)=0.
       if (lee_as_aux) f(:,:,:,iee :iee   +2)=0.
       if (laa_as_aux) f(:,:,:,iaa :iaa   +2)=0.
       if (lbb_as_aux) f(:,:,:,ibb :ibb   +2)=0.
@@ -289,16 +304,16 @@ module Magnetic
       select case (initaak)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
-          f(:,:,:,iaak:iaakim+2)=0.
+          f(:,:,:,iaak:iakzim)=0.
         case ('single')
           if (lroot) print*,'init_magnetic for A: single'
-          f(:,:,:,iaak:iaakim+2)=0.
+          f(:,:,:,iaak:iakzim)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iaak)=1.
         case ('Beltrami-general')
                call beltramik_general(amplaa,f,iaak,kx_aa,ky_aa,kz_aa,phase_aa)
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa,initpower_aa,initpower2_aa, &
-            cutoff_aa,ncutoff_aa,kpeak_aa,f,iaak,iaak+2,relhel_aa,kgaussian_aa, &
+            cutoff_aa,ncutoff_aa,kpeak_aa,f,iaak,iakz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true.)
@@ -313,10 +328,10 @@ module Magnetic
       select case (initeek)
         case ('nothing')
           if (lroot) print*,'init_magnetic: nothing'
-          f(:,:,:,ieek:ieekim+2)=0.
+          f(:,:,:,ieek:iekzim)=0.
         case ('single')
           if (lroot) print*,'init_magnetic for E: single'
-          f(:,:,:,ieek:ieekim+2)=0.
+          f(:,:,:,ieek:iekzim)=0.
           if (lroot) f(l1+1,m1+1,n1+1,ieek)=1.
 !
 !  dA/deta = -E
@@ -340,10 +355,10 @@ module Magnetic
 !  Re Ek = -k*Im(A)
 !  Im Ek = +k*Re(A)
 !
-                f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)=-k* &
-                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
-                f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)=+k* &
-                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :iekz)=-k* &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iakzim)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:iekzim)=+k* &
+                f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iakz)
               enddo
             enddo
           enddo
@@ -362,7 +377,6 @@ module Magnetic
 !
 !   1-apr-06/axel: coded
 !
-   !  if (idiag_ee2m/=0) lpenc_requested(i_e2)=.true.
       if (idiag_brms/=0 .or. idiag_EEEM/=0 .or. idiag_bfrms/=0 .or. &
           idiag_bmax/=0 .or. idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
@@ -444,15 +458,26 @@ module Magnetic
 !
 !  diagnostics
 !
-       if (ldiagnos) then
-         if (idiag_ee2m/=0) call sum_mn_name(( &
-             f(l1:l2,m,n,iekx  )**2+f(l1:l2,m,n,ieky  )**2+f(l1:l2,m,n,iekz  )**2+ &
-             f(l1:l2,m,n,iekxim)**2+f(l1:l2,m,n,iekyim)**2+f(l1:l2,m,n,iekzim)**2 &
-                                               )*nwgrid,idiag_ee2m)
-         if (idiag_aa2m/=0) call sum_mn_name(( &
-             f(l1:l2,m,n,iakx  )**2+f(l1:l2,m,n,iaky  )**2+f(l1:l2,m,n,iakz  )**2+ &
-             f(l1:l2,m,n,iakxim)**2+f(l1:l2,m,n,iakyim)**2+f(l1:l2,m,n,iakzim)**2 &
-                                               )*nwgrid,idiag_aa2m)
+      if (ldiagnos) then
+        if (lpolarization_basis) then
+          if (idiag_ee2m/=0) call sum_mn_name(( &
+              f(l1:l2,m,n,iekx  )**2+ &
+              f(l1:l2,m,n,iekxim)**2 &
+                                              )*nwgrid,idiag_ee2m)
+          if (idiag_aa2m/=0) call sum_mn_name(( &
+              f(l1:l2,m,n,iakx  )**2+ &
+              f(l1:l2,m,n,iakxim)**2 &
+                                              )*nwgrid,idiag_aa2m)
+        else
+          if (idiag_ee2m/=0) call sum_mn_name(( &
+              f(l1:l2,m,n,iekx  )**2+f(l1:l2,m,n,ieky  )**2+f(l1:l2,m,n,iekz  )**2+ &
+              f(l1:l2,m,n,iekxim)**2+f(l1:l2,m,n,iekyim)**2+f(l1:l2,m,n,iekzim)**2 &
+                                              )*nwgrid,idiag_ee2m)
+          if (idiag_aa2m/=0) call sum_mn_name(( &
+              f(l1:l2,m,n,iakx  )**2+f(l1:l2,m,n,iaky  )**2+f(l1:l2,m,n,iakz  )**2+ &
+              f(l1:l2,m,n,iakxim)**2+f(l1:l2,m,n,iakyim)**2+f(l1:l2,m,n,iakzim)**2 &
+                                              )*nwgrid,idiag_aa2m)
+        endif
           if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
           call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
           call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
@@ -461,12 +486,12 @@ module Magnetic
           call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
           call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
 !
-         if (lproc_pt.and.m==mpoint.and.n==npoint) then
-           if (idiag_akxpt/=0) call save_name(f(lpoint,m,n,iakx),idiag_akxpt)
-           if (idiag_ekxpt/=0) call save_name(f(lpoint,m,n,iekx),idiag_ekxpt)
-           if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
-         endif
-       endif
+          if (lproc_pt.and.m==mpoint.and.n==npoint) then
+            if (idiag_akxpt/=0) call save_name(f(lpoint,m,n,iakx),idiag_akxpt)
+            if (idiag_ekxpt/=0) call save_name(f(lpoint,m,n,iekx),idiag_ekxpt)
+            if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
+          endif
+        endif
       else
         if (headtt.or.ldebug) print*,'daa_dt: DONT SOLVE aa_dt'
       endif
@@ -691,47 +716,65 @@ module Magnetic
 !  Electromagnetic wave spectrum computed from aak.
 !
               if (ab_spec) then
-                spectra%mag(ik)=spectra%mag(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)**2
-                spectra%maghel(ik)=spectra%maghel(ik)+2*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(+k3) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(-k2)) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(+k1) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(-k3)) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(+k2) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(-k1)) &
-                                                        )
+                if (lpolarization_basis) then
+                  spectra%mag(ik)=spectra%mag(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)**2
+                  spectra%maghel(ik)=spectra%maghel(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)**2
+                else
+                  spectra%mag(ik)=spectra%mag(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)**2
+                  spectra%maghel(ik)=spectra%maghel(ik)+2*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +0) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(+k3) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(-k2)) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +1) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+2)*(+k1) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(-k3)) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  +2) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+0)*(+k2) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iaakim+1)*(-k1)) &
+                                                          )
+                endif
               endif
 !
 !  Electric field spectrum computed from eek
 !
               if (ele_spec) then
-                spectra%ele(ik)=spectra%ele(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)**2
-                spectra%elehel(ik)=spectra%elehel(ik)+2*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(+k3) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(-k2)) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(+k1) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(-k3)) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2) &
-                  *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(+k2) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(-k1)) &
-                                                        )
+                if (lpolarization_basis) then
+                  spectra%ele(ik)=spectra%ele(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)**2
+                  spectra%elehel(ik)=spectra%elehel(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)**2
+                else
+                  spectra%ele(ik)=spectra%ele(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)**2
+                  spectra%elehel(ik)=spectra%elehel(ik)+2*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +0) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(+k3) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(-k2)) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +1) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+2)*(+k1) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(-k3)) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieek  +2) &
+                    *(f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+0)*(+k2) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ieekim+1)*(-k1)) &
+                                                          )
+                endif
               endif
             endif
           enddo
@@ -883,12 +926,13 @@ module Magnetic
               lam2=.5*(-sigmaeff-discrim)
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
+!  XXX
 !
-              aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
-              aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+              aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iakz)
+              aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iakzim)
 !
-              eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :ieek  +2)
-              eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:ieekim+2)
+              eekre=f(nghost+ikx,nghost+iky,nghost+ikz,ieek  :iekz)
+              eekim=f(nghost+ikx,nghost+iky,nghost+ikz,ieekim:iekzim)
 !
 !  Prepare electromotive force EMF, but first project out solenoidal part
 !
