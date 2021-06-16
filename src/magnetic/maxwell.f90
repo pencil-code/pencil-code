@@ -92,6 +92,7 @@ module Magnetic
   include '../magnetic.h'
   !include 'record_types.h'
 !
+  complex, dimension (:,:,:,:), allocatable :: epol
   real, dimension(3) :: B_ext = 0.0
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
@@ -240,10 +241,13 @@ module Magnetic
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState, only: cs0
+      use Fourier, only: kx_fft, ky_fft, kz_fft
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: stat, i
+      real, dimension (3) :: e1, e2, kvec
+      real :: ksqr, k, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      integer :: stat, i, j, ikx, iky, ikz
+      complex :: fact=cmplx(0.,-1./sqrt(2.))
 !
 !  set speed of light
 !
@@ -274,6 +278,73 @@ module Magnetic
 !
       if (lalpha_inflation.and.lbeta_inflation) &
         call fatal_error("initialize_magnetic","only alpha or beta /= 0")
+!
+!  possibility of computing polarization basis here
+!
+      if (lpolarization_basis) then
+        allocate(epol(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('initialize_magnetic','Could not allocate memory for epol')
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+!
+!  collect k vector and compute k^2 at each point
+!
+              k1=kx_fft(ikx+ipx*nx)
+              k2=ky_fft(iky+ipy*ny)
+              k3=kz_fft(ikz+ipz*nz)
+              ksqr=k1**2+k2**2+k3**2
+              k=sqrt(ksqr)
+!
+              k1=kx_fft(ikx+ipx*nx)
+              k2=ky_fft(iky+ipy*ny)
+              k3=kz_fft(ikz+ipz*nz)
+              kvec(1)=k1
+              kvec(2)=k2
+              kvec(3)=k3
+              k1sqr=k1**2
+              k2sqr=k2**2
+              k3sqr=k3**2
+              ksqr=k1sqr+k2sqr+k3sqr
+!
+              if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+                e1=0.
+                e2=0.
+              else
+!
+                if(abs(k1)<abs(k2)) then
+                  if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                    e1=(/0.,-k3,+k2/)
+                    e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                  else !(k3 is pref dir)
+                    e1=(/k2,-k1,0./)
+                    e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                  endif
+                else !(k2 smaller than k1)
+                  if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                    e1=(/-k3,0.,+k1/)
+                    e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                  else !(k3 is pref dir)
+                    e1=(/k2,-k1,0./)
+                    e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                  endif
+                endif
+                e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+                e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+              endif
+!
+!  compute epol=(-i/sqrt(2))*(e1+i*e2)
+!
+              do j=1,3
+                epol(ikx,iky,ikz,j)=fact*cmplx(e1(j),e2(j))
+              enddo
+!
+!  end of ikx, iky, and ikz loops
+!
+            enddo
+          enddo
+        enddo
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -854,7 +925,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu, bb, uxb
       real, dimension (3) :: coefAre, coefAim, coefBre, coefBim
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,ip,jq,jStress_ij
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat
       complex, dimension (3) :: Acomplex, Ecomplex, Acomplex_new, Ecomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
@@ -926,7 +997,6 @@ module Magnetic
               lam2=.5*(-sigmaeff-discrim)
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
-!  XXX
 !
               aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iakz)
               aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iakzim)
@@ -1019,11 +1089,10 @@ module Magnetic
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
-              f(nghost+1,nghost+1,nghost+1,iaak  :iaak  +2)=0.
-              f(nghost+1,nghost+1,nghost+1,iaakim:iaakim+2)=0.
-              f(nghost+1,nghost+1,nghost+1,ieek  :ieek  +2)=0.
-              f(nghost+1,nghost+1,nghost+1,ieekim:ieekim+2)=0.
-!
+              f(nghost+1,nghost+1,nghost+1,iaak  :iakz  )=0.
+              f(nghost+1,nghost+1,nghost+1,iaakim:iakzim)=0.
+              f(nghost+1,nghost+1,nghost+1,ieek  :iekz  )=0.
+              f(nghost+1,nghost+1,nghost+1,ieekim:iekzim)=0.
             endif
 !
 !  end of ikx, iky, and ikz loops
@@ -1044,8 +1113,15 @@ module Magnetic
 !  aa back to real space, use the names bbkre and bbkim for aa.
 !
       if (laa_as_aux) then
-        bbkre=f(l1:l2,m1:m2,n1:n2,iaak  :iaak  +2)
-        bbkim=f(l1:l2,m1:m2,n1:n2,iaakim:iaakim+2)
+        if (lpolarization_basis) then
+          do j=1,3
+            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaak  )*epol(:,:,:,j)
+            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaakim)*epol(:,:,:,j)
+          enddo
+        else
+          bbkre=f(l1:l2,m1:m2,n1:n2,iaak  :iaak  +2)
+          bbkim=f(l1:l2,m1:m2,n1:n2,iaakim:iaakim+2)
+        endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
       endif
