@@ -113,6 +113,11 @@ class ogDataCube(DataCube):
         super(ogDataCube, self).__init__()
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def transform(self, trim_all):
         """
         Transform velocity coordinates from ur and uth to ux and uy.

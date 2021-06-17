@@ -112,6 +112,11 @@ class DataCube(object):
         self.n2 = None
         self.magic = None
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
              trimall=False, magic=None, sim=None, precision='d',
              lpersist=False, dtype=np.float64):

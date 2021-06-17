@@ -60,6 +60,11 @@ class TimeSeries(object):
         self.keys = []
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, file_name='time_series.dat', datadir='data',
              quiet=False, comment_char='#', sim=None, unique_clean=False):
         """

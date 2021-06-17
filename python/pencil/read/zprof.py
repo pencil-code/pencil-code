@@ -51,6 +51,11 @@ class ZProfile(object):
         self.z = 0
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, var_name, datadir='data', dim=None, nfield=1):
         """
         Read vertical profiles written in data/proc*/zprof_varname.dat.

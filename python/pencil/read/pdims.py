@@ -45,6 +45,11 @@ class PDim(object):
         self.mpaux = 0
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, sim=None, datadir='data'):
         """
         Read the pdim.dat file.

@@ -69,6 +69,11 @@ class Dim(object):
         self.mxgrid = self.mygrid = self.mzgrid = 0
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, datadir='data', proc=-1, ogrid=False, down=False):
         """
         Read the dim.dat file.

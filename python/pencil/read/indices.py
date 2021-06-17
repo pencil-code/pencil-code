@@ -45,7 +45,12 @@ class Index(object):
         Fill members with default values.
         """
 
-        self.keys = []
+        #self.keys = []
+
+
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
 
 
     def read(self, datadir='data', param=None, dim=None):

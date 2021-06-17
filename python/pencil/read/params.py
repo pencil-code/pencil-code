@@ -77,6 +77,11 @@ class Param(object):
         self.keys = []
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, datadir='data', param1=False, param2=False, quiet=True,
              conflicts_quiet=False,
              asdict=True, nest_dict=True, append_units=True):

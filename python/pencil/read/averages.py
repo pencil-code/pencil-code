@@ -57,6 +57,11 @@ class Averages(object):
         self.t = np.array([])
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, plane_list=None, var_index=-1, datadir='data',
              proc=-1, iter_list=None, precision='f'):
         """

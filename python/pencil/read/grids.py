@@ -63,6 +63,11 @@ class Grid(object):
         self.Lx = self.Ly = self.Lz = 0
 
 
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+
     def read(self, datadir='data', proc=-1, quiet=False, precision='f',
              trim=False):
         """
