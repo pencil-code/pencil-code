@@ -11,7 +11,7 @@ from .accuracy import *
 from .draglift import *
 from .tensors import *
 from .Reynolds import *
-from .shocktube import calc_shocktube
+from .shocktube import sod
 try:
     from .aver2h5 import *
 except:
