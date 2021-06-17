@@ -35,8 +35,8 @@
 ! variables and auxiliary variables added by this module.
 ! Need 3*2 for Ak, 3*2 for Ek, and then 3+3 for E and B, so 3*6=18.
 ! However, the space for E and B needs to be allocated in cparam.local.
-! Need to allocate 12 basic chunks (if full 3-D fields are used),
-! or 8 chunks (if lpolarization_basis=T).
+! Need to allocate 12 basic chunks if full 3-D fields are used,
+! or only 4 chunks if lpolarization_basis=T.
 !
 ! CPARAM logical, parameter :: lmagnetic = .true.
 ! CPARAM logical, parameter :: lbfield = .false.
@@ -121,7 +121,7 @@ module Magnetic
   logical :: lemf=.false., linflation=.false., lreheating=.false., ldebug_print=.false.
   real, dimension(3) :: aakre, aakim, eekre, eekim
   real :: c_light2=1.
-  real :: alpha2_inflation, beta2_inflation, kscale_factor
+  real :: alpha2_inflation, beta1_inflation, beta2_inflation, kscale_factor
   real :: amplaa=1e-4, initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0.
   real :: relhel_aa=1.
@@ -135,7 +135,6 @@ module Magnetic
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
-! namelist /magnetic_init_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
     lpolarization_basis, lswitch_sign_e2, initaak, initeek, &
     ux_const, ampl_uy, &
@@ -149,7 +148,6 @@ module Magnetic
 !
 ! run parameters
   namelist /magnetic_run_pars/ &
-! namelist /magnetic_run_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
     lswitch_sign_e2, ldebug_print, &
     cc_light, &
@@ -173,7 +171,6 @@ module Magnetic
 !
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
   integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
-  !integer :: iex, iey, iez
   integer, parameter :: nk=nxgrid/2
   type, public :: magpectra
     real, dimension(nk) :: mag   ,ele
@@ -199,7 +196,8 @@ module Magnetic
 !
 !  Register aak and eek as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
-!  Need 8 chunks if lpolarization_basis=T and 12 otherwise.
+!  Need 4 chunks (real and imaginary parts of A and E if
+!  lpolarization_basis=T and 3*4=12 otherwise for 3 components.
 !  In the former case, define iakz=iaky, etc.
 !
       if (lpolarization_basis) then
@@ -264,10 +262,12 @@ module Magnetic
 !
       kscale_factor=2*pi/Lx
 !
-!  compute alpha*(alpha+1) from Sharma+17 paper
+!  Compute alpha*(alpha+1) from Sharma+17 paper, and 2beta*(2beta+1).
+!  Also compute -2*beta. Note the minus sign, so f'/f=beta1_inflation/(t+1).
 !
       if (beta_inflation/=0.) then
-        beta2_inflation=2.*beta_inflation*(2.*beta_inflation+1.)
+        beta1_inflation=-2.*beta_inflation
+        beta2_inflation=+2.*beta_inflation*(2.*beta_inflation+1.)
         lbeta_inflation=.true.
       endif
 !
@@ -946,7 +946,7 @@ module Magnetic
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: discrim2, sigmaeff
-      real :: ksqr, ksqr_eff, k1, k2, k3, fact, kdotEMF
+      real :: ksqr, ksqr_eff, k, k1, k2, k3, fact, kdotEMF
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -991,12 +991,26 @@ module Magnetic
             ksqr=k1**2+k2**2+k3**2
 !
 !  Define effective squared wavenumber, which can be negative when t is small.
+!  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2, and
+!  f'/f = beta1_inflation/(t+1.). Note that f'/f itself is multiplied
+!  by another factor of 2.
 !
             if (linflation) then
               ksqr_eff=ksqr-alpha2_inflation/t**2
             elseif (lreheating) then
               if (lalpha_inflation) ksqr_eff=ksqr-alpha2_inflation*2./(t+1.)**2
-              if (lbeta_inflation) ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
+!
+!  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2, and
+!  f'/f = beta1_inflation/(t+1.). Note that f'/f itself is multiplied
+!  by another factor of 2.
+!
+              if (lbeta_inflation) then
+                if (lpolarization_basis) then
+                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2+2.*beta1_inflation/(t+1.)
+                else
+                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
+                endif
+              endif
             else
               ksqr_eff=ksqr
             endif
@@ -1120,8 +1134,17 @@ module Magnetic
 !  ee back to real space, use the names bbkre and bbkim for ee.
 !
       if (lee_as_aux) then
-        bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
-        bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        if (lpolarization_basis) then
+          do j=1,3
+            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieek  )*real(epol(:,:,:,j)) &
+                          -f(l1:l2,m1:m2,n1:n2,ieekim)*aimag(epol(:,:,:,j))
+            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieekim)*real(epol(:,:,:,j)) &
+                          +f(l1:l2,m1:m2,n1:n2,ieek  )*aimag(epol(:,:,:,j))
+          enddo
+        else
+          bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
+          bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
       endif
@@ -1154,8 +1177,19 @@ module Magnetic
               k2=ky_fft(iky+ipy*ny)
               k3=kz_fft(ikz+ipz*nz)
               ksqr=k1**2+k2**2+k3**2
-              bbkre(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
-              bbkim(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+              if (lpolarization_basis) then
+                do j=1,3
+                  bbkre(ikx,iky,ikz,j)=ksqr*( &
+                    f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*real(epol(ikx,iky,ikz,j)) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*aimag(epol(ikx,iky,ikz,j)))
+                  bbkim(ikx,iky,ikz,j)=ksqr*( &
+                    f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*real(epol(ikx,iky,ikz,j)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*aimag(epol(ikx,iky,ikz,j)))
+                enddo
+              else
+                bbkre(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+                bbkim(ikx,iky,ikz,:)=ksqr*f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+              endif
             enddo
           enddo
         enddo
@@ -1174,27 +1208,40 @@ module Magnetic
               k1=kx_fft(ikx+ipx*nx)
               k2=ky_fft(iky+ipy*ny)
               k3=kz_fft(ikz+ipz*nz)
-              aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
-              aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
+              if (lpolarization_basis) then
+                k=sqrt(k1**2+k2**2+k3**2)
+                do j=1,3
+                  bbkre(ikx,iky,ikz,j)=k*( &
+                    f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*real(epol(ikx,iky,ikz,j)) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*aimag(epol(ikx,iky,ikz,j)))
+                  bbkim(ikx,iky,ikz,j)=k*( &
+                    f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*real(epol(ikx,iky,ikz,j)) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*aimag(epol(ikx,iky,ikz,j)))
+                enddo
+              else
+!
+!  standard method; non-polarization based:
+!
+                aakre=f(nghost+ikx,nghost+iky,nghost+ikz,iaak  :iaak  +2)
+                aakim=f(nghost+ikx,nghost+iky,nghost+ikz,iaakim:iaakim+2)
 !
 !  Re(Bk) = -k x Im(Ak)
 !
-              bbkre(ikx,iky,ikz,1)=-k2*aakim(3)+k3*aakim(2)
-              bbkre(ikx,iky,ikz,2)=-k3*aakim(1)+k1*aakim(3)
-              bbkre(ikx,iky,ikz,3)=-k1*aakim(2)+k2*aakim(1)
+                bbkre(ikx,iky,ikz,1)=-k2*aakim(3)+k3*aakim(2)
+                bbkre(ikx,iky,ikz,2)=-k3*aakim(1)+k1*aakim(3)
+                bbkre(ikx,iky,ikz,3)=-k1*aakim(2)+k2*aakim(1)
 !
 !  Im(Bk) = +k x Re(Ak)
 !
-              bbkim(ikx,iky,ikz,1)=+k2*aakre(3)+k3*aakre(2)
-              bbkim(ikx,iky,ikz,2)=+k3*aakre(1)+k1*aakre(3)
-              bbkim(ikx,iky,ikz,3)=+k1*aakre(2)+k2*aakre(1)
+                bbkim(ikx,iky,ikz,1)=+k2*aakre(3)+k3*aakre(2)
+                bbkim(ikx,iky,ikz,2)=+k3*aakre(1)+k1*aakre(3)
+                bbkim(ikx,iky,ikz,3)=+k1*aakre(2)+k2*aakre(1)
+              endif
             enddo
           enddo
         enddo
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
-!
-!  do similarily for J
 !
 !  Add external (imposed) field B_ext, if nonvanishing.
 !
@@ -1208,8 +1255,17 @@ module Magnetic
 !  ee back to real space, use the names bbkre and bbkim for ee.
 !
       if (lee_as_aux) then
-        bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
-        bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        if (lpolarization_basis) then
+          do j=1,3
+            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieek  )*real(epol(:,:,:,j)) &
+                          -f(l1:l2,m1:m2,n1:n2,ieekim)*aimag(epol(:,:,:,j))
+            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieekim)*real(epol(:,:,:,j)) &
+                          +f(l1:l2,m1:m2,n1:n2,ieek  )*aimag(epol(:,:,:,j))
+          enddo
+        else
+          bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
+          bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
+        endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
       endif
