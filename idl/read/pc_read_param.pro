@@ -13,7 +13,7 @@
 ;  REQUIRES: external 'nl2idl' perl script (WD)
 ;  
 pro pc_read_param, object=object, dim=dim, datadir=datadir, $
-    param2=param2, run_param=run_param, print=print, quiet=quiet, help=help, single=single, update=update
+    param2=param2, run_param=run_param, print=print, quiet=quiet, help=help, single=single
 COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -24,7 +24,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, "pc_read_param, object=object,"
     print, "               datadir=datadir, proc=proc,"
-    print, "               /single, /update, /print, /quiet, /help,"
+    print, "               /single, /print, /quiet, /help,"
     print, "               /run_param"
     print, ""
     print, "Returns the parameters of a Pencil-Code run."
@@ -36,7 +36,6 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, "   /run_param: for reading param2.nml (synonym: /param2)"
     print, "   /single: instruction to create all variables in single precision"
-    print, "   /update: instruction to update output after precision change"
     print, "   /print : instruction to print all variables to standard output"
     print, "   /quiet : instruction not to print any 'helpful' information"
     print, "   /help  : display this usage information, and exit"
@@ -48,7 +47,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, quiet, 0
   default, single, 0
-  default, update, 0
 ;
 ; Default data directory.
 ;
@@ -88,7 +86,6 @@ COMPILE_OPT IDL2,HIDDEN
     nl2idl_d_opt = ' -d' $
   else $
     nl2idl_d_opt = ''
-  if keyword_set(update) then nl2idl_d_opt += ' -u '
 ;
 ; Read the parameter namelist file.
 ;

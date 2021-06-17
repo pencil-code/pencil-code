@@ -32,8 +32,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   --output=<file>       Output file, or stdout if not given
 #   -d
 #   --double              Mark floating-point values as double precision
-#   -u
-#   --udate               Force update of output (when precision is changed)
 #   -M <N>
 #   --maxtags=<N>         Like '-1', but split result in blocks of up to <N>
 #                         tags: { block1} {block 2} ..
@@ -70,7 +68,6 @@ GetOptions(\%opts,
                -f=s --function=s
                -o=s --output=s
                -d   --double
-               -u   --update
                -M=i --maxtags=i
                -q   --quiet
                -v   --version )
@@ -88,7 +85,6 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $function = ($opts{'f'} || $opts{'function'} || 'param');
 my $out_file = ($opts{'o'} || $opts{'output'}   || '');
 my $double   = ($opts{'d'} || $opts{'double'}   || 0);
-my $force    = ($opts{'u'} || $opts{'update'}   || 0);
 my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
 my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
@@ -101,15 +97,17 @@ if (!@ARGV) { @ARGV = ('-'); }
 if ($out_file) {
     if (-e $out_file) {
         my $need_update = 0;
-        if (!$force) {
-            my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_out, $ctime, $blksize, $blocks) = stat ($out_file);
-            foreach my $file (@ARGV) {
-                if (-e $file) {
-                    my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_in, $ctime, $blksize, $blocks) = stat ($file);
-                    if ($mtime_in >= $mtime_out) { $need_update = 1; }
+        my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_out, $ctime, $blksize, $blocks) = stat ($out_file);
+        foreach my $file (@ARGV) {
+            if (-e $file) {
+                my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime_in, $ctime, $blksize, $blocks) = stat ($file);
+                if ($mtime_in >= $mtime_out) { $need_update = 1; }
+                if (!$need_update){ 
+                    if ($double){ $need_update = mygrep($out_file,": *[0-9]\.[0-9][0-9]*[eE]"); }
+                    else        { $need_update = mygrep($out_file,": *[0-9]\.[0-9][0-9]*[dD]"); }
                 }
             }
-        } else {$need_update = 1};
+        }
 
         if (!$need_update) {
             open (OUT_FILE, "< ".$out_file) or die ("Error while reading '".$out_file."' ($!)\n");
@@ -145,6 +143,7 @@ my $code = $nl->output(format => 'idl', name => $name, trim => 1,
                        oneline => 0, maxslots => $maxtags, double => $double);
 
 print $out_handle $code;
+
 if ($out_file) {
 	close ($out_handle);
 	print $code;
@@ -152,7 +151,16 @@ if ($out_file) {
 
 exit (0);
 
-
+sub mygrep {
+    my($file, $string) = @_;
+    my $mstr='^.*'.$string.'.*$';
+    open my $fh, $file or die;
+    while (my $line = <$fh>) {
+        if ($line =~ $mstr) {return 1};
+    }
+    close($fh);
+    return 0;
+}
 # ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
