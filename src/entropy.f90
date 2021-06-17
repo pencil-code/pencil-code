@@ -238,7 +238,8 @@ module Energy
       chi_cspeed,xbot_chit1, xtop_chit1, lchit_noT, downflow_cs2cool_fac, &
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
-      lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver
+      lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
+      kx_ss, ky_ss, kz_ss
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -936,6 +937,20 @@ module Energy
             do n=n1,n2
               f(:,:,n,iss)=f(:,:,n,iss)+tmpz(n-nghost+nz*ipz)
             enddo
+          case ('wave-pressure-equil')
+            call get_cp1(cp1)
+            do n=n1,n2; do m=m1,m2
+              tmpz=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz
+              if (ldensity_nolog) then
+                tmpz=1./exp(cp1*tmpz)
+                f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)*tmpz
+                if (lreference_state) &
+                  f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-(1.-tmpz)*reference_state(:,iref_rho)
+              else
+                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmpz
+              endif
+            enddo; enddo
           case default
           endselect
         enddo
