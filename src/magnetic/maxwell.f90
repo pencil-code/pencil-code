@@ -129,7 +129,7 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: phase_aa=0.
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
-  logical :: lpolarization_basis=.false., lswitch_sign_e2=.true.
+  logical :: lpolarization_basis=.false., lswitch_sign_e2=.false.
   logical :: lscale_tobox=.true., lskip_projection_aa=.false.
   logical :: lalpha_inflation, lbeta_inflation
 !
@@ -151,7 +151,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
 ! namelist /magnetic_run_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    ldebug_print, &
+    lswitch_sign_e2, ldebug_print, &
     cc_light, &
     lemf, B_ext, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
@@ -1131,8 +1131,10 @@ module Magnetic
       if (laa_as_aux) then
         if (lpolarization_basis) then
           do j=1,3
-            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaak  )*epol(:,:,:,j)
-            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaakim)*epol(:,:,:,j)
+            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaak  )*real(epol(:,:,:,j)) &
+                          -f(l1:l2,m1:m2,n1:n2,iaakim)*aimag(epol(:,:,:,j))
+            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,iaakim)*real(epol(:,:,:,j)) &
+                          +f(l1:l2,m1:m2,n1:n2,iaak  )*aimag(epol(:,:,:,j))
           enddo
         else
           bbkre=f(l1:l2,m1:m2,n1:n2,iaak  :iaak  +2)
