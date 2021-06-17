@@ -124,19 +124,19 @@ module Magnetic
   real :: alpha2_inflation, beta1_inflation, beta2_inflation, kscale_factor
   real :: amplaa=1e-4, initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
   real :: kpeak_aa=10., kgaussian_aa=0.
-  real :: relhel_aa=1.
+  real :: relhel_aa=1., ksign=1.
   real :: k1hel=0., k2hel=1.
   real :: mu012=0.5 !(=1/2mu0)
   real :: phase_aa=0.
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
-  logical :: lpolarization_basis=.false., lswitch_sign_e2=.false.
+  logical :: lpolarization_basis=.false., lswitch_sign_e2=.false., lminus_mode=.false.
   logical :: lscale_tobox=.true., lskip_projection_aa=.false.
   logical :: lalpha_inflation, lbeta_inflation
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    lpolarization_basis, lswitch_sign_e2, initaak, initeek, &
+    lpolarization_basis, lswitch_sign_e2, lminus_mode, initaak, initeek, &
     ux_const, ampl_uy, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
@@ -149,9 +149,9 @@ module Magnetic
 ! run parameters
   namelist /magnetic_run_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    lswitch_sign_e2, ldebug_print, &
+    lswitch_sign_e2, lminus_mode, ldebug_print, &
     cc_light, &
-    lemf, B_ext, &
+    ksign, lemf, B_ext, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -342,6 +342,7 @@ module Magnetic
                   endif
                 endif
               endif
+              if (lminus_mode) e2=-e2
 !
 !  compute epol=(-i/sqrt(2))*(e1+i*e2)
 !
@@ -999,7 +1000,8 @@ module Magnetic
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
-                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2+2.*k*beta1_inflation/(t+1.)
+                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2 &
+                    +2.*ksign*k*beta1_inflation/(t+1.)
                 else
                   ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
                 endif
