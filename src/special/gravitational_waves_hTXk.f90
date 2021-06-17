@@ -91,7 +91,7 @@ module Special
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
-  character (len=labellen) :: aux_stress='stress'
+  character (len=labellen) :: aux_stress='stress', idelkt='jump'
   real :: amplhij=0., amplgij=0., dummy=0.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
@@ -108,7 +108,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0., tdelk=0., tstress_ramp=0.
+  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -129,7 +129,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
-    lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, &
+    lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
@@ -1348,7 +1348,15 @@ module Special
 !
       delkt=delk
       if (ldelkt) then
-        if (t>tdelk) delkt=0.
+        select case (idelkt)
+          case ('jump')
+            if (t>tdelk) delkt=0.
+          case ('exponential')
+            if (t>tdelk) delkt=exp(-(t-tdelk)/tau_delk)
+          case default
+            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
+                ,trim(idelkt))
+        endselect
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
