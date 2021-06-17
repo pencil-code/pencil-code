@@ -243,7 +243,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: e1, e2, kvec
-      real :: ksqr, k, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       integer :: stat, i, j, ikx, iky, ikz
       complex :: fact=cmplx(0.,-1./sqrt(2.))
 !
@@ -289,12 +289,6 @@ module Magnetic
             do ikx=1,nx
 !
 !  collect k vector and compute k^2 at each point
-!
-              k1=kx_fft(ikx+ipx*nx)
-              k2=ky_fft(iky+ipy*ny)
-              k3=kz_fft(ikz+ipz*nz)
-              ksqr=k1**2+k2**2+k3**2
-              k=sqrt(ksqr)
 !
               k1=kx_fft(ikx+ipx*nx)
               k2=ky_fft(iky+ipy*ny)
@@ -989,11 +983,10 @@ module Magnetic
             k2=ky_fft(iky+ipy*ny)
             k3=kz_fft(ikz+ipz*nz)
             ksqr=k1**2+k2**2+k3**2
+            k=sqrt(ksqr)
 !
 !  Define effective squared wavenumber, which can be negative when t is small.
-!  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2, and
-!  f'/f = beta1_inflation/(t+1.). Note that f'/f itself is multiplied
-!  by another factor of 2.
+!  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2.
 !
             if (linflation) then
               ksqr_eff=ksqr-alpha2_inflation/t**2
@@ -1002,11 +995,11 @@ module Magnetic
 !
 !  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2, and
 !  f'/f = beta1_inflation/(t+1.). Note that f'/f itself is multiplied
-!  by another factor of 2.
+!  by another factor of 2. Remember: beta1_inflation = -2*beta.
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
-                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2+2.*beta1_inflation/(t+1.)
+                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2+2.*k*beta1_inflation/(t+1.)
                 else
                   ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
                 endif
@@ -1211,10 +1204,10 @@ module Magnetic
               if (lpolarization_basis) then
                 k=sqrt(k1**2+k2**2+k3**2)
                 do j=1,3
-                  bbkre(ikx,iky,ikz,j)=k*( &
+                  bbkre(ikx,iky,ikz,j)=+k*( &
                     f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*real(epol(ikx,iky,ikz,j)) &
                    -f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*aimag(epol(ikx,iky,ikz,j)))
-                  bbkim(ikx,iky,ikz,j)=k*( &
+                  bbkim(ikx,iky,ikz,j)=+k*( &
                     f(nghost+ikx,nghost+iky,nghost+ikz,iaakim)*real(epol(ikx,iky,ikz,j)) &
                    +f(nghost+ikx,nghost+iky,nghost+ikz,iaak  )*aimag(epol(ikx,iky,ikz,j)))
                 enddo
@@ -1250,24 +1243,6 @@ module Magnetic
               f(l1:l2,m1:m2,n1:n2,ibb-1+j)=f(l1:l2,m1:m2,n1:n2,ibb-1+j)+B_ext(j)
           if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
         endif
-      endif
-!
-!  ee back to real space, use the names bbkre and bbkim for ee.
-!
-      if (lee_as_aux) then
-        if (lpolarization_basis) then
-          do j=1,3
-            bbkre(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieek  )*real(epol(:,:,:,j)) &
-                          -f(l1:l2,m1:m2,n1:n2,ieekim)*aimag(epol(:,:,:,j))
-            bbkim(:,:,:,j)=f(l1:l2,m1:m2,n1:n2,ieekim)*real(epol(:,:,:,j)) &
-                          +f(l1:l2,m1:m2,n1:n2,ieek  )*aimag(epol(:,:,:,j))
-          enddo
-        else
-          bbkre=f(l1:l2,m1:m2,n1:n2,ieek  :ieek  +2)
-          bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
-        endif
-        call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
       endif
 !
     endsubroutine compute_bb_from_aak_and_eek
