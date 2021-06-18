@@ -279,7 +279,7 @@ module Magnetic
       if (lalpha_inflation.and.lbeta_inflation) &
         call fatal_error("initialize_magnetic","only alpha or beta /= 0")
 !
-!  possibility of computing polarization basis here
+!  Possibility of computing polarization basis here:
 !
       if (lpolarization_basis) then
         allocate(epol(nx,ny,nz,3),stat=stat)
@@ -288,7 +288,7 @@ module Magnetic
           do iky=1,ny
             do ikx=1,nx
 !
-!  collect k vector and compute k^2 at each point
+!  Collect k vector and compute k^2 at each point.
 !
               k1=kx_fft(ikx+ipx*nx)
               k2=ky_fft(iky+ipy*ny)
@@ -327,7 +327,7 @@ module Magnetic
                 e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
               endif
 !
-!  possibility of swapping the sign of e2
+!  Possibility of swapping the sign of e2 in halfspace of k.
 !
               if (lswitch_sign_e2) then
                 if (k3<0.) then
@@ -342,7 +342,6 @@ module Magnetic
                   endif
                 endif
               endif
-              if (lminus_mode) e2=-e2
 !
 !  compute epol=(-i/sqrt(2))*(e1+i*e2)
 !
@@ -356,6 +355,10 @@ module Magnetic
           enddo
         enddo
       endif
+!
+!  Possibility of switching the sign of the polarization.
+!
+      if (lminus_mode) epol=conjg(epol)
 !
       call keep_compiler_quiet(f)
 !
@@ -997,6 +1000,8 @@ module Magnetic
 !  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2, and
 !  f'/f = beta1_inflation/(t+1.). Note that f'/f itself is multiplied
 !  by another factor of 2. Remember: beta1_inflation = -2*beta.
+!  The factor ksign should normally always be =1 to get the fasted growing mode,
+!  regardless of whether or not lminus_mode=T or not (default: lminus_mode=F).
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
