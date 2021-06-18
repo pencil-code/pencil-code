@@ -755,6 +755,12 @@ module Hydro
   real, dimension(nx) :: Fmax,advec_uu=0.
 !$omp THREADPRIVATE(advec_uu)
 !
+  real, dimension (nx) :: prof_amp1, prof_amp2
+  real, dimension (mz) :: prof_amp3
+  real, dimension (my) :: prof_amp4
+  real, dimension (nz,3) :: uumz_prof
+  real, dimension (nx,ny) :: omega_prof
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -919,6 +925,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
       integer :: j,myl ! currently unused: nycap
+      real :: slope,uinn,uext,zbot
 !
 ! set the right point in profile to unity.
 !
@@ -1067,23 +1074,6 @@ module Hydro
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
-!  Set profiles for forcing differential rotation.
-!
-      select case (uuprof)
-!
-!  spoke-like-NSSL (analogous to that in hydro_kinematic)
-!
-      case ('spoke-like-NSSL')
-        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
-        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
-        profy_diffrot1=-1.5*(5.*cos(y)**2-1.)
-        profy_diffrot2=-1.0*(4.*cos(y)**2-3.)
-        profy_diffrot3=-1.0
-        profz_diffrot1=+1.
-      endselect
-!
 !  Compute mask for x-averaging where x is in hydro_xaver_range.
 !  Normalize such that the average over the full domain
 !  gives still unity.
@@ -1168,9 +1158,16 @@ module Hydro
                       lremove_uumeanz .or. lremove_uumeanz_horizontal
       lcalc_uumeanx = lcalc_uumeanx.or.lremove_uumeanx
       lcalc_uumeany = lcalc_uumeany.or.lremove_uumeany
-      lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy
-
-      if (lremove_uumeanz.or.lremove_uumeanx.or.lremove_uumeany) lremove_mean_flow=.false.
+      lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy.or.ltestfield_xy
+!
+      if (lremove_uumeanz.or.lremove_uumeanx.or.lremove_uumeany) then
+        if (lremove_mean_flow) call warning('initialize_hydro', &
+            'lremove_mean_flow=T may interfere with lremove_uumean[xyz]=T')
+        if (lremove_mean_momenta) call warning('initialize_hydro', &
+            'lremove_mean_momenta=T may interfere with lremove_uumean[xyz]=T')
+        if (lremove_uumeanxy) call warning('initialize_hydro', &
+            'lremove_uumeanxy=T may interfere with lremove_uumean[xyz]=T')
+      endif
 !
       if (Omega/=0. .and. lyinyang) then
         if (phi==0.) then
@@ -1187,8 +1184,6 @@ module Hydro
         endif
       endif
 !
-      lcalc_uumeanxy=lremove_uumeanxy .or. lcalc_uumeanxy .or. ltestfield_xy
-!
       if (lcalc_uumeanxy .or. lcalc_ruumeanxy) then
         myl=my
         if (lyinyang) then
@@ -1200,6 +1195,186 @@ module Hydro
         uumxy=0.0
         ruumxy=0.0
       endif
+!
+!  Preparations for adding/removing mean flows.
+!  Set profiles for forcing differential rotation.
+!
+      select case (uuprof)
+
+      case ('BS04')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot
+        prof_amp3=cos(z)
+
+      case ('BS04c','BS04c1','HP09')
+
+        if (wdamp/=0.) then
+          prof_amp3=ampl1_diffrot*0.5*(1.+tanh((z-rdampint)/(wdamp)))
+        else
+          prof_amp3=ampl1_diffrot
+        endif
+
+        if (uuprof=='BS04c') then
+          prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif (uuprof=='BS04c1') then
+          prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif(uuprof=='HP09') then
+          prof_amp1=cos(kx_diffrot*x(l1:l2))
+!or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
+        endif
+
+      case ('BS04m')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))
+        prof_amp4=cos(pi/(2.*y(m2))*y)
+
+      case ('solar_DC99')
+        prof_amp1=(1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp))*step(x(l1:l2),rdampint,wdamp)*x(l1:l2)
+        prof_amp4=ampl2_diffrot*(1.064-0.145*costh**2-0.155*costh**4-1.)*sinth
+
+      case ('vertical_shear')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot)-phase_diffrot)
+
+      case ('vertical_compression','vertical_shear_x')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot))
+
+      case ('remove_vertical_shear')
+        if (.not.lcalc_uumean) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+
+      case ('vertical_shear_x_sinz')
+        zbot=xyz0(3)
+        where (z <= 0.) 
+          prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
+        elsewhere
+          prof_amp3=0.
+        endwhere
+
+      case ('vertical_shear_z')
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_z2')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_z2'")
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_linear')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_linear'")
+        prof_amp3=ampl1_diffrot*z
+
+      case ('tachocline')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+      case ('solar_simple')
+        if (lspherical_coords) then
+          prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
+          prof_amp4=1.5-7.5*costh*costh
+        elseif (lcartesian_coords) then
+          prof_amp1=ampl1_diffrot*cos(x(l1:l2))
+          prof_amp4=cos(y)*cos(y)
+        !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
+        else
+          call fatal_error("initialize_hydro", &
+                          "uuprof='solar_simple' not implemented for other than spherical or Cartesian coordinates") 
+        endif
+      case ('radial_uniform_shear')
+        uinn = omega_in*x(l1)
+        uext = omega_out*x(l2)
+        slope = (uext - uinn)/(x(l2)-x(l1))
+        prof_amp1=slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
+
+      case ('breeze')
+        prof_amp3=ampl_wind*z/(2.*pi)
+
+      case ('slow_wind')
+        prof_amp3=ampl_wind*(1.+tanh((z-rdampext)/wdamp))
+
+      case ('radial_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear'")
+        prof_amp1=ampl1_diffrot*cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx)
+
+      case ('radial_shear_damp')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear_damp'")
+        prof_amp1=ampl1_diffrot*tanh((x(l1:l2)-rdampint)/wdamp)
+
+      case ('damp_corona')
+        if (lspherical_coords) then
+          if (.not.lcalc_uumeanxy) &
+            call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
+          prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
+        elseif (lcartesian_coords) then
+          prof_amp3=0.5*(tanh((z-zbot)/wdamp)+1.)
+        endif
+
+      case ('damp_horiz_vel')
+        prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
+
+      case ('latitudinal_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='latitudinal_shear'")
+        prof_amp4=ampl1_diffrot*cos(2.*pi*k_diffrot*(y-y0)/Ly)
+
+      case ('damp_jets')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_jets'")
+        prof_amp4=1.-0.5*(1.+tanh((y-(y0+ydampint))/wdamp)-(1.+tanh((y-(y0+Lxyz(2)-ydampext))/wdamp)))
+
+      case ('spoke-like-NSSL')
+        if (.not.lspherical_coords) &
+          call warning("initialize_hydro", &
+                       "uuprof='spoke-like-NSSL' only meningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='spoke-like-NSSL'")
+
+        prof_amp1=ampl1_diffrot*x(l1:l2)
+        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
+        profy_diffrot1=-1.5*(5.*costh**2-1.)
+        profy_diffrot2=-1.0*(4.*costh**2-3.)
+        profy_diffrot3=-1.0
+        profz_diffrot1=+1.
+!
+      case ('uumz_profile')
+        if (.not.lcalc_uumeanz) then
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
+        else
+          if (.not.lgravz) &
+            call fatal_error("initialize_hydro","gravitation in z-direction (lgravz=T) needed for uuprof='uumz_profile'")
+          call read_uumz_profile(uumz_prof)
+        endif
+
+      case ('omega_profile')
+        if (.not.lspherical_coords) &
+          call warning("initialize_hydro", &
+                       "uuprof='omega_profile' only meaningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='omega_profile'")
+        call read_omega_profile(omega_prof)
+
+      case ('nothing')
+
+      case default
+         if (lroot) print*,'initialize_hydro: No profile of mean flow "'//trim(uuprof)//'"'
+
+      endselect
 !
       if (ivid_oo/=0) then
         !call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
@@ -1337,7 +1512,7 @@ module Hydro
         endif
       endif
 !
-!  do xy-averaged mean field for each component
+!  do xy-averaged mean flow for each component
 !
       if (lcalc_uumeanz) then
         fact=1./nxygrid
@@ -1367,7 +1542,7 @@ module Hydro
 !
       endif
 !
-!  do yz-averaged mean field for each component
+!  do yz-averaged mean flow for each component
 !
       if (lcalc_uumeanx) then
         fact=1./nyzgrid
@@ -1377,18 +1552,9 @@ module Hydro
           enddo
         enddo
         call finalize_aver(nprocyz,23,uumx)
-
-        if (lremove_uumeanz.and.lremove_uumeanx) then
-          uum0=sum(uumx(l1:l2,:),1)/nxgrid
-          call finalize_aver(nprocx,1,uum0)
-          do j=1,3 
-            uumx(:,j)=uumx(:,j)-uum0(j)
-          enddo
-        endif
-!
       endif
 !
-!  do xz-averaged mean field for each component
+!  do xz-averaged mean flow for each component
 !
       if (lcalc_uumeany) then
         fact=1./nxzgrid
@@ -1398,17 +1564,6 @@ module Hydro
           enddo
         enddo
         call finalize_aver(nprocxz,13,uumy)
-!
-        if (lremove_uumeany.and.(lremove_uumeanx.or.lremove_uumeanz)) then
-          if (.not.(lremove_uumeanx.and.lremove_uumeanz)) then
-            uum0=sum(uumy(m1:m2,:),1)/nygrid
-            call finalize_aver(nprocy,2,uum0)
-          endif
-          do j=1,3 
-            uumy(:,j)=uumy(:,j)-uum0(j)
-          enddo
-        endif
-
       endif
 !
 !  Do mean 2D field in (x,y)-plane for each component
@@ -1500,7 +1655,7 @@ module Hydro
 !  24-nov-02/tony: renamed for consistence (i.e. init_[variable name])
 !  13-feb-15/MR: changes for use of reference_state
 !
-      use Boundcond, only:update_ghosts
+      use Boundcond, only: update_ghosts
       use Density, only: beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
       use EquationOfState, only: cs20
@@ -2237,10 +2392,10 @@ module Hydro
             do n=n1,n2
               do m=m1,m2
                 sph=ampluu(j)*ylm(ll_sh(j),mm_sh(j),sph_har_der)
-                f(l1:l2,m,n,iux) = 2.*tmp*sph
+                f(l1:l2,m,n,iux) = ll_sh(j)*(ll_sh(j)+1)*tmp*sph
                 f(l1:l2,m,n,iuy) = ampluu(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) &      ! tb improved!
-                  f(l1:l2,m,n,iuz) = -prof*sph*mm_sh(j)/sinth(m)*sin(mm_sh(j)*z(n))/cos(mm_sh(j)*z(n))
+                  f(l1:l2,m,n,iuz) = -prof*sph*mm_sh(j)/sinth(m)* sin(mm_sh(j)*z(n))/cos(mm_sh(j)*z(n))
               enddo
             enddo
           endif
@@ -2826,9 +2981,9 @@ module Hydro
           ju=j+iuu-1
           do i=1,3
             if (lcylindrical_coords.and.ju==iuy.and.i==1) then  
-              call der6_pencil(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)                
+              call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)                
             elseif (lspherical_coords.and.ju==iuz.and.i==1) then  
-              call der6_pencil(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)                
+              call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)                
             else   
               call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)
             endif
@@ -3249,7 +3404,7 @@ module Hydro
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
         call identify_bcs('uz',iuz)
-        if(lslope_limit_diff) then
+        if (lslope_limit_diff) then
           call identify_bcs('sld_char',isld_char)
         endif
       endif
@@ -3260,7 +3415,6 @@ module Hydro
       if (ldensity.and.lrelativistic) then
         !print*,'AXEL'
       endif
-
 !
 !  Advection term.
 !
@@ -4449,9 +4603,11 @@ module Hydro
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !  12-sep-13/MR  : use finalize_aver
 !
+      use Sub, only: finalize_aver
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
-      real, dimension (3) :: OO, dOO
+      real, dimension (3) :: OO, dOO, uum0
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: i,j,l
 !
@@ -4567,35 +4723,57 @@ module Hydro
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
             enddo
           enddo
+        elseif (lremove_uumeanz_horizontal) then
+!
+!  Remove only xy-averaged horizontal flows
+!
+          do j=1,2
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
+          enddo
         endif
 !
 !  Remove mean flow (xz average).
 !
         if (lremove_uumeany) then
+!
+!  uum0 is formed to avoid double substraction of <uu>_xyz.
+!
+          if (lremove_uumeanz.or.lremove_uumeanz_horizontal) then
+            uum0=sum(uumy(m1:m2,:),1)/nygrid
+            call finalize_aver(nprocy,2,uum0)
+            if (lremove_uumeanz_horizontal) uum0(3)=0.
+          endif
+
           do j=1,3
             do m=1,my
               f(:,m,:,iuu+j-1) = f(:,m,:,iuu+j-1)-uumy(m,j)
-            enddo
+            enddo 
+            if (lremove_uumeanz.or.lremove_uumeanz_horizontal) &
+              f(:,:,:,iuu+j-1)=f(:,:,:,iuu+j-1)+uum0(j)  ! compensation as uum0 is already substracted once
           enddo
+
         endif
 !
 !  Remove mean flow (yz average).
 !
         if (lremove_uumeanx) then
+!
+!  uum0 is formed to avoid double substraction of <uu>_xyz.
+!
+          if (lremove_uumeanz.or.lremove_uumeanz_horizontal.or.lremove_uumeany) then
+            uum0=sum(uumx(l1:l2,:),1)/nxgrid
+            call finalize_aver(nprocx,1,uum0)
+            if (lremove_uumeanz_horizontal) uum0(3)=0.
+          endif
+
           do j=1,3
             do l=1,mx
               f(l,:,:,iuu+j-1) = f(l,:,:,iuu+j-1)-uumx(l,j)
             enddo
-          enddo
-        endif
-!
-!  Remove only xy-averaged horizontal flows
-!
-        if (lremove_uumeanz_horizontal) then
-          do j=1,2
-            do n=1,mz
-              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
-            enddo
+            if (lremove_uumeanz.or.lremove_uumeanz_horizontal.or.lremove_uumeany) &
+              f(:,:,:,iuu+j-1)=f(:,:,:,iuu+j-1)+uum0(j)  ! compensation as uum0 is already substracted once
           enddo
         endif
       endif
@@ -4726,7 +4904,7 @@ module Hydro
 !***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)
 !
-!  Coriolis terms for cartesian geometry.
+!  Coriolis terms for Cartesian geometry.
 !
 !  30-oct-09/MR: outsourced, parameter velind added
 !  15-feb-15/MR: calculation of Coriolis force of shear flow added
@@ -7039,408 +7217,235 @@ module Hydro
 !
       use Sub, only: step
 !
-      real :: slope,uinn,uext,zbot,prof_amp_scl
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: prof_amp1, prof_amp2, local_Omega
-      real, dimension (mz) :: prof_amp3
-      real, dimension (my) :: prof_amp4
-      real, dimension (nz,3), save :: uumz_prof
       character (len=labellen) :: prof_diffrot
-      real :: tmp, tmp2
       logical :: ldiffrot_test
-      integer :: llx
 !
+      real, dimension(nx) :: local_Omega
+
       select case (prof_diffrot)
 !
 !  diffrot profile from Brandenburg & Sandin (2004, A&A)
 !
       case ('BS04')
-      if (wdamp/=0.) then
-        prof_amp1=ampl1_diffrot*(1.-step(x(l1:l2),rdampint,wdamp))
-      else
-        prof_amp1=ampl1_diffrot
-      endif
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot*cos(z(n)))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp1*prof_amp3(n))
 !
 !  diffrot profile from Brandenburg & Sandin (2004, A&A), modified
 !  for convection.
 !
       case ('BS04c')
-      if (wdamp/=0.) then
-        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
-      else
-        prof_amp3=ampl1_diffrot
-      endif
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp3(n)*sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp1*prof_amp3(n))
 !
 !  same as above but with an equator
 !
       case ('BS04c1')
-      if (wdamp/=0.) then
-        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
-      else
-        prof_amp3=ampl1_diffrot
-      endif
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp3(n)*sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp1*prof_amp3(n))
 !
 !  modified diffrot profile from Brandenburg & Sandin (2004, A&A)
 !
       case ('BS04m')
-      if (wdamp/=0.) then
-        prof_amp1=ampl1_diffrot*(1.-step(x(l1:l2),rdampint,wdamp))
-      else
-        prof_amp1=ampl1_diffrot
-      endif
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-        -prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))*cos((pi/(2.*y(m2)))*y(m)))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
 !
 !  Shear profile from Hughes & Proctor (2009, PRL). Force either the
 !  full velocity field or only the y-average.
 !
       case ('HP09')
-      if (wdamp/=0.) then
-        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
-      else
-        prof_amp3=ampl1_diffrot
-      endif
       if (.not.lcalc_uumeanxz) then
         !df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1* f(l1:l2,m,n,iux)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-          -prof_amp3(n)*cos(kx_diffrot*x(l1:l2)))
-          !-prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp1*prof_amp3(n))
       else
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2) &
-!         -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
-!AB: should be kx_diffrot
-          -prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2)-prof_amp1*prof_amp3(n))
       endif
 !
 !  Shear profile linear in x
 !
       case ('Sx')
-      if (wdamp/=0.) then
-        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
-      else
-        prof_amp3=ampl1_diffrot
-      endif
       if (lcalc_uumeanx) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumx(l1:l2,iuy) &
-          -Shearx*x(l1:l2))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumx(l1:l2,iuy)-Shearx*x(l1:l2))
       else
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-          -Shearx*x(l1:l2))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-Shearx*x(l1:l2))
       endif
 !
 !  Solar rotation profile from Dikpati & Charbonneau (1999, ApJ)
 !
       case ('solar_DC99')
-      prof_amp1=step(x(l1:l2),rdampint,wdamp)
-      prof_amp2=1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp)
-      prof_amp4=(1.064-0.145*costh(m)**2-0.155*costh(m)**4)*ampl2_diffrot
-      if (lcalc_uumeanxy) then
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3) &
-            -(prof_amp1*prof_amp2*(prof_amp4(m)-ampl2_diffrot)))*x(l1:l2)*sinth(m)
+      if (lcalc_uumeanxy) then 
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*prof_amp4(m))
       else
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-            -(prof_amp1*prof_amp2*(prof_amp4(m)-ampl2_diffrot)))*x(l1:l2)*sinth(m)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
       endif
 !
 !  vertical shear profile
 !
       case ('vertical_shear')
-      zbot=xyz0(3)
       if (.not.lcalc_uumean) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp3(n))
       else
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumz(n,2)-prof_amp3(n))
       endif
 !
 !  vertical compression profile
 !
       case ('vertical_compression')
-      zbot=xyz0(3)
       if (.not.lcalc_uumean) then
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp3(n))
       else
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-            -tau_diffrot1*(uumz(n,3)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-prof_amp3(n))
       endif
 !
 !  Remove vertical shear profile
 !
       case ('remove_vertical_shear')
-      if (.not.lcalc_uumean) then
-        call fatal_error("remove_vertical_shear","you need to set lcalc_uumean=T in hydro_run_pars")
-      else
         f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)-uumz(n,1)
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-uumz(n,2)
-      endif
 !
 !  vertical shear profile
 !
       case ('vertical_shear_x')
-      zbot=xyz0(3)
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
-        -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(f(l1:l2,m,n,iux)-prof_amp3(n))
 !
 !  vertical shear profile with sinz profile
 !
       case ('vertical_shear_x_sinz')
-      zbot=xyz0(3)
-      if (z(n) <= 0.) then
-        tmp=ampl1_diffrot
-      else
-        tmp=0.
-      endif
-      tmp2=.5*pi/abs(zbot)
-      if (headtt) print*,''
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
-        -tau_diffrot1*(f(l1:l2,m,n,iux)-tmp*sin(tmp2*(z(n))))
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(f(l1:l2,m,n,iux)-prof_amp3(n))
 !
 !  Vertical shear profile U_y(z) centred around given z, forcing the
 !  horizontally averaged flow.
 !
       case ('vertical_shear_z')
-      zbot=rdampint
       if (.not.lcalc_uumean) then
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-             -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy)-prof_amp3(n))
       else
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-             -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumz(n,2)-prof_amp3(n))
       endif
 !
 !  Vertical shear profile U_y(z) centred around given z, forcing the
 !  y-averaged averaged flow.
 !
       case ('vertical_shear_z2')
-      zbot=rdampint
-      if (.not.lcalc_uumeanxz) then
-        call fatal_error("vertical_shear_z2","you need to set lcalc_uumeanxz=T in hydro_run_pars")
-      else
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-             -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
-      endif
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2)-prof_amp3(n))
 !
 !  Linear vertical shear profile U_y(z), forcing the y-averaged flow.
 !
       case ('vertical_shear_linear')
-      if (.not.lcalc_uumeanxz) then
-        call fatal_error("vertical_shear_z2","you need to set lcalc_uumeanxz=T in hydro_run_pars")
-      else
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*z(n))
-      endif
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2)-prof_amp3(n))
 !
 !  set u_phi=0 below given radius, i.e. enforce a tachocline in
 !  spherical convection setup
 !
       case ('tachocline')
-      if (wdamp/=0.) then
-        prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-      else
-        prof_amp1=1.
-      endif
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuz))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuz)
 !
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
 !  Note that P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
 !
       case ('solar_simple')
-      prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-      prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
-      if (lspherical_coords) then
+      if (lspherical_coords.or.lcartesian_coords) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-          -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
-      elseif (lcylindrical_coords) then
-        call fatal_error("solar_simple","not implemented for cylindrical coordinates")
-      else
-        do llx=l1,l2
-          df(llx,m,n,iuz)=df(llx,m,n,iuz)-tau_diffrot1*( f(llx,m,n,iuz) &
-               -ampl1_diffrot*cos(x(llx))*cos(y(m))*cos(y(m)) )
+                                                          -prof_amp1*prof_amp4(m))
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
-        enddo
       endif
       if (ldiffrot_test) then
-        f(l1:l2,m,n,iux) = 0.
-        f(l1:l2,m,n,iuy) = 0.
-        if (lspherical_coords) then
-          f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
-        else if (lcylindrical_coords) then
-          call fatal_error("diffrot_test","not implemented for cylindrical coordinates")
-        else
-          do llx=l1,l2
-            f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m))
-!prof_amp1(llx)*cos(y(m))*cos(y(m))
-          enddo
-        endif
-        f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
-       else
-       endif
+        f(l1:l2,m,n,iux:iuy) = 0.
+        if (lspherical_coords.or.lcartesian_coords) f(l1:l2,m,n,iuz) = prof_amp1*prof_amp4(m)
+      endif
 !
 !  radial_uniform_shear
 !  uphi = slope*x + uoffset
 !
       case ('radial_uniform_shear')
-       uinn = omega_in*x(l1)
-       uext = omega_out*x(l2)
-       slope = (uext - uinn)/(x(l2)-x(l1))
-       prof_amp1=  slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
-       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-             - prof_amp1)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1)
 !
 ! vertical shear in uz with respect to uz (slow wind)
 !
       case ('breeze')
       if (.not.lcalc_uumean) then
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl_wind*z(n)/(2.*pi))
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp3(n))
       else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumz(n,3)-ampl_wind*z(n)/(2.*pi))
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-prof_amp3(n))
       endif
 !
-!  uz with respect to z (slow wind) like 'breeze' case but ampl_wind a function
-!  of z
+!  uz with respect to z (slow wind) like 'breeze' case but ampl_wind a function of z
 !
       case ('slow_wind')
-      zbot=rdampext
       if (.not.lcalc_uumean) then
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl_wind*(1+tanh((z(n)-zbot)/wdamp)))
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp3(n))
       else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumz(n,3)-ampl_wind*(1+tanh((z(n)-zbot)/wdamp)))
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-prof_amp3(n))
       endif
-
 !
 !  Radial shear profile
 !
       case ('radial_shear')
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("radial_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot &
-             *cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx))
-      endif
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1)
 !
 !  Radial shear profile with damping of other mean velocities
 !
       case ('radial_shear_damp')
-      zbot=rdampint
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("radial_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumxy(l1:l2,m,1)-0.)
          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxy(l1:l2,m,2)-0.)
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*tanh((x(l1:l2)-zbot)/wdamp))
-      endif
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1)
 !
 !  Damp mean velocities in the corona above rdampext
 !
       case ('damp_corona')
-      zbot=rdampext
       if (lspherical_coords) then
-        if (.not.lcalc_uumeanxy) then
-          call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-        else
-          prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
-        endif
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
       else if (lcartesian_coords) then
         if (.not.lcalc_uumeanz) then
-!          call fatal_error("damp_corona","you need to set lcalc_uumean=T in hydro_run_pars")
-!  Piyali: commented the fatal_error so that lcalc_uumean=F can work as below
-!  for Cartesian coord
-! 
-          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iux)-0.)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuy)-0.)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuz)-0.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp3(n)*(f(l1:l2,m,n,iux)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp3(n)*(f(l1:l2,m,n,iuy)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp3(n)*(f(l1:l2,m,n,iuz)-0.)
         else
-          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumz(n,1)-0.)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumz(n,2)-0.)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumz(n,3)-0.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp3(n)*(uumz(n,1)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp3(n)*(uumz(n,2)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp3(n)*(uumz(n,3)-0.)
         endif
       endif
 !
 !  Damp horizontal motion
 !
       case ('damp_horiz_vel')
-        zbot=rdampext
         if (lcartesian_coords) then
-          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iux)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuy)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp3(n)*f(l1:l2,m,n,iux)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp3(n)*f(l1:l2,m,n,iuy)
         endif
 !
 !  Latitudinal shear profile
 !
       case ('latitudinal_shear')
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("latitudinal_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot &
-             *cos(2.*pi*k_diffrot*(y(m)-y0)/Ly))
-      endif
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp4(m))
 !
 !  Damp/enforce high latitude jets in spherical coordinates
 !
       case ('damp_jets')
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("damp_jets","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-         prof_amp_scl=1.-0.5*(1+tanh((y(m)-(y0+ydampint))/wdamp)-(1+tanh((y(m)-(y0+Lxyz(2)-ydampext))/wdamp)))
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp_scl*(uumxy(l1:l2,m,3)-uzjet)
-      endif
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp4(m)*(uumxy(l1:l2,m,3)-uzjet)
 !
 !  spoke-like-NSSL (analogous to that in hydro_kinematic)
 !
       case ('spoke-like-NSSL')
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("hydro_kinematic","you need lcalc_uumeanxy=T in hydro_run_pars")
-      else
-        local_Omega=profx_diffrot1*profy_diffrot1(m) &
-                   +profx_diffrot2*profy_diffrot2(m) &
-                   +profx_diffrot3*profy_diffrot3(m)
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1* &
-          (uumxy(l1:l2,m,3)-ampl1_diffrot*local_Omega*x(l1:l2)*sinth(m))
-      endif
+        local_Omega=profx_diffrot1*profy_diffrot1(m)+profx_diffrot2*profy_diffrot2(m)+profx_diffrot3*profy_diffrot3(m)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*local_Omega*sinth(m))
 !
-!  Relax toward profiles read from file
+!  Relax toward (1D-z) profile read from file
 !
       case ('uumz_profile')
-      if (.not.lcalc_uumeanz) then
-        call fatal_error("uumz_profile","you need to set lcalc_uumean=T in hydro_run_pars")
-      else
-        if (it == 1) then
-          uumz_prof = 0.
-          call read_uumz_profile(uumz_prof)
-        endif
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumz(n,1)-uumz_prof(n-nghost,1))
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumz(n,2)-uumz_prof(n-nghost,2))
         if (.not.limpose_only_horizontal_uumz) &
            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-uumz_prof(n-nghost,3))
-      endif
 !
-!  no profile matches
+!  Relax toward (2D-xy) profile read from file
+!
+      case ('omega_profile')
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-omega_prof(:,m-nghost)*x(l1:l2)*sinth(m))
 !
       case default
-         if (lroot) print*,'impose_profile_diffrot: No such profile ',trim(prof_diffrot)
+
       endselect
 !
     endsubroutine impose_profile_diffrot
@@ -7450,61 +7455,117 @@ module Hydro
 !  Read vertical profiles of horizontally averaged flows from file.
 !
 !  23-oct-18/pjk: added
+!  20-apr-21/MR: use mpiscatter
 !
-      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real_arr, mpiscatter, &
+                         MPI_COMM_ZBEAM, MPI_COMM_XYPLANE
 !
       real, dimension(nz,3), intent(out) :: uumz_prof
+!
       real, dimension(nzgrid) :: tmp1z, tmp2z, tmp3z
       real :: var1,var2,var3
       logical :: exist
       integer :: stat, n
 !
+      uumz_prof = 0.
+
+      if (lroot) then
+!
 !  Read mean velocity (uumz) and write into an array.
 !  If file is not found in run directory, search under trim(directory).
 !
-      inquire(file='uumz.dat',exist=exist)
-      if (exist) then
-        open(31,file='uumz.dat')
-      else
-        inquire(file=trim(directory)//'/uumz.ascii',exist=exist)
+        inquire(file='uumz.dat',exist=exist)
         if (exist) then
-          open(31,file=trim(directory)//'/uumz.ascii')
+          open(31,file='uumz.dat')
         else
-          call fatal_error('read_uumz_profile','*** error *** - no input file')
+          inquire(file=trim(directory)//'/uumz.ascii',exist=exist)
+          if (exist) then
+            open(31,file=trim(directory)//'/uumz.ascii')
+          else
+            call fatal_error('read_uumz_profile','no input file uumz.dat or '//trim(directory)//' uumz.ascii')
+          endif
         endif
-      endif
 !
-!  Read profiles.
+!  Read profiles. Assuming no ghost zones in uumz.dat.
 !
-!  Gravity in the z-direction
-!
-      if (lgravz) then
         do n=1,nzgrid
           read(31,*,iostat=stat) var1,var2,var3
-          if (stat<0) exit
+          if (stat<0) exit      !MR: then data missing!
           if (ip<5) print*,'uxmz, uymz, uzmz: ',var1,var2,var3
           tmp1z(n)=var1
           tmp2z(n)=var2
           tmp3z(n)=var3
         enddo
 !
-      call mpibcast_real_arr(tmp1z, nzgrid, comm=MPI_COMM_WORLD)
-      call mpibcast_real_arr(tmp2z, nzgrid, comm=MPI_COMM_WORLD)
-      call mpibcast_real_arr(tmp3z, nzgrid, comm=MPI_COMM_WORLD)
-!
-!  Assuming no ghost zones in uumz.dat.
-!
-        do n=n1,n2
-          uumz_prof(n-nghost,1)=tmp1z(ipz*nz+n-nghost)
-          uumz_prof(n-nghost,2)=tmp2z(ipz*nz+n-nghost)
-          uumz_prof(n-nghost,3)=tmp3z(ipz*nz+n-nghost)
-        enddo
-!
         close(31)
-!
+
       endif
 !
+!  Distribute tmp*z along z-beams, then replicate across xy-planes.
+!
+      if (ipx==0.and.ipy==0) then
+        call mpiscatter(tmp1z, uumz_prof(:,1), root, comm=MPI_COMM_ZBEAM)
+        call mpiscatter(tmp2z, uumz_prof(:,2), root, comm=MPI_COMM_ZBEAM)
+        call mpiscatter(tmp3z, uumz_prof(:,3), root, comm=MPI_COMM_ZBEAM)
+      endif
+      call mpibcast_real_arr(uumz_prof, 3*nz, proc=0, comm=MPI_COMM_XYPLANE)
+!
+!print*, 'iproc,uumz_prof=', iproc,uumz_prof(:,1)
+!
     endsubroutine read_uumz_profile
+!***********************************************************************
+    subroutine read_omega_profile(omega_prof)
+!
+!  Read profile of angular velocity as functio nof x and y from file
+!  omega.dat or omega.ascii .
+!
+!  20-apr-21/MR: coded
+!
+      use Mpicomm, only: mpibcast_real_arr, mpiscatter, &
+                         MPI_COMM_ZBEAM, MPI_COMM_XYPLANE
+!
+      real, dimension(nx,ny), intent(out) :: omega_prof
+
+      real, dimension(:,:), allocatable :: omega_prof_glob
+      logical :: exist
+      integer :: stat
+!
+      omega_prof = 0.
+      if (lroot) then
+!
+!  Read angular velocity omega and write into an array.
+!  If file is not found in run directory, search under trim(directory).
+!
+        inquire(file='omega.dat',exist=exist)
+        if (exist) then
+          open(31,file='omega.dat')
+        else
+          inquire(file=trim(directory)//'/omega.ascii',exist=exist)
+          if (exist) then
+            open(31,file=trim(directory)//'/omega.ascii')
+          else
+            call fatal_error('read_omega_profile','no input file omega.dat or' &
+                             //trim(directory)//' omega.ascii')
+          endif
+        endif
+!
+!  Read profile. Assuming no ghost zones in omega.dat.
+!
+        allocate(omega_prof_glob(nxgrid,nygrid))
+        read(31,*,iostat=stat) omega_prof_glob
+        close(31)
+
+      endif
+!
+!  Distribute omega across xy-planes, then replicate along z-beams.
+!
+      if (ipz==0) &
+        call mpiscatter(omega_prof_glob, omega_prof, root, comm=MPI_COMM_XYPLANE)
+
+      call mpibcast_real_arr(omega_prof, nx*ny, proc=0, comm=MPI_COMM_ZBEAM)
+!write(iproc+40,'(8(f8.1,1x))') omega_prof
+
+    endsubroutine read_omega_profile
 !***********************************************************************
     subroutine impose_velocity_ceiling(f)
 !
