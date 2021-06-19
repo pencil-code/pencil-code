@@ -388,6 +388,8 @@ module Mpicomm
 
       bufsizes_yz_corn=nghost
 
+      lcommunicate_y = (nprocz>1 .and. lpole(2))
+
       if (.not.lyinyang) then
 !
 !  Allocations for Yin-Yang grid are done later in yyinit.
@@ -1329,8 +1331,6 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  neighbours. Assumes the domain is binary communication between z processors.
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
 !
-      lcommunicate_y = (nprocz>1 .and. lpole(2))
-
       if (lcommunicate_y) then
         poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
         pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N rev
@@ -1863,6 +1863,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               if ((.not.lfirst_proc_z.or.bcz12(j,1)=='p').and. &
                   (.not.lfirst_proc_y.or.bcy12(j,1)=='p')) then    ! inner or periodic proc boundaries
                 f(:,1:m1-1,1:n1-1,j)=llbufi(:,:,:,j)               ! fill lower left corner
+!if (notanumber(llbufi(:,:,:,j))) print*, 'lbufyi: iproc,j=', iproc, j
               elseif (llcornr>=0.and.lyinyang) then
                 if (lfirst_proc_z) then
                   if (llast_proc_y.and.lcutoff_corners) then
