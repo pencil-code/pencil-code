@@ -82,7 +82,7 @@ module Energy
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
-  real :: tau_cool_ss=0.0
+  real :: tau_cool_ss=0.0, tau_relax_ss=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
   real :: ss_volaverage=0.
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
@@ -239,7 +239,7 @@ module Energy
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
-      kx_ss, ky_ss, kz_ss
+      kx_ss, ky_ss, kz_ss, tau_relax_ss
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3386,7 +3386,8 @@ module Energy
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
           heat_uniform/=0.0 .or. heat_gaussianz/=0.0 .or. tau_cool/=0.0 .or. &
-          tau_cool_ss/=0.0 .or. cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
+          tau_cool_ss/=0.0 .or. tau_relax_ss/=0.0 .or. cool_uniform/=0.0 .or. &
+          cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
           (tau_cool2 /=0) .or. lheat_cool_gravz) &
           call calc_heat_cool(df,p,Hmax)
@@ -5791,7 +5792,7 @@ module Energy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
 !
-      real, dimension (nx) :: heat, TT_drive
+      real, dimension (nx) :: heat, TT_drive, prof
       real :: profile_buffer
       real :: xi,cp1,Rgas
 !
@@ -5948,6 +5949,17 @@ module Energy
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_mz(n))/tau_cool_ss
         else
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const)/tau_cool_ss
+        endif
+      endif
+!
+!  Relax horizontally averaged entropy toward a cos(kz) profile
+!
+      if (tau_relax_ss/=0.) then
+         prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
+         if (lcalc_ssmean) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_ss*prof(n))/tau_relax_ss
+        else
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss(l1:l2)-ss_const-ampl_ss*prof(n))/tau_relax_ss
         endif
       endif
 !
