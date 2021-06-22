@@ -148,7 +148,7 @@ cp *.in $targetdir
 [ -f nnu2.dat ] && cp nnu2.dat $targetdir
 [ -f air.dat ] && cp air.dat $targetdir
 [ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
-[ -f data/emftensors.h5 ] && cp data/emftensors.h5 $targetdir/data
+[ -f data/emftensors.h5 ] && ln -s data/emftensors.h5 $targetdir/data/emftensors.h5
 if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
