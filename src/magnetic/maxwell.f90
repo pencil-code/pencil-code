@@ -115,7 +115,7 @@ module Magnetic
   character (len=labellen) :: initaak='nothing'
   character (len=labellen) :: initeek='nothing'
   character (len=labellen) :: cc_light='1'
-  real :: alpha_inflation=0., beta_inflation=0.
+  real :: alpha_inflation=0., beta_inflation=0., eps_quench=.3, nquench=10.
   real :: sigma=0., sigma_t1=0., sigma_t2=0., t1_sigma=0., t2_sigma=0.
   logical :: laa_as_aux=.false., lbb_as_aux=.true., lee_as_aux=.true., ljj_as_aux=.false.
   logical :: lemf=.false., linflation=.false., lreheating=.false., ldebug_print=.false.
@@ -131,7 +131,7 @@ module Magnetic
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
   logical :: lpolarization_basis=.false., lswitch_sign_e2=.false., lminus_mode=.false.
   logical :: lscale_tobox=.true., lskip_projection_aa=.false.
-  logical :: lalpha_inflation, lbeta_inflation
+  logical :: lalpha_inflation, lbeta_inflation, lquench_inflation=.false.
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
@@ -152,7 +152,8 @@ module Magnetic
     lswitch_sign_e2, lminus_mode, ldebug_print, &
     cc_light, &
     ksign, lemf, B_ext, &
-    conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma
+    conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
+    lquench_inflation, eps_quench, nquench
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -943,7 +944,7 @@ module Magnetic
       complex, dimension (3) :: Acomplex, Ecomplex, Acomplex_new, Ecomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
-      real :: discrim2, sigmaeff
+      real :: discrim2, sigmaeff, quench
       real :: ksqr, ksqr_eff, k, k1, k2, k3, fact, kdotEMF
       intent(inout) :: f
 !
@@ -972,6 +973,14 @@ module Magnetic
         enddo
         enddo
         call fft_xyz_parallel(bbkre,bbkim)
+      endif
+!
+!  possibility of quenching factor to make magnetogenesis turn off smoothly
+!
+      if (lquench_inflation) then
+        quench=1./(1.+((t+1.)/(2.-eps_quench))**nquench)
+      else
+        quench=1.
       endif
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
@@ -1005,10 +1014,13 @@ module Magnetic
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
-                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2 &
-                    +2.*ksign*k*beta1_inflation/(t+1.)
+                  !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2 &
+                  !  +2.*ksign*k*beta1_inflation/(t+1.)
+                  ksqr_eff=ksqr-quench*(beta2_inflation/(t+1.)**2 &
+                    +2.*ksign*k*beta1_inflation/(t+1.))
                 else
-                  ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
+                  !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
+                  ksqr_eff=ksqr-quench*beta2_inflation/(t+1.)**2
                 endif
               endif
             else
