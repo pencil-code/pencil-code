@@ -1017,7 +1017,7 @@ module Magnetic
                   !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2 &
                   !  +2.*ksign*k*beta1_inflation/(t+1.)
                   ksqr_eff=ksqr-quench*(beta2_inflation/(t+1.)**2 &
-                    +2.*ksign*k*beta1_inflation/(t+1.))
+                    -2.*ksign*k*beta1_inflation/(t+1.))
                 else
                   !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
                   ksqr_eff=ksqr-quench*beta2_inflation/(t+1.)**2
