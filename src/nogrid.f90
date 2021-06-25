@@ -35,6 +35,7 @@ module Grid
   public :: grid_bound_data
   public :: set_coorsys_dimmask
   public :: construct_serial_arrays
+  public :: coarsegrid_interp
 !
 ! public :: find_star
   public :: grid_profile
@@ -75,6 +76,15 @@ module Grid
 !  Dummy routine.
 !
     endsubroutine initialize_grid
+!***********************************************************************
+    subroutine coarsegrid_interp(f,ivar1,ivar2)
+!
+!  Dummy routine.
+!
+      real, dimension(:,:,:,:) :: f
+      integer, optional :: ivar1,ivar2
+!
+    endsubroutine coarsegrid_interp
 !***********************************************************************
     subroutine save_grid(lrestore)
 !
