@@ -30,7 +30,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: star_luminosity=1.0, Rstar=1.0, Rtran=1.2, chit0=1e8
-  real :: xi0=1.0, npoly1=1.5, npoly_jump=1.0, nad=1.5
+  real :: xi0=1.0, npoly1=1.5, npoly_jump=1.0, nad=1.5, rbot=1.0, wbot=0.1
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0, kramers_hcond0=0.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
@@ -41,7 +41,7 @@ module InitialCondition
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
       npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, &
-      lwrite_hcond_profile, lkappa_constchi
+      lwrite_hcond_profile, lkappa_constchi, rbot, wbot
 !
   contains
 !***********************************************************************
@@ -93,7 +93,7 @@ module InitialCondition
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
       real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
-      real, dimension (nxgrid) :: ss_global, cs2_global
+      real, dimension (nxgrid) :: ss_global, cs2_global, npoly_global
       real, dimension (nxgrid) :: drhodr_global, del2rho_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
@@ -272,7 +272,6 @@ module InitialCondition
 !
       coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
 !
-!
       npoly2=0.
       gnpoly2=0.
 !
@@ -312,6 +311,86 @@ module InitialCondition
 !
         kappa=coef1*(npoly2+1.)
         gkappa=coef1*gnpoly2
+!
+      case ('piecewise-poly')
+!
+!  Piecewise polytropic thermodynamic stratification (hcond not computed!)
+!
+      Rsurf=x0+Lxyz(1)
+      Tsurf=gravx/(cv*(gamma-1.))*xi0/Rstar
+!
+!  Compute depth dependent 'polytropic index' npoly
+!
+      npoly_global  = npoly1 - (npoly_jump)*(step(xglobal(nghost+1:nxgrid+nghost), rbot, wbot))
+!
+!  Temperature gradient using a constant 'polytropic index' npoly
+!
+      dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly_global+1.))
+!
+!  Integrate temperature from the known surface value to the interior
+!
+      TT_global(nxgrid)=Tsurf
+      do j=1,nxgrid-1
+        TT_global(nxgrid-j)=TT_global(nxgrid-j+1)-dTdr_global(nxgrid-j+1)*(xglobal(nxgrid+nghost-j+1)-xglobal(nxgrid+nghost-j))
+      enddo
+      TT(l1:l2)=TT_global(ipx*nx+1:(ipx+1)*nx)
+      T00=TT_global(1)
+      dlnTdr_global=dTdr_global/TT_global
+!
+!  Density gradient assuming hydrostatic equilibrium
+!
+      dlnrhodr_global=-dlnTdr_global-gravx/xglobal(nghost+1:nxgrid+nghost)**2/(cv*(gamma-1)*TT_global)
+
+      lnrho_global(1)=log(10*rho0) ! Dangerous hard-coded value for time being
+      do j=2,nxgrid
+        lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
+      enddo
+!
+!  Renormalize density such that rho=rho0 at r=rbot
+!
+      do j=1,nxgrid
+         if (xglobal(nghost+j) < rbot) then
+           del2rho_global(j)=lnrho_global(j) ! del2rho_global is not lnrho_global(r < rbot)
+         else
+           del2rho_global(j)=maxval(lnrho_global)
+         endif
+      enddo
+      lnrho_global=lnrho_global-minval(del2rho_global)
+      rho_global=exp(lnrho_global)
+      lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
+      rho00=rho0
+      rho_surf=exp(lnrho_global(nxgrid))
+!
+!  Renormalize entropy with rho0 and cs20
+!
+      cs2_prof=cs20*TT*cv*gamma*(gamma-1.)
+      cs2_global=cs20*TT_global*cv*gamma*(gamma-1.)
+      ss_prof=log(cs2_prof/cs20)/gamma - &
+              (gamma-1.)/(gamma)*(lnrho-log(rho0))
+      ss_global=log(cs2_global/cs20)/gamma - &
+              (gamma-1.)/(gamma)*(lnrho_global-log(rho0))
+!
+!  Put lnrho and ss into the f-array
+!
+      do m=m1,m2
+      do n=n1,n2
+        if (ldensity_nolog) then
+          f(l1:l2,m,n,irho) = exp(lnrho(l1:l2))
+        else
+          f(l1:l2,m,n,ilnrho) = lnrho(l1:l2)
+        endif
+        f(l1:l2,m,n,iss) = ss_prof(l1:l2)
+      enddo
+      enddo
+!
+!  Fail if reference state is used
+!
+      if (lreference_state) then
+         write(unit=errormsg,fmt=*) &
+           'initial_condition: piecewise-poly initial condition not'//&
+           ' implemented with reference state'
+         call fatal_error('initial_condition',errormsg)
+      endif
 !
       endselect
 !
