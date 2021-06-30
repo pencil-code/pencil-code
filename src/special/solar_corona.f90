@@ -44,7 +44,7 @@ module Special
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
   logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
              lemerg_profx=.false.,lset_boundary_emf=.false.,lset_hotplate_lnTT=.false.,&
-             lconv_vel_set_to_zero=.false.
+             lconv_vel_set_to_zero=.false.,ldispersion_acoustic=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -55,6 +55,7 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
+  real :: lnrho_max=max_real
   real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
@@ -106,7 +107,8 @@ module Special
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
       lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench, &
-      lset_hotplate_lnTT,lnTT_hotplate_tau,lconv_vel_set_to_zero
+      lset_hotplate_lnTT,lnTT_hotplate_tau,lconv_vel_set_to_zero,ldispersion_acoustic, &
+      lnrho_max
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1004,6 +1006,16 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
+      if (lnrho_max < max_real) then
+        if (dt * lnrho_min_tau > 1.0) then
+          if (lroot) print *, "ERROR: dt=", dt, " lnrho_min_tau=", lnrho_min_tau
+          call fatal_error ('special_calc_density', "dt too large: dt * lnrho_min_tau > 1")
+        endif
+        fdiff = lnrho_max - p%lnrho
+        where (fdiff > 0.0) fdiff = 0.0
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
+      endif
+!
       if (lslope_limited_special) then
         if (headtt) print*,'special_calc_density: call div_diff_flux'
         if (ibb==0)  &
@@ -1271,10 +1283,10 @@ module Special
 !
 !      real, dimension(mx,my,mz):: rho_tmp
       real, intent(in) :: dt_
-      real, dimension(nx,3) :: uu,bb,uxb
+      real, dimension(nx,3) :: uu,bb,uxb,rn
       real, dimension(nx) :: va
       real, dimension(2) :: gn
-      real :: uborder, border_width
+      real :: uborder, border_width,nwave_disp
       real, pointer, dimension(:) :: B_ext
       real, pointer :: TTtop
       integer :: ig,ierr
@@ -1388,13 +1400,27 @@ module Special
                uu(:,1)=uu_drive(1)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
                uu(:,2)=uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
                if (Lxyz(2) /=  0.) then
-                 uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)*cos(pi*nwave(2)*y(m)/Lxyz(2))
+                 if (ldispersion_acoustic) then
+                   nwave_disp=w_ff(1)*nwave(2)/w_ff(2)
+                   uu(:,3)=uu_drive(3)*cos(pi*nwave_disp*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)*cos(pi*nwave_disp*y(m)/Lxyz(2))
+                 else
+                   uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)*cos(pi*nwave(1)*y(m)/Lxyz(2))
+                 endif
                else
-                 uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(2)*t)
+                 if (ldispersion_acoustic) then
+                   nwave_disp=w_ff(1)*nwave(2)/w_ff(2)
+                   uu(:,3)=uu_drive(3)*cos(pi*nwave_disp*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)
+                 else
+                 uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)
+                 endif
                endif
-               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
-               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
-               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
+!               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
+!               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
+!               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
+               call random_number(rn)
+               f(l1:l2,m,n,iux) = uu(:,1)+uu_emerg(1)*(2*rn(:,1)-1)
+               f(l1:l2,m,n,iuy) = uu(:,2)+uu_emerg(2)*(2*rn(:,2)-1)
+               f(l1:l2,m,n,iuz) = uu(:,3)+uu_emerg(3)*(2*rn(:,3)-1)
             else
               if (lconv_vel_set_to_zero .and. (z(n) .lt. z_ff(1))) then
                 f(l1:l2,m,n,iux)=0.0
