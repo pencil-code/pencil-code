@@ -86,16 +86,18 @@ module Special
           dIring=0.0,dposx=0.0,dposz=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
   real :: posy=0.0,alpha=1.25,velx
   real, save :: posx,posz,Iring
-  integer :: nwid=1,nwid2=1,nlf=4
+  integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff,cool_type=5
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
              lslope_limited_special=.false.
   real, dimension (mx) :: x12,dx12
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
           lnTT_min=-max_real, lnTT_min_tau=1.0
+  real :: cool_RTV,z_cutoff
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
-           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau
+           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
+           cool_RTV,z_cutoff,cool_type
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -204,7 +206,13 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_y_mn)=.true.
+     lpenc_requested(i_y_mn)=.true.
+     if (cool_RTV /= 0.0) then
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_cp1) = .true.
+      endif
+
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -515,6 +523,7 @@ module Special
           endif
         endif
       endif
+      if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
     
 !
     endsubroutine special_calc_energy
@@ -1689,6 +1698,346 @@ module Special
 !
     endfunction minmod
 !***********************************************************************
+    subroutine calc_heat_cool_RTV(df,p)
+!
+!  Electron Temperature should be used for the radiative loss
+!  L = n_e * n_H * Q(T_e)
+!
+!  30-jan-08/bing: coded
+!
+      use EquationOfState, only: gamma
+      use Diagnostics,     only: max_mn_name
+      use Mpicomm,         only: stop_it
+      use Sub,             only: cubic_step,step
+      use SharedVariables, only: get_shared_variable
+      use Slices_methods,  only: store_slices
+!
+      integer :: ierr
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
+      real :: unit_lnQ
+      real :: z_cutoff
+!
+      unit_lnQ = 3*alog(real(unit_velocity))+ &
+          5*alog(real(unit_length))+alog(real(unit_density))
+      lnTT_SI = p%lnTT + alog(real(unit_temperature))
+!
+!     calculate ln(ne*ni) :
+!          ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
+!     lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
+!
+      lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
+!
+      call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
+!
+      rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
+      rtv_cool = p%cv1*exp(rtv_cool)
+!
+      rtv_cool = rtv_cool*cool_RTV
+!     for adjusting by setting cool_RTV in run.in
+!
+      select case (cool_RTV_cutoff)
+      case(0)
+!
+! Do nothing actually!
+!
+      case(1)
+!
+! Do nothing actually!
+!
+      case(2)
+        rtv_cool = rtv_cool &
+          *step(z(n),z_cutoff,0.2)
+      case default
+        call fatal_error('cool_RTV_cutoff:','wrong value')
+      endselect
+!
+!     add to temperature equation
+!
+      if (ltemperature) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
+        dt1_max = max(dt1_max,tmp)
+      endif
+!
+    endsubroutine calc_heat_cool_RTV
+!***********************************************************************
+    subroutine get_lnQ(lnTT,lnQ,delta_lnTT)
+!
+!  input: lnTT in SI units
+!  output: lnP  [p]=W/s * m^3
+!
+      real, dimension(nx), intent(in) :: lnTT
+      real, dimension(nx), intent(out) :: lnQ, delta_lnTT
+!
+      ! 37 points extracted from Cook et al. (1989)
+      real, parameter, dimension(37) :: intlnT = (/ &
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
+          9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
+          11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, &
+          12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
+          14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
+          15.6576, 69.0776 /)
+      real, parameter, dimension(37) :: intlnQ = (/ &
+          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
+          -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
+          -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
+          -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, &
+          -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
+          -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
+          -0.66650 /)
+!
+      ! 16 points extracted from Cook et al. (1989)
+      real, parameter, dimension(16) :: intlnT1 = (/ &
+          8.98008, 9.44060, 9.90112, 10.3616, 10.8221, 11.2827, &
+          11.5129, 11.8583, 12.4340, 12.8945, 13.3550, 13.8155, &
+          14.2760, 14.9668, 15.8878, 18.4207 /)
+      real, parameter, dimension(16) :: intlnQ1 = (/ &
+          -83.9292, -81.2275, -80.0532, -80.1837, -79.6694, -79.0938, &
+          -79.1322, -79.4776, -79.2934, -79.6618, -79.3778, -79.5159, &
+          -80.1990, -82.5093, -82.1793, -78.6717 /)
+!
+      ! Four Gaussians plus one constant fitted to Cook et al. (1989)
+      real, dimension(9) :: pars = (/ &
+          2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
+          1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
+!
+      real, dimension(nx) :: slope, ordinate
+      real, dimension(nx) :: logT, logQ
+      integer :: i, px, z_ref
+      real :: pos, frac
+!
+!  select type for cooling function
+!  1: 16-points logarithmic-piecewise-linear interpolation
+!  2: 37-points logarithmic-piecewise-linear interpolation
+!  3: four Gaussians fit
+!  4: several fits
+!  5: 37-points logarithmic-piecewise-linear interpolation with extrapolation
+!
+      select case (cool_type)
+      case (1)
+        lnQ = -max_real
+        do i = 1, 15
+          where ((lnTT >= intlnT1(i)) .and. (lnTT < intlnT1(i+1)))
+            slope = (intlnQ1(i+1)-intlnQ1(i)) / (intlnT1(i+1)-intlnT1(i))
+            ordinate = intlnQ1(i) - slope*intlnT1(i)
+            lnQ = slope*lnTT + ordinate
+          endwhere
+        enddo
+        delta_lnTT = max_real
+!
+      case (2)
+        lnQ = -max_real
+        do i = 1, 36
+          where ((lnTT >= intlnT(i)) .and. (lnTT < intlnT(i+1)))
+            slope = (intlnQ(i+1)-intlnQ(i)) / (intlnT(i+1)-intlnT(i))
+            ordinate = intlnQ(i) - slope*intlnT(i)
+            lnQ = slope*lnTT + ordinate
+          endwhere
+        enddo
+        delta_lnTT = max_real
+!
+      case (3)
+        call fatal_error('get_lnQ','this invokes exp() too often')
+        logT = lnTT*alog10(exp(1.)) ! Pencil units
+!
+        lnQ = pars(1)*exp(-(logT-4.3)**2/pars(2)**2) &
+            + pars(3)*exp(-(logT-4.9)**2/pars(4)**2) &
+            + pars(5)*exp(-(logT-5.35)**2/pars(6)**2) &
+            + pars(7)*exp(-(logT-5.85)**2/pars(8)**2) &
+            + pars(9)
+!
+        lnQ = lnQ * (20.*(-tanh((logT-3.7)*10.))+21)
+        lnQ = lnQ + (tanh((logT-6.9)*3.1)/2.+0.5)*3.
+!
+        lnQ = (lnQ+19.-32)*alog(10.)
+        delta_lnTT = max_real
+!
+      case (4)
+        logT = lnTT*alog10(exp(1.)) + alog(real(unit_temperature)) ! SI units
+        where (logT <= 3.8)
+          logQ = -max_real
+        elsewhere ((logT > 3.8) .and. (logT <= 3.93))
+          logQ = -7.155e1 + 9*logT
+        elsewhere ((logT > 3.93) .and. (logT <= 4.55))
+          logQ = +4.418916e+04 &
+              -5.157164e+04 * logT &
+              +2.397242e+04 * logT**2 &
+              -5.553551e+03 * logT**3 &
+              +6.413137e+02 * logT**4 &
+              -2.953721e+01 * logT**5
+        elsewhere ((logT > 4.55) .and. (logT <= 5.09))
+          logQ = +8.536577e+02 &
+              -5.697253e+02 * logT &
+              +1.214799e+02 * logT**2 &
+              -8.611106e+00 * logT**3
+        elsewhere ((logT > 5.09) .and. (logT <= 5.63))
+          logQ = +1.320434e+04 &
+              -7.653183e+03 * logT &
+              +1.096594e+03 * logT**2 &
+              +1.241795e+02 * logT**3 &
+              -4.224446e+01 * logT**4 &
+              +2.717678e+00 * logT**5
+        elsewhere ((logT > 5.63) .and. (logT <= 6.48))
+          logQ = -2.191224e+04 &
+              +1.976923e+04 * logT &
+              -7.097135e+03 * logT**2 &
+              +1.265907e+03 * logT**3 &
+              -1.122293e+02 * logT**4 &
+              +3.957364e+00 * logT**5
+        elsewhere ((logT > 6.48) .and. (logT <= 6.62))
+          logQ = +9.932921e+03 &
+              -4.519940e+03 * logT &
+              +6.830451e+02 * logT**2 &
+              -3.440259e+01 * logT**3
+        elsewhere (logT > 6.62)
+          logQ = -3.991870e+01 + 6.169390e-01 * logT
+        endwhere
+        lnQ = (logQ+19.-32)*alog(10.)
+        delta_lnTT = max_real
+!
+      case (5)
+        do px = 1, nx
+          pos = interpol_tabulated (lnTT(px), intlnT)
+          z_ref = floor (pos)
+          if (z_ref < 1) then
+            lnQ(px) = -max_real
+            delta_lnTT(px) = intlnT(2) - intlnT(1)
+            cycle
+          endif
+          if (z_ref > 36) z_ref = 36
+          frac = pos - z_ref
+          lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
+          delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
+        enddo
+!
+      case default
+        call fatal_error('get_lnQ','wrong type')
+      endselect
+!
+    endsubroutine get_lnQ
+!***********************************************************************
+
+    function interpol_tabulated (needle, haystack)
+!
+! Find the interpolated position of a given value in a tabulated values array.
+! Bisection search algorithm with preset range guessing by previous value.
+! Returns the interpolated position of the needle in the haystack.
+! If needle is not inside the haystack, an extrapolated position is returned.
+!
+! 09-feb-2011/Bourdin.KIS: coded
+!
+      real :: interpol_tabulated
+      real, intent(in) :: needle
+      real, dimension(:), intent(in) :: haystack
+!
+      integer, save :: lower=1, upper=1
+      integer :: mid, num, inc
+!
+      num = size (haystack, 1)
+      if (num < 2) call fatal_error ('interpol_tabulated', "Too few tabulated values!", .true.)
+      if (lower >= num) lower = num - 1
+      if ((upper <= lower) .or. (upper > num)) upper = num
+!
+      if (haystack(lower) > haystack(upper)) then
+!
+!  Descending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle > haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle < haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle < haystack(upper)) then
+          ! Extrapolate needle value below range
+          lower = num - 1
+        elseif (needle > haystack(lower)) then
+          ! Extrapolate needle value above range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle >= haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (haystack(lower) - needle) / (haystack(lower) - haystack(upper))
+!
+      elseif (haystack(lower) < haystack(upper)) then
+!
+!  Ascending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle < haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle > haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle > haystack(upper)) then
+          ! Extrapolate needle value above range
+          lower = num - 1
+        elseif (needle < haystack(lower)) then
+          ! Extrapolate needle value below range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle < haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (needle - haystack(lower)) / (haystack(upper) - haystack(lower))
+      else
+        interpol_tabulated = -1.0
+        call fatal_error ('interpol_tabulated', "Tabulated values are invalid!", .true.)
+      endif
+!
+    endfunction interpol_tabulated
+!***********************************************************************
+!
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
