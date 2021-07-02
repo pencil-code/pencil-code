@@ -185,6 +185,9 @@ module Special
   integer :: idiag_ggT2m=0       ! DIAG_DOC: $\bra{g_T^2}$
   integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
+  integer :: idiag_nlin0=0       ! DIAG_DOC: $\bra{nlin0}$
+  integer :: idiag_nlin1=0       ! DIAG_DOC: $\bra{nlin1}$
+  integer :: idiag_nlin2=0       ! DIAG_DOC: $\bra{nlin2}$
 !
   integer :: ihhT_realspace, ihhX_realspace
   integer :: iggT_realspace, iggX_realspace
@@ -650,6 +653,14 @@ module Special
                                                 -f(l1:l2,m,n,ihhTim)*f(l1:l2,m,n,ihhX  ) &
                                                 )*nwgrid*sign_switch,idiag_hhTXm)
          endif
+!
+         if (idiag_nlin1/=0) call sum_mn_name( &
+              f(l1:l2,m,n,iStress_ij+0)**2 &
+             +f(l1:l2,m,n,iStress_ij+1)**2 &
+             +f(l1:l2,m,n,iStress_ij+2)**2 &
+             +f(l1:l2,m,n,iStress_ij+3)**2 &
+             +f(l1:l2,m,n,iStress_ij+4)**2 &
+             +f(l1:l2,m,n,iStress_ij+5)**2,idiag_nlin1)
 !
          if (lproc_pt.and.m==mpoint.and.n==npoint) then
            if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
@@ -1143,6 +1154,7 @@ module Special
 !
       use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
       use SharedVariables, only: put_shared_variable
+      use Diagnostics
 !
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1300,7 +1312,7 @@ module Special
 !
         do i=1,3
         do j=1,6
-          call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j))
+          call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j),linv=.true.)
         enddo
         enddo
 !
@@ -1332,6 +1344,32 @@ module Special
       if (label=='St') then
         Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
         Tpq_im=0.0
+!
+!  diagnostics
+!
+        if (ldiagnos) then
+          lfirstpoint=.true.
+          do n=n1,n2
+          do m=m1,m2
+            if (idiag_nlin2/=0) call sum_mn_name(( &
+              nonlinear_Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
+             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
+             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin2)
+            !call sum_mn_name( &
+            if (idiag_nlin0/=0) call sum_mn_name(( &
+              Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
+             +Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
+             +Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin0)
+          enddo
+          enddo
+        endif
+!
         if (lnonlinear_source) then
           if (nonlinear_source_fact/=0.) nonlinear_Tpq_re=nonlinear_Tpq_re*nonlinear_source_fact
           if (lnonlinear_Tpq_trans) then
@@ -1341,6 +1379,9 @@ module Special
             Tpq_re(:,:,:,:)=Tpq_re(:,:,:,:)+nonlinear_Tpq_re(:,:,:,:)
           endif
         endif
+!
+!  Transform to Fourier space
+!
         call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
       endif
 !
@@ -1656,7 +1697,7 @@ module Special
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
-        idiag_Stgm=0 ; idiag_EEGW=0
+        idiag_Stgm=0 ; idiag_EEGW=0 ; idiag_nlin0=0; idiag_nlin1=0; idiag_nlin2=0
         cformv=''
       endif
 !
@@ -1691,6 +1732,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gTimp2',idiag_gTimp2)
         call parse_name(iname,cname(iname),cform(iname),'gXrep2',idiag_gXrep2)
         call parse_name(iname,cname(iname),cform(iname),'gXimp2',idiag_gXimp2)
+        call parse_name(iname,cname(iname),cform(iname),'nlin0',idiag_nlin0)
+        call parse_name(iname,cname(iname),cform(iname),'nlin1',idiag_nlin1)
+        call parse_name(iname,cname(iname),cform(iname),'nlin2',idiag_nlin2)
         if (lhhTX_as_aux) then
           call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
           call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
