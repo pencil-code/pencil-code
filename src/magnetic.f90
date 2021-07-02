@@ -327,6 +327,8 @@ module Magnetic
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
   logical :: ltime_integrals_always=.true.
+  logical :: lvart_in_shear_frame=.false.
+  real :: dtcor=0.
   real :: h_sld_magn=2.0,nlf_sld_magn=1.0,fac_sld_magn=1.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
@@ -389,7 +391,7 @@ module Magnetic
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
-      lbb_sph_as_aux, ltime_integrals_always
+      lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -6259,31 +6261,59 @@ module Magnetic
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !   1-jul-08/axel: moved this part to magnetic
 !  21-may-21/alberto: possibility of ltime_integrals_always=F to compute <b(t,x).b(t0,x)> adapted from hydro
+!   2-jul-21/hongzhe: possibility of resetting bbt every dtcor time
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f
       intent(in) :: p
+      integer :: ikx, nshear, iky
+      logical :: lreset_vart=.false.
+!
+!  reset bbt etc. if lreset_vart=.true.
+!
+      if (ltime_integrals_always .or. nint(dtcor)<=0.) then
+        if (it==1) lreset_vart=.true.
+      else
+        if (mod(nint(t),nint(dtcor))==1) lreset_vart=.true.
+      endif
+!
+!  assign values to bbt etc.
 !
       if (ltime_integrals_always) then
-        if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
-        if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+        if (lreset_vart) then
+          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt)  =0.
+          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt)  =0.
+        else
+          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
+          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
+        endif
       else
-        if (it==1) then
-          if (ibxt/=0) then
-            f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
+        if (lreset_vart) then
+          if (lvart_in_shear_frame) then
+            !
+            !  store ibbt etc. in the shear frame
+            !  Must have nprocy=1 because we shift in the y direction
+            !
+            if (.not. lshear) call fatal_error('time_integrals_magnetic',&
+                'lshear=F; cannot do frame transform')
+            if (nprocy/=1)    call fatal_error('time_integrals_magnetic',&
+                'nprocy=1 required for lvart_in_shear_frame')
+            do ikx=l1,l2
+              nshear=nint( deltay/dy * x(ikx)/Lx )
+              iky=mod(m-nshear,ny)
+              if (iky<=0) iky=iky+ny
+              if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)
+              if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
+            enddo
           else
-            if (lroot) print*,'ibbt not allocated'
-          endif
-          if (ijxt/=0.and.ijx/=0) then
-            f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
-          else
-            if (lroot) print*,'ijjt and ijj not allocated'
+            if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
+            if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
           endif
         endif
       endif
-
+      lreset_vart=.false.
 !
     endsubroutine time_integrals_magnetic
 !***********************************************************************
