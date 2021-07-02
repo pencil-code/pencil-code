@@ -1454,6 +1454,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=mpif90   #(nl6)
 #FFLAGS= -O3 #(nl6)
 #FFLAGS= -O0 #(nl6)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
 #CC=gcc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
 #LD_MPI= #(nl6)
