@@ -20,6 +20,9 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
     """
     import os
     from pencil.io import npfile
+    from pencil import read
+    import numpy as N
+    import pylab as P
 
     datadir = os.path.expanduser(datadir)
     if proc < 0:
@@ -28,9 +31,9 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
         filename = datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 
     # global dim
-    param = read_param(datadir)
+    param = read.param(datadir)
 
-    dim = read_dim(datadir,proc)
+    dim = read.dim(datadir,proc)
     if dim.precision == 'D':
         precision = 'd'
     else:
