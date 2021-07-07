@@ -283,8 +283,7 @@ module Special
             f,imu5,imu5,lscale_tobox=.false.)
           if(lremove_mean_mu5) call remove_mean(f,imu5)
           if (lmuS) then
-            call power_randomphase(amplmuS,initpower_muS,kgaussian_muS,kpeak_muS,cutoff_muS,&
-              f,imuS,imuS,lscale_tobox=.false.)
+            f(:,:,:,imuS) = muS_const
           endif
         case default
           call fatal_error("init_special: No such value for initspecial:" &
