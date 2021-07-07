@@ -108,6 +108,10 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	nghosty = dim.nghosty
 	nghostz = dim.nghostz
 
+	; Subvolume grid indizes.
+	xgs = xs
+	ygs = ys
+	zgs = zs
 	if (addghosts) then begin
 		default, xs, 0
 		default, ys, 0
@@ -115,9 +119,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		default, xe, xs + nxgrid - 1
 		default, ye, ys + nygrid - 1
 		default, ze, zs + nzgrid - 1
-		xe = xe + 2 * nghostx
-		ye = ye + 2 * nghosty
-		ze = ze + 2 * nghostz
+		xge = xe + 2 * nghostx
+		yge = ye + 2 * nghosty
+		zge = ze + 2 * nghostz
 	end else begin
 		default, xs, 0
 		default, ys, 0
@@ -125,24 +129,27 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		default, xe, mxgrid - 1
 		default, ye, mygrid - 1
 		default, ze, mzgrid - 1
+		xge = xe
+		yge = ye
+		twe = ze
 	end
-	xns = xs + nghostx
-	xne = xe - nghostx
-	yns = ys + nghosty
-	yne = ye - nghosty
-	zns = zs + nghostz
-	zne = ze - nghostz
-	gx_delta = xe - xs + 1
-	gy_delta = ye - ys + 1
-	gz_delta = ze - zs + 1
+	xns = xgs + nghostx
+	xne = xge - nghostx
+	yns = ygs + nghosty
+	yne = yge - nghosty
+	zns = zgs + nghostz
+	zne = zge - nghostz
+	gx_delta = xge - xgs + 1
+	gy_delta = yge - ygs + 1
+	gz_delta = zge - zgs + 1
 
-	if (any ([xs, xne-xns, ys, yne-yns, zs, zne-zns] lt 0) or any ([xe, ye, ze] ge [mxgrid, mygrid, mzgrid])) then $
+	if (any ([xgs, xne-xns, ygs, yne-yns, zgs, zne-zns] lt 0) or any ([xge, yge, zge] ge [mxgrid, mygrid, mzgrid])) then $
 		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
 
 	; Get necessary parameters quietly.
-	if (n_elements (start_param) eq 0) then $
+	if (size (start_param, /type) ne 8) then $
 		pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
-	if (n_elements (run_param) eq 0) then begin
+	if (size (run_param, /type) ne 8) then begin
 		if (file_test (datadir+'/param2.nml')) then begin
 			pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
 		endif else begin
@@ -150,32 +157,138 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		endelse
 	endif
 
-	if (n_elements (grid) eq 0) then $
-		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
-
 	; Set the coordinate system.
 	coord_system = start_param.coord_system
+
+	; Read the grid, if needed.
+	if (size (grid, /type) ne 8) then $
+		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
+
+	; Read timestamp.
+	pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet
+
+	; Generate dim structure of the sub-volume.
+	sub_dim = dim
+	sub_dim.mx = gx_delta
+	sub_dim.my = gy_delta
+	sub_dim.mz = gz_delta
+	sub_dim.nx = gx_delta - 2*nghostx
+	sub_dim.ny = gy_delta - 2*nghosty
+	sub_dim.nz = gz_delta - 2*nghostz
+	sub_dim.mxgrid = sub_dim.mx
+	sub_dim.mygrid = sub_dim.my
+	sub_dim.mzgrid = sub_dim.mz
+	sub_dim.nxgrid = sub_dim.nx
+	sub_dim.nygrid = sub_dim.ny
+	sub_dim.nzgrid = sub_dim.nz
+	sub_dim.mw = sub_dim.mx * sub_dim.my * sub_dim.mz
+	sub_dim.l1 = nghostx
+	sub_dim.m1 = nghosty
+	sub_dim.n1 = nghostz
+	sub_dim.l2 = sub_dim.mx - nghostx - 1
+	sub_dim.m2 = sub_dim.my - nghosty - 1
+	sub_dim.n2 = sub_dim.mz - nghostz - 1
+
+	; Overwrite with sub-volume dimensions for correct derivatives.
+	nx = sub_dim.nx
+	ny = sub_dim.ny
+	nz = sub_dim.nz
+	nw = nx * ny * nz
+	mx = sub_dim.mx
+	my = sub_dim.my
+	mz = sub_dim.mz
+	mw = mx * my * mz
+	l1 = sub_dim.l1
+	l2 = sub_dim.l2
+	m1 = sub_dim.m1
+	m2 = sub_dim.m2
+	n1 = sub_dim.n1
+	n2 = sub_dim.n2
+
+	; Crop grid.
+	x = grid.x[xgs:xge]
+	y = grid.y[ygs:yge]
+	z = grid.z[zgs:zge]
+
+	; Prepare for derivatives.
+	dx = grid.dx
+	dy = grid.dy
+	dz = grid.dz
+	dx_1 = grid.dx_1[xgs:xge]
+	dy_1 = grid.dy_1[ygs:yge]
+	dz_1 = grid.dz_1[zgs:zge]
+	dx_tilde = grid.dx_tilde[xgs:xge]
+	dy_tilde = grid.dy_tilde[ygs:yge]
+	dz_tilde = grid.dz_tilde[zgs:zge]
+	Ox = grid.Ox
+	Oy = grid.Oy
+	Oz = grid.Oz
+	Lx = grid.Lx
+	Ly = grid.Ly
+	Lz = grid.Lz
+	if (xge-xgs ne mxgrid-1) then begin
+		Ox = grid.x[xns]
+		Lx = total (1.0/grid.dx_1[xns:xne])
+		lperi[0] = 0
+	endif
+	if (yge-ygs ne mygrid-1) then begin
+		Oy = grid.y[yns]
+		Ly = total (1.0/grid.dy_1[yns:yne])
+		lperi[1] = 0
+	endif
+	if (zge-zgs ne mzgrid-1) then begin
+		Oz = grid.z[zns]
+		Lz = total (1.0/grid.dz_1[zns:zne])
+		lperi[2] = 0
+	endif
+	ldegenerated = [ xge-xgs, yge-ygs, zge-zgs ] lt 2 * [ nghostx, nghosty, nghostz ]
+
+	if (keyword_set (reduced)) then name += "reduced_"
+
+	; Remove ghost zones from grid, if requested.
+	if (keyword_set (trimall)) then begin
+		x = x[l1:l2]
+		y = y[m1:m2]
+		z = z[n1:n2]
+		dx_1 = dx_1[l1:l2]
+		dy_1 = dy_1[m1:m2]
+		dz_1 = dz_1[n1:n2]
+		dx_tilde = dx_tilde[l1:l2]
+		dy_tilde = dy_tilde[m1:m2]
+		dz_tilde = dz_tilde[n1:n2]
+		ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
+		name += "trimmed_"
+	endif
+
+	if (not keyword_set (quiet)) then begin
+		print, ' t = ', time
+		print, ''
+	endif
+
+	name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
+	sub_grid = create_struct (name=name, $
+		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+		time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
 
 	; Load HDF5 varfile if requested or available.
 	if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
 		time = pc_read ('time', file=varfile, datadir=datadir)
-		if (size (varcontent, /type) eq 0) then begin
+		if (size (varcontent, /type) ne 8) then begin
 			varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
 		end
 		quantities = varcontent[*].idlvar
 		num_quantities = n_elements (quantities)
-		if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
 		if (keyword_set (trimall)) then begin
-			xs = xns
-			ys = yns
-			zs = zns
+			xgs = xns
+			ygs = yns
+			zgs = zns
 			gx_delta -= 2*nghostx
 			gy_delta -= 2*nghosty
 			gz_delta -= 2*nghostz
 		end
 		object = dblarr (gx_delta, gy_delta, gz_delta, num_quantities)
 		tags = { time:time }
-		start = [ xs, ys, zs ]
+		start = [ xgs, ygs, zgs ]
 		count = [ gx_delta, gy_delta, gz_delta ]
 		for pos = 0L, num_quantities-1 do begin
 			if (quantities[pos] eq 'dummy') then continue
@@ -240,8 +353,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 			procdim.my = procdim.mygrid
 			procdim.mw = procdim.mx * procdim.my * procdim.mz
 		end else begin
-			ipx_start = xs / procdim.nx
-			ipy_start = ys / procdim.ny
+			ipx_start = xgs / procdim.nx
+			ipy_start = ygs / procdim.ny
 			ipx_end   = (xe - 2 * nghostx) / procdim.nx
 			ipy_end   = (ye - 2 * nghosty) / procdim.ny
 		end
@@ -249,49 +362,11 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		ipz_end   = (ze - 2 * nghostz) / procdim.nz
 	end
 
-	; Generate dim structure of the sub-volume.
-	sub_dim = dim
-	sub_dim.mx = gx_delta
-	sub_dim.my = gy_delta
-	sub_dim.mz = gz_delta
-	sub_dim.nx = gx_delta - 2*nghostx
-	sub_dim.ny = gy_delta - 2*nghosty
-	sub_dim.nz = gz_delta - 2*nghostz
-	sub_dim.mxgrid = sub_dim.mx
-	sub_dim.mygrid = sub_dim.my
-	sub_dim.mzgrid = sub_dim.mz
-	sub_dim.nxgrid = sub_dim.nx
-	sub_dim.nygrid = sub_dim.ny
-	sub_dim.nzgrid = sub_dim.nz
-	sub_dim.mw = sub_dim.mx * sub_dim.my * sub_dim.mz
-	sub_dim.l1 = nghostx
-	sub_dim.m1 = nghosty
-	sub_dim.n1 = nghostz
-	sub_dim.l2 = sub_dim.mx - nghostx - 1
-	sub_dim.m2 = sub_dim.my - nghosty - 1
-	sub_dim.n2 = sub_dim.mz - nghostz - 1
-
-	; Local shorthand for some parameters.
-	nx = sub_dim.nx
-	ny = sub_dim.ny
-	nz = sub_dim.nz
-	nw = nx * ny * nz
-	mx = sub_dim.mx
-	my = sub_dim.my
-	mz = sub_dim.mz
-	mw = mx * my * mz
-	l1 = sub_dim.l1
-	l2 = sub_dim.l2
-	m1 = sub_dim.m1
-	m2 = sub_dim.m2
-	n1 = sub_dim.n1
-	n2 = sub_dim.n2
-
 	; Read meta data and set up variable/tag lists.
-	if (n_elements (varcontent) eq 0) then $
+	if (size (varcontent, /type) ne 8) then $
 		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet)
 	totalvars = (size(varcontent))[1]
-	if (n_elements (var_list) eq 0) then begin
+	if (size (var_list, /type) eq 0) then begin
 		var_list = varcontent[*].idlvar
 		var_list = var_list[where (var_list ne "dummy")]
 	endif
@@ -305,7 +380,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	endfor
 	content = strmid (content, 2)
 
-	tags = { time:0.0d0 }
+	tags = { time:time }
 	read_content = ''
 	indices = [ -1 ]
 	num_read = 0
@@ -354,12 +429,12 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		for ipy = ipy_start, ipy_end do begin
 			for ipx = ipx_start, ipx_end do begin
 				; Set sub-volume parameters.
-				if (ipx eq ipx_start) then px_start = xs - ipx * procdim.nx else px_start = nghostx
-				if (ipy eq ipy_start) then py_start = ys - ipy * procdim.ny else py_start = nghosty
-				if (ipz eq ipz_start) then pz_start = zs - ipz * procdim.nz else pz_start = nghostz
-				if (ipx eq ipx_end) then px_end = xe - ipx * procdim.nx else px_end = procdim.mx - 1 - nghostx
-				if (ipy eq ipy_end) then py_end = ye - ipy * procdim.ny else py_end = procdim.my - 1 - nghosty
-				if (ipz eq ipz_end) then pz_end = ze - ipz * procdim.nz else pz_end = procdim.mz - 1 - nghostz
+				if (ipx eq ipx_start) then px_start = xgs - ipx * procdim.nx else px_start = nghostx
+				if (ipy eq ipy_start) then py_start = ygs - ipy * procdim.ny else py_start = nghosty
+				if (ipz eq ipz_start) then pz_start = zgs - ipz * procdim.nz else pz_start = nghostz
+				if (ipx eq ipx_end) then px_end = xge - ipx * procdim.nx else px_end = procdim.mx - 1 - nghostx
+				if (ipy eq ipy_end) then py_end = yge - ipy * procdim.ny else py_end = procdim.my - 1 - nghosty
+				if (ipz eq ipz_end) then pz_end = zge - ipz * procdim.nz else pz_end = procdim.mz - 1 - nghostz
 				px_delta = px_end - px_start + 1
 				py_delta = py_end - py_start + 1
 				pz_delta = pz_end - pz_start + 1
@@ -369,9 +444,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 				; Initialize processor specific parameters.
 				iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
-				if (ipx eq ipx_start) then x_off = 0 else x_off = nghostx + ipx * procdim.nx - xs
-				if (ipy eq ipy_start) then y_off = 0 else y_off = nghosty + ipy * procdim.ny - ys
-				if (ipz eq ipz_start) then z_off = 0 else z_off = nghostz + ipz * procdim.nz - zs
+				if (ipx eq ipx_start) then x_off = 0 else x_off = nghostx + ipx * procdim.nx - xgs
+				if (ipy eq ipy_start) then y_off = 0 else y_off = nghosty + ipy * procdim.ny - ygs
+				if (ipz eq ipz_start) then z_off = 0 else z_off = nghostz + ipz * procdim.nz - zgs
 				if (allprocs eq 1) then begin
 					if (keyword_set (reduced)) then procdir = 'reduced' else procdir = 'allprocs'
 				end else begin
@@ -408,85 +483,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	; Tidy memory a little.
 	undefine, buffer
 
-	; Read timestamp.
-	pc_read_var_time, time=t, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet
-
-	; Crop grid.
-	x = grid.x[xs:xe]
-	y = grid.y[ys:ye]
-	z = grid.z[zs:ze]
-
-	; Prepare for derivatives.
-	dx = grid.dx
-	dy = grid.dy
-	dz = grid.dz
-	dx_1 = grid.dx_1[xs:xe]
-	dy_1 = grid.dy_1[ys:ye]
-	dz_1 = grid.dz_1[zs:ze]
-	dx_tilde = grid.dx_tilde[xs:xe]
-	dy_tilde = grid.dy_tilde[ys:ye]
-	dz_tilde = grid.dz_tilde[zs:ze]
-	Ox = grid.Ox
-	Oy = grid.Oy
-	Oz = grid.Oz
-	Lx = grid.Lx
-	Ly = grid.Ly
-	Lz = grid.Lz
-	if (xe-xs ne mxgrid-1) then begin
-		Ox = grid.x[xns]
-		Lx = total (1.0/grid.dx_1[xns:xne])
-		lperi[0] = 0
-	endif
-	if (ye-ys ne mygrid-1) then begin
-		Oy = grid.y[yns]
-		Ly = total (1.0/grid.dy_1[yns:yne])
-		lperi[1] = 0
-	endif
-	if (ze-zs ne mzgrid-1) then begin
-		Oz = grid.z[zns]
-		Lz = total (1.0/grid.dz_1[zns:zne])
-		lperi[2] = 0
-	endif
-	ldegenerated = [ xe-xs, ye-ys, ze-zs ] lt 2 * [ nghostx, nghosty, nghostz ]
-
-	if (keyword_set (reduced)) then name += "reduced_"
-
-	; Remove ghost zones if requested.
-	if (keyword_set (trimall)) then begin
-		if (num_read ge 1) then object = object[l1:l2,m1:m2,n1:n2,*]
-		x = x[l1:l2]
-		y = y[m1:m2]
-		z = z[n1:n2]
-		dx_1 = dx_1[l1:l2]
-		dy_1 = dy_1[m1:m2]
-		dz_1 = dz_1[n1:n2]
-		dx_tilde = dx_tilde[l1:l2]
-		dy_tilde = dy_tilde[m1:m2]
-		dz_tilde = dz_tilde[n1:n2]
-		ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
-		name += "trimmed_"
-	endif
-
-	if (not keyword_set (quiet)) then begin
-		print, ' t = ', t
-		print, ''
-	endif
-
-	time = t
-	tags.time = t
-	name += strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
-	sub_grid = create_struct (name=name, $
-		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
-		t, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
-
-	if (addghosts) then begin
-		xs = xns - nghostx
-		xe = xne - nghostx
-		ys = yns - nghosty
-		ye = yne - nghosty
-		zs = zns - nghostz
-		ze = zne - nghostz
-	end
+	; Remove ghost zones from data, if requested.
+	if (keyword_set (trimall) and (num_read ge 1)) then object = object[l1:l2,m1:m2,n1:n2,*]
 
 END
 
