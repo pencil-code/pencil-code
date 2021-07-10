@@ -85,8 +85,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  character (len=labellen) :: inithij='nothing'
-  character (len=labellen) :: initgij='nothing'
+  character (len=labellen) :: initGW='nothing', inithij='nothing', initgij='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
@@ -107,8 +106,10 @@ module Special
   logical :: lonly_mag=.false.
   logical :: lstress=.true., lstress_ramp=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
+  logical :: reinitialize_GW=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0.
+  real :: rescale_GW=1.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -131,6 +132,7 @@ module Special
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
+    initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
@@ -369,6 +371,18 @@ module Special
 !  calculate kscale_factor (for later binning)
 !
       kscale_factor=2*pi/Lx
+!
+!  Reinitialize GW field using a small selection of perturbations
+!  that were mostly also available as initial conditions.
+!
+      if (reinitialize_GW) then
+        select case (initGW)
+        case ('rescale')
+          f(:,:,:,ihhT:ihhXim)=rescale_GW*f(:,:,:,ihhT:ihhXim)
+          f(:,:,:,iggT:iggXim)=rescale_GW*f(:,:,:,iggT:iggXim)
+        case default
+        endselect
+      endif
 !
       call keep_compiler_quiet(f)
 !
