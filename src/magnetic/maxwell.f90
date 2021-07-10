@@ -101,6 +101,7 @@ module Magnetic
   real :: ux_const=0., ampl_uy=0.
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
+  logical :: reinitialize_aa=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcovariant_magnetic=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
@@ -128,6 +129,7 @@ module Magnetic
   real :: k1hel=0., k2hel=1.
   real :: mu012=0.5 !(=1/2mu0)
   real :: phase_aa=0.
+  real :: rescale_aa=0.0
   integer :: kx_aa=0, ky_aa=0, kz_aa=0
   logical :: lpolarization_basis=.false., lswitch_sign_e2=.false., lminus_mode=.false.
   logical :: lscale_tobox=.true., lskip_projection_aa=.false.
@@ -137,7 +139,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
     lpolarization_basis, lswitch_sign_e2, lminus_mode, initaak, initeek, &
-    ux_const, ampl_uy, &
+    ux_const, ampl_uy, rescale_aa, &
     laa_as_aux, lbb_as_aux, lee_as_aux, ljj_as_aux, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     amplaa, initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
@@ -149,8 +151,8 @@ module Magnetic
 ! run parameters
   namelist /magnetic_run_pars/ &
     linflation, lreheating, alpha_inflation, beta_inflation, &
-    lswitch_sign_e2, lminus_mode, ldebug_print, &
-    cc_light, &
+    lswitch_sign_e2, lminus_mode, ldebug_print, initaak, initeek, &
+    reinitialize_aa, rescale_aa, cc_light, &
     ksign, lemf, B_ext, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     lquench_inflation, eps_quench, nquench
@@ -360,6 +362,18 @@ module Magnetic
 !  Possibility of switching the sign of the polarization.
 !
       if (lminus_mode) epol=conjg(epol)
+!
+!  Reinitialize magnetic field using a small selection of perturbations
+!  that were mostly also available as initial conditions.
+!
+      if (reinitialize_aa) then
+        select case (initaak)
+        case ('rescale')
+          f(:,:,:,iaak:iakzim)=rescale_aa*f(:,:,:,iaak:iakzim)
+          f(:,:,:,ieek:iekzim)=rescale_aa*f(:,:,:,ieek:iekzim)
+        case default
+        endselect
+      endif
 !
       call keep_compiler_quiet(f)
 !
