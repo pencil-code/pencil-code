@@ -1391,6 +1391,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-s default64 #(elogin*)
 #CFLAGS=-DFUNDERSC=1 -O2 #(elogin*)
 ##
+#####Sahel on Phoenix ####################
+#FC=mpif90.openmpi #(phoenix)
+#F90=$(FC) #(phoenix)
+#CC=cc #(phoenix)
+#FFLAGS=-O2 -free #(phoenix)
+##FFLAGS_DOUBLE=-s default64 #(phoenix)
+#CFLAGS=-DFUNDERSC=1 -O2 #(phoenix)
+##
 ## Axel on LCD
 ##
 #FC=mpif90 #(hydra2*)
