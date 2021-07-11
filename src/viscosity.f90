@@ -159,6 +159,7 @@ module Viscosity
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   viscous time step;
                                 ! DIAG_DOC:  see \S~\ref{time-step})
+  integer :: idiag_dtnu3=0
   integer :: idiag_meshRemax=0  ! DIAG_DOC: Max mesh Reynolds number
   integer :: idiag_Reshock=0    ! DIAG_DOC: Mesh Reynolds number at shock
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
@@ -836,7 +837,7 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtnu=0; idiag_nu_LES=0; idiag_Sij2m=0; idiag_epsK=0; idiag_epsK_LES=0
+        idiag_dtnu=0; idiag_dtnu3=0; idiag_nu_LES=0; idiag_Sij2m=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
@@ -863,6 +864,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
+        call parse_name(iname,cname(iname),cform(iname),'dtnu3',idiag_dtnu3)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'visc_heatm',idiag_visc_heatm)
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
@@ -2543,6 +2545,9 @@ module Viscosity
         maxdiffus3=max(maxdiffus3,diffus_nu3)
         if (ldiagnos.and.idiag_dtnu/=0) &
            call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
+        if (ldiagnos.and.idiag_dtnu3/=0) &
+           call max_mn_name(diffus_nu3/cdtv3,idiag_dtnu3,l_dt=.true.)
+
       endif
 !
 !  Diagnostic output
