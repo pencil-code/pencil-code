@@ -134,6 +134,7 @@ module Magnetic
   logical :: lpolarization_basis=.false., lswitch_sign_e2=.false., lminus_mode=.false.
   logical :: lscale_tobox=.true., lskip_projection_aa=.false.
   logical :: lalpha_inflation, lbeta_inflation, lquench_inflation=.false.
+  logical :: lback_to_unscaled=.true.
 !
 ! input parameters
   namelist /magnetic_init_pars/ &
@@ -153,7 +154,7 @@ module Magnetic
     linflation, lreheating, alpha_inflation, beta_inflation, &
     lswitch_sign_e2, lminus_mode, ldebug_print, initaak, initeek, &
     reinitialize_aa, rescale_aa, cc_light, &
-    ksign, lemf, B_ext, &
+    ksign, lemf, B_ext, lback_to_unscaled, &
     conductivity, sigma, sigma_t1, sigma_t2, t1_sigma, t2_sigma, &
     lquench_inflation, eps_quench, nquench
 !
@@ -959,7 +960,7 @@ module Magnetic
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosotA, cosotE, sinotA, sinotE
       real :: discrim2, sigmaeff, quench
-      real :: ksqr, ksqr_eff, k, k1, k2, k3, fact, kdotEMF
+      real :: ksqr, ksqr_eff, k, k1, k2, k3, fact, kdotEMF, ascl, finv
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -1157,6 +1158,16 @@ module Magnetic
         enddo
       enddo
 !
+!  compute 1/f if lback_to_unscaled=T
+!  Remember that f=a^(-beta), so finv=a^beta
+!
+        if (lback_to_unscaled) then
+          ascl=.25*(t+1.)**2
+          finv=ascl**beta_inflation
+        else
+          finv=1.
+        endif
+!
 !  ee back to real space, use the names bbkre and bbkim for ee.
 !
       if (lee_as_aux) then
@@ -1172,7 +1183,11 @@ module Magnetic
           bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
         endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
+        if (lback_to_unscaled) then
+          f(l1:l2,m1:m2,n1:n2,iee:iee+2)=finv*bbkre
+        else
+          f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
+        endif
       endif
 !
 !  aa back to real space, use the names bbkre and bbkim for aa.
@@ -1190,7 +1205,15 @@ module Magnetic
           bbkim=f(l1:l2,m1:m2,n1:n2,iaakim:iaakim+2)
         endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
+        if (lback_to_unscaled) then
+          f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=finv*bbkre
+          if (lee_as_aux) then
+            f(l1:l2,m1:m2,n1:n2,iee:iee+2)=f(l1:l2,m1:m2,n1:n2,iee:iee+2)
+                 -(beta1_inflation/(t+1.))*f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)
+          endif
+        else
+          f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
+        endif
       endif
 !
 !  jj back to real space, use the names bbkre and bbkim for jj.
@@ -1267,7 +1290,11 @@ module Magnetic
           enddo
         enddo
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
+        if (lback_to_unscaled) then
+          f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=finv*bbkre
+        else
+          f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
+        endif
 !
 !  Add external (imposed) field B_ext, if nonvanishing.
 !
