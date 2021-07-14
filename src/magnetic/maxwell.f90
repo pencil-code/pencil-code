@@ -1208,7 +1208,7 @@ module Magnetic
         if (lback_to_unscaled) then
           f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=finv*bbkre
           if (lee_as_aux) then
-            f(l1:l2,m1:m2,n1:n2,iee:iee+2)=f(l1:l2,m1:m2,n1:n2,iee:iee+2)
+            f(l1:l2,m1:m2,n1:n2,iee:iee+2)=f(l1:l2,m1:m2,n1:n2,iee:iee+2) &
                  -(beta1_inflation/(t+1.))*f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)
           endif
         else
