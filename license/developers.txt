@@ -53,6 +53,7 @@ Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         ,            King Mongkut's University of Technology North Bangkok
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         ,            NORDITA
+Johannes Tschernitz,  johannes.tschernitz/uni-graz.at,joh-tsch             ,                  ,                         ,            University of Graz
 Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       dehrgeif,    Max-Planck-Institut für Sonnensystemforschung Göttingen
 Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
 Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 702 895 0961,   ,                         ,            University of Nevada, Las Vegas
