@@ -1159,7 +1159,7 @@ module Magnetic
       enddo
 !
 !  compute 1/f if lback_to_unscaled=T
-!  Remember that f=a^(-beta), so finv=a^beta
+!  Remember that f=a^(-beta), so finv=a^beta (positive exponent!)
 !
         if (lback_to_unscaled) then
           ascl=.25*(t+1.)**2
@@ -1169,6 +1169,11 @@ module Magnetic
         endif
 !
 !  ee back to real space, use the names bbkre and bbkim for ee.
+!  In real space, divide by f (if lback_to_unscaled), or multiply by finv.
+!  The full expression for E is E=-dA/dt=-d/dt(A/f)=calE+calA*f'/f.
+!  where calE=-dcalA/dt, and calA=A/f. Note that f'/f=beta1_inflation/(t+1).
+!  Apply the second term later, when calA has been computed in real space.
+!  Note also that beta1_inflation=-2*beta has been defined with minus sign.
 !
       if (lee_as_aux) then
         if (lpolarization_basis) then
@@ -1209,7 +1214,7 @@ module Magnetic
           f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=finv*bbkre
           if (lee_as_aux) then
             f(l1:l2,m1:m2,n1:n2,iee:iee+2)=f(l1:l2,m1:m2,n1:n2,iee:iee+2) &
-                 -(beta1_inflation/(t+1.))*f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)
+                 +(beta1_inflation/(t+1.))*f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)
           endif
         else
           f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
