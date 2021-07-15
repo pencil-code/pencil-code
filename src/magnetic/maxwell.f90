@@ -1026,15 +1026,13 @@ module Magnetic
 !  by another factor of 2. Remember: beta1_inflation = -2*beta.
 !  The factor ksign should normally always be =1 to get the fasted growing mode,
 !  regardless of whether or not lminus_mode=T or not (default: lminus_mode=F).
+!  To reproduce the OF21 paper, however, we put ksign=2.5 (and beta=3).
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
-                  !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2 &
-                  !  +2.*ksign*k*beta1_inflation/(t+1.)
                   ksqr_eff=ksqr-quench*(beta2_inflation/(t+1.)**2 &
                     -2.*ksign*k*beta1_inflation/(t+1.))
                 else
-                  !ksqr_eff=ksqr-beta2_inflation/(t+1.)**2
                   ksqr_eff=ksqr-quench*beta2_inflation/(t+1.)**2
                 endif
               endif
@@ -1170,10 +1168,12 @@ module Magnetic
 !
 !  ee back to real space, use the names bbkre and bbkim for ee.
 !  In real space, divide by f (if lback_to_unscaled), or multiply by finv.
-!  The full expression for E is E=-dA/dt=-d/dt(A/f)=calE+calA*f'/f.
+!  The full expression for E is E=-dA/dt=-d/dt(A/f)=calE+calA*f'/f,
 !  where calE=-dcalA/dt, and calA=A/f. Note that f'/f=beta1_inflation/(t+1).
 !  Apply the second term later, when calA has been computed in real space.
 !  Note also that beta1_inflation=-2*beta has been defined with minus sign.
+!  Also, since the stress has now an f^2 factor, we undo the finv multiplication
+!  and just keep the inner derivative term on E, so E => E+A*f'/f, and B => B.
 !
       if (lee_as_aux) then
         if (lpolarization_basis) then
@@ -1188,11 +1188,7 @@ module Magnetic
           bbkim=f(l1:l2,m1:m2,n1:n2,ieekim:ieekim+2)
         endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        if (lback_to_unscaled) then
-          f(l1:l2,m1:m2,n1:n2,iee:iee+2)=finv*bbkre
-        else
-          f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
-        endif
+        f(l1:l2,m1:m2,n1:n2,iee:iee+2)=bbkre
       endif
 !
 !  aa back to real space, use the names bbkre and bbkim for aa.
@@ -1210,14 +1206,12 @@ module Magnetic
           bbkim=f(l1:l2,m1:m2,n1:n2,iaakim:iaakim+2)
         endif
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
         if (lback_to_unscaled) then
-          f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=finv*bbkre
           if (lee_as_aux) then
             f(l1:l2,m1:m2,n1:n2,iee:iee+2)=f(l1:l2,m1:m2,n1:n2,iee:iee+2) &
                  +(beta1_inflation/(t+1.))*f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)
           endif
-        else
-          f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)=bbkre
         endif
       endif
 !
@@ -1295,11 +1289,7 @@ module Magnetic
           enddo
         enddo
         call fft_xyz_parallel(bbkre,bbkim,linv=.true.)
-        if (lback_to_unscaled) then
-          f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=finv*bbkre
-        else
-          f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
-        endif
+        f(l1:l2,m1:m2,n1:n2,ibb:ibb+2)=bbkre
 !
 !  Add external (imposed) field B_ext, if nonvanishing.
 !
