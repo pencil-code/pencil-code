@@ -131,7 +131,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		default, ze, mzgrid - 1
 		xge = xe
 		yge = ye
-		twe = ze
+		zge = ze
 	end
 	xns = xgs + nghostx
 	xne = xge - nghostx
