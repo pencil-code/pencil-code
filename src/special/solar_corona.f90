@@ -1410,6 +1410,8 @@ module Special
                  if (ldispersion_acoustic) then
                    nwave_disp=w_ff(1)*nwave(2)/w_ff(2)
                    uu(:,3)=uu_drive(3)*cos(pi*nwave_disp*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)
+!                   uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))* &
+!                   (0.25*sin(.85714285714285714285*w_ff(1)*t)+0.5*sin(w_ff(1)*t)+0.25*sin(1.14285714285714285714*w_ff(1)*t))
                  else
                  uu(:,3)=uu_drive(3)*cos(pi*nwave(1)*x(l1:l2)/Lxyz(1))*sin(w_ff(1)*t)
                  endif

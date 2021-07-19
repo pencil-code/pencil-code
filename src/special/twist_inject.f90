@@ -86,7 +86,7 @@ module Special
           dIring=0.0,dposx=0.0,dposz=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
   real :: posy=0.0,alpha=1.25,velx
   real, save :: posx,posz,Iring
-  integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff,cool_type=5
+  integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff=2,cool_type=5
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
              lslope_limited_special=.false.
   real, dimension (mx) :: x12,dx12
@@ -97,7 +97,7 @@ module Special
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
            lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
-           cool_RTV,z_cutoff,cool_type
+           cool_RTV,cool_RTV_cutoff,z_cutoff,cool_type
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -1718,7 +1718,6 @@ module Special
 !
       real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
-      real :: z_cutoff
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))

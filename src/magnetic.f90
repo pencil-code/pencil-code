@@ -87,6 +87,10 @@ module Magnetic
   real, dimension (nz,3) :: bbmz,jjmz
   real, dimension (:,:), allocatable :: aamxy
 !
+! Ventor potential from file
+!
+  real, dimension (:,:,:,:), allocatable :: ap
+!
 ! Parameters
 !
   integer, parameter :: nresi_max=4
@@ -2270,7 +2274,7 @@ module Magnetic
           f(l1:l2,m1:m2,n1,iay)=ay*amplaa(1)
 !
         case ('A_from_file') !(prelim version to set Ax,Ay on one proc)
-          allocate(ap(nx,ny,nz,3))
+          if (.not.allocated(ap)) allocate(ap(nx,ny,nz,3))
           open(1,file='aa.dat',form='unformatted')
           read(1) ap
           close(1)
@@ -2280,7 +2284,7 @@ module Magnetic
           if (allocated(ap)) deallocate(ap)
 !
         case ('B_ext_from_file')
-          allocate(ap(mx,my,mz,6))
+          if (.not.allocated(ap)) allocate(ap(mx,my,mz,6))
           call input_snap('ap.dat',ap,6,0)
           call input_snap_finalize
 !
