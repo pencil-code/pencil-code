@@ -87,10 +87,6 @@ module InitialCondition
 !
 !  04-aug-10/simon: coded
 !
-!  Magnetic flux ring which has the form of a n-foil knot.
-!  NB: Curerently this works only for one CPU. For multi CPU usage
-!  initialize on one CPU and do the remeshing.
-!
 !  Created 2010-08-04 by Simon Candelaresi (Iomsn)
 !
       use Mpicomm, only: stop_it
