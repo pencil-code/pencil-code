@@ -2224,7 +2224,7 @@ module Magnetic
           enddo;enddo
         case ('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
-        case ('torus-test'); call torus_test(amplaa(j),f)
+        case ('torus-test'); call torus_test(amplaa(j),f,kx_aa(j),ky_aa(j))
 !
 ! test case horizontal dipole for spherical shell polar boundary conditions
 !
@@ -8181,7 +8181,7 @@ module Magnetic
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
-    subroutine torus_test(ampl,f)
+    subroutine torus_test(ampl,f,kx_aa,ky_aa)
 !
 !  Initial field concentrated along torus well inside the computational
 !  domain.
@@ -8195,7 +8195,7 @@ module Magnetic
 !
 !   05-may-2008/wolf: coded
 !
-      real :: ampl
+      real :: ampl,kx_aa,ky_aa
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: xxi2,ee
@@ -8206,8 +8206,8 @@ module Magnetic
       intent(inout) :: f
 !
       radius = xyz1(1)
-      width  = 0.1*radius
-      r_cent = 0.6*radius
+      width  = 0.1*radius*kx_aa
+      r_cent = 0.6*radius*ky_aa
 !
       if (lspherical_coords) then
         do n=n1,n2; do m=m1,m2
