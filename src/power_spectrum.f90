@@ -4170,8 +4170,6 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,ny,nz) :: h_re,ht_re
-  real, dimension(nx) :: bbi, jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -4222,37 +4220,31 @@ endsubroutine pdf
   !
   do ivec=1,3
     !
-    !  In fft, real and imaginary parts are handled separately.
-    !
-    !
     !  Spectrum of iuu.iuut
     !
     if (sp=='uut') then
-      if (iuu==0) call fatal_error('power_cor','iuu=0')
+      if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
     !
-    !   Spectrum of h.ht; h=u.curl(u) and ht=uut.curl(uut)
+    !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
+    !  Because uut has been transformed to the shear frame,
+    !  we have to use oot instead of curl(uut)
     !
     elseif (sp=='ouout') then
-      if (iuu==0) call fatal_error('power_cor','iuu=0')
+      if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
+      if (ioo==0)  call fatal_error('power_cor','ioo=0')
+      if (ioot==0) call fatal_error('power_cor','ioot=0')
       h_re=0.
       ht_re=0.
       !  helicity or helicity density is a scalar and only computed at ivec=1
       if (ivec==1) then
         do jvec=1,3
-          do n=n1,n2
-          do m=m1,m2
-            call curli(f,iuu,bbi,jvec)
-            im=m-nghost
-            in=n-nghost
-            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
-          enddo
-          enddo
+          a_re=f(l1:l2,m1:m2,n1:n2,ioo+jvec-1)  !(this corresponds to vorticity)
           b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
           do ikx=1,nx; do iky=1,ny; do ikz=1,nz
             h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
@@ -4260,14 +4252,7 @@ endsubroutine pdf
           enddo; enddo; enddo
         enddo
         do jvec=1,3
-          do n=n1,n2
-          do m=m1,m2
-            call curli(f,iuut,bbi,jvec)
-            im=m-nghost
-            in=n-nghost
-            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
-          enddo
-          enddo
+          a_re=f(l1:l2,m1:m2,n1:n2,ioot+jvec-1)  !(this corresponds to vorticity)
           b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
           do ikx=1,nx; do iky=1,ny; do ikz=1,nz
             ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
@@ -4289,8 +4274,8 @@ endsubroutine pdf
 !  Because we shift in the y direction, we need nprocy=1.
 !
     if (lshear_frame_correlation) then
-      if (.not. lshear) call fatal_error('powerhel','lshear=F; cannot do frame transform')
-      if (nprocy/=1) call fatal_error('powerhel','nprocy=1 required for lshear_frame_correlation')
+      if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
+      if (nprocy/=1) call fatal_error('power_cor','nprocy=1 required for lshear_frame_correlation')
       do ikx=l1,l2
         nshear=nint( deltay/dy * x(ikx)/Lx )
         do iky=1,ny
