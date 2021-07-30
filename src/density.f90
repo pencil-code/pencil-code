@@ -328,7 +328,7 @@ module Density
       if (lhydro) then
         call get_shared_variable('lrelativistic', &
             lrelativistic, caller='register_density')
-        if (lrelativistic_eos) then
+        if (lrelativistic) then
           if (lroot) then
             print*,'W A R N I N G:  lrelativistic_eos=T'
             print*,'does not make sense because lrelativistic=T'
