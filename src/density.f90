@@ -17,7 +17,6 @@
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
 ! PENCILS PROVIDED ekin, uuadvec_glnrho; uuadvec_grho
-!
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 !
 !***************************************************************
@@ -96,6 +95,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
+  logical, pointer :: lrelativistic
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -273,7 +273,7 @@ module Density
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       if (ldensity_nolog) then
         call farray_register_pde('rho',irho)
@@ -319,10 +319,25 @@ module Density
 !
       call put_shared_variable('mpoly',mpoly,caller='register_density') 
 !
-!  Communicate lrelativistic_eos to entropy too.
+!  Communicate lrelativistic_eos to magnetic too.
 !
       call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
-
+!
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro) then
+        call get_shared_variable('lrelativistic', &
+            lrelativistic, caller='register_density')
+        if (lrelativistic_eos) then
+          if (lroot) then
+            print*,'W A R N I N G:  lrelativistic_eos=T'
+            print*,'does not make sense because lrelativistic=T'
+            print*,'reset lrelativistic_eos=.false. and continue'
+          endif
+          lrelativistic_eos=.false.
+        endif
+      endif
+!
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -2036,6 +2051,10 @@ module Density
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
       endif
 !
+      if (lrelativistic) then
+        lpenc_requested(i_lorentz_gamma) = .true.
+      endif
+!
       if (lfargo_advection) then
         lpenc_requested(i_uu_advec)=.true.
         if (ldensity_nolog) then
@@ -2432,6 +2451,9 @@ module Density
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
               endif
               density_rhs=fourthird*density_rhs
+              if (lrelativistic) call fatal_error('dlnrho_dt','lrelativistic_eos must be false')
+            elseif (lhydro.and.lrelativistic) then
+              print*,'AXEL-density: ',lrelativistic
             endif
           endif
         else
