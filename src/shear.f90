@@ -1056,4 +1056,32 @@ module Shear
 !
      endsubroutine bcx_periodic
 !***********************************************************************
+    subroutine shear_frame_transform(a)
+!
+!  Transforms a variable a from lab frame to shear frame in the x space
+!  a must be defined on (l1:l2,m1:m2,n1:n2)
+!
+!  31-jun-21/hongzhe: coded
+!
+      real, dimension(nx,ny,nz), intent(inout) :: a
+!
+      real, dimension(nx,ny,nz) :: tmp
+      integer :: ikx,iky,jky,nshear
+!
+!   For now do not allow for y-parallelization; can be improved
+!
+      if (nprocy/=1) call fatal_error('shear_frame_transform',&
+          'nprocy=1 required for lshear_frame_correlation')
+      do ikx=l1,l2
+        nshear=nint( deltay/dy * x(ikx)/Lx )
+        do iky=1,ny
+          jky=mod(iky-nshear,ny)
+          if (jky<=0) jky=jky+ny
+          tmp(ikx-nghost,iky,:)=a(ikx-nghost,jky,:)
+        enddo
+      enddo
+      a=tmp
+!
+    endsubroutine shear_frame_transform
+!***********************************************************************
 endmodule Shear

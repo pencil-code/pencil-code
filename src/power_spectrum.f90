@@ -4162,6 +4162,7 @@ endsubroutine pdf
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use Chiral, only: iXX_chiral, iYY_chiral
     use Magnetic, only: magnetic_calc_spectra
+    use Shear, only: shear_frame_transform
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
@@ -4271,21 +4272,10 @@ endsubroutine pdf
 !
 !  Transform b_re to the shear frame. a_re has been recorded and
 !  transformed at some previous time using lvart_in_shear_frame=T.
-!  Because we shift in the y direction, we need nprocy=1.
 !
     if (lshear_frame_correlation) then
       if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
-      if (nprocy/=1) call fatal_error('power_cor','nprocy=1 required for lshear_frame_correlation')
-      do ikx=l1,l2
-        nshear=nint( deltay/dy * x(ikx)/Lx )
-        do iky=1,ny
-          jky=mod(iky-nshear,ny)
-          if (jky<=0) jky=jky+ny
-          b_im(ikx-nghost,iky,:)=b_re(ikx-nghost,jky,:)
-        enddo
-      enddo
-      b_re=b_im
-      b_im(:,:,:)=0.
+      call shear_frame_transform(b_re)
     endif
 !
 !  before doing fft, compute real-space correlation

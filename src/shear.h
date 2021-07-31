@@ -11,3 +11,4 @@
   public :: shear_variables
   public :: sheared_advection_fft
   public :: get_uy0_shear, get_hyper3x_mesh
+  public :: shear_frame_transform
