@@ -1,3 +1,4 @@
+*****************
 Quick start guide
 *****************
 
@@ -323,7 +324,7 @@ If you plan to use MPI, please also provide the full output of:
 Data post-processing
 ====================
 
-IDL visualization (optional, recommended)
+IDL visualization (optional,)
 -----------------------------------------
 
 GUI-based visualization (recommended for quick inspection)
@@ -346,17 +347,18 @@ Command-line based processing of “big data”
 
 Please check the documentation inside these files:
 
-=================================================
-===========================================
-“``pencil-code/idl/read/pc_read_var_raw.pro``”    efficient reading of raw data
-=================================================
-===========================================
-“``pencil-code/idl/read/pc_read_subvol_raw.pro``” reading of sub-volumes
-“``pencil-code/idl/read/pc_read_slice_raw.pro``”  reading of any 2D slice from 3D snapshots
-“``pencil-code/idl/pc_get_quantity.pro``”         compute physical quantities out of raw data
-“``pencil-code/idl/pc_check_quantities.pro``”     dependency checking of physical quantities
-=================================================
-===========================================
++------------------------------------------------+--------------------------------------------+
+|``pencil-code/idl/read/pc_read_var_raw.pro``    | efficient reading of raw data              |
++------------------------------------------------+--------------------------------------------+
+|``pencil-code/idl/read/pc_read_subvol_raw.pro`` | reading of sub-volumes                     |
++------------------------------------------------+--------------------------------------------+
+|``pencil-code/idl/read/pc_read_slice_raw.pro``  | reading of any 2D slice from 3D snapshots  |
++------------------------------------------------+--------------------------------------------+
+|``pencil-code/idl/pc_get_quantity.pro``         | compute physical quantities out of raw data|
++------------------------------------------------+--------------------------------------------+
+|``pencil-code/idl/pc_check_quantities.pro``     | dependency checking of physical quantities |
++------------------------------------------------+--------------------------------------------+
+
 
 in order to read data efficiently and compute quantities in physical
 units.
@@ -368,13 +370,13 @@ Several idl-procedures have been written (see in ‘``pencil-code/idl``’)
 to facilitate inspecting the data that can be found in raw format in
 ‘``jeans-x/data``’. For example, let us inspect the time series data
 
-::
+.. code:: idl 
 
    IDL> pc_read_ts, obj=ts
 
 The structure ``ts`` contains several variables that can be inspected by
 
-::
+.. code:: idl
 
    IDL> help, ts, /structure
    ** Structure <911fa8>, 4 tags, length=320, data length=320, refs=1:
@@ -390,7 +392,7 @@ information about the input files.
 We plot now the evolution of ``UMAX`` after the initial perturbation
 that is defined in “``start.in``”:
 
-::
+.. code:: idl 
 
    IDL> plot, ts.t, alog(ts.umax)
 
@@ -399,27 +401,27 @@ The complete state of the simulation is saved as snapshot files in
 “``jeans-x/run.in``”. These snapshots, for example “``VAR5``”, can be
 loaded with:
 
-::
+.. code:: idl
 
    IDL> pc_read_var, obj=ff, varfile="VAR5", /trimall
 
 Similarly ``tag_names`` will provide us with the available variables:
 
-::
+.. code:: idl
 
    IDL> print, tag_names(ff)
    T X Y Z DX DY DZ UU LNRHO POTSELF
 
 The logarithm of the density can be inspected by using a GUI:
 
-::
+.. code:: idl
 
    IDL> cslice, ff.lnrho
 
 Of course, for scripting one might use any quantity from the ``ff``
 structure, like calculating the average density:
 
-::
+.. code:: idl
 
    IDL> print, mean(exp(ff.lnrho))
 
@@ -448,18 +450,14 @@ able to import the ``pencil`` module:
    import pencil as pc
 
 Some useful functions:
++--------------------------------+--------------------------------------------+
+|``pc.read.ts``                  | read “``time_series.dat``” file. Parameters are added as members of the class|
++------------------------------------------------+--------------------------------------------+
+``pc.read.slices``              | read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)|
++------------------------------------------------+--------------------------------------------+
+|``pc.visu.animate_interactive`` | assemble a 2D animation from a 3D array|
++--------------------------------+--------------------------------------------+
 
-=================================
-=============================================================================
-“``pc.read.ts``”                  read “``time_series.dat``” file. Parameters are added as members of the class
-=================================
-=============================================================================
-“``pc.read.slices``”              read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)
-“``pc.visu.animate_interactive``” assemble a 2D animation from a 3D array
-=================================
-=============================================================================
 
-Some examples of postprocessing with Python can be found in the Pencil
-wiki:
-
-https://github.com/pencil-code/pencil-code/wiki/PythonForPencil.
+Some examples of postprocessing with Python can be found in the
+:ref:` python documentation <modpython>` and in the :ref:` python tutorials <tutpython>`.

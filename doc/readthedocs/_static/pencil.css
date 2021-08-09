@@ -1,0 +1,70 @@
+.wy-nav-content {
+    max-width: 1000px !important;
+}
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+}
+
+.rst-content .toctree-wrapper > p.caption {
+    font-size: 125%;
+}
+
+/* Remove extra spaces in table cells */
+td div.line-block,
+td div.wy-table-responsive,
+td blockquote,
+td ul.simple,
+td div.admonition {
+    margin-bottom: 0 !important;
+}
+
+.collapsable.closed ul li:nth-child(n+6) {
+    display: none;
+}
+
+.gray {
+    color: #aaa;
+}
+
+.framed img {
+    border: 2px solid #444;
+}
+
+.rst-content .menuselection {
+    border: 1px solid #aeaeae;
+    background: #ededed;
+    font-size: 80%;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2.4px 6px;
+    margin: auto 2px;
+}
+
+/* Hide until text is changed (Edit -> View) */
+.fa-bitbucket {
+    display: none !important;
+}
+
+.fa-bitbucket-show {
+    display: inline-block !important;
+}
+
+/* For the long lists of Doxygen items */
+#c-c-code-documentation li.toctree-l2,
+#class-list li.toctree-l1,
+#file-list li.toctree-l1,
+#struct-list li.toctree-l1,
+#union-list li.toctree-l1 {
+    display: inline-block;
+    border: 1px solid #ccc;
+    margin: 2px;
+    margin-left: 0px;
+    background-color: #f2f5f5;
+    padding: 1px 5px;
+}
+
+.icon-home {
+    font-size: 24px !important;
+}

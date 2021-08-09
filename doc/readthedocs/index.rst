@@ -1,33 +1,48 @@
-Welcome Pencil Code documentation!
-*******************************************
+##################################
+The Pencil Code documentation
+##################################
 
+.. admonition:: Welcome!
 
+   This is the new homepage of The Pencil Code documentation!
+   
+   Explore the page hierarchy below (or in the sidebar), and get started with
+   :ref:`contributing your own documentation<Contributing to the documentation>`!
 
-Python for Pencil is a python package develop for the postprocessing of the Pencil Code simulations.
-
-Documentation
-=============
 
 
 .. toctree::
-   :maxdepth: 1
+   :caption: Introduction
+   :maxdepth: 2
+
+   intro/getting_started
+   intro/usingrst
+   intro/links
+   intro/discussion
+
+.. toctree::
+   :caption: User manuals
+   :maxdepth: 2
+
+   Quick Guide <manuals/quick-guide>
    
-   pages/quick-guide
-   pages/modfortran
-   pages/modpython
+
+.. toctree::
+   :caption: Tutorials
+   :maxdepth: 2
+   
+   tutorials/python/tutpython
 
 
+.. toctree::
+   :caption: Code documentation
+   :maxdepth: 2
 
-Links
-=====
-* Project homepage: http://pencil-code.nordita.org/
-* Code repository: https://github.com/pencil-code/pencil-code
-* Wiki: https://github.com/pencil-code/pencil-code/wiki
+   toc/modpython
+   toc/modidl
+..   toc/modfortran
+
+  
+ 
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
