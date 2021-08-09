@@ -522,6 +522,7 @@
   \var{bym}       & $\left<B_y\right>$ \\
   \var{bzm}       & $\left<B_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
+  \var{bij_cov_diffmax} & difference between two mplementations of covariant derivatives \\
   \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
@@ -644,6 +645,8 @@
                     of $J_{\rm hyper}$ parallel to B \\
   \var{hjperpm}   & Mean value of the component
                     of $J_{\rm hyper}$ perpendicular to B \\
+  \var{b2sphm}    & $\int_{r=0}^{r=1} \Bv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
                     the magnetic_xaver_range \\
   \var{brmsz}     & $\left<\Bv^2\right>^{1/2}$ for
@@ -817,8 +820,8 @@
 \midrule
   \multicolumn{2}{c}{Module \file{disp_current.f90}} \\
 \midrule
-  \var{EErms}     & $\left<\Ev^2\right>^{1/2}$ \\
-  \var{EEmax}     & $\max(|\Ev|)$ \\
+  \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
+  \var{emax}      & $\max(|\Ev|)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
@@ -919,6 +922,9 @@
   \var{ggT2m}     & $\bra{g_T^2}$ \\
   \var{ggX2m}     & $\bra{g_X^2}$ \\
   \var{ggTXm}     & $\bra{g_T g_X}$ \\
+  \var{nlin0}     & $\bra{nlin0}$ \\
+  \var{nlin1}     & $\bra{nlin1}$ \\
+  \var{nlin2}     & $\bra{nlin2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk_no_xpara.f90}} \\
 \midrule
@@ -1433,12 +1439,15 @@
 \midrule
   \var{aa2m}      & $\langle A^2\rangle$ \\
   \var{ee2m}      & $\langle E^2\rangle$ \\
+  \var{EEEM}      & $\langle(E^2+B^2)/2\rangle$ \\
   \var{akxpt}     & $Akx^{pt}$ \\
   \var{ekxpt}     & $Ekx^{pt}$ \\
   \var{sigma}     & $\sigma$ \\
   \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
   \var{bmax}      & $\max(|\Bv|)$ \\
   \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
+  \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
   \var{bfrms}     & $\left<{\Bv'}^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{meanfield.f90}} \\
@@ -1850,6 +1859,7 @@
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
   \var{h0rms}     & $\left<h_{0}^2\right>^{1/2}$ \\
+  \var{rho0m}     & $\left<\exp h_{0}\right>$ \\
   \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
   \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
   \var{h0max}     & $\operatorname{max}h_{0}$ \\
@@ -1860,6 +1870,7 @@
   \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
   \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
   \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{E0mrms}    & $\left<\left<{\cal E}_{0}\right>^2\right>^{1/2}$ \\
   \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
   \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
   \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
