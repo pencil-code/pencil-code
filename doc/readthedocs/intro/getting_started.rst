@@ -84,7 +84,6 @@ the auto-generated code documentation. The build is slow (several minutes).
 
       sphinx-rtd-theme
       sphinxcontrib-images
-      sphinx-epytext
       sphinx-js
 
       astropy

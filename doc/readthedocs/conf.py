@@ -59,7 +59,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
-    "sphinx_epytext",
     "sphinxcontrib.images",
     "sphinxfortran.fortran_domain",
     "sphinxfortran.fortran_autodoc",
