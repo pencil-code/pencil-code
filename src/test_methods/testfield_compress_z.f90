@@ -208,7 +208,7 @@ module Testfield
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
   integer :: idiag_E22rms=0     ! DIAG_DOC: $\left<{\cal E}_{22}^2\right>^{1/2}$
   integer :: idiag_E0rms=0      ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
-  integer :: idiag_E0mrms=0     ! DIAG_DOC: $\left<\mean{{\cal E}_{0}}^2\right>^{1/2}$
+  integer :: idiag_E0mrms=0     ! DIAG_DOC: $\left<\left<{\cal E}_{0}\right>^2\right>^{1/2}$
   integer :: idiag_Ex11pt=0     ! DIAG_DOC: ${\cal E}_x^{11}$
   integer :: idiag_Ex21pt=0     ! DIAG_DOC: ${\cal E}_x^{21}$
   integer :: idiag_Ex12pt=0     ! DIAG_DOC: ${\cal E}_x^{12}$
