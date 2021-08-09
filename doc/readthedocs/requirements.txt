@@ -13,4 +13,4 @@ tqdm>=4.60.0
 vtk>=9.0.1
 sphinx-fortran
 sphinxcontrib.images
-python-git
+GitPython
