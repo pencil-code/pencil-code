@@ -37,6 +37,7 @@ module Particles_coagulation
   real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
   real :: tstart_droplet_coagulation=impossible
+  real :: reference_radius=5e-5
   logical :: ldroplet_coagulation_runtime=.false.
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
@@ -51,7 +52,8 @@ module Particles_coagulation
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
   logical :: sphericalKernel=.false.
-  logical :: lremove_particle=.false., lremove_particle2=.false.
+  logical :: lcheck_reference_radius=.false.
+  logical :: lremove_particle_phys=.true., lremove_particle=.false., lremove_particle2=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -90,7 +92,8 @@ module Particles_coagulation
       kernel_output, deltad, a0, rbin, &
       radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
       sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
-      lremove_particle, lremove_particle2, &
+      lcheck_reference_radius, reference_radius, &
+      lremove_particle_phys, lremove_particle, lremove_particle2, &
       lcollision_output_swapped
 !
   contains
@@ -891,6 +894,8 @@ module Particles_coagulation
 !  24-nov-10/anders: coded
 !  25-jan-16/Xiang-yu and nils: added the model of Shima et al. (2009)
 !
+      use General
+!
       real, dimension (mpar_loc,mparray) :: fp
       integer :: j, k, swarm_index1, swarm_index2, iswap, ipar_j_
       real :: deltavjk
@@ -902,8 +907,8 @@ module Particles_coagulation
       real :: rhopsma, rhopbig, apsma, apbig
       real :: coeff_restitution, deltav_recoil, escape_speed
       real :: apj,mpj,npj,apk,mpk,npk
-      logical :: lswap
-!
+      logical :: lswap, exists
+      character (len=fnlen) :: directory=''
 !
       if (lparticles_number) then
 !
@@ -980,9 +985,10 @@ module Particles_coagulation
 !  a simulation.
 !
               if (npk == npj) then
+!
 ! 13-June-18/Xiang-Yu: coded
 !                if (npk*dx*dy*dz<1.0 .and. lremove_particle) then
-                if (lremove_particle) then
+                if (lremove_particle.and.lremove_particle_phys) then
                   if (fp(swarm_index1,iap)>=fp(swarm_index2,iap)) then
                     fp(swarm_index1,ivpx:ivpz)=(rhopbig*fp(swarm_index1,ivpx:ivpz) + &
                         rhopsma*fp(swarm_index2,ivpx:ivpz))/(rhopsma+rhopbig)
@@ -999,9 +1005,14 @@ module Particles_coagulation
                     fp(swarm_index1,iap)=-fp(swarm_index1,iap)
                   endif
                 else
-! 13-June-18/Xiang-Yu.
-                  fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
-                  fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+!
+! 13-jun-18/Xiang-Yu.
+! 10-aug-21/Axel+Nils: added lremove_particle_phys option
+!
+                  if (lremove_particle_phys) then
+                    fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                    fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                  endif
                   mpnew=mpj+mpk
                   fp(swarm_index1,iap)&
                       =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
@@ -1020,10 +1031,13 @@ module Particles_coagulation
                 fp(swarm_index1,iap)&
                     =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !
-!  Set particle number densities. Only the the swarm with the highest 
+!  Set particle number densities. Only the swarm with the highest 
 !  particle number density, changes its particle number density.
+!  Added possibility to not do this (which is then no longer mass-conserving)
 !
-                fp(swarm_index2,inpswarm)=abs(npj-npk)
+                if (lremove_particle_phys) then
+                  fp(swarm_index2,inpswarm)=abs(npj-npk)
+                endif
 !
 !  Set particle velocities. Only the swarm with the lowest 
 !  particle number density, changes its particle velcity.
@@ -1225,7 +1239,6 @@ module Particles_coagulation
               call fatal_error('','No such droplet_coagulation_model')
             endif
           else
-
 !
 !  Physical particles in the two swarms collide asymmetrically.
 !
@@ -1252,6 +1265,20 @@ module Particles_coagulation
             fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
           else
             fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+          endif
+        endif
+      endif
+!
+!  Check whether the largest article has reached a certain reference radius
+!
+      if (lcheck_reference_radius) then
+        if (fp(j,iap)>reference_radius.or.fp(k,iap)>reference_radius) then
+          call safe_character_assign(directory,trim(datadir)//'/proc'//itoa(iproc))
+          inquire(FILE=trim(directory)//'/reached_reference_radius.dat',EXIST=exists)
+          if (.not.exists) then
+            open(unit=11,file=trim(directory)//'/reached_reference_radius.dat',STATUS='unknown')
+            write(11,*) t,fp(j,iap),fp(k,iap)
+            close(11)
           endif
         endif
       endif

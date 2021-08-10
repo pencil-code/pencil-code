@@ -264,11 +264,19 @@ module Particles_radius
             fp(k,iap) = ap0(ind)
           enddo
 !
+!  Set lucky droplet radius, ap1
+!
         case ('constant-1')
           if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
           do k = npar_low,npar_high
             if (ipar(k) == 1) fp(k,iap) = ap1
           enddo
+!
+!  Set lucky droplet radius, one per processor
+!
+        case ('constant-proc')
+          if (initial .and. lroot) print*, 'set_particles_radius: set lucky droplet radius per processor'
+          fp(npar_low,iap) = ap1
 !
         case ('2-size')
           if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
