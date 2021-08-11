@@ -1017,7 +1017,11 @@ module Magnetic
 !  With lbeta_inflation, we have f"/f = beta2_inflation/(t+1.)**2.
 !
             if (linflation) then
-              ksqr_eff=ksqr-alpha2_inflation/t**2
+              if (lpolarization_basis) then
+                ksqr_eff=ksqr-2.*ksign*k*/t
+              else
+                ksqr_eff=ksqr-alpha2_inflation/t**2
+              endif
             elseif (lreheating) then
               if (lalpha_inflation) ksqr_eff=ksqr-alpha2_inflation*2./(t+1.)**2
 !
