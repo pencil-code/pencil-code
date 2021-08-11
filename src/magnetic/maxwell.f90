@@ -1018,7 +1018,7 @@ module Magnetic
 !
             if (linflation) then
               if (lpolarization_basis) then
-                ksqr_eff=ksqr-2.*ksign*k*/t
+                ksqr_eff=ksqr-2.*ksign*k/t
               else
                 ksqr_eff=ksqr-alpha2_inflation/t**2
               endif
