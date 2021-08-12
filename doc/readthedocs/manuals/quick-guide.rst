@@ -450,13 +450,12 @@ able to import the ``pencil`` module:
    import pencil as pc
 
 Some useful functions:
-+--------------------------------+--------------------------------------------+
-|``pc.read.ts``                  | read “``time_series.dat``” file. Parameters are added as members of the class|
-+------------------------------------------------+--------------------------------------------+
-``pc.read.slices``              | read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)|
-+------------------------------------------------+--------------------------------------------+
-|``pc.visu.animate_interactive`` | assemble a 2D animation from a 3D array|
-+--------------------------------+--------------------------------------------+
+
+===============================   ======
+``pc.read.ts``                    read “``time_series.dat``” file. Parameters are added as members of the class
+``pc.read.slices``                read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)
+``pc.visu.animate_interactive``   assemble a 2D animation from a 3D array
+===============================   ======
 
 
 Some examples of postprocessing with Python can be found in the

@@ -58,6 +58,8 @@ the auto-generated code documentation. The build is very fast (few seconds).
 
       sphinx-rtd-theme
       sphinxcontrib-images
+      sphinx-fortran
+      sphinx-git
 
 3. Build:
 

@@ -2,7 +2,6 @@
 #
 # Read the power spectra of the simulation.
 #
-
 """
 Contains the classes and methods to read the power spectra.
 """

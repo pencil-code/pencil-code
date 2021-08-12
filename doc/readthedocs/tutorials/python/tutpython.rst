@@ -13,9 +13,9 @@ Pencil Code Commands in General
 For a list of all Pencil Code commands start IPython and type ``pc. <TAB>`` (as with auto completion).
 To access the help of any command just type the command followed by a '?' (no spaces), e.g.:
 
-.. code:: python
+.. code:: 
 
-        In [1]: pc.math.dot?
+        pc.math.dot?
         Type:       function
         String Form:<function dot at 0x7f9d96cb0cf8>
         File:       ~/pencil-code/python/pencil/math/vector_multiplication.py
@@ -48,7 +48,7 @@ You can change the values by simply typing e.g.
 
 
 Reading and Plotting Time Series
-===================
+================================
 
 Reading the time series file is very easy. Simply type
 
@@ -71,10 +71,11 @@ The standard plots are not perfect and need a little polishing. See further down
 You can save the plot into a file using the GUI or with
 
 .. code:: python
+
         plt.savefig('plot.eps')
 
 Reading and Plotting VAR files and slice files
-===================
+==============================================
 
 Read var files:
 
@@ -112,7 +113,7 @@ For a more interactive function plot use:
         This affects reading var files and slice files.
 
 Create a custom VAR0 or var.dat
-===================
+===============================
 
 With the functionality of writing snapshots directly into ``VAR*`` or ``var.dat`` the user can now generate an initial condition directly from a numpy array or modify the last snapshot and continue running. The function to be used is in ``python/pencil/io/snapshot.py`` and is called ``write_snapshot``. Here we outline how to generate an initial condition. For modifying the ``var.dat`` only the last steps are necessary.
 
@@ -127,6 +128,7 @@ First we need an empty run. For this let us use ``samples/kin-dynamo``
 In principle we can use any initial condition, as we are going to over write it. But it is cleaner to use
 
 .. code::
+
         INITIAL_CONDITION = noinitial_condition
 
 in ``src/Makefile.local``. Compile and start:
@@ -159,7 +161,7 @@ Putting it all together our python routine would look something like this:
 
 
 Examples
-===================
+========
 
 Standard plots with any plotting library are not the prettiest ones. The same is true for matplotlib. Here are a few pretty examples of plots where the default style is changed. You can add your commands into a script e.g. ``plot_results.py`` and execute it in IPython with ``execfile('plot_results.py')``.
 

@@ -30,7 +30,7 @@ The Pencil Code documentation
 .. toctree::
    :caption: Tutorials
    :maxdepth: 2
-   
+
    tutorials/python/tutpython
 
 
@@ -40,7 +40,7 @@ The Pencil Code documentation
 
    toc/modpython
    toc/modidl
-..   toc/modfortran
+   toc/modfortran
 
   
  
