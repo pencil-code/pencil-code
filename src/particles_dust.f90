@@ -221,7 +221,7 @@ module Particles
       thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
-      Lz0, lglobalrandom, linsert_particles_continuously, &
+      Lz0, lglobalrandom, lswap_radius_and_number, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
       ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
@@ -1139,6 +1139,31 @@ module Particles
               fp(1:npar_loc,ixp) = xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           if (nygrid /= 1 .or. lnocollapse_ydir_onecell) &
               fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid /= 1 .or. lnocollapse_zdir_onecell) &
+              fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+!
+!  Special thing where Lxyz_par(2) has been replaced by Lxyz_loc(2)
+!
+        case ('random_proc')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k = 1,npar_loc
+            if (nxgrid /= 1 .or. lnocollapse_xdir_onecell) then
+              call random_number_wrapper(r)
+              fp(k,ixp) = r
+            endif
+            if (nygrid /= 1 .or. lnocollapse_ydir_onecell) then
+              call random_number_wrapper(r)
+              fp(k,iyp) = r
+            endif
+            if (nzgrid /= 1 .or. lnocollapse_zdir_onecell) then
+              call random_number_wrapper(r)
+              fp(k,izp) = r
+            endif
+          enddo
+          if (nxgrid /= 1 .or. lnocollapse_xdir_onecell) &
+              fp(1:npar_loc,ixp) = xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid /= 1 .or. lnocollapse_ydir_onecell) &
+              fp(1:npar_loc,iyp) = xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid /= 1 .or. lnocollapse_zdir_onecell) &
               fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !

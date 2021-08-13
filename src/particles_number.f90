@@ -157,6 +157,16 @@ module Particles_number
               fp(k,inpswarm) = np_swarm0
             endif
           enddo
+        case ('constant_luck_proc')
+          if (lroot.and.initial) then
+            print*, 'init_particles_number: constant internal number, luck, proc'
+            print*, 'init_particles_number: np_swarm0=', np_swarm0
+            print*, 'init_particles_number: np_swarm0_luck=', np_swarm0_luck
+          endif
+          do k = npar_low,npar_high
+            fp(k,inpswarm) = np_swarm0
+          enddo
+          fp(npar_low,inpswarm) = np_swarm0_luck
         endselect
       enddo
 !
