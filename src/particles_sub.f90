@@ -822,7 +822,8 @@ module Particles_sub
 !  TODO: It would be better to write this information in binary format to avoid
 !  conversion problems when reading t_rmv with pc_read_pvar.
 !
-      open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
+!      open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
+      open(20,file=trim(directory_snap)//'/rmv_ipar.dat',position='append') !21-08-14/XYLI.
       if (present(ks)) then
         write(20,*) ipar(k), t_sp, ipar(ks)
       else
@@ -830,7 +831,8 @@ module Particles_sub
       endif
       close(20)
 !
-      open(20,file=trim(directory)//'/rmv_par.dat', &
+!      open(20,file=trim(directory)//'/rmv_par.dat', & !21-08-14/XYLI
+      open(20,file=trim(directory_snap)//'/rmv_par.dat', &
           position='append',form='unformatted')
       if (present(ks)) then
         write(20) fp(k,:), fp(ks,:)
