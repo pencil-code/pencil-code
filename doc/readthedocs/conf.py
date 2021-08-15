@@ -17,6 +17,10 @@ import sys
 import glob
 import datetime
 
+# Import all git history
+os.system("git pull --unshallow")
+print("Git history updated")
+
 # Path for custom-made extensions
 sys.path.insert(0, os.path.abspath("./_ext"))
 
