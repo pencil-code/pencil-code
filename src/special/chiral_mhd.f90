@@ -100,7 +100,7 @@ module Special
    real :: initpower_muS=0., cutoff_muS=0.
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
    real :: kgaussian_muS=0.,kpeak_muS=0.
-   real :: radius_mu5=0., sigma_mu5=0.
+   real :: radius_mu5=0., sigma_mu5=0., rescale_mu5=1.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -115,6 +115,7 @@ module Special
    logical :: ldiffmuS_hyper2_simplified=.false.
    logical :: lremove_mean_mu5=.false.
    logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
+   logical :: reinitialize_mu5=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
@@ -129,10 +130,12 @@ module Special
       radius_mu5, sigma_mu5
 !
   namelist /special_run_pars/ &
+      initspecial, mu5_const, &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
-      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term
+      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term, &
+      reinitialize_mu5, rescale_mu5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -202,6 +205,23 @@ module Special
       use SharedVariables, only : get_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr
+!
+!  Reinitialize GW field using a small selection of perturbations
+!  that were mostly also available as initial conditions.
+!
+      if (reinitialize_mu5) then
+        select case (initspecial)
+!
+        case ('rescale')
+          f(:,:,:,imu5)=rescale_mu5*f(:,:,:,imu5)
+!
+        case ('const')
+          f(:,:,:,imu5) = mu5_const
+          if (lmuS) f(:,:,:,imuS) = muS_const
+!
+        case default
+        endselect
+      endif
 !
       call keep_compiler_quiet(f)
 !

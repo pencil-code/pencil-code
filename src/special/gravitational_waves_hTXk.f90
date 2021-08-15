@@ -210,7 +210,7 @@ module Special
 !  Set up indices for variables in special modules.
 !
 !   3-aug-17/axel: coded
-!  28-mar-21/axel:allowed for lreal_space_hTX_as_aux
+!  28-mar-21/axel: allowed for lreal_space_hTX_as_aux
 !
       use Sub, only: register_report_aux
       use FArrayManager
@@ -634,112 +634,112 @@ module Special
 !
 !  diagnostics
 !
-       if (ldiagnos) then
-         if (lggTX_as_aux) then
-           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
-                                               +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
-                                               )*nwgrid*EGWpref,idiag_EEGW)
-           if (idiag_gg2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
-                                               +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
-                                               )*nwgrid,idiag_gg2m)
-           if (idiag_Stgm/=0) call sum_mn_name((f(l1:l2,m,n,iStressT  )*f(l1:l2,m,n,iggT  ) &
-                                               +f(l1:l2,m,n,iStressTim)*f(l1:l2,m,n,iggTim) &
-                                               +f(l1:l2,m,n,iStressX  )*f(l1:l2,m,n,iggX  ) &
-                                               +f(l1:l2,m,n,iStressXim)*f(l1:l2,m,n,iggXim) &
-                                               )*nwgrid,idiag_Stgm)
-           if (idiag_ggT2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
-                                                )*nwgrid,idiag_ggT2m)
-           if (idiag_ggX2m/=0) call sum_mn_name((f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
-                                                )*nwgrid,idiag_ggX2m)
-           if (idiag_ggTXm/=0) call sum_mn_name((f(l1:l2,m,n,iggT  )*f(l1:l2,m,n,iggXim) &
-                                                -f(l1:l2,m,n,iggTim)*f(l1:l2,m,n,iggX  ) &
-                                                )*nwgrid*sign_switch,idiag_ggTXm)
-         endif
-         if (lhhTX_as_aux) then
-           if (idiag_hrms/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
-                                               +f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
-                                               )*nwgrid,idiag_hrms,lsqrt=.true.)
-           if (idiag_hhT2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
-                                                )*nwgrid,idiag_hhT2m)
-           if (idiag_hhX2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
-                                                )*nwgrid,idiag_hhX2m)
-           if (idiag_hhTXm/=0) call sum_mn_name((f(l1:l2,m,n,ihhT  )*f(l1:l2,m,n,ihhXim) &
-                                                -f(l1:l2,m,n,ihhTim)*f(l1:l2,m,n,ihhX  ) &
-                                                )*nwgrid*sign_switch,idiag_hhTXm)
-         endif
+      if (ldiagnos) then
+        if (lggTX_as_aux) then
+          if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                              +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                              )*nwgrid*EGWpref,idiag_EEGW)
+          if (idiag_gg2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                              +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                              )*nwgrid,idiag_gg2m)
+          if (idiag_Stgm/=0) call sum_mn_name((f(l1:l2,m,n,iStressT  )*f(l1:l2,m,n,iggT  ) &
+                                              +f(l1:l2,m,n,iStressTim)*f(l1:l2,m,n,iggTim) &
+                                              +f(l1:l2,m,n,iStressX  )*f(l1:l2,m,n,iggX  ) &
+                                              +f(l1:l2,m,n,iStressXim)*f(l1:l2,m,n,iggXim) &
+                                              )*nwgrid,idiag_Stgm)
+          if (idiag_ggT2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                               )*nwgrid,idiag_ggT2m)
+          if (idiag_ggX2m/=0) call sum_mn_name((f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                               )*nwgrid,idiag_ggX2m)
+          if (idiag_ggTXm/=0) call sum_mn_name((f(l1:l2,m,n,iggT  )*f(l1:l2,m,n,iggXim) &
+                                               -f(l1:l2,m,n,iggTim)*f(l1:l2,m,n,iggX  ) &
+                                               )*nwgrid*sign_switch,idiag_ggTXm)
+        endif
+        if (lhhTX_as_aux) then
+          if (idiag_hrms/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
+                                              +f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
+                                              )*nwgrid,idiag_hrms,lsqrt=.true.)
+          if (idiag_hhT2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
+                                               )*nwgrid,idiag_hhT2m)
+          if (idiag_hhX2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
+                                               )*nwgrid,idiag_hhX2m)
+          if (idiag_hhTXm/=0) call sum_mn_name((f(l1:l2,m,n,ihhT  )*f(l1:l2,m,n,ihhXim) &
+                                               -f(l1:l2,m,n,ihhTim)*f(l1:l2,m,n,ihhX  ) &
+                                               )*nwgrid*sign_switch,idiag_hhTXm)
+        endif
 !
-         if (idiag_nlin1/=0) call sum_mn_name( &
-              f(l1:l2,m,n,iStress_ij+0)**2 &
-             +f(l1:l2,m,n,iStress_ij+1)**2 &
-             +f(l1:l2,m,n,iStress_ij+2)**2 &
-             +f(l1:l2,m,n,iStress_ij+3)**2 &
-             +f(l1:l2,m,n,iStress_ij+4)**2 &
-             +f(l1:l2,m,n,iStress_ij+5)**2,idiag_nlin1)
+        if (idiag_nlin1/=0) call sum_mn_name( &
+             f(l1:l2,m,n,iStress_ij+0)**2 &
+            +f(l1:l2,m,n,iStress_ij+1)**2 &
+            +f(l1:l2,m,n,iStress_ij+2)**2 &
+            +f(l1:l2,m,n,iStress_ij+3)**2 &
+            +f(l1:l2,m,n,iStress_ij+4)**2 &
+            +f(l1:l2,m,n,iStress_ij+5)**2,idiag_nlin1)
 !
-         if (lproc_pt.and.m==mpoint.and.n==npoint) then
-           if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
-           if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
-           if (idiag_SXrept/=0) call save_name(f(lpoint,m,n,iStressX  ),idiag_SXrept)
-           if (idiag_SXimpt/=0) call save_name(f(lpoint,m,n,iStressXim),idiag_SXimpt)
-           if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
-           if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
-           if (idiag_hXrept/=0) call save_name(f(lpoint,m,n,ihhX  ),idiag_hXrept)
-           if (idiag_hXimpt/=0) call save_name(f(lpoint,m,n,ihhXim),idiag_hXimpt)
-           if (idiag_gTrept/=0) call save_name(f(lpoint,m,n,iggT  ),idiag_gTrept)
-           if (idiag_gTimpt/=0) call save_name(f(lpoint,m,n,iggTim),idiag_gTimpt)
-           if (idiag_gXrept/=0) call save_name(f(lpoint,m,n,iggX  ),idiag_gXrept)
-           if (idiag_gXimpt/=0) call save_name(f(lpoint,m,n,iggXim),idiag_gXimpt)
-           if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
-           if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
-           if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
-           if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
-           if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
-           if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
-           if (lhhTX_as_aux) then
-             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
-             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
-           endif
-           if (lreal_space_hTX_as_aux) then
-             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT_realspace),idiag_hhTpt)
-             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX_realspace),idiag_hhXpt)
-             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT_realspace),idiag_hhTp2)
-             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX_realspace),idiag_hhXp2)
-           endif
-           if (lggTX_as_aux) then
-             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
-             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
-           endif
-           if (lreal_space_gTX_as_aux) then
-             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT_realspace),idiag_ggTpt)
-             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX_realspace),idiag_ggXpt)
-             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT_realspace),idiag_ggTp2)
-             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX_realspace),idiag_ggXp2)
-           endif
-         endif
+        if (lproc_pt.and.m==mpoint.and.n==npoint) then
+          if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
+          if (idiag_STimpt/=0) call save_name(f(lpoint,m,n,iStressTim),idiag_STimpt)
+          if (idiag_SXrept/=0) call save_name(f(lpoint,m,n,iStressX  ),idiag_SXrept)
+          if (idiag_SXimpt/=0) call save_name(f(lpoint,m,n,iStressXim),idiag_SXimpt)
+          if (idiag_hTrept/=0) call save_name(f(lpoint,m,n,ihhT  ),idiag_hTrept)
+          if (idiag_hTimpt/=0) call save_name(f(lpoint,m,n,ihhTim),idiag_hTimpt)
+          if (idiag_hXrept/=0) call save_name(f(lpoint,m,n,ihhX  ),idiag_hXrept)
+          if (idiag_hXimpt/=0) call save_name(f(lpoint,m,n,ihhXim),idiag_hXimpt)
+          if (idiag_gTrept/=0) call save_name(f(lpoint,m,n,iggT  ),idiag_gTrept)
+          if (idiag_gTimpt/=0) call save_name(f(lpoint,m,n,iggTim),idiag_gTimpt)
+          if (idiag_gXrept/=0) call save_name(f(lpoint,m,n,iggX  ),idiag_gXrept)
+          if (idiag_gXimpt/=0) call save_name(f(lpoint,m,n,iggXim),idiag_gXimpt)
+          if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
+          if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
+          if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
+          if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
+          if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
+          if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
+          if (lhhTX_as_aux) then
+            if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
+            if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
+          endif
+          if (lreal_space_hTX_as_aux) then
+            if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT_realspace),idiag_hhTpt)
+            if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX_realspace),idiag_hhXpt)
+            if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT_realspace),idiag_hhTp2)
+            if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX_realspace),idiag_hhXp2)
+          endif
+          if (lggTX_as_aux) then
+            if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
+            if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+          endif
+          if (lreal_space_gTX_as_aux) then
+            if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT_realspace),idiag_ggTpt)
+            if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX_realspace),idiag_ggXpt)
+            if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT_realspace),idiag_ggTp2)
+            if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX_realspace),idiag_ggXp2)
+          endif
+        endif
 !
-         if (lproc_p2.and.m==mpoint2.and.n==npoint2) then
-           if (idiag_STrep2/=0) call save_name(f(lpoint2,m,n,iStressT  ),idiag_STrep2)
-           if (idiag_STimp2/=0) call save_name(f(lpoint2,m,n,iStressTim),idiag_STimp2)
-           if (idiag_SXrep2/=0) call save_name(f(lpoint2,m,n,iStressX  ),idiag_SXrep2)
-           if (idiag_SXimp2/=0) call save_name(f(lpoint2,m,n,iStressXim),idiag_SXimp2)
-           if (idiag_hTrep2/=0) call save_name(f(lpoint2,m,n,ihhT  ),idiag_hTrep2)
-           if (idiag_hTimp2/=0) call save_name(f(lpoint2,m,n,ihhTim),idiag_hTimp2)
-           if (idiag_hXrep2/=0) call save_name(f(lpoint2,m,n,ihhX  ),idiag_hXrep2)
-           if (idiag_hXimp2/=0) call save_name(f(lpoint2,m,n,ihhXim),idiag_hXimp2)
-           if (idiag_gTrep2/=0) call save_name(f(lpoint2,m,n,iggT  ),idiag_gTrep2)
-           if (idiag_gTimp2/=0) call save_name(f(lpoint2,m,n,iggTim),idiag_gTimp2)
-           if (idiag_gXrep2/=0) call save_name(f(lpoint2,m,n,iggX  ),idiag_gXrep2)
-           if (idiag_gXimp2/=0) call save_name(f(lpoint2,m,n,iggXim),idiag_gXimp2)
-           if (lhhTX_as_aux) then
-             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
-             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
-           endif
-           if (lggTX_as_aux) then
-             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
-             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
-           endif
-         endif
-       endif
+        if (lproc_p2.and.m==mpoint2.and.n==npoint2) then
+          if (idiag_STrep2/=0) call save_name(f(lpoint2,m,n,iStressT  ),idiag_STrep2)
+          if (idiag_STimp2/=0) call save_name(f(lpoint2,m,n,iStressTim),idiag_STimp2)
+          if (idiag_SXrep2/=0) call save_name(f(lpoint2,m,n,iStressX  ),idiag_SXrep2)
+          if (idiag_SXimp2/=0) call save_name(f(lpoint2,m,n,iStressXim),idiag_SXimp2)
+          if (idiag_hTrep2/=0) call save_name(f(lpoint2,m,n,ihhT  ),idiag_hTrep2)
+          if (idiag_hTimp2/=0) call save_name(f(lpoint2,m,n,ihhTim),idiag_hTimp2)
+          if (idiag_hXrep2/=0) call save_name(f(lpoint2,m,n,ihhX  ),idiag_hXrep2)
+          if (idiag_hXimp2/=0) call save_name(f(lpoint2,m,n,ihhXim),idiag_hXimp2)
+          if (idiag_gTrep2/=0) call save_name(f(lpoint2,m,n,iggT  ),idiag_gTrep2)
+          if (idiag_gTimp2/=0) call save_name(f(lpoint2,m,n,iggTim),idiag_gTimp2)
+          if (idiag_gXrep2/=0) call save_name(f(lpoint2,m,n,iggX  ),idiag_gXrep2)
+          if (idiag_gXimp2/=0) call save_name(f(lpoint2,m,n,iggXim),idiag_gXimp2)
+          if (lhhTX_as_aux) then
+            if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
+            if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
+          endif
+          if (lggTX_as_aux) then
+            if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
+            if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
+          endif
+        endif
+      endif
       else
         if (headtt.or.ldebug) print*,'dspecial_dt: DONT SOLVE dspecial_dt'
       endif
