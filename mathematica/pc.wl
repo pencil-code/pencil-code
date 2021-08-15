@@ -1,10 +1,10 @@
 (* ::Package:: *)
 
-(* :Name: pc_template` *)
+(* :Name: pc` *)
 (* :Author: Hongzhe Zhou, Stockholm, 2021*)
 (* :Version: 0.1 *)
 (* :Summary:
-    Needs@ this package automatically Needs the following:
+    Needs this package automatically Needs the following:
       pcReadBasic, pcRead1D, pcRead2D,
       pcReadVAR, pcGetParam, pcPlot,
       pcTFM, pcParticleStalker,pcDerivative,

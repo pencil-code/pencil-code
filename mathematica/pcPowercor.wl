@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-(* :Name: pc_template` *)
+(* :Name: pcPowercor` *)
 (* :Author: Hongzhe Zhou, Stockholm, 2021*)
 (* :Version: 0.1 *)
 (* :Summary:

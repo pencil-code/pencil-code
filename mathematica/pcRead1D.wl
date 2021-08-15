@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-(* :Name: pcReadTS` *)
+(* :Name: pcRead1D` *)
 (* :Author: Hongzhe Zhou, Stockholm, 2021*)
 (* :Version: 0.1 *)
 (* :Summary:
