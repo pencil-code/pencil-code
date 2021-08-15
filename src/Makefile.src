@@ -2098,7 +2098,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##  which has bugs!
 ##
 ##FFLAGS=-O1 -ffree -e m -J experimental -J magnetic #(beskow*)
-##FFLAGS_DOUBLE=-s default64 #(beskow*)
 ##
 ##  the following 2 lines are for the gnu compiler
 ##  which works (use module swap PrgEnv-cray PrgEnv-gnu)
@@ -2106,11 +2105,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##NS: added compiler option -ffree-line-length-0
 ##NS: to allow for long lines in source codes (max col no def was 132)
 ##FFLAGS=-O3 -ffree-line-length-0 -large #(beskow*)
-#FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(beskow*)
 #FFLAGS=-O3 -ffree-line-length-0 #(beskow*)
+#FFLAGS=-O3 -mcmodel=large #(beskow*)
+#FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(beskow*)
+##FFLAGS=-O0 #(beskow*)
 ##NS: use following for debugging the code
 ##FFLAGS=-O3 -fcheck=all #(beskow*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(beskow*)
+##FFLAGS_DOUBLE=-r8 #(beskow*)
+##FFLAGS_DOUBLE=-s default64 #(beskow*)
 ##
 ##
 ##HP CP4000 BL Proliant supercluster
@@ -2679,6 +2682,9 @@ else
 endif
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
+#
+#  comment out the 3 lines ifneq, @, endif below if one gets an error message
+#  about io_dist cannot copy.
 #
 $(IO_OBJ):
 ifneq ($(IO),io_wrapper)
