@@ -1914,7 +1914,7 @@ module Magnetic
       real :: beq2,RFPradB12,RFPradJ12
       real :: s,c,sph,sph_har_der
       real :: cosalp, sinalp
-      integer :: j,iyz,llp1
+      integer :: j, iyz, llp1, l
       logical :: lvectorpotential=.true.
 !
       do j=1,ninit
@@ -2192,6 +2192,14 @@ module Magnetic
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
         case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa)
+        case ('sinx-clip')
+          do l=l1,l2
+            if (abs(x(l))<=pi) then
+              f(l,:,:,iay)=amplaa(j)*sin(x(l))
+            else
+              f(l,:,:,iay)=0.
+            endif
+          enddo
         case ('tony-nohel')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))
@@ -2213,10 +2221,19 @@ module Magnetic
         case ('force-free-jet')
           lB_ext_pot=.true.
           call force_free_jet(mu_ext_pot)
-        case ('Alfven-circ-x')
+!
+!  planar
+!
+        case ('planar')
+          if (lroot) print*,'init_aa: planar'
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iax)=amplaa(j)*(z(n)**4/4.-z(n)**3/3.)*x(l1:l2)**2*(x(l1:l2)-1.)
+            f(l1:l2,m,n,iay)=amplaa(j)*z(n)*(z(n)-1.)*x(l1:l2)*(x(l1:l2)-1.)*relhel_aa
+          enddo;enddo
 !
 !  Circularly polarised Alfven wave in x direction.
 !
+        case ('Alfven-circ-x')
           if (lroot) print*,'init_aa: circular Alfven wave -> x'
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*x(l1:l2))
