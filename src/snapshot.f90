@@ -452,6 +452,26 @@ module Snapshot
           f(:,:,:,ivar)=0.
         enddo
 !
+!  Read data without hydro or density, but with chiral chemical potential
+!
+      elseif (lread_oldsnap_nohydro_nomu5) then
+        if (lroot) print*,'read old snapshot file nohydro mvar,msnap=',mvar,msnap
+        call input_snap(chsnap,f,msnap-3,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        do ivar=msnap,9,-1
+          f(:,:,:,ivar)=f(:,:,:,ivar-5)
+        enddo
+        do ivar=7,5,-1
+          f(:,:,:,ivar)=f(:,:,:,ivar-4)
+        enddo
+        do ivar=1,4
+          f(:,:,:,ivar)=0.
+        enddo
+        ivar=8
+          f(:,:,:,ivar)=0.
+!
 !  Read data only with vector potential A
 !
       elseif (lread_oldsnap_onlyA) then
