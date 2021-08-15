@@ -570,7 +570,7 @@ module Magnetic
   integer :: idiag_bxbzm=0      ! DIAG_DOC:
   integer :: idiag_bybzm=0      ! DIAG_DOC:
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
-  integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two mplementations of covariant derivatives
+  integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two implementations of covariant derivatives
   integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $yz$-averaged
