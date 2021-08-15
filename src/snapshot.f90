@@ -456,7 +456,8 @@ module Snapshot
 !
       elseif (lread_oldsnap_onlyA) then
         if (lroot) print*,'read old snapshot file onlyA mvar,msnap=',mvar,msnap
-        call input_snap(chsnap,f,msnap-4,mode)
+        !call input_snap(chsnap,f,msnap-4,mode)
+        call input_snap(chsnap,f,3,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
