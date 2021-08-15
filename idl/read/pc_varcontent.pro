@@ -346,6 +346,7 @@ offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsa
 for tag = 1, num_tags do begin
   original = indices[tag-1].name
   vector = indices[tag-1].dims
+
 ; Quick fix to read scalar arrays (e.g. inp_ap1...inp_ap7)
   if (vector eq 7) then begin 
      vector=1
@@ -381,7 +382,7 @@ for tag = 1, num_tags do begin
       matches = stregex (index_pro, '^ *'+original+'( *)= *(indgen.*)$', /extract, /sub)
       lines = where (matches[0,*] ne '', num)
       if (num lt 1) then  $
-      ; Quantity not contained in this run
+        ; Quantity not contained in this run
         continue $
       else begin
         ret=execute('indspos='+matches[2,lines[0]])
