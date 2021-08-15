@@ -51,6 +51,8 @@ source $PENCIL_HOME/sourceme.csh
 
 ## Documentation
 
+* A new documentation webpage has been created with the goal of gather all the documentation together and create auto-documentation for the code:
+[Pencil Code documentation](https://pencil-code.readthedocs.io/en/latest/index.html).
 * The [manual][manual] is the main source of information.
 * There is also a [quick start][quick_start] to help getting started.
 * Information about [Python with the Pencil Code][PythonForPencil] and the
@@ -61,7 +63,7 @@ source $PENCIL_HOME/sourceme.csh
   You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
   Please contact them with your ideas.
 * The [Pencil Code User Meeting][meetings] will be held every year.
-  The 2021 meeting will be online; check with Jennifer Schober regarding the latest information.
+  The 2021 meeting was organized from Switzerland by Jennifer Schober online: [Pencil Code User Meeting 2021](https://www.epfl.ch/labs/lastro/meetings/pcum2021/).
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
