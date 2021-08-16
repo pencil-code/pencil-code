@@ -50,9 +50,9 @@ pcReload[]:=Module[{},
   
   Clear[kf];
   kf[sim_]:=kf[sim]=
-    If[ToString[readParamNml[sim,"start.in","lforcing"]]==="F" || readParamNml[sim,"run.in","FORCE"]==0.,
-      "No forcing",
-      If[Length[#[[1]]]==1,#[[2,1]],#[[1,2]]]&@Import[FileNameJoin[{sim,"k.dat"}]]
+    If[readParamNml[sim,"start.in","lforcing"] && readParamNml[sim,"run.in","FORCE"]!=0.,
+      If[Length[#[[1]]]==1,#[[2,1]],#[[1,2]]]&@Import[FileNameJoin[{sim,"k.dat"}]],
+      "No forcing"
     ];
   
   Clear[ted];

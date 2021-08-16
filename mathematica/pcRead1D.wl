@@ -63,7 +63,7 @@ Begin["`Private`"]
 
 readTS[sim_,vars__]:=Module[{file,ts,head,pos},
   readTS::badform="`1`: Inconsistent number of columns in ts.";
-  readTS::novar="`1`: Variable `2` not found in ts; returning {1}.";
+  readTS::novar="`1`: Variable `2` not found in ts.";
   file=sim<>"/data/time_series.dat";
   ts=DeleteCases[Import[file],x_/;Length[x]==1];
   If[Not[Equal@@(Length/@ts)],
@@ -74,12 +74,12 @@ readTS[sim_,vars__]:=Module[{file,ts,head,pos},
   If[vars=="HEAD",Return[head]];
   If[Length[ts[[1]]]!=Length[head],
     Message[readTS::badform,sim];
-    Return["BadTsFormat"]
+    Return[$Failed]
   ];
   Table[
     If[(pos=Position[head,var])=={},
       Message[readTS::novar,sim,var];
-      ConstantArray[1,Length[ts]],
+      $Failed,
       (*else*)
       ts[[;;,pos[[1,1]]]]
     ],
