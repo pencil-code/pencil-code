@@ -32,6 +32,7 @@ The Pencil Code documentation
    :maxdepth: 2
 
    tutorials/python/tutpython
+   tutorials/mathematica/tutmathematica
 
 
 .. toctree::
