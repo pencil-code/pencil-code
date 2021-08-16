@@ -3882,7 +3882,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
       real :: rho_uu_ff,force_ampl,fsum_tmp,fsum
-      integer :: j
+      integer :: j,m,n
 !
       rho_uu_ff=0.
       do n=n1,n2
