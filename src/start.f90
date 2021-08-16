@@ -498,6 +498,10 @@ program start
     seed(1)=seed0
     if (ichannel1<2) call random_seed_wrapper(PUT=seed,CHANNEL=1)
     if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
+  elseif (lseed_procdependent) then
+    seed(1)=-((seed0-1812+1)*10+iproc_world)
+    if (ichannel1<2) call random_seed_wrapper(PUT=seed,CHANNEL=1)
+    if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
 !  Final update of ghost cells, after that 'f' must not be altered, anymore.

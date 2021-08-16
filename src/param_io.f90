@@ -84,7 +84,7 @@ module Param_IO
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, dvid, ldivu_perp, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
-      G_Newton, hbar, random_gen, seed0, lseed_global, nfilter, lserial_io, der2_type, &
+      G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
@@ -114,7 +114,8 @@ module Param_IO
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
       sigmaSB_set, c_light_set, k_B_set, m_u_set, &
-      lnoghost_strati, ichannel1, ichannel2, tag_foreign
+      lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
+      lfatal_num_vector_369
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

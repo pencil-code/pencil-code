@@ -222,6 +222,7 @@ module Cdata
   logical :: ldownsampl=.false., ldownsampling, lrepair_snap=.false.
   integer, dimension(2) :: ivar_omit=(/0,0/)
   logical :: lzaver_on_input=.false.
+  logical :: lfatal_num_vector_369=.true.
 !
 ! Debugging
 !
@@ -261,7 +262,7 @@ module Cdata
   integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
   integer, parameter :: ndustspec0=8
   real, dimension (2) :: fran1,fran2
-  logical :: lseed_global=.true.
+  logical :: lseed_global=.true., lseed_procdependent=.false.
 !
 !  Module flags.
 !
