@@ -379,6 +379,8 @@ module Energy
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
   integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$
+  integer :: idiag_gTT2mz=0     ! XYAVG_DOC: $\left< {\nabla T}^2 \right>_{xy}$
+  integer :: idiag_gss2mz=0     ! XYAVG_DOC: $\left< {\nabla s}^2 \right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -2985,7 +2987,8 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0) lpenc_diagnos(i_gTT)=.true.
+      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0 .or. idiag_gTT2mz/=0) &
+          lpenc_diagnos(i_gTT)=.true.
       if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_ursphTTmphi/=0) &
         lpenc_diagnos(i_evr)=.true.
       if (idiag_fconvthsphmphi/=0) lpenc_diagnos(i_evth)=.true.
@@ -3066,7 +3069,8 @@ module Energy
           idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0 .or. &
           idiag_gTxgsx2mxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. idiag_gTxgsz2mxy/=0) &
         lpenc_diagnos2d(i_gTT)=.true.
-      if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
+      if (idiag_gsrms/=0 .or. idiag_gTxgsrms/=0 .or. idiag_gss2mz/=0) &
+          lpenc_diagnos(i_gss)=.true.
       if (idiag_gsxmxy/=0 .or. idiag_gsymxy/=0 .or. idiag_gszmxy/=0 .or. &
           idiag_gTxgsxmz/=0 .or. idiag_gTxgsymz/=0 .or. idiag_gTxgszmz/=0 .or. &
           idiag_gTxgsx2mz/=0 .or. idiag_gTxgsy2mz/=0 .or. idiag_gTxgsz2mz/=0 .or. &
@@ -3562,14 +3566,14 @@ module Energy
     subroutine calc_1d_diagnostics_energy(f,p)
 !
       use Diagnostics
-      use Sub, only: cross
+      use Sub, only: cross, dot2
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gTxgs
-      real, dimension (nx) :: uzmask
+      real, dimension (nx) :: uzmask, gTT2
 !
 !  1-D averages.
 !
@@ -3602,6 +3606,14 @@ module Energy
         call phizsum_mn_name_r(p%ss,idiag_ssmr)
         call phizsum_mn_name_r(p%TT,idiag_TTmr)
         call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
+        if (idiag_gTT2mz/=0) then
+           call dot2(p%gTT,gTT2)
+           call xysum_mn_name_z(gTT2,idiag_gTT2mz)
+        endif
+        if (idiag_gss2mz/=0) then
+           call dot2(p%gss,gTT2) ! gTT2 now gss^2
+           call xysum_mn_name_z(gTT2,idiag_gss2mz)
+        endif
         if (lFenth_as_aux) &
             call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
         if (lss_flucz_as_aux) then
@@ -6823,7 +6835,7 @@ module Energy
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
         idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
-        idiag_fpreszmz=0
+        idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -6952,6 +6964,8 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsz2mz',idiag_gTxgsz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz',idiag_ethmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpreszmz',idiag_fpreszmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTT2mz',idiag_gTT2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gss2mz',idiag_gss2mz)
       enddo
 !
       do inamer=1,nnamer
