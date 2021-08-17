@@ -15,61 +15,75 @@ BeginPackage["pcDerivative`"]
 (*Usage messages*)
 
 
-der::usage="der[f,mx,my,mz,di,i,n] returns the nth derivative w.r.t. i of f.
+der::usage="der[f,mx,my,mz,ghi,di,i,n] returns the nth derivative w.r.t. i of f.
 Input:
   f:  1D List of length mx*my*mz. Must be sorted by coordiantes
+  ghi: number of ghost cells
   di:  grid spacing
   i:  1, 2, or 3 as x, y, or z derivative
 Output:
   \!\(\*SuperscriptBox[\(d\), \(n\)]\)f/\!\(\*SuperscriptBox[\(di\), \(n\)]\) as a mx*my*mz length List"
 
-der2::usage="der2[f,mx,my,mz,{di,dj},{i,j}] returns d^2f/didj.
+der2::usage="der2[f,mx,my,mz,{ghi,ghj},{di,dj},{i,j}] returns d^2f/didj.
 Input:
   f:  1D List of length mx*my*mz. Must be sorted by coordiantes
+  ghi,ghij: numbers of ghost cells
   di,dj:  grid spacing
   i,j:  1, 2, or 3 as x, y, or z derivative
 Output:
   d^2f/didj as a mx*my*mz length List"
 
-grad::usage="grad[f,mx,my,mz,dx,dy,dz] returns the gradient of f.
+grad::usage="grad[f,mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the gradient of f.
 Input:
   f:  1D List of length mx*my*mz. Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
   dx,dy,dz:  grid spacings
 Output:
   {df/dx,df/dy,df/dz}, each as an mx*my*mz length List"
 
-div::usage="div[{fx,fy,fz},mx,my,mz,dx,dy,dz] returns the divergence of f.
+div::usage="div[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the divergence of f.
 Input:
   fx,fy,fz: three components of f, each as a 1D List of length mx*my*mz.
              Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
   dx,dy,dz:  grid spacings
 Output:
   div(f), as an mx*my*mz length List"
 
-curl::usage="curl[{fx,fy,fz},mx,my,mz,dx,dy,dz] returns the curl of f.
+curl::usage="curl[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the curl of f.
 Input:
   fx,fy,fz: three components of f, each as a 1D List of length mx*my*mz.
              Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
   dx,dy,dz:  grid spacings
 Output:
   curl(f), as three mx*my*mz length Lists"
 
-curl2::usage="curl2[{fx,fy,fz},mx,my,mz,dx,dy,dz] returns the curl of curl of f.
+curl2::usage="curl2[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the curl of curl of f.
 Input:
    fx,fy,fz: three components of f, each as a 1D List of length mx*my*mz.
              Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
   dx,dy,dz:  grid spacings
 Output:
   curl(curl(f)), as three mx*my*mz length Lists"
 
-laplacian::usage="laplacian[f,mx,my,mz,dx,dy,dz] returns the laplacian of f.
+laplacian::usage="laplacian[f,mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the laplacian of f.
 Input:
   f:  1D List of length mx*my*mz. Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
   dx,dy,dz:  grid spacings
 Output:
   laplacian(f), as three mx*my*mz length Lists"
 
-gradDiv;
+gradDiv::usage="gradDiv[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns grad(div f).
+Input:
+  fx,fy,fz: three components of f, each as a 1D List of length mx*my*mz.
+             Must be sorted by coordiantes
+  ghx,ghy,ghz: numbers of ghost cells
+  dx,dy,dz:  grid spacings
+Output:
+  grad(div f), as three mx*my*mz length Lists"
 
 
 Begin["`Private`"]

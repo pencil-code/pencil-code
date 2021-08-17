@@ -73,7 +73,7 @@ For example,
 
   {t,urms} = readTS[sim,"t","urms"]
 
-Make sure that ``Length`` of the left side is equal to the number of ``var``s; otherwise Mathematica will complain.
+Make sure that ``Length`` of the left side is equal to the number of ``var``; otherwise Mathematica will complain.
 
 To plot the data, you can say
 

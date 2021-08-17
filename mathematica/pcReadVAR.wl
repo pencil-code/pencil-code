@@ -19,9 +19,14 @@ readVARN::usage="readVARN[sim,iVAR,addons,\"ltrim\"->True] reads the iVARth VARN
 from all processors.
 Input:
   sim: String. Directory of the run
-  iVAR: index of the VARN file, starting from 0
-  addons: List. Optional. Specifies variables need to be computed; e.g., {\"oo\",\"bb\"}
-  \"ltrim\": Options. Default value =True. If =True then trim ghost zones.
+  iVAR: Integer. Index of the VARN file, starting from 0
+  addons: List. Optional. Specifies magical variables need to be computed; e.g., {\"oo\",\"bb\"}.
+          Magical variables in the result are assigned with long names, e.g., \"ooo1\" and \"bbb1\"
+            to avoid shadowing the written auxiliaries.
+  \"ltrim\": Option. Default value ->False.
+             If ->True then trim ghost zones.
+             If ->\"More\" then trim again nghost number of cells at the boundaries; i.e., 2*nghost cells are
+               removed at each boundary
 Output:
   An Association. Use readVARN[sim,iVAR]//Keys to extract its keys"
 
@@ -164,22 +169,20 @@ readVARNRaw[sim_,iVAR_]:=With[{
   Table[var->Flatten[data[#][var]&/@Range[0,nproc-1]],{var,allvars}]//Association
 ]]
 
-Options[readVARN]={"ltrim"->True}
+Options[readVARN]={"ltrim"->False}
 readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
   vars=varName[sim]//Keys,
   raw=readVARNRaw[sim,iVAR],
   ltrim=OptionValue["ltrim"]
   },
   Module[{grid,values,merge,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
-    readVARN::derivWOPeri="Warning: ghost zone values are incorrect when lperi!={T,T,T}";
+    readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
     PrintTemporary["Combining files..."];
     
     grid=Transpose[raw/@{"x","y","z"}];
     values=raw/@vars;
     oo=bb=jj={{},{},{}};
     
-    (*tmp=Transpose@SortBy[Transpose[{grid,Sequence@@values}]//DeleteDuplicates,First];*)
-    (*tmp={grid,Sequence@@values}//Transpose//Union//Transpose;*)
     merge[{l__List}]/;Length[{l}]>=2:=Flatten[MaximalBy[#,Abs,1]&/@Transpose[{l}],1];
     merge[{l_List}]/;Length[{l}]==1:=l;
     tmp=Transpose[merge/@GatherBy[{grid,Sequence@@values}//Transpose//Union,First]];
@@ -198,14 +201,14 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
       jj=curl2[values[[varName[sim]/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]
     ];
     
-    If[ltrim,
-      trim[f_]:=If[f=={},{},
-        ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten
-      ];
-      {grid,values,oo,bb,jj}=Map[trim,{grid,values,oo,bb,jj},{2}],
-      (*else*)
-      Message[readVARN::derivWOPeri]
+    trim[{}]={};
+    trim[f_]:=Switch[ltrim,
+      False,f,
+      True,ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
+      "More",ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
     ];
+    If[ltrim==False,Message[readVARN::ghvalues]];
+    {grid,values,oo,bb,jj}=Map[trim,{grid,values,oo,bb,jj},{2}];
       
     Join[
       Thread[{"t","dx","dy","dz","deltay"}->
@@ -214,7 +217,7 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
         readDim[sim]/@If[ltrim,{"nx","ny","nz"},{"mx","my","mz"}]],
       Thread[{"x","y","z"}->grid],
       Thread[vars->values],
-      (*long name to avoid shadowing the written auxillaries*)
+      (*long name to avoid shadowing the written auxiliaries*)
       Thread[{"ooo1","ooo2","ooo3"}->oo],
       Thread[{"bbb1","bbb2","bbb3"}->bb],
       Thread[{"jjj1","jjj2","jjj3"}->jj]
