@@ -12,6 +12,7 @@
   public :: heatflux_deriv_x
   public :: set_ghosts_for_onesided_ders
   public :: bval_from_neumann, bval_from_3rd, bval_from_4th
+  public :: calc_coeffs_1
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT

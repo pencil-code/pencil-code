@@ -2572,40 +2572,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine get_grid_mn
 !***********************************************************************
-    subroutine calc_coeffs_1( grid, coeffs )
-!
-!  Calculates the coefficients of the 6th order difference formula for the first
-!  derivative on a 7-point stencil.
-!  The grid is provided in form of the stepsizes in grid.
-!
-!  26-mar-15/MR: extracted from deriv_alt.
-!
-      real, dimension(-2:3), intent(in ) :: grid
-      real, dimension(-3:3), intent(out) :: coeffs
-
-      real :: h1, h2, h3, hm1, hm2, hm3, h12, h23, h123, hm12, hm23, hm123, &
-              h1m1, h1m12, h1m123, h12m1, h123m1, h12m12, h123m12, h12m123, h123m123
-
-      h1    = grid(1);    h2     = grid(2);     h3      = grid(3)
-      hm1   = grid(0);    hm2    = grid(-1);    hm3     = grid(-2)
-      h12   = h1 + h2;    h23    = h2+h3;       h123    = h12+h3
-      hm12  = hm1 + hm2;  hm23   = hm2+hm3;     hm123   = hm12+hm3
-      h1m1  = h1 + hm1;   h1m12  = h1+hm12;     h1m123  = h1 + hm123
-      h12m1 = h12 + hm1;  h12m12 = h12 + hm12;  h12m123 = h12 + hm123
-      h123m1= h123 + hm1; h123m12= h123 + hm12; h123m123= h123 + hm123
-
-      coeffs = (/-h1*h12*h123*hm1*hm12/(hm3*hm123*hm23*h1m123*h12m123*h123m123),&
-                  h1*h12*h123*hm1*hm123/(hm2*hm3*hm12*h1m12*h12m12*h123m12),    &
-                 -h1*h12*h123*hm12*hm123/(hm1*hm2*hm23*h1m1*h12m1*h123m1),      &
-                  0.,                                                           &
-                  h12*h123*hm1*hm12*hm123/(h1*h2*h23*h1m1*h1m12*h1m123),        &
-                 -h1*h123*hm1*hm12*hm123/(h2*h3*h12*h12m1*h12m12*h12m123),      &
-                  h1*h12*hm1*hm12*hm123/(h3*h123*h23*h123m1*h123m12*h123m123)    /)
-  
-      coeffs(0) = sum(coeffs)
-
-  endsubroutine calc_coeffs_1
-!***********************************************************************
     subroutine calc_bound_coeffs(coors,coeffs)
 !
 !  Calculates the coefficients of the 6th order difference formula for the first
@@ -2614,12 +2580,14 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  26-mar-15/MR: extracted from deriv_alt.
 !
+  use Deriv, only: calc_coeffs_1
+!
       real, dimension(:),                intent(IN ) :: coors
       real, dimension(-nghost:nghost,2), intent(OUT) :: coeffs
-
+!
       real, dimension(-nghost+1:nghost) :: dc
       integer                           :: sc
-
+!
       sc=size(coors)
 
       dc( 1:nghost)  = coors(nghost+2:2*nghost+1)-coors(nghost+1:2*nghost)
