@@ -172,7 +172,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Can only unshear coordinate frame if variables have been trimmed.
 ;
   if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
-    message, '/unshear only works with /trimall', /info
+    message, 'WARNING: /unshear only works with /trimall', /info
     trimall=1
   endif
 ;
@@ -331,9 +331,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read all variables from file, which are required.
 ;
     iyy=0
-    if size(object,/type) ne 0 then undefine, object
+    if is_defined(object) then undefine, object
 
-    t = pc_read ('time', file=varfile, datadir=datadir)
+    t = pc_read ('time', file=varfile, datadir=datadir, single=single)
 
     for pos = 0, n_elements (varcontent.idlvar)-1 do begin
       quantity = varcontent[pos].idlvar
@@ -357,8 +357,8 @@ COMPILE_OPT IDL2,HIDDEN
     
     if (not arg_present(object)) then begin
       message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags), /info
-      return
-    end
+      stop
+    endif
 
     if keyword_set(trimall) then begin
       object = create_struct('t', t, 'x', grid.x[dim.l1:dim.l2], 'y', grid.y[dim.m1:dim.m2], 'z', grid.z[dim.n1:dim.n2], 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz)
@@ -799,10 +799,10 @@ incomplete:
       free_lun,file
     endif
   endfor
-
   if yinyang then ia=nprocs
 
   endfor
+  iyy=0
 ;
 ; Tidy memory a little.
 ;
@@ -834,6 +834,7 @@ incomplete:
 ;
   if (validate_variables) then begin
     iyy=0
+    success=0
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
       if ( tags[iv] eq variables[iv] ) then begin
@@ -841,17 +842,20 @@ incomplete:
         res=0
       endif else $
         res=execute(tags[iv]+'='+variables[iv])
-      if (not res) then begin
+      if (res) then $
+        success=1 $
+      else begin
         if (not keyword_set(quiet)) then $
             print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
         skipvariable[iv]=1
-      endif
+      endelse
     endfor
-    if (min(skipvariable) ne 0) then return
+    if (min(skipvariable) ne 0) then message, 'ERROR: no valid variables found!'
     if (max(skipvariable) eq 1) then begin
       variables=variables[where(skipvariable eq 0)]
       tags=tags[where(skipvariable eq 0)]
     endif
+    magic = magic and success
   endif
 ;
 ; Save changes to the variables array (but don't include the effect of /TRIMALL).
@@ -1008,11 +1012,24 @@ incomplete:
     mergevars=arraytostring(variables+'_merge')
   endif
 ;
+; Calculate magic variables if this has not been done yet.
+;
+  if magic then begin
+    if validate_variables then $
+      variables=tags $
+    else if not validate_variables and (not arg_present(object) or keyword_set(trimall) ) then begin
+
+      for iv=0,n_elements(variables)-1 do begin
+        if ( tags[iv] ne variables[iv] ) then res=execute(tags[iv]+'='+variables[iv])
+      endfor
+      variables=tags
+    endif
+  endif
+;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then begin
-    if execute(strjoin('pc_noghost_pro,'+tags+',dim=dim',' & ')) ne 1 then $
-      message, 'ERROR trimming variables'
+  if (keyword_set(trimall) and (magic or not arg_present(object))) then begin
+    if execute(strjoin('pc_noghost_pro,'+tags+',dim=dim',' & ')) ne 1 then message, 'ERROR trimming variables'
   endif
 ;
 ; Transform to unsheared frame if requested.
@@ -1020,23 +1037,27 @@ incomplete:
   if (keyword_set(unshear)) then variables = 'pc_unshear('+tags+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
   if not arg_present(object) then begin
+
     if (keyword_set(trimxyz)) then begin
-      xyzstring=(((xyzstring.Replace[',',' & ']).Replace['x','x=x']).Replace['y','y=y']).Replace['z','z=z']
+      xyzstring=(((xyzstring.Replace(',',' & ')).Replace('x','x=x')).Replace('y','y=y')).Replace('z','z=z')
       res=execute(xyzstring)
     endif
-    message, 'WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.', /info
-    stop 
+    message, 'WARNING: No object named; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.' , /info
+    stop
+
   endif else begin
+
+    if (not magic and keyword_set(trimall)) then variables='pc_noghost('+variables+', dim=dim)'
     makeobject += arraytostring(variables)
     if yinyang then makeobject += mergevars
     makeobject += ")"      
 ;
 ; Execute command to make the structure.
 ;
-tags=variables ;!!!
     if (execute(makeobject) ne 1) then begin
-      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.'
+      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.', /info
       undefine, object
+      stop
     endif
 ;
 ; If requested print a summary (actually the default - unless being quiet).
