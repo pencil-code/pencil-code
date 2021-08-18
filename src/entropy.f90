@@ -320,6 +320,8 @@ module Energy
   integer :: idiag_Kkramersm=0  ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
   integer :: idiag_chikrammin=0 ! DIAG_DOC: $\min (\chi_{\rm kramers})$
   integer :: idiag_chikrammax=0 ! DIAG_DOC: $\max (\chi_{\rm kramers})$
+  integer :: idiag_TT2m=0       ! DIAG_DOC: $\left<(T)^2\right>$
+                                ! DIAG_DOC:   \quad(mean squared temperature)
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -2987,8 +2989,10 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0 .or. idiag_gTT2mz/=0) &
+      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0 .or. idiag_gTT2mz/=0 .or.  &
+          idiag_TT2m/=0) then
           lpenc_diagnos(i_gTT)=.true.
+      endif
       if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_ursphTTmphi/=0) &
         lpenc_diagnos(i_evr)=.true.
       if (idiag_fconvthsphmphi/=0) lpenc_diagnos(i_evth)=.true.
@@ -3505,6 +3509,7 @@ module Energy
             enddo
             call sum_mn_name(ufpres,idiag_ufpresm)
         endif
+        if (idiag_TT2m/=0) call sum_mn_name(p%TT**2,idiag_TT2m)
 !
 !  Analysis for the baroclinic term.
 !
@@ -6835,7 +6840,7 @@ module Energy
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
         idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
-        idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0
+        idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0; idiag_TT2m=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -6881,6 +6886,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
         call parse_name(iname,cname(iname),cform(iname),'chikrammin',idiag_chikrammin)
         call parse_name(iname,cname(iname),cform(iname),'chikrammax',idiag_chikrammax)
+        call parse_name(iname,cname(iname),cform(iname),'TT2m',idiag_TT2m)
       enddo
 !
       if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
