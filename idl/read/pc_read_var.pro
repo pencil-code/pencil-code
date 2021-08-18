@@ -1024,7 +1024,8 @@ incomplete:
       xyzstring=(((xyzstring.Replace[',',' & ']).Replace['x','x=x']).Replace['y','y=y']).Replace['z','z=z']
       res=execute(xyzstring)
     endif
-    message, 'WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.' 
+    message, 'WARNING: No object named; data will not be returned, but are available locally as x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.', /info
+    stop 
   endif else begin
     makeobject += arraytostring(variables)
     if yinyang then makeobject += mergevars
