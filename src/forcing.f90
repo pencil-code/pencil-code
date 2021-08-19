@@ -592,6 +592,14 @@ module Forcing
         profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
         profz_hel=1.
 !
+!  cosx modulation
+!
+      elseif (iforce_profile=='cosx2') then
+        profx_ampl=cos(kx_ff*x(l1:l2))**2
+        profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.; profz_hel=1.
+!
 !  turn off forcing intensity above x=x0, and
 !  cosy profile of helicity
 !
@@ -3516,7 +3524,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                 endif
               enddo
             else
-              f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+!
+!  add possibility of modulation
+!
+              !f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+              f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
             endif
 !
 !  test
