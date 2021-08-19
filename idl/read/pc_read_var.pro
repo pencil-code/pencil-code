@@ -169,13 +169,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (varfile eq 'dvar.dat') then noaux=1
 ;
-; Can only unshear coordinate frame if variables have been trimmed.
-;
-  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
-    message, 'WARNING: /unshear only works with /trimall', /info
-    trimall=1
-  endif
-;
 ; Downsampled snapshot?
 ;
   ldownsampled=strmid(varfile,0,4) eq 'VARd'
@@ -1012,12 +1005,12 @@ incomplete:
     mergevars=arraytostring(variables+'_merge')
   endif
 ;
-; Calculate magic variables if this has not been done yet.
+; Calculate magic variables if this has not been done yet and is needed before object creation.
 ;
   if magic then begin
     if validate_variables then $
       variables=tags $
-    else if not validate_variables and (not arg_present(object) or keyword_set(trimall) ) then begin
+    else if not validate_variables and (not arg_present(object) or keyword_set(trimall) or keyword_set(unshear)) then begin
 
       for iv=0,n_elements(variables)-1 do begin
         if ( tags[iv] ne variables[iv] ) then res=execute(tags[iv]+'='+variables[iv])
@@ -1030,11 +1023,14 @@ incomplete:
 ;
   if (keyword_set(trimall) and (magic or not arg_present(object))) then begin
     if execute(strjoin('pc_noghost_pro,'+tags+',dim=dim',' & ')) ne 1 then message, 'ERROR trimming variables'
-  endif
+    xtrimstr='[dim.l1:dim.l2]'
+  endif else $
+    xtrimstr=''
 ;
 ; Transform to unsheared frame if requested.
 ;
-  if (keyword_set(unshear)) then variables = 'pc_unshear('+tags+',param=param,xax=x[dim.l1:dim.l2],t=t)'
+  if (param.lshear and keyword_set(unshear)) then $
+    variables = 'pc_unshear('+tags+',param=param,xax=x'+xtrimstr+',t=t)'
 ;
   if not arg_present(object) then begin
 
