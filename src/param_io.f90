@@ -121,6 +121,7 @@ module Param_IO
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1start, it1d, it_rmv, dt, cdt, ddt, &
+      lfractional_tstep_advance, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
