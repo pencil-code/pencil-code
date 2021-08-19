@@ -29,26 +29,20 @@ function pc_unshear, a, deltay=deltay, xax=xax, x0=x0, Lx=Lx, Ly=Ly, $
 ;
 default, x0, 0.0d
 default, interpolation_type, 'fourier'
+default, datadir, 'data'
 ;
 ; If deltay is not provided, the program can read the relevant information
-; from param.
+; from param.nml.
 ;
-if (not keyword_set(deltay)) then begin
-  if (not keyword_set(param)) then begin
-    if (keyword_set(datadir)) then begin
-      pc_read_param, obj=param, datadir=datadir, /quiet
-    endif else begin
-      print, 'pc_unshear: must provide either param or datadir or {deltay,xax,Lx,Ly}'
-      return, a
-    endelse
-  endif
-  if (not keyword_set(t)) then begin
+if (not is_defined(deltay) or not keyword_set(Lx) or not keyword_set(Ly) ) then begin
+  if (not keyword_set(param)) then pc_read_param, obj=param, datadir=datadir, /quiet
+  if (not is_defined(t) and not is_defined(deltay)) then begin
     print, 'pc_unshear: must provide t when deltay is not provided'
     return, a
   endif
-  Lx=param.Lxyz[0]
-  Ly=param.Lxyz[1]
-  deltay=-param.Sshear*Lx*t
+  if not keyword_set(Lx) then Lx=param.Lxyz[0]
+  if not keyword_set(Ly) then Ly=param.Lxyz[1]
+  if not is_defined(deltay) then deltay=-param.Sshear*Lx*t
 endif
 ;
 ; xax must always be provided.
