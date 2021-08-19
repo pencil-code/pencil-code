@@ -24,7 +24,8 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
-! PENCILS PROVIDED lorentz_gamma; ss_relativistic2; ss_relativistic(3)
+! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
+! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor
 !***************************************************************
 !
 module Hydro
@@ -2558,6 +2559,16 @@ module Hydro
         lpenc_requested(i_phiy)=.true.
       endif
 !
+!  request rho1 if relativistic
+!
+      if (lrelativistic) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_ss_rel)=.true.
+        lpenc_requested(i_ss_rel2)=.true.
+        lpenc_requested(i_ss_rel_ij)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
 !  video pencils
 !
       if (lwrite_slices) then
@@ -2856,7 +2867,7 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
+      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, sqrt_ss_term
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
@@ -2864,23 +2875,45 @@ module Hydro
 !
       intent(in) :: lpenc_loc
       intent(out):: p
-
-! uu
+!
+! uu, is either directly p%uu=f(l1:l2,m,n,iux:iuz), or, if lrelativistic
+! p%ss_rel=f(l1:l2,m,n,iux:iuz), and we compute p%lorentz_gamma and
+! p%lorentz_gamma2, so uu = ss_rel_factor * ss_rel
+! from Eq.(11) of Brandenburg, Enqvist, & Olesen (1996).
+!
       if (lpenc_loc(i_uu)) then
         if (lrelativistic) then
-          p%ss_relativistic=f(l1:l2,m,n,iux:iuz)
-          call dot2_mn(p%ss_relativistic,p%ss_relativistic2)
-          p%lorentz_gamma=0.
-          p%uu=f(l1:l2,m,n,iux:iuz)
+          p%ss_rel=f(l1:l2,m,n,iux:iuz)
+          call dot2_mn(p%ss_rel,p%ss_rel2)
+          sqrt_ss_term=sqrt(1.+2.25*p%ss_rel2*p%rho1**2)
+          p%lorentz_gamma2=.5*(1.+sqrt_ss_term)
+          p%ss_rel_factor=.75*p%rho1/p%lorentz_gamma2
+          call multsv_mn(p%ss_rel_factor,p%ss_rel,p%uu)
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif
       endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
-! uij
+!
+! uij = u_i,j = ss_rel_factor * ss_rel_i,j + ss_rel_factor_{,j} * ss_rel_i
+! 
       if (lpenc_loc(i_uij)) then
-        call gij(f,iuu,p%uij,1)
+        if (lrelativistic) then
+          if (.not.lpenc_loc(i_uu)) &
+            call fatal_error('calc_pencils_hydro_nonlinear','need lpenc_loc(i_uu)')
+          call gij(f,iuu,p%ss_rel_ij,1)
+          call multsv_mn(p%ss_rel_factor,p%ss_rel_ij,p%uij)
+!
+!  add ss_rel_factor_{,j} = ss_rel_factor*(-lnrho_{,j}-lngam_{,j}) * ss_rel_i
+!
+          call multmv_transp(p%ss_rel_ij,p%ss_rel,tmp3)
+          call multsv_add(2.*tmp3,-p%ss_rel2,p%glnrho,tmp3)
+          call multsv_mn(.5/sqrt_ss_term*(9./16.)*p%rho1**2/p%lorentz_gamma2,tmp3,tmp3)
+          call multvv_smat_add(p%ss_rel_factor,-p%glnrho-tmp3,p%ss_rel,p%uij)
+        else
+          call gij(f,iuu,p%uij,1)
+        endif
 !
 !  if gradu is to be stored as auxiliary then we store it now
 !
@@ -2896,7 +2929,9 @@ module Hydro
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
 ! divu
-      if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      if (lpenc_loc(i_divu)) then
+        call div_mn(p%uij,p%divu,p%uu)
+      endif
 ! sij
       if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2

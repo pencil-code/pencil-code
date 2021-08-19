@@ -66,7 +66,7 @@ module Sub
   public :: cross, cross_mn, cross_mixed
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn, multsv_mn_add
-  public :: multvs, multvv_mat
+  public :: multvs, multvv_mat, multvv_smat, multvv_smat_add
   public :: multmm_sc
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp
@@ -186,6 +186,14 @@ module Sub
 !
   interface multvv_mat
     module procedure multvv_mat_mn
+  endinterface
+!
+  interface multvv_smat
+    module procedure multvv_smat_mn
+  endinterface
+!
+  interface multvv_smat_add
+    module procedure multvv_smat_add_mn
   endinterface
 !
   interface multmm_sc
@@ -1037,6 +1045,40 @@ module Sub
 !
     endsubroutine multvv_mat_mn
 !***********************************************************************
+    subroutine multvv_smat_mn(s,a,b,c)
+!
+!  Vector multiplied with vector, gives matrix, and scaled by s
+!
+!   16-aug-21/axel: adapted from pencil_mat_mn
+!
+      real, dimension (nx) :: s
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx,3,3) :: c
+      integer :: i,j
+!
+      do i=1,3; do j=1,3
+        c(:,i,j)=s*a(:,j)*b(:,i)
+      enddo; enddo
+!
+    endsubroutine multvv_smat_mn
+!***********************************************************************
+    subroutine multvv_smat_add_mn(s,a,b,c)
+!
+!  Vector multiplied with vector, gives matrix, and scaled by s
+!
+!   16-aug-21/axel: adapted from pencil_mat_mn
+!
+      real, dimension (nx) :: s
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx,3,3) :: c
+      integer :: i,j
+!
+      do i=1,3; do j=1,3
+        c(:,i,j)=c(:,i,j)+s*a(:,j)*b(:,i)
+      enddo; enddo
+!
+    endsubroutine multvv_smat_add_mn
+!***********************************************************************
     subroutine multmm_sc_mn(a,b,c)
 !
 !  Matrix multiplied with matrix, gives scalar.
@@ -1210,6 +1252,7 @@ module Sub
     subroutine multsv_mn_add(a,b,c)
 !
 !  Vector multiplied with scalar, gives vector.
+!  Unfortunately, this has almost the same name as the next one: multsv_add_mn
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)

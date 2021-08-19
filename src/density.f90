@@ -328,11 +328,13 @@ module Density
       if (lhydro) then
         call get_shared_variable('lrelativistic', &
             lrelativistic, caller='register_density')
-        if (lrelativistic) then
+        if (lrelativistic.and.lrelativistic_eos) then
           if (lroot) then
+            print*
             print*,'W A R N I N G:  lrelativistic_eos=T'
             print*,'does not make sense because lrelativistic=T'
             print*,'reset lrelativistic_eos=.false. and continue'
+            print*
           endif
           lrelativistic_eos=.false.
         endif
@@ -2453,7 +2455,7 @@ module Density
               density_rhs=fourthird*density_rhs
               if (lrelativistic) call fatal_error('dlnrho_dt','lrelativistic_eos must be false')
             elseif (lhydro.and.lrelativistic) then
-              print*,'AXEL-density: ',lrelativistic
+              !print*,'AXEL-density: ',lrelativistic
             endif
           endif
         else
