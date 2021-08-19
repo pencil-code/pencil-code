@@ -128,7 +128,7 @@ readAves[sim_,plane_,varNames__]:=
       If[error,Return[{0,0}]];
       
       index=Flatten@Map[Position[varList,#]&,Flatten@{varNames}];
-      {t,vars}=readSpec[sim,plane<>"averages.dat"];
+      {t,vars}=read1D[sim,plane<>"averages.dat"];
       vars=Transpose@Map[Partition[#,Length[#]/Length[varList]]&,vars];
       Join[{t},vars[[index]]]
     ]
