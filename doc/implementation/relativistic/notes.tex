@@ -17,20 +17,45 @@
 \begin{document}
 %\maketitle
 
+\begin{equation}
+\uu={3/4\over\rho\gamma^2}\SSS
+\end{equation}
+
+\section{$u_{i,j}$}
+
+\begin{equation}
+u_{i,j}={3/4\over\rho\gamma^2}\,S_{i,j}+\left({3/4\over\rho\gamma^2}\right)_{,j} S_i
+\end{equation}
+
+\section{$\left({3/4\over\rho\gamma^2}\right)_{,j}$}
+
+\begin{equation}
+\left({3/4\over\rho\gamma^2}\right)_{,j}
+=\left({3/4\over\rho\gamma^2}\right) \left(-\nabla_j\ln\rho-\nabla_j\ln\gamma^2\right)
+\end{equation}
+
 \section{$\nab\ln\gamma^2$}
 
 Eq.(11) of BEO96:
 \begin{equation}
 \gamma^2=\half+\sqrt{\quarter+{\textstyle{9\over16}}\,{\SSS^2\over\rho^2}}
 \end{equation}
+Take gradient:
 \begin{equation}
 \nab\gamma^2={1\over2\sqrt{\quarter+{\textstyle{9\over16}}\,{\SSS^2\over\rho^2}}}{\textstyle{9\over16}}\,
 \left({\nab\SSS^2\over\rho^2}-{\SSS^2\over\rho^2}\nab\ln\rho\right)
 \end{equation}
+where
 \begin{equation}
 (\nab\SSS^2)_i=2S_j S_{j,i}
 \end{equation}
-
+Write as
+\begin{equation}
+\nab\gamma^2={1\over2\sqrt{\quarter+{\textstyle{9\over16}}\,{\SSS^2\over\rho^2}}}
+{9/16\over\rho^2}\,
+\left(\nab\SSS^2-\SSS^2\nab\ln\rho\right)
+\end{equation}
+so $\nab\ln\gamma^2=\gamma^{-2}\nab\gamma^2$.
 
 %Use $(r,\phi,z)$ coordinates and
 
