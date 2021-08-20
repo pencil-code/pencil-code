@@ -63,9 +63,9 @@ pcReload[]:=Module[{},
   
   Clear[eta];
   eta[sim_]:=eta[sim]=
-    If[ToString@readParamNml[sim,"start.in","lmagnetic"]==="F",
-      "No magnetic",
-      readParamNml[sim,"run.in","ETA"]
+    If[readParamNml[sim,"start.in","lmagnetic"],
+      readParamNml[sim,"run.in","ETA"],
+      "No magnetic"
     ];
   
   Clear[PrM];
@@ -129,15 +129,15 @@ getParam[sim_,"Ro",k2_]:=If[omega[sim]==0,"No rotation",k2*urms[sim]/2/omega[sim
 getParam[sim_,"Co"]:=If[omega[sim]==0,0,1/getParam[sim,"Ro"]]
 getParam[sim_,"Co",k2_]:=If[omega[sim]=0,0,1/getParam[sim,"Ro",k2]]
 getParam[sim_,"Sh"]:=
-  If[ToString@readParamNml[sim,"start.in","lshear"]==="F",
-    0,
-    readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/kf[sim]
+  If[readParamNml[sim,"start.in","lshear"],
+    readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/kf[sim],
+    0
   ]
 getParam[sim_,"-Sh"]:=-getParam[sim,"Sh"]
 getParam[sim_,"Sh",k2_]:=
-  If[ToString@readParamNml[sim,"start.in","lshear"]==="F",
-    0,
-    readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/k2
+  If[readParamNml[sim,"start.in","lshear"],
+    readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/k2,
+    0
   ]
 getParam[sim_,"-Sh",k2_]:=-getParam[sim,"Sh",k2]
 

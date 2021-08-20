@@ -96,7 +96,7 @@ varName[sim_]:=Rule@@@Reverse/@Import[sim<>"/data/varname.dat"]//Association
 
 
 readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value},
-  readParamNml::noentry="Entry `1` not found. Returning $Failed.";
+  readParamNml::noentry="Entry `1` not found for `2`.";
   
   (*import nml file; one line normally goes to one List; if one line becomes a String, break it*)
   breakTwoInOne[nml_]:=Replace[Import[sim<>"/data/"<>nml],x_String:>StringSplit[x,","],{1}];
@@ -111,7 +111,7 @@ readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value
     ],_?(StringMatchQ[#,param<>"=*"]&)
   ];
   
-  If[value=={},Message[readParamNml::noentry,param];Return[$Failed]];
+  If[value=={},Message[readParamNml::noentry,param,sim];Return[$Failed]];
   value=StringReplace[First[value],x__~~",":>x];
   If[StringContainsQ[value,","],Return[
       StringSplit[StringDrop[value,StringLength[param]+1],","]
