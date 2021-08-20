@@ -4,14 +4,22 @@
 ;  Same as pc_varcontent, but for global variables.
 ;
 FUNCTION pc_varcontent_global, datadir=datadir, dim=dim, $
-    run2D=run2D, param=param, quiet=quiet, scalar=scalar
+    run2D=run2D, param=param, quiet=quiet, scalar=scalar, single=single
 COMPILE_OPT IDL2,HIDDEN
+
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;
+;  Set pc_precision.
+;
+if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
+
+default, single, 0
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
 if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,datadir=datadir,quiet=quiet
 if (n_elements(param) eq 0) then pc_read_param,obj=param,datadir=datadir, $
-    dim=dim,quiet=quiet
+    dim=dim,quiet=quiet, single=single
 datadir = pc_get_datadir(datadir)
 ; 
 ;  Read the positions of variables in f.
@@ -29,10 +37,12 @@ endfor
 ;  Make an array of structures in which to store their descriptions.
 ;  Index zero is kept as a dummy entry.
 ;
+one_loc = (single ? 1. : one)
+
 varcontent=replicate({varcontent_all, $
     variable:'UNKNOWN', $
     idlvar:'dummy', $
-    idlinit:'fltarr(mx,my,mz)*one', $
+    idlinit:'fltarr(mx,my,mz)*one_loc', $
     idlvarloc:'dummy_loc', $
     idlinitloc:'fltarr(mxloc,myloc,mzloc)*one', $
     skip:0}, dim.mglobal+1)
@@ -47,30 +57,30 @@ if (keyword_set(run2D)) then begin
 ;  
   if (dim.nx eq 1) then begin
 ;  2-D run in (y,z) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
     INIT_3VECTOR_LOC = 'fltarr(myloc,mzloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
     INIT_SCALAR_LOC  = 'fltarr(myloc,mzloc)*one'
   endif else if (dim.ny eq 1) then begin
 ;  2-D run in (x,z) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
     INIT_3VECTOR_LOC = 'fltarr(mxloc,mzloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
     INIT_SCALAR_LOC  = 'fltarr(mxloc,mzloc)*one'
   endif else begin
 ;  2-D run in (x,y) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
     INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
     INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc)*one'
   endelse
 endif else begin
 ;
 ;  Regular 3-D run.
 ;
-  INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+  INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
   INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
-  INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+  INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
   INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
 endelse
 ;
@@ -252,7 +262,7 @@ endif
 ;
 ;  Remove empty entry at position 0:
 ;
-varcontent=varcontent[1:*]
+if (n_elements(varcontent) gt 1) then varcontent=varcontent[1:*] else varcontent=0 
 ;
 return, varcontent
 ;
