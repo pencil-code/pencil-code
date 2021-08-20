@@ -386,8 +386,37 @@ ifeq ($(OPACITY),noopacity)
 else
   OPACITY_SRC = $(OPACITY).f
 endif
-ifeq ($(MPICOMM),nompicomm)
+#
+# Check number of cpus.
+#
+ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
+#
+ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm mpicomm_double))
+#
+  dummy := $(shell scripts/nprocs)
+  include nprocs.inc
+  ifneq ($(and $(ncpus), $(nprocx), $(nprocy), $(nprocz)),)
+    nprocs := $(shell echo $$(( $(nprocx) * $(nprocy) * $(nprocz))))
+    ifneq ($(strip $(ncpus)),$(strip $(nprocs)))
+nproc_message:
+	@echo ";;; Cannot build: "
+	@echo ";;;    ncpus unequal nprocx*nprocy*nprocz"
+	@rm -f nprocs.inc
+	exit 1
+
+    endif
+  endif
+else
   YINYANG = noyinyang
+  ifneq ($(ncpus),) 
+    ifneq ($(ncpus),1) 
+mpicomm_message:
+	@echo ";;; Cannot build:"
+	@echo ";;;    ncpus > 1, but MPICOMM = nompicomm"
+	exit 1
+
+    endif
+  endif
 endif
 ifeq ($(YINYANG),yinyang)
   YINYANG_MPI = yinyang_mpi
@@ -3113,3 +3142,4 @@ include Makefile.library
 include Makefile.depend
 
 # DO NOT DELETE
+
