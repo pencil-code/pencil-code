@@ -52,7 +52,7 @@ pro pc_read_var_raw,                                                      $
     start_param=start_param, run_param=run_param, varcontent=varcontent,  $
     time=time, dim=dim, grid=grid, proc=proc, allprocs=allprocs,          $
     var_list=var_list, trimall=trimall, quiet=quiet,                      $
-    swap_endian=swap_endian, f77=f77, reduced=reduced
+    swap_endian=swap_endian, f77=f77, reduced=reduced, single=single
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -69,11 +69,17 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, swap_endian, 0
   default, reduced, 0
+  default, single, 0
+;
   if (keyword_set (reduced)) then allprocs = 1
 ;
 ; Default data directory.
 ;
   datadir = pc_get_datadir(datadir)
+;
+;  Set pc_precision.
+;
+  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Name and path of varfile to read.
 ;
@@ -87,14 +93,19 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    if (size (varcontent, /type) eq 0) then begin
+    if (not is_defined(varcontent)) then $
       varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
-    end
+    
     quantities = varcontent[*].idlvar
     num_quantities = n_elements (quantities)
-    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
-    object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities)
-    time = pc_read ('time', file=varfile, datadir=datadir)
+    if (not is_defined(grid)) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet, single=single
+
+    if (precision eq 'D' and not single) then $
+      object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities) $
+    else $
+      object = fltarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities)
+
+    time = pc_read ('time', file=varfile, datadir=datadir, single=single)
     tags = { time:time }
     for pos = 0L, num_quantities-1 do begin
       if (quantities[pos] eq 'dummy') then continue
@@ -103,21 +114,21 @@ COMPILE_OPT IDL2,HIDDEN
         length = strlen (quantities[pos])
         if ((length eq 2) and (strmid (quantities[pos], 0, 1) eq strmid (quantities[pos], 1, 1))) then length--
         label = strmid (quantities[pos], 0, length)
-        object[*,*,*,pos] = pc_read ('data/'+label+'x', trimall=trimall, processor=proc, dim=dim)
-        object[*,*,*,pos+1] = pc_read ('data/'+label+'y', trimall=trimall, processor=proc, dim=dim)
-        object[*,*,*,pos+2] = pc_read ('data/'+label+'z', trimall=trimall, processor=proc, dim=dim)
+        object[*,*,*,pos] = pc_read ('data/'+label+'x', trimall=trimall, processor=proc, dim=dim, single=single)
+        object[*,*,*,pos+1] = pc_read ('data/'+label+'y', trimall=trimall, processor=proc, dim=dim, single=single)
+        object[*,*,*,pos+2] = pc_read ('data/'+label+'z', trimall=trimall, processor=proc, dim=dim, single=single)
         tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
         pos += num_skip
       end else if (num_skip ge 1) then begin
         tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1))
         for comp = 0, num_skip do begin
           label = quantities[pos] + strtrim(comp+1, 2)
-          object[*,*,*,pos+comp] = pc_read ('data/'+label, trimall=trimall, processor=proc, dim=dim)
+          object[*,*,*,pos+comp] = pc_read ('data/'+label, trimall=trimall, processor=proc, dim=dim, single=single)
           tags = create_struct (tags, label, pos + comp)
         end
         pos += num_skip
       end else begin
-        object[*,*,*,pos] = pc_read ('data/'+quantities[pos], trimall=trimall, processor=proc, dim=dim)
+        object[*,*,*,pos] = pc_read ('data/'+quantities[pos], trimall=trimall, processor=proc, dim=dim, single=single)
         tags = create_struct (tags, quantities[pos], pos)
       end
     end
@@ -146,8 +157,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Set f77 keyword according to allprocs.
 ;
-  if (allprocs eq 1) then default, f77, 0
-  default, f77, 1
+  default, f77, (allprocs eq 1 ? 0 : 1)
 ;
 ; Get necessary dimensions quietly.
 ;
@@ -157,10 +167,10 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ; Get necessary parameters.
 ;
   if (n_elements (start_param) eq 0) then $
-      pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet, single=single
   if (n_elements (run_param) eq 0) then begin
     if (file_test (datadir+'/param2.nml')) then begin
-      pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet, single=single
     end else begin
       print, 'Could not find '+datadir+'/param2.nml'
     end
@@ -171,7 +181,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   run2D=start_param.lwrite_2d
 ;
   if (n_elements (grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet
+      pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet, single=single
 ;
 ; Set the coordinate system.
 ;
@@ -241,7 +251,6 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Initialize cdat_grid variables.
 ;
-  t = zero
   x = make_array (dim.mx, type=type_idl)
   y = make_array (dim.my, type=type_idl)
   z = make_array (dim.mz, type=type_idl)
@@ -275,7 +284,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   end
   content = strmid (content, 2)
 ;
-  tags = { time:0.0d0 }
+  tags = { time: (single ? 0. : zero) }
   read_content = ''
   indices = [ -1 ]
   num_read = 0
@@ -330,7 +339,10 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Initialise target object: contains ghost zones irrespective of whether they are stored or not.
 ;
-  object = make_array (dim.mx, dim.my, dim.mz, num_read, type=type_idl)
+  if (single) then $
+    object = fltarr(dim.mx, dim.my, dim.mz, num_read) $
+  else $
+    object = make_array(dim.mx, dim.my, dim.mz, num_read, type=type_idl)
 ;
 ; Initialise read buffers.
 ;
@@ -339,7 +351,8 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Iterate over processors.
 ;
-  t = -one
+  t = single ? -1. : -one
+
   for ipz = ipz_start, ipz_end do begin
     for ipy = ipy_start, ipy_end do begin
       for ipx = ipx_start, ipx_end do begin
@@ -418,17 +431,18 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
           if (iproc eq 0) then readu, lun, x, y, z, dx, dy, dz
         end else begin
           ; distributed files
-          if (start_param.lshear) then begin
-            deltay = zero
-            readu, lun, t_test, x_loc, y_loc, z_loc, dx, dy, dz, deltay
-          end else begin
+          if (start_param.lshear) then $
+            readu, lun, t_test, x_loc, y_loc, z_loc, dx, dy, dz, deltay $
+          else $
             readu, lun, t_test, x_loc, y_loc, z_loc, dx, dy, dz
-          end
+         
           x[x_off:x_end] = x_loc
           y[y_off:y_end] = y_loc
           z[z_off:z_end] = z_loc
         end
-        if (t eq -one) then t = t_test
+        
+        if single then t_test=float(t_test)         
+        if (t lt 0.) then t = t_test
         if (t ne t_test) then begin
           print, "ERROR: TIMESTAMP IS INCONSISTENT: ", filename
           print, "t /= t_test: ", t, t_test
@@ -441,6 +455,12 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
       end
     end
   end
+  if (precision eq 'D' and single) then begin
+    x=float(x) & y=float(y) & z=float(z)
+    dx=float(dx) & dy=float(dy) & dz=float(dz)
+  endif
+  tags = create_struct (tags, ['x','y','z','dx','dy','dz'], x, y, z, dx, dy, dz)
+  if (start_param.lshear) then tags = create_struct (tags, 'deltay', single ? float(deltay) : deltay)
 ;
 ; Tidy memory a little.
 ;
