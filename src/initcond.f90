@@ -5048,11 +5048,12 @@ module Initcond
 !  14-aug-20/axel: adapted for fft_xyz_parallel
 !
       use Fourier, only: fft_xyz_parallel
+      use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
       logical, intent(in), optional :: lpower_profile_file
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
-      logical :: lskip_projection, lpower_profile_file1
+      logical :: lskip_projection
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
@@ -5078,14 +5079,6 @@ module Initcond
         lremain_in_fourier1 = lremain_in_fourier
       else
         lremain_in_fourier1 = .false.
-      endif
-!
-!  Check whether or not we want to read from file
-!
-      if (present(lpower_profile_file)) then
-        lpower_profile_file1 = lpower_profile_file
-      else
-        lpower_profile_file1 = .false.
       endif
 !
 !  Allocate memory for arrays.
@@ -5204,9 +5197,10 @@ module Initcond
 !
         if (kgaussian /= 0.) r=r*exp(-.25*(k2/kgaussian**2.-1.))
 !
-!  apply additional profile read from file
+!  apply additional profile read from file;
+!  first check whether or not we want to read from file
 !
-        if (lpower_profile_file) then
+        if (loptest(lpower_profile_file)) then
           open(9,file='power_profile.dat',status='old')
           read(9,*) nk,lgk0,dlgk
           if (lroot.and.ip<14) print*,'power_randomphase_hel=',nk,lgk0,dlgk
