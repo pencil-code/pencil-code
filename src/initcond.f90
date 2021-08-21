@@ -5026,7 +5026,7 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
-      k1hel, k2hel,lremain_in_fourier)
+      k1hel, k2hel,lremain_in_fourier,lpower_profile_file)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -5050,16 +5050,19 @@ module Initcond
       use Fourier, only: fft_xyz_parallel
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
+      logical, intent(in), optional :: lpower_profile_file
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
-      logical :: lskip_projection
-      integer :: i,i1,i2,ikx,iky,ikz,stat
+      logical :: lskip_projection, lpower_profile_file1
+      integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact=4., kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5075,6 +5078,14 @@ module Initcond
         lremain_in_fourier1 = lremain_in_fourier
       else
         lremain_in_fourier1 = .false.
+      endif
+!
+!  Check whether or not we want to read from file
+!
+      if (present(lpower_profile_file)) then
+        lpower_profile_file1 = lpower_profile_file
+      else
+        lpower_profile_file1 = .false.
       endif
 !
 !  Allocate memory for arrays.
@@ -5192,6 +5203,42 @@ module Initcond
 !  apply Gaussian on top of everything
 !
         if (kgaussian /= 0.) r=r*exp(-.25*(k2/kgaussian**2.-1.))
+!
+!  apply additional profile read from file
+!
+        if (lpower_profile_file) then
+          open(9,file='power_profile.dat',status='old')
+          read(9,*) nk,lgk0,dlgk
+          if (lroot.and.ip<14) print*,'power_randomphase_hel=',nk,lgk0,dlgk
+          if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
+          allocate(kk(nk),power_factor(nk),lgkk(nk),lgff(nk))
+          do ik=1,nk
+            read(9,*) kk(ik),power_factor(ik)
+          enddo
+          close(9)
+          lgkk=alog10(kk)
+          lgff=alog10(power_factor)
+          print*,'AXEL: kk=',kk
+          print*,'AXEL: lgkk=',lgkk
+          print*,'AXEL: fac=',power_factor
+          print*,'AXEL: lgff=',lgff
+!
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                lgk=alog10(sqrt(k2(ikx,iky,ikz)))
+                ik=(lgk-lgk0)/dlgk+1
+                if (ik<=1.or.ik>nk) call fatal_error('power_randomphase_hel','ik<=1.or.ik>nk')
+                lgk1=lgkk(ik)
+                lgk2=lgkk(ik+1)
+                lgf1=lgff(ik)
+                lgf2=lgff(ik+1)
+                lgf=lgf1+(lgk-lgk1)*(lgf2-lgf1)/(lgk2-lgk1)
+                if (lroot.and.ip<14) print*,'power_randomphase_hel=',10**lgk,10**lgf
+              enddo
+            enddo
+          enddo
+        endif
 !
 !  scale with r
 !

@@ -232,6 +232,7 @@ module Magnetic
   logical :: lax_ext_global=.false.,lay_ext_global=.false.,&
              laz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
+  logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
 !
@@ -261,7 +262,7 @@ module Magnetic
       lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
-      r_inner, r_outer
+      r_inner, r_outer, lpower_profile_file
 !
 ! Run parameters
 !
@@ -1936,7 +1937,8 @@ module Magnetic
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, &
-            lscale_tobox, k1hel=k1hel, k2hel=k2hel)
+            lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lpower_profile_file=lpower_profile_file)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
