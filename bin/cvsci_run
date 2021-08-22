@@ -52,7 +52,7 @@ endif
 #  also get a copy of their time stamps before checking in
 #
   ls -l *.in *.dat *.pro src/*.local > .log
-  $add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log >& /dev/null
+  $add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat power_profile.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log >& /dev/null
 
 #
   if (-e data) then
