@@ -138,6 +138,7 @@ cp *.in $targetdir
 [ -f chemistry.dat ] && cp chemistry.dat $targetdir
 [ -f chemistry_m.dat ] && cp chemistry_m.dat $targetdir
 [ -f chemistry_p.dat ] && cp chemistry_p.dat $targetdir
+[ -f power_profile.dat ] && cp power_profile.dat $targetdir
 [ -f particles_initial.dat ] && cp particles_initial.dat $targetdir
 [ -f particles_initial_header.pro ] && cp particles_initial_header.pro $targetdir
 [ -f parameters.pro ] && cp parameters.pro $targetdir
