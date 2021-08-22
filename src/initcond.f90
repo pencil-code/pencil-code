@@ -5203,7 +5203,7 @@ module Initcond
         if (loptest(lpower_profile_file)) then
           open(9,file='power_profile.dat',status='old')
           read(9,*) nk,lgk0,dlgk
-          if (lroot.and.ip<14) print*,'power_randomphase_hel=',nk,lgk0,dlgk
+          if (lroot.and.ip<14) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
           if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
           allocate(kk(nk),power_factor(nk),lgkk(nk),lgff(nk))
           do ik=1,nk
@@ -5212,10 +5212,9 @@ module Initcond
           close(9)
           lgkk=alog10(kk)
           lgff=alog10(power_factor)
-          print*,'AXEL: kk=',kk
-          print*,'AXEL: lgkk=',lgkk
-          print*,'AXEL: fac=',power_factor
-          print*,'AXEL: lgff=',lgff
+!
+!  Go through each mesh point and interpolate logarithmically to the
+!  correct scaling factor for the power (energy) spectrum.
 !
           do ikz=1,nz
             do iky=1,ny
@@ -5228,7 +5227,7 @@ module Initcond
                 lgf1=lgff(ik)
                 lgf2=lgff(ik+1)
                 lgf=lgf1+(lgk-lgk1)*(lgf2-lgf1)/(lgk2-lgk1)
-                if (lroot.and.ip<14) print*,'power_randomphase_hel=',10**lgk,10**lgf
+                r(ikx,iky,ikz)=r(ikx,iky,ikz)*10**lgf
               enddo
             enddo
           enddo
