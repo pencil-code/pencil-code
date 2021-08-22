@@ -94,6 +94,7 @@ module Special
    real :: diffmu5=0., diffmuS=0., diffmu5max, diffmuSmax
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: lambda5, mu5_const=0., gammaf5=0.
+   real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
@@ -118,6 +119,7 @@ module Special
    logical :: reinitialize_mu5=.false.
 !
   character (len=labellen) :: initspecial='nothing'
+  character (len=labellen) :: gammaf5_tdep='const'
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, &
@@ -135,7 +137,7 @@ module Special
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term, &
-      reinitialize_mu5, rescale_mu5
+      reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -147,6 +149,7 @@ module Special
   integer :: idiag_mu5min=0    ! DIAG_DOC: $\min\mu_5$
   integer :: idiag_mu5max=0    ! DIAG_DOC: $\max\mu_5$
   integer :: idiag_mu5abs=0    ! DIAG_DOC: $\max|\mu_5|$
+  integer :: idiag_gamf5m=0    ! DIAG_DOC: $\left<\Gamma_5\right>$
   integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$     
   integer :: idiag_gmuSrms=0   ! DIAG_DOC: $\left<(\nabla\mu_S)^2\right>^{1/2}$     
   integer :: idiag_gmu5mx=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_x$   
@@ -205,6 +208,11 @@ module Special
       use SharedVariables, only : get_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr
+!
+!  set gammaf5_input to input value (which was gammaf5)
+!
+      gammaf5_input=gammaf5
+print*,'AXEL, gammaf5_input=',gammaf5
 !
 !  Reinitialize GW field using a small selection of perturbations
 !  that were mostly also available as initial conditions.
@@ -438,7 +446,7 @@ module Special
 !  11-jun-20/jenny: added hyperdiffusion
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
-      use Diagnostics, only: sum_mn_name, max_mn_name
+      use Diagnostics, only: sum_mn_name, max_mn_name, save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -584,6 +592,7 @@ module Special
         if (idiag_mu5min/=0) call max_mn_name(-p%mu5,idiag_mu5min,lneg=.true.)
         if (idiag_mu5max/=0) call max_mn_name(p%mu5,idiag_mu5max)
         if (idiag_mu5abs/=0) call max_mn_name(abs(p%mu5),idiag_mu5abs)
+        if (idiag_gamf5m/=0) call save_name(gammaf5,idiag_gamf5m)
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
@@ -690,7 +699,7 @@ module Special
         idiag_muSm=0; idiag_muSrms=0;
         idiag_mu5m=0; idiag_mu51m=0; idiag_mu5rms=0
         idiag_mu5min=0; idiag_mu5max=0; idiag_mu5abs=0
-        idiag_gmu5rms=0; idiag_gmuSrms=0; 
+        idiag_gamf5m=0; idiag_gmu5rms=0; idiag_gmuSrms=0; 
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
@@ -709,6 +718,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5min',idiag_mu5min)
         call parse_name(iname,cname(iname),cform(iname),'mu5max',idiag_mu5max)
         call parse_name(iname,cname(iname),cform(iname),'mu5abs',idiag_mu5abs)
+        call parse_name(iname,cname(iname),cform(iname),'gamf5m',idiag_gamf5m)
         call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gmuSrms',idiag_gmuSrms)
         call parse_name(iname,cname(iname),cform(iname),'gmu5mx',idiag_gmu5mx)
@@ -753,6 +763,46 @@ module Special
       endselect
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  22-aug-21/axel: temporal profile for gammaf5
+!
+      use Sub, only: remove_mean_value
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  Choice of gammaf5_tdep profiles.
+!
+      select case (gammaf5_tdep)
+        case ('const')
+          gammaf5=gammaf5_input
+          if (headtt.or.ldebug) print*,'gammaf5=const=',gammaf5
+!
+!  Time-dependent profile for sigma.
+!
+        case ('step')
+          if (t<=t1_gammaf5) then
+            gammaf5=0.
+          elseif (t<=t2_gammaf5) then
+            gammaf5=gammaf5_input
+          else
+            gammaf5=0.
+          endif
+!
+!  Default.
+!
+        case default
+          call fatal_error("daa_dt: No such value for gammaf5_tdep:",trim(gammaf5_tdep))
+      endselect
+!
+    endsubroutine special_before_boundary
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
