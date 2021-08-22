@@ -3286,7 +3286,7 @@ module Sub
 !  Computes  u.grad(M)
 !  where M is a second rank matrix.
 !
-!  07-aug-10/dhruba: coded
+! 07-aug-10/dhruba: coded
 ! 24-nov-11/dhruba: added upwinding
 ! 26-mar-12/MR: doupwind introduced
 !
@@ -3767,7 +3767,8 @@ module Sub
 !  When toutoff=1., the output times would be 1.1, 1.2, 1.5, etc.
 !
         if (dtout<0.0) then
-          tout=toutoff+(tout-toutoff)*10.**onethird
+          !tout=toutoff+(tout-toutoff)*10.**onethird
+          tout=toutoff+(tout-toutoff)*10.**onesixth
         else
           tout=tout+abs(dtout)
 !         if (.not.lout) tout=tout+abs(dtout)
