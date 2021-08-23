@@ -10,7 +10,7 @@ pro pc_read_global,                                                  $
     dim=dim, grid=grid, param=param, datadir=datadir, proc=proc,     $
     stats=stats, nostats=nostats, quiet=quiet, help=help,            $
     swap_endian=swap_endian, varcontent=varcontent,                  $
-    scalar=scalar, run2D=run2D
+    scalar=scalar, run2D=run2D, single=single
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -23,28 +23,44 @@ COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
 ;
+; If asked for, show some help.
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_global'
+    return
+  endif
+;
 ; Default settings
 ;
   default, validate_variables, 1
   default, trimall, 0
   default, allprocs, 0
+  default, single, 0
 ;
 ; Default data directory
 ;
   datadir = pc_get_datadir(datadir)
+;
+;  Set pc_precision.
+;
+  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Name and path of varfile to read
 ;
   if (file_test (datadir+'/global.h5')) then default, varfile, 'global.h5'
   default, varfile, 'global.dat'
 ;
+;  Read meta data.
+;
+  default, varcontent, pc_varcontent_global(datadir=datadir,dim=dim, $
+                       param=param,quiet=quiet,scalar=scalar,run2D=run2D,single=single)
+;
 ; Load HDF5 varfile if requested or available.
 ;
   if (not keyword_set (old_format) and strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+
     message, "pc_read_global: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    if (size (varcontent, /type) eq 0) then begin
-      varcontent = pc_varcontent_global (datadir=datadir, dim=dim, param=param, quiet=quiet, scalar=scalar, run2D=run2D)
-    end
+    
     quantities = varcontent[*].idlvar
     num_quantities = n_elements (quantities)
     for pos = 0, num_quantities-1 do begin
@@ -56,9 +72,9 @@ COMPILE_OPT IDL2,HIDDEN
         quantity = [ 'glnTx', 'glnTy', 'glnTz' ]
       end
       if (pos eq 0) then begin
-        object = create_struct (quantities[pos], pc_read (quantity, file=varfile, datadir=datadir, trimall=trimall, processor=proc, dim=dim))
+        object = create_struct (quantities[pos], pc_read (quantity, file=varfile, datadir=datadir, trimall=trimall, processor=proc, dim=dim, single=single))
       end else begin
-        object = create_struct (object, quantities[pos], pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
+        object = create_struct (object, quantities[pos], pc_read (quantity, trimall=trimall, processor=proc, dim=dim, single=single))
       end
     end
     h5_close_file
@@ -70,7 +86,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(dim) eq 0) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
   if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
@@ -87,7 +103,7 @@ COMPILE_OPT IDL2,HIDDEN
   if ((n_elements(grid) eq 1) or (allprocs eq 1)) then begin
     procgrid=grid
   endif else begin
-    pc_read_grid, obj=procgrid, dim=dim, datadir=datadir, param=param, proc=proc, swap_endian=swap_endian, /quiet
+    pc_read_grid, obj=procgrid, dim=dim, datadir=datadir, param=param, proc=proc, swap_endian=swap_endian, /quiet, single=single
   endelse
 ;
 ; Read dimensions (global)...
@@ -134,10 +150,8 @@ COMPILE_OPT IDL2,HIDDEN
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
   endelse
 ;
-;  Read meta data and set up variable/tag lists
+;  Set up variable/tag lists
 ;
-  default, varcontent, pc_varcontent_global(datadir=datadir,dim=dim, $
-      param=param,quiet=quiet,scalar=scalar,run2D=run2D)
   totalvars=(size(varcontent))[1]
 ;
   if (n_elements(variables) ne 0) then begin
@@ -361,7 +375,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Make structure out of the variables.
 ;
-  makeobject = "object = " + "CREATE_STRUCT(name=objectname,[" + $
+  makeobject = "object = " + "CREATE_STRUCT(name=nameobject,[" + $
       arraytostring(tags,QUOTE="'",/noleader) + "]" + $
       arraytostring(variables) + ")"
 ;
