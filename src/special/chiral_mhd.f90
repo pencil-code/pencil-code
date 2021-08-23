@@ -170,6 +170,7 @@ module Special
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
   integer :: idiag_mu5bxm=0    ! DIAG_DOC: $\left<\mu_5B_x\right>$
   integer :: idiag_mu5b2m=0    ! DIAG_DOC: $\left<\mu_5B^2\right>$
+  integer :: idiag_mu5jbm=0    ! DIAG_DOC: $\left<\mu_5\Jv\cdot\Bv\right>$
   integer :: idiag_jxm = 0     ! DIAG_DOC: $\langle J_x\rangle$
 !
   contains
@@ -380,6 +381,10 @@ print*,'AXEL, gammaf5_input=',gammaf5
         lpenc_requested(i_b2)=.true.
       endif
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
+!
+!  diagnostic pencils
+!
+      if (idiag_mu5jbm/=0) lpenc_diagnos(i_jb)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -631,6 +636,9 @@ print*,'AXEL, gammaf5_input=',gammaf5
         if (idiag_dt_chiral/=0) call max_mn_name(-(1./dt1_special),idiag_dt_chiral,lneg=.true.)
         if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
+        if (idiag_mu5jbm/=0) call sum_mn_name(p%mu5*p%jb,idiag_mu5jbm)
+!
+!AB: shouldn't this pencil be requested in pencil_criteria_special?
         if (idiag_jxm /= 0) then
           lpenc_diagnos(i_jj) = .true.
           call sum_mn_name(p%jj(:,1), idiag_jxm)
@@ -739,6 +747,7 @@ print*,'AXEL, gammaf5_input=',gammaf5
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
+        call parse_name(iname,cname(iname),cform(iname),'mu5jbm',idiag_mu5jbm)
         call parse_name(iname,cname(iname), cform(iname),'jxm', idiag_jxm)
       enddo
 !
