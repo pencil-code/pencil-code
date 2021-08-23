@@ -41,6 +41,21 @@ Input:
 Output:
   {{t1,t2,...},{{data at t1},{data at t2},...}}"
 
+read1DSigned::usage="read1DSigned[sim,file,l:0,testF:Positive] reads 1D data and
+separates them into groups based on the test function testF. Those with testF
+returning False are replaced by zeros in the first group, and those with testF
+returning True are replaced by zeros in the second group.
+Input:
+  sim: String. Directory of the simulation folder
+  file: String. Name of the data file, including .dat
+  l:  Integer. Optional. If exists then specifies the length of the 1D data.
+  testF: The test function. testF==Positive by default. Other examples: Real, #^2<0.5&
+Example output with testF==Positive:
+  { {t1,t2,...},
+    {{1,0,2,3,0,...},...},
+    {{0,-4,0,0,-5,...},...}
+  }"
+
 readAves::usage="readAves[sim,sp,varNames] returns planar averaged values.
 Input:
   sim: String. Directory of the run
@@ -99,17 +114,22 @@ a[1]/.FindFit[Transpose[{t,Log[f]}],a[1]*tt+a[2],{a[1],a[2]},tt]
 (*Spectra-like files*)
 
 
-read1D[sim_,file_]:=Module[{l,pos},
-  l=Import[sim<>"/data/"<>file];
-  pos=Flatten@Position[l,x_/;Length[x]==1];
-  l=Flatten/@Partition[l,pos[[2]]-pos[[1]]];
-  {First/@l,Rest/@l}
+read1D[sim_,file_]:=Module[{data,pos},
+  data=Import[sim<>"/data/"<>file];
+  pos=Flatten@Position[data,x_/;Length[x]==1];
+  data=Flatten/@Partition[data,pos[[2]]-pos[[1]]];
+  {First/@data,Rest/@data}
 ]
-
 read1D[sim_,file_,l_]:=Module[{data},
   data=Import[sim<>"/data/"<>file]//Flatten;
   data=Partition[data,l+1];
   {First/@data,Rest/@data}
+]
+
+read1DSigned[sim_,file_,l_Integer:0,testF_:Positive]:=Module[{t,spec},
+  {t,spec}=If[l<=0,read1D[sim,file],read1D[sim,file,l]];
+  spec=Rest/@spec;
+  {t,spec/.x_?(!testF[#]&)->0,spec/.x_?testF->0}
 ]
 
 
@@ -144,7 +164,7 @@ End[]
 
 Protect[
   readTS,growthRate,
-  read1D,
+  read1D,read1DSigned,
   readAves
 ]
 
