@@ -12,38 +12,59 @@
 ;
 function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=pos, datadir=datadir, first=first, last=last, skip=skip, single=single
 
-  if (size (datadir, /type) eq 0) then datadir = pc_get_datadir (datadir)
+  ; load one HDF5 slice, defined by quantity and plane, from directory datadir/'slices'
 
-  ; load one HDF5 slice, if datadir ends with '/slices'
-  last_slice = pc_read ('last', filename=quantity+'_'+plane+'.h5', datadir=datadir+'/slices')
-
+  datadir = pc_get_datadir (datadir)
   default, first, 1
-  default, last, last_slice
+  default, last, pc_read ('last', filename=quantity+'_'+plane+'.h5', datadir=datadir+'/slices')
   default, skip, 0
+  default, single, 0
+
+  if first gt last then first=last
+  if skip lt 0 then skip=0
+
   step = skip + 1
   num = 1 + (last - first) / step
 
   if (keyword_set(single)) then begin
     data = fltarr ([h5_get_size ('1/data'), num]) 
-    time = fltarr (num)
+    if arg_present(time) then time = fltarr (num)
   endif else begin
     data = dblarr ([h5_get_size ('1/data'), num])
-    time = dblarr (num)
+    if arg_present(time) then time = dblarr (num)
   endelse
 
-  coord = time 
-  pos = lonarr (num)
+  if arg_present(coord) then coord = time 
+  if arg_present(pos) then pos = lonarr (num)
 
   ; iterate over slices
+  cut_upto=-1
   for slice = first, last, step do begin
+
+    catch, error_status
+    ;This statement begins the error handler:
+    if error_status ne 0 then begin
+      print, 'Error: slice '+strtrim (slice, 2)+' not found!!! Reading terminated.'
+      cut_upto=index-1
+      break
+    endif
+
     index = (slice - first) / step
     group = strtrim (slice, 2)
     data[*,*,index] = pc_read (group+'/data',/single)
-    time[index] = pc_read (group+'/time')
-    coord[index] = pc_read (group+'/coordinate')
-    pos[index] = pc_read (group+'/position')
+    if arg_present(time) then time[index] = pc_read (group+'/time')
+    if arg_present(coord) then coord[index] = pc_read (group+'/coordinate')
+    if arg_present(pos) then pos[index] = pc_read (group+'/position')
   end
+  catch, /cancel
   h5_close_file
+
+  if cut_upto ge 0 then begin
+    data=data[*,*,0:cut_upto]
+    if arg_present(time) then time=time[0:cut_upto]
+    if arg_present(coord) then coord=coord[0:cut_upto]
+    if arg_present(pos) then pos=pos[0:cut_upto]
+  endif
 
   return, reform(data,/overwrite)
 end
