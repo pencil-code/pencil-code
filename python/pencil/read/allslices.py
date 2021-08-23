@@ -17,7 +17,7 @@ def slices(*args, **kwargs):
     Signature:
 
     read(field='', extension='', datadir='data', proc=-1, old_file=False,
-         precision='f', iter_list=list(), vlarge=1000000000, quiet=True,
+         precision='f', iter_list=list(), quiet=True,
          tstart=0, tend=None)
 
     Parameters
@@ -35,8 +35,6 @@ def slices(*args, **kwargs):
     *precision*: Precision of the data. Either float 'f' or double 'd'.
 
     *iter_list*: List of iteration indices for which to sample the slices.
-
-    *vlarge*: Size of arrays over which to apply memory limits reshaping.
 
     *quiet*: Flag for switching off output.
 
@@ -95,7 +93,6 @@ class SliceSeries(object):
         old_file=False,
         precision="f",
         iter_list=list(),
-        vlarge=1000000000,
         quiet=True,
         tstart=0,
         tend=None,
@@ -106,7 +103,7 @@ class SliceSeries(object):
         call signature:
 
         read(field='', extension='', datadir='data', proc=-1, old_file=False,
-             precision='f', iter_list=list(), vlarge=1000000000, quiet=True,
+             precision='f', iter_list=list(), quiet=True,
              tstart=0, tend=None)
 
         Keyword arguments:
@@ -124,8 +121,6 @@ class SliceSeries(object):
         *precision*: Precision of the data. Either float 'f' or double 'd'.
 
         *iter_list*: List of iteration indices for which to sample the slices.
-
-        *vlarge*: Size of arrays over which to apply memory limits reshaping.
 
         *quiet*: Flag for switching off output.
 
@@ -387,49 +382,6 @@ class SliceSeries(object):
                         sys.stdout.flush()
                     self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
-                    # Separate the data in chunks if too big
-
-                    # if slice_series.size > vlarge:
-                    # This chunking does not work.
-                    # when doing this the shape of the final array is not correct,
-                    # islice >> t.shape
-                    if False:
-                        vscaled = (int(vlarge / vsize / hsize) + 1) * vsize * hsize
-                        nchunks = int(slice_series.size / vscaled)
-                        endslice = vscaled * nchunks
-                        subslice_series = np.array_split(
-                            slice_series[: endslice + 1], nchunks, axis=0
-                        )
-                        ichunk_size = int(subslice_series[0].size / vsize / hsize)
-                        slice_tmp = subslice_series[0].reshape(
-                            ichunk_size, vsize, hsize
-                        )
-                        if not quiet:
-                            print("slice_series.shape", slice_series.shape)
-                            print(field, "chunk_size", nchunks)
-                            print("subslice_series[0].size", subslice_series[0].size)
-                            sys.stdout.flush()
-                        for subslice in subslice_series:
-                            ichunk_size = int(subslice.size / vsize / hsize)
-                            subslice = subslice.reshape(ichunk_size, vsize, hsize)
-                            slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
-                            if not quiet:
-                                print("slice_tmp.shape", slice_tmp.shape)
-                                sys.stdout.flush()
-                        if not nchunks * vscaled == slice_series.size:
-                            ichunk_size = int(
-                                slice_series[endslice + 1 :].size / vsize / hsize
-                            )
-                            subslice = slice_series[endslice + 1 :].reshape(
-                                ichunk_size, vsize, hsize
-                            )
-                            slice_tmp = np.concatenate([slice_tmp, subslice], axis=0)
-                            if not quiet:
-                                print("slice_tmp.shape", slice_tmp.shape)
-                                sys.stdout.flush()
-                        slice_series = slice_tmp
-                    else:
-                        slice_series = slice_series.reshape(islice, vsize, hsize)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
