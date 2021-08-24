@@ -1,7 +1,7 @@
 ;
 ;  Shift plane in the x-direction.
 ;
-pro pc_read_aver_shift_plane, nvar_all, array, xshift, par, timefix, ts, t, t0
+pro pc_read_aver_shift_plane, nvar_all, array, xshift, par, timefix, ts, t, t0, grid
 ;
   for ivar=0, nvar_all-1 do $
     array[*,*,ivar] = shift(array[*,*,ivar],xshift,0)
@@ -34,7 +34,7 @@ pro pc_read_aver_shift_plane, nvar_all, array, xshift, par, timefix, ts, t, t0
 ;  Comove with central grid point.
 ;
       print, 'AJ/2010-05-26: the following appears to be wrong'
-      print, '               xax[0] should be xshift*dx'
+      print, '               xax[0] should be xshift*dx'   ; xax,yax anyway not defined
       stop
       for ix=0, nxg-1 do $
         array2[ix,*] = pc_shift_6th(reform(array2[ix,*]),yax,-par.Sshear*(t-t0)*xax[0])

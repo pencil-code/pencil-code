@@ -20,7 +20,7 @@ g=shift(g,deltax_int)
 
 deltax_fra=deltax/dx-fix(deltax/dx)
 
-g_ghost=dblarr(nx+6)
+g_ghost= make_array(nx+6, type=size(g,/type))
 l1=3 & l2=l1+nx-1
 g_ghost[l1:l2]=g
 g_ghost[0:2]=g_ghost[l2-2:l2]

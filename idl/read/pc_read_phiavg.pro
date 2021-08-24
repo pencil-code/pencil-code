@@ -58,13 +58,20 @@ function parse_labels, line
 end
 ; ---------------------------------------------------------------------- ;
 function pc_read_phiavg, file, datadir=datadir, $
-                      VARS=vars, TONLY=t_only, $
-                      DEBUG=debug, HELP=help, old_format=old_format
+                         VARS=vars, TONLY=t_only, $
+                         DEBUG=debug, HELP=help, old_format=old_format, single=single
+
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
   if (keyword_set(help)) then extract_help, 'pc_read_phiavg'
+;
+;  Set pc_precision.
+;
+  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 
   default, debug, 0
   default, t_only, 0
+  default, single, 0
   datadir = pc_get_datadir (datadir)
 
   ; load HDF5 averages, if available
@@ -74,7 +81,7 @@ function pc_read_phiavg, file, datadir=datadir, $
     last = pc_read ('last', filename='phi.h5', datadir=datadir+'/averages/')
     if (pos gt last) then message, 'pc_read_phiavg: ERROR: "'+h5_file+'" ends after '+str (last+1)+' snapshots!'
     group = str (pos) + '/'
-    time = pc_read (group+'time')
+    time = pc_read (group+'time', single=single)
     if (keyword_set (t_only)) then begin
       h5_close_file
       return, time
@@ -84,12 +91,12 @@ function pc_read_phiavg, file, datadir=datadir, $
     found = where (strlowcase (vars) ne 'time', num)
     if (num le 0) then message, 'pc_read_phiavg: ERROR: "'+h5_file+'" contains no known averages!'
     vars = vars[found]
-    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
-    r = pc_read ('r', filename='phi.h5', datadir=datadir+'/averages/')
-    dr = pc_read ('dr')
+    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet, single=single
+    r = pc_read ('r', filename='phi.h5', datadir=datadir+'/averages/', single=single)
+    dr = pc_read ('dr', single=single)
     struct = { t:time, last:last, pos:pos, rcyl:r, dr:dr, z:grid.z[dim.n1:dim.n2], nvars:num, labels:vars }
     for pos = 0, num-1 do begin
-      struct = create_struct (struct, vars[pos], pc_read (group+vars[pos]))
+      struct = create_struct (struct, vars[pos], pc_read (group+vars[pos],single=single))
     end
     h5_close_file
     return, struct
@@ -97,7 +104,7 @@ function pc_read_phiavg, file, datadir=datadir, $
 
   if (n_elements(vars) gt 0) then begin
     message, /INFO, $
-        'VARS keyword (for selecting only certain vars) not yet implemented'
+        'VARS keyword (for selecting variables) not yet implemented'
   endif
 
   if (strpos (file, 'averages/') eq -1) then file = datadir + '/averages/' + file
@@ -106,34 +113,38 @@ function pc_read_phiavg, file, datadir=datadir, $
   close, lun
   openr, lun, file, /F77
 
-  t = 0.
+  t = 0.*one
   if (t_only) then begin
     readu, lun
     readu, lun, t
     close, lun
     free_lun, lun
-    return, t
+    return, single ? float(t) : t
   endif
 
   nr=1L & nz=1L & nvars=1L & nprocz=1L
   readu, lun, nr, nz, nvars, nprocz
   if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
 
-  rcyl = fltarr(nr)
-  z    = fltarr(nz)
+  rcyl = fltarr(nr)*one
+  z    = fltarr(nz)*one
   readu, lun, t, rcyl, z
+  if (single) then begin
+    t=float(t) & rcyl=float(rcyl) & z=float(z)
+  endif
   if (debug) then begin
     print,'t=',t
     print,'rcyl in ', minmax(rcyl)
     print,'z in '   , minmax(z)
   endif
 
-  vars = fltarr(nr,nz,nvars)
+  vars = fltarr(nr,nz,nvars)*one
   readu, lun, vars
+  if (single) then vars=float(vars)
   if (debug) then print, 'vars in ', minmax(vars)
 
   point_lun, -lun, position       ; save current file position
-  llen = 0L                     ; length of labels line
+  llen = 0L                       ; length of labels line
   readu, lun, llen
   if (debug) then print, 'llen=', llen
   if ((llen le 0) or (llen gt 4096)) then $
@@ -161,9 +172,13 @@ function pc_read_phiavg, file, datadir=datadir, $
   def = def + '}'
   if (debug) then print, 'def = ', def
   cmd = 'res = ' + def
-  if (not execute(cmd)) then $
-      message, "Encountered error trying to execute <" + cmd + ">"
+  if (not execute(cmd)) then begin
+      message, "Encountered error trying to make object by <" + cmd + ">.", /info
+      print, 'Variables locally available as t, rcyl, z, labels, vars.' 
+      undefine, res
+      stop
+      return, 0
+  endif
   return, res
 
 end
-; End of file pc_read_phiavg.pro

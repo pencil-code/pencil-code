@@ -26,13 +26,18 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
     readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, $
-    write=write, single=single, dim=dim, grid=grid
+    nameobject=nameobject,write=write, single=single, dim=dim, grid=grid
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
+  dir=strtrim(dir,2)
   if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: averaging direction "'+strtrim(dir,2)+'" unknown.'
+;
+;  Set pc_precision.
+;
+  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 ;
 ;  Default values.
 ;
@@ -90,22 +95,23 @@ COMPILE_OPT IDL2,HIDDEN
   default, yinyang, 0
   default, xtitle, 'x'
   default, ytitle, dir eq 'y' ? 'z' : 'y'
+  default, single, 0
 ;
-  if (size (grid, /type) eq 0) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+  if (not is_defined(grid)) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet, single=single
 ;
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+dir+'.h5')) then begin
     message, "pc_read_2d_aver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     last = pc_read ('last', filename=dir+'.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
-    times = pc_read (groups[0]+'/time')
-    for it=1, last do times=[times,pc_read(groups[it]+'/time')]
+    times = pc_read (groups[0]+'/time', single=single)
+    for it=1, last do times=[times,pc_read(groups[it]+'/time',single=single)]
     in = (where (times ge tmin))[0:*:njump]
     num = n_elements (in)
     if (num le 0) then message, 'pc_read_2d_aver: ERROR: "'+h5_file+'" no data available after given "tmin"!'
     groups = groups[in]
     times = times[in]
-    if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
+    vars = h5_content (groups[0])
     found = where (strlowcase (vars) ne 'time', numb)
     vars = vars[found]
     object = { t:times, last:last, pos:1+long (groups), num_quantities:numb, labels:vars }
@@ -120,21 +126,20 @@ COMPILE_OPT IDL2,HIDDEN
       object = create_struct (object, 'z', grid.z[dim.n1:dim.n2])
     end
     for pos = 0, numb-1 do begin
-       variable=pc_read (groups[0]+'/'+vars[pos])
+       variable=pc_read (groups[0]+'/'+vars[pos],single=single)
        variable=spread(variable,2,num)
-       for it=1, num-1 do variable[*,*,it]=pc_read (groups[it]+'/'+vars[pos])
+       for it=1, num-1 do variable[*,*,it]=pc_read (groups[it]+'/'+vars[pos],single=single)
       object = create_struct (object, vars[pos], variable)
     end
     h5_close_file
     return
   end
-
 ;
   if strpos(varfile,'0.dat') ge 0 then begin
     default, in_file, dir+'aver0.in'
     file_t2davg=datadir+'/t2davg0.dat'
   endif else begin
-    default, in_file, strtrim(dir,2)+'aver.in'
+    default, in_file, dir+'aver.in'
     file_t2davg=datadir+'/t2davg.dat'
   endelse
 ;
@@ -143,7 +148,7 @@ COMPILE_OPT IDL2,HIDDEN
   pc_read_dim, obj=dim, datadir=datadir, /quiet
   pc_read_dim, obj=locdim, datadir=datadir+'/proc0', /quiet
   if (stalk) then begin
-    pc_read_pstalk, obj=pst, datadir=datadir, /quiet
+    pc_read_pstalk, obj=pst, datadir=datadir, /quiet, single=single
     default, nstalk, n_elements(pst.ipar)
   endif
 ;
@@ -151,7 +156,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  frame.
 ;
   if (readpar or (xshift ne 0)) then begin
-    pc_read_param, obj=par, datadir=datadir, /quiet
+    pc_read_param, obj=par, datadir=datadir, /quiet, single=single
 ;
 ; We know from param whether we have a Yin-Yang grid.
 ;
@@ -162,7 +167,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Some z-averages are erroneously calculated together with time series
 ;  diagnostics. The proper time is thus found in time_series.dat.
 ;
-  if (timefix) then pc_read_ts, obj=ts, datadir=datadir, /quiet
+  if (timefix) then pc_read_ts, obj=ts, datadir=datadir, /quiet, double=(not single)
 ;
 ;  Derived dimensions.
 ;
@@ -182,7 +187,7 @@ COMPILE_OPT IDL2,HIDDEN
   nycap=0
 
   if (readgrid or (xshift ne 0) or yinyang) then begin
-    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet, single=single
     xax=grid.x
     if (dir eq 'y') then $
       yax=grid.z $
@@ -254,7 +259,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Die if attempt to plot a variable that does not exist.
 ;
-  if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
+  if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1='+strtrim(nvar-1,2)+'!'
 ;
 ;  Define filenames to read data from - either from a single processor or
 ;  from all of them.
@@ -347,7 +352,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Define axes (default to indices if no axes are supplied).
 ;
-  if (n_elements(par) gt 1) then begin
+  if (is_defined(par)) then begin
     x0=par.xyz0[0]
     x1=par.xyz1[0]
     Lx=par.Lxyz[0]
@@ -389,13 +394,11 @@ COMPILE_OPT IDL2,HIDDEN
   if (iplot lt 0) then begin
 ;
     array_local=fltarr(nx,ny,nvar_all)*one
-    if keyword_set(single) then $
-      array_global=fltarr(nxg,nyg,nret,nvar) $
-    else $
-      array_global=fltarr(nxg,nyg,nret,nvar)*one
-    type_as_on_disk=not keyword_set(single) or size(one,/type) eq 4
+    array_global= single ? fltarr(nxg,nyg,nret,nvar) : fltarr(nxg,nyg,nret,nvar)*one
+      
+    type_as_on_disk = (not keyword_set(single)) or type_idl eq 4
 
-    t=zero
+    t_in = zero
     if njump gt 1 then incr=njump*(double(n_elements(array_local))*data_bytes+8L + data_bytes+8L)
 ;
     for ip=0, num_files-1 do begin
@@ -426,7 +429,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read time.
 ;
         if filepos lt 0. then point_lun, -lun, filepos
-        readu, lun, t
+        readu, lun, t_in & t=single ? float(t_in) : t_in
 
         if (it eq 0) then t0=t
 ;
@@ -486,7 +489,7 @@ COMPILE_OPT IDL2,HIDDEN
             yn=''
             read, prompt='Do you really want to overwrite the averages (yes/no)?', yn 
             if yn eq 'yes' and not type_as_on_disk then $
-              read, prompt='Data was read in in single precision, so you loose precision in overwriting. Continue (yes/no)?', yn
+              read, prompt='Data was converted to single precision, so you loose precision in overwriting. Continue (yes/no)?', yn
           endif else $
             yn='yes'
 
@@ -498,7 +501,7 @@ COMPILE_OPT IDL2,HIDDEN
               iye=iya+ny-1
               openw, lun, write+'/'+filename[ip], /f77, swap_endian=swap_endian, /get_lun
               for itt=0,nread-1 do begin
-                writeu, lun, tt[itt], tt[itt]
+                writeu, lun, tt[itt], tt[itt]   ; two times?
                 if type_as_on_disk then $
                   writeu, lun, array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*] $
                 else $
@@ -535,7 +538,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     if (xshift ne 0) then $
       for it=0, nread-1 do $
-        pc_read_aver_shift_plane, nvar, array_global[*,*,it,*], xshift, par, timefix, ts, t, t0
+        pc_read_aver_shift_plane, nvar, array_global[*,*,it,*], xshift, par, timefix, ts, t, t0, grid
 ;
 ;  Split read data into named arrays.
 ;
@@ -570,9 +573,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Variables to put single time snapshot in.
 ;
-    array=fltarr(nxg,nyg,nvar)*one
+    array=single ? fltarr(nxg,nyg,nvar) : fltarr(nxg,nyg,nvar)*one
     array_local=fltarr(nx,ny,nvar_all)*one
-    tt_local=fltarr(num_files)*one
+    tt_local= single ? fltarr(num_files) : fltarr(num_files)*one
 ;
 ;  Read 2D-averages and put in arrays if requested.
 ;
@@ -583,8 +586,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read time.
 ;
+      tt_tmp=zero
       for ip=0, num_files-1 do begin
-        tt_tmp=zero
         readu, luns[ip], tt_tmp
         tt_local[ip]=tt_tmp
         if (ip ge 1) then begin
@@ -611,7 +614,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Shift plane in the x direction.
 ;
         if (xshift ne 0) then $
-            pc_read_aver_shift_plane, nvar, array, xshift, par, timefix, ts, t, t0
+            pc_read_aver_shift_plane, nvar, array, xshift, par, timefix, ts, t, t0, grid
 ;
 ;  Interpolate position of stalked particles to time of snapshot.
 ;
@@ -716,13 +719,15 @@ COMPILE_OPT IDL2,HIDDEN
       coornames="" & coors=""
     endelse
 
-    makeobject="object = create_struct(name=objectname,['t',"+coornames + $
+    makeobject="object = create_struct(name=nameobject,['t',"+coornames + $
         arraytostring(variables,quote="'",/noleader) + "],"+"tt,"+coors+$
         arraytostring(variables,/noleader) + ")"
 ;
     if (execute(makeobject) ne 1) then begin
-      message, 'ERROR evaluating variables: ' + makeobject, /info
+      message, 'ERROR making object by: ' + makeobject, /info
+      print, 'Variables locally available as tt, '+arraytostring(varnames,/noleader)+'.'
       undefine,object
+      stop
     endif
   endif
 ;
