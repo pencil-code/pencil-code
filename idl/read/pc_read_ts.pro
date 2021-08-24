@@ -70,7 +70,7 @@ pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
     num=num, it=it, time=time, dt=dt, cdt=cdt, urms=urms, labels=labels, $
-    ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
+    ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst, $
     movingaverage=movingaverage, monotone=monotone, njump=njump, sepminus=sepminus
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -146,10 +146,7 @@ COMPILE_OPT IDL2,HIDDEN
       if (any (label eq [ '', 'it', 'last', 'step' ])) then continue
       labels = [ labels, label ]
       elements = h5_content (label)
-      idl_type = h5_get_type (label+'/'+elements[0], /exists)
-      empty = round (!Values.F_NaN)
-      if (idl_type eq 4) then empty = !Values.F_NaN
-      if (idl_type eq 5) then empty = !Values.D_NaN
+      empty = double ? !Values.D_NaN : !Values.F_NaN
       maximum = last / step
       data = replicate (empty, maximum+1)
       for num = 0L, maximum do begin
