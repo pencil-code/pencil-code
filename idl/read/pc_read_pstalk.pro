@@ -12,8 +12,9 @@
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
 pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
-    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax
+    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax, single=single
 COMPILE_OPT IDL2,HIDDEN
+;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default values.
@@ -22,6 +23,7 @@ default, swap_endian, 0
 default, quiet, 0
 default, it1, -1
 default, it0, 0
+default, single, 0
 datadir = pc_get_datadir(datadir)
 ;
 ; Load HDF5 file if requested or available.
@@ -31,14 +33,14 @@ datadir = pc_get_datadir(datadir)
     message, "pc_read_pstalk: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     num_files = n_elements (files)
     for pos = 0, num_files-1 do begin
-      t = pc_read ('time', file='PSTALK'+strtrim (pos, 2)+'.h5', datadir=datadir)
+      t = pc_read ('time', file='PSTALK'+strtrim (pos, 2)+'.h5', datadir=datadir, single=single)
       if (pos eq 0) then begin
         distribution = pc_read ('proc/distribution')
         num_part = total (distribution)
         quantities = h5_content('stalker')
         num_quantities = n_elements (quantities)
-        object = { t:replicate(!Values.D_NaN, num_files), IPAR:pc_read('stalker/ID') }
-        data = dblarr (num_part, num_files)
+        object = { t:replicate(single ? !Values.F_NaN : !Values.D_NaN*zero, num_files), IPAR:pc_read('stalker/ID') }
+        data = single ? fltarr(num_part, num_files) : fltarr (num_part, num_files)*zero
         for i = 0, num_quantities-1 do begin
           if (strupcase (quantities[i]) eq 'ID') then continue
           object = create_struct (object, quantities[i], data)
@@ -50,7 +52,7 @@ datadir = pc_get_datadir(datadir)
         found = where (strupcase (quantities) eq strupcase (tags[i]), num_found)
         if (num_found ne 1) then message, 'pc_read_pstalk: ERROR while reading quantites.'
         tmp = object.(i)
-        tmp[*,pos] = pc_read('stalker/'+quantities[found])
+        tmp[*,pos] = pc_read('stalker/'+quantities[found],single=single)
         object.(i) = tmp
       end
       object.t[pos] = t
@@ -66,7 +68,7 @@ pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 ;
 ; Read parameters from file.
 ;
-pc_read_param, obj=param, datadir=datadir, /quiet
+pc_read_param, obj=param, datadir=datadir, /quiet, single=single
 ;
 ; Stop if no particles have been stalked.
 ;
@@ -114,8 +116,8 @@ endif
 ;
 ; Initialize data arrays.
 ;
-t=fltarr(nout)*zero
-array=fltarr(nfields,pdim.npar_stalk,nout)*zero
+t=single ? fltarr(nout) : fltarr(nout)*zero
+array=single ? fltarr(nfields,pdim.npar_stalk,nout) : fltarr(nfields,pdim.npar_stalk,nout)*zero
 ;
 ; Sink particles have random particle indices, so we need to keep track of the
 ; particle index for later sorting.
@@ -207,7 +209,7 @@ if (lstalk_sink_particles) then begin
       for it=1,nout-1 do begin
         kk=where(ipar_stalk2[*,it] eq kuniq[k])
         if (kk[0] ne -1) then array[*,k,it]=array2[*,kk,it] $
-            else array[*,k,it]=zero
+        else array[*,k,it]=zero
       endfor
     endfor
     ipar_stalk=kuniq
@@ -224,5 +226,10 @@ command="object = create_struct(name=objectname,['t','ipar'"+ $
     arraytostring(fields,quote="'")+"],t,ipar_stalk"+ $
     arraytostring('reform(array['+strtrim(indgen(nfields),2)+",*,*])")+")"
 status=execute(command)
+
+if (status eq 0) then begin
+  message, 'Error: building of object failed, but data locally available as t,ipar_stalk,array', /info
+  stop
+endif
 ;
 end
