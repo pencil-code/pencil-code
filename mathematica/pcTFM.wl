@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcTFM`"]
+BeginPackage["pcTFM`","pcReadBasic`","pcRead1D`"]
 
 
 (* ::Chapter:: *)
