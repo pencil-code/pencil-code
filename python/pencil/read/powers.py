@@ -13,13 +13,13 @@ def power(*args, **kwargs):
 
     Signature:
 
-    power(datadir='data', file_name='', quiet=False)
+    power(datadir='data', fn='', quiet=False)
 
     Parameters
     ----------
     *datadir*:  Directory where the data is stored.
 
-    *file_name*:  Filename to read.
+    *fn*:  Filename to read.
           If a filename is given, only that power spectrum is read.
           By default it reads all the power spectrum files.
 
@@ -64,20 +64,20 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name="", quiet=False):
+    def read(self, datadir="data", fn="", quiet=False):
         """
         Read the power spectra.
 
         call signature:
 
-        power(datadir='data', file_name='', quiet=False)
+        power(datadir='data', fn='', quiet=False)
 
         Keyword arguments:
 
         *datadir*:
           Directory where the data is stored.
 
-        *file_name*:
+        *fn*:
           Filename to read.
           If a filename is given, only that power spectrum is read.
           By default it reads all the power spectrum files.
@@ -90,25 +90,26 @@ class Power(object):
         import os.path as op
         import numpy as np
         from pencil import read
+        from pencil.util import ffloat
         import sys
         import matplotlib as plt
 
         power_list = []
         file_list = []
 
-        if file_name:
-            print("Reading only ", file_name)
+        if fn:
+            print("Reading only ", fn)
             try:
-                if op.isfile(op.join(datadir, file_name)):
+                if op.isfile(op.join(datadir, fn)):
                     # print("read one file")
-                    if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                        if file_name[:6] == "power_":
-                            power_list.append(file_name.split(".")[0][6:])
-                            print("appending", file_name.split(".")[0][6:])
+                    if fn[:5] == "power" and fn[-4:] == ".dat":
+                        if fn[:6] == "power_":
+                            power_list.append(fn.split(".")[0][6:])
+                            print("appending", fn.split(".")[0][6:])
                         else:
-                            power_list.append(file_name.split(".")[0][5:])
-                            print("appending", file_name.split(".")[0][5:])
-                        file_list.append(file_name)
+                            power_list.append(fn.split(".")[0][5:])
+                            print("appending", fn.split(".")[0][5:])
+                        file_list.append(fn)
                 else:
                     print("File does not exist, exiting")
             except IOError:
@@ -121,22 +122,22 @@ class Power(object):
 
             # power_list = []
             # file_list = []
-            for file_name in os.listdir(datadir):
-                if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                    if file_name[:6] == "power_":
-                        power_list.append(file_name.split(".")[0][6:])
+            for fn in os.listdir(datadir):
+                if fn[:5] == "power" and fn[-4:] == ".dat":
+                    if fn[:6] == "power_":
+                        power_list.append(fn.split(".")[0][6:])
                     else:
-                        power_list.append(file_name.split(".")[0][5:])
-                    file_list.append(file_name)
+                        power_list.append(fn.split(".")[0][5:])
+                    file_list.append(fn)
 
         # Determine the file and data structure.
         dim = read.dim(datadir=datadir)
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
-        for power_idx, file_name in enumerate(file_list):
+        for power_idx, fn in enumerate(file_list):
             # Read the raw file.
-            infile = open(os.path.join(datadir, file_name), "r")
+            infile = open(os.path.join(datadir, fn), "r")
             line_list = infile.readlines()
             infile.close()
 
@@ -144,20 +145,16 @@ class Power(object):
             n_blocks = int(len(line_list) / block_size)
 
             if not quiet:
-                print(file_name)
+                print(fn)
 
             # For the moment, exclude some incompatible files.
-            # if file_name == 'powero.dat' or file_name == 'poweru.dat' or \
-            if (
-                file_name == "powero.dat"
-                or file_name == "powerb.dat"
-                or file_name == "powera.dat"
-            ):
+            # if fn == 'powero.dat' or fn == 'poweru.dat' or \
+            if fn == "powero.dat" or fn == "powerb.dat" or fn == "powera.dat":
                 continue
             elif (
-                file_name == "powerux_xy.dat"
-                or file_name == "poweruy_xy.dat"
-                or file_name == "poweruz_xy.dat"
+                fn == "powerux_xy.dat"
+                or fn == "poweruy_xy.dat"
+                or fn == "poweruz_xy.dat"
             ):
                 # This file has a different number of k
 
@@ -172,7 +169,7 @@ class Power(object):
                     )
                     ini = 2
                     kx = []
-                    for i in range(ini, np.ceil(nkx / 8) + ini):
+                    for i in range(ini, int(np.ceil(nkx / 8)) + ini):
                         kx.append([float(j) for j in line_list[i].split()])
                     kx = np.array(list(plt.cbook.flatten(kx)))
                     setattr(self, "kx", kx)
@@ -186,7 +183,7 @@ class Power(object):
                         .split(")")[0][1:]
                     )
                     ky = []
-                    for i in range(ini, np.ceil(nky / 8) + ini):
+                    for i in range(ini, int(np.ceil(nky / 8)) + ini):
                         ky.append([float(j) for j in line_list[i].split()])
                     ky = np.array(list(plt.cbook.flatten(ky)))
                     setattr(self, "ky", ky)
@@ -200,7 +197,7 @@ class Power(object):
                         .split(")")[0][1:]
                     )
                     kz = []
-                    for i in range(ini, np.ceil(nkz / 8) + ini):
+                    for i in range(ini, int(np.ceil(nkz / 8)) + ini):
                         kz.append([float(j) for j in line_list[i].split()])
                     kz = np.array(list(plt.cbook.flatten(ky)))
                     setattr(self, "kz", kz)
@@ -226,24 +223,11 @@ class Power(object):
                     else:
                         maxi = len(line.strip().split())
                         for j in range(0, maxi, 2):
-                            if "E" in line.strip().split()[j]:
-                                a = line.strip().split()[j]
-                            else:
-                                a = (
-                                    line.strip().split()[j][:-4]
-                                    + "E"
-                                    + line.strip().split()[j][-4:]
-                                )
-                            if "E" in line.strip().split()[j + 1]:
-                                b = line.strip().split()[j + 1]
-                            else:
-                                b = (
-                                    line.strip().split()[j + 1][:-4]
-                                    + "E"
-                                    + line.strip().split()[j + 1][-4:]
-                                )
+                            a = line.strip().split()[j]
 
-                            power_array.append(complex(real=float(a), imag=float(b)))
+                            b = line.strip().split()[j + 1]
+
+                            power_array.append(complex(real=ffloat(a), imag=ffloat(b)))
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
@@ -255,14 +239,12 @@ class Power(object):
                 setattr(self, power_list[power_idx], power_array)
 
             elif (
-                file_name == "poweruz_x.dat"
-                or file_name == "powerux_x.dat"
-                or file_name == "poweruy_x.dat"
+                fn == "poweruz_x.dat" or fn == "powerux_x.dat" or fn == "poweruy_x.dat"
             ):
                 # this has irrational numbers
 
                 time = []
-                # print('complex reading of file ', file_name)
+                # print('complex reading of file ', fn)
                 power_array = []
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
@@ -287,7 +269,7 @@ class Power(object):
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
 
-            elif file_name == "power_krms.dat":
+            elif fn == "power_krms.dat":
                 power_array = []
                 for line_idx, line in enumerate(line_list):
                     if line_idx < block_size - 1:
@@ -307,7 +289,7 @@ class Power(object):
                         time.append(float(line.strip()))
                     else:
                         for value_string in line.strip().split():
-                            power_array.append(float(value_string))
+                            power_array.append(ffloat(value_string))
 
                 # Reformat into arrays.
                 time = np.array(time)
