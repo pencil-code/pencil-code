@@ -26,7 +26,7 @@ program read_videofiles
 !
   character (len=fnlen) :: file='',fullname='',directory=''
   character (len=fnlen) :: datadir='data',path='',cfield=''
-  character (len=labellen) :: field='lnrho'
+  character (len=labellen) :: field='lnrho', cn_every=''
 !
   logical :: exists, lread_slice, lwritten_something=.false.
 !
@@ -43,21 +43,34 @@ program read_videofiles
   real, dimension(:,:), allocatable :: yz,yzyang
   character, dimension(-1:0) :: trufal=(/'F','T' /)
 !
-!  read name of the field (must coincide with file extension)
+!  Read name of the field (must coincide with file extension)
 !
-  write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
-  read(*,'(a)') cfield
+  if (iargc()==0) then
+    write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
+    read(*,'(a)') cfield
 !
-!  read stride from internal reader
+!  Read stride from internal file.
 !
-  isep1=index(cfield,' ')
-  isep2=len(cfield)
-  field=cfield(1:isep1)
-  if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) n_every
+    isep1=index(cfield,' ')
+    isep2=len(cfield)
+    field=cfield(1:isep1)
+    if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) n_every
+  else
+!
+!  Read field and stride command line.
+!
+    call getarg(1,field)
+    call getarg(2,cn_every)
+    if (cn_every/='') read(cn_every,*,err=11) n_every
+    goto 12
+11  print*, 'Invalid value for stride -- set to 1!!!'
+    n_every=1
+12  continue
+  endif
 
   if (n_every <= 0) then
-    print *, 'Invalid value for stride!'
-    stop
+    print*, 'Invalid value for stride -- set to 1!!!'
+    n_every=1
   endif
 !
 !  Find out the number of available slices and frames to read.
