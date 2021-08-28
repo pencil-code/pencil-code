@@ -2779,7 +2779,8 @@ combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
 	$(LD) combine_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o combine_videofiles.x
 #
-read_videofiles.o: $(basics)
+read_videofiles.o: read_videofiles.f90 $(basics)
+	$(FC) $(MOST_COMP_FLAGS) -o read_videofiles.o -c read_videofiles.f90
 read_videofiles.x: read_videofiles.o
 	$(LD) read_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_videofiles.x
 #
