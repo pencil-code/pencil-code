@@ -372,8 +372,8 @@ class PlotSettings:
     constant_seed: bool = False
     
     ### Camera params ##########################################################
-    camera_centre: tuple = (-165, -132, 120)
-    focal_point: tuple   = (31.5, 31.5, 31.5)
+    camera_centre: tuple = None
+    focal_point: tuple   = None
     
     ### Axes params ############################################################
     show_axes: bool    = True
@@ -1131,6 +1131,10 @@ def __plot_field(
     # If preview enabled, plotting should be done ON-screen not off
     if settings.preview:
         settings.off_screen = False
+    else:
+        print(f'Warning! preview=False but off_screen=False. Plotting should be done'
+        ' off screen currently. Setting off_screen=True')
+        settings.off_screen = True
 
     # If [cmin,cmax] not given, set automatically to min and max of all 2D slices
     if cmin is None and cmax is None:
