@@ -69,7 +69,7 @@ pcPlotStyle[]:=Map[
   SetOptions[#,{PlotRange->All,Frame->True,
       LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
       ImageSize->{300,300/GoldenRatio}}]&,
-  {Plot,ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot}
+  {Plot,ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot}
 ]
 
 
