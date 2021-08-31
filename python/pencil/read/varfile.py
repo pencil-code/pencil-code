@@ -28,29 +28,60 @@ def var(*args, **kwargs):
     for one vector field, 8 for var.dat in the case of MHD with entropy.
     but, deltay(1) is only there if lshear is on! need to know parameters.
 
-    call signature:
+    Signature:
 
     var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
         trimall=False, magic=None, sim=None, precision='f')
 
-    Keyword arguments:
-        var_file:   Name of the VAR file.
-        datadir:    Directory where the data is stored.
-        proc:       Processor to be read. If -1 read all and assemble to one array.
-        ivar:       Index of the VAR file, if var_file is not specified.
-        quiet:      Flag for switching off output.
-        trimall:    Trim the data cube to exclude ghost zones.
-        magic:      Values to be computed from the data, e.g. B = curl(A).
-        sim:        Simulation sim object.
-        precision:  Float (f), double (d) or half (half).
-        lpersist:   Read the persistent variables if they exist
+    Parameters
+    ----------
+     *var_file*: str
+         Name of the VAR file.
+         If not specified, use var.dat (which is the latest snapshot of the fields)
 
-    The default var file is var.dat (which is the latests snapshot of the fields)
+     *datadir*: str
+         Directory where the data is stored.
 
-    Return:
-    Instance of the pencil.read.var.DataCube class.
-    All of the computed fields are imported as class members.
+     *proc*: int
+         Processor to be read. If -1 read all and assemble to one array.
 
+     *ivar*: int
+       Index of the VAR file, if var_file is not specified.
+
+     *quiet*: bool
+         Flag for switching off output.
+
+     *trimall*: bool
+         Trim the data cube to exclude ghost zones.
+
+     *magic*: bool
+         Values to be computed from the data, e.g. B = curl(A).
+
+     *sim*: pencil code simulation object
+         Contains information about the local simulation.
+
+     *precision*: str
+         Float 'f', double 'd' or half 'half'.
+
+     *lpersist*: bool
+         Read the persistent variables if they exist
+
+    Returns
+    -------
+    DataCube
+        Instance of the pencil.read.var.DataCube class.
+        All of the computed fields are imported as class members.
+
+    Examples
+    -------
+    Read the latest var.dat file and print the shape of the uu array:
+    >>> var = pc.read.var()
+    >>> print(var.uu.shape)
+
+    Read the VAR2 file, compute the magnetic field B = curl(A),
+    the vorticity omega = curl(u) and remove the ghost zones:
+    >>> var = pc.read.var(var_file='VAR2', magic=['bb', 'vort'], trimall=True)
+    >>> print(var.bb.shape)
     """
 
     from pencil.sim import __Simulation__
@@ -123,7 +154,7 @@ class DataCube(object):
         """
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
-
+    
         The file format written by output() (and used, e.g. in var.dat)
         consists of the followinig Fortran records:
         1. data(mx, my, mz, nvar)
@@ -131,23 +162,61 @@ class DataCube(object):
         Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
         for one vector field, 8 for var.dat in the case of MHD with entropy.
         but, deltay(1) is only there if lshear is on! need to know parameters.
-
-        call signature:
-
+    
+        Signature:
+    
         var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-            trimall=False, magic=None, sim=None, precision='d')
-
-        Keyword arguments:
-            var_file:   Name of the VAR file.
-            datadir:    Directory where the data is stored.
-            proc:       Processor to be read. If -1 read all and assemble to one array.
-            ivar:       Index of the VAR file, if var_file is not specified.
-            quiet:      Flag for switching off output.
-            trimall:    Trim the data cube to exclude ghost zones.
-            magic:      Values to be computed from the data, e.g. B = curl(A).
-            sim:        Simulation sim object.
-            precision:  Float (f), double (d) or half (half).
-            dtype:      precision for var.obj, default double
+            trimall=False, magic=None, sim=None, precision='f')
+    
+        Parameters
+        ----------
+         *var_file*: str
+             Name of the VAR file.
+             If not specified, use var.dat (which is the latest snapshot of the fields)
+    
+         *datadir*: str
+             Directory where the data is stored.
+    
+         *proc*: int
+             Processor to be read. If -1 read all and assemble to one array.
+    
+         *ivar*: int
+           Index of the VAR file, if var_file is not specified.
+    
+         *quiet*: bool
+             Flag for switching off output.
+    
+         *trimall*: bool
+             Trim the data cube to exclude ghost zones.
+    
+         *magic*: bool
+             Values to be computed from the data, e.g. B = curl(A).
+    
+         *sim*: pencil code simulation object
+             Contains information about the local simulation.
+    
+         *precision*: str
+             Float 'f', double 'd' or half 'half'.
+    
+         *lpersist*: bool
+             Read the persistent variables if they exist
+    
+        Returns
+        -------
+        DataCube
+            Instance of the pencil.read.var.DataCube class.
+            All of the computed fields are imported as class members.
+    
+        Examples
+        -------
+        Read the latest var.dat file and print the shape of the uu array:
+        >>> var = pc.read.var()
+        >>> print(var.uu.shape)
+    
+        Read the VAR2 file, compute the magnetic field B = curl(A),
+        the vorticity omega = curl(u) and remove the ghost zones:
+        >>> var = pc.read.var(var_file='VAR2', magic=['bb', 'vort'], trimall=True)
+        >>> print(var.bb.shape)
         """
 
         import os
