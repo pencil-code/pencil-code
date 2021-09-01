@@ -18,6 +18,17 @@ BeginPackage["pcPlot`","pcReadBasic`","pcRead2D`"]
 pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
 
+showVideo::usage="showVideo[sim,var,loc,plotStyle:{},aniStyle:{},\"lFrames\"->False] generates a video from video files.
+Input:
+  sim: String. The run directory
+  var: String. The variable to be read. Must be present in video.in
+  loc: String. Which slice to read; e.g., \"xy2\" or \"yz\"
+  plotStyle: List. Optional. Additional options for ListDensityPlot
+  aniStyle: List. Optional. Additional options for ListAnimate
+  \"lFrames\": Option. False by default. If ->True then returns a list of frames.
+Output:
+  An animation."
+
 showSlice::usage="showSlice[data,var,{sp,loc},plotStyle:{},\"ldata\"->False] plots a slice.
 Input:
   data: Must be from readVARN[sim,iVAR]
@@ -25,7 +36,7 @@ Input:
   sp: String. \"x\", \"y\", or \"z\"
   loc: Integer, the number of the slice
   plotStyle: Optional. Changes plotting style of ListDensityPlot
-  \"ldata\": Option. Default value =False. If =True then returns data on the slice.
+  \"ldata\": Option. False by default. If ->True then returns data on the slice.
 Output:
   A density plot of var at location loc in the sp direction"
 
@@ -80,6 +91,31 @@ pcPlotStyle[]:={
     }]&,{ListDensityPlot}
   ];
 }
+
+
+(* ::Section:: *)
+(*Generate a 2D video from video files*)
+
+
+Options[showVideo]={"lFrames"->False};
+showVideo[sim_,var_,loc_,plotStyle_List:{},aniStyle_List:{},OptionsPattern[]]:=
+  Module[{sp,slice,time,pos,max,cf,frames},
+    sp=", "<>Which[
+      StringMatchQ[loc,"xy"~~___],"z=",
+      StringMatchQ[loc,"yz"~~___],"x=",
+      StringMatchQ[loc,"xz"~~___],"y=",
+      True,""
+    ];
+  {slice,time,pos}=readSlice[sim,var,loc];
+  max=1.1*Max[slice//Flatten//Abs];
+  cf[z_]:=pcColorFunction[(z+max)/(2*max)];
+  frames=MapThread[ListDensityPlot[#1,plotStyle,
+    ColorFunction->cf,ColorFunctionScaling->False,
+    PlotLegends->BarLegend[{cf,{-max,max}}],FrameTicks->None,
+    PlotLabel->StringJoin["t=",ToString[NumberForm[#2,3]],sp,ToString[NumberForm[pos[[1]],3]]]
+  ]&,{slice,time}];
+  If[OptionValue["lFrames"],frames,ListAnimate[frames,aniStyle,AnimationRunning->False]]
+]
 
 
 (* ::Section:: *)
@@ -176,6 +212,7 @@ End[]
 
 Protect[
   pcLabelStyle,pcPlotStyle,
+  showVideo,
   showSlice,showSliceVector
 ]
 
