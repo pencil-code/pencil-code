@@ -64,13 +64,22 @@ Begin["`Private`"]
 (*Plot style related*)
 
 
+pcColorFunction[z_]:=Blend[{RGBColor[0.368417, 0.506779, 0.709798],White,RGBColor[0.880722, 0.611041, 0.142051]},z]
+pcColorFunction[x_,y_,z_]:=pcColorFunction[z]
+
 pcLabelStyle=Directive[Thick,Black,14,FontFamily->"Times"];
-pcPlotStyle[]:=Map[
-  SetOptions[#,{PlotRange->All,Frame->True,
-      LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
-      ImageSize->{300,300/GoldenRatio}}]&,
-  {Plot,ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot}
-]
+pcPlotStyle[]:={
+  Map[SetOptions[#,{
+      PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
+      FrameStyle->pcLabelStyle,ImageSize->{300,300/GoldenRatio}
+    }]&,{Plot,ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot}
+  ];
+  Map[SetOptions[#,{
+      PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,PlotLegends->Automatic,
+      FrameStyle->pcLabelStyle,ImageSize->200,ColorFunction->pcColorFunction
+    }]&,{ListDensityPlot}
+  ];
+}
 
 
 (* ::Section:: *)
