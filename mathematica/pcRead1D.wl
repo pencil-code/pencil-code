@@ -56,6 +56,15 @@ Example output with testF==Positive:
     {{0,-4,0,0,-5,...},...}
   }"
 
+read1D2Scale::usage="read1D2Scale[sim,file,kf] reads 1D spectrum and splits it into
+large- and small-scale parts according to the dividing wave number kf.
+Input:
+  sim: String. Directory of the simulation folder
+  file: String. Name of the data file, including .dat
+  kf: Integer. Modes with wave numbers >= kf will be included in the small-scale part.
+Output:
+  {t, large-scale spectra, small-scale spectra}.";
+
 readAves::usage="readAves[sim,sp,varNames] returns planar averaged values.
 Input:
   sim: String. Directory of the run
@@ -131,6 +140,13 @@ read1DSigned[sim_,file_,l_Integer:0,testF_:Positive]:=Module[{t,spec},
   spec=Rest/@spec;
   {t,spec/.x_?(!testF[#]&)->0,spec/.x_?testF->0}
 ]
+read1D2Scale[sim_,file_,kf_Integer]:=Module[{t,spec,n,specL,specS},
+  {t,spec}=read1D[sim,file];
+  n=spec//First//Length;
+  specL=(UnitStep[kf-#]&/@Range[n])*#&/@spec;
+  specS=(UnitStep[#-kf-1]&/@Range[n])*#&/@spec;
+  {t,specL,specS}
+]
 
 
 (* ::Section:: *)
@@ -164,7 +180,7 @@ End[]
 
 Protect[
   readTS,growthRate,
-  read1D,read1DSigned,
+  read1D,read1DSigned,read1D2Scale,
   readAves
 ]
 
