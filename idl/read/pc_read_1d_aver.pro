@@ -1,25 +1,35 @@
 ;
 ; $Id: pc_read_1d_aver.pro 23239 2015-03-26 20:29:51Z mreinhardt@nordita.org $
-;
+;+
 ;  Read 1d-averages from file.
-;
+;-
 pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
-    monotone=monotone, quiet=quiet, njump=njump, tmin=tmin, dim=dim, grid=grid, single=single
+    monotone=monotone, quiet=quiet, njump=njump, tmin=tmin, dim=dim, grid=grid, single=single, help=help
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
-;  Get necessary dimensions.
-;
-if (not is_defined(dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-if (not is_defined(grid)) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
-;
-;  Set pc_precision.
-;
-  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_1d_aver'
+    return
+  endif
+
+default, monotone, 0
+default, quiet, 0
+default, njump, 1
+default, tmin, 0.0
+default, single, 0
 ;
 ;  Default data directory.
 ;
 datadir = pc_get_datadir(datadir)
+;
+;  Get necessary dimensions.
+;
+if (not is_defined(dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+;
+;  Set pc_precision.
+;
+pc_set_precision, datadir=datadir, dim=dim, /quiet
 
 if (dir eq 'z') then begin
   ndir = dim.nz
@@ -35,11 +45,8 @@ end else $
 
 default, in_file, avdirs+'aver.in'
 default, varfile, avdirs+'averages.dat'
-default, monotone, 0
-default, quiet, 0
-default, njump, 1
-default, tmin, 0.0
-default, single, 0
+
+if (not is_defined(grid)) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
 
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+avdirs+'.h5')) then begin
@@ -117,11 +124,11 @@ if (not quiet) then print, 'Going to read averages at <=', strtrim(nit,2), ' tim
 ;  read the data with idl.
 ;
 for i=0,nvar-1 do begin
-  cmd=varnames[i]+(single ? '=fltarr(ndir,nit)' : '=fltarr(ndir,nit)*one')
+  cmd=varnames[i]+'=make_array(ndir,nit, type=single ? 4 : type_idl)'
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
 endfor
-var=fltarr(ndir*nvar)*one
-times = single ? fltarr(nit) : fltarr(nit)*one
+var=make_array(ndir*nvar, type=type_idl)
+times=make_array(nit, type=single ? 4 : type_idl)
 ;
 ;  Read averages and put in arrays.
 ;

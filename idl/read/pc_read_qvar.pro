@@ -1,18 +1,24 @@
 ;
 ; $Id$
-;
+;+
 ;   Read qvar.dat, or other QVAR file
-;
+;-
 pro pc_read_qvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
-    quiet=quiet, qquiet=qquiet, SWAP_ENDIAN=SWAP_ENDIAN
+    quiet=quiet, qquiet=qquiet, single=single, SWAP_ENDIAN=SWAP_ENDIAN, help=help
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_qvar'
+    return
+  endif
 ;
 ;  Defaults.
 ;
 datadir = pc_get_datadir(datadir)
 default, quiet, 0
 default, qquiet, 0
+default, single, 0
 
 if n_elements(ivar) eq 1 then begin
   default, varfile_, 'QVAR'
@@ -29,32 +35,29 @@ endelse
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "pc_read_qvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    t = pc_read ('time', file=varfile, datadir=datadir)
+    t = pc_read ('time', file=varfile, datadir=datadir, single=single)
     object = { t:t, number:pc_read ('number') }
-    object = create_struct (object, 'mass', pc_read ('points/mass'))
-    object = create_struct (object, 'xx', pc_read ('points/'+['x','y','z']))
-    object = create_struct (object, 'vv', pc_read ('points/v'+['x','y','z']))
+    object = create_struct (object, 'mass', pc_read ('points/mass', single=single))
+    object = create_struct (object, 'xx', pc_read ('points/'+['x','y','z'], single=single))
+    object = create_struct (object, 'vv', pc_read ('points/v'+['x','y','z'], single=single))
     return
   end
 ;
 if (qquiet) then quiet=1
 ;
-;  Derived dimensions.
-;
-;
-;  Time Get necessary dimensions.
-;
-t=0d0
+;  Get necessary dimensions.
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_qdim, obj=qdim, datadir=datadir, /quiet
+;
 mqvar =qdim.mqvar
 nqpar =qdim.nqpar
 ;mqpar =0L
 ;
+t=zero
+;
 ;  Read qvar indices from qvarname.dat
 ;
-datadir = pc_get_datadir(datadir)
 openr, lun, datadir+'/qvarname.dat', /get_lun
 while (not eof(lun)) do begin
   line=''
@@ -74,12 +77,12 @@ varcontent=REPLICATE( $
     {varcontent_all_par, $
     variable   : 'UNKNOWN', $
     idlvar     : 'dummy', $
-    idlinit    : 'fltarr(nqpar)*one', $
+    idlinit    : single ? 'fltarr(nqpar)' : 'make_array(nqpar, type=type_idl)', $
     skip       : 0}, $
     mqvar+1)
 
-INIT_SCALAR  = 'fltarr(nqpar)*one'
-INIT_3VECTOR = 'fltarr(nqpar,3)*one'
+INIT_SCALAR  = single ? 'fltarr(nqpar)' : 'make_array(nqpar, type=type_idl)'
+INIT_3VECTOR = single ? 'fltarr(nqpar,3)' : 'make_array(nqpar,3, type=type_idl)'
 ;
 ;  Go through all possible particle variables
 ;
@@ -102,7 +105,7 @@ varcontent[imass].idlinit  = INIT_SCALAR
 
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
-varcontent[0].idlinit     = '0.'
+varcontent[0].idlinit     = single ? '0.' : 'zero'
 varcontent[0].skip        = 0
 ;
 varcontent = varcontent[1:*]
@@ -123,11 +126,6 @@ for iv=0L,totalvars-1L do begin
       +' - '+ varcontent[iv].idlvar, /INFO
   iv=iv+varcontent[iv].skip
 endfor
-;
-;  Define arrays for temporary storage of data.
-;
-
-array=fltarr(nqpar,totalvars)*one
 ;
 if (not keyword_set(quiet)) then $
   print,'Loading ',strtrim(datadir+'/proc0/'+varfile), ')...'
@@ -154,11 +152,15 @@ readu, lun, nqpar
 ;
 if (nqpar ne 0) then begin
 ;
+;  Define array for temporary storage of data.
+;
+  array=make_array(nqpar,mqvar, type=type_idl)
+;
 ;  Read local processor data.
 ;
-  array=fltarr(nqpar,mqvar)*one
   readu, lun, array
   readu, lun, t
+  if (single) then t=float(t)
   print, 't =', t
 ;
 endif
@@ -182,7 +184,9 @@ makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
+  message, 'Error: building of object failed, but data locally available as t'+arraytostring(variables)+'.', /info
   undefine,object
+  stop
 endif
 
 end

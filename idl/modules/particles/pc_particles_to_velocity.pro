@@ -1,17 +1,22 @@
 ;;
 ;;  $Id$
-;;
-;;  Convert positions and velocities of particles to a grid velocity field
-;;  and (optionally) a directional rms speed.
-;;
-;;  fine: set to refraction factor (1 = no change, 2 = double resolution)
-;;  vprms: calculate velocity dispersion sigma, this is the rmsd of v, NOT rms of v !!
-;;
+;+
+;  Convert positions and velocities of particles to a grid velocity field
+;  and (optionally) a directional rms speed.
+;
+;  fine: set to refraction factor (1 = no change, 2 = double resolution)
+;  vprms: calculate velocity dispersion sigma, this is the rmsd of v, NOT rms of v !!
+;-
 ;;  Author: Anders Johansen
 ;;
 function pc_particles_to_velocity, xxp, vvp, x, y, z, vprms=vprms, $
-    cic=cic, tsc=tsc, fine=fine, ghost=ghost, datadir=datadir, quiet=quiet
+    cic=cic, tsc=tsc, fine=fine, ghost=ghost, datadir=datadir, quiet=quiet, help=help
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;
+if (keyword_set(help)) then begin
+  doc_library, 'pc_particles_to_velocity'
+  return
+endif
 ;;
 ;;  Set default values.
 ;;
@@ -20,6 +25,7 @@ default, tsc, 0
 default, fine, 1
 default, ghost, 0
 default, quiet, 0
+datadir=pc_get_datadir(datadir)
 ;;
 ;;  Set real precision.
 ;;

@@ -1,8 +1,8 @@
 ;
 ; $Id$
-;
+;+
 ;   Read pvar.dat, or other PVAR file
-;
+;-
 ;  1-mar-17/MR: added new keyword parameters "single" and "array".
 ;               /single would force to store the data in single precision.
 ;               array=<name> would force output of the data in an array <name>
@@ -13,10 +13,15 @@
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
-    solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
+    solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, help=help, $
     proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc, single=single, array=array
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+
+if (keyword_set(help)) then begin
+  doc_library, 'pc_read_pvar'
+  return
+endif
 ;
 ;  Defaults.
 ;
@@ -29,6 +34,7 @@ default, savefile, 1
 default, proc, -1
 default, trimxyz, 1
 default, id_proc, 0
+default, single, 0
 objout = not arg_present(array)
 ;
 if (n_elements(ivar) eq 1) then begin
@@ -46,8 +52,8 @@ endelse
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "pc_read_pvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
-    t = pc_read ('time', file=varfile, datadir=datadir)
+    pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    t = pc_read ('time', file=varfile, datadir=datadir,single=single)
     quantities = h5_content('part')
     num_quantities = n_elements (quantities)
     distribution = pc_read ('proc/distribution')
@@ -60,7 +66,7 @@ endelse
     for pos = 0, num_quantities-1 do begin
       quantity = quantities[pos]
       if (strlowcase (quantity) eq 'id') then quantity = 'ipar'
-      object = create_struct (object, quantity, pc_read ('part/'+quantities[pos], start=start, count=count))
+      object = create_struct (object, quantity, pc_read ('part/'+quantities[pos], start=start, count=count), single=single)
     end
     h5_close_file
     return
@@ -72,20 +78,20 @@ if (keyword_set(solid_object)) then rmv=1
 ;
 ;  Get necessary dimensions.
 ;
-if (proc eq -1) then begin
-  pc_read_dim, obj=dim, datadir=datadir, /quiet
-endif else begin
+if (proc eq -1) then  $
+  pc_read_dim, obj=dim, datadir=datadir, /quiet $
+else $
   pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
-endelse
+
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 ;
 ; Check if we are inserting particles continuously
 ;
 if (file_test('./data/param2.nml')) then begin
-  pc_read_param, object=param2, /param2, datadir=datadir, quiet=quiet
+  pc_read_param, object=param2, /param2, datadir=datadir, quiet=quiet, single=single
   linsert_particles_continuously=param2.linsert_particles_continuously
 endif else begin
-  pc_read_param, object=param, datadir=datadir, quiet=quiet
+  pc_read_param, object=param, datadir=datadir, quiet=quiet, single=single
   linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
@@ -125,7 +131,7 @@ ncpus=dim.nprocx*dim.nprocy*dim.nprocz
 ;  Time and grid parameters.
 ;
 t=zero
-x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
+x=make_array(dim.mx, type=type_idl) & y=make_array(dim.my, type=type_idl) & z=make_array(dim.mz, type=type_idl)
 dx=zero &  dy=zero &  dz=zero
 ;
 ;  Read processor dimensions if reading just one processor.
@@ -135,7 +141,7 @@ if (ncpus gt 1) then begin
 endif else begin
   procdim=dim
 endelse
-xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.mz)*one
+xloc=make_array(procdim.mx, type=type_idl) & yloc=make_array(procdim.my, type=type_idl) & zloc=make_array(procdim.mz, type=type_idl)
 ;
 ;  Read particle variable indices from particle_index.pro
 ;
@@ -152,16 +158,16 @@ free_lun, lun
 ;
 ;  Define structure for data
 ;
+INIT_SCALAR  = single ? 'fltarr(npar)' : 'make_array(npar, type=type_idl)'
+INIT_3VECTOR = single ? 'fltarr(npar,3)' : 'make_array(npar,3, type=type_idl)'
+;
 varcontent=replicate( $
     {varcontent_all_par, $
     variable   : 'UNKNOWN', $
     idlvar     : 'dummy', $
-    idlinit    : 'fltarr(npar)*one', $
+    idlinit    : INIT_SCALAR, $
     skip       : 0}, $
     mpvar+mpaux+1)
-;
-INIT_SCALAR  = 'fltarr(npar)*one'
-INIT_3VECTOR = 'fltarr(npar,3)*one'
 ;
 ;  Go through all possible particle variables
 ;
@@ -343,7 +349,7 @@ if (id_proc) then begin
   variables=[variables,'iproc']
 endif
 ;
-tarr=fltarr(ncpus)*one
+tarr=make_array(ncpus, type=type_idl)
 t=zero
 npar_loc=0L
 npar=0L
@@ -351,7 +357,7 @@ if (rmv) then begin
   npar=pdim.npar
   ipar_rmv=lonarr(npar)
   npar_rmv=0L
-  trmv    =fltarr(npar)*one
+  trmv    =make_array(npar, type=type_idl)
 endif
 ;
 ;  Read from single processor.
@@ -381,10 +387,7 @@ if (proc ne -1) then begin
 ;
 ;  Read local processor data.
 ;
-    if keyword_set(single) then $
-      array=fltarr(npar,mpvar+mpaux) $
-    else $
-      array=fltarr(npar,mpvar+mpaux)*one
+    array=make_array(npar,mpvar+mpaux, type=type_idl)
 
     readu, file, array
 ;
@@ -404,10 +407,7 @@ if (proc ne -1) then begin
 ;
 endif else begin
 ;
-  if keyword_set(single) then $
-    array=fltarr(npar_max,totalvars) $
-  else $
-    array=fltarr(npar_max,totalvars)*one
+  array=make_array(npar_max,totalvars, type=single ? 4 : type_idl)
 ;
 ;  Loop over processors.
 ;
@@ -454,7 +454,7 @@ endif else begin
 ;
 ;  Read local processor data.
 ;
-      array_loc=fltarr(npar_loc,mpvar+mpaux)*one
+      array_loc=make_array(npar_loc,mpvar+mpaux, type=type_idl)
       readu, file, array_loc
 ;
 ;  Put local processor data into proper place in global data array
@@ -492,7 +492,7 @@ endif else begin
 ;
         openr, lun, filename1, /get_lun
         ipar_rmv_loc=0L
-        t_rmv_loc=0.0*one
+        t_rmv_loc=zero
 ;
 ;  Find out how many particles were removed at this processor. This is done
 ;  by counting lines until eof, without actually using the read data.
@@ -510,7 +510,7 @@ endif else begin
 ;  Read indices and times into array. The index is read as a real number,
 ;  but converted to integer afterwards.
 ;
-        array_loc=fltarr(nfields,nrmv)*one
+        array_loc=make_array(nfields,nrmv, type=type_idl)
         get_lun, file1 & close, file1
         openr, file1, filename1
         readf, file1, array_loc
@@ -520,15 +520,15 @@ endif else begin
         if (nfields eq 3) then begin
           ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
           if (n_elements(array_sink) eq 0) then $
-              array_sink=fltarr(npar_max,totalvars)*one
-          array_sink_loc=fltarr(mpvar+mpaux)*one
+              array_sink=make_array(npar_max,totalvars, type=single ? 4 : type_idl)
+          array_sink_loc=make_array(mpvar+mpaux, type=type_idl)
         endif
 ;
 ;  Read positions, velocities, etc.
 ;
         get_lun, file2 & close, file2
         openr, file2, filename2, /f77
-        array_loc=fltarr(mpvar+mpaux)*one
+        array_loc=make_array(mpvar+mpaux, type=type_idl)
         k=0L
         ipar_rmv_loc_dummy=0L
         for k=0,nrmv-1 do begin
@@ -823,8 +823,9 @@ else begin
 endelse
 
 if (execute(makeobject) ne 1) then begin
-  message, 'ERROR Evaluating variables: ' + makeobject, /info
+  message, 'Error: building of object failed, but data locally available as t,x,y,z,dx,dy,dz,npar_found,iipar'+arraytostring(varcontent.idlvar)+'.', /info
   undefine, object
+  stop
 endif
 ;
 end

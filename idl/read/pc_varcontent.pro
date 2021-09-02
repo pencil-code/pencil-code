@@ -1,6 +1,6 @@
 ;
 ;  $Id$
-;
+;+
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
 ; variable (string)
@@ -22,14 +22,19 @@
 ; idlinitloc (string)
 ;   Again as idlinit but used when two mesh sizes are required at once.
 ;   see idlvarloc
-;
-function pc_varcontent, datadir=datadir, dim=dim, param=param, par2=run_param, $
+;-
+function pc_varcontent, datadir=datadir, dim=dim, param=param, par2=run_param, help=help, $
                         run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single, hdf5=hdf5
 ;
 ;    /single: enforces single precision of returned data.
 ;      /down: data read from downsampled snapshot.
 ;
 COMPILE_OPT IDL2,HIDDEN
+;
+if (keyword_set(help)) then begin
+  doc_library, 'pc_varcontent'
+  return
+endif
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
@@ -40,6 +45,7 @@ if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
 default, hdf5, 0
+default, single, 0
 ;
 ;  Read the positions of variables in the f-array from the index file.
 ;
@@ -324,8 +330,7 @@ endif
 ;
 ;  Predefine some variable types used regularly.
 ;
-if keyword_set(single) then type='4' else type='type_idl'
-INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
+INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+(single ? '4' : 'type_idl')+')' ]
 ;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
 ;  ghost zones in the missing direction. We add ghost zones here anyway so

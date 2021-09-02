@@ -1,21 +1,26 @@
 ;;
 ;; $Id$
-;;
-;; NAME:
-;;      pc_read_pstalk
-;;
-;; PURPOSE:
-;;     Read information about local state of the gas around a
-;;     selected group of particles.
-;;
-;; MODIFICATION HISTORY:
-;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
-;;
+;+
+; NAME:
+;      pc_read_pstalk
+;
+; PURPOSE:
+;     Read information about local state of the gas around a
+;     selected group of particles.
+;-
+; MODIFICATION HISTORY:
+;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
+;
 pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
-    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax, single=single
+    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax, single=single, help=help
 COMPILE_OPT IDL2,HIDDEN
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_pstalk'
+    return
+  endif
 ;
 ; Default values.
 ;
@@ -25,6 +30,10 @@ default, it1, -1
 default, it0, 0
 default, single, 0
 datadir = pc_get_datadir(datadir)
+;
+; Read dimensions.
+;
+pc_read_dim, obj=dim, datadir=datadir, /quiet
 ;
 ; Load HDF5 file if requested or available.
 ;
@@ -40,7 +49,7 @@ datadir = pc_get_datadir(datadir)
         quantities = h5_content('stalker')
         num_quantities = n_elements (quantities)
         object = { t:replicate(single ? !Values.F_NaN : !Values.D_NaN*zero, num_files), IPAR:pc_read('stalker/ID') }
-        data = single ? fltarr(num_part, num_files) : fltarr (num_part, num_files)*zero
+        data = make_array(num_part, num_files, type=single ? 4 : type_idl)
         for i = 0, num_quantities-1 do begin
           if (strupcase (quantities[i]) eq 'ID') then continue
           object = create_struct (object, quantities[i], data)
@@ -61,9 +70,6 @@ datadir = pc_get_datadir(datadir)
     return
   end
 ;
-; Read dimensions and set precision.
-;
-pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 ;
 ; Read parameters from file.
@@ -116,8 +122,8 @@ endif
 ;
 ; Initialize data arrays.
 ;
-t=single ? fltarr(nout) : fltarr(nout)*zero
-array=single ? fltarr(nfields,pdim.npar_stalk,nout) : fltarr(nfields,pdim.npar_stalk,nout)*zero
+t=make_array(nout, type=single ? 4 : type_idl)
+array=make_array(nfields,pdim.npar_stalk,nout, type=single ? 4 : type_idl)
 ;
 ; Sink particles have random particle indices, so we need to keep track of the
 ; particle index for later sorting.
@@ -160,7 +166,7 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
         ipar_loc=lonarr(npar_stalk_loc)
         readu, lun, ipar_loc
 ;
-        array_loc=fltarr(nfields,npar_stalk_loc)*zero
+        array_loc=make_array(nfields,npar_stalk_loc, type=type_idl)
         readu, lun, array_loc
 ;
 ; Put data from local processor into global data structure.
@@ -229,6 +235,7 @@ status=execute(command)
 
 if (status eq 0) then begin
   message, 'Error: building of object failed, but data locally available as t,ipar_stalk,array', /info
+  undefine, object
   stop
 endif
 ;

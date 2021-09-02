@@ -1,6 +1,6 @@
 ;
 ; $Id$
-;
+;+
 ;  Reads and displays data in a plane (currently with tvscl) and plots a
 ;  curve as well (cross-section through iy).
 ;
@@ -21,7 +21,7 @@
 ;
 ;  ... and for spherical slices
 ;    rvid_plane,'bb1',min=-.5,max=.5,/sph
-;
+;-
 pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     tmax=tmax,max=amax,swap_endian=swap_endian,quiet=quiet, $
     min=amin,extension=extension,nrepeat=nrepeat,wait=wait, $
@@ -31,20 +31,26 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     shell=shell,r_int=r_int, $
     r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
     contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
-    nsmooth=nsmooth, cubic=cubic, textsize=textsize, $
+    nsmooth=nsmooth, cubic=cubic, textsize=textsize, help=help, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
     interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
-    Beq=Beq,taud=taud,grid=gridplot,maptype=maptype, _extra=_extra
+    Beq=Beq,taud=taud,grid=gridplot,maptype=maptype, single=single, _extra=_extra
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
+if (keyword_set(help)) then begin
+  doc_library, 'rvid_plane'
+  return
+endif
+
 default,ix,-1
 default,iy,-1
 default,ps,0
 default,quiet,0
 default,gridplot,0
+default,single,0
 ;
 ;  default extension
 ;
@@ -105,7 +111,7 @@ sample = ~keyword_set(interp)
         contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
         nsmooth=nsmooth, cubic=cubic, textsize=textsize, $
         polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
-        spherical_surface=spherical_surface, nlevels=nlevels, $
+        spherical_surface=spherical_surface, nlevels=nlevels, single=single, $
         doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
         interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
         Beq=Beq,taud=taud,grid=gridplot,maptype=maptype, _extra=_extra
@@ -135,6 +141,7 @@ if (keyword_set(png_truecolor)) then png=1
 ;  Read the dimensions from "dim.dat".
 ;
 pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
+pc_set_precision, dim=dim, /quiet
 nx=dim.nx
 ny=dim.ny
 nz=dim.nz
@@ -151,7 +158,7 @@ ncpus=nprocx*nprocy*nprocz
 ;
 ;  Read grid data.
 ;
-pc_read_grid, obj=grid, proc=proc, swap_endian=swap_endian, /quiet
+pc_read_grid, obj=grid, proc=proc, swap_endian=swap_endian, /quiet, single=single
 x=grid.x(dim.l1:dim.l2)
 y=grid.y(dim.m1:dim.m2)
 z=grid.z(dim.n1:dim.n2)
@@ -164,7 +171,7 @@ if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then extension='yz'
 ;
 ;  Consider non-equidistant grid
 ;
-pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
+pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet, single=single
 if not all(par.lequidist) then begin
   massage = 1
 ;
@@ -287,18 +294,18 @@ endif
 t=zero
 islice=0
 ;
-if (extension eq 'xy') then plane=fltarr(nx,ny)*one
-if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
-if (extension eq 'xy3') then plane=fltarr(nx,ny)*one
-if (extension eq 'xz') then plane=fltarr(nx,nz)*one
-if (extension eq 'yz') then plane=fltarr(ny,nz)*one
+if (extension eq 'xy') then plane=make_array(nx,ny, type=type_idl)
+if (extension eq 'xy2') then plane=make_array(nx,ny, type=type_idl)
+if (extension eq 'xy3') then plane=make_array(nx,ny, type=type_idl)
+if (extension eq 'xz') then plane=make_array(nx,nz, type=type_idl)
+if (extension eq 'yz') then plane=make_array(ny,nz, type=type_idl)
 size_plane=size(plane)
 if yinyang then size_plane=[2,nz,nz]
 ;
-slice_xpos=0.0*one
-slice_ypos=0.0*one
-slice_zpos=0.0*one
-slice_z2pos=0.0*one
+slice_xpos=zero
+slice_ypos=zero
+slice_zpos=zero
+slice_z2pos=zero
 ;
 ;  Open MPEG file, if keyword is set.
 ;
@@ -345,16 +352,16 @@ endif
 istride=stride ;(make sure the first one is written)
 ;
 if (keyword_set(global_scaling)) then begin
-  amax = !Values.F_NaN
-  amin = !Values.F_NaN
+  amax = !Values.F_NaN & amin=amax
   print, 'Reading "'+file_slice+'".'
   openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
   if yinyang and extension eq 'yz' then begin
     ninds=0L
     readu, lun, ninds
-    yz=fltarr(2,ninds)
+    yz=make_array(2,ninds, type=type_idl)
     readu, lun, yz
-    plane=fltarr(ninds)*one
+    plane=make_array(ninds, type=type_idl)
+    if (single) then yz=float(yz)
   endif
   while (not eof(lun)) do begin
     if (keyword_set(oldfile)) then begin ; For files without position
@@ -363,20 +370,20 @@ if (keyword_set(global_scaling)) then begin
       readu, lun, plane, t, slice_z2pos
     endelse
     if (keyword_set(exponential)) then begin
-      amax=max([amax,exp(max(plane))], /NaN)
-      amin=min([amin,exp(min(plane))], /NaN)
+      amax=max([amax,exp(max(float(plane)))], /NaN)
+      amin=min([amin,exp(min(float(plane)))], /NaN)
     endif else if (keyword_set(log)) then begin
-      amax=max([amax,alog10(max(plane))], /NaN)
-      amin=min([amin,alog10(min(plane)>tiny)], /NaN)
+      amax=max([amax,alog10(max(float(plane)))], /NaN)
+      amin=min([amin,alog10(min(float(plane))>tiny)], /NaN)
     endif else if (keyword_set(nsmooth)) then begin
-      amax=max([amax,max(smooth(plane,nsmooth))], /NaN)
-      amin=min([amin,min(smooth(plane,nsmooth))], /NaN)
+      amax=max([amax,max(smooth(float(plane),nsmooth))], /NaN)
+      amin=min([amin,min(smooth(float(plane),nsmooth))], /NaN)
     endif else if (keyword_set(sqroot)) then begin
-      amax=max([amax,sqrt(max(plane))], /NaN)
-      amin=min([amin,sqrt(min(plane))], /NaN)
+      amax=max([amax,sqrt(max(float(plane)))], /NaN)
+      amin=min([amin,sqrt(min(float(plane)))], /NaN)
     endif else begin
-      amax=max([amax,max(plane)], /NaN)
-      amin=min([amin,min(plane)], /NaN)
+      amax=max([amax,max(float(plane))], /NaN)
+      amin=min([amin,min(float(plane))], /NaN)
     endelse
   end
   close, lun
@@ -392,11 +399,12 @@ openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
 if yinyang and extension eq 'yz' then begin
   ngrid=0L
   readu, lun, ngrid
-  yz_yy=fltarr(2,ngrid)*one
+  yz_yy=make_array(2,ngrid, type=type_idl)
   readu, lun, yz_yy
-  plane=fltarr(ngrid)*one
+  plane=make_array(ngrid, type=type_idl)
   triangulate, yz_yy[0,*], yz_yy[1,*], triangles
   size_plane=size(plane)
+  if (single) then yz_yy=float(yz_yy)
 endif
 
 if (not quiet) then print, 'Array size: ', size_plane[1:size_plane[0]], yinyang ? '(Yin-Yang grid)':''
@@ -409,6 +417,9 @@ while (not eof(lun)) do begin
     readu, lun, plane, t, slice_z2pos
   end
 ;
+  if (single) then begin
+    plane=float(plane) & t=float(t)
+  endif
   if (massage) then plane = interpolate(plane, ii1, ii2, /grid)
 ;
 ;  Rescale data with optional parameter zoom.

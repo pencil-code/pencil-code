@@ -1,12 +1,17 @@
 ;
 ; $Id: pc_read_pdim.pro 9839 2008-09-05 07:24:02Z ajohan $
-;
+;+
 ;  Read block domain decomposition from file.
-;
+;-
 pro pc_read_block, object=object, datadir=datadir, varfile=varfile, $
-    proc=proc, swap=swap, quiet=quiet
+    proc=proc, swap=swap, quiet=quiet, single=single, help=help
 compile_opt IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_block'
+    return
+  endif
 ;
 ; Default settings.
 ;
@@ -14,6 +19,11 @@ default, varfile, 'blocks.dat'
 default, proc, 0
 default, swap, 0
 default, quiet, 0
+default, single, 0
+;
+; Default data directory.
+;
+datadir = pc_get_datadir(datadir)
 ;
 ; Read dimension.
 ;
@@ -36,7 +46,7 @@ nblockmax=bdim.nblockmax
 ;
 ; Initialize all variables.
 ;
-t=0.0d
+t=zero
 nblock_loc=0L
 nproc_parent=0L
 nproc_foster=0L
@@ -55,15 +65,15 @@ if (file_test(filename)) then begin
   if (nblock_loc gt 0) then begin
     iproc_parent_block=lonarr(nblock_loc)
     ibrick_parent_block=lonarr(nblock_loc)
-    xb=fltarr(mxb,nblock_loc)*one
-    yb=fltarr(myb,nblock_loc)*one
-    zb=fltarr(mzb,nblock_loc)*one
-    dx1b=fltarr(mxb,nblock_loc)*one
-    dy1b=fltarr(myb,nblock_loc)*one
-    dz1b=fltarr(mzb,nblock_loc)*one
-    dVol1xb=fltarr(mxb,nblock_loc)*one
-    dVol1yb=fltarr(myb,nblock_loc)*one
-    dVol1zb=fltarr(mzb,nblock_loc)*one
+    xb=make_array(mxb,nblock_loc, type=type_idl)
+    yb=make_array(myb,nblock_loc, type=type_idl)
+    zb=make_array(mzb,nblock_loc, type=type_idl)
+    dx1b=make_array(mxb,nblock_loc, type=type_idl)
+    dy1b=make_array(myb,nblock_loc, type=type_idl)
+    dz1b=make_array(mzb,nblock_loc, type=type_idl)
+    dVol1xb=make_array(mxb,nblock_loc, type=type_idl)
+    dVol1yb=make_array(myb,nblock_loc, type=type_idl)
+    dVol1zb=make_array(mzb,nblock_loc, type=type_idl)
     readu, file, iproc_parent_block
     readu, file, ibrick_parent_block
     readu, file, xb
@@ -75,6 +85,17 @@ if (file_test(filename)) then begin
     readu, file, dVol1xb
     readu, file, dVol1yb
     readu, file, dVol1zb
+    if (single and precision eq 'D') then begin
+      xb=float(xb)
+      yb=float(yb)
+      zb=float(zb)
+      dx1b=float(dx1b)
+      dy1b=float(dy1b)
+      dz1b=float(dz1b)
+      dVol1xb=float(dVol1xb)
+      dVol1yb=float(dVol1yb)
+      dVol1zb=float(dVol1zb)
+    endif
   endif else begin
     dummy=0L
     readu, file, dummy
@@ -84,9 +105,9 @@ if (file_test(filename)) then begin
     readu, file, dummy
     iproc_parent_block=-1
     ibrick_parent_block=-1
-    xb=-1.0*one
-    yb=-1.0*one
-    zb=-1.0*one
+    xb=single ? -1. : -one
+    yb=xb & zb=xb & dx1b=xb & dy1b=xb & dz1b=xb
+    dVol1xb=xb & dVol1yb=xb & dVol1zb=xb
   endelse
   if (nproc_parent gt 0) then begin
     iproc_parent_list=lonarr(nproc_parent)
@@ -108,6 +129,7 @@ if (file_test(filename)) then begin
 endif else begin
   message, 'ERROR: cannot find file ' + filename
 endelse
+if single then t=float(t)
 ;
 ; Build structure of all the variables
 ;

@@ -1,17 +1,16 @@
 ;
 ;  $Id$
-;
+;+
 ;  Same as pc_varcontent, but for global variables.
-;
-FUNCTION pc_varcontent_global, datadir=datadir, dim=dim, $
+;-
+FUNCTION pc_varcontent_global, datadir=datadir, dim=dim, help=help, $
     run2D=run2D, param=param, quiet=quiet, scalar=scalar, single=single
 COMPILE_OPT IDL2,HIDDEN
-
-common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
-;  Set pc_precision.
-;
-if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_varcontent_global'
+    return
+  endif
 
 default, single, 0
 ;
@@ -34,21 +33,11 @@ for i=0,nindex-1 do begin
   message, 'pc_varcontent_global: there was a problem with index.pro', /info
 endfor
 ;
-;  Make an array of structures in which to store their descriptions.
-;  Index zero is kept as a dummy entry.
-;
-one_loc = (single ? 1. : one)
-
-varcontent=replicate({varcontent_all, $
-    variable:'UNKNOWN', $
-    idlvar:'dummy', $
-    idlinit:'fltarr(mx,my,mz)*one_loc', $
-    idlvarloc:'dummy_loc', $
-    idlinitloc:'fltarr(mxloc,myloc,mzloc)*one', $
-    skip:0}, dim.mglobal+1)
-;
 ;  Predefine some variable types used regularly
 ;
+
+INIT_3VECTOR = single ? 'fltarr(mx,my,mz,3)' : 'make_array(mx,my,mz,3, type=type_idl)'
+INIT_SCALAR  = single ? 'fltarr(mx,my,mz)' : 'make_array(mx,my,mz, type=type_idl)'
 if (keyword_set(run2D)) then begin
 ;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
@@ -57,32 +46,35 @@ if (keyword_set(run2D)) then begin
 ;  
   if (dim.nx eq 1) then begin
 ;  2-D run in (y,z) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
-    INIT_3VECTOR_LOC = 'fltarr(myloc,mzloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
-    INIT_SCALAR_LOC  = 'fltarr(myloc,mzloc)*one'
+    INIT_3VECTOR_LOC = 'make_array(myloc,mzloc,3, type=type_idl)'
+    INIT_SCALAR_LOC  = 'make_array(myloc,mzloc, type=type_idl)'
   endif else if (dim.ny eq 1) then begin
 ;  2-D run in (x,z) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
-    INIT_3VECTOR_LOC = 'fltarr(mxloc,mzloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
-    INIT_SCALAR_LOC  = 'fltarr(mxloc,mzloc)*one'
+    INIT_3VECTOR_LOC = 'make_array(mxloc,mzloc,3, type=type_idl)'
+    INIT_SCALAR_LOC  = 'make_array(mxloc,mzloc, type=type_idl)'
   endif else begin
 ;  2-D run in (x,y) plane.
-    INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
-    INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
-    INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc)*one'
+    INIT_3VECTOR_LOC = 'make_array(mxloc,myloc,3, type=type_idl)'
+    INIT_SCALAR_LOC  = 'make_array(mxloc,myloc, type=type_idl)'
   endelse
 endif else begin
 ;
 ;  Regular 3-D run.
 ;
-  INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one_loc'
-  INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
-  INIT_SCALAR      = 'fltarr(mx,my,mz)*one_loc'
-  INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
+  INIT_3VECTOR_LOC = 'make_array(mxloc,myloc,mzloc,3, type=type_idl)'
+  INIT_SCALAR_LOC  = 'make_array(mxloc,myloc,mzloc, type=type_idl)'
 endelse
+;
+;  Make an array of structures in which to store their descriptions.
+;  Index zero is kept as a dummy entry.
+;
+varcontent=replicate({varcontent_all, $
+    variable:'UNKNOWN', $
+    idlvar:'dummy', $
+    idlinit:INIT_SCALAR, $
+    idlvarloc:'dummy_loc', $
+    idlinitloc:'make_array(mxloc,myloc,mzloc, type=type_idl)', $
+    skip:0}, dim.mglobal+1)
 ;
 ; For EVERY POSSIBLE variable in a var file, store a
 ; description of the variable in an indexed array of structures

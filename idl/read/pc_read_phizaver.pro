@@ -1,12 +1,17 @@
 ;;
 ;; $Id$
-;;
-;;   Read phiz-averages from file
-;;
+;+
+;   Read phiz-averages from file.
+;-
 pro pc_read_phizaver, object=object, varfile=varfile, datadir=datadir, $
-    monotone=monotone, quiet=quiet
+    monotone=monotone, quiet=quiet, single=single, help=help
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+;;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_phizaver'
+    return      
+  endif
 ;;
 ;;  Default data directory.
 ;;
@@ -14,27 +19,27 @@ datadir = pc_get_datadir(datadir)
 default, varfile, 'phizaverages.dat'
 default, monotone, 0
 default, quiet, 0
+default, single, 0
 
   ; load HDF5 averages, if available
   h5_file = datadir + '/averages/phi_z.h5'
   if (file_test (h5_file)) then begin
     last = pc_read ('last', filename='phi_z.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
-    times = reform (pc_read (groups+'/time'))
+    times = reform (pc_read (groups+'/time'),single=single)
     message, "pc_read_phizaver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
+    vars = h5_content (groups[0])
     found = where (strlowcase (vars) ne 'time', num)
     if (num le 0) then message, 'pc_read_phizaver: ERROR: "'+h5_file+'" contains no known averages!'
     vars = vars[found]
-    r = pc_read ('r')
+    r = pc_read ('r',single=single)
     object = { t:times, last:last, pos:long (groups), rcyl:r, nvars:num, labels:vars }
     for pos = 0, num-1 do begin
-      object = create_struct (object, vars[pos], pc_read (groups+'/'+vars[pos]))
+      object = create_struct (object, vars[pos], pc_read (groups+'/'+vars[pos],single=single))
     end
     h5_close_file
     return
   end
-
 ;;
 ;;  Get necessary dimensions.
 ;;
@@ -64,13 +69,13 @@ if ((nlines-nlin_rcyl) mod nlin_per_time ne 0) then $
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 
 for i=0,nvar-1 do begin
-  cmd=varnames[i]+'=fltarr(nr,nit)*one'
+  cmd=varnames[i]+'=make_array(nr,nit, type=single ? 4 : type_idl)'
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
 endfor
 
-rcyl=fltarr(nr)*one
-var =fltarr(nr)*one
-tt  =fltarr(nit)*one
+rcyl=make_array(nr, type=type_idl)
+var =make_array(nr, type=type_idl)
+tt  =make_array(nit, type=single ? 4 : type_idl)
 
 ;;
 ;;  Prepare for read
@@ -89,6 +94,8 @@ openr, lun, filename, /get_lun
 
 ;; Read radius (first ceil(nr/8) records)
 readf, lun, rcyl
+if (single) then rcyl=float(rcyl)
+t=zero
 for it=0,nit-1 do begin
 ;; Read time
   readf, lun, t
@@ -119,8 +126,9 @@ makeobject="object = CREATE_STRUCT(name=objectname,['t','rcyl'," + $
 
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
+  print, 'Data locally available as tt[ii], rcyl, '+arraytostring(varnames+'[*,ii]',/noleader)+'.'
   undefine,object
+  stop
 endif
-
 
 end

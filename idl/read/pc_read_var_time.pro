@@ -1,4 +1,4 @@
-; +
+;+
 ; NAME:
 ;       PC_READ_VAR_TIME
 ;
@@ -27,16 +27,16 @@
 ;
 ; EXAMPLES:
 ;       pc_read_var, time=t              ;; read time into variable t
-;
+;-
 ; MODIFICATION HISTORY:
 ;       $Id$
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
-;-
+;
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
     procdim=procdim, ivar=ivar, swap_endian=swap_endian, f77=f77, reduced=reduced, $
-    exit_status=exit_status, quiet=quiet
+    exit_status=exit_status, quiet=quiet, single=single, help=help
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -44,13 +44,18 @@ COMPILE_OPT IDL2,HIDDEN
 ; set them up properly.
 ;
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
-  common cdat_coords,coord_system
+
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_var_time'
+    return
+  endif
 ;
 ; Default settings.
 ;
   default, reduced, 0
   default, quiet, 0
-  if (size (datadir, /type) eq 0) then datadir = pc_get_datadir (datadir)
+  default, single, 0
+  datadir = pc_get_datadir (datadir)
 ;
   if (arg_present(exit_status)) then exit_status=0
 ;
@@ -70,7 +75,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    time = pc_read ('time', file=varfile, datadir=datadir)
+    time = pc_read ('time', file=varfile, datadir=datadir, single=single)
     return
   end
 ;
@@ -78,17 +83,16 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   pc_find_config, varfile, datadir=datadir, procdir=procdir, procdim=procdim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
 ;
-; Local shorthand for some parameters.
+; Set precision for all Pencil Code tools.
 ;
-  precision = procdim.precision
-  if (precision eq 'D') then bytes = 8 else bytes = 4
+  pc_set_precision, datadir=datadir, /quiet
 ;
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(procdim.mx)*one
-  y=fltarr(procdim.my)*one
-  z=fltarr(procdim.mz)*one
+  x=make_array(procdim.mx, type=type_idl)
+  y=make_array(procdim.my, type=type_idl)
+  z=make_array(procdim.mz, type=type_idl)
   dx=zero
   dy=zero
   dz=zero
@@ -139,6 +143,6 @@ COMPILE_OPT IDL2,HIDDEN
 ; If requested print a summary (actually the default - unless being quiet).
 ;
   if (not quiet) then print, ' t = ', t
-  time = t
+  time = single ? float(t) : t
 ;
 end

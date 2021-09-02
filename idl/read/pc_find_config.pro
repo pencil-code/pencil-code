@@ -1,4 +1,4 @@
-; +
+;+
 ; NAME:
 ;       PC_FIND_CONFIG
 ;
@@ -41,12 +41,17 @@
 ;       Written by: PABourdin, 06-Sep-2015
 ;
 ;-
-pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, procdim=procdim, allprocs=allprocs, reduced=reduced, lcollect_xy=lcollect_xy, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file
+pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, procdim=procdim, allprocs=allprocs, reduced=reduced, lcollect_xy=lcollect_xy, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file, help=help
 
 COMPILE_OPT IDL2,HIDDEN
 
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 	common cdat_coords, coord_system
+
+        if (keyword_set(help)) then begin
+          doc_library, 'pc_find_config'
+          return
+        endif
 
 	; defaults
 	default, reduced, 0
@@ -55,6 +60,7 @@ COMPILE_OPT IDL2,HIDDEN
 	default, check_file, 0
 	dead_beef = 'DEADBEEF'
 
+        pc_set_precision, dim=dim, datadir=datadir, /quiet
 	; determine file type (set allprocs and procdir)
 	if (keyword_set (reduced)) then begin
 		if (n_elements (allprocs) gt 0) then begin
@@ -74,7 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
 			procdir = datadir+'/proc0/'
 			allprocs = 0
 			pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-			if (size (start_param, /type) ne 8) then pc_read_param, object=start_param, dim=procdim, datadir=datadir, /quiet
+			if (not is_defined(start_param)) then pc_read_param, object=start_param, dim=procdim, datadir=datadir, /quiet
 			nprocxy = procdim.nprocx * procdim.nprocy
 			num_var = procdim.mvar
 			if (start_param.lwrite_aux) then num_var += procdim.maux
@@ -112,12 +118,11 @@ COMPILE_OPT IDL2,HIDDEN
 	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+'/reduced/'
 
 	; get global dimensions
-	if (size (dim, /type) ne 8) then begin
+	if (size(dim, /type) ne 8) then $
 		pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
-	end
 
 	; get "start.in" parameters
-	if (size (start_param, /type) ne 8) then pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
+	if (not is_defined(start_param)) then pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 
 	; set coordinate system
 	coord_system = start_param.coord_system
@@ -127,10 +132,9 @@ COMPILE_OPT IDL2,HIDDEN
 	if (start_param.lwrite_aux) then mvar_io += dim.maux
 
 	; set also procdim
-	if (size (procdim, /type) eq 0) then begin
+	if (not is_defined(procdim)) then begin
 		if (allprocs eq 1) then procdim = dim else pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-	end
-
+        endif
 	; set other parameters according to allprocs
 	marker = ''
 	marker_bytes = 4

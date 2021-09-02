@@ -63,6 +63,10 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   if (not is_defined(param)) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
   if (not is_defined(dim)) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
 ;
+;  Set pc_precision.
+;
+    pc_set_precision, datadir=datadir, dim=dim, /quiet
+;
 ; Set mx,my,mz in common block for derivative routines
 ;
     nx=dim.nx
@@ -92,10 +96,6 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;  Set coordinate system.
 ;
     coord_system=param.coord_system
-;
-;  Set pc_precision.
-;
-    pc_set_precision, dim=dim, quiet=quiet
     NaN = !Values.F_NaN * one
     downprec = (precision eq 'D') and single
 ;

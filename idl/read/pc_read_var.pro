@@ -1,7 +1,7 @@
-; +
+;
 ; NAME:
 ;       PC_READ_VAR
-;
+;+
 ; PURPOSE:
 ;       Read var.dat, or other VAR files in any imaginable way!
 ;
@@ -71,7 +71,7 @@
 ;       pc_read_var, obj=vars, /bb       ;; shortcut for the above
 ;       pc_read_var, obj=vars, variables=['bb'], /magic, /trimall
 ;                                        ;; vars.bb without ghost points
-;
+;-
 ; MODIFICATION HISTORY:
 ;       $Id$
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
@@ -79,7 +79,7 @@
 ; BUGS:
 ;       Note that the variable "variables" is being modified upon exiting.
 ;
-;-
+;
 @pc_noghost.pro
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
@@ -110,6 +110,11 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat_coords,coord_system
   common corn, llcorn, lucorn, ulcorn, uucorn
 ;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_var'
+    return
+  endif
+;
 ; Default settings.
 ;
   default, magic, 0
@@ -127,13 +132,6 @@ COMPILE_OPT IDL2,HIDDEN
   default, cubint, -.5
 ;
   if (arg_present(exit_status)) then exit_status=0
-;
-; If no meaningful parameters are given show some help!
-;
-  if (keyword_set(help)) then begin
-    doc_library, 'pc_read_var'
-    return
-  endif
 ;
 ; Default data directory.
 ;
@@ -198,13 +196,18 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   logrid=0
   if (keyword_set(ogrid)) then logrid=1  
-  if (n_elements(dim) eq 0) then $
+  if (not is_defined(dim)) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
+;
+; Set precision for all Pencil Code tools if necessary.
+;
+  pc_set_precision, datadir=datadir, dim=dim, quiet=quiet
+  
   if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
   if (n_elements(par2) eq 0) then begin
     if (file_test(datadir+'/param2.nml')) then begin
-      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet, single=single
     endif else begin
       print, 'Could not find '+datadir+'/param2.nml'
       if (magic) then print, 'This may give problems with magic variables.'
@@ -218,11 +221,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  if (size(grid, /type) eq 0) then $
+  if (not is_defined(grid)) then $
       pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
       proc=proc, allprocs=allprocs, reduced=reduced, $
-      swap_endian=swap_endian, /quiet, down=ldownsampled
-    
+      swap_endian=swap_endian, /quiet, down=ldownsampled, single=single
   if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=hdf5_varfile)
@@ -305,7 +307,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, global, 0
   if (global) then begin
-    pc_read_global, obj=gg, proc=proc, $
+    pc_read_global, obj=gg, proc=proc, single=single, $
         param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, allprocs=allprocs, /quiet
     global_names=tag_names(gg)
   endif
@@ -345,12 +347,13 @@ COMPILE_OPT IDL2,HIDDEN
     endfor
 
     object = create_struct('t', t)
-    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', (pc_read ('persist/shear_delta_y'))[0])
+    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', (pc_read ('persist/shear_delta_y',single=single))[0])
     h5_close_file
     
     if (not arg_present(object)) then begin
       message, '"WARNING: No object named; data will not be returned, but are available locally in variables x,y,z,t'+arraytostring(tags), /info
       stop
+      return
     endif
 
     if keyword_set(trimall) then begin
@@ -360,6 +363,12 @@ COMPILE_OPT IDL2,HIDDEN
       object = create_struct('t', t, 'x', grid.x, 'y', grid.y, 'z', grid.z, 'dx', grid.dx, 'dy', grid.dy, 'dz', grid.dz)
       res=execute("object = create_struct(object,["+strjoin("'"+tags+"'",',')+']'+arraytostring(tags)+")")
     end
+    if (not res) then begin
+      message, 'ERROR creating object; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz'+arraytostring(tags)+'.', /info
+      undefine, object
+      stop
+      return
+    endif
 
     return
   end
@@ -409,9 +418,9 @@ COMPILE_OPT IDL2,HIDDEN
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled, ogrid=logrid
   endelse
 ;
-; ... and check pc_precision is set for all Pencil Code tools.
+; Set precision for all Pencil Code tools if necessary.
 ;
-  pc_set_precision, dim=dim, quiet=quiet
+  pc_set_precision, datadir=datadir, dim=dim, quiet=quiet
 ;
 ; Local shorthand for some parameters.
 ;
@@ -473,18 +482,18 @@ COMPILE_OPT IDL2,HIDDEN
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(dim.mx)*one
-  y=fltarr(dim.my)*one
-  z=fltarr(dim.mz)*one
+  x=make_array(dim.mx, type=type_idl)
+  y=make_array(dim.my, type=type_idl)
+  z=make_array(dim.mz, type=type_idl)
   dx=zero
   dy=zero
   dz=zero
   deltay=zero
 ;
   if (nprocs gt 1) then begin
-    xloc=fltarr(procdim.mx)*one
-    yloc=fltarr(procdim.my)*one
-    zloc=fltarr(procdim.mz)*one
+    xloc=make_array(procdim.mx, type=type_idl)
+    yloc=make_array(procdim.my, type=type_idl)
+    zloc=make_array(procdim.mz, type=type_idl)
   endif
 ;
 ; Get a free unit number.
@@ -595,9 +604,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;  accordingly in y and z direction makes a difference on the
 ;  diagonals).
 ;
-      xloc=fltarr(procdim.mx)*one
-      yloc=fltarr(procdim.my)*one
-      zloc=fltarr(procdim.mz)*one
+      xloc=make_array(procdim.mx, type=type_idl)
+      yloc=make_array(procdim.my, type=type_idl)
+      zloc=make_array(procdim.mz, type=type_idl)
 
       if (procdim.ipx eq 0L) then begin
         i0x=0L
@@ -796,6 +805,12 @@ incomplete:
 
   endfor
   iyy=0
+
+  if (single) then begin
+    x=float(x) & y=float(y) & z=float(z)
+    dx=float(dx) & dy=float(dy) & dz=float(dz)
+    t=float(t) & deltay=float(deltay)
+  endif
 ;
 ; Tidy memory a little.
 ;
@@ -885,7 +900,7 @@ incomplete:
           if iyy eq 1 then begin 
             idum=execute( tags[i]+'_tmp = '+tags[i] )
             idum=execute( 'sz=size('+tags[i]+')')
-            idum=execute( tags[i]+' = make_array([sz[1:sz[0]],2], /float, /nozero)')
+            idum=execute( tags[i]+' = make_array([sz[1:sz[0]],2], type=single ? 4 : type_idl, /nozero)')
             idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i]+'_tmp' )
             idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
             idum=execute('undefine,'+tags[i]+'_tmp' )
@@ -919,13 +934,13 @@ incomplete:
       yz_uucorn=uucorn
       yz_uucorn[0,*] = (uucorn[0,*]-y[0])*scaly & yz_uucorn[1,*] = (uucorn[1,*]-z[0])*scalz 
 ;
-      values=fltarr((size(yz_llcorn))[2])
+      values=make_array((size(yz_llcorn))[2],type=single ? 4 : type_idl )
 
       for i=0,n_elements(tags)-1 do begin
 
         idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
         inds_other='[*,*,*'+(isvec ? ',icomp' : '')+',1-iyy]' & inds_val=(isvec ? '[*,*,icomp]' : '')
-        if isvec then values=fltarr(dim.mx,n_elements(yz_llcorn[0,*]),3)*one 
+        if isvec then values=make_array(dim.mx,n_elements(yz_llcorn[0,*]),3, type=single ? 4 : type_idl) 
         ncomp=(isvec ? 2 : 0)
 ;
 ;  Interpolate and fill in both grids.
@@ -1040,7 +1055,7 @@ incomplete:
     endif
     message, 'WARNING: No object named; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.' , /info
     stop
-
+    return
   endif else begin
 
     if (not magic and keyword_set(trimall)) then variables='pc_noghost('+variables+', dim=dim)'
@@ -1054,6 +1069,7 @@ incomplete:
       message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.', /info
       undefine, object
       stop
+      return
     endif
 ;
 ; If requested print a summary (actually the default - unless being quiet).

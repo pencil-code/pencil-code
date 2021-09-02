@@ -1,8 +1,8 @@
 ;
 ; $Id$
-;
+;+
 ;  Read 2D-averages from file.
-;
+;-
 ;  1-mar-17/MR: added new keyword parameter write: allows to write the averages,
 ;               just read in, to destination write; if write eq '.' or write eq './'
 ;               the averages in the cirrent working directory will be overwritten - 
@@ -26,18 +26,19 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
     readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, $
-    nameobject=nameobject,write=write, single=single, dim=dim, grid=grid
+    nameobject=nameobject,write=write, single=single, dim=dim, grid=grid, help=help
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_2d_aver'
+    return
+  endif
+;
   dir=strtrim(dir,2)
   if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: averaging direction "'+strtrim(dir,2)+'" unknown.'
-;
-;  Set pc_precision.
-;
-  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 ;
 ;  Default values.
 ;
@@ -145,7 +146,12 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read additional information.
 ;
-  pc_read_dim, obj=dim, datadir=datadir, /quiet
+  if (not is_defined(dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+;
+;  Set pc_precision.
+;
+  pc_set_precision, datadir=datadir, dim=dim, /quiet
+
   pc_read_dim, obj=locdim, datadir=datadir+'/proc0', /quiet
   if (stalk) then begin
     pc_read_pstalk, obj=pst, datadir=datadir, /quiet, single=single
@@ -346,7 +352,7 @@ COMPILE_OPT IDL2,HIDDEN
         print, 'Returning averages at '+relchar+strtrim(nret,2)+' times out of '+strtrim(nit,2)+ $
                ' at an interval of '+strtrim(njump,2)+' steps.'
 ;
-    tt=fltarr(nret)*one
+    tt=make_array(nret, type=single ? 4 : type_idl)
 ;
   endif
 ;
@@ -393,8 +399,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (iplot lt 0) then begin
 ;
-    array_local=fltarr(nx,ny,nvar_all)*one
-    array_global= single ? fltarr(nxg,nyg,nret,nvar) : fltarr(nxg,nyg,nret,nvar)*one
+    array_local=make_array(nx,ny,nvar_all, type=type_idl)
+    array_global=make_array(nxg,nyg,nret,nvar, type=single ? 4 : type_idl)
       
     type_as_on_disk = (not keyword_set(single)) or type_idl eq 4
 
@@ -409,7 +415,7 @@ COMPILE_OPT IDL2,HIDDEN
       if yinyang and ip ge num_files-2*nprocx then begin
         nyl=nycap
         if ip eq num_files-2*nprocx then $
-          array_local=fltarr(nx,nyl,nvar_all)*one
+          array_local=make_array(nx,nyl,nvar_all, type=type_idl)
         if ip lt num_files-nprocx then $
           iya=nygrid+nycap $
         else $
@@ -552,7 +558,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Method 2: Read in data slice by slice and plot the results.
 ;
     for i=0,nvar-1 do begin
-      cmd=variables[i]+'=fltarr(nxg,nyg,ceil(nit/double(njump)))*one'
+      cmd=variables[i]+'=make_array(nxg,nyg,ceil(nit/double(njump)), type=type_idl)'
       if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
     endfor
 
@@ -573,9 +579,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Variables to put single time snapshot in.
 ;
-    array=single ? fltarr(nxg,nyg,nvar) : fltarr(nxg,nyg,nvar)*one
-    array_local=fltarr(nx,ny,nvar_all)*one
-    tt_local= single ? fltarr(num_files) : fltarr(num_files)*one
+    array=make_array(nxg,nyg,nvar, type=single ? 4 : type_idl)
+    array_local=make_array(nx,ny,nvar_all, type=type_idl)
+    tt_local=make_array(num_files, type=single ? 4 : type_idl)
 ;
 ;  Read 2D-averages and put in arrays if requested.
 ;
@@ -709,7 +715,7 @@ COMPILE_OPT IDL2,HIDDEN
   endelse
 ;
 ;  Put data in structure. One must set nit>0 to specify how many lines
-;  of data that should be saved.
+;  of data should be saved.
 ;
   if (nit ne 0) then begin
     if (yinyang) then begin 

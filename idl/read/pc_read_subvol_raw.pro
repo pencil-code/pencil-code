@@ -1,7 +1,7 @@
-; +
+;
 ; NAME:
 ;       PC_READ_SUBVOL_RAW
-;
+;+
 ; PURPOSE:
 ;       Read sub-volumes from var.dat, or other VAR files in an efficient way!
 ;
@@ -59,13 +59,16 @@
 ;       tvscl, HR_ohm[*,*,0]          ; Display lowest physical z-layer.
 ;       tvscl, HR_ohm[dim.nx-1,*,*]   ; Display rightmost physical yz-cut.
 ;       cslice, HR_ohm                ; Explore 3D sub-volume in a GUI.
-;
+;-
 ; MODIFICATION HISTORY:
 ;       $Id$
 ;       Adapted from: pc_read_slice_raw.pro, 4th May 2012
 ;
-;-
-pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77
+;
+pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, $
+                        start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, $
+                        xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, $
+                        time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77, single=single, help=help
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -74,12 +77,18 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 	common cdat_coords, coord_system
 
+        if (keyword_set(help)) then begin
+          doc_library, 'pc_read_subvol_raw'
+          return
+        endif
+
 	; Default settings.
 	default, reduced, 0
 	default, addghosts, 0
 	default, swap_endian, 0
 	if (keyword_set (name)) then name += "_" else name = "pc_read_subvol_raw_"
 	if (keyword_set (reduced)) then allprocs = 1
+	default, single, 0
 
 	; Default data directory.
 	datadir = pc_get_datadir(datadir)
@@ -93,7 +102,11 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	end
 
 	; Get necessary dimensions quietly.
-	if (n_elements (dim) eq 0) then pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
+	if (not is_defined(dim)) then pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
+
+        ; Set precision for all Pencil Code tools.
+
+        pc_set_precision, datadir=datadir, dim=dim, /quiet
 
 	; Local shorthand for some parameters.
 	nxgrid = dim.nxgrid
@@ -162,10 +175,10 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Read the grid, if needed.
 	if (size (grid, /type) ne 8) then $
-		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
+		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
 
 	; Read timestamp.
-	pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet
+	pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet, single=single
 
 	; Generate dim structure of the sub-volume.
 	sub_dim = dim
@@ -272,7 +285,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Load HDF5 varfile if requested or available.
 	if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-		time = pc_read ('time', file=varfile, datadir=datadir)
+		time = pc_read ('time', file=varfile, datadir=datadir, single=single)
 		if (size (varcontent, /type) ne 8) then begin
 			varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
 		end
@@ -286,7 +299,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 			gy_delta -= 2*nghosty
 			gz_delta -= 2*nghostz
 		end
-		object = dblarr (gx_delta, gy_delta, gz_delta, num_quantities)
+		object = make_array(gx_delta, gy_delta, gz_delta, num_quantities, type=single ? 4 : type_idl)
 		tags = { time:time }
 		start = [ xgs, ygs, zgs ]
 		count = [ gx_delta, gy_delta, gz_delta ]
@@ -364,7 +377,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Read meta data and set up variable/tag lists.
 	if (size (varcontent, /type) ne 8) then $
-		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet)
+		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet,single=single)
 	totalvars = (size(varcontent))[1]
 	if (size (var_list, /type) eq 0) then begin
 		var_list = varcontent[*].idlvar
@@ -420,7 +433,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		indices = indices[where (indices ge 0)]
 
 		; Initialize output buffer.
-		object = make_array (gx_delta, gy_delta, gz_delta, num_read, type=type_idl)
+		object = make_array(gx_delta, gy_delta, gz_delta, num_read, type=single ? 4 : type_idl)
 	end
 
 	; Iterate over processors.

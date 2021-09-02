@@ -51,7 +51,7 @@ function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=p
 
     index = (slice - first) / step
     group = strtrim (slice, 2)
-    data[*,*,index] = pc_read (group+'/data',/single)
+    data[*,*,index] = pc_read (group+'/data',single=single)
     if arg_present(time) then time[index] = pc_read (group+'/time')
     if arg_present(coord) then coord[index] = pc_read (group+'/coordinate')
     if arg_present(pos) then pos[index] = pc_read (group+'/position')

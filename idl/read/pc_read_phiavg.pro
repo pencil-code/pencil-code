@@ -2,34 +2,34 @@
 ;;;   pc_read_phiavg.pro   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  Date:   11-Aug-2003
-;;;
-;;;  Description:
-;;;    Read phi-averages from file and return them in a structure
-;;;  Usage:
-;;;    avg = pc_read_phiavg('data/averages/PHIAVG1')
-;;;  Keywords:
-;;;    TONLY  -- If true, return just the time t (as a scalar)
-;;;  Slots of returned structure:
-;;;       t        FLOAT              ; time
-;;;       rcyl     FLOAT Array[nr]    ; coordinate
-;;;       z        FLOAT Array[nz]    ; coordinate (only for root proc)
-;;;       nprocz   LONG               ; number of processors in z
-;;;       nvars    LONG               ; number of variables
-;;;       <var1>   FLOAT Array[nr,nz] ; first averaged variable
-;;;       <var2>   FLOAT Array[nr,nz] ; second averaged variable,
-;;;       etc.
-;;;    The names <var1>, etc are the same as in the file phiaver.in,
-;;;    e.g. `b2mphi', etc.
-;;;
-;;;  File format of PHIAVG files:
-;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
-;;;    2. t, r_phiavg, z_phiavg, dr, dz
-;;;    1. data
-;;;    4. len(labels),labels
-
+;+ 
+;   Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+;   Date:   11-Aug-2003
+; 
+;   Description:
+;     Read phi-averages from file and return them in a structure
+;   Usage:
+;     avg = pc_read_phiavg('data/averages/PHIAVG1')
+;   Keywords:
+;     TONLY  -- If true, return just the time t (as a scalar)
+;   Slots of returned structure:
+;        t        FLOAT              ; time
+;        rcyl     FLOAT Array[nr]    ; coordinate
+;        z        FLOAT Array[nz]    ; coordinate (only for root proc)
+;        nprocz   LONG               ; number of processors in z
+;        nvars    LONG               ; number of variables
+;        <var1>   FLOAT Array[nr,nz] ; first averaged variable
+;        <var2>   FLOAT Array[nr,nz] ; second averaged variable,
+;        etc.
+;     The names <var1>, etc are the same as in the file phiaver.in,
+;     e.g. `b2mphi', etc.
+; 
+;   File format of PHIAVG files:
+;     3. nr_phiavg, nz_phiavg, nvars, nprocz
+;     2. t, r_phiavg, z_phiavg, dr, dz
+;     1. data
+;     4. len(labels),labels
+;-
 
 function parse_labels, line
 ;
@@ -62,12 +62,12 @@ function pc_read_phiavg, file, datadir=datadir, $
                          DEBUG=debug, HELP=help, old_format=old_format, single=single
 
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
-
-  if (keyword_set(help)) then extract_help, 'pc_read_phiavg'
-;
-;  Set pc_precision.
-;
-  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
+;               
+  if (keyword_set(help)) then begin
+    extract_help, 'pc_read_phiavg'
+    doc_library, 'pc_read_phiavg'
+    return, 0      
+  endif
 
   default, debug, 0
   default, t_only, 0
@@ -101,11 +101,13 @@ function pc_read_phiavg, file, datadir=datadir, $
     h5_close_file
     return, struct
   end
+;
+;  Set precision.
+;
+  pc_set_precision, datadir=datadir, /quiet
 
-  if (n_elements(vars) gt 0) then begin
-    message, /INFO, $
-        'VARS keyword (for selecting variables) not yet implemented'
-  endif
+  if ( is_defined(vars) ) then $
+    message, /INFO, 'VARS keyword (for selecting variables) not yet implemented'
 
   if (strpos (file, 'averages/') eq -1) then file = datadir + '/averages/' + file
 
@@ -113,7 +115,7 @@ function pc_read_phiavg, file, datadir=datadir, $
   close, lun
   openr, lun, file, /F77
 
-  t = 0.*one
+  t = zero
   if (t_only) then begin
     readu, lun
     readu, lun, t
@@ -126,8 +128,8 @@ function pc_read_phiavg, file, datadir=datadir, $
   readu, lun, nr, nz, nvars, nprocz
   if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
 
-  rcyl = fltarr(nr)*one
-  z    = fltarr(nz)*one
+  rcyl = make_array(nr, type=type_idl)
+  z    = make_array(nz, type=type_idl)
   readu, lun, t, rcyl, z
   if (single) then begin
     t=float(t) & rcyl=float(rcyl) & z=float(z)
@@ -138,7 +140,7 @@ function pc_read_phiavg, file, datadir=datadir, $
     print,'z in '   , minmax(z)
   endif
 
-  vars = fltarr(nr,nz,nvars)*one
+  vars = make_array(nr,nz,nvars, type=type_idl)
   readu, lun, vars
   if (single) then vars=float(vars)
   if (debug) then print, 'vars in ', minmax(vars)

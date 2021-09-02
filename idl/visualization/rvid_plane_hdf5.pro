@@ -1,6 +1,6 @@
 ;
 ; $Id$
-;
+;+
 ;  Reads and displays data in a plane (currently with tvscl) and plots a
 ;  curve as well (cross-section through iy).
 ;
@@ -21,7 +21,7 @@
 ;
 ;  ... and for spherical slices
 ;    rvid_plane_hdf5, 'bb1', min=-.5, max=.5, /sph
-;
+;-
 pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, $
     tmax=tmax, max=amax, swap_endian=swap_endian, quiet=quiet, $
     min=amin, extension=extension, nrepeat=nrepeat, wait=wait, $
@@ -30,21 +30,28 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     global_scaling=global_scaling, automatic_scaling=automatic_scaling, $
     shell=shell, r_int=r_int, r_ext=r_ext, zoom=zoom, colmpeg=colmpeg, exponential=exponential, $
     contourplot=contourplot, color=color, sqroot=sqroot, tunit=tunit, $
-    nsmooth=nsmooth, cubic=cubic, textsize=textsize, $
+    nsmooth=nsmooth, cubic=cubic, textsize=textsize, help=help, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer, wsx=wsx, wsy=wsy, title=title, log=log, $
     interp=interp, savefile=savefile, rotate=rotate, phi_shift=phi_shift, $
-    Beq=Beq, taud=taud, grid=gridplot, maptype=maptype, _extra=_extra
+    Beq=Beq, taud=taud, grid=gridplot, maptype=maptype, single=single, _extra=_extra
 ;
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'rvid_plane_hdf5'
+    return
+  endif
+
   if (keyword_set (swap_endian)) then print, "rvid_plane_hdf5: WARNING: the 'swap_endian' parameter is ignored for HDF5 files."
 ;
   default, ix, -1
   default, iy, -1
   default, ps, 0
   default, quiet, 0
+  default, single, 0
   default, gridplot, 0
 ;
 ;  default extension
@@ -101,6 +108,8 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   end
 ;
   pc_read_dim, obj=dim, proc=proc, datadir=datadir, /quiet
+  pc_set_precision, dim=dim, /quiet
+
   nx = dim.nx
   ny = dim.ny
   nz = dim.nz
@@ -121,7 +130,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   nprocz = dim.nprocz
   ncpus = nprocx*nprocy*nprocz
 ;
-  pc_read_grid, obj=grid, proc=proc, dim=dim, datadir=datadir, /quiet
+  pc_read_grid, obj=grid, proc=proc, dim=dim, datadir=datadir, /quiet, single=single
   x = grid.x(dim.l1:dim.l2)
   y = grid.y(dim.m1:dim.m2)
   z = grid.z(dim.n1:dim.n2)
@@ -131,7 +140,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   if ((nx ne 1) and (ny eq 1) and (nz ne 1)) then extension = 'xz'
   if ((nx eq 1) and (ny ne 1) and (nz ne 1)) then extension = 'yz'
 ;
-  pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
+  pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet, single=single
   if (not all (par.lequidist)) then begin
     ; consider non-equidistant grid
     destretch = 1
@@ -217,8 +226,8 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     yy = fltarr(nx,nz)
     for i = 0, nx-1 do begin
       for j = 0, nz-1 do begin
-        xx[i,j] = x[i]*cos (theta[j])
-        yy[i,j] = x[i]*sin (theta[j])
+        xx[i,j] = x[i]*cos(theta[j])
+        yy[i,j] = x[i]*sin(theta[j])
       end
     end
   end
@@ -302,7 +311,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   end
 
   ; set processor dimensions
-  if (size (proc, /type) ne 0) then begin
+  if (is_defined(proc)) then begin
     ipx = proc mod dim.nprocx
     ipy = (proc / dim.nprocx) mod dim.nprocy
     ipz = proc / (dim.nprocx * dim.nprocy)
@@ -316,11 +325,10 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   if (not quiet) then print, 'Array size: ', size_plane, yinyang ? '(Yin-Yang grid)' : ''
 
   if (keyword_set (global_scaling)) then begin
-    amax = !Values.F_NaN
-    amin = !Values.F_NaN
+    amax = !Values.F_NaN & amin=amax
     for pos = 1, last, stride+1 do begin
       frame = str (pos)
-      plane = pc_read (frame+'/data', start=start, count=count)
+      plane = pc_read (frame+'/data', start=start, count=count, single=single)
       if (keyword_set (nsmooth)) then plane = smooth (plane, nsmooth)
       amax = max ([ amax, max (plane) ], /NaN)
       amin = min ([ amin, min (plane) ], /NaN)
@@ -342,8 +350,8 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   for pos = 1, last, stride+1 do begin
     frame = str (pos)
     index = (pos - 1) / (stride + 1)
-    plane = pc_read (frame+'/data', start=start, count=count)
-    t = pc_read (frame+'/time')
+    plane = pc_read (frame+'/data', start=start, count=count, single=single)
+    t = pc_read (frame+'/time', single=single)
 ;
     if (keyword_set (destretch)) then plane = interpolate(plane, ii1, ii2, /grid)
 ;
@@ -488,7 +496,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
           wdelete, pixID
         end
         if (keyword_set (savefile)) then begin
-          if (size (slices, /type) eq 0) then begin
+          if (not is_defined(slices)) then begin
             slices = plane
             times = t
           end else begin

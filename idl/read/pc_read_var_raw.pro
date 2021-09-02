@@ -1,7 +1,7 @@
-; +
+;
 ; NAME:
 ;       PC_READ_VAR_RAW
-;
+;+
 ; PURPOSE:
 ;       Read var.dat, or other VAR files in an efficient way!
 ;
@@ -41,17 +41,17 @@
 ;       cslice, var
 ; or:
 ;       cmp_cslice, { uz:var[*,*,*,tags.uz], lnrho:var[*,*,*,tags.lnrho] }
-;
+;-
 ; MODIFICATION HISTORY:
 ;       $Id$
 ;       Adapted from: pc_read_var.pro, 25th January 2012
 ;
-;-
+;
 pro pc_read_var_raw,                                                      $
     object=object, varfile=varfile, datadir=datadir, tags=tags,           $
     start_param=start_param, run_param=run_param, varcontent=varcontent,  $
     time=time, dim=dim, grid=grid, proc=proc, allprocs=allprocs,          $
-    var_list=var_list, trimall=trimall, quiet=quiet,                      $
+    var_list=var_list, trimall=trimall, quiet=quiet, help=help,           $
     swap_endian=swap_endian, f77=f77, reduced=reduced, single=single
 
 COMPILE_OPT IDL2,HIDDEN
@@ -64,6 +64,11 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords, coord_system
+
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_var_raw'
+    return
+  endif
 ;
 ; Default settings.
 ;
@@ -77,9 +82,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   datadir = pc_get_datadir(datadir)
 ;
-;  Set pc_precision.
+;  Set precision.
 ;
-  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
+  pc_set_precision, datadir=datadir, dim=dim, /quiet
 ;
 ; Name and path of varfile to read.
 ;
@@ -141,19 +146,19 @@ COMPILE_OPT IDL2,HIDDEN
   default, allprocs, -1
   if (allprocs eq -1) then begin
     allprocs = 0
-    if (size (proc, /type) ne 0) then allprocs = 0
+    if (is_defined(proc)) then allprocs = 0
     if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
-    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+    if (file_test (datadir+'/allprocs/'+varfile) and not is_defined(proc) ) then allprocs = 1
   end
 ;
 ; Check if reduced keyword is set.
 ;
-if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
+if (keyword_set (reduced) and is_defined(proc)) then $
     message, "pc_read_var_raw: /reduced and 'proc' cannot be set both."
 ;
 ; Check if allprocs is set.
 ;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var_raw: 'allprocs' and 'proc' cannot be set both."
+  if ((allprocs ne 0) and is_defined(proc)) then message, "pc_read_var_raw: 'allprocs' and 'proc' cannot be set both."
 ;
 ; Set f77 keyword according to allprocs.
 ;
@@ -161,7 +166,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Get necessary dimensions quietly.
 ;
-  if (n_elements (dim) eq 0) then $
+  if (not is_defined(dim)) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
 ;
 ; Get necessary parameters.
@@ -210,7 +215,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
       procdim.my = dim.mygrid
       procdim.mw = procdim.mx * procdim.my * procdim.mz
     end else begin
-      if (n_elements (proc) eq 0) then begin
+      if (not is_defined(proc)) then begin
         pc_read_dim, object=procdim, proc=0, datadir=datadir, /quiet
         ipx_end = dim.nprocx-1
         ipy_end = dim.nprocy-1
@@ -269,7 +274,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   if (n_elements (varcontent) eq 0) then $
       varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet,run2D=run2D)
   totalvars = (size(varcontent))[1]
-  if (n_elements (var_list) eq 0) then begin
+  if (not is_defined(var_list)) then begin
     var_list = varcontent[*].idlvar
     var_list = var_list[where (var_list ne "dummy")]
   end
@@ -339,10 +344,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Initialise target object: contains ghost zones irrespective of whether they are stored or not.
 ;
-  if (single) then $
-    object = fltarr(dim.mx, dim.my, dim.mz, num_read) $
-  else $
-    object = make_array(dim.mx, dim.my, dim.mz, num_read, type=type_idl)
+  object = make_array(dim.mx, dim.my, dim.mz, num_read, type=single ? 4 : type_idl)
 ;
 ; Initialise read buffers.
 ;

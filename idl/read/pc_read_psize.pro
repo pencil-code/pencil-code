@@ -1,25 +1,34 @@
-;
-;  $Id$
-;
+;+
 ;  Read particle size distribution from file, as output by the Pencil Code.
-;
+;-
 ;  Author: Anders Johansen (anders@astro.lu.se)
 ;  Date  : 06-feb-11
 ;
 pro pc_read_psize, object=object, dim=dim, datadir=datadir, filename=filename, $
-    quiet=quiet
+    quiet=quiet, single=single, help=help
 COMPILE_OPT IDL2,HIDDEN
+
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_read_psize'
+    return      
+  endif
 ;
 ;  Defaul settings.
 ;
 default, quiet, 0
+default, single, 0
 ;
 ;  Default datadir, dim, and filename.
 ;
 datadir = pc_get_datadir(datadir)
-if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
 default, filename, 'particle_size_dist.dat'
+if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+;
+;  Set precision.
+;
+pc_set_precision,  datadir=datadir, dim=dim, /quiet
 ;
 ;  Count the number of output entries in the file.
 ;
@@ -39,9 +48,9 @@ readf, lun, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
 ;
 ;  Read information on particle bins.
 ;
-log_ap=fltarr(nbin_ap_dist)*one
-log_ap_low=fltarr(nbin_ap_dist)*one
-log_ap_high=fltarr(nbin_ap_dist)*one
+log_ap=make_array(nbin_ap_dist, type=single ? 4 : type_idl)
+log_ap_low=make_array(nbin_ap_dist, type=single ? 4 : type_idl)
+log_ap_high=make_array(nbin_ap_dist, type=single ? 4 : type_idl)
 ;
 readf, lun, log_ap
 readf, lun, log_ap_low
@@ -49,10 +58,10 @@ readf, lun, log_ap_high
 ;
 ;  Read output times and measured particle size distribution.
 ;
-ap_dist_tmp=fltarr(nbin_ap_dist)*one
+ap_dist_tmp=make_array(nbin_ap_dist, type=type_idl)
 t_tmp=one
-ap_dist=fltarr(nbin_ap_dist,nlines-4)*one
-t=fltarr(nlines-4)*one
+ap_dist=make_array(nbin_ap_dist,nlines-4, type=single ? 4 : type_idl)
+t=make_array(nlines-4, type=single ? 4 : type_idl)
 ;
 for i=0,nlines-5 do begin
   readf, lun, t_tmp, ap_dist_tmp

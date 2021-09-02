@@ -3,12 +3,14 @@
 ;  $Date: 2008-07-31 10:07:55 $
 ;  $Revision: 1.49 $
 ;
-pro pc_magic_var_dep, variables, tags, var, dep
+pro pc_magic_var_dep, variables, tags, var, dep, single=single
 ;
 ;  Resolve dependencies of magic variables.
 ;
 ;  Author: Anders Johansen
 ;
+  default, single, 0
+
   iv=where(variables eq var) & iv=min(iv)
 ;
 ;  If variable is requested, put dependencies in the variables array.
@@ -42,7 +44,7 @@ end
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 ;
 ;  25-may-04/tony: coded 
-;
+;+
 ; Utility routine to automatically construct expressions for commonly
 ; requested variable from variables stored in a var file. 
 ;
@@ -106,10 +108,15 @@ end
 ; Gross-Pitaevskii Equation (Bose-Einstein Condensate)
 ;    psi2    -> mod psi squared (density squared)
 ;    argpsi  -> atan(imag(psi),real(psi))
-;
+;-
 pro pc_magic_var, variables, tags, $
-    param=param, par2=par2, $
+    param=param, par2=par2, help=help, $
     datadir=datadir, global_names=global_names, quiet=quiet
+;
+  if (keyword_set(help)) then begin
+    doc_library, 'pc_magic_var'
+    return
+  endif
 ;
 ;  Default values.
 ;
@@ -278,7 +285,7 @@ pro pc_magic_var, variables, tags, $
       if (lshear) then begin
         variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(bb[*,*,*,*,iyy])'
       endif else begin
-        variables[iv]='fltarr(mx,my,mz,3)*one'
+        variables[iv]=single ? 'fltarr(mx,my,mz,3)' : 'make_array(mx,my,mz,3, type=type_idl)'
       endelse
 ; Magnetic stretching
     endif else if (variables[iv] eq 'strb') then begin
@@ -288,7 +295,7 @@ pro pc_magic_var, variables, tags, $
       if (lshear) then begin
         variables[iv]='-param.qshear*param.omega*bb[*,*,*,0,iyy]'
       endif else begin
-        variables[iv]='fltarr(mx,my,mz)*one'
+        variables[iv]=single ? 'fltarr(mx,my,mz)' : 'make_array(mx,my,mz, type=type_idl)'
       endelse
 ; Magnetic compression
     endif else if (variables[iv] eq 'compb') then begin
@@ -318,7 +325,7 @@ pro pc_magic_var, variables, tags, $
       if (lshear) then begin
         variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(uu[*,*,*,*,iyy])'
       endif else begin
-        variables[iv]='fltarr(mx,my,mz,3)*one'
+        variables[iv]=single ? 'fltarr(mx,my,mz,3)' : 'make_array(mx,my,mz,3, type=type_idl)'
       endelse
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
@@ -343,7 +350,7 @@ pro pc_magic_var, variables, tags, $
           variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(exp(lnrho[*,*,*,iyy]))'
         endelse
       endif else begin
-        variables[iv]='fltarr(mx,my,mz)*one'
+        variables[iv]=single ? 'fltarr(mx,my,mz)' : 'make_array(mx,my,mz, type=type_idl)'
       endelse
 ; Density advection by background shear (logarithmic density)
     endif else if (variables[iv] eq 'sadvlnrho') then begin
@@ -354,7 +361,7 @@ pro pc_magic_var, variables, tags, $
           variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho[*,*,*,iyy])'
         endelse
       endif else begin
-        variables[iv]='fltarr(mx,my,mz)*one'
+        variables[iv]=single ? 'fltarr(mx,my,mz)' : 'make_array(mx,my,mz, type=type_idl)'
       endelse
 ; Density compression
     endif else if (variables[iv] eq 'comprho') then begin

@@ -31,35 +31,44 @@
 ;      /HELP: display this usage information, and exit
 ;
 ;-
-pro pc_read_penciled,datafile=datafile,field=field, vec=vec, $
-TRIMALL=TRIMALL,dim=dim,HELP=HELP,datadir=datadir
-;
+pro pc_read_penciled,datafile=datafile,field=field, t=t, vec=vec, $
+TRIMALL=TRIMALL,dim=dim,HELP=HELP,datadir=datadir,single=single
+; 
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+
 IF (keyword_set(HELP)) THEN BEGIN
   doc_library,'pc_read_penciled'
   return
 ENDIF
+
+default, single, single
+default, vec, 0
 datadir = pc_get_datadir(datadir)
 ;
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (datafile, strlen(datafile)-3) eq '.h5') then begin
     message, "pc_read_penciled: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
-    t = pc_read ('time', file=datafile, datadir=datadir+'/allprocs')
+    if (arg_present(t)) then t = pc_read ('time', file=datafile, datadir=datadir+'/allprocs',single=single)
     quantities = h5_content ('/', number=num_quantities)
     found = where (strmid (quantities, 0, 4) eq 'data', num_quantities)
     if (num_quantities eq 0) then message, "pc_read_penciled: ERROR: no valid quantities found!"
     quantities = quantities[found]
-    field = pc_read (quantities)
+    field = pc_read (quantities,single=single)
     h5_close_file
     return
   end
 ;
-; - assume by default that we want to read a scalar
-if (n_elements(vec) eq 0)   then vec=0
+; Assume by default that we want to read a scalar.
+;
 if (datafile eq 'glhc.dat') then vec=1
 if (datafile eq 'gg.dat')   then vec=1
 ;
-if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,datadir=datadir
+if (not is_defined(dim)) then pc_read_dim,obj=dim,datadir=datadir
+;
+; Set precision for all Pencil Code tools.
+;
+pc_set_precision, datadir=datadir, dim=dim, /quiet
 ;
 ;  read local sizes
 ;
@@ -69,11 +78,11 @@ openr,1,datadir+'/proc0/dim.dat'
 readf,1,mxloc,myloc,mzloc
 close,1
 if (vec eq 0) then begin
-  floc=fltarr(mxloc,myloc,mzloc)
-  field=fltarr(dim.mx,dim.my,dim.mz)
+  floc=make_array(mxloc,myloc,mzloc, type=type_idl)
+  field=make_array(dim.mx,dim.my,dim.mz, type=single ? 4 : type_idl)
 endif else begin
-  floc=fltarr(mxloc,myloc,mzloc,3)
-  field=fltarr(dim.mx,dim.my,dim.mz,3)
+  floc=make_array(mxloc,myloc,mzloc,3, type=type_idl)
+  field=make_array(dim.mx,dim.my,dim.mz,3, type=single ? 4 :type_idl)
 endelse
 ;
 nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
@@ -135,7 +144,9 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       floc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
   endelse
 endfor
-; -- trimall
+;
+; Trim variable field.
+;
 if keyword_set(TRIMALL) then begin
   if (vec eq 0) then $
     field=reform(field[dim.l1:dim.l2,dim.m1:dim.m2,dim.n1:dim.n2]) else $

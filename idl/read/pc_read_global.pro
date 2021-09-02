@@ -1,8 +1,8 @@
 ;
 ;  $Id$
-;
+;+
 ;  Same as pc_read_var, but for global variables.
-;
+;-
 pro pc_read_global,                                                  $
     object=object, varfile=varfile, variables=variables, tags=tags,  $
     validate_variables=validate_variables, trimall=trimall,          $
@@ -20,7 +20,6 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
-  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
 ;
 ; If asked for, show some help.
@@ -40,10 +39,6 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 ;
   datadir = pc_get_datadir(datadir)
-;
-;  Set pc_precision.
-;
-  if (not is_defined(precision)) then pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Name and path of varfile to read
 ;
