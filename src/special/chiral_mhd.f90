@@ -44,7 +44,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3)
-! PENCILS PROVIDED ugmu5; ugmuS; del2mu5; del2muS; del4mu5; del4muS
+! PENCILS PROVIDED ugmu5; ugmuS; del2mu5; del2muS
+! PENCILS PROVIDED del4mu5; del4muS; del6mu5; del6muS
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -93,6 +94,7 @@ module Special
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
    real :: diffmu5=0., diffmuS=0., diffmu5max, diffmuSmax
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
+   real :: diffmu5_hyper3=0., diffmuS_hyper3=0.
    real :: lambda5, mu5_const=0., gammaf5=0.
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
@@ -114,6 +116,8 @@ module Special
    logical :: lmuS=.false., lCVE=.false.
    logical :: ldiffmu5_hyper2_simplified=.false.
    logical :: ldiffmuS_hyper2_simplified=.false.
+   logical :: ldiffmu5_hyper3_simplified=.false.
+   logical :: ldiffmuS_hyper3_simplified=.false.
    logical :: lremove_mean_mu5=.false.
    logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
    logical :: reinitialize_mu5=.false.
@@ -136,6 +140,8 @@ module Special
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
+      diffmu5_hyper3, diffmuS_hyper3, &
+      ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5
 !
@@ -213,7 +219,7 @@ module Special
 !  set gammaf5_input to input value (which was gammaf5)
 !
       gammaf5_input=gammaf5
-print*,'AXEL, gammaf5_input=',gammaf5
+!print*,'AXEL, gammaf5_input=',gammaf5
 !
 !  Reinitialize GW field using a small selection of perturbations
 !  that were mostly also available as initial conditions.
@@ -371,6 +377,8 @@ print*,'AXEL, gammaf5_input=',gammaf5
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (ldiffmu5_hyper2_simplified) lpenc_requested(i_del4mu5)=.true.
       if (ldiffmuS_hyper2_simplified) lpenc_requested(i_del4muS)=.true.
+      if (ldiffmu5_hyper3_simplified) lpenc_requested(i_del6mu5)=.true.
+      if (ldiffmuS_hyper3_simplified) lpenc_requested(i_del6muS)=.true.
       if (lhydro.or.lhydro_kinematic) then
          lpenc_requested(i_uu)=.true.
          if (lCVE) lpenc_requested(i_oo)=.true.
@@ -408,8 +416,8 @@ print*,'AXEL, gammaf5_input=',gammaf5
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, del4, dot2_mn, del2v_etc, grad, dot, u_dot_grad, gij
-      use Sub, only: multsv, curl, curl_mn
+      use Sub, only: del2, del4, del6, dot2_mn, del2v_etc, grad, dot
+      use Sub, only: u_dot_grad, gij, multsv, curl, curl_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -423,12 +431,14 @@ print*,'AXEL, gammaf5_input=',gammaf5
         if (lpencil(i_ugmuS)) call dot(p%uu,p%gmuS,p%ugmuS)
         if (lpencil(i_del2muS)) call del2(f,imuS,p%del2muS)
         if (lpencil(i_del4muS)) call del4(f,imuS,p%del4muS)
+        if (lpencil(i_del6muS)) call del6(f,imuS,p%del6muS)
       endif
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_del4mu5)) call del4(f,imu5,p%del4mu5)
+      if (lpencil(i_del6mu5)) call del6(f,imu5,p%del6mu5)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -448,7 +458,8 @@ print*,'AXEL, gammaf5_input=',gammaf5
 !  29-sep-18/axel: included ldiffus_mu5_1_old and modified diffus_mu5_1
 !  25-noc-18/jenny: included muS terms in timestep calculation
 !  25-noc-18/jenny: added diffusion term to muS equation
-!  11-jun-20/jenny: added hyperdiffusion
+!  11-jun-20/jenny: added hyperdiffusion (hyper2)
+!  28-aug-21/jenny: added hyperdiffusion (hyper3)
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
@@ -481,6 +492,9 @@ print*,'AXEL, gammaf5_input=',gammaf5
       if (ldiffmu5_hyper2_simplified) then
          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
             -diffmu5_hyper2*p%del4mu5
+      else if (ldiffmu5_hyper3_simplified) then
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+            +diffmu5_hyper3*p%del6mu5
       else
          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
             +diffmu5*p%del2mu5 
@@ -522,7 +536,10 @@ print*,'AXEL, gammaf5_input=',gammaf5
 ! 
         if (ldiffmuS_hyper2_simplified) then
            df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-            -diffmuS_hyper2*p%del4muS
+              -diffmuS_hyper2*p%del4muS
+        else if (ldiffmuS_hyper3_simplified) then
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
+              +diffmuS_hyper3*p%del6muS
         else
            df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
               +diffmuS*p%del2muS
