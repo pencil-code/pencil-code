@@ -17,8 +17,10 @@ These are generic requirements for all PyVista plotter tools including
 * imageio-ffmpeg
 * tqdm
 * numpy
+* sklearn --- necessary for pv_volume_plotter.py parameter tests. 
 
-PyVista is tested to work with versions: VTK==9.0.1 and pyvista==0.30.0.
+All pyvista plotting tools are tested to work with versions: VTK==9.0.3 and 
+pyvista==0.31.3.
 
 Furthermore, in order to save videos, PyVista requires ``imageio-ffmpeg``. Note that
 saving only images is faster and should be used instead in combination with e.g.
@@ -81,6 +83,7 @@ The class can be initialized in at least three ways:
 """
 # Python extrenal libraries
 import pyvista as pv
+from pyvista.utilities.features import transform_vectors_sph_to_cart
 import pencil as pc
 import numpy as np
 
@@ -93,6 +96,8 @@ import os
 # Some generic utility functions are defined in .../visu/pv_plotter_utils.py
 from pencil.visu.pv_plotter_utils import *
 
+
+from icecream import ic
 
 # For sanity checking input arguments. See plot() function documentation for details.
 XYZPLANE_KEYS = ['xy', 'xy2', 'xz', 'yz']
@@ -641,7 +646,7 @@ def __normScalars(scalars, cmin, cmax, field, norm='linear', dtype='f') -> tuple
     return scalars, cmin, cmax
 
 
-def __vectorsFromSlices(slice_obj, fields, vectors_unit_length=False, 
+def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False, 
                         coordinates='cartesian', surface_vectors=True):
     """
     Function to generate vectors from slice data. Fields defines the vector components,
@@ -674,25 +679,57 @@ def __vectorsFromSlices(slice_obj, fields, vectors_unit_length=False,
     time_shape = slice_obj.t.shape[0]
     
     for slice in ['xy', 'xy2', 'xz', 'yz']:
-        v1 = slice_obj.__getattribute__(slice).__getattribute__(
-                                fields[0]).swapaxes(1,2).reshape(time_shape, -1)
-        v2 = slice_obj.__getattribute__(slice).__getattribute__(
-                                fields[1]).swapaxes(1,2).reshape(time_shape, -1)
-        v3 = slice_obj.__getattribute__(slice).__getattribute__(
-                                fields[2]).swapaxes(1,2).reshape(time_shape, -1)
+        if coordinates == 'cartesian':
+            v1 = slice_obj.__getattribute__(slice).__getattribute__(
+                                    fields[0]).swapaxes(1,2).reshape(time_shape, -1)
+            v2 = slice_obj.__getattribute__(slice).__getattribute__(
+                                    fields[1]).swapaxes(1,2).reshape(time_shape, -1)
+            v3 = slice_obj.__getattribute__(slice).__getattribute__(
+                                    fields[2]).swapaxes(1,2).reshape(time_shape, -1)
 
-        if coordinates == 'spherical':
-            raise NotImplementedError
+        elif coordinates == 'spherical':
+            v1 = slice_obj.__getattribute__(slice).__getattribute__(fields[0])
+            v2 = slice_obj.__getattribute__(slice).__getattribute__(fields[1])
+            v3 = slice_obj.__getattribute__(slice).__getattribute__(fields[2])
+            
+            var = pc.read.var(datadir=datadir, trimall=True, precision='f')
+            r, theta, phi = var.x, (var.y*180)/np.pi, (var.z/180)/np.pi
+            nr, ntheta, nphi = r.shape[0], theta.shape[0], phi.shape[0]
+
             # NOTE! vectors now have one extra dimension (time) compared to var 
             # plots. The transfrom fucntion would either need to be run once per
             # time instant or something else (calculate one conversion matrix 
             # and just use that + matrix product). Check the source of pyvista for
             # the conversion --> make it into a matrix?
-            #
-            u_t, v_t, w_t = pv.transform_vectors_sph_to_cart(phi, theta, r, u, v, w)
+            shape = (time_shape, nr, ntheta, nphi)
+            u = np.zeros(shape)
+            v = np.zeros(shape)
+            w = np.zeros(shape)
             
+            ic(v1.shape, v2.shape, v3.shape)
+            ic(shape)
+
+            if slice == 'xy' or slice =='xy2':
+                u[:,]
+            elif slice == 'xz':
+                pass
+            elif slice == 'yz':
+                pass
+            
+
+            # The transformed vectors 
+            v1_t, v2_t, v3_t = np.zeros_like(v1), np.zeros_like(v2), np.zeros_like(v3)
+            
+            # Stupid solution: loop over all time instants converting each time instant individually.
+            # Better solution would be to just calculate the matrix once defined in pv.transform_vectors_sph_to_cart
+            #   and apply it straight to the v1,v2,v3 without the looping and recalculations. 
+            for t in range(time_shape):
+                v1_t[t], v2_t[t], v3_t[t] = pv.transform_vectors_sph_to_cart(phi, theta, r, v1[t], v2[t], v3[t])
+
         elif coordinates == 'cylinder':
-            raise NotImplementedError
+            raise NotImplementedError("Currently __vectorsFromSlices() cannot convert vectors from"
+                " cylinder coordinates to cartesian which is for the vectors to be added to the"
+                " Pyvista plot!")
         
         if surface_vectors:
             # Set correct vector component to zero
@@ -1495,7 +1532,7 @@ def plot(
 
             settings.surface_vectors = False
 
-        vectors = __vectorsFromSlices(slice_obj, vectors, 
+        vectors = __vectorsFromSlices(slice_obj, vectors, datadir,
                                         vectors_unit_length=False, 
                                         coordinates=settings.coordinates,
                                         surface_vectors=settings.surface_vectors)

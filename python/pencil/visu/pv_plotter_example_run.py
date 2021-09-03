@@ -7,8 +7,8 @@ import pencil as pc
 import numpy as np
 
 # Coordinate system
-CARTESIAN = True
-SPHERICAL = False
+CARTESIAN = False
+SPHERICAL = True
 CYLINDER  = False
 
 # Read in vector data or not
@@ -16,15 +16,15 @@ VECTORS = True
 
 # Choose vector data
 if VECTORS:
-    # vectors = ['uu1', 'uu2', 'uu3']
-    vectors = ['bb1', 'bb2', 'bb3']
+    vectors = ['uu1', 'uu2', 'uu3']
+    # vectors = ['bb1', 'bb2', 'bb3']
 else:
     vectors = None
 
 # Which scalars to plot
-FIELDS = ['rho']
+FIELDS = ['lnrho']
 # Normalization applied on the scalar
-NORM   = 'log'
+NORM   = 'linear'
 
 # Choose time interval to plot
 ### 1. Start and end indeces (between 0 <= t <= slices.t[-1])
@@ -51,7 +51,7 @@ if CARTESIAN:
 ################################################################################
 ## SPHERICAL MILLENIUM PARAMETERS
 elif SPHERICAL:
-    DIR           = '../testfield_millenium_data'   # ==> spherical
+    DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
     coordinates   = 'spherical'
     CAMERA_CENTRE = (-2.9,-2.5, 2.3)
     #CAMERA_CENTRE = (-10,-10,8)
@@ -76,7 +76,6 @@ else: # CYLINDER
 
 # Set the PlotSettings object - see pv_plotter.py PlotSetting for further documentation
 # on the possible parameters
-
 settings = pc.visu.pv_plotter.PlotSettings(
     ### General settings
     off_screen      = True, 
@@ -92,7 +91,7 @@ settings = pc.visu.pv_plotter.PlotSettings(
     timestamp       = True,
     
     ### Plot parameters
-    NORM            = NORM, 
+    norm            = NORM, 
     coordinates     = coordinates,
     opacities       = {'xy': 1, 'xy2': 1, 'xz': 1, 'yz': 1},
     
@@ -138,7 +137,6 @@ settings = pc.visu.pv_plotter.PlotSettings(
     show_axes       = True, 
     axes_labels     = ('','',''),   #('x','y','z'), 
     axes_font       = 9, 
-    cbar_title_font = 12,
     
     ##### Colorbar properties
     ### Field specific
@@ -161,7 +159,6 @@ settings = pc.visu.pv_plotter.PlotSettings(
     cbar_title_font = 10,
     cbar_label_font = 8,
     n_colors        = 256, 
-    bg_color        = 'white', 
     title_position  = 'upper_right', 
     title_font      = 14,
     str_unit        = ' UNIT', 
@@ -180,7 +177,7 @@ pc.visu.pv_plotter.plot(
     tstart=TSTART, tend=TEND, islice=-1,
     istart=ISTART, iend=IEND,
     # Colors & scaling
-    COLOR_RANGE=COLOR_RANGE, color_levels=None,
+    color_range=COLOR_RANGE, color_levels=None,
     unit='unit_velocity', rescale=1., par=list(),
     # Extras
     debug=True, settings=settings
