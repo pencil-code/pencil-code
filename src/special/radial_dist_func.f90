@@ -35,14 +35,14 @@ module Special
 ! Declare index of variables
 !
    integer, parameter :: npgrid=512, nbin=npgrid/2
-   integer, target :: ispecial=0
+   integer :: ispecial=0, rdf_stride_outer=1, rdf_stride_inner=1
 !
   ! input parameters
   real :: gam_lucky=fourthird, efficiency_exponent=0., efficiency_prefactor=1.
   real :: rcrit=0., lambda_star1=1, runit=1.
   character(len=50) :: init_qq='read512cubed'
   namelist /special_init_pars/ &
-    gam_lucky
+    rdf_stride_outer, rdf_stride_inner
 !
   ! run parameters
   logical :: lMFT=.false., lrA=.false., lrB=.false.
@@ -119,7 +119,6 @@ module Special
 !
 !  Initial condition; same for every population.
 !
-print*,'AXEL1'
       select case (init_qq)
         case ('nothing'); if (lroot) print*,'init_qq: nothing'
         case ('zero'); f(:,:,:,ispecial)=0.
@@ -134,27 +133,30 @@ print*,'AXEL1'
           noffset=nz*ipz
           moffset=ny*ipy
           loffset=nx*ipx
-          do n=noffset+n1,noffset+n2
-print*,'AXEL2, n',n
-          do m=moffset+m1,moffset+m2
-print*,'AXEL2, m',m
-          do l=loffset+l1,loffset+l2
-print*,'AXEL2, l',l
+print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset
+          do n=noffset+n1,noffset+n2,rdf_stride_outer
+          do m=moffset+m1,moffset+m2,rdf_stride_outer
+          do l=loffset+l1,loffset+l2,rdf_stride_outer
+            if (np(l,m,n)/=0.) then
 !
 !  go through all points of the np array
 !
-            do nn=1,npgrid
-            do mm=1,npgrid
-            do ll=1,npgrid
-              distance=sqrt((xx(l)-xx(ll))**2+(y(m)-y(mm))**2+(z(n)-z(nn))**2)
-              idist=int(nbin*distance/length)+1
-              if (idist>=1.and.idist<=nbin) then
-                f(:,:,:,idist)=f(:,:,:,idist)+np(l,m,n)*np(ll,mm,nn)
-                f(:,:,:,nbin+1)=f(:,:,:,nbin+1)+np(l,m,n)*np(ll,mm,nn)
-              endif
-            enddo
-            enddo
-            enddo
+              do nn=1,npgrid,rdf_stride_inner
+print*,'AXEL1, iproc,l,m,n,nn=',iproc,l,m,n,nn
+              do mm=1,npgrid,rdf_stride_inner
+              do ll=1,npgrid,rdf_stride_inner
+                if (np(ll,mm,nn)/=0.) then
+                  distance=sqrt((xx(l)-xx(ll))**2+(y(m)-y(mm))**2+(z(n)-z(nn))**2)
+                  idist=int(nbin*distance/length)+1
+                  if (idist>=1.and.idist<=nbin) then
+                    f(:,:,:,idist)=f(:,:,:,idist)+np(l,m,n)*np(ll,mm,nn)
+                    f(:,:,:,nbin+1)=f(:,:,:,nbin+1)+np(l,m,n)*np(ll,mm,nn)
+                  endif
+                endif
+              enddo
+              enddo
+              enddo
+            endif
 print*,'iproc,l=',iproc,l
           enddo
 print*,'iproc,m=',iproc,m
