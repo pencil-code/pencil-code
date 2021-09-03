@@ -4610,7 +4610,7 @@ module Hydro
             if (nprocy/=1) call fatal_error&
                 ('time_integrals_hydro','nprocy=1 required for lvart_in_shear_frame')
             do ikx=l1,l2
-              nshear=nint( deltay/dy * x(ikx)/Lx )
+              nshear=nint( -Sshear*x(ikx)*t/dy  )
               iky=mod(m-nshear,ny)
               if (iky<=0) iky=iky+ny
               if (iuxt/=0)              f(ikx,m,n,iuxt:iuzt) = f(ikx,iky,n,iux:iuz)

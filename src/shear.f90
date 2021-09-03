@@ -1073,7 +1073,7 @@ module Shear
       if (nprocy/=1) call fatal_error('shear_frame_transform',&
           'nprocy=1 required for lshear_frame_correlation')
       do ikx=l1,l2
-        nshear=nint( deltay/dy * x(ikx)/Lx )
+        nshear=nint( -Sshear*x(ikx)*t/dy  )
         do iky=1,ny
           jky=mod(iky-nshear,ny)
           if (jky<=0) jky=jky+ny
