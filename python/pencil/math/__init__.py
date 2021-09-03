@@ -11,5 +11,5 @@ from .Helmholtz import *
 from .primes import *
 from .interpolation import vec_int
 from .structure_function import *
-
+from .laplace_solver import *
 from . import derivatives
