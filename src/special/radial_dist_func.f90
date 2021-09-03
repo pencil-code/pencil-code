@@ -114,7 +114,7 @@ module Special
       real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
-      real, dimension(nbin+1) :: rdf
+      real, dimension(nbin+1) :: rdf, rdf_sum
 !
       intent(inout) :: f
 !
@@ -138,7 +138,6 @@ module Special
 !  return to this point from below unless np(lnp,mnp,nnp)/=0.
 !
 2000      continue
-print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset
           do n=n1,n2,rdf_stride_outer
           do m=m1,m2,rdf_stride_outer
           do l=l1,l2,rdf_stride_outer
@@ -150,7 +149,6 @@ print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,
 !  go through all points of the np array
 !
               do nn=1,npgrid,rdf_stride_inner
-print*,'AXEL1, iproc,l,m,n,nn=',iproc,l,m,n,nn
               do mm=1,npgrid,rdf_stride_inner
               do ll=1,npgrid,rdf_stride_inner
                 if (np(ll,mm,nn)/=0.) then
@@ -168,11 +166,9 @@ print*,'AXEL1, iproc,l,m,n,nn=',iproc,l,m,n,nn
               loffset=loffset+1
               goto 2000
             endif
-print*,'iproc,l=',iproc,l
           enddo
-print*,'iproc,m=',iproc,m
           enddo
-print*,'iproc,n=',iproc,n
+          print*,'iproc,n=',iproc,n
           enddo
 !
         case default
@@ -189,9 +185,19 @@ print*,'iproc,n=',iproc,n
         rdf(ibin)=sum(f(:,:,:,ibin))
       enddo
       open (1, file=trim(directory_snap)//'/rdf.txt', form='formatted')
-      write(1,1000) rdf
-1000  format(1p8e10.3)
+      write(1,'(1p,8e10.3)') rdf
       close(1)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(rdf,rdf_sum,nbin+1)
+  !
+  if (lroot) then
+    open(1,file=trim(datadir)//'/rdf.txt')
+    write(1,'(1p,8e10.3)') rdf_sum
+    close(1)
+  endif
 !
     endsubroutine init_special
 !***********************************************************************
