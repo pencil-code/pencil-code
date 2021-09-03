@@ -110,10 +110,11 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, parameter :: length=4*pi
       real :: distance
-      integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist
+      integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin
       real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
+      real, dimension(nbin+1) :: rdf
 !
       intent(inout) :: f
 !
@@ -134,6 +135,7 @@ module Special
           moffset=ny*ipy
           loffset=nx*ipx
 print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset
+2000      continue
           do n=noffset+n1,noffset+n2,rdf_stride_outer
           do m=moffset+m1,moffset+m2,rdf_stride_outer
           do l=loffset+l1,loffset+l2,rdf_stride_outer
@@ -156,6 +158,9 @@ print*,'AXEL1, iproc,l,m,n,nn=',iproc,l,m,n,nn
               enddo
               enddo
               enddo
+            else
+              loffset=loffset+1
+              goto 2000
             endif
 print*,'iproc,l=',iproc,l
           enddo
@@ -171,6 +176,16 @@ print*,'iproc,n=',iproc,n
           if (lroot) print*,'init_qq: No such value for init_qq: ', trim(init_qq)
           call stop_it("")
       endselect
+!
+!  compute total sum
+!
+      do ibin=1,nbin+1
+        rdf(ibin)=sum(f(:,:,:,ibin))
+      enddo
+      open (1, file=trim(directory_snap)//'/rdf.txt', form='formatted')
+      write(1,1000) rdf
+1000  format(1p8e10.3)
+      close(1)
 !
     endsubroutine init_special
 !***********************************************************************
