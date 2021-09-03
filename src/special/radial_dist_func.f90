@@ -110,7 +110,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, parameter :: length=4*pi
       real :: distance
-      integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin
+      integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin, nnp, mnp, lnp
       real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
@@ -134,12 +134,18 @@ module Special
           noffset=nz*ipz
           moffset=ny*ipy
           loffset=nx*ipx
-print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset
+!
+!  return to this point from below unless np(lnp,mnp,nnp)/=0.
+!
 2000      continue
-          do n=noffset+n1,noffset+n2,rdf_stride_outer
-          do m=moffset+m1,moffset+m2,rdf_stride_outer
-          do l=loffset+l1,loffset+l2,rdf_stride_outer
-            if (np(l,m,n)/=0.) then
+print*,'AXEL0, iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset=',iproc,l1,l2,m1,m2,n1,n2,loffset,moffset,noffset
+          do n=n1,n2,rdf_stride_outer
+          do m=m1,m2,rdf_stride_outer
+          do l=l1,l2,rdf_stride_outer
+            nnp=n+noffset
+            mnp=m+moffset
+            lnp=l+loffset
+            if (np(lnp,mnp,nnp)/=0.) then
 !
 !  go through all points of the np array
 !
@@ -151,8 +157,8 @@ print*,'AXEL1, iproc,l,m,n,nn=',iproc,l,m,n,nn
                   distance=sqrt((xx(l)-xx(ll))**2+(y(m)-y(mm))**2+(z(n)-z(nn))**2)
                   idist=int(nbin*distance/length)+1
                   if (idist>=1.and.idist<=nbin) then
-                    f(:,:,:,idist)=f(:,:,:,idist)+np(l,m,n)*np(ll,mm,nn)
-                    f(:,:,:,nbin+1)=f(:,:,:,nbin+1)+np(l,m,n)*np(ll,mm,nn)
+                    f(l,m,n,idist) =f(l,m,n,idist) +np(lnp,mnp,nnp)*np(ll,mm,nn)
+                    f(l,m,n,nbin+1)=f(l,m,n,nbin+1)+np(lnp,mnp,nnp)*np(ll,mm,nn)
                   endif
                 endif
               enddo
