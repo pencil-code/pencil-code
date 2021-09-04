@@ -66,6 +66,7 @@ COMPILE_OPT IDL2,HIDDEN
           print, "WARNING: 'run.csh' not yet executed, 'run_pars' are unavailable."
       return
     end
+    param2=1
   endif else begin
     filename = datadir+'/param.nml'
     outfile = idl_subdir+'/start_param.pro'
@@ -99,7 +100,7 @@ COMPILE_OPT IDL2,HIDDEN
   result[0] = ''
   result = result[sort (result)]
   num_lines = (size (result, /dimensions))[0]
-  object = { param_file:filename }
+  obj = {param_file: filename}
   for pos = 1, num_lines-1 do begin
     line = result[pos]
     EOL = stregex (line, ',? *\$ *$')
@@ -147,9 +148,14 @@ COMPILE_OPT IDL2,HIDDEN
       endif 
       if not ok then code = 'struct = {'+strmid (line, 0, EOL)+'}'
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
-      object = create_struct (object, struct)
+      obj = create_struct (obj, struct)
     end
   end
+  object = create_struct(name='pc_param'+(keyword_set(param2) ? '2' : ''), obj)
+;
+;  Set status of object to "valid".
+;
+  setenv, 'PC_VALID_PARAM'+(keyword_set(param2) ? '2' : '')+'=V'
 ;
 ; If requested print a summary
 ;

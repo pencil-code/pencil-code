@@ -116,7 +116,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Build the full path and filename.
 ;
-  if (size(proc, /type) ne 0) then begin
+  if (is_defined(proc)) then begin
     ; Read dimensions on local processor.
     if (keyword_set(reduced)) then $
         message, "pc_read_dim: /reduced and 'proc' cannot be set both."
@@ -228,7 +228,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Build structure of all the variables.
 ;
-  object = create_struct(name=filename,$
+  object = create_struct(name='pc_dim_'+strtrim(filename,2),$
       ['mx','my','mz','mw', $
       'mvar','maux','mglobal', $
       'precision', $
@@ -249,6 +249,10 @@ COMPILE_OPT IDL2, HIDDEN
       l1,l2,m1,m2,n1,n2, $
       ipx, ipy, ipz, $
       nprocx,nprocy,nprocz)
+;
+;  Set status of object to "valid".
+;
+  setenv, 'PC_VALID_DIM=V'
 ;
 ;  Print a summary if requested.
 ;

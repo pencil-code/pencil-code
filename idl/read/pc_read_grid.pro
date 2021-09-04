@@ -60,12 +60,12 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; Get necessary dimensions.
 ;
-  if (not is_defined(param)) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
   if (not is_defined(dim)) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
 ;
 ;  Set pc_precision.
 ;
-    pc_set_precision, datadir=datadir, dim=dim, /quiet
+  pc_set_precision, datadir=datadir, dim=dim, /quiet
+  if (not is_defined(param)) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
 ;
 ; Set mx,my,mz in common block for derivative routines
 ;
@@ -402,7 +402,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ;  Build structure of all the variables
 ;
-  object = create_struct(name="pc_read_grid_" + $
+  object = create_struct(name="pc_grid_" + $
       str((size(x))[1]) + '_' + $
       str((size(y))[1]) + '_' + $
       str((size(z))[1]) + ((downprec or precision eq 'S') ? '_S' : '_D'), $
@@ -411,6 +411,10 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
        'lequidist','lperi','ldegenerated'], $
       t,x,y,z,dx,dy,dz,Ox,Oy,Oz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
         lequidist,lperi,ldegenerated)
+;
+;  Set status of object to "valid".
+;
+  setenv, 'PC_VALID_GRID=V'
 ;
 ; If requested print a summary
 ;

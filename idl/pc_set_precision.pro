@@ -12,14 +12,32 @@ COMPILE_OPT IDL2, HIDDEN
 
         if (is_defined(precision)) then begin
           if (strtrim(getenv('IDL_LAST_WORKDIR'),2) eq wdir) then begin
+;
+;  Working directory was not changed.
+;
             if arg_present(new) then new=precision
             return
           endif else begin
+;
+;  Working directory was changed: invalidate precision, dim, grid and param objects.
+;
             undefine, precision
             undefine, dim
+            setenv, 'PC_VALID_DIM='
+            setenv, 'PC_VALID_GRID='
+            setenv, 'PC_VALID_PARAM='
+            setenv, 'PC_VALID_PARAM2='
           endelse
-        endif else $
+        endif else begin
+;
+;  Very first call of pc_set_precision during a session.
+;
           undefine, dim
+          setenv, 'PC_VALID_DIM='
+          setenv, 'PC_VALID_GRID='
+          setenv, 'PC_VALID_PARAM='
+          setenv, 'PC_VALID_PARAM2='
+        endelse
 
         setenv, 'IDL_LAST_WORKDIR='+wdir
 
