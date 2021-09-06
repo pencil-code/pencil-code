@@ -328,16 +328,6 @@ module Density
       if (lhydro) then
         call get_shared_variable('lrelativistic', &
             lrelativistic, caller='register_density')
-        if (lrelativistic.and.lrelativistic_eos) then
-          if (lroot) then
-            print*
-            print*,'W A R N I N G:  lrelativistic_eos=T'
-            print*,'does not make sense because lrelativistic=T'
-            print*,'reset lrelativistic_eos=.false. and continue'
-            print*
-          endif
-          lrelativistic_eos=.false.
-        endif
       endif
 !
     endsubroutine register_density
@@ -1409,6 +1399,7 @@ module Density
         case ('shock-tube', '13')
 !
 !  Shock tube test (should be consistent with hydro module).
+!  Remember that for ldensity_nolog=T, we say exp(...) at the end of this routine!
 !
           call information('init_lnrho','polytropic standing shock')
           do n=n1,n2; do m=m1,m2
@@ -1608,10 +1599,11 @@ module Density
       endif
 !
 !  If unlogarithmic density considered, take exp of lnrho resulting from
-!  initlnrho
+!  initlnrho.
 !
       if (ldensity_nolog .and. (.not.lread_oldsnap) .and. (.not.ldensity_linearstart)) &
            f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
+!AB: Wlad, why the question marks on Dec 7, 2020?
 !
 !  Impose density floor or ceiling if requested.
 !
@@ -2444,18 +2436,20 @@ module Density
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
           if (ldensity_nolog) then
             density_rhs= - p%ugrho  - p%rho*p%divu
+            if (lrelativistic_eos) density_rhs=fourthird*density_rhs
           else
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
-            if (lrelativistic_eos) then
+!
+!  The following few lines only enter without lrelativistic,
+!  but with lrelativistic_eos.
+!
+            if (lrelativistic_eos.and..not.lrelativistic) then
               if (lhydro) then
                 call multvs(p%uu,density_rhs,tmpv)
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
               endif
               density_rhs=fourthird*density_rhs
-              if (lrelativistic) call fatal_error('dlnrho_dt','lrelativistic_eos must be false')
-            elseif (lhydro.and.lrelativistic) then
-              !print*,'AXEL-density: ',lrelativistic
             endif
           endif
         else

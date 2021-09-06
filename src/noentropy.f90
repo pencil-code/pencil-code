@@ -31,7 +31,7 @@ module Energy
 !
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-  logical, pointer :: lffree, lrelativistic_eos
+  logical, pointer :: lffree, lrelativistic_eos, lrelativistic
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -70,6 +70,13 @@ module Energy
       if (ldensity) then
         call get_shared_variable('lrelativistic_eos', &
             lrelativistic_eos, caller='register_energy')
+      endif
+!
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro) then
+        call get_shared_variable('lrelativistic', &
+            lrelativistic, caller='register_energy')
       endif
 !
 !  Identify version number.
@@ -232,7 +239,11 @@ module Energy
         if (lstratz) then
           lpencil_in(i_glnrhos)=.true.
         else
-          lpencil_in(i_glnrho)=.true.
+          if (lrelativistic) then
+            lpencil_in(i_grho)=.true.
+          else
+            lpencil_in(i_glnrho)=.true.
+          endif
         endif
         if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
@@ -273,7 +284,11 @@ module Energy
 !  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
 !
               if (ldensity.and.lrelativistic_eos) then
-                p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+                if (lrelativistic) then
+                  p%fpres(:,j)=-.75*p%cs2*p%grho(:,j)
+                else
+                  p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+                endif
               else
                 p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
               endif

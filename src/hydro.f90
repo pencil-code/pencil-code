@@ -130,6 +130,7 @@ module Hydro
   logical :: loo_as_aux = .false.
   logical :: luut_as_aux=.false., luust_as_aux=.false.
   logical :: loot_as_aux=.false., loost_as_aux=.false.
+  logical :: luuk_as_aux=.false., look_as_aux=.false.
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lscale_tobox=.true.
@@ -169,6 +170,7 @@ module Hydro
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
+      luuk_as_aux, look_as_aux, &
       mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -815,6 +817,11 @@ module Hydro
 !
       !if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz)
+!!
+!!  Fourier transformed uu as aux
+!!
+!!     if (luuk_as_aux) call register_report_aux('uuk', iuuk)
+!!     if (look_as_aux) call register_report_aux('ook', iook)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.
@@ -2961,10 +2968,18 @@ module Hydro
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
         endif
       endif
-! ugu
+!
+! ugu. In the relativistic case, we compute u.gradS, so we need to input p%ss_rel_ij,
+! but p%uu (as opposed to p%ss_rel) is neededm because it enteres as prefactor for upwinding.
+!
       if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+        if (lrelativistic) then
+          call u_dot_grad(f,iuu,p%ss_rel_ij,p%uu,p%ugu,UPWIND=lupw_uu)
+        else
+          call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+        endif
+!
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'ugu',p%ugu(1:6,1)
 !      endif
@@ -3188,8 +3203,12 @@ module Hydro
       if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
 !        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
-        call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
-        call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
+        if (lrelativistic) then
+          call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu pencil')
+        else
+          call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
+          call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
+        endif
         p%ugu = ugu0+u0gu
       endif
 ! ugu2
@@ -3416,7 +3435,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn_add
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3426,6 +3445,7 @@ module Hydro
       intent(in) :: p
       intent(inout) :: f,df
 
+      real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: ftot
       integer :: j, ju
 !
@@ -3444,19 +3464,20 @@ module Hydro
         endif
       endif
 !
-!  Check whether we compute relativistic bulk flows
-!  (as opposed to just lrelativistic_eos)
-!
-      if (ldensity.and.lrelativistic) then
-        !print*,'AXEL'
-      endif
-!
 !  Advection term.
 !
       if (ladvection_velocity) then
         if (.not. lweno_transport .and. &
             .not. lno_meridional_flow .and. .not. lfargo_advection) &
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+!
+!  Subtract u.gradu. In the relativistic case, this is automatically
+!  u.gradS, and then we also need to subtract (divu)*S.
+!
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+      if (ldensity.and.lrelativistic) then
+        call multsv(p%divu,p%ss_rel,tmpv)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+      endif
 !
 !  WENO transport.
 !
