@@ -33,7 +33,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 if (keyword_set(help)) then begin
   doc_library, 'pc_varcontent'
-  return
+  return, 0
 endif
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
