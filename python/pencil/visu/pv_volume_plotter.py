@@ -93,7 +93,7 @@ from pencil.visu.pv_plotter_utils import *
 # --> icecream provides nice pretty printing and supports different data structures
 # --> memory-profiler has tools for easy python script memory profiling
 # from memory_profiler import profile, memory_usage
-# from icecream import ic
+from icecream import ic
 
 
 # Constant dictionary defining keys (integer error key) and values (reason for
@@ -231,12 +231,36 @@ class Plot3DSettings:
                                  mesh in a sphere given radius.
     show_axes: bool
         Show axes for the plot
+    show_grid: bool
+        Shows a grid on the plotter.
     scalars_norm: str
         Either 'log' or None
+    override_log: bool
+        If False, and scalar_key contains 'ln' parameter scalars_norm is automatically
+        set to None. Else if scalar_key does not contain 'ln', scalar_norm is set
+        to 'log'. If True, scalars_norm is kept to whatever user has set it to.
     background_color: str or 3-tuple of ints
         Either a string e.g. 'white', 'black' or 'gray'. Also can be a three int
         RGB tuple e.g (255, 255, 255)
-            
+
+    Widgets
+    -------
+    add_volume_opacity_slider: bool
+        Adds a slider widget controlling parameter `volume_opacity`. Only applies
+        when `mesh_type=="volume"`, i.e. volume rendering enabled.
+    widget_type: type
+        Both of the available widget methods show an "arrow" that can be used to
+        choose the angle of the sliced plane. Furthermore the plane itself can be
+        moved up and down in the whole volume. 
+        
+        Available widget types are:
+        1) 'clip slice' --- Only shows the current slice, noticeably faster than
+                            clip box. 
+        2) 'clip box' --- Shows the current slice + the rest of the data "below"
+                            the slice.
+        3) 'plane vectors' --- Similar to 'clip box' except also vectors are added
+                            on to the slice. The vectors can be controlled by changing
+                            Plot3DSettings vectors parameters.
     Camera
     ------
     camera_centre: tuple of 3 floats
@@ -309,6 +333,16 @@ class Plot3DSettings:
 
         See https://docs.pyvista.org/core/filters.html?highlight=streamlines_from_source#pyvista.DataSetFilters.streamlines_from_source
         for more details on the parameters.
+
+        Note that if stream_params is None the following defaults are set:
+        >>> self.stream_params = {
+                'max_steps': 1000,
+                'max_time': 1e60,
+                'terminal_speed': 1e-60,
+                'integration_direction': 'both',
+                'compute_vorticity': False,
+                'integrator_type': 45,
+            }
     
     The following parameters are used if method == 'default'. Then streamline source points are 
     initialized from a sphere of radius source_radius and with center source_center.
@@ -456,8 +490,15 @@ class Plot3DSettings:
     window_size: tuple = (1008,656)
     method: str = 'points'
     show_axes: bool = True
+    show_grid: bool = False
     scalars_norm: str = None
+    override_log: bool = False
     background_color: str = 'white'
+
+    ### Widgets
+    add_volume_opacity_slider: bool = False,
+    widget_type: str = None
+
     ### Camera
     camera_centre: tuple = None
     focal_point: tuple = None
@@ -706,7 +747,7 @@ class Pyvista3DPlot:
     """
     def __init__(self, vector_key, scalar_key, datadir='./data', 
                      precision='f', magic='bb', ivar=-1, coordinates='cartesian',
-                     outputdir=f'./stream_output_{int(time.time())}', 
+                     outputdir=f'./stream_output', 
                      settings=Plot3DSettings(), debug=False):
         """
         Initialization for the Pyvista3DPlot object.
@@ -753,12 +794,22 @@ class Pyvista3DPlot:
         
         self.loadSettings(settings)
 
+        # Set automatic title containing data directory, scalar and vector keys
         if settings.title == '' or settings.title == None:
             settings.update(title=f'{str(self.datadir)}\nscalar: {scalar_key}\n'
                                 f'vector: {vector_key}')
+        
+        # If override_log is False set normalization on scalars automatically based
+        # on whether the key contains 'ln' or not
+        if not settings.override_log:
+            if 'ln' in scalar_key:
+                settings.update(scalars_norm=None)
+            else:
+                settings.update(scalars_norm='log')
 
         self.scalar_key = scalar_key
         self.vector_key = vector_key
+
         self.var = pc.read.var(datadir=datadir, precision=precision, trimall=True, 
                                 magic=magic, ivar=ivar)
         self.grid = pc.read.grid(datadir=datadir, trim=True)
@@ -989,14 +1040,15 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         lims = [self.mesh[scalars].min(), self.mesh[scalars].max()]
-        plotter = pv.Plotter(window_size=self.settings.window_size)
-        
+        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.__plotterSettings(self.settings)
+
         for surf in surfaces:
-            plotter.add_mesh(surf, cmap=cmap, clim=lims)
+            self.plotter.add_mesh(surf, cmap=cmap, clim=lims)
         
         print('\n--> Pan around the camera to wanted angle, then press "q" to save image!\n')
-        plotter.show(auto_close=False)
-        plotter.screenshot(filename=f'{filename}.{self.settings.imageformat}')
+        self.plotter.show(auto_close=False)
+        self.plotter.screenshot(filename=f'{filename}.{self.settings.imageformat}')
 
 
     def scalars(self):
@@ -1336,6 +1388,90 @@ class Pyvista3DPlot:
         self.mesh.set_active_vectors('vectors')
 
 
+    def __addWidgets(self, settings):
+        print(f'>>> WARNING! with larger datasets some of these widgets might be'
+        ' laggy! Try "clip plane" might be generally faster than other widgets.')
+        
+        field_sbar_args = create_sbar_args(settings, settings.field_sbar_title,
+                                settings.field_sbar_pos_x, settings.field_sbar_pos_y) 
+        scalar_sbar_args = create_sbar_args(settings, settings.scalar_sbar_title,
+                                settings.scalar_sbar_pos_x, settings.scalar_sbar_pos_y)
+
+        if settings.widget_type == 'clip slice':
+            self.plotter.add_mesh_slice(self.mesh, scalars='scalars', 
+                                        scalar_bar_args=scalar_sbar_args)
+        
+        elif settings.widget_type == 'clip box':
+            self.plotter.add_mesh_clip_plane(self.mesh, scalars='scalars', 
+                                            scalar_bar_args=scalar_sbar_args)
+        
+        elif settings.widget_type == 'plane vectors':
+            print(f'> NOTE! "plane vectors" widget can be tuned using Plot3DSettings vector parameters!')
+            # Callback function is called by add_plane_widget
+            def callback(normal, origin):
+                slice = self.mesh.slice(normal=normal, origin=origin)
+                
+                if settings.vector_scaling == 'magnitude':
+                    magnitude = slice['vector magnitude']
+                    # If vector max not set, use mean + one STD of magnitudes as a reasonable value
+                    if settings.vector_max is None:
+                        settings.vector_max = magnitude.mean() + magnitude.std()
+                    slice['scale'] = np.array([settings.vector_max if a > settings.vector_max 
+                                            else a for a in magnitude])
+                    scale = 'scale'
+                elif settings.vector_scaling == 'scalars':
+                    scale = 'scalars'
+                elif settings.vector_scaling is None:
+                    scale = None
+                else:
+                    raise ValueError(f'[__add_vectors] Unknown scaling method scaling = {settings.vector_scaling}')
+                
+                # Random sample the slice so that not all vectors are plotted
+                if self.settings.n_points != None:
+                    sampled = randomSampleMeshPoints(settings.n_points, slice, get_arrays=True)
+                else: 
+                    sampled = slice
+
+                arrows = sampled.glyph(orient='vectors', scale=scale, factor=settings.vector_factor)
+
+                # if self.coordinates == 'cartesian':
+                #     origin = 
+
+                self.plotter.add_mesh(self.surface_mesh, opacity=0.2, show_scalar_bar=False)
+                self.plotter.add_mesh(slice, opacity=settings.mesh_opacity, name='scalars',
+                                    cmap=settings.mesh_cmap, scalar_bar_args=scalar_sbar_args)
+                self.plotter.add_mesh(arrows, opacity=settings.field_opacity, name="arrows", 
+                                    cmap=settings.field_cmap, scalar_bar_args=field_sbar_args)
+
+            self.plotter.add_plane_widget(callback,)
+
+        else:
+            raise ValueError(f'Unknown widget type: {settings.widget_type}.')
+
+        self.__plotterSettings(settings)
+        self.plotter.show(window_size=self.settings.window_size, auto_close=False)
+
+        if settings.imageformat is not None:
+            self.plotter.screenshot(self.outputdir / f'widget_image_{int(time.time())}.{settings.imageformat}')
+
+        self.plotter.close()
+
+
+    def __plotterSettings(self, settings):
+        self.plotter.add_text(text=settings.title, 
+                              position='upper_left',
+                              font_size=settings.title_font_size,
+                              color=settings.annotation_color)
+        
+        if self.settings.show_axes:
+            self.plotter.show_bounds(color=settings.annotation_color, location='outer')
+        if self.settings.show_grid:
+            self.plotter.show_grid()
+
+        self.__set_camera(settings)
+        self.plotter.background_color = settings.background_color
+
+
     def __handlePlotter(self, settings):
         """
         Adds all necessary meshes to the plotter and shows it / saves an image or
@@ -1348,6 +1484,12 @@ class Pyvista3DPlot:
         scalar_sbar_args = create_sbar_args(settings, settings.scalar_sbar_title,
                                 settings.scalar_sbar_pos_x, settings.scalar_sbar_pos_y) 
 
+        if settings.widget_type != None and isinstance(settings.widget_type, str):
+            self.__addWidgets(settings)
+
+            # We want to stop execution of __handlePlotter here. Otherwise it'll
+            # try to add meshes to an already closed plotter
+            return
         
         # Add scalars to plotter
         if settings.show_mesh:
@@ -1363,13 +1505,14 @@ class Pyvista3DPlot:
                                         cmap=settings.mesh_cmap,
                                         opacity='linear',
                                         mapper='smart',
-                                        opacity_unit_distance= self.mesh.length * self.settings.volume_opacity,
+                                        opacity_unit_distance= self.mesh.length * settings.volume_opacity,
                                         # shade=True
                                         )
                 # This adds a slider to the plot moving the opacity_unit_distance parameter
-                # f = lambda val: va.GetProperty().SetScalarOpacityUnitDistance(val)
-                # self.plotter.add_slider_widget(f, [0, self.mesh.length*2], 
-                #             title="Opacity Distance")
+                if settings.add_volume_opacity_slider:
+                    f = lambda val: va.GetProperty().SetScalarOpacityUnitDistance(self.mesh.length * val)
+                    self.plotter.add_slider_widget(f, [0, 1], 
+                                title="Volume opacity")
 
             elif settings.mesh_type == "surface":
                 self.plotter.add_mesh(self.surface_mesh, 
@@ -1377,9 +1520,9 @@ class Pyvista3DPlot:
                                     cmap=settings.mesh_cmap,
                                     show_scalar_bar=settings.show_mesh_sbar,
                                     scalar_bar_args=scalar_sbar_args,
-                                    culling=self.settings.culling)
+                                    culling=settings.culling)
             elif settings.mesh_type == "orthogonal slices":
-                x, y, z = self.settings.slice_pos
+                x, y, z = settings.slice_pos
                 slices = self.mesh.slice_orthogonal(x=x, y=y, z=z)
                 self.plotter.add_mesh(slices, 
                                     opacity=settings.mesh_opacity, 
@@ -1408,16 +1551,8 @@ class Pyvista3DPlot:
                 for source in self.src:
                     self.plotter.add_mesh(source, render_points_as_spheres=True)
         
-        self.plotter.add_text(text=settings.title, 
-                              position='upper_left',
-                              font_size=settings.title_font_size,
-                              color=settings.annotation_color)
-        
-        if self.settings.show_axes:
-            self.plotter.show_bounds(color=settings.annotation_color, location='outer')
-
-        self.__set_camera()
-        self.plotter.background_color = self.settings.background_color
+        # Apply extra settings on the plotter + annotations
+        self.__plotterSettings(settings)
 
         if settings.orbit_gif:
             print(f'Starting orbit gif generation...')
@@ -1448,29 +1583,29 @@ class Pyvista3DPlot:
         self.plotter.close()
 
 
-    def __set_camera(self):
+    def __set_camera(self, settings):
         """
         Set plotter camera using all or some of the possible supplied values. That is:
         - settings.camera_centre
         - settings.focal_point
         - settings.view_up 
         """
-        if self.settings.camera_centre != None and self.settings.focal_point != None:
-            self.plotter.camera_position = (self.settings.camera_centre, 
-                                            self.settings.focal_point, 
-                                            self.settings.view_up)
-        elif self.settings.camera_centre != None:
+        if settings.camera_centre != None and settings.focal_point != None:
+            self.plotter.camera_position = (settings.camera_centre, 
+                                            settings.focal_point, 
+                                            settings.view_up)
+        elif settings.camera_centre != None:
             _, focal, _ = self.plotter.camera_position
-            self.plotter.camera_position = (self.settings.camera_centre,
+            self.plotter.camera_position = (settings.camera_centre,
                                             focal,
-                                            self.settings.view_up)
-        elif self.settings.focal_point != None:
+                                            settings.view_up)
+        elif settings.focal_point != None:
             pos, _, _ = self.plotter.camera_position
             self.plotter.camera_position = (pos,
-                                            self.settings.focal_point,
-                                            self.settings.view_up)
-        if self.settings.zoom_factor != None:
-            self.plotter.camera.zoom(self.settings.zoom_factor)
+                                            settings.focal_point,
+                                            settings.view_up)
+        if settings.zoom_factor != None:
+            self.plotter.camera.zoom(settings.zoom_factor)
 
 
     def __writeParamtestLog(self, settings: dict, id=-1):

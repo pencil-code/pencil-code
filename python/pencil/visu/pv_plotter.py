@@ -83,7 +83,6 @@ The class can be initialized in at least three ways:
 """
 # Python extrenal libraries
 import pyvista as pv
-from pyvista.utilities.features import transform_vectors_sph_to_cart
 import pencil as pc
 import numpy as np
 
@@ -219,22 +218,65 @@ class PlotSettings:
         !WARNING! Not tested yet well, enables pyvista.add_mesh log_scale option
     stream_params: dict
         Any parameters pyvista streamlines_from_source() takes in OTHER THAN
-        surface_streamlines, vectors. These parameters include:
+        `surface_streamlines` and `vectors`. The following is the Pyvista's own
+        documentation on the pyvista.streamlines_from_source, see link for documentation
+        after the list:
             * integrator_type
+                The integrator type to be used for streamline generation. The 
+                default is Runge-Kutta45. The recognized solvers are: RUNGE_KUTTA2 
+                (2), RUNGE_KUTTA4 (4), and RUNGE_KUTTA45 (45). Options are 2, 4, 
+                or 45. Default is 45.
             * integration_direction
+                Specify whether the streamline is integrated in the upstream or 
+                downstream directions (or both). Options are 'both', 'backward', 
+                or 'forward'.
             * initial_step_length
+                Initial step size used for line integration, expressed in length
+                unitsL or cell length units (see step_unit parameter). either the
+                starting size for an adaptive integrator, e.g., RK45, or the 
+                constant / fixed size for non-adaptive ones, i.e., RK2 and RK4).
             * step_unit
+                Uniform integration step unit. The valid unit is now limited to 
+                only LENGTH_UNIT ('l') and CELL_LENGTH_UNIT ('cl'). Default is 
+                CELL_LENGTH_UNIT: 'cl'.
             * min_step_length
+                Minimum step size used for line integration, expressed in length 
+                or cell length units. Only valid for an adaptive integrator RK45.
             * max_step_length
+                aximum step size used for line integration, expressed in length 
+                or cell length units. Only valid for an adaptive integrator RK45.
             * max_steps
+                Maximum number of steps for integrating a streamline.
             * terminal_speed
+                Terminal speed value, below which integration is terminated.
             * max_error
+                Maximum error tolerated throughout streamline integration.
             * max_time
+                Specify the maximum length of a streamline expressed in LENGTH_UNIT.
             * compute_vorticity
+                Vorticity computation at streamline points (necessary for generating
+                proper stream-ribbons using the vtkRibbonFilter.
             * interpolator_type
+                Set the type of the velocity field interpolator to locate cells 
+                during streamline integration either by points or cells. The cell
+                locator is more robust then the point locator. Options are 'point'
+                or 'cell' (abbreviations of 'p' and 'c' are also supported).
             * rotation_scale
+                This can be used to scale the rate with which the streamribbons 
+                twist. The default is 1
+
         See https://docs.pyvista.org/core/filters.html?highlight=streamlines_from_source#pyvista.DataSetFilters.streamlines_from_source
         for more details on the parameters.
+
+        Note that if stream_params is None the following defaults are set:
+        >>> self.stream_params = {
+                'max_steps': 1000,
+                'max_time': 1e60,
+                'terminal_speed': 1e-60,
+                'integration_direction': 'both',
+                'compute_vorticity': False,
+                'integrator_type': 45,
+            }
         
     RANDOM SAMPLING PARAMS
     ----------------------
