@@ -10,6 +10,7 @@
 """
 Contains the classes and methods to read the simulation dimensions.
 """
+import numpy as np
 
 
 def dim(*args, **kwargs):
@@ -99,36 +100,36 @@ class Dim(object):
             import h5py
 
             with h5py.File(os.path.join(datadir,'grid.h5'), 'r') as tmp:
-                self.mx = tmp['settings']['mx'][0]
-                self.my = tmp['settings']['my'][0]
-                self.mz = tmp['settings']['mz'][0]
-                self.mvar = tmp['settings']['mvar'][0]
-                self.maux = tmp['settings']['maux'][0]
-                self.mglobal = tmp['settings']['mglobal'][0]
-                self.precision = tmp['settings']['precision'][0]
-                self.nghostx = tmp['settings']['nghost'][0]
-                self.nghosty = tmp['settings']['nghost'][0]
-                self.nghostz = tmp['settings']['nghost'][0]
-                self.nprocx = tmp['settings']['nprocx'][0]
-                self.nprocy = tmp['settings']['nprocy'][0]
-                self.nprocz = tmp['settings']['nprocz'][0]
-                self.nx = tmp['settings']['nx'][0]
-                self.ny = tmp['settings']['ny'][0]
-                self.nz = tmp['settings']['nz'][0]
-                self.l1 = tmp['settings']['l1'][0]
-                self.l2 = tmp['settings']['l2'][0]
-                self.m1 = tmp['settings']['m1'][0]
-                self.m2 = tmp['settings']['m2'][0]
-                self.n1 = tmp['settings']['n1'][0]
-                self.n2 = tmp['settings']['n2'][0]
+                self.mx = np.asscalar(np.array(tmp['settings']['mx'][()]))
+                self.my = np.asscalar(np.array(tmp['settings']['my'][()]))
+                self.mz = np.asscalar(np.array(tmp['settings']['mz'][()]))
+                self.mvar = np.asscalar(np.array(tmp['settings']['mvar'][()]))
+                self.maux = np.asscalar(np.array(tmp['settings']['maux'][()]))
+                self.mglobal = np.asscalar(np.array(tmp['settings']['mglobal'][()]))
+                self.precision = np.asscalar(np.array(tmp['settings']['precision'][()]))
+                self.nghostx = np.asscalar(np.array(tmp['settings']['nghost'][()]))
+                self.nghosty = np.asscalar(np.array(tmp['settings']['nghost'][()]))
+                self.nghostz = np.asscalar(np.array(tmp['settings']['nghost'][()]))
+                self.nprocx = np.asscalar(np.array(tmp['settings']['nprocx'][()]))
+                self.nprocy = np.asscalar(np.array(tmp['settings']['nprocy'][()]))
+                self.nprocz = np.asscalar(np.array(tmp['settings']['nprocz'][()]))
+                self.nx = np.asscalar(np.array(tmp['settings']['nx'][()]))
+                self.ny = np.asscalar(np.array(tmp['settings']['ny'][()]))
+                self.nz = np.asscalar(np.array(tmp['settings']['nz'][()]))
+                self.l1 = np.asscalar(np.array(tmp['settings']['l1'][()]))
+                self.l2 = np.asscalar(np.array(tmp['settings']['l2'][()]))
+                self.m1 = np.asscalar(np.array(tmp['settings']['m1'][()]))
+                self.m2 = np.asscalar(np.array(tmp['settings']['m2'][()]))
+                self.n1 = np.asscalar(np.array(tmp['settings']['n1'][()]))
+                self.n2 = np.asscalar(np.array(tmp['settings']['n2'][()]))
                 self.iprocz_slowest = 0
                 self.ipx = self.ipy = self.ipz = 0
-                self.nxgrid = tmp['settings']['nx'][0]
-                self.nygrid = tmp['settings']['ny'][0]
-                self.nzgrid = tmp['settings']['nz'][0]
-                self.mxgrid = tmp['settings']['mx'][0]
-                self.mygrid = tmp['settings']['my'][0]
-                self.mzgrid = tmp['settings']['mz'][0]
+                self.nxgrid = np.asscalar(np.array(tmp['settings']['nx'][()]))
+                self.nygrid = np.asscalar(np.array(tmp['settings']['ny'][()]))
+                self.nzgrid = np.asscalar(np.array(tmp['settings']['nz'][()]))
+                self.mxgrid = np.asscalar(np.array(tmp['settings']['mx'][()]))
+                self.mygrid = np.asscalar(np.array(tmp['settings']['my'][()]))
+                self.mzgrid = np.asscalar(np.array(tmp['settings']['mz'][()]))
                 self.mw = self.mx*self.my*self.mz
         else:
             if not ogrid:
