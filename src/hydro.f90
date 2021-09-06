@@ -900,9 +900,7 @@ module Hydro
 !
 !  shared variable of lrelativistic for density
 !
-      if (ldensity) &
-        call put_shared_variable('lrelativistic', &
-            lrelativistic, caller='register_density')
+      call put_shared_variable('lrelativistic',lrelativistic, caller='register_density')
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
