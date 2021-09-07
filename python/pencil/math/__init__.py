@@ -13,3 +13,4 @@ from .interpolation import vec_int
 from .structure_function import *
 from .laplace_solver import *
 from . import derivatives
+from . import stats

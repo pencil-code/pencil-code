@@ -57,7 +57,8 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
                                 and not '\n' in ivisc:
             ldel2 = True
         if 'shock' in ivisc:
-            lshock = True
+            if not isinstance(shock, list):
+                lshock = True
         if 'hyper3' in ivisc:
             lhyper3 = True
 
@@ -199,7 +200,7 @@ def fluid_reynolds(uu, param, grid, lnrho=list(), shock=list(), nghost=3,
     advec = np.zeros_like(uu)
     advec[0] = dot(uu,tmp0)
     advec[1] = dot(uu,tmp1)
-    advec[0] = dot(uu,tmp2)
+    advec[2] = dot(uu,tmp2)
     del(tmp0,tmp1,tmp2)
     advec2 = np.sqrt(dot2(advec))
     del(advec)
