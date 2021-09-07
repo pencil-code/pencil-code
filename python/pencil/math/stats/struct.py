@@ -119,12 +119,12 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
     else: 
         arrchunksize = 8*arrshape[0]/1024/1024
 
-    #include which dimensions in function D?  
+    #include which dimensions in function D?
     axis = 0
     Dshape = []
     Daxis = []
     if 'z' in dirs:
-        #first dimension of function D is z  
+        #first dimension of function D is z
         nz = int(len(dims[axis])/2)
         Dshape.append(nz)
         Daxis.append(axis)
@@ -137,10 +137,10 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
                   '{} does not equal arr shape {}'.format(2*nz, arrshape[0]))
             sys.exit()
     else:
-        #first dimension of function D is not z  
+        #first dimension of function D is not z
         nz = 0
     if 'y' in dirs:
-        #next dimension of function D is y  
+        #next dimension of function D is y
         if D3 and 'z' not in dirs:
             axis += 1
         ny = int(len(dims[axis])/2)
@@ -155,10 +155,10 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
                   '{} does not equal arr shape {}'.format(2*ny, arrshape[axis]))
             sys.exit()
     else:
-        #y is not dimension of function D  
+        #y is not dimension of function D
         ny = 0
     if 'x' in dirs:
-        #next dimension of function D is x  
+        #next dimension of function D is x
         if D3 and 'y' not in dirs:
             if 'z' not in dirs:
                 axis += 2
@@ -177,7 +177,7 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
                   '{} does not equal arr shape {}'.format(2*nx, arrshape[axis]))
             sys.exit()
     else:
-        #x is not dimension of function D  
+        #x is not dimension of function D
         nx = 0
     if len(Dshape) == 0:
         print('length arrays are empty lists; at least 1 dimension from'
@@ -192,7 +192,7 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
     D[:] = np.nan
     N[:] = np.nan
     ell[:] = np.nan
-    #skip calculating D when ell > lmax, based on shortest domain edge 
+    #skip calculating D when ell > lmax, based on shortest domain edge
     lmax = 1e8
     if D1:
         lmax = min(lmax, (Dshape[0]+1)/2/Dshape[0]*abs(dims[0][-1]-dims[0][0]))
@@ -236,7 +236,7 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
     #compute correlations
     zskip = max(1,int(np.random.uniform()*loopsample[0]))
     for iz in range(1,Dshape[0],zskip):
-        #downsample array in steps of zstep over subset starting at iz0 
+        #downsample array in steps of zstep over subset starting at iz0
         zstep = max(np.mod(iz,downsample[0]),1)
         iz0 = int(np.random.uniform()/zstep*(nz-1))
         if not len(Dshape) > 1:
@@ -262,7 +262,7 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
             zshift = np.roll(marr, int(iz/zstep), axis=Daxis[0])[iz0:iz0+maxl[0]]
             yskip = max(1,int(np.random.uniform()*loopsample[1]))
             for iy in range(0,Dshape[1],yskip):
-                #downsample array in steps of ystep over subset starting at iy0 
+                #downsample array in steps of ystep over subset starting at iy0
                 ystep = max(np.mod(iy,downsample[1]),1)
                 iy0 = int(np.random.uniform()/ystep*(ny-1))
                 if not len(Dshape) > 2:
@@ -309,7 +309,7 @@ def space_struct( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
                         if ell[iz,iy,ix] <= lmax:
                             marr = np.ma.array(arr[::zstep,::ystep,::xstep])
                             xshift = np.roll(yshift[:,:,::xstep], int(ix/xstep), axis=Daxis[2])
-                            # account for shear if D3 'zyx' 
+                            # account for shear if D3 'zyx'
                             if ix > 0 and not deltay == 0.:
                                 ishear = round(2*ny*deltay/
                                              (max(dims[1])-min(dims[1]))/ystep)
@@ -399,6 +399,7 @@ def space_struct_mpi( arr, dims=[[],[],[]], Dorder=2, dirs='zyx',
                  figname = None, dlabel = 'data',
                  quiet=True):
     """
+    Clone from above -- not yet implemented
     Calculate the structure function in space.
 
     call signature:
