@@ -111,6 +111,7 @@ module Special
       real, parameter :: length=4*pi
       real :: distance
       integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin, nnp, mnp, lnp
+      integer :: loffset_search, l1_search
       real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
       real, dimension(npgrid) :: zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
@@ -137,10 +138,12 @@ module Special
 !
 !  return to this point from below unless np(lnp,mnp,nnp)/=0.
 !
+          loffset_search=0
 2000      continue
+          l1_search=l1+loffset_search
           do n=n1,n2,rdf_stride_outer
           do m=m1,m2,rdf_stride_outer
-          do l=l1,l2,rdf_stride_outer
+          do l=l1_search,l2,rdf_stride_outer
             nnp=n+noffset
             mnp=m+moffset
             lnp=l+loffset
@@ -152,7 +155,7 @@ module Special
               do mm=1,npgrid,rdf_stride_inner
               do ll=1,npgrid,rdf_stride_inner
                 if (np(ll,mm,nn)/=0.) then
-                  distance=sqrt((xx(l)-xx(ll))**2+(y(m)-y(mm))**2+(z(n)-z(nn))**2)
+                  distance=sqrt((xx(l)-xx(ll))**2+(yy(m)-yy(mm))**2+(zz(n)-zz(nn))**2)
                   idist=int(nbin*distance/length)+1
                   if (idist>=1.and.idist<=nbin) then
                     f(l,m,n,idist) =f(l,m,n,idist) +np(lnp,mnp,nnp)*np(ll,mm,nn)
@@ -163,7 +166,7 @@ module Special
               enddo
               enddo
             else
-              loffset=loffset+1
+              loffset_search=loffset_search+1
               goto 2000
             endif
           enddo
