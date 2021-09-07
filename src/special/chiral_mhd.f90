@@ -92,7 +92,7 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5=0., diffmuS=0., diffmu5max, diffmuSmax
+   real :: diffmu5=0., diffmuS=0.
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: diffmu5_hyper3=0., diffmuS_hyper3=0.
    real :: lambda5, mu5_const=0., gammaf5=0.
@@ -137,7 +137,7 @@ module Special
 !
   namelist /special_run_pars/ &
       initspecial, mu5_const, &
-      diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
+      diffmu5, diffmuS, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       diffmu5_hyper3, diffmuS_hyper3, &
@@ -149,6 +149,7 @@ module Special
 !
   integer :: idiag_muSm=0      ! DIAG_DOC: $\left<\mu_S\right>$
   integer :: idiag_muSrms=0    ! DIAG_DOC: $\left<\mu_S^2\right>^{1/2}$
+  integer :: idiag_muSmax=0    ! DIAG_DOC: $\max\mu$
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu51m=0     ! DIAG_DOC: $\left<|\mu_5|\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
@@ -608,6 +609,7 @@ module Special
       if (ldiagnos) then
         if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
+        if (idiag_muSmax/=0) call max_mn_name(p%muS,idiag_muSmax)
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu51m/=0) call sum_mn_name(sqrt(p%mu5**2),idiag_mu51m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
@@ -721,9 +723,9 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_muSm=0; idiag_muSrms=0;
-        idiag_mu5m=0; idiag_mu51m=0; idiag_mu5rms=0
-        idiag_mu5min=0; idiag_mu5max=0; idiag_mu5abs=0
+        idiag_muSm=0; idiag_muSrms=0; idiag_muSmax=0;
+        idiag_mu5m=0; idiag_mu51m=0; idiag_mu5rms=0;
+        idiag_mu5min=0; idiag_mu5max=0; idiag_mu5abs=0;
         idiag_gamf5m=0; idiag_gmu5rms=0; idiag_gmuSrms=0; 
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0;
@@ -737,6 +739,7 @@ module Special
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'muSm',idiag_muSm)
         call parse_name(iname,cname(iname),cform(iname),'muSrms',idiag_muSrms)
+        call parse_name(iname,cname(iname),cform(iname),'muSmax',idiag_muSmax)
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu51m',idiag_mu51m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
