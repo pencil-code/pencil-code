@@ -98,7 +98,7 @@ def derive_data(sim_path, src, dst, magic=['pp','tt'], par=[], comm=None,
                               MBmin=chunksize,nmin=nmin,size=size)[1]
     else:
         nchunks = [1,1,1]
-    print('nchunks {}'.format(nchunks)) 
+    print('nchunks {}'.format(nchunks))
     # for mpi split chunks across processes
     if size > 1:
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
@@ -300,7 +300,7 @@ def calc_derived_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             var = fluid_reynolds(uu, par, gd, lnrho=lnrho, shock=shock, lmix=lmix)
             n1r,m1r,l1r = under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost)
             return var[n1r:n2-n1+n1r,m1r:m2-m1+m1r,l1r:l2-l1+l1r]
-        
+
     #======================================================================
     def Rm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == 'Rm':
