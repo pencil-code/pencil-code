@@ -4233,6 +4233,17 @@ endsubroutine pdf
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
     !
+    !  correlation of u(t') with omega(t)
+    !
+    elseif (sp=='out') then
+      if (iuu==0)  call fatal_error('power_cor','iuu=0')
+      if (iuut==0) call fatal_error('power_cor','iuut=0')
+      if (ioo==0)  call fatal_error('power_cor','ioo=0')
+      b_re=f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)
+      b_im=0.
+      a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
+      a_im=0.
+    !
     !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
     !  Because uut has been transformed to the shear frame,
     !  we have to use oot instead of curl(uut)

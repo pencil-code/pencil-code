@@ -836,6 +836,7 @@ module Snapshot
 !
         if (uut_spec)   call power_cor(f,'uut')
         if (ouout_spec) call power_cor(f,'ouout')
+        if (out_spec)   call power_cor(f,'out')
 !
         lspec=.false.
       endif
