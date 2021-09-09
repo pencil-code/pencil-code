@@ -93,7 +93,7 @@ from pencil.visu.pv_plotter_utils import *
 # --> icecream provides nice pretty printing and supports different data structures
 # --> memory-profiler has tools for easy python script memory profiling
 # from memory_profiler import profile, memory_usage
-from icecream import ic
+# from icecream import ic
 
 
 # Constant dictionary defining keys (integer error key) and values (reason for
@@ -261,6 +261,8 @@ class Plot3DSettings:
         3) 'plane vectors' --- Similar to 'clip box' except also vectors are added
                             on to the slice. The vectors can be controlled by changing
                             Plot3DSettings vectors parameters.
+        4) 'plane streamlines' --- same as plane vectors but with streamlines instead.
+        
     Camera
     ------
     camera_centre: tuple of 3 floats
@@ -481,7 +483,7 @@ class Plot3DSettings:
             * z corresponds to z location of the XY slice
     """
     ### General
-    title: str    = ''
+    title: str    = '   '
     title_font_size: int = 14
     n_points: int = 100
     set_seed_1: bool = False
@@ -1117,30 +1119,36 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         surface = surfaces[0].copy()
-        plotter = pv.Plotter()
-        plotter.open_gif(filename)
-        plotter.enable_depth_peeling()
+        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.__plotterSettings(self.settings)
+        self.plotter.open_gif(str(self.outputdir / filename))
+        self.plotter.enable_depth_peeling()
         
+        scalar_sbar_args = create_sbar_args(self.settings, self.settings.scalar_sbar_title,
+                                self.settings.scalar_sbar_pos_x, self.settings.scalar_sbar_pos_y)
+
         lims = [self.mesh[scalars].min(), self.mesh[scalars].max()]
-        plotter.add_mesh(surface, opacity=1.0, clim=lims, cmap=cmap)
+        self.plotter.add_mesh(surface, opacity=1.0, clim=lims, cmap=cmap, 
+                        scalar_bar_args=scalar_sbar_args, 
+                        show_scalar_bar=self.settings.show_mesh_sbar)
 
         if show_outline:
-            # plotter.add_mesh(self.mesh.outline_corners(), color='k')
-            plotter.add_mesh(self.mesh.outline(), color='k')
+            # self.plotter.add_mesh(self.mesh.outline_corners(), color='k')
+            self.plotter.add_mesh(self.mesh.outline(), color='k')
 
         print('\n--> Pan around the camera to wanted angle, then press "q" to produce the movie!\n')
-        plotter.show(auto_close=False)
+        self.plotter.show(auto_close=False)
         print(f'Starting to create the isovalue gif, this might take a moment!')
         with tqdm(total=2*len(surfaces), desc="Moving isovalue rendering:") as pbar:
             for surf in surfaces:
                 surface.overwrite(surf)
-                plotter.write_frame()
+                self.plotter.write_frame()
                 pbar.update(1)
             for surf in surfaces[::-1]:
                 surface.overwrite(surf)
-                plotter.write_frame()
+                self.plotter.write_frame()
                 pbar.update(1)
-        plotter.close()
+        self.plotter.close()
 
 
     def preview(self):
@@ -1398,14 +1406,20 @@ class Pyvista3DPlot:
                                 settings.scalar_sbar_pos_x, settings.scalar_sbar_pos_y)
 
         if settings.widget_type == 'clip slice':
+            self.plotter.add_mesh(self.surface_mesh, opacity=0.2, cmap=settings.mesh_cmap,
+                                    show_scalar_bar=False)
             self.plotter.add_mesh_slice(self.mesh, scalars='scalars', 
+                                        cmap=settings.mesh_cmap,
                                         scalar_bar_args=scalar_sbar_args)
         
         elif settings.widget_type == 'clip box':
+            self.plotter.add_mesh(self.surface_mesh, opacity=0.2, cmap=settings.mesh_cmap,
+                                    show_scalar_bar=False)
             self.plotter.add_mesh_clip_plane(self.mesh, scalars='scalars', 
+                                            cmap=settings.mesh_cmap,
                                             scalar_bar_args=scalar_sbar_args)
         
-        elif settings.widget_type == 'plane vectors':
+        elif settings.widget_type in ['plane vectors', 'plane streamlines']:
             print(f'> NOTE! "plane vectors" widget can be tuned using Plot3DSettings vector parameters!')
             # Callback function is called by add_plane_widget
             def callback(normal, origin):
@@ -1426,22 +1440,32 @@ class Pyvista3DPlot:
                 else:
                     raise ValueError(f'[__add_vectors] Unknown scaling method scaling = {settings.vector_scaling}')
                 
+                # lims = [slice['scalars'].min(), slice['scalars'].max()]
+
                 # Random sample the slice so that not all vectors are plotted
                 if self.settings.n_points != None:
                     sampled = randomSampleMeshPoints(settings.n_points, slice, get_arrays=True)
                 else: 
                     sampled = slice
-
-                arrows = sampled.glyph(orient='vectors', scale=scale, factor=settings.vector_factor)
-
-                # if self.coordinates == 'cartesian':
-                #     origin = 
-
-                self.plotter.add_mesh(self.surface_mesh, opacity=0.2, show_scalar_bar=False)
-                self.plotter.add_mesh(slice, opacity=settings.mesh_opacity, name='scalars',
+                
+                self.plotter.add_mesh(self.surface_mesh, opacity=0.2, cmap=settings.mesh_cmap,
+                                    show_scalar_bar=False)
+                self.plotter.add_mesh(slice, opacity=settings.mesh_opacity, name='scalars', #clim=lims,
                                     cmap=settings.mesh_cmap, scalar_bar_args=scalar_sbar_args)
-                self.plotter.add_mesh(arrows, opacity=settings.field_opacity, name="arrows", 
-                                    cmap=settings.field_cmap, scalar_bar_args=field_sbar_args)
+
+                if 'vectors' in settings.widget_type:
+                    arrows = sampled.glyph(orient='vectors', scale=scale, factor=settings.vector_factor)
+                    self.plotter.add_mesh(arrows, opacity=settings.field_opacity, name="arrows", 
+                                        cmap=settings.field_cmap, scalar_bar_args=field_sbar_args)
+                if 'streamlines' in settings.widget_type:
+                    stream = slice.streamlines_from_source(sampled, #vectors='vectors',
+                                                            surface_streamlines=True, 
+                                                            **settings.stream_params)
+                    self.plotter.add_mesh(#stream,
+                                        stream.tube(radius=settings.tube_radius,
+                                            scalars=settings.stream_variable_radius,
+                                            radius_factor=settings.stream_radius_factor), 
+                                        name='stream',)
 
             self.plotter.add_plane_widget(callback,)
 
@@ -1512,7 +1536,7 @@ class Pyvista3DPlot:
                 if settings.add_volume_opacity_slider:
                     f = lambda val: va.GetProperty().SetScalarOpacityUnitDistance(self.mesh.length * val)
                     self.plotter.add_slider_widget(f, [0, 1], 
-                                title="Volume opacity")
+                                title="Volume opacity", color='black')
 
             elif settings.mesh_type == "surface":
                 self.plotter.add_mesh(self.surface_mesh, 

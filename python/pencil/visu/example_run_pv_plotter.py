@@ -29,7 +29,7 @@ NORM   = 'linear'
 # Choose time interval to plot
 ### 1. Start and end indeces (between 0 <= t <= slices.t[-1])
 ISTART = 30
-IEND   = 60
+IEND   = 40
 ### 2. Start and end time instants i.e. the time values found in slices.t
 TSTART = None
 TEND   = None
@@ -52,6 +52,7 @@ if CARTESIAN:
 ## SPHERICAL MILLENIUM PARAMETERS
 elif SPHERICAL:
     DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
+    # DIR = '../testfield_millenium_data'
     coordinates   = 'spherical'
     CAMERA_CENTRE = (-2.9,-2.5, 2.3)
     #CAMERA_CENTRE = (-10,-10,8)
@@ -80,13 +81,13 @@ settings = pc.visu.pv_plotter.PlotSettings(
     ### General settings
     off_screen      = True, 
     preview         = False, 
-    window_size     = (656, 1008), 
+    window_size     = (1000, 1000), 
     progress_bar    = True, 
     videoformat     = None, 
     imageformat     = 'png', 
     framerate       = 7,
-    figdir          = './images/',
-    moviedir        = './movies/', 
+    figdir          = '/home/leevi/Desktop/images',
+    moviedir        = '/home/leevi/Desktop/movies', 
     bg_color        = 'white',
     timestamp       = True,
     
@@ -109,8 +110,8 @@ settings = pc.visu.pv_plotter.PlotSettings(
     
     ### Streamline parameters
     streamlines         = True,
-    stream_tube_radius  = 0.5,
-    stream_variable_radius = 'Magnitude',
+    stream_tube_radius  = 0.005,
+    stream_variable_radius = None,
     stream_radius_factor = 8,
     stream_src_points   = {'xy': 40, 'xy2': 40, 'xz': 150, 'yz': 150},
     stream_show_source  = False,

@@ -16,8 +16,8 @@ def runPyvistaVolumePlotter():
     DATADIR = '/home/leevi/Desktop/MOUNT/4pc2OloqlM/data'
 
     # SCALAR_KEY  = 'lnrho'
-    # SCALAR_KEY  = 'tt'
-    SCALAR_KEY  = 'rho'
+    SCALAR_KEY  = 'tt'
+    # SCALAR_KEY  = 'rho'
     # SCALAR_KEY  = 'ss'
     # SCALAR_KEY = 'cooling'
     
@@ -31,22 +31,26 @@ def runPyvistaVolumePlotter():
     settings = Plot3DSettings(
         ##############################
         ### General
-        title       = '',
+        title       = '   ',
         title_font_size = 14,
-        n_points    = 1000,
+        n_points    = 1500,
         set_seed_1    = False,
         imageformat = 'png',
         off_screen  = False, 
-        window_size = (1000, 1000),
+        window_size = (800, 1000),
         method      = METHOD,
-        show_axes = True,
+        show_axes = False,
         show_grid = False,
         scalars_norm = 'log',
-        background_color = 'gray',
+        background_color = 'white',
         ##############################
         ### Widgets
         add_volume_opacity_slider = False,
-        widget_type = 'plane vectors', 
+        # widget_type = None,
+        # widget_type = 'clip slice',
+        # widget_type = 'clip box',
+        # widget_type = 'plane vectors',
+        # widget_type = 'plane streamlines', 
         ##############################
         ### Camera
         camera_centre = None,
@@ -55,11 +59,11 @@ def runPyvistaVolumePlotter():
         zoom_factor = 1.5,
         ##############################
         ### Streamlines
-        tube_radius         = 0.004,
+        tube_radius         = 0.0005,
         show_source         = False,
-        surface_streamlines = True,
+        surface_streamlines = False,
         stream_params       = {
-                'max_steps': 2500, # 5000
+                'max_steps': 600, # 5000
                 'max_time': 1e60,
                 'terminal_speed': 1e-60,       
                 'integration_direction': 'both',
@@ -69,18 +73,18 @@ def runPyvistaVolumePlotter():
         source_radius = None,
         source_center = None,
         stream_variable_radius = 'vector magnitude',
-        stream_radius_factor = 4,
+        stream_radius_factor = 6,
         ###############################
         ### Vectors
         vector_scaling  = 'magnitude',
-        vector_factor   = 1e-2,
-        vector_max      = 4,
+        vector_factor   = 1.2e-2,
+        vector_max      = 2,
         ###############################
         ### MESH
         show_mesh = True,
         mesh_type = "volume",
         slice_pos = (None,None,None),
-        volume_opacity = 0,
+        volume_opacity = 1,
         culling = None,
         ###############################
         # Scalarbar GENERAL
@@ -94,15 +98,15 @@ def runPyvistaVolumePlotter():
         ###############################
         # Scalarbar: Mesh
         scalar_sbar_title = 'scalars', # 'log[TT]\n',
-        show_mesh_sbar  = True,
-        mesh_opacity    = 1.0,  
+        show_mesh_sbar  = False,
+        mesh_opacity    = 1.,  
         mesh_cmap       = 'hot',
         scalar_sbar_pos_x = 0.91,
         scalar_sbar_pos_y = None,
         ###############################
         # Scalarbar: Field
         field_sbar_title = 'vectors',
-        show_field_sbar = True,
+        show_field_sbar = False,
         field_opacity   = 1,
         field_cmap      = 'jet',
         field_sbar_pos_x = 0.03,
@@ -125,10 +129,10 @@ def runPyvistaVolumePlotter():
                 settings=settings, debug=True, outputdir='/home/leevi/Desktop/stream_output')     
     # plot.preview()
     # plot.vectors()
-    # plot.streamlines()
-    plot.scalars()
+    plot.streamlines()
+    # plot.scalars()
     # plot.contour(isosurfaces=10)
-    # plot.movingIsovalue(isosurfaces=50)
+    # plot.movingIsovalue(isosurfaces=100)
     # plot.writeSettings('settings.json')
 
 

@@ -44,9 +44,9 @@ Plot availability for each coordinate system
 
 | Plot type             | Cartesian | Spherical | Cylinder |
 |-----------------------|-----------|-----------|----------|
-| Scalars               |     x     |     x     |     x    |
-| + surface vectors     |     x     |     -     |     -    |
-| + surface streamlines |     x     |     -     |     -    |
+| Scalars               |     X     |     X     |     X    |
+| + surface vectors     |     X     |     X     |     -    |
+| + surface streamlines |     X     |     X     |     -    |
 
 
 Things to note
@@ -95,8 +95,6 @@ import os
 # Some generic utility functions are defined in .../visu/pv_plotter_utils.py
 from pencil.visu.pv_plotter_utils import *
 
-
-from icecream import ic
 
 # For sanity checking input arguments. See plot() function documentation for details.
 XYZPLANE_KEYS = ['xy', 'xy2', 'xz', 'yz']
@@ -504,6 +502,18 @@ class PlotSettings:
 ################################################################
 
 
+def vector_sph_to_cart(r, th, ph, u, v, w):
+    """
+    r = radius
+    th = theta = [0, pi]
+    ph = phi = [0, 2pi]
+    """
+    u_t = np.sin(ph) * np.cos(th) * u + np.cos(ph) * np.cos(th) * v - np.sin(th) * w
+    v_t = np.sin(ph) * np.sin(th) * u + np.cos(ph) * np.sin(th) * v + np.cos(th) * w
+    w_t = np.cos(ph) * u - np.sin(ph) * v
+    return u_t, v_t, w_t
+
+
 def __addVectorsToMesh(
     # PyVista visualization specific
     plotter: pv.Plotter, mesh, key, settings):
@@ -717,7 +727,32 @@ def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False,
         shape = v.shape
         norm = np.linalg.norm(v, axis=-1) # Axis 1 since ==> [time, vectors, components]
         return v / norm.reshape(shape[0], shape[1], 1) 
+
+    def transform_vectors_sph_to_cart(u, v, w, th, ph):
+        """
+        Modified version of pyvista's transform_vectors_sph_to_cart function. Now
+        the meshgrid needs to be intialized externally. Useful for the following 
+        time loops for spherical conversions so that these arrays are not always 
+        recalculated.
+        
+        See pyvista source features.py for original transform_vectors_sph_to_cart
+        """
+        # Transform wind components from spherical to cartesian coordinates
+        # https://en.wikipedia.org/wiki/Vector_fields_in_cylindrical_and_spherical_coordinates
+        u_t = np.sin(ph) * np.cos(th) * w + np.cos(ph) * np.cos(th) * v - np.sin(th) * u
+        v_t = np.sin(ph) * np.sin(th) * w + np.cos(ph) * np.sin(th) * v + np.cos(th) * u
+        w_t = np.cos(ph) * w - np.sin(ph) * v
+        return u_t, v_t, w_t
     
+    def return_angles(theta, phi, r):
+        """
+        Helper for the modified transform_vectors_sph_to_cart routine to create the
+        angle meshgrid.
+        """
+        xx, yy, _ = np.meshgrid(np.radians(theta), np.radians(phi), r, indexing="ij")
+        th, ph = xx.squeeze(), yy.squeeze()
+        return th, ph
+
     time_shape = slice_obj.t.shape[0]
     
     for slice in ['xy', 'xy2', 'xz', 'yz']:
@@ -733,40 +768,46 @@ def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False,
             v1 = slice_obj.__getattribute__(slice).__getattribute__(fields[0])
             v2 = slice_obj.__getattribute__(slice).__getattribute__(fields[1])
             v3 = slice_obj.__getattribute__(slice).__getattribute__(fields[2])
-            
+
             var = pc.read.var(datadir=datadir, trimall=True, precision='f')
-            r, theta, phi = var.x, (var.y*180)/np.pi, (var.z/180)/np.pi
+            # We use the convention pyvista uses:
+            #   - theta = [0, 360] = azimuthal angle in degrees ==> var.z
+            #   - phi   = [0, 180] = polar angle in degrees ======> var.y
+            #   - r                =  radial distance ============> var.x
+            #
+            r = var.x
+            theta = (var.y*180) / np.pi
+            phi = (var.z*180) / np.pi
             nr, ntheta, nphi = r.shape[0], theta.shape[0], phi.shape[0]
 
-            # NOTE! vectors now have one extra dimension (time) compared to var 
-            # plots. The transfrom fucntion would either need to be run once per
-            # time instant or something else (calculate one conversion matrix 
-            # and just use that + matrix product). Check the source of pyvista for
-            # the conversion --> make it into a matrix?
-            shape = (time_shape, nr, ntheta, nphi)
-            u = np.zeros(shape)
-            v = np.zeros(shape)
-            w = np.zeros(shape)
-            
-            ic(v1.shape, v2.shape, v3.shape)
-            ic(shape)
+            if slice  in ['xy', 'xy2']:
+                if slice == 'xy':
+                    theta_pos = [slice_obj.position.xy[0]]
+                else:
+                    theta_pos = [slice_obj.position.xy2[0]]
+                th, ph = return_angles(theta_pos, phi, r)
+                for t in range(time_shape):
+                    v1[t], v2[t], v3[t] = transform_vectors_sph_to_cart(v1[t], v2[t], v3[t], th, ph)
 
-            if slice == 'xy' or slice =='xy2':
-                u[:,]
-            elif slice == 'xz':
-                pass
-            elif slice == 'yz':
-                pass
-            
+            if slice == 'xz':
+                phi_pos = [slice_obj.position.xz[0]]
+                th, ph = return_angles(theta, phi_pos, r)
+                for t in range(time_shape):
+                    v1[t], v2[t], v3[t] = transform_vectors_sph_to_cart(v1[t], v2[t], v3[t], th, ph)
+                    # v1[t], v2[t], v3[t]= pv.transform_vectors_sph_to_cart(
+                    #                                         theta, phi_pos, r, v1[t], v2[t], v3[t])
 
-            # The transformed vectors 
-            v1_t, v2_t, v3_t = np.zeros_like(v1), np.zeros_like(v2), np.zeros_like(v3)
+            if slice == 'yz': 
+                r_pos = [slice_obj.position.yz[0]]
+                th, ph = return_angles(theta, phi, r_pos)
+                for t in range(time_shape):
+                    v1[t], v2[t], v3[t] = transform_vectors_sph_to_cart(v1[t], v2[t], v3[t], th, ph)
+                    # v1[t], v2[t], v3[t]= transform_vectors_sph_to_cart(
+                    #                                         theta, phi, r_pos, v1[t], v2[t], v3[t])
             
-            # Stupid solution: loop over all time instants converting each time instant individually.
-            # Better solution would be to just calculate the matrix once defined in pv.transform_vectors_sph_to_cart
-            #   and apply it straight to the v1,v2,v3 without the looping and recalculations. 
-            for t in range(time_shape):
-                v1_t[t], v2_t[t], v3_t[t] = pv.transform_vectors_sph_to_cart(phi, theta, r, v1[t], v2[t], v3[t])
+            v1 = v1.reshape((time_shape, -1), order='F')
+            v2 = v2.reshape((time_shape, -1), order='F')
+            v3 = v3.reshape((time_shape, -1), order='F')
 
         elif coordinates == 'cylinder':
             raise NotImplementedError("Currently __vectorsFromSlices() cannot convert vectors from"
@@ -787,7 +828,7 @@ def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False,
         vecs[:,:,0] = v1
         vecs[:,:,1] = v2
         vecs[:,:,2] = v3
-        
+
         if vectors_unit_length:
             vectors[slice] = normalize(vecs)
         else:
