@@ -42,6 +42,7 @@ module power_spectrum
   real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
+  character (LEN=linelen) :: power_format='(1p,8e10.2)'
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
@@ -51,7 +52,8 @@ module power_spectrum
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
-      lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation
+      lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
+      power_format
 !
   contains
 !***********************************************************************
@@ -365,8 +367,8 @@ module power_spectrum
       open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
     endif
 !
-    write(1,*) t
-    write(1,'(1p,8e10.2)') spectrum_sum
+    write(1,*) t   
+    write(1,power_format) spectrum_sum 
     close(1)
   endif
 !
@@ -474,7 +476,7 @@ module power_spectrum
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
     write(1,*) t
-    write(1,'(1p,8e10.2)') spectrum_sum
+    write(1,power_format) spectrum_sum 
     close(1)
   endif
   !
@@ -1402,7 +1404,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum 
     endif
     close(1)
     !
@@ -1413,7 +1415,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum 
     endif
     close(1)
     !
@@ -1431,7 +1433,7 @@ module power_spectrum
         enddo
       else
         write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrum_sum
+        write(1,power_format) cyl_spectrum_sum 
       endif
       close(1)
       !
@@ -1444,7 +1446,7 @@ module power_spectrum
         enddo
       else
         write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
+        write(1,power_format) cyl_spectrumhel_sum 
       endif
       close(1)
     endif
@@ -1452,7 +1454,7 @@ module power_spectrum
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
@@ -1661,7 +1663,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -1672,7 +1674,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
@@ -1686,7 +1688,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum2_sum
+      write(1,power_format) spectrum2_sum
     endif
     close(1)
     !
@@ -1697,14 +1699,14 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum2hel_sum
+      write(1,power_format) spectrum2hel_sum
     endif
     close(1)
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
@@ -1901,7 +1903,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -1912,14 +1914,14 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
@@ -2095,7 +2097,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -2106,14 +2108,14 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
@@ -2288,7 +2290,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -2299,14 +2301,14 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
@@ -2555,7 +2557,7 @@ module power_spectrum
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -2567,7 +2569,7 @@ module power_spectrum
         enddo
       else
         write(1,*) t
-        write(1,'(1p,8e10.2)') spectrumhel_sum
+        write(1,power_format) spectrumhel_sum
       endif
       close(1)
     endif
@@ -2575,7 +2577,7 @@ module power_spectrum
     if (lwrite_krms_GWs) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms_GWs=.false.
     endif
@@ -2751,7 +2753,7 @@ module power_spectrum
        open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     endif
     write(1,*) t
-    write(1,'(1p,8e10.2)') spectrum_sum
+    write(1,power_format) spectrum_sum
     close(1)
   endif
   !
@@ -2962,7 +2964,7 @@ module power_spectrum
       if (lcomplex) then
         write(1,'(1p,8("(",e10.2,",",e10.2,")"))') spectrumx_sum/(nygrid*nzgrid)
       else
-        write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
+        write(1,power_format) spectrumx_sum/(nygrid*nzgrid)
       endif
 !
 
@@ -2992,7 +2994,7 @@ module power_spectrum
         open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
             position='append')
         write(1,*) t
-        write(1,'(1p,8e10.2)') spectrumy_sum/(nxgrid*nzgrid)
+        write(1,power_format) spectrumy_sum/(nxgrid*nzgrid)
         close(1)
       endif
 !
@@ -3014,7 +3016,7 @@ module power_spectrum
         open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
             position='append')
         write(1,*) t
-        write(1,'(1p,8e10.2)') spectrumz_sum/(nxgrid*nygrid)
+        write(1,power_format) spectrumz_sum/(nxgrid*nygrid)
         close(1)
       endif
     endif
@@ -3279,10 +3281,10 @@ endsubroutine pdf
 !
     if (lspherical_coords) then
       spectrum_sum=.5*spectrum_sum
-      write(1,'(1p,8e10.2)') spectrum_sum/nVol2d
+      write(1,power_format) spectrum_sum/nVol2d
     elseif (lcylindrical_coords) then
       spectrumy_sum=.5*spectrumy_sum
-      write(1,'(1p,8e10.2)') spectrumy_sum/nVol2d
+      write(1,power_format) spectrumy_sum/nVol2d
     endif
     close(1)
   endif
@@ -3419,12 +3421,12 @@ endsubroutine pdf
      spectrumhel_sum=0.5*spectrumhel_sum
      open(1,file=trim(datadir)//'/power_phi_'//trim(sp)//'.dat',position='append')
      write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
+     write(1,power_format) spectrum_sum
      close(1)
 !
      open(1,file=trim(datadir)//'/powerhel_phi_'//trim(sp)//'.dat',position='append')
      write(1,*) t
-     write(1,'(1p,8e10.2)') spectrumhel_sum
+     write(1,power_format) spectrumhel_sum
      close(1)
    endif
   !
@@ -3522,7 +3524,7 @@ endsubroutine pdf
      spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
      write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
+     write(1,power_format) spectrum_sum
      close(1)
   endif
   !
@@ -4129,7 +4131,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -4140,7 +4142,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
   endif
@@ -4395,7 +4397,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrum_sum
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -4406,7 +4408,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumhel_sum
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
@@ -4422,7 +4424,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') correlation_sum
+      write(1,power_format) correlation_sum
     endif
     close(1)
     !
@@ -4433,7 +4435,7 @@ endsubroutine pdf
       enddo
     else
       write(1,*) t
-      write(1,'(1p,8e10.2)') correlationhel_sum
+      write(1,power_format) correlationhel_sum
     endif
     close(1)
     !
@@ -4450,7 +4452,7 @@ endsubroutine pdf
         enddo
       else
         write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrum_sum
+        write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
       !
@@ -4463,7 +4465,7 @@ endsubroutine pdf
         enddo
       else
         write(1,*) t
-        write(1,'(1p,8e10.2)') cyl_spectrumhel_sum
+        write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
     endif
@@ -4471,7 +4473,7 @@ endsubroutine pdf
     if (lwrite_krms) then
       krms=sqrt(k2m_sum/nks_sum)
       open(1,file=trim(datadir)//'/powercor_krms.dat',position='append')
-      write(1,'(1p,8e10.2)') krms
+      write(1,power_format) krms
       close(1)
       lwrite_krms=.false.
     endif
