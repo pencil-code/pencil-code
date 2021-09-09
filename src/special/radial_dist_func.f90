@@ -34,15 +34,17 @@ module Special
 !
 ! Declare index of variables
 !
-   integer, parameter :: npgrid=512, nbin=npgrid/2
-   integer :: ispecial=0, rdf_stride_outer=1, rdf_stride_inner=1
+  integer, parameter :: npgrid=512, nbin=npgrid/2
+  integer :: ispecial=0, rdf_stride_outer=1, rdf_stride_inner=1
+  logical :: lloffset_search=.false.
 !
   ! input parameters
   real :: gam_lucky=fourthird, efficiency_exponent=0., efficiency_prefactor=1.
   real :: rcrit=0., lambda_star1=1, runit=1.
   character(len=50) :: init_qq='read512cubed'
+  character(LEN=labellen) :: file_in='../np_ap1.dat'
   namelist /special_init_pars/ &
-    rdf_stride_outer, rdf_stride_inner
+    rdf_stride_outer, rdf_stride_inner, file_in, lloffset_search
 !
   ! run parameters
   logical :: lMFT=.false., lrA=.false., lrB=.false.
@@ -109,7 +111,7 @@ module Special
       real, dimension (npgrid,npgrid,npgrid) :: np
       real, dimension (mx,my,mz,mfarray) :: f
       real, parameter :: length=4*pi
-      real :: distance
+      real :: distance, delx2, dely2, delz2
       integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin, nnp, mnp, lnp
       integer :: loffset_search, l1_search
       real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
@@ -125,11 +127,13 @@ module Special
         case ('nothing'); if (lroot) print*,'init_qq: nothing'
         case ('zero'); f(:,:,:,ispecial)=0.
         case ('read512cubed')
-          open(1,FILE='np_ap3.dat',FORM='unformatted')
+          open(1,FILE=trim(file_in),FORM='unformatted')
           read(1) np
           close(1)
 !
-!  go through all starting points
+!  Go through all starting points. On each processor, the indices l,m,n
+!  access only points within the f-array, but not the full array np.
+!  Therefore we define a processor-dependent offset for each direction.
 !
           f=0.
           noffset=nz*ipz
@@ -141,9 +145,12 @@ module Special
           loffset_search=0
 2000      continue
           l1_search=l1+loffset_search
-          do n=n1,n2,rdf_stride_outer
-          do m=m1,m2,rdf_stride_outer
-          do l=l1_search,l2,rdf_stride_outer
+          !do n=n1,n2,rdf_stride_outer
+          !do m=m1,m2,rdf_stride_outer
+          !do l=l1_search,l2,rdf_stride_outer
+          do n=101,n2,rdf_stride_outer
+          do m=101,m2,rdf_stride_outer
+          do l=173,l2,rdf_stride_outer
             nnp=n+noffset
             mnp=m+moffset
             lnp=l+loffset
@@ -155,7 +162,11 @@ module Special
               do mm=1,npgrid,rdf_stride_inner
               do ll=1,npgrid,rdf_stride_inner
                 if (np(ll,mm,nn)/=0.) then
-                  distance=sqrt((xx(l)-xx(ll))**2+(yy(m)-yy(mm))**2+(zz(n)-zz(nn))**2)
+                  !distance=sqrt((xx(l)-xx(ll))**2+(yy(m)-yy(mm))**2+(zz(n)-zz(nn))**2)
+                  delx2=min((xx(l)-xx(ll))**2, (xx(l)-xx(ll)-length)**2, (xx(l)-xx(ll)+length)**2)
+                  dely2=min((yy(l)-yy(ll))**2, (yy(l)-yy(ll)-length)**2, (yy(l)-yy(ll)+length)**2)
+                  delz2=min((zz(l)-zz(ll))**2, (zz(l)-zz(ll)-length)**2, (zz(l)-zz(ll)+length)**2)
+                  distance=sqrt(delx2+dely2+delz2)
                   idist=int(nbin*distance/length)+1
                   if (idist>=1.and.idist<=nbin) then
                     f(l,m,n,idist) =f(l,m,n,idist) +np(lnp,mnp,nnp)*np(ll,mm,nn)
@@ -166,8 +177,10 @@ module Special
               enddo
               enddo
             else
-              loffset_search=loffset_search+1
-              goto 2000
+              if (lloffset_search) then
+                loffset_search=loffset_search+1
+                goto 2000
+              endif
             endif
           enddo
           enddo
@@ -191,8 +204,8 @@ module Special
       write(1,'(1p,8e10.3)') rdf
       close(1)
   !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
   !
   call mpireduce_sum(rdf,rdf_sum,nbin+1)
   !
