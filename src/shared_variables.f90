@@ -795,7 +795,7 @@ module SharedVariables
 !***********************************************************************
     subroutine put_variable_logical0d(varname,variable,ierr,caller)
 !
-!  Comment me.
+!  Put variable for logicals (not an array)
 !
       character (len=*) :: varname
       logical, target :: variable

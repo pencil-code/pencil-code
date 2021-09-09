@@ -18,6 +18,7 @@
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
 ! PENCILS PROVIDED ekin, uuadvec_glnrho; uuadvec_grho
 ! PENCILS PROVIDED rhos1; glnrhos(3)
+! PENCILS PROVIDED totenergy_rel
 !
 !***************************************************************
 module Density
@@ -328,6 +329,9 @@ module Density
       if (lhydro) then
         call get_shared_variable('lrelativistic', &
             lrelativistic, caller='register_density')
+   !AB: not sure this is needed
+   !  else
+   !    lrelativistic=.false.
       endif
 !
     endsubroutine register_density
@@ -2046,7 +2050,9 @@ module Density
       endif
 !
       if (lrelativistic) then
-        lpenc_requested(i_lorentz_gamma) = .true.
+        lpenc_requested(i_lorentz_gamma)=.true.
+        lpenc_requested(i_totenergy_rel)=.true.
+        lpenc_requested(i_ss_rel)=.true.
       endif
 !
       if (lfargo_advection) then
@@ -2230,7 +2236,13 @@ module Density
       integer :: i
 !
 ! rho
-      p%rho=f(l1:l2,m,n,irho)
+!
+      if (lrelativistic) then
+        p%totenergy_rel=f(l1:l2,m,n,irho)
+        p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
+      else
+        p%rho=f(l1:l2,m,n,irho)
+      endif
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
@@ -2435,7 +2447,11 @@ module Density
             .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
           if (ldensity_nolog) then
-            density_rhs= - p%ugrho  - p%rho*p%divu
+            if (lrelativistic) then
+              density_rhs=-p%divss_rel
+            else
+              density_rhs=-p%ugrho-p%rho*p%divu
+            endif
             if (lrelativistic_eos) density_rhs=fourthird*density_rhs
           else
             density_rhs= - p%divu

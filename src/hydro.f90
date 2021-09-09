@@ -25,7 +25,7 @@
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
 ! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
-! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor
+! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
 !***************************************************************
 !
 module Hydro
@@ -900,7 +900,7 @@ module Hydro
 !
 !  shared variable of lrelativistic for density
 !
-      call put_shared_variable('lrelativistic',lrelativistic, caller='register_density')
+      call put_shared_variable('lrelativistic',lrelativistic, caller='register_hydro')
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
@@ -2571,7 +2571,8 @@ module Hydro
         lpenc_requested(i_ss_rel)=.true.
         lpenc_requested(i_ss_rel2)=.true.
         lpenc_requested(i_ss_rel_ij)=.true.
-        lpenc_requested(i_glnrho)=.true.
+   !    lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_grho)=.true.
       endif
 !
 !  video pencils
@@ -2872,11 +2873,10 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, sqrt_ss_term
+      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, sqrt_ss_term, ratio_mom2en
+      real, dimension (nx,3,3) :: tmp6
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
-!
-      real, dimension(nx,3,3) :: tmp6
 !
       intent(in) :: lpenc_loc
       intent(out):: p
@@ -2890,8 +2890,10 @@ module Hydro
         if (lrelativistic) then
           p%ss_rel=f(l1:l2,m,n,iux:iuz)
           call dot2_mn(p%ss_rel,p%ss_rel2)
-          sqrt_ss_term=sqrt(1.+2.25*p%ss_rel2*p%rho1**2)
-          p%lorentz_gamma2=.5*(1.+sqrt_ss_term)
+          !sqrt_ss_term=sqrt(1.+2.25*p%ss_rel2*p%rho1**2)
+          !p%lorentz_gamma2=.5*(1.+sqrt_ss_term)
+          ratio_mom2en=p%ss_rel2/p%totenergy_rel
+          p%lorentz_gamma2=.5/(1.-ratio_mom2en)*(1.-.5*ratio_mom2en+sqrt(1.-.75*ratio_mom2en))
           p%ss_rel_factor=.75*p%rho1/p%lorentz_gamma2
           call multsv_mn(p%ss_rel_factor,p%ss_rel,p%uu)
         else
@@ -2933,6 +2935,10 @@ module Hydro
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
+! divS
+      if (lpenc_loc(i_divss_rel)) then
+        call div_mn(p%ss_rel_ij,p%divss_rel,p%ss_rel)
+      endif
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
