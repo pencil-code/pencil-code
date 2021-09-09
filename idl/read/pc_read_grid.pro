@@ -53,6 +53,8 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   ENDIF
 
   default, single, 0
+  if is_defined(proc) then $
+    if (proc lt 0) then undefine, proc
 ;
 ; Default data directory
 ;
@@ -60,56 +62,31 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; Get necessary dimensions.
 ;
-  if (not is_defined(dim)) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
+  pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
 ;
 ;  Set pc_precision.
 ;
   pc_set_precision, datadir=datadir, dim=dim, /quiet
-  if (not is_defined(param)) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
-;
-; Set mx,my,mz in common block for derivative routines
-;
-    nx=dim.nx
-    ny=dim.ny
-    nz=dim.nz
-    nw=nx*ny*nz
-    mx=dim.mx
-    my=dim.my
-    mz=dim.mz
-    mw=mx*my*mz
-    l1=dim.l1
-    l2=dim.l2
-    m1=dim.m1
-    m2=dim.m2
-    n1=dim.n1
-    n2=dim.n2
-    nghostx=dim.nghostx
-    nghosty=dim.nghosty
-    nghostz=dim.nghostz
-;
-; General grid properties.
-;
-    lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
-    lperi = (param.lperi ne 0)
-    ldegenerated = ([ nx, ny, nz ] eq 1)
-;
-;  Set coordinate system.
-;
-    coord_system=param.coord_system
-    NaN = !Values.F_NaN * one
-    downprec = (precision eq 'D') and single
+  pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
+
+  NaN = !Values.F_NaN * one
+  downprec = (precision eq 'D') and single
 ;
 ; Default filename stem.
 ;
-    if keyword_set(down) then $
-      gridfile='grid_down' $
-    else $
-      gridfile='grid'
+  if keyword_set(down) then $
+    gridfile='grid_down' $
+  else $
+    gridfile='grid'
 
-  if (file_test (datadir+'/'+gridfile+'.h5')) then begin
+  filename=datadir+'/'+gridfile+'.h5'
+
+  if file_test(filename) then begin
 ;
-; HDF5 file format
+; HDF5 file format - check validity of input object.
 ;
+    if is_valid(object,'GRID',filename) then return
+
     start = [ 0, 0, 0 ]
     count = [ dim.mx, dim.my, dim.mz ]
     if (is_defined(proc)) then start = [ dim.ipx*dim.nx, dim.ipy*dim.ny, dim.ipz*dim.nz ]
@@ -147,9 +124,39 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; Old file format
 ;
+; Set mx,my,mz in common block for derivative routines
+;
+    nx=dim.nx
+    ny=dim.ny
+    nz=dim.nz
+    nw=nx*ny*nz
+    mx=dim.mx
+    my=dim.my
+    mz=dim.mz
+    mw=mx*my*mz
+    l1=dim.l1
+    l2=dim.l2
+    m1=dim.m1
+    m2=dim.m2
+    n1=dim.n1
+    n2=dim.n2
+    nghostx=dim.nghostx
+    nghosty=dim.nghosty
+    nghostz=dim.nghostz
+;
+; General grid properties.
+;
+    lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
+    lperi = (param.lperi ne 0)
+    ldegenerated = ([ nx, ny, nz ] eq 1)
+;
+;  Set coordinate system.
+;
+    coord_system=param.coord_system
+;
 ; Default filename.
 ;
-   gridfile += '.dat'
+    gridfile += '.dat'
 ;
     allprocs_exists = file_test(datadir+'/allprocs/'+gridfile)
     default, swap_endian, 0
@@ -159,24 +166,40 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     default, allprocs, -1
     if (allprocs eq -1) then begin
       allprocs=0
-      if (allprocs_exists and (n_elements(proc) eq 0)) then allprocs=1
+      if (allprocs_exists and not is_defined(proc)) then allprocs=1
     end
 ;
 ; Check if allprocs is consistent with proc.
 ;
-    if ((allprocs gt 0) and (n_elements(proc) ne 0)) then $
+    if ((allprocs gt 0) and is_defined(proc)) then $
         message, "pc_read_grid: 'allprocs' and 'proc' cannot be set both."
 ;
 ; Check if reduced keyword is set.
 ;
-    if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+    if (keyword_set(reduced) and is_defined(proc)) then $
         message, "pc_read_grid: /reduced and 'proc' cannot be set both."
-
-    if ((allprocs gt 0) or allprocs_exists or keyword_set (reduced)) then begin
-      ncpus=1
-    end else begin
+;
+; Build the full path and filename
+;
+    ncpus=1 & iterate_cpus=0
+    if (keyword_set (reduced)) then begin
+      filename=datadir+'/reduced/'+gridfile
+    endif else if is_defined(proc) then begin
+      filename=datadir+'/proc'+str(proc)+'/'+gridfile
+    endif else if ((allprocs gt 0) or allprocs_exists) then begin
+    ;;;endif else if ((allprocs gt 0)) then begin
+      filename=datadir+'/allprocs/'+gridfile
+    endif else begin
+      filename=datadir+'/procs/'+gridfile
       ncpus=dim.nprocx*dim.nprocy*dim.nprocz
-    end
+      iterate_cpus=1
+    endelse
+;
+;  Check validity of input object.
+;
+    if is_valid(object,'GRID',filename) then return
+    filename_loc=filename
+    print, 'Reading grid data from ' , filename, ' ...'
 ;
 ; Initialize / set default returns for ALL variables, here in precision of the run.
 ;
@@ -205,19 +228,12 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     get_lun, file
 
     for i=0,ncpus-1 do begin
-;
-; Build the full path and filename
-;
-      if (keyword_set (reduced)) then begin
-        filename=datadir+'/reduced/'+gridfile
-      endif else if (n_elements(proc) ne 0) then begin
-        filename=datadir+'/proc'+str(proc)+'/'+gridfile
-      endif else if ((allprocs gt 0) or allprocs_exists) then begin
-      ;;;endif else if ((allprocs gt 0)) then begin
-        filename=datadir+'/allprocs/'+gridfile
-      endif else begin
-        filename=datadir+'/proc'+str(i)+'/'+gridfile
+
+      if iterate_cpus then begin
+
+        filename_loc=datadir+'/proc'+str(i)+'/'+gridfile
         ; Read processor box dimensions
+        undefine, procdim
         pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET, down=down
         xloc = replicate (NaN, procdim.mx)
         yloc = replicate (NaN, procdim.my)
@@ -228,26 +244,27 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
         dx_tildeloc = replicate (NaN, procdim.mx)
         dy_tildeloc = replicate (NaN, procdim.my)
         dz_tildeloc = replicate (NaN, procdim.mz)
-      endelse
+
+      endif
       ; Check for existence and read the data
-      if (not file_test(filename)) then begin
+      if (not file_test(filename_loc)) then begin
         FREE_LUN,file
-        message, 'ERROR: cannot find file '+ filename
+        message, 'ERROR: cannot find file '+ filename_loc
       endif
 
-      check=check_ftn_consistency(filename,swap_endian)
+      check=check_ftn_consistency(filename_loc,swap_endian)
       if check eq -1 then begin
-        print, 'File "'+strtrim(filename,2)+'" corrupted!'
+        print, 'File "'+strtrim(filename_loc,2)+'" corrupted!'
         return
       endif else $
         if check eq 1 then $
-          print, 'Try to read file "'+strtrim(filename,2)+'" with reversed endian swap!'
+          print, 'Try to read file "'+strtrim(filename_loc,2)+'" with reversed endian swap!'
      
-      if (not keyword_set(quiet)) then print, 'Reading ' , filename , '...'
+      if (iterate_cpus and not keyword_set(quiet)) then print, 'Reading ' , filename_loc , ' ...'
 
-      openr,file,filename,/F77,SWAP_ENDIAN=swap_endian
+      openr,file,filename_loc,/F77,SWAP_ENDIAN=swap_endian
 
-      if ((allprocs gt 0) or allprocs_exists or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
+      if (not iterate_cpus) then begin
         readu, file, t, x, y, z
         readu, file, dx, dy, dz
         if (downprec) then begin
@@ -334,11 +351,11 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
         endif
         found_Lxyz = 1
 
-        readu, file, xloc, yloc, zloc
+        readu, file, xloc, yloc, zloc       ; actually d[xyz]_1_loc
         if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
         if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
         if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
-        readu, file, xloc, yloc, zloc
+        readu, file, xloc, yloc, zloc       ; actually d[xyz]_tilde_loc
         if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
         if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
         if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
@@ -402,25 +419,18 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ;  Build structure of all the variables
 ;
-  object = create_struct(name="pc_grid_" + $
-      str((size(x))[1]) + '_' + $
-      str((size(y))[1]) + '_' + $
-      str((size(z))[1]) + ((downprec or precision eq 'S') ? '_S' : '_D'), $
+  object = create_struct(name="PC_GRID"+':'+strtrim(filename), $
       ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
        'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
        'lequidist','lperi','ldegenerated'], $
       t,x,y,z,dx,dy,dz,Ox,Oy,Oz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
-        lequidist,lperi,ldegenerated)
-;
-;  Set status of object to "valid".
-;
-  setenv, 'PC_VALID_GRID=V'
+      lequidist,lperi,ldegenerated)
 ;
 ; If requested print a summary
 ;
   fmt = '(A,4G15.6)'
   if (keyword_set(print)) then begin
-    if (n_elements(proc) eq 0) then begin
+    if (not is_defined(proc)) then begin
       print, FORMAT='(A,I2,A)', 'For all processors calculation domain:'
     endif else if (keyword_set(reduced)) then begin
       print, FORMAT='(A,I2,A)', 'For reduced calculation domain:'

@@ -218,7 +218,7 @@ endelse
 ;
 yinyang=par.lyinyang
 ;
-if (n_elements(proc) ne 0) then begin
+if (is_defined(proc)) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension

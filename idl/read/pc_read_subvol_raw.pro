@@ -102,7 +102,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	end
 
 	; Get necessary dimensions quietly.
-	if (not is_defined(dim)) then pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
+	pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
 
         ; Set precision for all Pencil Code tools.
 
@@ -160,22 +160,16 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
 
 	; Get necessary parameters quietly.
-	if (size (start_param, /type) ne 8) then $
-		pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
-	if (size (run_param, /type) ne 8) then begin
-		if (file_test (datadir+'/param2.nml')) then begin
-			pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
-		endif else begin
-			print, 'Could not find '+datadir+'/param2.nml'
-		endelse
-	endif
+	pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
+	pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
+	if not is_defined(run_param) then $
+  	  print, 'Could not find '+datadir+'/param2.nml'
 
 	; Set the coordinate system.
 	coord_system = start_param.coord_system
 
 	; Read the grid, if needed.
-	if (size (grid, /type) ne 8) then $
-		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
+	pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
 
 	; Read timestamp.
 	pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet, single=single

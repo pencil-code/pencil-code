@@ -9,14 +9,14 @@ function check_slices_par, field, readdir, switches
 ;  7-jul-20/PAB: added regex hook, added check for existence of orig field
 ;
 fields=rstringlist('video.in')
-if (fields[0] eq '') then begin
+if (strtrim(fields[0],2) eq '') then begin
   message, 'No entries in "video.in"!', /warn
   return, 0
 endif
 ;
 default, field, fields[0]
 ;
-if ((is_str (field) le 0) or (field eq '')) then begin
+if ((is_str (field) le 0) or (strtrim(field,2) eq '')) then begin
   message, '"field" must be a non-empty string!', /warn
   return, 0
 endif

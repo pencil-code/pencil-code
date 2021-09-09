@@ -26,6 +26,7 @@ filename=datadir+'/qdim.dat'
 ; Check for existence and read the data
 ;
 if (file_test(filename)) then begin
+  if is_valid(object,'QDIM',filename) then return
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
   openr,file,filename
   readf,file,nqpar,mqvar
@@ -37,7 +38,7 @@ endelse
 ;
 ; Build structure of all the variables
 ;
-object = CREATE_STRUCT(name=objectname, ['nqpar','mqvar'], nqpar, mqvar)
+object = CREATE_STRUCT(name='PC_QDIM:'+strtrim(filename,2), ['nqpar','mqvar'], nqpar, mqvar)
 ;
 ; If requested print a summary
 ;

@@ -103,7 +103,7 @@ COMPILE_OPT IDL2,HIDDEN
     
     quantities = varcontent[*].idlvar
     num_quantities = n_elements (quantities)
-    if (not is_defined(grid)) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet, single=single
+    pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet, single=single
 
     if (precision eq 'D' and not single) then $
       object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities) $
@@ -166,27 +166,20 @@ if (keyword_set (reduced) and is_defined(proc)) then $
 ;
 ; Get necessary dimensions quietly.
 ;
-  if (not is_defined(dim)) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
+  pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
 ;
 ; Get necessary parameters.
 ;
-  if (n_elements (start_param) eq 0) then $
-      pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet, single=single
-  if (n_elements (run_param) eq 0) then begin
-    if (file_test (datadir+'/param2.nml')) then begin
-      pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet, single=single
-    end else begin
-      print, 'Could not find '+datadir+'/param2.nml'
-    end
-  end
+  pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet, single=single
+  pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet, single=single
+  if (not is_defined(run_param)) then $
+    print, 'Could not find '+datadir+'/param2.nml'
 ;
 ; We know from param whether we have to read 2-D or 3-D data.
 ;
   run2D=start_param.lwrite_2d
 ;
-  if (n_elements (grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet, single=single
+  pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet, single=single
 ;
 ; Set the coordinate system.
 ;

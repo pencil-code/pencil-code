@@ -51,11 +51,10 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory.
 ;
   datadir = pc_get_datadir(datadir)
-  if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, quiet=quiet
+  pc_read_dim, datadir=datadir, object=dim, quiet=quiet
 ;
 ; Build the full path and filename and check for existence.
 ;
-  undefine, object
   idl_subdir = datadir+'/idl'
   if (not file_test (idl_subdir, /directory)) then file_mkdir, idl_subdir
   if (keyword_set(param2) or keyword_set(run_param)) then begin
@@ -74,6 +73,10 @@ COMPILE_OPT IDL2,HIDDEN
         message, "ERROR: '"+filename+"' not found - datadir may not be initialized, please execute 'start.csh'."
   endelse
 ;
+;  Check validity of input object.
+;
+  if is_valid(object,'PARAM',filename) then return
+;
 ; Check if we are prepared for reading anything.
 ;
   pencil_home = getenv ('PENCIL_HOME')
@@ -90,7 +93,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read the parameter namelist file.
 ;
-  if (not keyword_set(quiet)) then print, 'Reading "'+filename+'".'
+  if (not keyword_set(quiet)) then print, 'Reading '+filename+' ...'
 ;
 ; Parse content of namelist file, if necessary.
 ;
@@ -151,11 +154,7 @@ COMPILE_OPT IDL2,HIDDEN
       obj = create_struct (obj, struct)
     end
   end
-  object = create_struct(name='pc_param'+(keyword_set(param2) ? '2' : ''), obj)
-;
-;  Set status of object to "valid".
-;
-  setenv, 'PC_VALID_PARAM'+(keyword_set(param2) ? '2' : '')+'=V'
+  object = create_struct(name='PC_PARAM:'+strtrim(filename), obj)
 ;
 ; If requested print a summary
 ;

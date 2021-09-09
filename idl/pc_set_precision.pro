@@ -19,24 +19,16 @@ COMPILE_OPT IDL2, HIDDEN
             return
           endif else begin
 ;
-;  Working directory was changed: invalidate precision, dim, grid and param objects.
+;  Working directory was changed: invalidate precision and dim object.
 ;
             undefine, precision
             undefine, dim
-            setenv, 'PC_VALID_DIM='
-            setenv, 'PC_VALID_GRID='
-            setenv, 'PC_VALID_PARAM='
-            setenv, 'PC_VALID_PARAM2='
           endelse
         endif else begin
 ;
 ;  Very first call of pc_set_precision during a session.
 ;
           undefine, dim
-          setenv, 'PC_VALID_DIM='
-          setenv, 'PC_VALID_GRID='
-          setenv, 'PC_VALID_PARAM='
-          setenv, 'PC_VALID_PARAM2='
         endelse
 
         setenv, 'IDL_LAST_WORKDIR='+wdir
@@ -46,7 +38,7 @@ COMPILE_OPT IDL2, HIDDEN
 	; Remove the following block after all scripts have been shifted to new config finder:
 
 	if (not is_defined(new)) then begin
-		if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+		pc_read_dim, obj=dim, datadir=datadir, /quiet
 		new = strupcase (dim.precision)
 	end
 

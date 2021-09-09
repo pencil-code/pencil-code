@@ -98,7 +98,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, ytitle, dir eq 'y' ? 'z' : 'y'
   default, single, 0
 ;
-  if (not is_defined(grid)) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet, single=single
+  pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet, single=single
 ;
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+dir+'.h5')) then begin
@@ -146,7 +146,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read additional information.
 ;
-  if (not is_defined(dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+  pc_read_dim, obj=dim, datadir=datadir, /quiet
 ;
 ;  Set pc_precision.
 ;
@@ -231,6 +231,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (nvar_all le 0) then message, "ERROR: there are no variables found."
   variables_all = variables_all[inds]
 ;
+  variables=strtrim(variables,2)
   if (variables[0] eq '') then begin
     variables = variables_all
     nvar = nvar_all

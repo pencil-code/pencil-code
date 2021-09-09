@@ -190,29 +190,24 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check if allprocs is set.
 ;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "'allprocs' and 'proc' cannot be set both."
-;
-; Get necessary dimensions quietly.
+  if ((allprocs ne 0) and is_defined(proc)) then message, "'allprocs' and 'proc' cannot be set both."
 ;
   logrid=0
   if (keyword_set(ogrid)) then logrid=1  
-  if (not is_defined(dim)) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
+;
+; Get necessary dimensions quietly.
+;
+  pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
 ;
 ; Set precision for all Pencil Code tools if necessary.
 ;
   pc_set_precision, datadir=datadir, dim=dim, quiet=quiet
   
-  if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
-  if (n_elements(par2) eq 0) then begin
-    if (file_test(datadir+'/param2.nml')) then begin
-      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet, single=single
-    endif else begin
-      print, 'Could not find '+datadir+'/param2.nml'
-      if (magic) then print, 'This may give problems with magic variables.'
-      undefine, par2
-    endelse
+  pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
+  pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet, single=single
+  if (not is_defined(par2)) then begin
+    print, 'Could not find '+datadir+'/param2.nml'
+    if (magic) then print, 'This may give problems with magic variables.'
   endif
 ;
 ; Set the coordinate system.
@@ -221,10 +216,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  if (not is_defined(grid)) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
-      proc=proc, allprocs=allprocs, reduced=reduced, $
-      swap_endian=swap_endian, /quiet, down=ldownsampled, single=single
+  pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
+                proc=proc, allprocs=allprocs, reduced=reduced, $
+                swap_endian=swap_endian, /quiet, down=ldownsampled, single=single
   if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single,hdf5=hdf5_varfile)

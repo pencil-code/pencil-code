@@ -19,8 +19,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
-  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
-  common cdat_coords,coord_system
+  common cdat_coords, coord_system
 ;
 ; If asked for, show some help.
 ;
@@ -78,10 +77,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Get necessary dimensions quietly
 ;
-  if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
-  if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
+  pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
+  pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
@@ -95,19 +92,17 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  if ((n_elements(grid) eq 1) or (allprocs eq 1)) then begin
-    procgrid=grid
-  endif else begin
+  if (is_defined(grid) or (allprocs eq 1)) then $
+    procgrid=grid $  ; no validity check of dim
+  else $
     pc_read_grid, obj=procgrid, dim=dim, datadir=datadir, param=param, proc=proc, swap_endian=swap_endian, /quiet, single=single
-  endelse
 ;
 ; Read dimensions (global)...
 ;
-  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
-    procdim=dim
-  endif else begin
+  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then $
+    procdim=dim $    ; no validity check of dim
+  else $
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-  endelse
 ;
 ; Should ghost zones be returned?
 ;

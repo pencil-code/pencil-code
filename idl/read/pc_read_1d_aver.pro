@@ -25,7 +25,7 @@ datadir = pc_get_datadir(datadir)
 ;
 ;  Get necessary dimensions.
 ;
-if (not is_defined(dim)) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 ;
 ;  Set pc_precision.
 ;
@@ -46,7 +46,7 @@ end else $
 default, in_file, avdirs+'aver.in'
 default, varfile, avdirs+'averages.dat'
 
-if (not is_defined(grid)) then pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
+pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
 
   ; load HDF5 averages, if available
   if (file_test (datadir+'/averages/'+avdirs+'.h5')) then begin

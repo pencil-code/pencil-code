@@ -114,22 +114,14 @@ COMPILE_OPT IDL2, HIDDEN
   if (keyword_set(down)) then dimfile = 'dim_down.dat'
   if (keyword_set(ogrid)) then dimfile = 'ogdim.dat'
 ;
-;  Build the full path and filename.
+  filename = datadir+'/grid.h5'
+
+  if (file_test (filename)) then begin
 ;
-  if (is_defined(proc)) then begin
-    ; Read dimensions on local processor.
-    if (keyword_set(reduced)) then $
-        message, "pc_read_dim: /reduced and 'proc' cannot be set both."
-    filename = datadir+'/proc'+str(proc)+'/'+dimfile
-  end else begin
-    ; Read global dimensions.
-    filename = datadir+'/'+dimfile
-    if (keyword_set(reduced)) then filename = datadir+'/reduced/'+dimfile
-  end
+; HDF5 format is available - check validity of input object.
 ;
-  if (file_test (datadir+'/grid.h5')) then begin
-    ; HDF5 format is available
-    filename = datadir+'/grid.h5'
+    if is_valid(object,'DIM',filename) then return
+
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
     mxgrid = h5_read ('settings/mx', file=filename)
     mygrid = h5_read ('settings/my')
@@ -148,7 +140,7 @@ COMPILE_OPT IDL2, HIDDEN
     nprocz = h5_read ('settings/nprocz')
     precision_new = h5_read ('settings/precision', /close)
     pc_set_precision, precision=precision_new
-    if (size (proc, /type) ne 0) then begin
+    if ( is_defined(proc) ) then begin
       ipx = proc mod nprocx
       ipy = (proc / nprocx) mod nprocy
       ipz = proc / (nprocx * nprocy)
@@ -164,7 +156,25 @@ COMPILE_OPT IDL2, HIDDEN
       mz = mzgrid
     end
   end else begin
-    ; old file format
+;
+; Old file format
+;
+;  Build the full path and filename.
+;
+    if (is_defined(proc)) then begin
+      ; Read dimensions on local processor.
+      if (keyword_set(reduced)) then $
+          message, "pc_read_dim: /reduced and 'proc' cannot be set both."
+      filename = datadir+'/proc'+str(proc)+'/'+dimfile
+    end else begin
+      ; Read global dimensions.
+      filename = datadir+'/'+dimfile
+      if (keyword_set(reduced)) then filename = datadir+'/reduced/'+dimfile
+    end
+;
+;  Check validity of input object.
+;
+    if is_valid(object,'DIM',filename) then return
 ;
 ;  Check for existence and read the data.
 ;
@@ -228,7 +238,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Build structure of all the variables.
 ;
-  object = create_struct(name='pc_dim_'+strtrim(filename,2),$
+  object = create_struct(name='PC_DIM:'+strtrim(filename,2),$
       ['mx','my','mz','mw', $
       'mvar','maux','mglobal', $
       'precision', $
@@ -249,10 +259,6 @@ COMPILE_OPT IDL2, HIDDEN
       l1,l2,m1,m2,n1,n2, $
       ipx, ipy, ipz, $
       nprocx,nprocy,nprocz)
-;
-;  Set status of object to "valid".
-;
-  setenv, 'PC_VALID_DIM=V'
 ;
 ;  Print a summary if requested.
 ;

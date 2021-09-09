@@ -9,16 +9,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (keyword_set(help)) then begin
     doc_library, 'pc_varcontent_global'
-    return
+    return, 0
   endif
 
 default, single, 0
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
-if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,datadir=datadir,quiet=quiet
-if (n_elements(param) eq 0) then pc_read_param,obj=param,datadir=datadir, $
-    dim=dim,quiet=quiet, single=single
+pc_read_dim,obj=dim,datadir=datadir,quiet=quiet
+pc_read_param,obj=param,datadir=datadir,dim=dim,quiet=quiet, single=single
 datadir = pc_get_datadir(datadir)
 ; 
 ;  Read the positions of variables in f.

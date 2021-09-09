@@ -24,7 +24,7 @@ default, single, 0
 ;
 datadir = pc_get_datadir(datadir)
 default, filename, 'particle_size_dist.dat'
-if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+pc_read_dim, obj=dim, datadir=datadir, /quiet
 ;
 ;  Set precision.
 ;

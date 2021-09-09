@@ -70,7 +70,7 @@ pro pc_read_aver_plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
 ;  Put current time in title if requested.
   if (t_title) then begin
     timestr='t='+strtrim(string(time/t_scale-t_zero,format=tformat),2)
-    title = title eq '' ? timestr : title+'('+timestr+')'
+    title = strtrim(title,2) eq '' ? timestr : title+'('+timestr+')'
   endif
 ;  tvscl-type plot with axes.
   if min gt max then begin

@@ -123,8 +123,7 @@ pro pc_magic_var, variables, tags, $
   default, quiet, 0
 ;
   if (not keyword_set(datadir)) then datadir='data'
-  if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, datadir=datadir, /quiet
+  pc_read_param, object=param, datadir=datadir, /quiet
 ;
 ;  Add global values if requested (e.g. external magnetic field to bb).
 ;

@@ -367,7 +367,7 @@ if err ne 0 then return, 0
 
     for i=0,ncomp-1 do begin
 
-      if fmt eq '' then $
+      if strtrim(fmt,2) eq '' then $
         readf,2,spectrum1 $
       else $
         readf,2,spectrum1,format=fmt 

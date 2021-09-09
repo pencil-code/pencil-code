@@ -80,7 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
 			procdir = datadir+'/proc0/'
 			allprocs = 0
 			pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-			if (not is_defined(start_param)) then pc_read_param, object=start_param, dim=procdim, datadir=datadir, /quiet
+			pc_read_param, object=start_param, dim=procdim, datadir=datadir, /quiet
 			nprocxy = procdim.nprocx * procdim.nprocy
 			num_var = procdim.mvar
 			if (start_param.lwrite_aux) then num_var += procdim.maux
@@ -118,11 +118,10 @@ COMPILE_OPT IDL2,HIDDEN
 	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+'/reduced/'
 
 	; get global dimensions
-	if (size(dim, /type) ne 8) then $
-		pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
+	pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
 
 	; get "start.in" parameters
-	if (not is_defined(start_param)) then pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
+	pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 
 	; set coordinate system
 	coord_system = start_param.coord_system

@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pdim.pro 9839 2008-09-05 07:24:02Z ajohan $
+;; $Id: pc_read_bdim.pro 9839 2008-09-05 07:24:02Z ajohan $
 ;;
 ;;  Read block domain decomposition dimension data.
 ;;
@@ -34,6 +34,7 @@ n2b=0L
 ;
 filename=datadir+'/bdim.dat'
 if (file_test(filename)) then begin
+  if is_valid(object,'BDIM',filename) then return
   if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
   get_lun, file
   openr, file, filename
@@ -42,13 +43,12 @@ if (file_test(filename)) then begin
        nxb, nyb, nzb, $
        l1b, l2b, m1b, m2b, n1b, n2b
   free_lun,file
-endif else begin
+endif else $
   message, 'ERROR: cannot find file ' + filename
-endelse
 ;
 ; Build structure of all the variables.
 ;
-object = create_struct(name=objectname, $
+object = create_struct(name='PC_BDIM:'+strtrim(filename,2), $
     ['nbrickx','nbricky','nbrickz','nblockmax','mxb','myb','mzb','nghostb', $
     'nxb','nyb','nzb','l1b','l2b','m1b','m2b','n1b','n2b'], $
      nbrickx, nbricky, nbrickz, nblockmax, mxb, myb, mzb, nghostb, $
