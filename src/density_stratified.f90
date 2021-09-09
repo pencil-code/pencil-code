@@ -24,6 +24,7 @@
 ! PENCILS PROVIDED del2rho; del2lnrho; del6lnrho
 ! PENCILS PROVIDED hlnrho(3,3)
 ! PENCILS PROVIDED uij5glnrho(3); sglnrho(3)
+! PENCILS PROVIDED totenergy_rel
 !
 !***************************************************************
 module Density
