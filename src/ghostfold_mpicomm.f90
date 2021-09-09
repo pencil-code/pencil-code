@@ -300,16 +300,19 @@ subroutine fold_df_3points(df,ivar1,ivar2)
       real, dimension (ny,nz) :: df_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+      integer :: l1m3, l2p3, m1m1, m2p3
 !
       nvar_fold=ivar2-ivar1+1
 !
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
 !
+      l1m3=l1-3; l2p3=l2+3; 
+      m1m1=m1-1; m2p3=m2+3     
       if (nzgrid/=1) then
         if (nprocz==1) then
 ! Folding the top ghost zones on the bottom
-          df(l1-3:l2+3,m1-3:m2+3,n1:n1+2,ivar1:ivar2)= &
+          df(l1m3:l2p3,m1-3:m2+3,n1:n1+2,ivar1:ivar2)= &
               df(l1-3:l2+3,m1-3:m2+3,n1:n1+2,ivar1:ivar2)+ &
               df(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)
 ! Folding the bottom ghost zones on the top
@@ -563,6 +566,9 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
       real, dimension (ny,nz) :: f_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+      integer :: l1m1, l1m3, l2p1, l2p3
+      integer :: m1m1, m1m3, m2p1, m2p3
+      integer :: n1m1, n1m3, n2p1, n2p3
 !
       nvar_fold=ivar2-ivar1+1
 !
@@ -578,21 +584,24 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
 !
 !
 !
+      l1m1=l1-1; l1m3=l1-3; l2p1=l2+1; l2p3=l2+3
+      m1m1=m1-1; m1m3=m1-3; m2p1=m2+1; m2p3=m2+3
+      n1m1=n1-1; n1m3=n1-3; n2p1=n2+1; n2p3=n2+3
       if (nzgrid/=1) then
         if (nprocz==1) then
 ! Folding the top ghost zones on the bottom
-          f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)= &
+          f(l1:l2,m1:m2,n1m3:n1m1,ivar1:ivar2)= &
 !              f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)+ &
               f(l1:l2,m1:m2,n2i:n2,ivar1:ivar2)
 ! Folding the bottom ghost zones on the top
-          f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)= &
+          f(l1:l2,m1:m2,n2p1:n2p3,ivar1:ivar2)= &
 !              f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)+ &
               f(l1:l2,m1:m2,n1:n1i,ivar1:ivar2)
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xy,(/nx,ny,3,nvar_fold/),zlneigh,itag1)
-              f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)= f_tmp_xy
+              f(l1:l2,m1:m2,n1m3:n1m1,ivar1:ivar2)= f_tmp_xy
 !                  f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2) + f_tmp_xy
             elseif (iproc_rcv==zuneigh) then
               f_tmp_xy = f(l1:l2,m1:m2,n2i:n2,ivar1:ivar2)
@@ -617,17 +626,17 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
 !
       if (nygrid/=1) then
         if (nprocy==1) then
-          f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2)= &
+          f(l1:l2,m1m3:m1m1,n1:n2,ivar1:ivar2)= &
 !              f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2) + &
               f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2)
-          f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2)= &
+          f(l1:l2,m2p1:m2p3,n1:n2,ivar1:ivar2)= &
 !              f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2) + &
               f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2)
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz,(/nx,3,nz,nvar_fold/),ylneigh,itag3)
-              f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2)= &
+              f(l1:l2,m1m3:m1m1,n1:n2,ivar1:ivar2)= &
 !                  f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2) + f_tmp_xz
                   f_tmp_xz
             elseif (iproc_rcv==yuneigh) then
@@ -655,7 +664,7 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
           f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)= &
 !              f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2) + &
               f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2)
-          f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)= &
+          f(l2p1:l2p3,m1:m2,n1:n2,ivar1:ivar2)= &
 !              f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2) + &
               f(l1:l1i,m1:m2,n1:n2,ivar1:ivar2)
         else
@@ -667,7 +676,7 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
               call mpisend_real(f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2), &
                   (/3,ny,nz,nvar_fold/),xuneigh,itag5)
             endif
-            if (iproc==iproc_rcv) f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)= &
+            if (iproc==iproc_rcv) f(l1m3:l1m1,m1:m2,n1:n2,ivar1:ivar2)= &
 !                f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
                 f_tmp_yz
             if (iproc==iproc_rcv) then
@@ -711,6 +720,9 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
       real, dimension (ny,nz) :: f_tmp_yz_one
       integer :: nvar_fold, iproc_rcv, ivar
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+      integer :: l1m1, l1m3, l2p1, l2p3
+      integer :: m2m1, m2m3, m2p1, m2p3
+      integer :: n1m1, n1m3, n2m1, n2m3, n2p1, n2p3
 !
       nvar_fold=ivar2-ivar1+1
 !
@@ -724,16 +736,17 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
 !  z: (l1:l2,m1:m2,n2i:n2) is sent to (l1:l2,m1:m2,n1-3:n1-1) of the following processor
 !     (l1:l2,m1:m2,n1:n1i) is sent to (l1:l2,m1:m2,n2+1:n2+3) of the preceeding processor
 !
-!
-!
+      m2m1=m2-1; m2m3=m2-3; m2p1=m2+1; m2p3=m2+3
+      n1m1=n1-1; n1m3=n1-3; n2m1=n2-1; n2m3=n2-3; n2p1=n2+1; n2p3=n2+3
       if (nzgrid/=1) then
         if (nprocz==1) then
 ! Folding the top ghost zones on the bottom
-          f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)= &
+          f(l1:l2,m1:m2,n1m3:n1m1,ivar1:ivar2)= &
 !              f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)+ &
               f(l1:l2,m1:m2,n2i:n2,ivar1:ivar2)
 ! Folding the bottom ghost zones on the top
-          f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)= &
+          !f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)= &
+          f(l1:l2,m1:m2,n2p1:n2p3,ivar1:ivar2)= &
 !              f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)+ &
               f(l1:l2,m1:m2,n1:n1i,ivar1:ivar2)
         else
@@ -770,7 +783,8 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
           f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2)= &
 !              f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2) + &
               f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2)
-          f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2)= &
+          !f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2)= &
+          f(l1:l2,m2p1:m2p3,n1:n2,ivar1:ivar2)= &
 !              f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2) + &
               f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2)
         else
@@ -802,12 +816,16 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
 !  Finally x.
 !
 !
+      l1m1=l1-1
+      l1m3=l1-3
+      l2p1=l2+1
+      l2p3=l2+3
       if (nxgrid/=1) then
         if (nprocx==1) then
           f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)= &
 !              f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2) + &
               f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2)
-          f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)= &
+          f(l2p1:l2p3,m1:m2,n1:n2,ivar1:ivar2)= &
 !              f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2) + &
               f(l1:l1i,m1:m2,n1:n2,ivar1:ivar2)
         else
@@ -819,7 +837,7 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
               call mpisend_real(f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2), &
                   (/3,ny,nz,nvar_fold/),xuneigh,itag5)
             endif
-            if (iproc==iproc_rcv) f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)= &
+            if (iproc==iproc_rcv) f(l1m3:l1m1,m1:m2,n1:n2,ivar1:ivar2)= &
 !                f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2) + f_tmp_yz
                 f_tmp_yz
             if (iproc==iproc_rcv) then
