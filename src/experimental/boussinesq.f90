@@ -23,6 +23,7 @@
 ! PENCILS PROVIDED ekin; transprho
 !
 ! PENCILS PROVIDED glnrhos(3)
+! PENCILS PROVIDED totenergy_rel
 !
 !***************************************************************
 module Density
