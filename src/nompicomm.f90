@@ -2821,4 +2821,26 @@ module Mpicomm
 !
     endfunction report_clean_output
 !***********************************************************************
+    function mpiscatterv_real(nlocal,src,dest) result (lerr)
+
+      integer :: nlocal
+      real, dimension(:) :: src, dest
+      logical :: lerr
+
+      dest=src
+      lerr=.false.
+
+    endfunction mpiscatterv_real
+!***********************************************************************
+    function mpiscatterv_int(nlocal,src,dest) result (lerr)
+
+      integer :: nlocal
+      integer, dimension(:) :: src, dest
+      logical :: lerr
+
+      dest=src
+      lerr=.false.
+
+    endfunction mpiscatterv_int
+!***********************************************************************
 endmodule Mpicomm

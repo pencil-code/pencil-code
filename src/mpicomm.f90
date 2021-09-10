@@ -9742,4 +9742,63 @@ endif
 !      
     endsubroutine interpolate_yy
 !***********************************************************************
+    function mpiscatterv_real(nlocal,src,dest) result (lerr)
+
+      integer :: nlocal
+      real, dimension(:) :: src, dest
+      logical :: lerr
+
+      integer, dimension(ncpus) :: counts,dspls
+      integer :: i
+
+      call MPI_GATHER(nlocal,1,MPI_INTEGER,counts,1,MPI_INTEGER,root,MPI_COMM_PENCIL,mpierr)
+
+      if (lroot) then
+        lerr=(sum(counts)>size(src))
+        if (.not.lerr) then
+          dspls(1)=0
+          do i=2,ncpus
+            dspls(i)=dspls(i-1)+counts(i-1)
+          enddo
+        endif
+      endif
+
+      call mpibcast(lerr)
+      if (lerr) then
+        return
+      else
+        call MPI_SCATTERV(src,counts,dspls,MPI_REAL,dest,nlocal,MPI_REAL,root,MPI_COMM_PENCIL,mpierr)
+      endif
+
+    endfunction mpiscatterv_real
+!***********************************************************************
+    function mpiscatterv_int(nlocal,src,dest) result (lerr)
+
+      integer :: nlocal
+      integer, dimension(:) :: src, dest
+      logical :: lerr
+
+      integer, dimension(ncpus) :: counts,dspls
+      integer :: i
+
+      call MPI_GATHER(nlocal,1,MPI_INTEGER,counts,1,MPI_INTEGER,root,MPI_COMM_PENCIL,mpierr)
+
+      if (lroot) then
+        lerr=(sum(counts)>size(src))
+        if (.not.lerr) then
+          dspls(1)=0
+          do i=2,ncpus
+            dspls(i)=dspls(i-1)+counts(i-1)
+          enddo
+        endif
+      endif
+      call mpibcast(lerr)
+      if (lerr) then
+        return
+      else
+        call MPI_SCATTERV(src,counts,dspls,MPI_INTEGER,dest,nlocal,MPI_INTEGER,root,MPI_COMM_PENCIL,mpierr)
+      endif
+
+    endfunction mpiscatterv_int
+!***********************************************************************
   endmodule Mpicomm
