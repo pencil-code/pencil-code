@@ -30,6 +30,7 @@
   public :: mpiscatter
   public :: mpigather_scl_str, mpigather_xy, mpimerge_1d, mpigather_z, &
             mpigather_and_out_cmplx, mpigather_and_out_real
+  public :: mpiscatterv
   public :: mpiwtime, mpiwtick
 
   public :: mpisend_nonblock_real,mpisend_nonblock_int
@@ -377,6 +378,11 @@
     module procedure mpisend_nonblock_int_scl
     module procedure mpisend_nonblock_int_arr
     module procedure mpisend_nonblock_int_arr2
+  endinterface
+!
+  interface mpiscatterv
+    module procedure mpiscatterv_real
+    module procedure mpiscatterv_int
   endinterface
 !
 !  Communicators
