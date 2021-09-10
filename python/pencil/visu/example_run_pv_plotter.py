@@ -7,8 +7,8 @@ import pencil as pc
 import numpy as np
 
 # Coordinate system
-CARTESIAN = False
-SPHERICAL = True
+CARTESIAN = True
+SPHERICAL = False
 CYLINDER  = False
 
 # Read in vector data or not
@@ -51,8 +51,8 @@ if CARTESIAN:
 ################################################################################
 ## SPHERICAL MILLENIUM PARAMETERS
 elif SPHERICAL:
-    # DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
-    DIR = '../testfield_millenium_data'
+    DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
+    # DIR = '../testfield_millenium_data'
     coordinates   = 'spherical'
     CAMERA_CENTRE = (-2.9,-2.5, 2.3)
     #CAMERA_CENTRE = (-10,-10,8)

@@ -503,18 +503,6 @@ class PlotSettings:
 ################################################################
 
 
-def vector_sph_to_cart(r, th, ph, u, v, w):
-    """
-    r = radius
-    th = theta = [0, pi]
-    ph = phi = [0, 2pi]
-    """
-    u_t = np.sin(ph) * np.cos(th) * u + np.cos(ph) * np.cos(th) * v - np.sin(th) * w
-    v_t = np.sin(ph) * np.sin(th) * u + np.cos(ph) * np.sin(th) * v + np.cos(th) * w
-    w_t = np.cos(ph) * u - np.sin(ph) * v
-    return u_t, v_t, w_t
-
-
 def __addVectorsToMesh(
     # PyVista visualization specific
     plotter: pv.Plotter, mesh, key, settings):
@@ -857,14 +845,15 @@ def __getFilename(type, field, settings, idx=-1, timestamp=False):
     Parameters 
     ----------
     type: str
-        TODO!
+        Type for the file name (i.e. suffix)
     field: str
-        
+        Name of the field
     settings: PlotSettings
-    
+        settings
     idx: int, optional
+        Index for the filename
     timestamp: bool, optional
-    
+        Enable timestamp in filename
     
     Returns
     -------

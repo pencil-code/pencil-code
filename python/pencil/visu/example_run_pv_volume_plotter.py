@@ -21,8 +21,8 @@ def runPyvistaVolumePlotter():
     # SCALAR_KEY  = 'ss'
     # SCALAR_KEY = 'cooling'
     
-    # VECTOR_KEY  = 'bb'
-    VECTOR_KEY = ['ux', 'uy', 'uz']
+    VECTOR_KEY  = 'bb'
+    # VECTOR_KEY = ['ux', 'uy', 'uz']
     # VECTOR_KEY  = ['ax', 'ay', 'az']
     
     IVAR        = -1
@@ -33,11 +33,12 @@ def runPyvistaVolumePlotter():
         ### General
         title       = '   ',
         title_font_size = 14,
-        n_points    = 1500,
+        n_points    = 2500,
         set_seed_1    = False,
         imageformat = 'png',
         off_screen  = False, 
-        window_size = (800, 1000),
+        # window_size = (1000, 1000),
+        # window_size = (1920,1080),
         method      = METHOD,
         show_axes = False,
         show_grid = False,
@@ -46,7 +47,7 @@ def runPyvistaVolumePlotter():
         ##############################
         ### Widgets
         add_volume_opacity_slider = False,
-        # widget_type = None,
+        widget_type = None,
         # widget_type = 'clip slice',
         # widget_type = 'clip box',
         # widget_type = 'plane vectors',
@@ -82,9 +83,9 @@ def runPyvistaVolumePlotter():
         ###############################
         ### MESH
         show_mesh = True,
-        mesh_type = "volume",
+        mesh_type = "surface",
         slice_pos = (None,None,None),
-        volume_opacity = 1,
+        volume_opacity = 1/15,
         culling = None,
         ###############################
         # Scalarbar GENERAL
@@ -99,8 +100,8 @@ def runPyvistaVolumePlotter():
         # Scalarbar: Mesh
         scalar_sbar_title = 'scalars', # 'log[TT]\n',
         show_mesh_sbar  = False,
-        mesh_opacity    = 1.,  
-        mesh_cmap       = 'hot',
+        mesh_opacity    = 0,  
+        mesh_cmap       = 'seismic',
         scalar_sbar_pos_x = 0.91,
         scalar_sbar_pos_y = None,
         ###############################

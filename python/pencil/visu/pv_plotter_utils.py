@@ -37,7 +37,7 @@ def plotPreview(plotter) -> None:
     -----
     Last updated: 18.6.2021
     """
-    raise NotImplementedError("Currently not working properly!")
+    raise NotImplementedError("Currently not working properly! Set parameter preview=False")
 
     plotter.show(title='Plot preview', interactive=True,
                  auto_close=False, interactive_update=True)
