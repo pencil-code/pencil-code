@@ -29,7 +29,7 @@ NORM   = 'linear'
 # Choose time interval to plot
 ### 1. Start and end indeces (between 0 <= t <= slices.t[-1])
 ISTART = 30
-IEND   = 40
+IEND   = 100
 ### 2. Start and end time instants i.e. the time values found in slices.t
 TSTART = None
 TEND   = None
@@ -51,8 +51,8 @@ if CARTESIAN:
 ################################################################################
 ## SPHERICAL MILLENIUM PARAMETERS
 elif SPHERICAL:
-    DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
-    # DIR = '../testfield_millenium_data'
+    # DIR           = '/home/leevi/Desktop/MOUNT/testfield_millennium/data'
+    DIR = '../testfield_millenium_data'
     coordinates   = 'spherical'
     CAMERA_CENTRE = (-2.9,-2.5, 2.3)
     #CAMERA_CENTRE = (-10,-10,8)
@@ -86,8 +86,8 @@ settings = pc.visu.pv_plotter.PlotSettings(
     videoformat     = None, 
     imageformat     = 'png', 
     framerate       = 7,
-    figdir          = '/home/leevi/Desktop/images',
-    moviedir        = '/home/leevi/Desktop/movies', 
+    figdir          = './images', #'/home/leevi/Desktop/images',
+    moviedir        = './videos', #'/home/leevi/Desktop/movies', 
     bg_color        = 'white',
     timestamp       = True,
     
@@ -103,7 +103,7 @@ settings = pc.visu.pv_plotter.PlotSettings(
     ### Vector plot parameters
     n_vectors       = 350,
     vector_size     = 3,
-    vector_method   = 'every_nth', # 'random' | 'every_nth'
+    vector_method   = 'random', # 'random' | 'every_nth'
     vector_scaling  = 'magnitude',
     vector_max      = 11,
     surface_vectors = True, 
@@ -115,7 +115,6 @@ settings = pc.visu.pv_plotter.PlotSettings(
     stream_radius_factor = 8,
     stream_src_points   = {'xy': 40, 'xy2': 40, 'xz': 150, 'yz': 150},
     stream_show_source  = False,
-    stream_src_radius   = None, #!TODO! MISSING
     stream_log_scale = False,
     stream_params       = {
         'max_steps'             : 2000,

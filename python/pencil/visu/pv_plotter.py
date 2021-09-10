@@ -12,12 +12,17 @@ These are generic requirements for all PyVista plotter tools including
 ``pv_plotter.py``, ``pv_volume_plotter.py`` and ``pv_plotter_utils.py``.
 
 * pyvista
-    -> latest version (version >= 0.31.3) otherwise some streamline methods may 
-        not work
+    -> latest version (version >= 0.31.3) otherwise there might be issues with the
+    pyvista.streamlines_from_source() function
 * imageio-ffmpeg
 * tqdm
 * numpy
 * sklearn --- necessary for pv_volume_plotter.py parameter tests. 
+
+All of these can be installed by:
+```
+pip3 install <Library name>
+```
 
 All pyvista plotting tools are tested to work with versions: VTK==9.0.3 and 
 pyvista==0.31.3.
@@ -52,34 +57,8 @@ Plot availability for each coordinate system
 Things to note
 --------------
 STREAMLINES: increasing number of source points, steps in integration or even field 
-itself can have a large effect on the used memory|time that takes to create one 
+itself can have a large effect on the used memory / time that takes to create one 
 frame.
-
-
-Settings
---------
-Class ``PlotSettings()`` defines all possible settings in addition to the parameters 
-function plot() takes in. For further information about all the possible parameters, 
-see documentation of ``PlotSettings``. 
-
-The class can be initialized in at least three ways: 
-
-1. Pass in the parameters:
->>> settings = PlotSettings(off_screen=True, preview=False, ...)
-
-2. Define a dictionary and pass that in using asterisk notation:
->>> params = {
-    'off_screen': True,
-    'preview': False,
-    ...
-}
->>> settings = PlotSettings(**params)
-
-3. Initialize class and change the values in more 'object-oriented' way:
->>> settings = PlotSettings() 
->>> settings.off_screen = True
->>> settings.preview = False
-
 """
 # Python extrenal libraries
 import pyvista as pv
@@ -112,7 +91,32 @@ class PlotSettings:
     this as a class has the advantage of keeping all default and parameter 
     settings in one maintainable place and removes the hassle of e.g. using
     kwargs.
+
+    Quick Tutorial
+    --------------
+    Class ``PlotSettings()`` defines all possible settings in addition to the parameters 
+    function plot() takes in. For further information about all the possible parameters, 
+    see documentation of ``PlotSettings``. 
+
+    The class can be initialized in at least three ways: 
+
+    1. Pass in the parameters:
+    >>> settings = PlotSettings(off_screen=True, preview=False, ...)
+
+    2. Define a dictionary and pass that in using asterisk notation:
+    >>> params = {
+        'off_screen': True,
+        'preview': False,
+        ...
+    }
+    >>> settings = PlotSettings(**params)
+
+    3. Initialize class and change the values in more 'object-oriented' way:
+    >>> settings = PlotSettings() 
+    >>> settings.off_screen = True
+    >>> settings.preview = False
     
+
     GENERAL PARAMETERS
     ------------------
     off_screen: bool
@@ -146,7 +150,6 @@ class PlotSettings:
         Options: 'cartesian' | 'spherical' | 'cylinder'
     opacities: dict
         Opacities per slice. Should be dict with keys 'xy', 'xy2', 'yz' and 'xz'.
-        #TODO! at the moment, only works for cartesian box plots
     
     COORDINATE SPECIFIC PARAMETERS
     ------------------------------
@@ -210,10 +213,9 @@ class PlotSettings:
         and 'yz' defining number of source points for each mesh.
     stream_show_source: bool
         Show source points as spheres in the plot.
-    stream_src_radius: float
-        #TODO! MISSING TOTALLY, CURRENTLY USELESS PARAMETER
     stream_log_scale: bool
-        !WARNING! Not tested yet well, enables pyvista.add_mesh log_scale option
+        Enables pyvista.add_mesh log_scale, i.e. applies logarithm for the values
+        to be added to the colorbar.
     stream_params: dict
         Any parameters pyvista streamlines_from_source() takes in OTHER THAN
         `surface_streamlines` and `vectors`. The following is the Pyvista's own
@@ -408,7 +410,6 @@ class PlotSettings:
     stream_radius_factor: float = 10
     stream_src_points: int      = 50
     stream_show_source: bool    = False
-    stream_src_radius: float    = None  #TODO! MISSING TOTALLY, CURRENTLY USELESS PARAMETER
     stream_log_scale: bool      = False # !WARNING! not tested yet too well, enables add_mesh log_scale
     stream_params: dict         = None
     
@@ -776,9 +777,9 @@ def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False,
             #   - r                =  radial distance ============> var.x
             #
             r = var.x
-            theta = (var.y*180) / np.pi
-            phi = (var.z*180) / np.pi
-            nr, ntheta, nphi = r.shape[0], theta.shape[0], phi.shape[0]
+            theta = (var.z*180) / np.pi
+            phi = (var.y*180) / np.pi
+            # nr, ntheta, nphi = r.shape[0], theta.shape[0], phi.shape[0]
 
             if slice  in ['xy', 'xy2']:
                 if slice == 'xy':
@@ -788,6 +789,8 @@ def __vectorsFromSlices(slice_obj, fields, datadir, vectors_unit_length=False,
                 th, ph = return_angles(theta_pos, phi, r)
                 for t in range(time_shape):
                     v1[t], v2[t], v3[t] = transform_vectors_sph_to_cart(v1[t], v2[t], v3[t], th, ph)
+                    # v1[t], v2[t], v3[t] = pv.transform_vectors_sph_to_cart(
+                    #                                         theta_pos, phi, r, v1[t], v2[t], v3[t])
 
             if slice == 'xz':
                 phi_pos = [slice_obj.position.xz[0]]
@@ -1484,7 +1487,7 @@ def plot(
         If set to 'common', then all times and fields have same colorbar min
         and max values. Default: None.
     unit : string, optional
-        TODO!
+        Unit (string) appended to the end of the timestamp in the title. 
     rescale : int, optional
         TODO!
     par : list, optional

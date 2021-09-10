@@ -498,7 +498,7 @@ class Plot3DSettings:
     background_color: str = 'white'
 
     ### Widgets
-    add_volume_opacity_slider: bool = False,
+    add_volume_opacity_slider: bool = False
     widget_type: str = None
 
     ### Camera
