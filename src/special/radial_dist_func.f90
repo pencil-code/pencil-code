@@ -123,6 +123,7 @@ module Special
 !
 !  Initial condition; same for every population.
 !
+print*,'AXEL76'
       select case (init_qq)
         case ('nothing'); if (lroot) print*,'init_qq: nothing'
         case ('zero'); f(:,:,:,ispecial)=0.
@@ -145,12 +146,9 @@ module Special
           loffset_search=0
 2000      continue
           l1_search=l1+loffset_search
-          !do n=n1,n2,rdf_stride_outer
-          !do m=m1,m2,rdf_stride_outer
-          !do l=l1_search,l2,rdf_stride_outer
-          do n=101,n2,rdf_stride_outer
-          do m=101,m2,rdf_stride_outer
-          do l=173,l2,rdf_stride_outer
+          do n=n1,n2,rdf_stride_outer
+          do m=m1,m2,rdf_stride_outer
+          do l=l1_search,l2,rdf_stride_outer
             nnp=n+noffset
             mnp=m+moffset
             lnp=l+loffset
@@ -164,10 +162,10 @@ module Special
                 if (np(ll,mm,nn)/=0.) then
                   !distance=sqrt((xx(l)-xx(ll))**2+(yy(m)-yy(mm))**2+(zz(n)-zz(nn))**2)
                   delx2=min((xx(l)-xx(ll))**2, (xx(l)-xx(ll)-length)**2, (xx(l)-xx(ll)+length)**2)
-                  dely2=min((yy(l)-yy(ll))**2, (yy(l)-yy(ll)-length)**2, (yy(l)-yy(ll)+length)**2)
-                  delz2=min((zz(l)-zz(ll))**2, (zz(l)-zz(ll)-length)**2, (zz(l)-zz(ll)+length)**2)
+                  dely2=min((yy(m)-yy(mm))**2, (yy(m)-yy(mm)-length)**2, (yy(m)-yy(mm)+length)**2)
+                  delz2=min((zz(n)-zz(nn))**2, (zz(n)-zz(nn)-length)**2, (zz(n)-zz(nn)+length)**2)
                   distance=sqrt(delx2+dely2+delz2)
-                  idist=int(nbin*distance/length)+1
+                  idist=int(nbin*distance/(.5*length))+1
                   if (idist>=1.and.idist<=nbin) then
                     f(l,m,n,idist) =f(l,m,n,idist) +np(lnp,mnp,nnp)*np(ll,mm,nn)
                     f(l,m,n,nbin+1)=f(l,m,n,nbin+1)+np(lnp,mnp,nnp)*np(ll,mm,nn)
