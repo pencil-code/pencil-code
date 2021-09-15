@@ -261,7 +261,7 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_slice_position()
+    subroutine output_slice_position
 !
 !  Record slice positions.
 !
@@ -269,7 +269,7 @@ module Io
 !
       use HDF5_IO, only: hdf5_output_slice_position
 !
-      call hdf5_output_slice_position()
+      call hdf5_output_slice_position
 !
     endsubroutine output_slice_position
 !***********************************************************************
@@ -417,83 +417,85 @@ module Io
       real, optional, intent(in) :: time
       logical, optional, intent(in) :: time_only
 !
-      real, dimension (:), allocatable :: gx, gy, gz
+      real, dimension(:), allocatable :: gx, gy, gz
       integer :: alloc_err
 !
-      if (present (time)) call output_hdf5 ('time', time)
-      if (loptest (time_only)) return
+      if (lroot.and.present(time)) call output_hdf5 ('time', time)
+      if (loptest(time_only)) return
 !
       if (lroot) then
         allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-      else
-        allocate (gx(1), gy(1), gz(1), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('output_settings', 'allocate memory for gx,gy,gz', .true.)
       endif
-      if (alloc_err > 0) call fatal_error ('output_settings', 'allocate memory for gx,gy,gz', .true.)
 !
-      call create_group_hdf5 ('grid')
       call collect_grid (x, y, z, gx, gy, gz)
-      call output_hdf5 ('grid/x', gx, mxgrid)
-      call output_hdf5 ('grid/y', gy, mygrid)
-      call output_hdf5 ('grid/z', gz, mzgrid)
-      call output_hdf5 ('grid/dx', dx)
-      call output_hdf5 ('grid/dy', dy)
-      call output_hdf5 ('grid/dz', dz)
-      call output_hdf5 ('grid/Lx', Lx)
-      call output_hdf5 ('grid/Ly', Ly)
-      call output_hdf5 ('grid/Lz', Lz)
-      call output_hdf5 ('grid/Ox', x0)
-      call output_hdf5 ('grid/Oy', y0)
-      call output_hdf5 ('grid/Oz', z0)
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      call output_hdf5 ('grid/dx_1', gx, mxgrid)
-      call output_hdf5 ('grid/dy_1', gy, mygrid)
-      call output_hdf5 ('grid/dz_1', gz, mzgrid)
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
-      call output_hdf5 ('grid/dy_tilde', gy, mygrid)
-      call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
-      call create_group_hdf5 ('unit')
-      call output_hdf5 ('unit/system', unit_system)
-      call output_hdf5_double ('unit/density', unit_density)
-      call output_hdf5_double ('unit/length', unit_length)
-      call output_hdf5_double ('unit/velocity', unit_velocity)
-      call output_hdf5_double ('unit/magnetic', unit_magnetic)
-      call output_hdf5_double ('unit/temperature', unit_temperature)
-      call output_hdf5_double ('unit/mass', unit_mass)
-      call output_hdf5_double ('unit/energy', unit_energy)
-      call output_hdf5_double ('unit/time', unit_time)
-      call output_hdf5_double ('unit/flux', unit_flux)
-      call create_group_hdf5 ('settings')
-      call output_hdf5 ('settings/mx', nxgrid+2*nghost)
-      call output_hdf5 ('settings/my', nygrid+2*nghost)
-      call output_hdf5 ('settings/mz', nzgrid+2*nghost)
-      call output_hdf5 ('settings/nx', nxgrid)
-      call output_hdf5 ('settings/ny', nygrid)
-      call output_hdf5 ('settings/nz', nzgrid)
-      call output_hdf5 ('settings/l1', nghost)
-      call output_hdf5 ('settings/m1', nghost)
-      call output_hdf5 ('settings/n1', nghost)
-      call output_hdf5 ('settings/l2', nghost+nxgrid-1)
-      call output_hdf5 ('settings/m2', nghost+nygrid-1)
-      call output_hdf5 ('settings/n2', nghost+nzgrid-1)
-      call output_hdf5 ('settings/nghost', nghost)
-      call output_hdf5 ('settings/mvar', mvar)
-      call output_hdf5 ('settings/maux', maux)
-      call output_hdf5 ('settings/mglobal', mglobal)
-      call output_hdf5 ('settings/nprocx', nprocx)
-      call output_hdf5 ('settings/nprocy', nprocy)
-      call output_hdf5 ('settings/nprocz', nprocz)
-      if (sizeof_real() < 8) then
-        call output_hdf5 ('settings/precision', 'S')
-      else
-        call output_hdf5 ('settings/precision', 'D')
+      if (lroot) then
+        call create_group_hdf5 ('grid')
+        call output_hdf5 ('grid/x', gx, mxgrid)
+        call output_hdf5 ('grid/y', gy, mygrid)
+        call output_hdf5 ('grid/z', gz, mzgrid)
+        call output_hdf5 ('grid/dx', dx)
+        call output_hdf5 ('grid/dy', dy)
+        call output_hdf5 ('grid/dz', dz)
+        call output_hdf5 ('grid/Lx', Lx)
+        call output_hdf5 ('grid/Ly', Ly)
+        call output_hdf5 ('grid/Lz', Lz)
+        call output_hdf5 ('grid/Ox', x0)
+        call output_hdf5 ('grid/Oy', y0)
+        call output_hdf5 ('grid/Oz', z0)
       endif
-      ! versions represent only non-compatible file formats
-      ! 0 : experimental
-      ! 1 : first public release
-      call output_hdf5 ('settings/version', 0)
-!
-      deallocate (gx, gy, gz)
+      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      if (lroot) then
+        call output_hdf5 ('grid/dx_1', gx, mxgrid)
+        call output_hdf5 ('grid/dy_1', gy, mygrid)
+        call output_hdf5 ('grid/dz_1', gz, mzgrid)
+      endif
+      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      if (lroot) then
+        call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
+        call output_hdf5 ('grid/dy_tilde', gy, mygrid)
+        call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
+        call create_group_hdf5 ('unit')
+        call output_hdf5 ('unit/system', unit_system)
+        call output_hdf5_double ('unit/density', unit_density)
+        call output_hdf5_double ('unit/length', unit_length)
+        call output_hdf5_double ('unit/velocity', unit_velocity)
+        call output_hdf5_double ('unit/magnetic', unit_magnetic)
+        call output_hdf5_double ('unit/temperature', unit_temperature)
+        call output_hdf5_double ('unit/mass', unit_mass)
+        call output_hdf5_double ('unit/energy', unit_energy)
+        call output_hdf5_double ('unit/time', unit_time)
+        call output_hdf5_double ('unit/flux', unit_flux)
+        call create_group_hdf5 ('settings')
+        call output_hdf5 ('settings/mx', nxgrid+2*nghost)
+        call output_hdf5 ('settings/my', nygrid+2*nghost)
+        call output_hdf5 ('settings/mz', nzgrid+2*nghost)
+        call output_hdf5 ('settings/nx', nxgrid)
+        call output_hdf5 ('settings/ny', nygrid)
+        call output_hdf5 ('settings/nz', nzgrid)
+        call output_hdf5 ('settings/l1', nghost)
+        call output_hdf5 ('settings/m1', nghost)
+        call output_hdf5 ('settings/n1', nghost)
+        call output_hdf5 ('settings/l2', nghost+nxgrid-1)
+        call output_hdf5 ('settings/m2', nghost+nygrid-1)
+        call output_hdf5 ('settings/n2', nghost+nzgrid-1)
+        call output_hdf5 ('settings/nghost', nghost)
+        call output_hdf5 ('settings/mvar', mvar)
+        call output_hdf5 ('settings/maux', maux)
+        call output_hdf5 ('settings/mglobal', mglobal)
+        call output_hdf5 ('settings/nprocx', nprocx)
+        call output_hdf5 ('settings/nprocy', nprocy)
+        call output_hdf5 ('settings/nprocz', nprocz)
+        if (sizeof_real() < 8) then
+          call output_hdf5 ('settings/precision', 'S')
+        else
+          call output_hdf5 ('settings/precision', 'D')
+        endif
+        ! versions represent only non-compatible file formats
+        ! 0 : experimental
+        ! 1 : first public release
+        call output_hdf5 ('settings/version', 0)
+      endif
 !
     endsubroutine output_settings
 !***********************************************************************
