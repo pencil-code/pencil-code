@@ -600,6 +600,14 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
 !
+!  cosx modulation
+!
+      elseif (iforce_profile=='cosx^nexp') then
+        profx_ampl=cos(kx_ff*x(l1:l2))**nexp_ff
+        profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.; profz_hel=1.
+!
 !  turn off forcing intensity above x=x0, and
 !  cosy profile of helicity
 !
@@ -3520,15 +3528,23 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               do j=1,3
                 if (lactive_dimension(j)) then
                   jf=j+ifff-1
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                  if (iforce_profile=='nothing') then
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j) &
+                      *profx_ampl*profy_ampl(m)*profz_ampl(n)
+                  endif
                 endif
               enddo
             else
 !
 !  add possibility of modulation
 !
-              !f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
-              f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
+              if (iforce_profile=='nothing') then
+                f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+              else
+                f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
+              endif
             endif
 !
 !  test
