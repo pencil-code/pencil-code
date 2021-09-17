@@ -382,6 +382,7 @@ class SliceSeries(object):
                         sys.stdout.flush()
                     self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
+                    slice_series = slice_series.reshape(islice, vsize, hsize)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
