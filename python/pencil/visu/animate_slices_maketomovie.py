@@ -13,6 +13,7 @@ def make_movie(
     norm=None,
     save=None,
     figsize=(16, 4),
+    fps=12,
 ):
     """
     read 2D slice files and assemble an animation in a mpg movie.
@@ -21,19 +22,20 @@ def make_movie(
 
     Options:
 
-     field --- which variable to slice
-     datadir --- path to data directory
-     proc --- an integer giving the processor to read a slice from
+     field  --- which variable to slice
+     datadir--- path to data directory
+     proc   --- an integer giving the processor to read a slice from
      extension --- which plane of xy,xz,yz,Xz. for 2D this should be overwritten.
-     format --- endian. one of little, big, or native (default)
-     tmin --- start time
-     tmax --- end time
-     amin --- minimum value for image scaling
-     amax --- maximum value for image scaling
+     format  --- endian. one of little, big, or native (default)
+     tmin    --- start time
+     tmax    --- end time
+     amin    --- minimum value for image scaling
+     amax    --- maximum value for image scaling
      transform --- insert arbitrary numerical code to modify the slice
-     norm --- scales calar data
-     save -- directory to save file
+     norm    --- scales calar data
+     save    --- directory to save file
      figsize --- tuple containing the size of the figure
+     fps     --- Frames per seconds for the video
     """
     import os
     from pencil.io import npfile
@@ -170,7 +172,7 @@ def make_movie(
 
     print("Making movie animation.mpg - this make take a while")
     os.system(
-        "mencoder 'mf://_tmp*.png' -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg"
+        f"mencoder 'mf://_tmp*.png' -mf type=png:fps={fps} -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg"
     )
     if save:
         os.system(f"mv _tmp*.png {save}")
