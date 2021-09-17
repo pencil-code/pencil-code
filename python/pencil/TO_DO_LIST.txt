@@ -3,12 +3,9 @@
 1. Store information about array indices in data objects. (SC)
 3. Writing (in IO) routines for custom data: (FG, SC, LFSR)
 4. Implement particles reding modules for different types of particles. (VC, JA)
-5. Rbox_vid for visualization. (VC, SC).
 6. Simulation objects last implementations (see below). (LFSR, VC)
 8. Coordinate transformations, including fields. (JA, SC)
 9. Derivatives on non-equidistant grids. (JA)
-10. Tutorials: wait until pencilnew is set up, then update tutorials and decide who is doing stuff.
-    Have examples that are specific to simulations.
 11. Examples in all doc strings. Epydoc usage?
 
 
@@ -30,19 +27,12 @@ Use simulation objects to:
 * mkdatadir via bash command?
 
 
-Make more efficient:
-* vtk exporter with no loops
-* use multi core capabilities to spead up processes, e.g. threads or multicore library
-
-
 Do better visualizations:
 * interactive visualization
 * plot routines via typical style files (paper style, ApJ style, Simon style, ...)
 
 Check functions:
-*Remove temporarely the ones that are not working, maybe to a developers folder.
 *Every file should work independently, even if the environment is not loaded.
-*Check duplicate functions names: for instance, I think having "io/npfile.py" locally, whereas you als have scipy.io.npfile is not a good idea.
 
 
 ############### DONE #############
@@ -62,14 +52,9 @@ Put simulations in dictionary to:
 November 2020 meeting:
 Naming of files differ to functions/classes (Wolfgang - check reload options) 
 imports to be inside functions rather than file header (Wolfgang)
-use epydoc/sphinx and increase (Illa) Do we need to rewrite doc strings?
-Update to the Pencil Python wiki (Illa)
 Use black to run reformatting on Python ? (Wolfgang)
 Add tutorial examples to wiki and also the pencil/tutorials (Simon/Illa)
 Duplicate jupyter with python and ipython and update README (Simon)
 
-
-
-List here files that need to be reformatted according to Pencil style guide:
 
 
