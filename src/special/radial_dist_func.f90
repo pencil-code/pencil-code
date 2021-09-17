@@ -34,6 +34,7 @@ module Special
 !
 ! Declare index of variables
 !
+  !integer, parameter :: npgrid=512, nbin=npgrid/2
   integer, parameter :: npgrid=256, nbin=npgrid/2
   integer :: ispecial=0, rdf_stride_outer=1, rdf_stride_inner=1
   logical :: lloffset_search=.false.
@@ -162,9 +163,9 @@ module Special
 !  xx,yy,zz are global, so they need to be accessed by indices
 !  lnp, mnp, nnp. The indices ll,mm,nn are always global.
 !
-              do nn=1,npgrid,rdf_stride_inner
-              do mm=1,npgrid,rdf_stride_inner
-              do ll=1,npgrid,rdf_stride_inner
+              do nn=nnp+1,npgrid,rdf_stride_inner
+              do mm=mnp+1,npgrid,rdf_stride_inner
+              do ll=lnp+1,npgrid,rdf_stride_inner
                 if (np(ll,mm,nn)/=0.) then
                   delx2=min((xx(lnp)-xx(ll))**2, (xx(lnp)-xx(ll)-length)**2, (xx(lnp)-xx(ll)+length)**2)
                   dely2=min((yy(mnp)-yy(mm))**2, (yy(mnp)-yy(mm)-length)**2, (yy(mnp)-yy(mm)+length)**2)
