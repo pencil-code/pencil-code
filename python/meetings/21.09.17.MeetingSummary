@@ -1,0 +1,30 @@
+###### Meeting 14 April 21 Summary #######
+Participants:
+
+* Topcis
+--------
+1. Rules for adding new routines and extending existing routines.
+
+In the long term we should have test functions. (WD, SC)
+Build on the existing test in pc/python/pencil/tests
+Send regular emails to PC Python group to stick to coding rules. (IRL, SC)
+
+
+2. Unified format for doc string.
+
+Have all sections for every function:
+General definition, Signature, Parameters, Returns, Return Type, Examples, (Notes)
+Add section to the style guide about the documentation. (IRL)
+Send email about unified doc string. (IRL, SC)
+
+
+3. Usage of Black.
+
+Add to the style guide that everyone should run Black when
+making changes and additions. (IRL)
+Send an email to the PC Python discussion group. (WD)
+
+
+4. pv plots: should we extend?
+
+Email authors of the visu/pv_* routines. (SC)
