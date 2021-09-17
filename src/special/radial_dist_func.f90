@@ -34,7 +34,7 @@ module Special
 !
 ! Declare index of variables
 !
-  integer, parameter :: npgrid=512, nbin=npgrid/2
+  integer, parameter :: npgrid=256, nbin=npgrid/2
   integer :: ispecial=0, rdf_stride_outer=1, rdf_stride_inner=1
   logical :: lloffset_search=.false.
 !
@@ -123,7 +123,6 @@ module Special
 !
 !  Initial condition; same for every population.
 !
-print*,'AXEL76'
       select case (init_qq)
         case ('nothing'); if (lroot) print*,'init_qq: nothing'
         case ('zero'); f(:,:,:,ispecial)=0.
@@ -146,6 +145,10 @@ print*,'AXEL76'
           loffset_search=0
 2000      continue
           l1_search=l1+loffset_search
+!
+!  By default, lloffset_search=F, so loffset_search will remain 0,
+!  so the l loop with start with l1.
+!
           do n=n1,n2,rdf_stride_outer
           do m=m1,m2,rdf_stride_outer
           do l=l1_search,l2,rdf_stride_outer
@@ -154,18 +157,24 @@ print*,'AXEL76'
             lnp=l+loffset
             if (np(lnp,mnp,nnp)/=0.) then
 !
-!  go through all points of the np array
+!  Go through all points of the np array.
+!  The indices l,m,n are the local indices per processor, but
+!  xx,yy,zz are global, so they need to be accessed by indices
+!  lnp, mnp, nnp. The indices ll,mm,nn are always global.
 !
               do nn=1,npgrid,rdf_stride_inner
               do mm=1,npgrid,rdf_stride_inner
               do ll=1,npgrid,rdf_stride_inner
                 if (np(ll,mm,nn)/=0.) then
-                  !distance=sqrt((xx(l)-xx(ll))**2+(yy(m)-yy(mm))**2+(zz(n)-zz(nn))**2)
-                  delx2=min((xx(l)-xx(ll))**2, (xx(l)-xx(ll)-length)**2, (xx(l)-xx(ll)+length)**2)
-                  dely2=min((yy(m)-yy(mm))**2, (yy(m)-yy(mm)-length)**2, (yy(m)-yy(mm)+length)**2)
-                  delz2=min((zz(n)-zz(nn))**2, (zz(n)-zz(nn)-length)**2, (zz(n)-zz(nn)+length)**2)
+                  delx2=min((xx(lnp)-xx(ll))**2, (xx(lnp)-xx(ll)-length)**2, (xx(lnp)-xx(ll)+length)**2)
+                  dely2=min((yy(mnp)-yy(mm))**2, (yy(mnp)-yy(mm)-length)**2, (yy(mnp)-yy(mm)+length)**2)
+                  delz2=min((zz(nnp)-zz(nn))**2, (zz(nnp)-zz(nn)-length)**2, (zz(nnp)-zz(nn)+length)**2)
                   distance=sqrt(delx2+dely2+delz2)
                   idist=int(nbin*distance/(.5*length))+1
+!
+!  Select all the points in a shell, or rather, find the shell into which
+!  the number of pairs, np(lnp,mnp,nnp)*np(ll,mm,nn), is added.
+!
                   if (idist>=1.and.idist<=nbin) then
                     f(l,m,n,idist) =f(l,m,n,idist) +np(lnp,mnp,nnp)*np(ll,mm,nn)
                     f(l,m,n,nbin+1)=f(l,m,n,nbin+1)+np(lnp,mnp,nnp)*np(ll,mm,nn)
