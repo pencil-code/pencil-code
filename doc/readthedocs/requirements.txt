@@ -15,3 +15,4 @@ sphinx-fortran
 sphinxcontrib.images
 GitPython
 latexmk>=4.67
+perl>=5.30
