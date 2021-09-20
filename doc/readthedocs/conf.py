@@ -155,6 +155,7 @@ htmlhelp_basename = "PencilCodeDOC"
 
 
 # -- Options for LaTeX output ------------------------------------------------
+latex_engine = "xelatex"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
@@ -175,7 +176,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "PCDOC.tex", "PC Documentation", "Illa R. Losada", "manual")
+    (master_doc, "PCDOC.tex", "PC Documentation", "Illa R. Losada", "manual"),
+    (
+        "manuals/quick-guide",
+        "quickGuide.tex",
+        "Quick start guide",
+        "I. R. Losada, M. Lambrechts, E. Cole, P. Bourdin",
+        "manual",
+    ),
 ]
 
 
@@ -232,8 +240,9 @@ todo_include_todos = True
 ## Fortran configuration
 fortran_src = [
     "../../src/ascalar.f90",
+    "../../src/geometrical_types.f90",
     #    "../../src/bfield.f90",
-    # "../../src/magnetic.f90",
+    # "../../src/magnetic.f90"
 ]
 fortran_ext = ["f90"]
 

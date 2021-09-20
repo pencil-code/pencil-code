@@ -25,7 +25,7 @@
 
     real, dimension(3) :: center0
     real :: th0,ph0,r_in0,height0
-    contains
+    !contains
     !  procedure, pass :: precess => my_precess
     !procedure :: torus_rect_unfmt_write
     !procedure :: torus_rect_unfmt_read
@@ -36,7 +36,7 @@
 
   contains
 !
-!***********************************************************************
+!**********************************************************************
     subroutine torus_init(torus)
 
     type(torus_rect) :: torus
