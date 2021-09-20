@@ -177,13 +177,13 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, "PCDOC.tex", "PC Documentation", "Illa R. Losada", "manual"),
-    (
-        "manuals/quick-guide",
-        "quickGuide.tex",
-        "Quick start guide",
-        "I. R. Losada, M. Lambrechts, E. Cole, P. Bourdin",
-        "manual",
-    ),
+    # (
+    #    "manuals/quick-guide",
+    #    "quickGuide.tex",
+    #    "Quick start guide",
+    #    "I. R. Losada, M. Lambrechts, E. Cole, P. Bourdin",
+    #    "manual",
+    # ),
 ]
 
 
