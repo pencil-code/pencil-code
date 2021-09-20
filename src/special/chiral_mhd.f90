@@ -92,7 +92,7 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5=0., diffmuS=0.
+   real :: diffmu5=0., diffmuS=0., diffmuSmax=0.
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: diffmu5_hyper3=0., diffmuS_hyper3=0.
    real :: lambda5, mu5_const=0., gammaf5=0.
@@ -120,6 +120,7 @@ module Special
    logical :: ldiffmuS_hyper3_simplified=.false.
    logical :: lremove_mean_mu5=.false.
    logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
+   logical :: ldt_chiral_mhd=.true.
    logical :: reinitialize_mu5=.false.
 !
   character (len=labellen) :: initspecial='nothing'
@@ -136,8 +137,9 @@ module Special
       radius_mu5, sigma_mu5
 !
   namelist /special_run_pars/ &
+      diffmu5, diffmuS, diffmuSmax, diffmuSmax, ldt_chiral_mhd, &
       initspecial, mu5_const, &
-      diffmu5, diffmuS, &
+      diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
       lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       diffmu5_hyper3, diffmuS_hyper3, &
@@ -589,9 +591,9 @@ module Special
                                         + eta*meanmu5*bbtest
       endif  
 !
-!  Todal contribution to the timestep
+!  Total contribution to the timestep
 !
-      if (lfirst.and.ldt) then
+      if (lfirst.and.ldt.and.ldt_chiral_mhd) then
         if (lmuS) then
           dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
                           dt1_gammaf5, dt1_vmu, &
