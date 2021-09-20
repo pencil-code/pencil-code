@@ -155,7 +155,7 @@ htmlhelp_basename = "PencilCodeDOC"
 
 
 # -- Options for LaTeX output ------------------------------------------------
-latex_engine = "xelatex"
+latex_engine = "pdflatex"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
