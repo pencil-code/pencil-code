@@ -14,5 +14,3 @@ vtk>=9.0.1
 sphinx-fortran
 sphinxcontrib.images
 GitPython
-latexmk
-perl
