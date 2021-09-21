@@ -4256,7 +4256,9 @@ endsubroutine pdf
       h_re=0.
       ht_re=0.
       !  helicity or helicity density is a scalar and only computed at ivec=1
-      if (ivec==1) then
+      if (ivec>1) then
+        a_re=0.; b_re=0.; a_im=0.; b_im=0.;
+      else
         do jvec=1,3
           a_re=f(l1:l2,m1:m2,n1:n2,ioo+jvec-1)  !(this corresponds to vorticity)
           b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
