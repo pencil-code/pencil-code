@@ -115,12 +115,18 @@ module Special
       real :: distance, delx2, dely2, delz2
       integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin, nnp, mnp, lnp
       integer :: loffset_search, l1_search
-      real, dimension(npgrid) :: xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
-      real, dimension(npgrid) :: yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
-      real, dimension(npgrid) :: zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
+      real, dimension(npgrid) :: xx
+      real, dimension(npgrid) :: yy
+      real, dimension(npgrid) :: zz
       real, dimension(nbin+1) :: rdf, rdf_sum
 !
       intent(inout) :: f
+!
+!  Initialize arrays
+!
+      xx = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
+      yy = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
+      zz = (/ (real(i*length/npgrid), i=0, npgrid-1) /)
 !
 !  Initial condition; same for every population.
 !
