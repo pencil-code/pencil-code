@@ -114,12 +114,12 @@ We are now working with read the docs and sphinx to create automatic documentati
 
 We are using Numpy docstring style, and require the following fields in the docstring:
 
--General description of the Class/function
--Signature: how the function can be called
--Parameters: list of parameters of the class/function
--Returns: type of variable the function returns
--Examples: at least one example of usage
--Notes (ptional): any further comments to the function
+- General description of the Class/function
+- Signature: how the function can be called
+- Parameters: list of parameters of the class/function
+- Returns: type of variable the function returns
+- Examples: at least one example of usage
+- Notes (ptional): any further comments to the function
 
 
 .. code:: python
