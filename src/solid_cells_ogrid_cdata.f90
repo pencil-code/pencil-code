@@ -350,12 +350,16 @@ module solid_cells_ogrid_cdata
   logical :: lwrite_mdotc=.false., lnonegative_Yk=.false.
   logical :: llin_BC=.false., lsinus_spec_distr=.false., ltanh_rate = .false.
   real :: toler = 1e-7, tanh_a1 = 1000., tanh_a2 = 0.0001
+  integer :: kinetics_heter=1
+  real :: scale_oxy = 1., scale_gas = 1.
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
   integer :: idiag_Nusselt=0
   integer :: idiag_mdot_C =0
+  integer :: idiag_mdot_CO2 =0
+  integer :: idiag_mdot_O2 =0
 
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases

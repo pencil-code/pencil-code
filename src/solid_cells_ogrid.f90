@@ -53,7 +53,8 @@ module Solid_Cells
       lfilter_rhoonly, lspecial_rad_int_mom, toler, reduce_timestep, &
       init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
       TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, &
-      solid_reactions_intro_time, tanh_a1, tanh_a2 
+      solid_reactions_intro_time, tanh_a1, tanh_a2, scale_gas, &
+      scale_oxy, kinetics_heter
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -1644,9 +1645,11 @@ module Solid_Cells
 !
 !  Compute the mean heterogeneous reaction rate
 !
-      real, intent(inout) :: mdot_C
+      real, dimension (3), intent(inout) :: mdot_C
 !
-      mdot_C = mdot_C + heter_reaction_rate(m_ogrid,n_ogrid,nchemspec+1) 
+      mdot_C(1) = mdot_C(1) + heter_reaction_rate(m_ogrid,n_ogrid,nchemspec+1)
+      mdot_C(2) = mdot_C(2) + heter_reaction_rate(m_ogrid,n_ogrid,ichem_CO2)
+      mdot_C(3) = mdot_C(3) + heter_reaction_rate(m_ogrid,n_ogrid,ichem_O2)
 !
     endsubroutine mdot_C_pencils
 !***********************************************************************
@@ -1655,16 +1658,22 @@ module Solid_Cells
 !  Sum up the computed char consumption rates
 !
       use Mpicomm, only: mpireduce_sum
-      real, intent(inout) :: mdot_C
-      real :: mdot_C_all
+      real, dimension (3), intent(inout) :: mdot_C
+      real :: mdot_C_all,mdot_CO2_all,mdot_O2_all
 !
-      call mpireduce_sum(mdot_C,mdot_C_all)
+      call mpireduce_sum(mdot_C(1),mdot_C_all)
+      call mpireduce_sum(mdot_C(2),mdot_CO2_all)
+      call mpireduce_sum(mdot_C(3),mdot_O2_all)
 !
       if(lroot) then
         !*(-10) to change units from g/cm^2/s to kg/m^2/s and the opposite
         ! sign is needed for production -> consumption
-        mdot_C=mdot_C_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
-        if (idiag_mdot_C /= 0) fname(idiag_mdot_C)=mdot_C
+        mdot_C(1)=mdot_C_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
+        mdot_C(3)=mdot_O2_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
+        mdot_C(2)=mdot_CO2_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
+        if (idiag_mdot_C /= 0) fname(idiag_mdot_C)=mdot_C(1)
+        if (idiag_mdot_O2 /= 0) fname(idiag_mdot_O2)=mdot_C(3)
+        if (idiag_mdot_CO2 /= 0) fname(idiag_mdot_CO2)=mdot_C(2)
       endif
 !
     endsubroutine mdot_C_coeffs
@@ -1713,6 +1722,8 @@ module Solid_Cells
         idiag_c_dragy = 0
         idiag_Nusselt = 0
         idiag_mdot_C  = 0
+        idiag_mdot_CO2  = 0
+        idiag_mdot_O2  = 0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1722,6 +1733,8 @@ module Solid_Cells
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
         call parse_name(iname,cname(iname),cform(iname),'Nusselt',idiag_Nusselt)
         call parse_name(iname,cname(iname),cform(iname),'mdot_C',idiag_mdot_C)
+        call parse_name(iname,cname(iname),cform(iname),'mdot_CO2',idiag_mdot_CO2)
+        call parse_name(iname,cname(iname),cform(iname),'mdot_O2',idiag_mdot_O2)
       enddo
 !
     endsubroutine rprint_solid_cells
@@ -4067,7 +4080,7 @@ module Solid_Cells
      if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
-    if (llast .and. lwrite_mdotc) call write_reactions(heter_reaction_rate(:,4,nchemspec+1))
+    if (llast .and. lwrite_mdotc) call write_reactions(heter_reaction_rate(:,4,:))
 !
 !  Set silly values for f_cartesian inside r_int_inner
 !
@@ -4084,20 +4097,22 @@ module Solid_Cells
 
   endsubroutine time_step_ogrid
 !***********************************************************************
-    subroutine write_reactions(mdot_c)
+    subroutine write_reactions(mdots)
 !
 !  write mdot_C in the output file
 !
       use Mpicomm, only: mpibarrier
       character(len=fnlen) :: input_file="./data/mdotc.out"
       integer :: file_id=123, i
-      real, dimension (my_ogrid) :: mdot_c
+      real, dimension (my_ogrid,6) :: mdots
 !
       do i=0,ncpus
         if (iproc .eq. i) then
           open (file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
           write (file_id,*) 'Proc',iproc
-          write (file_id,*) 'Mdot_C',mdot_c
+          write (file_id,*) 'Mdot_C',mdots(:,nchemspec+1)
+          write (file_id,*) 'Mdot_CO2',mdots(:,ichem_CO2)
+          write (file_id,*) 'Mdot_O2',mdots(:,ichem_O2)
           write (file_id,*) 'Theta',y_ogrid
           close (file_id)
         endif
@@ -4116,11 +4131,12 @@ module Solid_Cells
       integer :: nyz_ogrid
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       intent(out)    :: df
-      real :: c_dragx,c_dragy, Nusselt, dt_ogrid, mdot_C
+      real :: c_dragx,c_dragy, Nusselt, dt_ogrid
+      real,dimension (3) :: mdot_C
       c_dragx=0.
       c_dragy=0.
       Nusselt=0.
-      mdot_C =0.
+      mdot_C(:) =0.
 !
 !  Initiate communication and do boundary conditions.
 !

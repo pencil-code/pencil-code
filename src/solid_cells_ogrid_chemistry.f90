@@ -634,7 +634,7 @@ module solid_cells_ogrid_chemistry
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
       real, dimension(mx_ogrid) ::  nu_dyn
 ! lambda_Suth in cgs [g/(cm*s*K^0.5)]
-      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
+      real :: lambda_Suth = 1.52e-5, Suth_const = 110.
       integer :: j2,j3, k
       real, dimension(mx_ogrid) :: T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low
@@ -1306,8 +1306,8 @@ module solid_cells_ogrid_chemistry
 !
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
-         ! kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
-          kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
+          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+         ! kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
@@ -1514,8 +1514,15 @@ module solid_cells_ogrid_chemistry
       ! C + CO2 -> 2CO
 !
 ! Zhang (same as in Luo)
-      B_n_het=(/1.97e9,1.291e7/)        ! cm/s 1.291
-      E_an_het=(/47301.701,45635.267/)  ! cal/mol
+      if (kinetics_heter == 1) then
+        B_n_het=(/1.97e9,1.291e7/)        ! cm/s
+        E_an_het=(/47301.701,45635.267/)  ! cal/mol
+!
+! Makino
+      elseif (kinetics_heter == 2) then
+        B_n_het=(/4.1e8,1.1e10/)        ! cm/s
+        E_an_het=(/42782.0,64531.5/)      ! cal/mol
+      endif
 !
 ! Schulze (REMEMBER to change back prod(2) and mdot for O2 because 1st reaction is C + 1/2O2 -> CO)
 !      B_n_het=(/3.007e7, 460.5/)        ! cm/s (/K) (in second reaction there's T^1 in rate expression)
@@ -1527,6 +1534,9 @@ module solid_cells_ogrid_chemistry
 !
 !  Chemkin data case
 !
+!
+      B_n_het(1) = B_n_het(1)*scale_oxy
+      B_n_het(2) = B_n_het(2)*scale_gas
       prod(1) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)*rho_cgs
       prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs
 !      prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs*f_og(l1_ogrid,m_ogrid,n_ogrid,iTT)
@@ -1538,6 +1548,7 @@ module solid_cells_ogrid_chemistry
       enddo
 !
       mdot(ichem_O2)=-vreact_p(1)
+!      mdot(ichem_O2)=-0.5*vreact_p(1)
       if (ltanh_rate) then
         if (f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2) .gt. (tanh_a2/tanh_a1)) then
            mdot(ichem_O2)=mdot(ichem_O2)*tanh(tanh_a1*f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)-tanh_a2)
@@ -1545,7 +1556,6 @@ module solid_cells_ogrid_chemistry
              mdot(ichem_O2)=0.0
         endif
       endif
-!      mdot(ichem_O2)=-0.5*vreact_p(1)
       mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*(-mdot(ichem_O2))&
                         +species_constants(ichem_CO,imass)/species_constants(ichem_CO2,imass)*vreact_p(2))
       mdot(ichem_CO2)=-vreact_p(2)

@@ -125,6 +125,7 @@ module Chemistry
   real :: Y_H2O=0.0008
   real :: m_H2O = 2.*1.00794+15.9994
   logical :: lback=.true.
+  real :: scale_homo = 0.
 !
 !   Lewis coefficients
 !
@@ -148,7 +149,7 @@ module Chemistry
       init_TT2,init_rho,&
       init_ux,init_uy,init_uz,init_pressure, &
       str_thick,lT_tanh,lT_const,lheatc_chemistry, &
-      prerun_directory, lback, &
+      prerun_directory, lback, scale_homo, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, intro_time, p_init, Y_H2O, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
@@ -1355,7 +1356,7 @@ module Chemistry
       real, dimension(mx,my,mz) :: mu1_full
       real, dimension(mx) ::  nu_dyn
 ! lambda_Suth in [g/(cm*s*K^0.5)]
-      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
+      real :: lambda_Suth = 1.52e-5, Suth_const = 110.
       integer :: j2,j3, k
       real, dimension(mx) :: T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low
@@ -2344,11 +2345,11 @@ module Chemistry
         Sijm(nchemspec,1) = 0.0
       endif
 !
-      !B_n = 33.6174731212
-      B_n = 32.680877  !changed A to lower S_l
+      B_n = 33.6174731212 + scale_homo
+     ! B_n = 32.680877  !changed A to lower S_l
       alpha_n = 0.0
       !! E_an in CAL !!
-      E_an = 40000 
+      E_an = 40000
 !
       back(:) = lback
       Mplus_case(:) = .false.
@@ -4256,8 +4257,8 @@ module Chemistry
 !
         if (lmech_simple) then
           !! 20.0301186564 = ln(5*10e8) !!
-       !   kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
-          kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
+          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+          !kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
           sum_sp = 1.
         else
 
