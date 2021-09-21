@@ -1,7 +1,19 @@
-def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', proc=-1, extension='xz',
-                   format='native', tmin=0., tmax=1.e38, wait=0.,
-                   amin=0., amax=1., transform='', oldfile=False,
-                   makemovie=False):
+def animate_slices_compareruns(
+    field="uu1",
+    datadir1="data/",
+    datadir2="data/",
+    proc=-1,
+    extension="xz",
+    format="native",
+    tmin=0.0,
+    tmax=1.0e38,
+    wait=0.0,
+    amin=0.0,
+    amax=1.0,
+    transform="",
+    oldfile=False,
+    makemovie=False,
+):
     """
     read 2D slice files from two different runs
     note that the runs must have same precision and sizes
@@ -27,33 +39,35 @@ def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', 
 
     datadir1 = os.path.expanduser(datadir1)
     if proc < 0:
-        filename1 = join(datadir1, 'slice_' + field + '.' + extension)
+        filename1 = join(datadir1, "slice_" + field + "." + extension)
     else:
-        filename1 = join(datadir1, 'proc' + str(proc),
-                        'slice_' + field + '.' + extension)
+        filename1 = join(
+            datadir1, "proc" + str(proc), "slice_" + field + "." + extension
+        )
 
     datadir2 = os.path.expanduser(datadir2)
     if proc < 0:
-        filename2 = join(datadir2, 'slice_' + field + '.' + extension)
+        filename2 = join(datadir2, "slice_" + field + "." + extension)
     else:
-        filename2 = join(datadir2, 'proc' + str(proc),
-                        'slice_' + field + '.' + extension)
+        filename2 = join(
+            datadir2, "proc" + str(proc), "slice_" + field + "." + extension
+        )
 
     # Read the global dimensions.
     dim = read_dim(datadir1, proc)
-    if dim.precision == 'D':
-        precision = 'd'
+    if dim.precision == "D":
+        precision = "d"
     else:
-        precision = 'f'
+        precision = "f"
 
     # Set up slice plane.
-    if extension == 'xy' or extension == 'Xy':
+    if extension == "xy" or extension == "Xy":
         hsize = dim.nx
         vsize = dim.ny
-    if extension == 'xz':
+    if extension == "xz":
         hsize = dim.nx
         vsize = dim.nz
-    if extension == 'yz':
+    if extension == "yz":
         hsize = dim.ny
         vsize = dim.nz
     plane1 = np.zeros((vsize, hsize), dtype=precision)
@@ -62,23 +76,23 @@ def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', 
     infile1 = npfile(filename1, endian=format)
     infile2 = npfile(filename2, endian=format)
 
-    #ax = plt.axes()
-    #ax.set_xlabel('')
-    #ax.set_ylabel('')
-    #ax.set_ylim
-    #ax.get_xaxis().set_visible(False)
-    #ax.get_yaxis().set_visible(False)
+    # ax = plt.axes()
+    # ax.set_xlabel('')
+    # ax.set_ylabel('')
+    # ax.set_ylim
+    # ax.get_xaxis().set_visible(False)
+    # ax.get_yaxis().set_visible(False)
 
-    fig, (ax1,ax2) = plt.subplots(1,2)
-    #fig.suptitle('Re = 400', fontsize=20)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    # fig.suptitle('Re = 400', fontsize=20)
     image1 = ax1.imshow(plane1, vmin=amin, vmax=amax)
     image2 = ax2.imshow(plane2, vmin=amin, vmax=amax)
-    ax1.set_xlabel('')
-    ax1.set_ylabel('')
+    ax1.set_xlabel("")
+    ax1.set_ylabel("")
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
-    ax2.set_xlabel('')
-    ax2.set_ylabel('')
+    ax2.set_xlabel("")
+    ax2.set_ylabel("")
     ax2.get_xaxis().set_visible(False)
     ax2.get_yaxis().set_visible(False)
 
@@ -109,24 +123,28 @@ def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', 
             plane2 = raw_data2[:-2].reshape(vsize, hsize)
 
         if transform:
-            exec('plane = plane' + transform)
+            exec("plane = plane" + transform)
 
         if t > tmin and t < tmax:
-            title = 't = %11.3e' % t
-            #fig.set_title(title)
+            title = "t = %11.3e" % t
+            # fig.set_title(title)
             image1.set_data(plane1)
             image2.set_data(plane2)
             manager.canvas.draw()
 
             if ifirst:
-                #print "----islice----------t---------min-------max-------delta" # Python 2
+                # print "----islice----------t---------min-------max-------delta" # Python 2
                 print("----islice----------t---------min-------max-------delta")
-            #print "%10i %10.3e %10.3e %10.3e %10.3e" \ # Python 2
-                #% (islice, t, plane.min(), plane.max(), plane.max() - plane.min()) # Python 2
-            print("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, plane1.min(), plane1.max(), plane1.max() - plane1.min()))
+            # print "%10i %10.3e %10.3e %10.3e %10.3e" \ # Python 2
+            #% (islice, t, plane.min(), plane.max(), plane.max() - plane.min()) # Python 2
+            print(
+                "{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(
+                    islice, t, plane1.min(), plane1.max(), plane1.max() - plane1.min()
+                )
+            )
 
-            if(makemovie):
-                fname = '_tmp%03d.png' % islice
+            if makemovie:
+                fname = "_tmp%03d.png" % islice
                 fig.savefig(fname)
                 files.append(fname)
 
@@ -138,8 +156,10 @@ def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', 
     infile1.close()
     infile2.close()
 
-    if(makemovie):
-        print('Making movie animation.mpg - this make take a while')
+    if makemovie:
+        print("Making movie animation.mpg - this make take a while")
         # SC: Not all systems use mencoder. Need to change this into ffmpeg.
-        os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg")
+        os.system(
+            "mencoder 'mf://_tmp*.png' -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg"
+        )
         os.system("rm _tmp*.png")

@@ -28,7 +28,6 @@ def pdim(*args, **kwargs):
     return pdim_tmp
 
 
-
 class PDim(object):
     """
     Class holding the data from pdim.dat and its methods.
@@ -44,13 +43,11 @@ class PDim(object):
         self.npar_stalk = 0
         self.mpaux = 0
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
 
-
-    def read(self, sim=None, datadir='data'):
+    def read(self, sim=None, datadir="data"):
         """
         Read the pdim.dat file.
 
@@ -73,8 +70,8 @@ class PDim(object):
         if sim != None:
             datadir = sim.datadir
 
-         # Contains the global particle properties.
-        filename = os.path.join(datadir, 'pdim.dat')
+        # Contains the global particle properties.
+        filename = os.path.join(datadir, "pdim.dat")
 
         try:
             filename = os.path.expanduser(filename)

@@ -1,8 +1,8 @@
 def in_ipynb():
-    """ Returns True if executed in jupyter notebook, else False. """
+    """Returns True if executed in jupyter notebook, else False."""
 
     try:
-        return 'ZMQ' in str(get_ipython())
+        return "ZMQ" in str(get_ipython())
     except:
         return False
 

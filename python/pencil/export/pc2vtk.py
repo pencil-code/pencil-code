@@ -7,9 +7,20 @@
 Contains the routines for converting PencilCode data data into vtk format.
 """
 
-def var2vtk(var_file='var.dat', datadir='data', proc=-1,
-            variables=None, b_ext=False, magic=[],
-            destination='work', quiet=True, trimall=True, ti=-1, tf=-1):
+
+def var2vtk(
+    var_file="var.dat",
+    datadir="data",
+    proc=-1,
+    variables=None,
+    b_ext=False,
+    magic=[],
+    destination="work",
+    quiet=True,
+    trimall=True,
+    ti=-1,
+    tf=-1,
+):
     """
     Convert data from PencilCode format to vtk.
 
@@ -69,62 +80,67 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
         variables = []
         indx = read.index()
         for key in indx.__dict__.keys():
-            if 'keys' not in key:
+            if "keys" not in key:
                 variables.append(key)
-        if 'uu' in variables:
-            magic.append('vort')
-            variables.append('vort')
-        if 'rho' in variables or 'lnrho' in variables:
-            if 'ss' in variables:
-                magic.append('tt')
-                variables.append('tt')
-                magic.append('pp')
-                variables.append('pp')
-        if 'aa' in variables:
-            magic.append('bb')
-            variables.append('bb')
-            magic.append('jj')
-            variables.append('jj')
-            variables.append('ab')
-            variables.append('b_mag')
-            variables.append('j_mag')
+        if "uu" in variables:
+            magic.append("vort")
+            variables.append("vort")
+        if "rho" in variables or "lnrho" in variables:
+            if "ss" in variables:
+                magic.append("tt")
+                variables.append("tt")
+                magic.append("pp")
+                variables.append("pp")
+        if "aa" in variables:
+            magic.append("bb")
+            variables.append("bb")
+            magic.append("jj")
+            variables.append("jj")
+            variables.append("ab")
+            variables.append("b_mag")
+            variables.append("j_mag")
     else:
         # Convert single variable string into length 1 list of arrays.
-        if (len(variables) > 0):
-            if (len(variables[0]) == 1):
+        if len(variables) > 0:
+            if len(variables[0]) == 1:
                 variables = [variables]
-        if 'tt' in variables:
-            magic.append('tt')
-        if 'pp' in variables:
-            magic.append('pp')
-        if 'bb' in variables:
-            magic.append('bb')
-        if 'jj' in variables:
-            magic.append('jj')
-        if 'vort' in variables:
-            magic.append('vort')
-        if 'b_mag' in variables and not 'bb' in magic:
-            magic.append('bb')
-        if 'j_mag' in variables and not 'jj' in magic:
-            magic.append('jj')
-        if 'ab' in variables and not 'bb' in magic:
-            magic.append('bb')
+        if "tt" in variables:
+            magic.append("tt")
+        if "pp" in variables:
+            magic.append("pp")
+        if "bb" in variables:
+            magic.append("bb")
+        if "jj" in variables:
+            magic.append("jj")
+        if "vort" in variables:
+            magic.append("vort")
+        if "b_mag" in variables and not "bb" in magic:
+            magic.append("bb")
+        if "j_mag" in variables and not "jj" in magic:
+            magic.append("jj")
+        if "ab" in variables and not "bb" in magic:
+            magic.append("bb")
 
-
-    for t_idx in range(ti, tf+1):
+    for t_idx in range(ti, tf + 1):
         if animation:
-            var_file = 'VAR' + str(t_idx)
+            var_file = "VAR" + str(t_idx)
 
         # Read the PencilCode variables and set the dimensions.
-        var = read.var(var_file=var_file, datadir=datadir, proc=proc,
-                       magic=magic, trimall=True, quiet=quiet)
+        var = read.var(
+            var_file=var_file,
+            datadir=datadir,
+            proc=proc,
+            magic=magic,
+            trimall=True,
+            quiet=quiet,
+        )
 
         grid = read.grid(datadir=datadir, proc=proc, trim=trimall, quiet=True)
 
         params = read.param(quiet=True)
 
         # Add external magnetic field.
-        if (b_ext == True):
+        if b_ext == True:
             B_ext = np.array(params.b_ext)
             var.bb[0, ...] += B_ext[0]
             var.bb[1, ...] += B_ext[1]
@@ -133,57 +149,64 @@ def var2vtk(var_file='var.dat', datadir='data', proc=-1,
         dimx = len(grid.x)
         dimy = len(grid.y)
         dimz = len(grid.z)
-        dim = dimx*dimy*dimz
-        dx = (np.max(grid.x) - np.min(grid.x))/(dimx-1)
-        dy = (np.max(grid.y) - np.min(grid.y))/(dimy-1)
-        dz = (np.max(grid.z) - np.min(grid.z))/(dimz-1)
+        dim = dimx * dimy * dimz
+        dx = (np.max(grid.x) - np.min(grid.x)) / (dimx - 1)
+        dy = (np.max(grid.y) - np.min(grid.y)) / (dimy - 1)
+        dz = (np.max(grid.z) - np.min(grid.z)) / (dimz - 1)
 
         # Write the vtk header.
         if animation:
-            fd = open(destination + str(t_idx) + '.vtk', 'wb')
+            fd = open(destination + str(t_idx) + ".vtk", "wb")
         else:
-            fd = open(destination + '.vtk', 'wb')
-        fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
-        fd.write('VAR files\n'.encode('utf-8'))
-        fd.write('BINARY\n'.encode('utf-8'))
-        fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
-        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz).encode('utf-8'))
-        fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]).encode('utf-8'))
-        fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz).encode('utf-8'))
-        fd.write('POINT_DATA {0:9}\n'.format(dim).encode('utf-8'))
+            fd = open(destination + ".vtk", "wb")
+        fd.write("# vtk DataFile Version 2.0\n".encode("utf-8"))
+        fd.write("VAR files\n".encode("utf-8"))
+        fd.write("BINARY\n".encode("utf-8"))
+        fd.write("DATASET STRUCTURED_POINTS\n".encode("utf-8"))
+        fd.write(
+            "DIMENSIONS {0:9} {1:9} {2:9}\n".format(dimx, dimy, dimz).encode("utf-8")
+        )
+        fd.write(
+            "ORIGIN {0:8.12} {1:8.12} {2:8.12}\n".format(
+                grid.x[0], grid.y[0], grid.z[0]
+            ).encode("utf-8")
+        )
+        fd.write(
+            "SPACING {0:8.12} {1:8.12} {2:8.12}\n".format(dx, dy, dz).encode("utf-8")
+        )
+        fd.write("POINT_DATA {0:9}\n".format(dim).encode("utf-8"))
 
         # Write the data.
         for v in variables:
-            print('Writing {0}.'.format(v))
+            print("Writing {0}.".format(v))
             # Prepare the data to the correct format.
-            if v == 'ab':
+            if v == "ab":
                 data = math.dot(var.aa, var.bb)
-            elif v == 'b_mag':
+            elif v == "b_mag":
                 data = np.sqrt(math.dot2(var.bb))
-            elif v == 'j_mag':
+            elif v == "j_mag":
                 data = np.sqrt(math.dot2(var.jj))
             else:
                 data = getattr(var, v)
-            if sys.byteorder == 'little':
+            if sys.byteorder == "little":
                 data = data.astype(np.float32).byteswap()
             else:
                 data = data.astype(np.float32)
             # Check if we have vectors or scalars.
             if data.ndim == 4:
                 data = np.moveaxis(data, 0, 3)
-                fd.write('VECTORS {0} float\n'.format(v).encode('utf-8'))
+                fd.write("VECTORS {0} float\n".format(v).encode("utf-8"))
             else:
-                fd.write('SCALARS {0} float\n'.format(v).encode('utf-8'))
-                fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
+                fd.write("SCALARS {0} float\n".format(v).encode("utf-8"))
+                fd.write("LOOKUP_TABLE default\n".encode("utf-8"))
             fd.write(data.tobytes())
 
-        del(var)
+        del var
 
         fd.close()
 
 
-
-def slices2vtk(field='', extension='', datadir='data', destination='slices', proc=-1):
+def slices2vtk(field="", extension="", datadir="data", destination="slices", proc=-1):
     """
     Convert slices from PencilCode format to vtk.
 
@@ -220,11 +243,11 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
     from pencil import read
 
     # Convert single variable string into length 1 list of arrays.
-    if (len(field) > 0):
-        if (len(field[0]) == 1):
+    if len(field) > 0:
+        if len(field[0]) == 1:
             field = [field]
-    if (len(extension) > 0):
-        if (len(extension[0]) == 1):
+    if len(extension) > 0:
+        if len(extension[0]) == 1:
             extension = [extension]
 
     # Read the grid dimensions.
@@ -242,63 +265,111 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
     # Determine the position of the slices.
     if params.ix != -1:
         x0 = grid.x[params.ix]
-    elif params.slice_position == 'm':
-        x0 = grid.x[int(len(grid.x)/2)]
+    elif params.slice_position == "m":
+        x0 = grid.x[int(len(grid.x) / 2)]
     if params.iy != -1:
         y0 = grid.y[params.iy]
-    elif params.slice_position == 'm':
-        y0 = grid.y[int(len(grid.y)/2)]
+    elif params.slice_position == "m":
+        y0 = grid.y[int(len(grid.y) / 2)]
     if params.iz != -1:
         z0 = grid.z[params.iz]
-    elif params.slice_position == 'm':
-        z0 = grid.z[int(len(grid.z)/2)]
+    elif params.slice_position == "m":
+        z0 = grid.z[int(len(grid.z) / 2)]
     if params.iz2 != -1:
         z02 = grid.z[params.iz]
-    elif params.slice_position == 'm':
-        z02 = grid.z[int(len(grid.z)/2)]
+    elif params.slice_position == "m":
+        z02 = grid.z[int(len(grid.z) / 2)]
 
     for t_idx, t in enumerate(slices.t):
         for ext in extension:
             # Open the destination file for writing.
-            fd = open(destination + '_' + ext + '_' + str(t_idx) + '.vtk', 'wb')
+            fd = open(destination + "_" + ext + "_" + str(t_idx) + ".vtk", "wb")
 
             # Write the header.
-            fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
-            fd.write('slices {0}\n'.format(ext).encode('utf-8'))
-            fd.write('BINARY\n'.encode('utf-8'))
-            fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
-            if ext == 'xy':
-                fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dim.nx, dim.ny, 1).encode('utf-8'))
-                fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], z0).encode('utf-8'))
-                fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.dx, grid.dy, 1.).encode('utf-8'))
+            fd.write("# vtk DataFile Version 2.0\n".encode("utf-8"))
+            fd.write("slices {0}\n".format(ext).encode("utf-8"))
+            fd.write("BINARY\n".encode("utf-8"))
+            fd.write("DATASET STRUCTURED_POINTS\n".encode("utf-8"))
+            if ext == "xy":
+                fd.write(
+                    "DIMENSIONS {0:9} {1:9} {2:9}\n".format(dim.nx, dim.ny, 1).encode(
+                        "utf-8"
+                    )
+                )
+                fd.write(
+                    "ORIGIN {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.x[0], grid.y[0], z0
+                    ).encode("utf-8")
+                )
+                fd.write(
+                    "SPACING {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.dx, grid.dy, 1.0
+                    ).encode("utf-8")
+                )
                 dim_p = dim.nx
                 dim_q = dim.ny
-            if ext == 'xy2':
-                fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dim.nx, dim.ny, 1).encode('utf-8'))
-                fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], z02).encode('utf-8'))
-                fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.dx, grid.dy, 1.).encode('utf-8'))
+            if ext == "xy2":
+                fd.write(
+                    "DIMENSIONS {0:9} {1:9} {2:9}\n".format(dim.nx, dim.ny, 1).encode(
+                        "utf-8"
+                    )
+                )
+                fd.write(
+                    "ORIGIN {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.x[0], grid.y[0], z02
+                    ).encode("utf-8")
+                )
+                fd.write(
+                    "SPACING {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.dx, grid.dy, 1.0
+                    ).encode("utf-8")
+                )
                 dim_p = dim.nx
                 dim_q = dim.ny
-            if ext == 'xz':
-                fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dim.nx, 1, dim.nz).encode('utf-8'))
-                fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], y0, grid.z[0]).encode('utf-8'))
-                fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.dx, 1., grid.dz).encode('utf-8'))
+            if ext == "xz":
+                fd.write(
+                    "DIMENSIONS {0:9} {1:9} {2:9}\n".format(dim.nx, 1, dim.nz).encode(
+                        "utf-8"
+                    )
+                )
+                fd.write(
+                    "ORIGIN {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.x[0], y0, grid.z[0]
+                    ).encode("utf-8")
+                )
+                fd.write(
+                    "SPACING {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        grid.dx, 1.0, grid.dz
+                    ).encode("utf-8")
+                )
                 dim_p = dim.nx
                 dim_q = dim.nz
-            if ext == 'yz':
-                fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(1, dim.ny, dim.nz).encode('utf-8'))
-                fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(x0, grid.y[0], grid.z[0]).encode('utf-8'))
-                fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(1., grid.dy, grid.dz).encode('utf-8'))
+            if ext == "yz":
+                fd.write(
+                    "DIMENSIONS {0:9} {1:9} {2:9}\n".format(1, dim.ny, dim.nz).encode(
+                        "utf-8"
+                    )
+                )
+                fd.write(
+                    "ORIGIN {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        x0, grid.y[0], grid.z[0]
+                    ).encode("utf-8")
+                )
+                fd.write(
+                    "SPACING {0:8.12} {1:8.12} {2:8.12}\n".format(
+                        1.0, grid.dy, grid.dz
+                    ).encode("utf-8")
+                )
                 dim_p = dim.ny
                 dim_q = dim.nz
-            fd.write('POINT_DATA {0:9}\n'.format(dim_p*dim_q).encode('utf-8'))
+            fd.write("POINT_DATA {0:9}\n".format(dim_p * dim_q).encode("utf-8"))
 
             # Write the data.
             for fi in field:
                 data = getattr(getattr(slices, ext), fi)
-                fd.write(('SCALARS ' + ext + '_' + fi + ' float\n').encode('utf-8'))
-                fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
-                if sys.byteorder == 'little':
+                fd.write(("SCALARS " + ext + "_" + fi + " float\n").encode("utf-8"))
+                fd.write("LOOKUP_TABLE default\n".encode("utf-8"))
+                if sys.byteorder == "little":
                     data = data.astype(np.float32).byteswap()
                 else:
                     data = data.astype(np.float32)
@@ -307,9 +378,8 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
             fd.close()
 
 
-
 ## Convert PencilCode average file to vtk.
-#def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
+# def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
 #            destination = 'xyaverages', quiet = 1):
 #    """
 #    Convert average data from PencilCode format to vtk.
@@ -389,7 +459,7 @@ def slices2vtk(field='', extension='', datadir='data', destination='slices', pro
 #
 #
 ## Convert PencilCode power spectra to vtk.
-#def power2vtk(powerfiles = ['power_mag.dat'],
+# def power2vtk(powerfiles = ['power_mag.dat'],
 #              datadir = 'data/', destination = 'power', thickness = 1):
 #    """
 #    Convert power spectra from PencilCode format to vtk.

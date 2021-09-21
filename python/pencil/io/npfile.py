@@ -9,12 +9,13 @@ import sys
 
 import numpy as np
 
-__all__ = ['sys_endian_code', 'npfile']
+__all__ = ["sys_endian_code", "npfile"]
 
-sys_endian_code = (sys.byteorder == 'little') and '<' or '>'
+sys_endian_code = (sys.byteorder == "little") and "<" or ">"
+
 
 class npfile(object):
-    ''' Class for reading and writing numpy arrays to/from files
+    """Class for reading and writing numpy arrays to/from files
 
     Inputs:
       file_name -- The complete path name to the file to open
@@ -58,48 +59,46 @@ class npfile(object):
     >>> npf.write_array(arr)
     >>> npf.rewind()
     >>> npf.read_array((5,2), arr.dtype)
-    '''
+    """
 
-    def __init__(self, file_name,
-                 permission='rb',
-                 endian = 'dtype',
-                 order = 'C'):
-        if 'b' not in permission: permission += 'b'
-        #if isinstance(file_name, basestring):
+    def __init__(self, file_name, permission="rb", endian="dtype", order="C"):
+        if "b" not in permission:
+            permission += "b"
+        # if isinstance(file_name, basestring):
         if isinstance(file_name, str):
-            #self.file = file(file_name, permission)
+            # self.file = file(file_name, permission)
             self.file = open(file_name, permission)
         else:
             try:
                 closed = file_name.closed
             except AttributeError:
-                raise TypeError('Need filename or file object as input')
+                raise TypeError("Need filename or file object as input")
             if closed:
-                raise TypeError('File object should be open')
+                raise TypeError("File object should be open")
             self.file = file_name
         self.endian = endian
         self.order = order
 
     def get_endian(self):
         return self._endian
+
     def set_endian(self, endian_code):
         self._endian = self.parse_endian(endian_code)
-    endian = property(get_endian, set_endian, None, 'get/set endian code')
+
+    endian = property(get_endian, set_endian, None, "get/set endian code")
 
     def parse_endian(self, endian_code):
-        ''' Returns valid endian code from wider input options'''
-        if endian_code in ['native', 'n', 'N','default', '=']:
+        """Returns valid endian code from wider input options"""
+        if endian_code in ["native", "n", "N", "default", "="]:
             return sys_endian_code
-        elif endian_code in ['swapped', 's', 'S']:
-            return sys_endian_code == '<' and '>' or '<'
-        elif endian_code in ['ieee-le','l','L','little-endian',
-                             'little','le','<']:
-            return '<'
-        elif endian_code in ['ieee-be','B','b','big-endian',
-                             'big','be', '>']:
-            return '>'
-        elif endian_code == 'dtype':
-            return 'dtype'
+        elif endian_code in ["swapped", "s", "S"]:
+            return sys_endian_code == "<" and ">" or "<"
+        elif endian_code in ["ieee-le", "l", "L", "little-endian", "little", "le", "<"]:
+            return "<"
+        elif endian_code in ["ieee-be", "B", "b", "big-endian", "big", "be", ">"]:
+            return ">"
+        elif endian_code == "dtype":
+            return "dtype"
         else:
             raise ValueError("Unrecognized endian code: " + endian_code)
         return
@@ -119,13 +118,12 @@ class npfile(object):
     def tell(self):
         return self.file.tell()
 
-    def rewind(self,howmany=None):
-        """Rewind a file to its beginning or by a specified amount.
-        """
+    def rewind(self, howmany=None):
+        """Rewind a file to its beginning or by a specified amount."""
         if howmany is None:
             self.seek(0)
         else:
-            self.seek(-howmany,1)
+            self.seek(-howmany, 1)
 
     def read_raw(self, size=-1):
         """Read raw bytes from file as string."""
@@ -143,7 +141,7 @@ class npfile(object):
         return end_pos - cur_pos
 
     def _endian_order(self, endian, order):
-        ''' Housekeeping function to return endian, order from input args '''
+        """Housekeeping function to return endian, order from input args"""
         if endian is None:
             endian = self.endian
         else:
@@ -154,12 +152,12 @@ class npfile(object):
 
     def _endian_from_dtype(self, dt):
         dt_endian = dt.byteorder
-        if dt_endian == '=':
+        if dt_endian == "=":
             dt_endian = sys_endian_code
         return dt_endian
 
     def write_array(self, data, endian=None, order=None):
-        ''' Write to open file object the flattened numpy array data
+        """Write to open file object the flattened numpy array data
 
         Inputs
         data      - numpy array or object convertable to array
@@ -168,17 +166,17 @@ class npfile(object):
                     (if None, get from self.endian)
         order     - order of array to write (C, F)
                     (if None from self.order)
-        '''
+        """
         endian, order = self._endian_order(endian, order)
         data = np.asarray(data)
         dt_endian = self._endian_from_dtype(data.dtype)
-        if not endian == 'dtype':
+        if not endian == "dtype":
             if dt_endian != endian:
                 data = data.byteswap()
         self.file.write(data.tostring(order=order))
 
     def read_array(self, dt, shape=-1, endian=None, order=None):
-        '''Read data from file and return it in a numpy array.
+        """Read data from file and return it in a numpy array.
 
         Inputs
         ------
@@ -195,7 +193,7 @@ class npfile(object):
 
         Outputs
         arr       - array from file with given dtype (dt)
-        '''
+        """
         endian, order = self._endian_order(endian, order)
         dt = np.dtype(dt)
         try:
@@ -206,27 +204,24 @@ class npfile(object):
         if minus_ones == 0:
             pass
         elif minus_ones == 1:
-            known_dimensions_size = -np.product(shape,axis=0) * dt.itemsize
-            unknown_dimension_size, illegal = divmod(self.remaining_bytes(),
-                                                     known_dimensions_size)
+            known_dimensions_size = -np.product(shape, axis=0) * dt.itemsize
+            unknown_dimension_size, illegal = divmod(
+                self.remaining_bytes(), known_dimensions_size
+            )
             if illegal:
                 raise ValueError("unknown dimension doesn't match filesize")
             shape[shape.index(-1)] = unknown_dimension_size
         else:
-            raise ValueError(
-                "illegal -1 count; can only specify one unknown dimension")
+            raise ValueError("illegal -1 count; can only specify one unknown dimension")
         sz = dt.itemsize * np.product(shape)
         dt_endian = self._endian_from_dtype(dt)
         buf = self.file.read(sz)
-        arr = np.ndarray(shape=shape,
-                         dtype=dt,
-                         buffer=buf,
-                         order=order)
-        if (not endian == 'dtype') and (dt_endian != endian):
+        arr = np.ndarray(shape=shape, dtype=dt, buffer=buf, order=order)
+        if (not endian == "dtype") and (dt_endian != endian):
             return arr.byteswap()
         return arr.copy()
 
-    def fort_write(self,data,endian=None,order=None,head_size=4):
+    def fort_write(self, data, endian=None, order=None, head_size=4):
         """Write a Fortran binary record from a numpy array
 
         Inputs:
@@ -241,28 +236,28 @@ class npfile(object):
           *args -- Arguments representing data to write.
         """
         endian, order = self._endian_order(endian, order)
-        if endian == '<':
+        if endian == "<":
             nfmt = "<"
-        elif endian == '>':
+        elif endian == ">":
             nfmt = ">"
         else:
             nfmt = ""
         if head_size == 4:
-            nfmt+= 'i'
+            nfmt += "i"
         elif head_size == 8:
-            nfmt+='L'
+            nfmt += "L"
         else:
             raise TypeError("Unknown head_size. Valid vaules are 4 & 8.")
 
-        #outstr = struct.pack(data.dtype,data.tostring(order=order))
+        # outstr = struct.pack(data.dtype,data.tostring(order=order))
         outstr = data.tostring(order=order)
-        strlen = struct.pack(nfmt,len(outstr))
+        strlen = struct.pack(nfmt, len(outstr))
         self.file.write(strlen)
         self.file.write(outstr)
         self.file.write(strlen)
 
     def fort_read(self, dt, shape=-1, endian=None, order=None, head_size=4):
-        '''Read data from a fortran binary record and return it in a numpy array.
+        """Read data from a fortran binary record and return it in a numpy array.
 
         note that fortran records give a 4-byte (or 8-byte if you use
         gfortran) header describing the number of bytes in a
@@ -286,15 +281,15 @@ class npfile(object):
 
         Outputs
         arr       - array from file with given dtype (dt)
-        '''
+        """
 
         endian, order = self._endian_order(endian, order)
         dt = np.dtype(dt)
         dt_endian = self._endian_from_dtype(dt)
-        #first, read header
+        # first, read header
         buf = self.file.read(head_size)
-        header = np.ndarray(shape=(1),dtype='i',buffer=buf)[0]
-        if (not endian == 'dtype') and (dt_endian != endian):
+        header = np.ndarray(shape=(1), dtype="i", buffer=buf)[0]
+        if (not endian == "dtype") and (dt_endian != endian):
             header = header.byteswap()
         try:
             shape = list(shape)
@@ -304,24 +299,19 @@ class npfile(object):
         if minus_ones == 0:
             pass
         elif minus_ones == 1:
-            known_dimensions_size = -np.product(shape,axis=0) * dt.itemsize
-            unknown_dimension_size, illegal = divmod(header,
-                                                     known_dimensions_size)
+            known_dimensions_size = -np.product(shape, axis=0) * dt.itemsize
+            unknown_dimension_size, illegal = divmod(header, known_dimensions_size)
             if illegal:
                 raise ValueError("unknown dimension doesn't match record size")
             shape[shape.index(-1)] = unknown_dimension_size
         else:
-            raise ValueError(
-                "illegal -1 count; can only specify one unknown dimension")
+            raise ValueError("illegal -1 count; can only specify one unknown dimension")
         sz = dt.itemsize * np.product(shape)
 
         buf = self.file.read(sz)
-        arr = np.ndarray(shape=shape,
-                         dtype=dt,
-                         buffer=buf,
-                         order=order)
-        #fortran record ends with the header repeated. skip this.
-        self.seek(head_size,1)
-        if (not endian == 'dtype') and (dt_endian != endian):
+        arr = np.ndarray(shape=shape, dtype=dt, buffer=buf, order=order)
+        # fortran record ends with the header repeated. skip this.
+        self.seek(head_size, 1)
+        if (not endian == "dtype") and (dt_endian != endian):
             return arr.byteswap()
         return arr.copy()

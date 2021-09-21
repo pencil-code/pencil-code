@@ -1,5 +1,4 @@
-
-def dill_save(obj, name, folder='pc'):
+def dill_save(obj, name, folder="pc"):
     """This scripts saves any kind of object as a dill file in a folder.
 
     Args:
@@ -11,18 +10,19 @@ def dill_save(obj, name, folder='pc'):
     from os.path import join, exists
     import dill
 
-    mkdir(folder)        ## prepare folder
+    mkdir(folder)  ## prepare folder
 
-    if (not name.endswith('.dill')): name = name+'.dill'
-    if folder=='pc' and name.startswith('pc/'):
-        name=name[3:]
+    if not name.endswith(".dill"):
+        name = name + ".dill"
+    if folder == "pc" and name.startswith("pc/"):
+        name = name[3:]
 
     full_path = join(folder, name)
 
     if exists(full_path):
         remove(full_path)
 
-    with open(join(folder, name), 'wb') as f:
+    with open(join(folder, name), "wb") as f:
         dill.dump(obj, f)
 
     return True

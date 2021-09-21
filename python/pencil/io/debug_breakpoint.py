@@ -13,8 +13,8 @@ def debug_breakpoint():
 
     shell = InteractiveConsole(env)
     shell.interact(
-        '* Break: {} ::: Line {}\n'
-        '* Continue with Ctrl+D or raise SystemExit...'.format(
+        "* Break: {} ::: Line {}\n"
+        "* Continue with Ctrl+D or raise SystemExit...".format(
             caller.f_code.co_filename, caller.f_lineno
         )
     )

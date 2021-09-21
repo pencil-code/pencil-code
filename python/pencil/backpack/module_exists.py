@@ -1,5 +1,5 @@
 def module_exists(MOD):
-    """ Returns True if module MOD exists, else False. """
+    """Returns True if module MOD exists, else False."""
 
     import importlib
 

@@ -57,42 +57,43 @@ def ogvar(*args, **kwargs):
             started = a.started()
             break
     else:
-        if 'sim' in kwargs.keys():
-            started = kwargs['sim'].started()
-        elif 'datadir' in kwargs.keys():
+        if "sim" in kwargs.keys():
+            started = kwargs["sim"].started()
+        elif "datadir" in kwargs.keys():
             from os.path import join, exists
-            if exists(join(kwargs['datadir'], 'time_series.dat')):
+
+            if exists(join(kwargs["datadir"], "time_series.dat")):
                 started = True
 
-    if 'ivar' not in kwargs.keys():
+    if "ivar" not in kwargs.keys():
         ivar = 0
     if not started and ivar != 0:
-        print('!! ERROR: Simulation has not jet started. There are not ogvar files.')
+        print("!! ERROR: Simulation has not jet started. There are not ogvar files.")
         return False
 
-    if ('var_file' in kwargs):
-        if isinstance(kwargs['var_file'], __Simulation__):
-            kwargs['var_file'] = 'ogvar.dat'
+    if "var_file" in kwargs:
+        if isinstance(kwargs["var_file"], __Simulation__):
+            kwargs["var_file"] = "ogvar.dat"
     else:
-        if ('varfile' in kwargs):
-            kwargs['var_file'] = kwargs['varfile']
-        elif ('ivar' in kwargs):
-            if (kwargs['ivar'] < 0):
-                kwargs['var_file'] = 'ogvar.dat'
+        if "varfile" in kwargs:
+            kwargs["var_file"] = kwargs["varfile"]
+        elif "ivar" in kwargs:
+            if kwargs["ivar"] < 0:
+                kwargs["var_file"] = "ogvar.dat"
             else:
-                kwargs['var_file'] = 'OGVAR' + str(kwargs['ivar'])
+                kwargs["var_file"] = "OGVAR" + str(kwargs["ivar"])
         else:
-            kwargs['var_file'] = 'ogvar.dat'
+            kwargs["var_file"] = "ogvar.dat"
 
-    if (kwargs['var_file'][0:2].lower() != 'og'):
-        print('!! ERROR: Read procedure not called with ogvar-file.')
-        print('          Did you mean to call read.var() instead?')
+    if kwargs["var_file"][0:2].lower() != "og":
+        print("!! ERROR: Read procedure not called with ogvar-file.")
+        print("          Did you mean to call read.var() instead?")
         return False
 
     ogvar_tmp = ogDataCube()
     ogvar_tmp.read(*args, **kwargs)
-    if ('trim_all' in kwargs):
-        trim_all = kwargs['trim_all']
+    if "trim_all" in kwargs:
+        trim_all = kwargs["trim_all"]
     else:
         trim_all = True
 
@@ -112,11 +113,9 @@ class ogDataCube(DataCube):
 
         super(ogDataCube, self).__init__()
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
-
 
     def transform(self, trim_all):
         """

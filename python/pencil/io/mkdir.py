@@ -19,9 +19,9 @@ def mkdir(destination, rank=0, lfs=False, MB=1, count=1):
         if rank == 0:
             os.makedirs(destination)
             if lfs:
-                cmd = 'lfs setstripe -S {}M -c {} '.format(MB,count)+destination
-                process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+                cmd = "lfs setstripe -S {}M -c {} ".format(MB, count) + destination
+                process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                 output, error = process.communicate()
-                print(cmd,output,error)
+                print(cmd, output, error)
         return True
     return False

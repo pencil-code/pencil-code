@@ -50,13 +50,11 @@ class ZProfile(object):
         self.prof = 0
         self.z = 0
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
 
-
-    def read(self, var_name, datadir='data', dim=None, nfield=1):
+    def read(self, var_name, datadir="data", dim=None, nfield=1):
         """
         Read vertical profiles written in data/proc*/zprof_varname.dat.
         Returns a ZProfile object with z and profiles(z).
@@ -87,8 +85,8 @@ class ZProfile(object):
         if not dim:
             dim = read.dim()
 
-        nz = int(dim.nzgrid/dim.nprocz)
-        self.z = np.zeros(nz*dim.nprocz, dtype=np.float32)
+        nz = int(dim.nzgrid / dim.nprocz)
+        self.z = np.zeros(nz * dim.nprocz, dtype=np.float32)
         if nfield > 1:
             self.prof = np.zeros((nfield, dim.nzgrid), dtype=np.float32)
         else:
@@ -97,13 +95,13 @@ class ZProfile(object):
         # Loop over all processors and records in file.
         izcount = 0
         for iprocz in range(0, dim.nprocz):
-            proc_name = 'proc{0}'.format(iprocz)
-            file_name = os.path.join(datadir, proc_name, 'zprof_', var_name, '.dat')
-            fd = open(file_name, 'r')
+            proc_name = "proc{0}".format(iprocz)
+            file_name = os.path.join(datadir, proc_name, "zprof_", var_name, ".dat")
+            fd = open(file_name, "r")
 
             #  When reading a zprof_once_X file, the first dim.nghostz gridpoints are
             #  not saved.
-            if var_name.find('once') != -1:
+            if var_name.find("once") != -1:
                 for i in range(dim.nghostz):
                     line = fd.readline()
             for i in range(nz):
@@ -112,8 +110,8 @@ class ZProfile(object):
                 self.z[izcount] = data[0]
                 if nfield > 1:
                     for j in range(nfield):
-                        self.prof[j, izcount] = data[j+1]
+                        self.prof[j, izcount] = data[j + 1]
                 else:
                     self.prof[izcount] = data[1]
-                izcount = izcount+1
+                izcount = izcount + 1
         fd.close()

@@ -28,7 +28,7 @@ def ffloat(x):
     """
     Numbers are read from fortran code, which has a specific lenght, in this case 8 char
     If we have scientific notation, it cuts the e and the number doesn't make sense.
-    Example: 
+    Example:
     Instead of 3.76e-291 it will write 3.76-291
 
     This function checks and converts all numbers to scientific notation in this case

@@ -42,9 +42,9 @@ def slices(*args, **kwargs):
 
     *tend*: End time interval from which to sample slices.
 
-    Returns 
-    ------- 
-    Class containing the fields and slices as attributes. 
+    Returns
+    -------
+    Class containing the fields and slices as attributes.
 
     Notes
     -----

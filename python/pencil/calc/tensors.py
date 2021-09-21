@@ -53,32 +53,32 @@ class Tensors(object):
         imask=None,
     ):
         """object returns time dependent meridional tensors
-           from Averages object aver.z. u, acoef and bcoef and aver.t
+        from Averages object aver.z. u, acoef and bcoef and aver.t
 
-           For long DNS runs the 'zaverages.dat' file can be very large
-           so MPI may be required and the data is loaded by processor
-           as default.
+        For long DNS runs the 'zaverages.dat' file can be very large
+        so MPI may be required and the data is loaded by processor
+        as default.
 
-           lskip_zeros=True identifies the resetting of the testfield
-           and rmbzeros and rmfzeros number to exclude before and following
-           By default none are removed.
+        lskip_zeros=True identifies the resetting of the testfield
+        and rmbzeros and rmfzeros number to exclude before and following
+        By default none are removed.
 
-           iy is the index array that is computed in this MPI process, which
-           may be a subset of the array on this processor
+        iy is the index array that is computed in this MPI process, which
+        may be a subset of the array on this processor
 
-           l_correction=True permits the pencil coefficients computed
-           prior to the Pencil Code correction implemented after
-           time=t_correction to be rescaled accordingly to match the new
-           formulation.
+        l_correction=True permits the pencil coefficients computed
+        prior to the Pencil Code correction implemented after
+        time=t_correction to be rescaled accordingly to match the new
+        formulation.
 
-           trargs contain optional arguments for the time treatments: mean,
-           smoothing, etc.
+        trargs contain optional arguments for the time treatments: mean,
+        smoothing, etc.
 
-           tindex is set to limit the range of the iterations loaded from
-           Averages in zaverages.dat
+        tindex is set to limit the range of the iterations loaded from
+        Averages in zaverages.dat
 
-           The index imask, excluding the resets, can be specified to
-           ensure all processes use the same mask
+        The index imask, excluding the resets, can be specified to
+        ensure all processes use the same mask
         """
         import numpy as np
         import os

@@ -24,11 +24,11 @@ def dot(a, b):
 
     import numpy as np
 
-    if (a.ndim != 4 or a.shape[0] != 3 or b.ndim != 4 or b.shape[0] != 3):
+    if a.ndim != 4 or a.shape[0] != 3 or b.ndim != 4 or b.shape[0] != 3:
         print("error: both vectors must be 4-D array f[3, mz, my, mx] for dot.")
         raise ValueError
 
-    return np.sum(a*b, axis=0)
+    return np.sum(a * b, axis=0)
 
 
 def dot2(a):
@@ -64,7 +64,7 @@ def cross(a, b):
 
     import numpy as np
 
-    if (a.ndim != 4 or a.shape[0] != 3 or a.shape != b.shape):
+    if a.ndim != 4 or a.shape[0] != 3 or a.shape != b.shape:
         print("error: both vectors must be 4-D array f[3, mz, my, mx] for cross.")
         raise ValueError
 

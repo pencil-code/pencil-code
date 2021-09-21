@@ -11,6 +11,7 @@ Contains the simulations class which can be used to store and perform actions on
 multiple simulations at once.
 """
 
+
 def simulations(*args, **kwargs):
     """
     Generate simulations object, which is a container for simulation objects.
@@ -35,6 +36,7 @@ def simulations(*args, **kwargs):
 
     return __Simulations__(*args, **kwargs)
 
+
 class __Simulations__(object):
     """
     Simulations object.
@@ -42,23 +44,25 @@ class __Simulations__(object):
 
     def __init__(self, *args, **kwargs):
 
-        self.sims = []          # list of all simulation stored
+        self.sims = []  # list of all simulation stored
 
         for arg in args:
-            #print('\n __init__ : '+ str(arg))
+            # print('\n __init__ : '+ str(arg))
             self.add(args)
 
         for kw, arg in kwargs:
-            print('!! ERROR: Not prepared for kwargs yet!!')
-            print(kw+': '+str(arg))
+            print("!! ERROR: Not prepared for kwargs yet!!")
+            print(kw + ": " + str(arg))
 
-        if type(self.sims) == type(False) and self.sims == False: return False
+        if type(self.sims) == type(False) and self.sims == False:
+            return False
 
         # sort self.sims list by name
         import re
+
         convert = lambda text: int(text) if text.isdigit() else text.lower()
-        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key.name) ]
-        self.sims = sorted(self.sims, key = alphanum_key)
+        alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.name)]
+        self.sims = sorted(self.sims, key=alphanum_key)
 
         # Done
 
@@ -82,28 +86,28 @@ class __Simulations__(object):
         for arg in args:
 
             if isinstance(arg, __Simulation__):
-                #print('\n self.add: __Simulation__')
-                #print(arg.path)
+                # print('\n self.add: __Simulation__')
+                # print(arg.path)
                 self.sims.append(arg)
                 return True
 
             elif isinstance(arg, str):
-                #print('\n self.add: string')
+                # print('\n self.add: string')
                 self.sims.append(get_sim(arg))
                 return True
 
             elif is_iterable(arg):
-                #print('\n self.add: iterable: '+str(args))
+                # print('\n self.add: iterable: '+str(args))
                 for ar in arg:
-                    #print('n self.add: iterable add: '+str(a))
+                    # print('n self.add: iterable add: '+str(a))
                     self.add(ar)
                 return True
 
             else:
-                print('!! ERROR: Couldnt add to simulations object: '+str(args))
+                print("!! ERROR: Couldnt add to simulations object: " + str(args))
 
         for kw, arg in kwargs:
-            print('!! ERROR: Not prepared for kwargs yet!!')
-            print(kw+': '+str(arg))
+            print("!! ERROR: Not prepared for kwargs yet!!")
+            print(kw + ": " + str(arg))
 
         return False

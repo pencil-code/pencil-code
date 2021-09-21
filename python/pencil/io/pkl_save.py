@@ -1,5 +1,4 @@
-
-def pkl_save(obj, name, folder='.pc', ascii=True):
+def pkl_save(obj, name, folder=".pc", ascii=True):
     """This scripts saves any kind of object as a pkl file in folder.
 
     Args:
@@ -11,11 +10,12 @@ def pkl_save(obj, name, folder='.pc', ascii=True):
     from os.path import join
     import pickle
 
-    mkdir(folder)        ## prepare folder
+    mkdir(folder)  ## prepare folder
 
-    if (not name.endswith('.pkl')): name = name+'.pkl'
+    if not name.endswith(".pkl"):
+        name = name + ".pkl"
 
-    with open(join(folder, name), 'wb') as f:
+    with open(join(folder, name), "wb") as f:
         if ascii:
             pickle.dump(obj, f, 0)
             return True

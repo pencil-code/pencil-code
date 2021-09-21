@@ -1,10 +1,17 @@
-
-def export_fig(fig, filepath, filename=False,
-                    PNG=True, PDF=False, EPS=False, DPI=300, EXPORT_BBOX_INCES='tight', transparent=True,
-                    verbose=True,
-                    timestamp=False):
-    """Does a proper export of a figure handle to all kind of image files.
-    """
+def export_fig(
+    fig,
+    filepath,
+    filename=False,
+    PNG=True,
+    PDF=False,
+    EPS=False,
+    DPI=300,
+    EXPORT_BBOX_INCES="tight",
+    transparent=True,
+    verbose=True,
+    timestamp=False,
+):
+    """Does a proper export of a figure handle to all kind of image files."""
     import datetime as dt
     from os.path import join, split
     from pencil.io import exists_file as exists
@@ -16,7 +23,8 @@ def export_fig(fig, filepath, filename=False,
         filename = filepath[-1]
         filepath = filepath[0]
 
-    if filepath == '': filepath = '.'
+    if filepath == "":
+        filepath = "."
 
     filename = filename.strip()
     filepath = filepath.strip()
@@ -27,31 +35,45 @@ def export_fig(fig, filepath, filename=False,
     ######## generate timestamp if demanded
     if timestamp == True:
         timestamp = str(dt.datetime.now())[:-7]
-        timestamp = timestamp.replace(" ", "_").replace(":","-")
-        complete_filepath = complete_filepath+'_'+timestamp
+        timestamp = timestamp.replace(" ", "_").replace(":", "-")
+        complete_filepath = complete_filepath + "_" + timestamp
 
     ######## do the export
     if PNG:
-        fig.savefig(complete_filepath+'.png',
-        	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI, transparent=transparent)
-        if verbose: print('~ .png saved')
+        fig.savefig(
+            complete_filepath + ".png",
+            bbox_inches=EXPORT_BBOX_INCES,
+            dpi=DPI,
+            transparent=transparent,
+        )
+        if verbose:
+            print("~ .png saved")
 
     if PDF:
-        fig.savefig(complete_filepath+'.pdf',
-        	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI, transparent=transparent)
-        if verbose: print('~ .pdf saved')
+        fig.savefig(
+            complete_filepath + ".pdf",
+            bbox_inches=EXPORT_BBOX_INCES,
+            dpi=DPI,
+            transparent=transparent,
+        )
+        if verbose:
+            print("~ .pdf saved")
 
     if EPS:
-        fig.savefig(complete_filepath+'.png',
-        	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI, transparent=transparent)
-        if verbose: print('~ .eps saved')
+        fig.savefig(
+            complete_filepath + ".png",
+            bbox_inches=EXPORT_BBOX_INCES,
+            dpi=DPI,
+            transparent=transparent,
+        )
+        if verbose:
+            print("~ .eps saved")
 
     if not PNG and not EPS and not EPS:
-        if verbose: print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
+        if verbose:
+            print("? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!")
     else:
-        if verbose: print('~ Plots saved to '+complete_filepath)
+        if verbose:
+            print("~ Plots saved to " + complete_filepath)
 
     return True

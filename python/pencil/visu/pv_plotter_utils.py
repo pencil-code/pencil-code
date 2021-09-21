@@ -1,7 +1,7 @@
 #
 # pv_plotter_utils.py
-# 
-# This file defines generic utility routines for PyVista plotters pv_plotter.py 
+#
+# This file defines generic utility routines for PyVista plotters pv_plotter.py
 # and pv_volume_plotter.py.
 #
 # Author: Leevi Veneranta (leevi.veneranta@aalto.fi)
@@ -15,6 +15,7 @@ See ``pv_plotter.py`` docstring!
 from tqdm import tqdm
 import pyvista as pv
 import numpy as np
+
 # import cv2
 
 # Internal Python libraries
@@ -32,47 +33,61 @@ def plotPreview(plotter) -> None:
         Instance of pv.Plotter
     window_size : list, optional
         Windows size [width, height], by default None
-        
+
     Notes
     -----
     Last updated: 18.6.2021
     """
-    raise NotImplementedError("Currently not working properly! Set parameter preview=False")
+    raise NotImplementedError(
+        "Currently not working properly! Set parameter preview=False"
+    )
 
-    plotter.show(title='Plot preview', interactive=True,
-                 auto_close=False, interactive_update=True)
+    plotter.show(
+        title="Plot preview",
+        interactive=True,
+        auto_close=False,
+        interactive_update=True,
+    )
 
-    cam_prev = (0,0,0)
+    cam_prev = (0, 0, 0)
     counter = 0
-    print(f'WARNING! In order to close window properly, type "CTRL-C" on the'
-          'command line!')
-    print(f'>>> DO NOT PRESS quit on the plot window!')
-    while True:       
+    print(
+        f'WARNING! In order to close window properly, type "CTRL-C" on the'
+        "command line!"
+    )
+    print(f">>> DO NOT PRESS quit on the plot window!")
+    while True:
         try:
             cam, focal, viewup = getCameraParamsRounded(plotter)
 
             if cam != cam_prev:
-                print(f'[{counter}] CAMERA PARAMS:\n> camera centre = {cam}' 
-                    f'\n> focal point = {focal}\n> view up = {viewup}\n')
-                plotter.add_text(f'CAMERA PARAMETERS:\n> Camera centre = {cam}' 
-                                f'\n> Focal point = {focal}\n> View up = {viewup}', 
-                                name='title', font_size=11)
+                print(
+                    f"[{counter}] CAMERA PARAMS:\n> camera centre = {cam}"
+                    f"\n> focal point = {focal}\n> view up = {viewup}\n"
+                )
+                plotter.add_text(
+                    f"CAMERA PARAMETERS:\n> Camera centre = {cam}"
+                    f"\n> Focal point = {focal}\n> View up = {viewup}",
+                    name="title",
+                    font_size=11,
+                )
                 counter += 1
                 cam_prev = cam
 
             plotter.update()
-            
+
         except KeyboardInterrupt:
             # When CTRL + C pressed
             plotter.close()
 
 
-def randomSampleMeshPoints(n, mesh, set_seed_1=False, constant_seed=False,
-                             get_arrays=False, seed=None):
+def randomSampleMeshPoints(
+    n, mesh, set_seed_1=False, constant_seed=False, get_arrays=False, seed=None
+):
     """
-    Returns randomly (uniformly) sampled points from the given mesh, 
+    Returns randomly (uniformly) sampled points from the given mesh,
     i.e. a subset of mesh.points
-    
+
     Parameters
     ----------
     n : int
@@ -80,37 +95,38 @@ def randomSampleMeshPoints(n, mesh, set_seed_1=False, constant_seed=False,
     mesh
         Pyvista mesh
     set_seed_1 : bool, optional
-        If set_seed_1 set to True, sets seed used by the random generator to 1, 
+        If set_seed_1 set to True, sets seed used by the random generator to 1,
         i.e. each time.time this is called with the same mesh, function would return
         the same points. For debugging purposes. By default False
     get_arrays : bool, optional
         If True, also samples all the point arrays that the given mesh contains,
         and adds them to the returned pyvista.PolyData
-        
+
     Returns
     -------
     pyvista.PolyData
         Set of n randomly sampled points from the given mesh.
     """
     npoints = mesh.n_points
-    assert n <= npoints, f"Number of points chosen must be at most mesh.n_points" \
-     f"= {mesh.n_points}"
-    
-    # For debugging purposes to keep point choices constant  
+    assert n <= npoints, (
+        f"Number of points chosen must be at most mesh.n_points" f"= {mesh.n_points}"
+    )
+
+    # For debugging purposes to keep point choices constant
     if set_seed_1:
         np.random.seed(1)
     elif constant_seed:
         assert seed is not None, "INTERNAL ERROR: seed value not set?"
         np.random.seed(seed)
-        
+
     idx = np.random.randint(0, high=npoints, size=n)
-    points = mesh.points[idx,:]
+    points = mesh.points[idx, :]
     sampled = pv.PolyData(points)
-    
+
     if get_arrays:
         for key in mesh.array_names:
             sampled[key] = mesh[key][idx]
-        
+
     return sampled
 
 
@@ -120,12 +136,14 @@ def randomSampleMesh(n, mesh):
     individual cells all around the plot each having 9 streamlines
     """
     npoints = mesh.n_points
-    assert n <= npoints, f"Number of points chosen must be at most mesh.n_points = {mesh.n_points}"
-    idx = np.random.randint(0,high=npoints, size=n)
+    assert (
+        n <= npoints
+    ), f"Number of points chosen must be at most mesh.n_points = {mesh.n_points}"
+    idx = np.random.randint(0, high=npoints, size=n)
     mask = np.zeros(npoints)
     mask[idx] = 1
-    mesh['mask'] = mask
-    return mesh.threshold(value=1, scalars='mask')
+    mesh["mask"] = mask
+    return mesh.threshold(value=1, scalars="mask")
 
 
 def getCameraParamsRounded(plotter: pv.Plotter, precision=3) -> tuple:
@@ -141,30 +159,32 @@ def getCameraParamsRounded(plotter: pv.Plotter, precision=3) -> tuple:
     -------
     tuple
         (camera_centre, focal_point, view_up)
-        
+
     Notes
     -----
     Last updated: 18.6.2021
     """
     cam, focal, viewup = plotter.camera_position
-    
-    cam = (round(cam[0], precision),
-           round(cam[1], precision),
-           round(cam[2], precision))
-    
-    focal = (round(focal[0], precision),
-             round(focal[1], precision),
-             round(focal[2], precision))
-    
-    viewup = (round(viewup[0], precision),
-              round(viewup[1], precision),
-              round(viewup[2],precision))
-    
+
+    cam = (round(cam[0], precision), round(cam[1], precision), round(cam[2], precision))
+
+    focal = (
+        round(focal[0], precision),
+        round(focal[1], precision),
+        round(focal[2], precision),
+    )
+
+    viewup = (
+        round(viewup[0], precision),
+        round(viewup[1], precision),
+        round(viewup[2], precision),
+    )
+
     return cam, focal, viewup
 
 
 def gridFromCylCoords(r, theta, z) -> pv.StructuredGrid:
-    """"
+    """ "
     Create PyVista StructuredGrid out of cylinder coordinates.
     Parameters
     ----------
@@ -178,12 +198,12 @@ def gridFromCylCoords(r, theta, z) -> pv.StructuredGrid:
     -------
     pyvista.StructuredGrid
         Mesh given the coordinates
-        
+
     Notes
     -----
     Last updated: 18.6.2021
     """
-    x,y,z = np.meshgrid(r, theta, z)
+    x, y, z = np.meshgrid(r, theta, z)
     # Transform grid to cartesian coordinates
     x_cart = x * np.cos(y)
     y_cart = x * np.sin(y)
@@ -229,21 +249,21 @@ def create_sbar_args(settings, title, posx, posy):
     showing field (stream | vectors) or scalars.
     """
     sbar_args = {
-                'title': title,
-                'position_x': posx,
-                'position_y': posy,
-                **settings._sbar_args
-                }
-    if title is None or title == '':
-        # The title works stupidly - if you want pyvista to infer sbar name 
+        "title": title,
+        "position_x": posx,
+        "position_y": posy,
+        **settings._sbar_args,
+    }
+    if title is None or title == "":
+        # The title works stupidly - if you want pyvista to infer sbar name
         # automatically from point arrays, you cant pass title parameter at all
         # thus if it is None ==> remove title from sbar_args
-        del sbar_args['title']
-    
+        del sbar_args["title"]
+
     return sbar_args
 
 
-# def imgsToVideo(output='test_movie.mp4', imgpath=Path('./images'), outputdir=Path('./'), 
+# def imgsToVideo(output='test_movie.mp4', imgpath=Path('./images'), outputdir=Path('./'),
 #                 imageformat='.png', fps=10, fourcc=0, debug=False):
 #     """
 #     NOTE! This seems to have an effect on the image quality, unlike running just
@@ -266,9 +286,9 @@ def create_sbar_args(settings, title, posx, posy):
 #     fps: int
 #         Frames per second for the video.
 #     fourcc: int or str
-#         From OpenCV doc: 4-character code of codec used to compress the frames. 
-#         For example, CV_FOURCC('P','I','M','1') is a MPEG-1 codec, 
-#         CV_FOURCC('M','J','P','G') is a motion-jpeg codec etc. List of codes can 
+#         From OpenCV doc: 4-character code of codec used to compress the frames.
+#         For example, CV_FOURCC('P','I','M','1') is a MPEG-1 codec,
+#         CV_FOURCC('M','J','P','G') is a motion-jpeg codec etc. List of codes can
 #         be obtained at Video Codecs by FOURCC page.
 #         Link: https://www.fourcc.org/codecs.php
 #     debug: bool
@@ -294,7 +314,7 @@ def create_sbar_args(settings, title, posx, posy):
 #             os.mkdir(outputdir)
 #     if isinstance(imgpath, str):
 #         imgpath = Path(imgpath)
-#     images = [img for img in os.listdir(imgpath) if img.endswith(imageformat)]  
+#     images = [img for img in os.listdir(imgpath) if img.endswith(imageformat)]
 #     frame = cv2.imread(str(imgpath / images[0]))
 #     height, width, layers = frame.shape
 #     video = cv2.VideoWriter(str(outputdir / output), fourcc, fps, (width, height))

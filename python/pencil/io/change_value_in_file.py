@@ -1,5 +1,7 @@
-def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False, DEBUG=False):
-    """ Use to change a quantity in
+def change_value_in_file(
+    filename, quantity, newValue, sim=False, filepath=False, DEBUG=False
+):
+    """Use to change a quantity in
         - *.in
         - *.local
         - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pc.io.get_systemid
@@ -19,7 +21,14 @@ def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False
 
     from pencil.io import get_value_from_file
 
-    return_value = get_value_from_file(filename, quantity, change_quantity_to=newValue, sim=sim, filepath=filepath, DEBUG=DEBUG)
+    return_value = get_value_from_file(
+        filename,
+        quantity,
+        change_quantity_to=newValue,
+        sim=sim,
+        filepath=filepath,
+        DEBUG=DEBUG,
+    )
 
     if return_value == None:
         return False

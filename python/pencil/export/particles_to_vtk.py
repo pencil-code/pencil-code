@@ -8,8 +8,16 @@
 Contains the class with the vtk data.
 """
 
-def particles_to_vtk(var_file='pvar.dat', datadir='data', proc=-1,
-                     destination='particles.vtk', ti=-1, tf=-1, binary=True):
+
+def particles_to_vtk(
+    var_file="pvar.dat",
+    datadir="data",
+    proc=-1,
+    destination="particles.vtk",
+    ti=-1,
+    tf=-1,
+    binary=True,
+):
     """
     Read the pVAR files from Pencil Code and write them as vtk files.
 
@@ -48,7 +56,7 @@ def particles_to_vtk(var_file='pvar.dat', datadir='data', proc=-1,
     pvar_list = []
     if (ti >= 0) and (tf >= 0):
         for tidx in range(ti, tf):
-            var_file = 'PVAR{0}'.format(tidx)
+            var_file = "PVAR{0}".format(tidx)
             pvar = read.pvar(varfile=var_file, datadir=datadir, proc=proc)
             pvar_list.append(pvar)
     else:
@@ -86,8 +94,7 @@ class ParticlesVtk(object):
         self.ti = -1
         self.tf = -1
         self.binary = True
-        self.destination = 'work.vtk'
-
+        self.destination = "work.vtk"
 
     def convert_to_vtk(self, pvar_list):
         """
@@ -120,7 +127,6 @@ class ParticlesVtk(object):
 
             self.vtk_grid_data.append(vtk_grid_data)
 
-
     def write_to_vtk(self):
         """
         Write the grid data into vtk files.
@@ -134,7 +140,7 @@ class ParticlesVtk(object):
 
         if (self.ti >= 0) and (self.tf >= 0):
             for tidx in range(self.ti, self.tf):
-                destination = '{0}{1}.vtk'.format(self.destination, tidx)
+                destination = "{0}{1}.vtk".format(self.destination, tidx)
                 writer = vtk.vtkUnstructuredGridWriter()
                 if self.binary:
                     writer.SetFileTypeToBinary()
@@ -144,9 +150,9 @@ class ParticlesVtk(object):
                 writer.SetFileName(destination)
                 # Ensure compatability between vtk 5 and 6.
                 try:
-                    writer.SetInputData(self.vtk_grid_data[tidx-self.ti])
+                    writer.SetInputData(self.vtk_grid_data[tidx - self.ti])
                 except:
-                    writer.SetInput(self.vtk_grid_data[tidx-self.ti])
+                    writer.SetInput(self.vtk_grid_data[tidx - self.ti])
                 writer.Write()
         else:
             writer = vtk.vtkUnstructuredGridWriter()

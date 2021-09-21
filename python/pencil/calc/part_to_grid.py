@@ -1,4 +1,13 @@
-def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=False, extent=False, fill_gaps=False):
+def part_to_grid(
+    xp,
+    yp,
+    zp=False,
+    quantity=False,
+    Nbins=[1024, 1024, 1024],
+    sim=False,
+    extent=False,
+    fill_gaps=False,
+):
     """Bins quantity based on position data xp and yp to 1024^2 bins like a histrogram.
     This method is not using TSC.
 
@@ -26,24 +35,27 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
     from pencil.calc import fill_gaps_in_grid
 
     if not xp.shape == yp.shape and yp.shape == xp.shape and yp.shape == zp.shape:
-        print('! ERROR: Shape of xp, yp, zp and quantity needs to be equal!')
+        print("! ERROR: Shape of xp, yp, zp and quantity needs to be equal!")
 
     if extent == False and sim == False:
         sim = get_sim()
 
     if quantity == False:
-        quantity = xp/xp
+        quantity = xp / xp
 
     if extent == False:
         grid = sim.grid
         if type(zp) == type(False) and zp == False:
-            extent = [[grid.x[0]-grid.dx/2, grid.x[-1]+grid.dx/2],
-                      [grid.y[0]-grid.dy/2, grid.y[-1]+grid.dy/2]]
+            extent = [
+                [grid.x[0] - grid.dx / 2, grid.x[-1] + grid.dx / 2],
+                [grid.y[0] - grid.dy / 2, grid.y[-1] + grid.dy / 2],
+            ]
         else:
-            extent = [[grid.x[0]-grid.dx/2, grid.x[-1]+grid.dx/2],
-                      [grid.y[0]-grid.dy/2, grid.y[-1]+grid.dy/2],
-                      [grid.z[0]-grid.dz/2, grid.z[-1]+grid.dz/2]]
-
+            extent = [
+                [grid.x[0] - grid.dx / 2, grid.x[-1] + grid.dx / 2],
+                [grid.y[0] - grid.dy / 2, grid.y[-1] + grid.dy / 2],
+                [grid.z[0] - grid.dz / 2, grid.z[-1] + grid.dz / 2],
+            ]
 
     if type(zp) == type(False) and zp == False:
         arr = np.zeros((2, Nbins[0], Nbins[1]))
@@ -51,30 +63,43 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
         arr = np.zeros((3, Nbins[0], Nbins[1], Nbins[2]))
 
     arr[:] = np.NAN
-    xgrid = (np.linspace(extent[0][0], extent[0][1], num=Nbins[0]+1)[:-1]+np.linspace(extent[0][0], extent[0][1], num=Nbins[0]+1)[1:])/2
-    ygrid = (np.linspace(extent[1][0], extent[1][1], num=Nbins[1]+1)[:-1]+np.linspace(extent[1][0], extent[1][1], num=Nbins[1]+1)[1:])/2
+    xgrid = (
+        np.linspace(extent[0][0], extent[0][1], num=Nbins[0] + 1)[:-1]
+        + np.linspace(extent[0][0], extent[0][1], num=Nbins[0] + 1)[1:]
+    ) / 2
+    ygrid = (
+        np.linspace(extent[1][0], extent[1][1], num=Nbins[1] + 1)[:-1]
+        + np.linspace(extent[1][0], extent[1][1], num=Nbins[1] + 1)[1:]
+    ) / 2
     if type(zp) == type(False) and zp == False:
         for x, y, q in zip(xp, yp, quantity):
-            idx = np.argmin(np.abs(x-xgrid))
-            idy = np.argmin(np.abs(y-ygrid))
-            if np.isnan(arr[0, idx, idy]): arr[0, idx, idy] = 0; arr[1, idx, idy] = 0
+            idx = np.argmin(np.abs(x - xgrid))
+            idy = np.argmin(np.abs(y - ygrid))
+            if np.isnan(arr[0, idx, idy]):
+                arr[0, idx, idy] = 0
+                arr[1, idx, idy] = 0
             arr[0, idx, idy] += q
             arr[1, idx, idy] += 1
 
     else:
-        zgrid = (np.linspace(extent[2][0], extent[2][1], num=Nbins[2]+1)[:-1]+np.linspace(extent[2][0], extent[2][1], num=Nbins[2]+1)[1:])/2
+        zgrid = (
+            np.linspace(extent[2][0], extent[2][1], num=Nbins[2] + 1)[:-1]
+            + np.linspace(extent[2][0], extent[2][1], num=Nbins[2] + 1)[1:]
+        ) / 2
         for x, y, z, q in zip(xp, yp, zp, quantity):
-            idx = np.argmin(np.abs(x-xgrid))
-            idy = np.argmin(np.abs(y-ygrid))
-            idz = np.argmin(np.abs(z-zgrid))
-            if np.isnan(arr[0, idx, idy, idz]): arr[0, idx, idy, idz] = 0; arr[1, idx, idy, idz] = 0
+            idx = np.argmin(np.abs(x - xgrid))
+            idy = np.argmin(np.abs(y - ygrid))
+            idz = np.argmin(np.abs(z - zgrid))
+            if np.isnan(arr[0, idx, idy, idz]):
+                arr[0, idx, idy, idz] = 0
+                arr[1, idx, idy, idz] = 0
             arr[0, idx, idy, idz] += q
             arr[1, idx, idy, idz] += 1
 
+    arr = arr[0] / arr[1]
 
-    arr = arr[0]/arr[1]
-
-    if fill_gaps == True: arr = fill_gaps_in_grid(arr, key=np.NAN)
+    if fill_gaps == True:
+        arr = fill_gaps_in_grid(arr, key=np.NAN)
 
     if type(zp) == type(False) and zp == False:
         return arr, xgrid, ygrid

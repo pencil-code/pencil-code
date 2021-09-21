@@ -52,7 +52,7 @@ class Dim(object):
         self.maux = 0
         self.mglobal = 0
 
-        self.precision = 'S'
+        self.precision = "S"
         self.nghostx = self.nghosty = self.nghostz = 0
 
         self.nprocx = self.nprocy = self.nprocz = 0
@@ -69,13 +69,11 @@ class Dim(object):
         self.nxgrid = self.nygrid = self.nzgrid = 0
         self.mxgrid = self.mygrid = self.mzgrid = 0
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
 
-
-    def read(self, datadir='data', proc=-1, ogrid=False, down=False):
+    def read(self, datadir="data", proc=-1, ogrid=False, down=False):
         """
         Read the dim.dat file.
 
@@ -96,54 +94,54 @@ class Dim(object):
 
         import os
 
-        if os.path.exists(os.path.join(datadir, 'grid.h5')):
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
             import h5py
 
-            with h5py.File(os.path.join(datadir,'grid.h5'), 'r') as tmp:
-                self.mx = np.asscalar(np.array(tmp['settings']['mx'][()]))
-                self.my = np.asscalar(np.array(tmp['settings']['my'][()]))
-                self.mz = np.asscalar(np.array(tmp['settings']['mz'][()]))
-                self.mvar = np.asscalar(np.array(tmp['settings']['mvar'][()]))
-                self.maux = np.asscalar(np.array(tmp['settings']['maux'][()]))
-                self.mglobal = np.asscalar(np.array(tmp['settings']['mglobal'][()]))
-                self.precision = np.asscalar(np.array(tmp['settings']['precision'][()]))
-                self.nghostx = np.asscalar(np.array(tmp['settings']['nghost'][()]))
-                self.nghosty = np.asscalar(np.array(tmp['settings']['nghost'][()]))
-                self.nghostz = np.asscalar(np.array(tmp['settings']['nghost'][()]))
-                self.nprocx = np.asscalar(np.array(tmp['settings']['nprocx'][()]))
-                self.nprocy = np.asscalar(np.array(tmp['settings']['nprocy'][()]))
-                self.nprocz = np.asscalar(np.array(tmp['settings']['nprocz'][()]))
-                self.nx = np.asscalar(np.array(tmp['settings']['nx'][()]))
-                self.ny = np.asscalar(np.array(tmp['settings']['ny'][()]))
-                self.nz = np.asscalar(np.array(tmp['settings']['nz'][()]))
-                self.l1 = np.asscalar(np.array(tmp['settings']['l1'][()]))
-                self.l2 = np.asscalar(np.array(tmp['settings']['l2'][()]))
-                self.m1 = np.asscalar(np.array(tmp['settings']['m1'][()]))
-                self.m2 = np.asscalar(np.array(tmp['settings']['m2'][()]))
-                self.n1 = np.asscalar(np.array(tmp['settings']['n1'][()]))
-                self.n2 = np.asscalar(np.array(tmp['settings']['n2'][()]))
+            with h5py.File(os.path.join(datadir, "grid.h5"), "r") as tmp:
+                self.mx = np.asscalar(np.array(tmp["settings"]["mx"][()]))
+                self.my = np.asscalar(np.array(tmp["settings"]["my"][()]))
+                self.mz = np.asscalar(np.array(tmp["settings"]["mz"][()]))
+                self.mvar = np.asscalar(np.array(tmp["settings"]["mvar"][()]))
+                self.maux = np.asscalar(np.array(tmp["settings"]["maux"][()]))
+                self.mglobal = np.asscalar(np.array(tmp["settings"]["mglobal"][()]))
+                self.precision = np.asscalar(np.array(tmp["settings"]["precision"][()]))
+                self.nghostx = np.asscalar(np.array(tmp["settings"]["nghost"][()]))
+                self.nghosty = np.asscalar(np.array(tmp["settings"]["nghost"][()]))
+                self.nghostz = np.asscalar(np.array(tmp["settings"]["nghost"][()]))
+                self.nprocx = np.asscalar(np.array(tmp["settings"]["nprocx"][()]))
+                self.nprocy = np.asscalar(np.array(tmp["settings"]["nprocy"][()]))
+                self.nprocz = np.asscalar(np.array(tmp["settings"]["nprocz"][()]))
+                self.nx = np.asscalar(np.array(tmp["settings"]["nx"][()]))
+                self.ny = np.asscalar(np.array(tmp["settings"]["ny"][()]))
+                self.nz = np.asscalar(np.array(tmp["settings"]["nz"][()]))
+                self.l1 = np.asscalar(np.array(tmp["settings"]["l1"][()]))
+                self.l2 = np.asscalar(np.array(tmp["settings"]["l2"][()]))
+                self.m1 = np.asscalar(np.array(tmp["settings"]["m1"][()]))
+                self.m2 = np.asscalar(np.array(tmp["settings"]["m2"][()]))
+                self.n1 = np.asscalar(np.array(tmp["settings"]["n1"][()]))
+                self.n2 = np.asscalar(np.array(tmp["settings"]["n2"][()]))
                 self.iprocz_slowest = 0
                 self.ipx = self.ipy = self.ipz = 0
-                self.nxgrid = np.asscalar(np.array(tmp['settings']['nx'][()]))
-                self.nygrid = np.asscalar(np.array(tmp['settings']['ny'][()]))
-                self.nzgrid = np.asscalar(np.array(tmp['settings']['nz'][()]))
-                self.mxgrid = np.asscalar(np.array(tmp['settings']['mx'][()]))
-                self.mygrid = np.asscalar(np.array(tmp['settings']['my'][()]))
-                self.mzgrid = np.asscalar(np.array(tmp['settings']['mz'][()]))
-                self.mw = self.mx*self.my*self.mz
+                self.nxgrid = np.asscalar(np.array(tmp["settings"]["nx"][()]))
+                self.nygrid = np.asscalar(np.array(tmp["settings"]["ny"][()]))
+                self.nzgrid = np.asscalar(np.array(tmp["settings"]["nz"][()]))
+                self.mxgrid = np.asscalar(np.array(tmp["settings"]["mx"][()]))
+                self.mygrid = np.asscalar(np.array(tmp["settings"]["my"][()]))
+                self.mzgrid = np.asscalar(np.array(tmp["settings"]["mz"][()]))
+                self.mw = self.mx * self.my * self.mz
         else:
             if not ogrid:
                 if down:
-                    file_name = 'dim_down.dat'
+                    file_name = "dim_down.dat"
                 else:
-                    file_name = 'dim.dat'
+                    file_name = "dim.dat"
             else:
-                file_name = 'ogdim.dat'
+                file_name = "ogdim.dat"
 
             if proc < 0:
                 file_name = os.path.join(datadir, file_name)
             else:
-                file_name = os.path.join(datadir, 'proc{0}'.format(proc), file_name)
+                file_name = os.path.join(datadir, "proc{0}".format(proc), file_name)
 
             try:
                 file_name = os.path.expanduser(file_name)
@@ -156,20 +154,22 @@ class Dim(object):
                 dim_file.close()
 
             if len(lines[0].split()) == 6:
-                self.mx, self.my, self.mz, self.mvar, self.maux,\
-                self.mglobal = tuple(map(int, lines[0].split()))
+                self.mx, self.my, self.mz, self.mvar, self.maux, self.mglobal = tuple(
+                    map(int, lines[0].split())
+                )
             else:
-                self.mx, self.my, self.mz, self.mvar, self.maux = \
-                    tuple(map(int, lines[0].split()))
+                self.mx, self.my, self.mz, self.mvar, self.maux = tuple(
+                    map(int, lines[0].split())
+                )
                 self.mglobal = 0
 
             self.precision = lines[1].strip("\n")
-            self.nghostx, self.nghosty, self.nghostz = \
-                tuple(map(int, lines[2].split()))
+            self.nghostx, self.nghosty, self.nghostz = tuple(map(int, lines[2].split()))
             if proc < 0:
                 # Set global parameters.
-                self.nprocx, self.nprocy, self.nprocz, self.iprocz_slowest = \
-                    tuple(map(int, lines[3].split()))
+                self.nprocx, self.nprocy, self.nprocz, self.iprocz_slowest = tuple(
+                    map(int, lines[3].split())
+                )
                 self.ipx = self.ipy = self.ipz = -1
             else:
                 # Set local parameters to this proc.
@@ -177,24 +177,24 @@ class Dim(object):
                 self.nprocx = self.nprocy = self.nprocz = self.iprocz_slowest = -1
 
             # Add derived quantities to the dim object.
-            self.nx = self.mx - (2*self.nghostx)
-            self.ny = self.my - (2*self.nghosty)
-            self.nz = self.mz - (2*self.nghostz)
-            self.mw = self.mx*self.my*self.mz
+            self.nx = self.mx - (2 * self.nghostx)
+            self.ny = self.my - (2 * self.nghosty)
+            self.nz = self.mz - (2 * self.nghostz)
+            self.mw = self.mx * self.my * self.mz
             self.l1 = self.nghostx
             self.l2 = self.mx - self.nghostx - 1
             self.m1 = self.nghosty
             self.m2 = self.my - self.nghosty - 1
             self.n1 = self.nghostz
-            self.n2 = self.mz -self.nghostz - 1
+            self.n2 = self.mz - self.nghostz - 1
             if self.ipx == self.ipy == self.ipz == -1:
                 # Set global parameters.
                 self.nxgrid = self.nx
                 self.nygrid = self.ny
                 self.nzgrid = self.nz
-                self.mxgrid = self.nxgrid + (2*self.nghostx)
-                self.mygrid = self.nygrid + (2*self.nghosty)
-                self.mzgrid = self.nzgrid + (2*self.nghostz)
+                self.mxgrid = self.nxgrid + (2 * self.nghostx)
+                self.mygrid = self.nygrid + (2 * self.nghosty)
+                self.mzgrid = self.nzgrid + (2 * self.nghostz)
             else:
                 # Set local parameters to this proc.
                 self.nxgrid = self.nygrid = self.nzgrid = 0

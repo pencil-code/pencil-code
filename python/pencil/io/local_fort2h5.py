@@ -20,22 +20,24 @@ To apply from the command line:
 
 import pencil as pc
 
-pc.io.sim2h5(newdir='full/path/to/fortran/binary/simulation',
-             olddir='full/path/to/hdf5/copy/of/simulation', #can be the same
-             #if 2D averages files are very large an alternative reading method
-             #is required so set True
-             laver2D=False,
-             #if var files not required or have already been converted set False
-             lvars=True,
-             #if videos not required or have already been converted set False
-             lvids=True,
-             #if averages not required or have already been converted set False
-             laver=True,
-             #if averages include 2D and not laver2D set True
-             l2D=False,
-             #CAUTION old files can be deleted during progress
-             lremove_old_snapshots=True,
-             lremove_old_slices=True,
-             lremove_old_averages=True,
-             #warning given before executing removal of data until set True
-             execute=False)
+pc.io.sim2h5(
+    newdir="full/path/to/fortran/binary/simulation",
+    olddir="full/path/to/hdf5/copy/of/simulation",  # can be the same
+    # if 2D averages files are very large an alternative reading method
+    # is required so set True
+    laver2D=False,
+    # if var files not required or have already been converted set False
+    lvars=True,
+    # if videos not required or have already been converted set False
+    lvids=True,
+    # if averages not required or have already been converted set False
+    laver=True,
+    # if averages include 2D and not laver2D set True
+    l2D=False,
+    # CAUTION old files can be deleted during progress
+    lremove_old_snapshots=True,
+    lremove_old_slices=True,
+    lremove_old_averages=True,
+    # warning given before executing removal of data until set True
+    execute=False,
+)

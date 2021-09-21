@@ -8,8 +8,17 @@ Contains methods for integrating quantities in different coordinate systems.
 """
 
 
-def integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
-              coordinate_system='cartesian', axis=(0, 1, 2)):
+def integrate(
+    quantity,
+    dx=1.0,
+    dy=1.0,
+    dz=1.0,
+    x=None,
+    y=None,
+    z=None,
+    coordinate_system="cartesian",
+    axis=(0, 1, 2),
+):
     """
     Integrate a field along axis 'axis' using the trapezoidal rule.
     Works for Cartesian, cylindrical and spherical coordinates.
@@ -67,29 +76,31 @@ def integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
         raise ValueError
 
     # Check the grid.
-    if (coordinate_system == 'cylindrical') and (x is None):
-        print('ERROR: need to specify x (radius) for cylindrical coordinates.')
+    if (coordinate_system == "cylindrical") and (x is None):
+        print("ERROR: need to specify x (radius) for cylindrical coordinates.")
         raise ValueError
-    if (coordinate_system == 'spherical') and ((x is None) or (y is None)):
-        print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
+    if (coordinate_system == "spherical") and ((x is None) or (y is None)):
+        print(
+            "ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates."
+        )
         raise ValueError
 
     # Prepare the grid in case None is specified.
     # The origin is not relevant for the integration for trivial metrics.
     if x is None:
-        x = np.linspace(0, (quantity.shape[2]-1)*dx, quantity.shape[2])
+        x = np.linspace(0, (quantity.shape[2] - 1) * dx, quantity.shape[2])
     if y is None:
-        y = np.linspace(0, (quantity.shape[1]-1)*dy, quantity.shape[1])
+        y = np.linspace(0, (quantity.shape[1] - 1) * dy, quantity.shape[1])
     if z is None:
-        z = np.linspace(0, (quantity.shape[0]-1)*dz, quantity.shape[0])
+        z = np.linspace(0, (quantity.shape[0] - 1) * dz, quantity.shape[0])
 
     # Multiply the Jacobian to our quantity.
     integral = quantity.copy()
-    if (coordinate_system == 'cylindrical') and (any(axis == 2)):
+    if (coordinate_system == "cylindrical") and (any(axis == 2)):
         integral *= x[np.newaxis, np.newaxis, :]
-    if (coordinate_system == 'spherical') and (any(axis == 2)):
-        integral *= x[np.newaxis, np.newaxis, :]**2
-    if (coordinate_system == 'spherical') and (any(axis == 1)):
+    if (coordinate_system == "spherical") and (any(axis == 2)):
+        integral *= x[np.newaxis, np.newaxis, :] ** 2
+    if (coordinate_system == "spherical") and (any(axis == 1)):
         integral *= np.sin(y[np.newaxis, :, np.newaxis])
 
     # Perform the integration along the spcified axis.

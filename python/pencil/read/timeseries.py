@@ -59,14 +59,19 @@ class TimeSeries(object):
         self.t = []
         self.keys = []
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
 
-
-    def read(self, file_name='time_series.dat', datadir='data',
-             quiet=False, comment_char='#', sim=None, unique_clean=False):
+    def read(
+        self,
+        file_name="time_series.dat",
+        datadir="data",
+        quiet=False,
+        comment_char="#",
+        sim=None,
+        unique_clean=False,
+    ):
         """
         Read Pencil Code time series data.
 
@@ -122,8 +127,7 @@ class TimeSeries(object):
                 keys_new = re.split("-+", line)
                 if keys_new != self.keys:
                     n_newrows = abs(len(keys_new) - len(self.keys))
-                    data = np.append(data, np.zeros((nlines_init, n_newrows)),
-                                     axis=1)
+                    data = np.append(data, np.zeros((nlines_init, n_newrows)), axis=1)
                     self.keys = keys_new
             else:
                 try:

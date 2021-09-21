@@ -11,6 +11,7 @@ Contains the classes and methods to read the simulation dimensions.
 
 from pencil.read.dims import Dim
 
+
 def ogdim(*args, **kwargs):
     """
     Read the ogdim.dat file.

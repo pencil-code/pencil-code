@@ -1,4 +1,14 @@
-def printProgressBar(iteration, total, pbar=False, prefix = '', suffix = '', decimals = 1, length = 50, fill = 'X', verbose=False):
+def printProgressBar(
+    iteration,
+    total,
+    pbar=False,
+    prefix="",
+    suffix="",
+    decimals=1,
+    length=50,
+    fill="X",
+    verbose=False,
+):
     """
     Call in a loop to create terminal progress bar
 
@@ -29,27 +39,32 @@ def printProgressBar(iteration, total, pbar=False, prefix = '', suffix = '', dec
     from pencil.backpack.module_exists import module_exists
     from pencil.backpack.in_ipynb import in_ipynb
 
-    if module_exists('tqdm'):
+    if module_exists("tqdm"):
         if type(pbar) == bool:
             if in_ipynb():
-                if verbose: print('- NOTEBOOK MODE -')
+                if verbose:
+                    print("- NOTEBOOK MODE -")
                 from tqdm import tqdm_notebook as tqdm
             else:
-                if verbose: print('- PYTHON/BASH MODE -')
+                if verbose:
+                    print("- PYTHON/BASH MODE -")
                 from tqdm import tqdm
             pbar = tqdm(total=total)
             pbar.update(iteration)
         else:
-            pbar.update(iteration-pbar.last_print_n)
-        if iteration == total: pbar.close()
+            pbar.update(iteration - pbar.last_print_n)
+        if iteration == total:
+            pbar.close()
         return pbar
 
     else:
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        percent = ("{0:." + str(decimals) + "f}").format(
+            100 * (iteration / float(total))
+        )
         filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        #print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
-        print('\r{0} |{1}| %{2} %{3}'.format(prefix, bar, percent, suffix))
+        bar = fill * filledLength + "-" * (length - filledLength)
+        # print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+        print("\r{0} |{1}| %{2} %{3}".format(prefix, bar, percent, suffix))
         # Print New Line on Complete
         if iteration == total:
             print()

@@ -52,8 +52,17 @@ class ParticleData(object):
 
     """
 
-    def __init__(self, varfile='pvar.dat', npar_max=-1,
-                 datadir=False, sim=False, proc=-1, swap_endian=False, quiet=False, DEBUG=False):
+    def __init__(
+        self,
+        varfile="pvar.dat",
+        npar_max=-1,
+        datadir=False,
+        sim=False,
+        proc=-1,
+        swap_endian=False,
+        quiet=False,
+        DEBUG=False,
+    ):
         """
         Read PVAR files from Pencil Code using IDL.
         Uses IDL<->Python Bridge, this must be activated manually!
@@ -83,77 +92,95 @@ class ParticleData(object):
         datadir = sim.datadir
 
         l_h5 = False
-        if os.path.exists(os.path.join(datadir,'grid.h5')):
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
             l_h5 = True
             import h5py
         if not l_h5:
             try:
                 cwd = os.getcwd()
                 from idlpy import IDL
+
                 os.chdir(cwd)
 
             except:
-                print('! ERROR: no idl<->python bridge found. Try whats written in pstalk-comment to fix that issue.')
-                print('! ')
-                print('! Use something like: (ensure you have IDL 8.5.1 or larger)')
-                print('! export PYTHONPATH=$PYTHONPATH:$IDL_HOME/lib/bridges:$IDL_HOME/bin/bin.linux.x86_64')
-                print('! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64')
-                print('! in your .bashrc')
-                print('! ')
+                print(
+                    "! ERROR: no idl<->python bridge found. Try whats written in pstalk-comment to fix that issue."
+                )
+                print("! ")
+                print("! Use something like: (ensure you have IDL 8.5.1 or larger)")
+                print(
+                    "! export PYTHONPATH=$PYTHONPATH:$IDL_HOME/lib/bridges:$IDL_HOME/bin/bin.linux.x86_64"
+                )
+                print(
+                    "! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64"
+                )
+                print("! in your .bashrc")
+                print("! ")
                 return None
 
         if not l_h5:
             if quiet == False:
-                quiet = '0'
+                quiet = "0"
             else:
-                quiet = '1'
+                quiet = "1"
 
             if swap_endian == False:
-                if byteorder == 'little': swap_endian = '0'
-                elif byteorder == 'big': swap_endian = '1'
-            else: print('? WARNING: Couldnt determine endianness!')
+                if byteorder == "little":
+                    swap_endian = "0"
+                elif byteorder == "big":
+                    swap_endian = "1"
+            else:
+                print("? WARNING: Couldnt determine endianness!")
 
         ####### preparing IDL call
         # cleanup of varfile string
-        if is_number(varfile): varfile = 'PVAR'+str(varfile)
+        if is_number(varfile):
+            varfile = "PVAR" + str(varfile)
         varfile = str(varfile)
-        if varfile=='var.dat': varfile='pvar.dat'
-        if varfile[:3]=='VAR': varfile='P'+varfile
+        if varfile == "var.dat":
+            varfile = "pvar.dat"
+        if varfile[:3] == "VAR":
+            varfile = "P" + varfile
         if l_h5:
-            varfile = str.strip(varfile,'.dat')+'.h5'
-            with h5py.File(os.path.join(datadir,'allprocs',varfile),'r') as hf:
-                for key in hf['part'].keys():
-                    setattr(self, key.lower(), hf['part'][key][()])
+            varfile = str.strip(varfile, ".dat") + ".h5"
+            with h5py.File(os.path.join(datadir, "allprocs", varfile), "r") as hf:
+                for key in hf["part"].keys():
+                    setattr(self, key.lower(), hf["part"][key][()])
         #
         else:
-            idl_call = ', '.join(['pc_read_pvar',
-                                  'obj=pvar',
-                                  'varfile="'+varfile+'"',
-                                  'datadir="'+datadir+'"',
-                                  'quiet='+quiet,
-                                  'swap_endian='+swap_endian,
-                                  'proc='+str(proc)
-                                  ])
+            idl_call = ", ".join(
+                [
+                    "pc_read_pvar",
+                    "obj=pvar",
+                    'varfile="' + varfile + '"',
+                    'datadir="' + datadir + '"',
+                    "quiet=" + quiet,
+                    "swap_endian=" + swap_endian,
+                    "proc=" + str(proc),
+                ]
+            )
 
             # reduce number of particles to be read in
-            if npar_max > 0: idl_call= idl_call+', npar_max='+str(npar_max)
+            if npar_max > 0:
+                idl_call = idl_call + ", npar_max=" + str(npar_max)
 
             ####### show idl_call string if DEBUG
-            if DEBUG == True: print('~ DEBUG: idl_call: '+idl_call)
+            if DEBUG == True:
+                print("~ DEBUG: idl_call: " + idl_call)
 
             ###### read in var file in IDL
-            print('~ reading '+varfile+' in IDL..')
+            print("~ reading " + varfile + " in IDL..")
             IDL.run(idl_call)
 
             ####### parse to python
-            print('~ parsing PVAR from IDL to python..')
+            print("~ parsing PVAR from IDL to python..")
             pvar = IDL.pvar
 
             for key in pvar.keys():
                 setattr(self, key.lower(), pvar[key])
-            setattr(self, 'xp', pvar['XX'][0])
-            setattr(self, 'yp', pvar['XX'][1])
-            setattr(self, 'zp', pvar['XX'][2])
-            setattr(self, 'vpx', pvar['VV'][0])
-            setattr(self, 'vpy', pvar['VV'][1])
-            setattr(self, 'vpz', pvar['VV'][2])
+            setattr(self, "xp", pvar["XX"][0])
+            setattr(self, "yp", pvar["XX"][1])
+            setattr(self, "zp", pvar["XX"][2])
+            setattr(self, "vpx", pvar["VV"][0])
+            setattr(self, "vpy", pvar["VV"][1])
+            setattr(self, "vpz", pvar["VV"][2])

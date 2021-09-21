@@ -76,15 +76,21 @@ class Param(object):
 
         self.keys = []
 
-
     def keys(self):
         for i in self.__dict__.keys():
             print(i)
 
-
-    def read(self, datadir='data', param1=False, param2=False, quiet=True,
-             conflicts_quiet=False,
-             asdict=True, nest_dict=True, append_units=True):
+    def read(
+        self,
+        datadir="data",
+        param1=False,
+        param2=False,
+        quiet=True,
+        conflicts_quiet=False,
+        asdict=True,
+        nest_dict=True,
+        append_units=True,
+    ):
         """
         Read Pencil Code simulation parameters.
         Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
@@ -126,16 +132,16 @@ class Param(object):
 
         datadir = os.path.expanduser(datadir)
 
-        #Collect files to be read into a list
+        # Collect files to be read into a list
         files = []
         if param1:
-            files.append(join(datadir, 'param.nml'))
+            files.append(join(datadir, "param.nml"))
         elif param2:
-            files.append(join(datadir, 'param2.nml'))
+            files.append(join(datadir, "param2.nml"))
         else:
-            files.append(join(datadir, 'param.nml'))
-            if exists(join(datadir, 'param2.nml')):
-                files.append(join(datadir, 'param2.nml'))
+            files.append(join(datadir, "param.nml"))
+            if exists(join(datadir, "param2.nml")):
+                files.append(join(datadir, "param2.nml"))
 
         # Verify path of files in list.
         for filen in files:
@@ -153,15 +159,30 @@ class Param(object):
             # Nesting parameters with same name under module attributes
             if nest_dict:
                 for filen in files:
-                    param_list, param_conflicts, name_list, super_name_list = \
-                                self.__read_nml(param_list, filen,
-                                                param_conflicts, name_list, super_name_list, nest=True)
+                    (
+                        param_list,
+                        param_conflicts,
+                        name_list,
+                        super_name_list,
+                    ) = self.__read_nml(
+                        param_list,
+                        filen,
+                        param_conflicts,
+                        name_list,
+                        super_name_list,
+                        nest=True,
+                    )
             # Parameters with same name will be written by last value
             else:
                 for filen in files:
-                    param_list, param_conflicts, name_list, super_name_list = \
-                                self.__read_nml(param_list, filen,
-                                                param_conflicts, name_list, super_name_list)
+                    (
+                        param_list,
+                        param_conflicts,
+                        name_list,
+                        super_name_list,
+                    ) = self.__read_nml(
+                        param_list, filen, param_conflicts, name_list, super_name_list
+                    )
             if not param_conflicts:
                 subkey_list = list()
                 for super_name in super_name_list:
@@ -187,13 +208,21 @@ class Param(object):
                 for key in param_conflicts.keys():
                     for subkey in param_conflicts[key].keys():
                         if not conflicts_quiet:
-                            print(subkey, 'as', param_conflicts[key][subkey][0],
-                                  'in', key, 'conflicts with',
-                                  param_conflicts[key][subkey][2], 'in',
-                                  param_conflicts[key][subkey][1])
+                            print(
+                                subkey,
+                                "as",
+                                param_conflicts[key][subkey][0],
+                                "in",
+                                key,
+                                "conflicts with",
+                                param_conflicts[key][subkey][2],
+                                "in",
+                                param_conflicts[key][subkey][1],
+                            )
             # Create object container for nested contents
             class Foo(object):
                 pass
+
             # Construct class Params object attributes
             for key in param_list.keys():
                 # Nest only parameters with name conflicts
@@ -202,7 +231,7 @@ class Param(object):
                     setattr(self, key, ext_object)
                     for subkey in param_list[key].keys():
                         if not quiet:
-                            print(subkey, 'is nested under', key)
+                            print(subkey, "is nested under", key)
                         setattr(ext_object, subkey, param_list[key][subkey])
                 else:
                     # Unique parameters saved unnested
@@ -213,39 +242,46 @@ class Param(object):
         else:
             # Execute output of nl2python script.
             for filen in files:
-                cmd = 'nl2python ' + filen
+                cmd = "nl2python " + filen
                 script = os.popen(cmd).read()
                 if not quiet:
                     print(script)
                 if script:
                     # This import is needed to execute the script.
                     import numpy
+
                     # TODO: Do this without calling a shell command.
                     # Done: via asdict
                     exec(script.replace("\n    ", "\nself.")[198:])
-                    del(numpy)
+                    del numpy
                 else:
-                    print("Param.read: nl2python returned nothing!"+
-                          " Is $PENCIL_HOME/bin in the path?")
+                    print(
+                        "Param.read: nl2python returned nothing!"
+                        + " Is $PENCIL_HOME/bin in the path?"
+                    )
                     return -1
 
         if append_units:
-            setattr(self, 'unit_time', self.unit_length/self.unit_velocity)
-            setattr(self, 'unit_mass', self.unit_density*self.unit_length**3)
-            setattr(self, 'unit_flux', self.unit_mass/self.unit_time**3)
-            setattr(self, 'unit_energy', self.unit_mass*self.unit_velocity**2)
-            setattr(self, 'unit_energy_density',
-                    self.unit_density*self.unit_velocity**2)
-            setattr(self, 'unit_entropy',
-                    self.unit_velocity**2/self.unit_temperature)
-            if hasattr(param, 'mu0'):
-                setattr(self, 'unit_current',
-                        self.unit_magnetic*self.unit_length/self.mu0)
-        #IL: updating the list of keys as a list
+            setattr(self, "unit_time", self.unit_length / self.unit_velocity)
+            setattr(self, "unit_mass", self.unit_density * self.unit_length ** 3)
+            setattr(self, "unit_flux", self.unit_mass / self.unit_time ** 3)
+            setattr(self, "unit_energy", self.unit_mass * self.unit_velocity ** 2)
+            setattr(
+                self, "unit_energy_density", self.unit_density * self.unit_velocity ** 2
+            )
+            setattr(
+                self, "unit_entropy", self.unit_velocity ** 2 / self.unit_temperature
+            )
+            if hasattr(param, "mu0"):
+                setattr(
+                    self,
+                    "unit_current",
+                    self.unit_magnetic * self.unit_length / self.mu0,
+                )
+        # IL: updating the list of keys as a list
 
         self.keys = list(self.__dict__.keys())
         return 0
-
 
     def __param_formatter(self, string_part):
         """
@@ -275,7 +311,6 @@ class Param(object):
         except:
             return re.sub("'", "", string_part)
 
-
     def __tuple_catch(self, string):
         """
         Catches name - value tuples in a string.
@@ -297,9 +332,9 @@ class Param(object):
             return tuple(string)
         return self.__param_formatter(string)
 
-
-    def __read_nml(self, params, file_name, param_conflicts, name_list,
-                   super_name_list, nest=False):
+    def __read_nml(
+        self, params, file_name, param_conflicts, name_list, super_name_list, nest=False
+    ):
         """
         Reads in F90 namelist as dictionary object
 
@@ -318,21 +353,27 @@ class Param(object):
 
         import re
 
-        r = re.compile(r'(?:[^,(]|\([^)]*\))+')
+        r = re.compile(r"(?:[^,(]|\([^)]*\))+")
 
         # Contain the nested parameters to be retained
         # Contain the nest names for each parameter set
         for rawline in open(file_name):
-            if ',' in rawline[1]:
-                rawline = lastrawline+rawline
-            if ' ' in rawline[1]:
-                rawline = lastrawline+rawline
+            if "," in rawline[1]:
+                rawline = lastrawline + rawline
+            if " " in rawline[1]:
+                rawline = lastrawline + rawline
             if "'" in rawline[1]:
-                rawline = lastrawline+rawline
+                rawline = lastrawline + rawline
             lastrawline = rawline
-            line = rawline.rstrip('\n')
+            line = rawline.rstrip("\n")
             if line[1] == "&" or line[0] == "&":
-                super_name = line[2:].lower().rsplit('_pars')[0].rsplit('_init')[0].rsplit('_run')[0]
+                super_name = (
+                    line[2:]
+                    .lower()
+                    .rsplit("_pars")[0]
+                    .rsplit("_init")[0]
+                    .rsplit("_run")[0]
+                )
                 if nest:
                     if not params.__contains__(super_name):
                         params[super_name] = dict()
@@ -346,7 +387,7 @@ class Param(object):
                     parts = r.findall(value)
                     value = []
                     for i in range(len(parts)):
-                        #IL: changed to allow for * in strings
+                        # IL: changed to allow for * in strings
                         if "'" not in parts[i] and "*" in parts[i]:
                             s = parts[i].split("*")
                             for j in range(int(s[0])):
@@ -359,24 +400,25 @@ class Param(object):
                     name_list.append(name)
                     if nest:
                         # Save all parameters nested and unnested
-                        if not super_name in ('run', 'init'):
+                        if not super_name in ("run", "init"):
                             params[super_name][name] = value
         # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
-            if 'run' in super_name_list: super_name_list.remove('run')
-            if 'init' in super_name_list: super_name_list.remove('init')
+            if "run" in super_name_list:
+                super_name_list.remove("run")
+            if "init" in super_name_list:
+                super_name_list.remove("init")
             for super_name in super_name_list:
                 for alt_name in super_name_list:
                     for name in params[super_name].keys():
                         if name in params[alt_name].keys():
-                            if not params[alt_name][name] ==\
-                                   params[super_name][name]:
+                            if not params[alt_name][name] == params[super_name][name]:
                                 if not super_name in param_conflicts.keys():
                                     param_conflicts[super_name] = dict()
                                 param_conflicts[super_name][name] = (
                                     params[super_name][name],
                                     alt_name,
-                                    params[alt_name][name])
+                                    params[alt_name][name],
+                                )
 
         return params, param_conflicts, name_list, super_name_list
-

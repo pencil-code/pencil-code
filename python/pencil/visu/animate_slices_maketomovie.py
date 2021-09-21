@@ -181,4 +181,3 @@ def make_movie(
         os.system("rm _tmp*.png")
         print("Removing all files")
     infile.close()
-
