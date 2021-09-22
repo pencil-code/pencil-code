@@ -3076,6 +3076,8 @@ file_io_f95.o: file_io_f95.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
+slices_methods.o: slices_methods.f90
+	$(FC) $(ALL_COMP_FLAGS) -o slices_methods.o -c slices_methods.f90
 #
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
