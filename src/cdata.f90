@@ -92,6 +92,8 @@ module Cdata
   real :: xbot_slice=0.0,xtop_slice=1.0
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
+  real :: r_rslice=0.
+  integer :: nth_rslice=min(nxgrid,nygrid,nzgrid)/2, nph_rslice=min(nxgrid,nygrid,nzgrid)
   real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
   logical, dimension(3) :: lperi=.true., &                                       ! all directions periodic
                            lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
@@ -277,7 +279,7 @@ module Cdata
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
-  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false.
+  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.

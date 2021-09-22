@@ -22,7 +22,7 @@ module Slices
 !
   real :: tslice=0.
   real, target, dimension(:,:), allocatable :: slice_xy,slice_xy2,slice_xy3,slice_xy4
-  real, target, dimension(:,:), allocatable :: slice_xz,slice_xz2,slice_yz
+  real, target, dimension(:,:), allocatable :: slice_xz,slice_xz2,slice_yz,slice_r
 !
 contains
 !***********************************************************************
@@ -121,6 +121,7 @@ contains
 
         slices%name=sname
         call assign_slices_scal(slices,slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)
+        if (lwrite_slice_r) slices%r => slice_r   ! no interpolation
         slices%ready=.false.
 !
 !  By default assume we're not using module hooks to get the slice contents
@@ -174,6 +175,7 @@ contains
           call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z(iz2_loc), iz2, slices%xy2)
           call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z(iz3_loc), iz3, slices%xy3)
           call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z(iz4_loc), iz4, slices%xy4)
+          call output_slice(lwrite_slice_r, tslice, sname, 'r', r_rslice, 0, slices%r)
         else
           if (slices%index/=0) slices%index=0
           inamev=inamev+1
@@ -197,6 +199,7 @@ contains
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
       !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_rslice, prep_rslice
       use General, only: itoa
       use IO, only: output_slice_position
     
@@ -376,6 +379,21 @@ contains
       call position(iz3,ipz,nz,iz3_loc,lwrite_slice_xy3)
       call position(iz4,ipz,nz,iz4_loc,lwrite_slice_xy4)
 !
+      lwrite_slice_r = (r_rslice>0.) .and. (nth_rslice>0) .and. (nph_rslice>0)
+      if (lwrite_slice_r) then
+        if (coord_system/='cartesian') then
+          call warning('setup_slices','r-slices only meaningful in Cartesian runs')
+          lwrite_slice_r=.false.
+        elseif (dimensionality<3) then
+          call warning('setup_slices','r-slices only meaningful in 3D- runs')
+          lwrite_slice_r=.false.
+        elseif (any(.not.lequidist)) then
+          call not_implemented('setup_slices','r-slices in non-equidistannt grids')
+        else
+          call prep_rslice
+        endif
+      endif
+
       if (.not.lactive_dimension(3)) then
         lwrite_slice_xy2=.false.; lwrite_slice_xy3=.false.; lwrite_slice_xy4=.false.
         iz2_loc=1; iz3_loc=1; iz4_loc=1
@@ -423,6 +441,7 @@ contains
       if (lwrite_slice_xy3.and..not.allocated(slice_xy3)) allocate(slice_xy3(nx,ny))
       if (lwrite_slice_xy4.and..not.allocated(slice_xy4)) allocate(slice_xy4(nx,ny))
       if (lwrite_slice_xz2.and..not.allocated(slice_xz2)) allocate(slice_xz2(nx,nz))
+      if (lwrite_slice_r  .and..not.allocated(slice_r)  ) call alloc_rslice(slice_r)
 
     endsubroutine setup_slices
 !***********************************************************************

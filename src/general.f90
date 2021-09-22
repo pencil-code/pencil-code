@@ -12,7 +12,7 @@ module General
 !
   public :: gaunoise_number
   public :: safe_character_assign, safe_character_append, safe_character_prepend
-  public :: lower_case
+  public :: lower_case,upper_case
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
@@ -61,7 +61,8 @@ module General
   public :: linear_interpolate_2d
   public :: chk_time
   public :: get_species_nr
-  public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,convert_nml
+  public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
+  public :: compress_nvidia
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -1277,6 +1278,25 @@ module General
       enddo
 !
     endfunction lower_case
+!***********************************************************************
+    function upper_case(input)
+!
+!  27-Sep-2015/PABourdin: coded
+!
+      character(*), intent(in) :: input
+      character(len(input)) :: upper_case
+!
+      character(*), parameter :: lower_chars = 'abcdefghijklmnopqrstuvwxyz'
+      character(*), parameter :: upper_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      integer pos, ind
+!
+      upper_case = input
+      do pos = 1, len (input)
+        ind = index (lower_chars, upper_case(pos:pos))
+        if (ind /= 0) upper_case(pos:pos) = upper_chars(ind:ind)
+      enddo
+!
+    endfunction upper_case
 !***********************************************************************
     subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
 !
@@ -5680,29 +5700,29 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 
     endsubroutine convert_nml
 !***********************************************************************
-    subroutine extract_from_nml(name,nml,lvec)
+    function extract_from_nml(name,nml,lvec) result(res)
 !
 ! Extracts (greps) data item with name "name" from a namelist file (default: data/param2.nml)
 ! and stores result in file "tmp"
 ! 
 ! 12-jun-19/MR: coded
 !
-      use Syscalls, only: system_cmd
+      use Syscalls, only: extract_str
 
       character(LEN=*)           :: name
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
 
-      character(LEN=256) :: cmd
+      character(LEN=256) :: cmd, res
 
-      cmd="grep '"//trim(name)//" *=' "//trim(coptest(nml,'data/param2.nml'))//" | sed -e's/^.*= *//'"
+      cmd="grep -i '"//trim(name)//" *=' "//trim(coptest(nml,'data/param2.nml'))//" | sed -e's/^.*"//trim(name)//" *= *//'" &
+          //" -e's/^.*"//upper_case(trim(name))//" *= *//'"
       if (loptest(lvec)) cmd=trim(cmd)//" -e's/\([1-9][0-9]*\)\*/*\1/g'"
-      cmd=trim(cmd)//" > tmp"
-      call system_cmd(cmd)
+      call extract_str(cmd,res)
 
-    endsubroutine extract_from_nml
+    endfunction extract_from_nml
 !***********************************************************************
-    function get_from_nml_str(name,lfound,nml,lvec) result (res)
+    function get_from_nml_str(name,nml,lvec) result (res)
 !
 ! Returns the value of a string variable with name "name", previously extracted from a namelist file
 ! and stored in file "tmp"
@@ -5710,22 +5730,12 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 ! 12-jun-19/MR: coded
 !
       character(LEN=*)           :: name
-      logical                    :: lfound
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
-      character(LEN=128) :: res
+      character(LEN=128) :: res,string
       
-      call extract_from_nml(name,nml,lvec)
- 
-      res=''
-      inquire(file='tmp',exist=lfound)
-      if (lfound) then
-        open(1,file='tmp')
-        read(1,'(a)',err=1,end=1) res
-        goto 2
-1       lfound=.false.
-2       close(1,status='delete')
-      endif
+      string=extract_from_nml(name,nml,lvec)
+      read(string,'(a)') res
 
     endfunction get_from_nml_str
 !***********************************************************************
@@ -5741,20 +5751,41 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
       logical :: res
+      character(LEN=128) :: string
 
-      call extract_from_nml(name,nml,lvec)
+      lfound=.true.
+      string=extract_from_nml(name,nml,lvec)
+      read(string,*,err=1,end=1) res
+      return
 
+   1  lfound=.false.
       res=.false.
-      inquire(file='tmp',exist=lfound)
-      if (lfound) then
-        open(1,file='tmp')
-        read(1,*,err=1,end=1) res
-        goto 2
-1       lfound=.false.
-2       close(1,status='delete')
-      endif
 
     endfunction get_from_nml_log
+!***********************************************************************
+    function get_from_nml_int(name,lfound,nml,lvec) result (res)
+!
+! Returns the value of a logical variable with name "name", previously extracted from a namelist file
+! and stored in file "tmp"
+! 
+! 12-jun-19/MR: coded
+!
+      character(LEN=*)           :: name
+      logical                    :: lfound
+      character(LEN=*), optional :: nml
+      logical,          optional :: lvec
+      integer                    :: res
+      character(LEN=128) :: string
+
+      lfound=.true.
+      string=extract_from_nml(name,nml,lvec)
+      read(string,*,err=1,end=1) res
+      return
+
+   1  lfound=.false.
+      res=0
+
+    endfunction get_from_nml_int
 !***********************************************************************
     function get_from_nml_real(name,lfound,nml,lvec) result (res)
 !
@@ -5768,19 +5799,98 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
       real :: res
+      character(LEN=128) :: string
 
-      call extract_from_nml(name,nml,lvec)
+      lfound=.true.
+      string=extract_from_nml(name,nml,lvec)
+      read(string,*,err=1,end=1) res
+      return
 
-      res=0.
-      inquire(file='tmp',exist=lfound)
-      if (lfound) then
-        open(1,file='tmp')
-        read(1,*,err=1,end=1) res
-        goto 2
-1       lfound=.false.
-2       close(1,status='delete')
-      endif
+  1   res=impossible
+      lfound=.false.
 
     endfunction get_from_nml_real
+!***********************************************************************    
+    subroutine compress_nvidia(buffer,radius)
+
+      use Cdata, only: iproc
+
+      real, dimension(:,:,:,:), intent(IN) :: buffer
+      integer, intent(IN) :: radius
+
+      integer, dimension(4) :: sz
+      integer :: i,icx,icy,icz,ncx,ncy,ncz,iv,icellx,icelly,icellz
+      real :: valc, dval
+      real, dimension(size(buffer,4)) :: diffmax, reldiffmax
+
+      if (radius<=0) return
+      do i=1,4
+        sz(i)=size(buffer,i)
+      enddo
+
+      ncx=sz(1); ncy=sz(2); ncz=sz(3)
+      if (sz(1)==nghost) then
+        icx=ceiling(nghost/2.)
+        do iv=1,sz(4)
+          diffmax(iv)=0.; reldiffmax(iv)=0.
+          do icy=radius+1,ncy,2*radius+1
+            do icz=radius+1,ncz,2*radius+1
+              valc=buffer(icx,icy,icz,iv)
+              do icellx=icx-min(nghost-2,radius),icx+min(nghost-2,radius)
+                do icelly=icy-radius,icy+radius
+                  do icellz=icz-radius,icz+radius
+                    dval=abs(buffer(icellx,icelly,icellz,iv)-valc)
+                    diffmax(iv)=max(diffmax(iv),dval)
+                    if (valc/=0) reldiffmax(iv)=max(reldiffmax(iv),dval/abs(valc))
+                  enddo
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+      elseif (sz(2)==nghost) then
+        icy=ceiling(nghost/2.)
+        do iv=1,sz(4)
+          diffmax(iv)=0.; reldiffmax(iv)=0.
+          do icx=radius+1,ncx,2*radius+1
+            do icz=radius+1,ncz,2*radius+1
+              valc=buffer(icx,icy,icz,iv)
+              do icellx=icx-radius,icx+radius
+                do icelly=icy-min(nghost-2,radius),icy+min(nghost-2,radius)
+                  do icellz=icz-radius,icz+radius
+                    dval=abs(buffer(icellx,icelly,icellz,iv)-valc)
+                    diffmax(iv)=max(diffmax(iv),dval)
+                    if (valc/=0) reldiffmax(iv)=max(reldiffmax(iv),dval/abs(valc))
+                  enddo
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+      elseif (sz(3)==nghost) then
+        icz=ceiling(nghost/2.)
+        do iv=1,sz(4)
+          diffmax(iv)=0.; reldiffmax(iv)=0.
+          do icx=radius+1,ncx,2*radius+1
+            do icy=radius+1,ncy,2*radius+1
+              valc=buffer(icx,icy,icz,iv)
+              do icellx=icx-radius,icx+radius
+                do icelly=icy-radius,icy+radius
+                  do icellz=icz-min(nghost-2,radius),icz+min(nghost-2,radius)
+                    dval=abs(buffer(icellx,icelly,icellz,iv)-valc)
+                    diffmax(iv)=max(diffmax(iv),dval)
+                    if (valc/=0) reldiffmax(iv)=max(reldiffmax(iv),dval/abs(valc))
+                  enddo
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+      endif
+      do iv=1,sz(4)
+        print*, 'iproc,iv,diffmax,reldiffmax=', iproc, iv, diffmax(iv), reldiffmax(iv)
+      enddo
+
+    endsubroutine compress_nvidia
 !***********************************************************************
   endmodule General

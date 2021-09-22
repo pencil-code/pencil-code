@@ -17,7 +17,7 @@ program read_videofiles
   implicit none
 !
   integer :: ipx,ipy,ipz,iproc,it,num_slices,num_frames
-  integer :: ipy1=-1,ipy2=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1
+  integer :: ipy1=-1,ipy2=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1,ipr=-1
   integer, parameter :: lun=10
   integer :: itdebug=1,n_every=1
   integer :: isep1=0,isep2=0,nyy=1,iyy,ninds
@@ -28,10 +28,10 @@ program read_videofiles
   character (len=fnlen) :: datadir='data',path='',cfield=''
   character (len=labellen) :: field='lnrho', cn_every=''
 !
-  logical :: exists, lread_slice, lwritten_something=.false.
+  logical :: exists, lread_slice, lwritten_something=.false.,lrslice
 !
-  real :: min_xy,min_xy2,min_xy3,min_xy4,min_xz,min_yz,min_xz2
-  real :: max_xy,max_xy2,max_xy3,max_xy4,max_xz,max_yz,max_xz2
+  real :: min_xy,min_xy2,min_xy3,min_xy4,min_xz,min_yz,min_xz2,min_r
+  real :: max_xy,max_xy2,max_xy3,max_xy4,max_xz,max_yz,max_xz2,max_r
 !
 ! Grid data
 !
@@ -130,7 +130,9 @@ program read_videofiles
           if (lread_slice) ipy2=ipy
           read(lun,*) lread_slice          ! yz
           if (lread_slice) ipx1=ipx
-          close(lun)
+          read(lun,*,end=100) lrslice      ! r
+          if (lrslice) ipr=0
+ 100      close(lun)
         enddo
       enddo
     enddo
@@ -173,6 +175,7 @@ program read_videofiles
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
   endif
+  call read_slice(ipr,'r ',min_r,max_r)
 !
 !  Print summary.
 !
@@ -198,6 +201,7 @@ program read_videofiles
     if (ipy1/=-1) print *,' xz-plane:',min_xz,max_xz
     if (ipy2/=-1) print *,'xz2-plane:',min_xz2,max_xz2
     if (ipx1/=-1) print *,' yz-plane:',min_yz,max_yz
+    if (ipr /=-1) print *,' r-surface:',min_r,max_r
     print *,'-------------------------------------------------'
     print *,'finished OK'
   endif
@@ -231,18 +235,20 @@ program read_videofiles
       integer,                           intent(in) :: ipxyz
       character (len=*),                 intent(in) :: suffix
       real,                              intent(out):: glob_min, glob_max
+      integer :: nth_rslice, nph_rslice
       real,    dimension(:,:), optional, intent(in) :: yz
       integer, dimension(:),   optional, intent(in) :: inds
 !
       integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2
-      integer :: ipx_start, ipx_end, ipy_start, ipy_end, ipz_start, ipz_end
-      integer :: i,ind,ninds
+      integer :: ipx_start, ipx_end, ipy_start, ipy_end, ipz_start, ipz_end, &
+                 ith_min,ith_max,iph_min,iph_max
+      integer :: i,ind,ninds,isl
       real, dimension (num_frames) :: times
       real, dimension (:,:), allocatable :: loc_slice
       real, dimension (:,:,:,:), allocatable :: glob_slice
       real, dimension (:,:), allocatable :: glob_slice_yy
       real :: slice_pos
-      logical :: lexists
+      logical :: lexists,lrslice,lfound
 !
       if (ipxyz < 0) return
       print *, "read_slice: "//trim(suffix)
@@ -253,6 +259,7 @@ program read_videofiles
       ipy_end = nprocy-1
       ipz_start = 0
       ipz_end = nprocz-1
+      lrslice=.false.
       if (suffix(1:2) == 'xz') then
         ipy_start = ipxyz
         ipy_end = ipxyz
@@ -271,15 +278,29 @@ program read_videofiles
           ninds=size(inds)
           allocate(glob_slice_yy(2*nyzgrid,num_frames))
         endif
-      else
+      elseif (suffix(1:2) == 'xy') then
         ipz_start = ipxyz
         ipz_end = ipxyz
         ndim1 = nx
         ndim2 = ny
         glob_ndim1 = nxgrid
         glob_ndim2 = nygrid
+      elseif (suffix(1:1) == 'r') then
+        lrslice=.true.
+        ! get global slice dimensions from run.in     
+        glob_ndim1=get_from_nml_int('nth_rslice',lfound)
+        if (.not.lfound) then
+          print*, 'r-slice expected, but nth_rslice not found in param2.nml'
+          return
+        endif
+        glob_ndim2=get_from_nml_int('nph_rslice',lfound)
+        if (.not.lfound) then
+          print*, 'r-slice expected, but nph_rslice not found in param2.nml'
+          return
+        endif
       endif
-      allocate (loc_slice(ndim1,ndim2), glob_slice(glob_ndim1,glob_ndim2,num_frames,0:nyy-1))
+      allocate (glob_slice(glob_ndim1,glob_ndim2,num_frames,0:nyy-1)); glob_slice=0
+      if (.not.lrslice) allocate (loc_slice(ndim1,ndim2))
 !
 !  Try to read 
 !
@@ -288,7 +309,18 @@ program read_videofiles
         do ipy=ipy_start, ipy_end
           do ipx=ipx_start, ipx_end
             iproc=find_proc(ipx,ipy,ipz)+iyy*ncpus
+
             call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+            !get ith_min:ith_max,iph_min:iph_max from slice_position.dat
+            if (lrslice) then
+              open (lun,file=trim(path)//'/slice_position.dat',status='old',position='append')
+              backspace(lun)
+              read(lun,*) lrslice,ith_min,ith_max,iph_min,iph_max
+              close(lun)
+!print*,'ith_min:ith_max,iph_min:iph_max', ith_min,ith_max,iph_min,iph_max
+              if (allocated(loc_slice)) deallocate(loc_slice)
+              allocate (loc_slice(ith_min:ith_max,iph_min:iph_max))
+            endif
             call safe_character_assign(file,'/slice_'//trim(field)//'.'//trim(suffix))
             call safe_character_assign(fullname,trim(path)//trim(file))
 !
@@ -317,8 +349,10 @@ program read_videofiles
                 glob_slice(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz,frame,iyy) = loc_slice
               elseif (suffix(1:2) == 'yz') then
                 glob_slice(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz,frame,iyy) = loc_slice
-              else
+              elseif (suffix(1:2) == 'xy') then
                 glob_slice(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,frame,iyy) = loc_slice
+              elseif (suffix(1:1) == 'r') then
+                glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy) = glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy)+loc_slice
               endif
             enddo
             close (lun)
