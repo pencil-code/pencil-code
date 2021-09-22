@@ -33,11 +33,13 @@ module Cparam
 !
 !  Derived and fixed parameters.
 !
+! BEGIN CHANGE FOR DYNAMICAL ALLOCATION
   integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
   integer, parameter :: mcom=mvar+maux_com
   integer, parameter :: mparray=mpvar+mpaux
   integer, parameter :: mpcom=mpvar+mpaux
   integer, parameter :: mqarray=mqvar+mqaux
+! END CHANGE FOR DYNAMICAL ALLOCATION
 !
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
 !
@@ -180,7 +182,7 @@ module Cparam
   double precision, parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
   double precision, parameter :: m_u_cgs=1.66053886d-24    ! [g]
   double precision, parameter :: mu0_cgs=4*pi              ! [cgs]
-  ! Better express R_cgs as a derive quantity (i.e. don't define here...)
+  ! Better express R_cgs as a derived quantity (i.e. don't define here...)
   ! (Not done yet since it breaks the interstellar test)
   !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
   double precision, parameter :: R_cgs=8.3144D7            ! [erg/g/K]
@@ -211,6 +213,7 @@ module Cparam
     real, pointer, dimension (:,:) :: xy2
     real, pointer, dimension (:,:) :: xy3
     real, pointer, dimension (:,:) :: xy4
+    real, pointer, dimension (:,:) :: r
   endtype slice_data
 !
 !  Data structure used to allow module specific boundary conditions.
