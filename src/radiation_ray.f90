@@ -2395,7 +2395,7 @@ module Radiation
 !  26-jul-06/tony: coded
 !
       use Slices_methods, only: assign_slices_scal, assign_slices_vec, &
-                                nullify_slice_pointers
+                                assign_slices_f_scal, nullify_slice_pointers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2445,11 +2445,11 @@ module Radiation
           !slices%xy=.25*pi_1*f(l1:l2,m1:m2,iz_loc,iQrad)+Srad(l1:l2,m1:m2,iz_loc)
           !slices%xy2=.25*pi_1*f(l1:l2,m1:m2,iz2_loc,iQrad)+Srad(l1:l2,m1:m2,iz2_loc)
 !
-          call assign_slices_vec(slices,Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,nnu) 
+          call assign_slices_vec(slices,Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu) 
 !
 ! Source function
 !
-        case ('Srad'); call assign_slices_scal(slices,Srad,1)
+        case ('Srad'); call assign_slices_f_scal(slices,Srad,1)
 !
 !  Opacity
 !

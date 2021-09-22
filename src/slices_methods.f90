@@ -37,7 +37,7 @@ module Slices_methods
   public :: store_slices
   public :: process_slices, addto_slices
   public :: assign_slices_vec
-  public :: assign_slices_scal
+  public :: assign_slices_scal, assign_slices_f_scal
   !public :: alloc_slice_buffers
   public :: nullify_slice_pointers
   public :: write_rslice_position
