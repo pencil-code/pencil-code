@@ -634,7 +634,7 @@ module solid_cells_ogrid_chemistry
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
       real, dimension(mx_ogrid) ::  nu_dyn
 ! lambda_Suth in cgs [g/(cm*s*K^0.5)]
-      real :: lambda_Suth = 1.52e-5, Suth_const = 110.
+      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
       integer :: j2,j3, k
       real, dimension(mx_ogrid) :: T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low

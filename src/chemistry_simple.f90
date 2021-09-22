@@ -1356,7 +1356,7 @@ module Chemistry
       real, dimension(mx,my,mz) :: mu1_full
       real, dimension(mx) ::  nu_dyn
 ! lambda_Suth in [g/(cm*s*K^0.5)]
-      real :: lambda_Suth = 1.52e-5, Suth_const = 110.
+      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
       integer :: j2,j3, k
       real, dimension(mx) :: T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low
