@@ -67,7 +67,38 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;  Set pc_precision.
 ;
   pc_set_precision, datadir=datadir, dim=dim, /quiet
+;
+; Set mx,my,mz in common block for derivative routines
+;
+  nx=dim.nx
+  ny=dim.ny
+  nz=dim.nz
+  nw=nx*ny*nz
+  mx=dim.mx
+  my=dim.my
+  mz=dim.mz
+  mw=mx*my*mz
+  l1=dim.l1
+  l2=dim.l2
+  m1=dim.m1
+  m2=dim.m2
+  n1=dim.n1
+  n2=dim.n2
+  nghostx=dim.nghostx
+  nghosty=dim.nghosty
+  nghostz=dim.nghostz
+
   pc_read_param, object=param, datadir=datadir, QUIET=QUIET, single=single
+;
+; General grid properties.
+;
+    lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
+    lperi = (param.lperi ne 0)
+    ldegenerated = ([ nx, ny, nz ] eq 1)
+;
+;  Set coordinate system.
+;
+    coord_system=param.coord_system
 
   NaN = !Values.F_NaN * one
   downprec = (precision eq 'D') and single
@@ -123,37 +154,6 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   end else begin
 ;
 ; Old file format
-;
-; Set mx,my,mz in common block for derivative routines
-;
-    nx=dim.nx
-    ny=dim.ny
-    nz=dim.nz
-    nw=nx*ny*nz
-    mx=dim.mx
-    my=dim.my
-    mz=dim.mz
-    mw=mx*my*mz
-    l1=dim.l1
-    l2=dim.l2
-    m1=dim.m1
-    m2=dim.m2
-    n1=dim.n1
-    n2=dim.n2
-    nghostx=dim.nghostx
-    nghosty=dim.nghosty
-    nghostz=dim.nghostz
-;
-; General grid properties.
-;
-    lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
-    lperi = (param.lperi ne 0)
-    ldegenerated = ([ nx, ny, nz ] eq 1)
-;
-;  Set coordinate system.
-;
-    coord_system=param.coord_system
-;
 ; Default filename.
 ;
     gridfile += '.dat'
