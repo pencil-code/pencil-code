@@ -115,7 +115,7 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xz, ind_y1
             read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
             read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
-            read(lun_pos,'(l5,i5)',end=100) lread_slice_r, ind_r
+            read(lun_pos,*,end=100) lread_slice_r, ind_r
   100       close(lun_pos)
 
             if (lread_slice_xy) then
@@ -579,7 +579,7 @@ program rvid_box
       if (lread_slice_r) then
         allocate(r_t(nth_rslice,nph_rslice,it),stat=stat)
         if (stat==0) then
-          do iproc=0,ncpus
+          do iproc=0,ncpus-1
 
             call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.r')
