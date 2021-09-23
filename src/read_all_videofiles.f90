@@ -17,39 +17,41 @@ program rvid_box
 !
       implicit none
 !
-      real, allocatable, dimension (:,:,:) :: xy_t,xz_t,yz_t
+      real, allocatable, dimension (:,:,:) :: xy_t,xz_t,yz_t,r_t
       real, allocatable, dimension (:) :: t_array
 !
       real, dimension (nx,ny) :: xy_loc,xy_loc_dummy
       real, dimension (nx,nz) :: xz_loc,xz_loc_dummy
       real, dimension (ny,nz) :: yz_loc,yz_loc_dummy
+      real, dimension (:,:), allocatable :: r_loc 
 !
       integer :: ipx,ipy,ipz,iproc,it,istride
       integer :: ipx1 = -1
       integer :: ipy1 = -1, ipy2 = -1
       integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
-      integer :: pos_x1 = -1
+      integer :: pos_x1 = -1, pos_r = -1
       integer :: pos_y1 = -1, pos_y2 = -1
       integer :: pos_z1 = -1, pos_z2 = -1, pos_z3 = -1, pos_z4 = -1
-      integer :: ind_x1 = -1
+      integer :: ind_x1 = -1, ind_r = -1
       integer :: ind_y1 = -1, ind_y2 = -1
       integer :: ind_z1 = -1, ind_z2 = -1, ind_z3 = -1, ind_z4 = -1
+      integer :: nth_rslice, nph_rslice, ith_min,ith_max,iph_min,iph_max
       integer :: lun_pos=33, lun_video=34, i
       integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
       integer :: isep1=0,idummy,sindex
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
       logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
-      logical :: lread_slice_xz2
+      logical :: lread_slice_xz2,lread_slice_r
       real :: t,t_dummy
       real :: slice_pos=0.,slice_pos_dummy
-      integer :: stride=0
+      integer :: stride=0,lun
 !
       character (len=fnlen) :: file='',fullname='',wfile='',directory=''
       character (len=fnlen) :: datadir='data',path='',cfield=''
       character (len=20) :: field='lnrho',field2=''
 !
-      logical :: exists,lfirst_slice=.true.
+      logical :: exists,lfirst_slice=.true.,ldummy,lfound
       character, dimension(-1:0) :: trufal=(/'F','T'/)
 !
 !  Read name of the field from a file containing the field to be read.
@@ -104,6 +106,7 @@ program rvid_box
               print*,'slice_position.dat for iproc=',iproc,'not found!'
               STOP 1
             endif
+            
             open(lun_pos,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
             read(lun_pos,'(l5,i5)') lread_slice_xy, ind_z1
             read(lun_pos,'(l5,i5)') lread_slice_xy2, ind_z2
@@ -112,7 +115,9 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xz, ind_y1
             read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
             read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
-            close(lun_pos)
+            read(lun_pos,'(l5,i5)',end=100) lread_slice_r, ind_r
+  100       close(lun_pos)
+
             if (lread_slice_xy) then
               ipz1 = ipz
               ind_z1 = ind_z1 + ipz * nz
@@ -148,6 +153,7 @@ program rvid_box
               ind_x1 = ind_x1 + ipx * nx
               if (pos_x1 < ind_x1) pos_x1 = ind_x1
             endif
+            if (lread_slice_r) pos_r = ind_r
           enddo
         enddo
       enddo
@@ -160,9 +166,26 @@ program rvid_box
       write(lun_pos,*) trufal(min(ipy1,0)), pos_y1
       write(lun_pos,*) trufal(min(ipy2,0)), pos_y2
       write(lun_pos,*) trufal(min(ipx1,0)), pos_x1
+
+      lread_slice_r=(ind_r>0)
+      if (lread_slice_r) then
+        nth_rslice=get_from_nml_int('nth_rslice',lfound)
+        if (.not.lfound) then
+          print*, 'r-slice expected, but nth_rslice not found in param2.nml'
+          lread_slice_r=.false.; nph_rslice=0
+        endif
+      endif
+      if (lread_slice_r) then
+        nph_rslice=get_from_nml_int('nph_rslice',lfound)
+        if (.not.lfound) then
+          print*, 'r-slice expected, but nph_rslice not found in param2.nml'
+          lread_slice_r=.false.
+        endif
+      endif
+      write(lun_pos,*) lread_slice_r, nth_rslice, nph_rslice
       close(lun_pos)
 !
-!  Need to reset     MR: Why?
+!  Need to reset
 !
       if (ipz1/=-1) lread_slice_xy=.true.
       if (ipz2/=-1) lread_slice_xy2=.true.
@@ -222,35 +245,35 @@ program rvid_box
 !
 !  Try to find number of timesteps, therefore asume xy-slice is written
 !
-          if (lfirst_slice) then
-            ipz=ipz1
-            ipx=0
-            ipy=0
-            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
-            call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
-            call safe_character_assign(fullname,trim(path)//trim(file))
-            !
-            inquire(FILE=trim(fullname),EXIST=exists)
-            if (.not.exists) then
-              print*,"Slice not found: ", fullname
-            endif
-            !
-            it = 0
-            iostat=0
-            open(lun_read,file=trim(fullname),status='old',form='unformatted')
-            do while (iostat==0)
-              do istride=1,stride
-                read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
-              enddo
-              read(lun_read,iostat=iostat) xy_loc,t,slice_pos
-              if (iostat==0) it=it+1
-            enddo
-            close(lun_read)
-            !
-            allocate(t_array(it),stat=iostat)
-            lfirst_slice=.false.
-          endif
+    if (lfirst_slice) then
+      ipz=ipz1
+      ipx=0
+      ipy=0
+      iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+      call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+      call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
+      call safe_character_assign(fullname,trim(path)//trim(file))
+      !
+      inquire(FILE=trim(fullname),EXIST=exists)
+      if (.not.exists) then
+        print*,"Slice not found: ", fullname
+      endif
+      !
+      it = 0
+      iostat=0
+      open(lun_read,file=trim(fullname),status='old',form='unformatted')
+      do while (iostat==0)
+        do istride=1,stride
+          read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+        enddo
+        read(lun_read,iostat=iostat) xy_loc,t,slice_pos
+        if (iostat==0) it=it+1
+      enddo
+      close(lun_read)
+      !
+      allocate(t_array(it),stat=iostat)
+      lfirst_slice=.false.
+    endif
 !
 !  First xy plane
 !
@@ -547,10 +570,57 @@ program rvid_box
           enddo
           close(lun_write)
         else
-          write(*,*) 'Could not allocate memory to read slices'
+          write(*,*) 'Could not allocate memory to read yz-slices'
           STOP 1
         endif
         if (allocated(yz_t)) deallocate(yz_t)
+      endif
+
+      if (lread_slice_r) then
+        allocate(r_t(nth_rslice,nph_rslice,it),stat=stat)
+        if (stat==0) then
+          do iproc=0,ncpus
+
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+            call safe_character_assign(file,'/slice_'//trim(field)//'.r')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+              write (*,*) 'Maybe slice was added to video.in after simulation.'
+            else
+              open (lun,file=trim(path)//'/slice_position.dat',status='old',position='append')
+              backspace(lun)
+              read(lun,*) ldummy,ith_min,ith_max,iph_min,iph_max
+              close(lun)
+!print*,'ith_min:ith_max,iph_min:iph_max', ith_min,ith_max,iph_min,iph_max
+              if (allocated(r_loc)) deallocate(r_loc)
+              allocate(r_loc(ith_min:ith_max,iph_min:iph_max))
+              open(lun_read,file=trim(fullname),status='old',form='unformatted')
+              do i=1,it
+                do istride=1,stride
+                  read(lun_read,iostat=iostat) r_loc,t_dummy,slice_pos_dummy
+                enddo
+                read(lun_read,iostat=iostat) r_loc,t,slice_pos
+                r_t(ith_min:ith_max,iph_min:iph_max,i)=r_t(ith_min:ith_max,iph_min:iph_max,i)+r_loc
+                t_array(i) = t
+              enddo
+              close(lun_read)
+            endif
+          enddo
+
+          call safe_character_assign(wfile,trim(datadir)//trim(file))
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) r_t(:,:,i),t_array(i),slice_pos
+          enddo
+          close(lun_write)
+
+        else
+          write(*,*) 'Could not allocate memory to read r-slices'
+          STOP 1
+        endif
+        if (allocated(r_t)) deallocate(r_t)
       endif
 !
   enddo loop
