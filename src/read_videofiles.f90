@@ -28,7 +28,7 @@ program read_videofiles
   character (len=fnlen) :: datadir='data',path='',cfield=''
   character (len=labellen) :: field='lnrho', cn_every=''
 !
-  logical :: exists, lread_slice, lwritten_something=.false.,lrslice
+  logical :: exists, lread_slice, lwritten_something=.false.,lrslice=.false.
 !
   real :: min_xy,min_xy2,min_xy3,min_xy4,min_xz,min_yz,min_xz2,min_r
   real :: max_xy,max_xy2,max_xy3,max_xy4,max_xz,max_yz,max_xz2,max_r
