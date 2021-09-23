@@ -26,6 +26,7 @@ class Tracers(object):
         self.y1 = None
         self.z1 = None
         self.l = None
+        self.tracers = None
         self.mapping = None
         self.t = None
         self.aa = None
@@ -293,11 +294,14 @@ class Tracers(object):
         xx[:, :, 1] = self.y0[i_proc : self.x0.shape[0] : n_proc, :, t_idx].copy()
         xx[:, :, 2] = self.z1[i_proc : self.x0.shape[0] : n_proc, :, t_idx].copy()
 
+#        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+
         # Initialize the local arrays for this core.
         sub_x1 = np.zeros(xx[:, :, 0].shape)
         sub_y1 = np.zeros(xx[:, :, 0].shape)
         sub_z1 = np.zeros(xx[:, :, 0].shape)
         sub_l = np.zeros(xx[:, :, 0].shape)
+        sub_tracers = np.zeros(xx[:, :, 0].shape, dtype=np.ndarray)
         sub_curly_A = np.zeros(xx[:, :, 0].shape)
         sub_ee = np.zeros(xx[:, :, 0].shape)
         sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
@@ -353,9 +357,12 @@ class Tracers(object):
                     if (self.y0[ix, iy, t_idx] - sub_y1[int(ix / n_proc), iy]) > 0:
                         sub_mapping[int(ix / n_proc), iy, :] = [0, 0, 1]
                     else:
-                        sub_mapping[int(ix / n_proc), iy, :] = [1, 0, 0]
-        #                else:
-        #                    sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
+                        sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
+#                else:
+#                    sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
+
+        queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_tracers,
+                   sub_curly_A, sub_ee))
 
         queue.put(
             (i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_curly_A, sub_ee)
@@ -379,7 +386,7 @@ class Tracers(object):
         """
 
         import os
-
+        import numpy as np
         try:
             import h5py
         except:
@@ -397,17 +404,19 @@ class Tracers(object):
             set_y1 = f.create_dataset("y1", self.y1.shape, dtype=self.y1.dtype)
             set_z1 = f.create_dataset("z1", self.z1.shape, dtype=self.z1.dtype)
             set_l = f.create_dataset("l", self.l.shape, dtype=self.l.dtype)
+            set_tracers = f.create_dataset("tracers", self.tracers.shape, dtype=h5py.special_dtype(vlen=np.float64))
             set_x0[...] = self.x0[...]
             set_y0[...] = self.y0[...]
             set_x1[...] = self.x1[...]
             set_y1[...] = self.y1[...]
             set_z1[...] = self.z1[...]
             set_l[...] = self.l[...]
-            #            set_q = []
-            #            if not self.params.int_q == '':
-            #                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
-            #                                              dtype=getattr(self, self.params.int_q).dtype))
-            #                set_q[-1][...] = getattr(self, self.params.int_q)[...]
+            set_tracers[...] = self.tracers[...]
+#            set_q = []
+#            if not self.params.int_q == '':
+#                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
+#                                              dtype=getattr(self, self.params.int_q).dtype))
+#                set_q[-1][...] = getattr(self, self.params.int_q)[...]
             set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset(
                 "mapping", self.mapping.shape, dtype=self.mapping.dtype
@@ -453,14 +462,15 @@ class Tracers(object):
         f = h5py.File(os.path.join(datadir, file_name), "r")
 
         # Extract arrays.
-        self.t = f["t"].value
-        self.x0 = f["x0"].value
-        self.y0 = f["y0"].value
-        self.x1 = f["x1"].value
-        self.y1 = f["y1"].value
-        self.z1 = f["z1"].value
-        self.l = f["l"].value
-        self.mapping = f["mapping"].value
+        self.t = f['t'].value
+        self.x0 = f['x0'].value
+        self.y0 = f['y0'].value
+        self.x1 = f['x1'].value
+        self.y1 = f['y1'].value
+        self.z1 = f['z1'].value
+        self.l = f['l'].value
+        self.tracers = f['tracers'].value
+        self.mapping = f['mapping'].value
         print(f.keys())
         if "curly_A" in list(f.keys()):
             self.curly_A = f["curly_A"].value
@@ -473,6 +483,11 @@ class Tracers(object):
         for param in params.attrs.keys():
             setattr(self.params, param, params.attrs[param])
 
+        # Reshape the tracers.
+        for i in range(self.tracers.shape[0]):
+            for j in range(self.tracers.shape[1]):
+                for k in range(self.tracers.shape[2]):
+                    self.tracers[i, j, k] = self.tracers[i, j, k].reshape([int(self.tracers[i, j, k].shape[0]/3), 3])
         f.close()
 
 

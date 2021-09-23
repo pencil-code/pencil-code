@@ -235,9 +235,14 @@ class FixedPoint(object):
                 for fixed in self.fixed_points[t_idx]:
                     # Trace the stream line.
                     xx = np.array([fixed[0], fixed[1], self.params.Oz])
-                    time = time = np.linspace(
-                        0, self.params.Lz / np.max(abs(field[2])), 10
-                    )
+#                    time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
+                    field_strength_z0 = vec_int(xx, field,
+                                                [var.dx, var.dy, var.dz],
+                                                [var.x[0], var.y[0], var.z[0]],
+                                                [len(var.x), len(var.y), len(var.z)],
+                                                interpolation=self.params.interpolation)
+                    field_strength_z0 = np.sqrt(np.sum(field_strength_z0**2))
+                    time = np.linspace(0, 4*self.params.Lz/field_strength_z0, 500)
                     stream = Stream(field, self.params, xx=xx, time=time)
                     # Do the field line integration.
                     if self.params.int_q == "curly_A":
@@ -281,6 +286,7 @@ class FixedPoint(object):
     def __sub_fixed(self, queue, ix0, iy0, field, tracers, tidx, var, i_proc):
         import numpy as np
         from pencil.calc.streamlines import Stream
+        from pencil.math.interpolation import vec_int
 
         diff = np.zeros((4, 2))
         fixed = []
@@ -352,10 +358,15 @@ class FixedPoint(object):
                             xx[i1, 1] = ymin + k1 / (nt - 1.0) * (ymax - ymin)
                             xx[i1, 2] = self.params.Oz
                             i1 += 1
-                    for it1 in range(nt ** 2):
-                        time = np.linspace(
-                            0, self.params.Lz / np.max(abs(field[2])), 10
-                        )
+                    for it1 in range(nt**2):
+#                        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
+                        field_strength_z0 = vec_int(xx[it1, :], field,
+                                                    [var.dx, var.dy, var.dz],
+                                                    [var.x[0], var.y[0], var.z[0]],
+                                                    [len(var.x), len(var.y), len(var.z)],
+                                                    interpolation=self.params.interpolation)
+                        field_strength_z0 = np.sqrt(np.sum(field_strength_z0**2))
+                        time = np.linspace(0, 4*self.params.Lz/field_strength_z0, 500)
                         stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                         tracers_part[it1, 0:2] = xx[it1, 0:2]
                         tracers_part[it1, 2:] = stream.tracers[-1, :]
@@ -396,13 +407,18 @@ class FixedPoint(object):
                     fixed_index += np.sign(poincare)
 
                     # Find the streamline at the fixed point.
-                    time = np.linspace(0, self.params.Lz / np.max(abs(field[2])), 100)
-                    stream = Stream(
-                        field,
-                        self.params,
-                        xx=np.array([fixed_point[0], fixed_point[1], self.params.Oz]),
-                        time=time,
-                    )
+#                    time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+                    field_strength_z0 = vec_int(np.array([fixed_point[0], fixed_point[1], self.params.Oz]), field,
+                                                [var.dx, var.dy, var.dz],
+                                                [var.x[0], var.y[0], var.z[0]],
+                                                [len(var.x), len(var.y), len(var.z)],
+                                                interpolation=self.params.interpolation)
+                    field_strength_z0 = np.sqrt(np.sum(field_strength_z0**2))
+                    time = np.linspace(0, 4*self.params.Lz/field_strength_z0, 500)
+                    stream = Stream(field, self.params, xx=np.array([fixed_point[0],
+                                                                     fixed_point[1],
+                                                                     self.params.Oz]),
+                                    time=time)
                     fixed_tracers.append(stream.tracers)
 
         queue.put(
@@ -430,6 +446,7 @@ class FixedPoint(object):
     def __edge(self, field, sx, sy, diff1, diff2, rec):
         import numpy as np
         from pencil.calc.streamlines import Stream
+        from pencil.math.interpolation import vec_int
 
         phi_min = np.pi / 8.0
         dtot = np.arctan2(
@@ -441,10 +458,15 @@ class FixedPoint(object):
             ym = 0.5 * (sy[0] + sy[1])
 
             # Trace the intermediate field line.
-            time = np.linspace(0, self.params.Lz / np.max(abs(field[2])), 100)
-            stream = Stream(
-                field, self.params, xx=np.array([xm, ym, self.params.Oz]), time=time
-            )
+#            time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
+            field_strength_z0 = vec_int(np.array([xm, ym, self.params.Oz]), field,
+                                        [self.params.dx, self.params.dy, self.params.dz],
+                                        [self.params.Ox, self.params.Oy, self.params.Oz],
+                                        [self.params.nx, self.params.ny, self.params.nz],
+                                        interpolation=self.params.interpolation)
+            field_strength_z0 = np.sqrt(np.sum(field_strength_z0**2))
+            time = np.linspace(0, 4*self.params.Lz/field_strength_z0, 500)
+            stream = Stream(field, self.params, xx=np.array([xm, ym, self.params.Oz]), time=time)
             stream_x0 = stream.tracers[0, 0]
             stream_y0 = stream.tracers[0, 1]
             stream_x1 = stream.tracers[-1, 0]
@@ -462,6 +484,7 @@ class FixedPoint(object):
     def __null_point(self, point, var, field):
         import numpy as np
         from pencil.calc.streamlines import Stream
+        from pencil.math.interpolation import vec_int
 
         dl = np.min([var.dx, var.dy]) / 30.0
         it = 0
@@ -477,7 +500,14 @@ class FixedPoint(object):
             xx[3, :] = np.array([point[0], point[1] - dl, self.params.Oz])
             xx[4, :] = np.array([point[0], point[1] + dl, self.params.Oz])
             for it1 in range(5):
-                time = time = np.linspace(0, self.params.Lz / np.max(abs(field[2])), 10)
+#                time = time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 10)
+                field_strength_z0 = vec_int(xx[it1, :], field,
+                                            [var.dx, var.dy, var.dz],
+                                            [var.x[0], var.y[0], var.z[0]],
+                                            [len(var.x), len(var.y), len(var.z)],
+                                            interpolation=self.params.interpolation)
+                field_strength_z0 = np.sqrt(np.sum(field_strength_z0**2))
+                time = np.linspace(0, 4*self.params.Lz/field_strength_z0, 500)
                 stream = Stream(field, self.params, xx=xx[it1, :], time=time)
                 tracers_null[it1, :2] = xx[it1, :2]
                 tracers_null[it1, 2:] = stream.tracers[-1, 0:2]
@@ -701,7 +731,7 @@ class FixedPoint(object):
         else:
             print("Error: empty destination file")
 
-    def read(self, datadir="data", file_name="fixed_points.hdf5"):
+    def read(self, datadir='data', file_name='fixed_points.hdf5', quiet=True):
         """
         Read the fixed points from a file.
 
@@ -716,6 +746,9 @@ class FixedPoint(object):
 
         *file_name*:
           File with the tracer data.
+
+        *quiet*:
+          Suppress warnings.
         """
 
         import os
@@ -777,4 +810,7 @@ class FixedPoint(object):
         try:
             self.tracers.read(datadir=datadir, file_name=tracer_file_name)
         except:
-            print("Warning: no tracer file found.")
+            if quiet:
+                pass
+            else:
+                print('Warning: no tracer file found.')
