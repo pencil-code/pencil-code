@@ -641,14 +641,18 @@ module HDF5_IO
 !
 !  27-Oct-2018/PABourdin: cleaned up
 !
+      use Slices_methods, only: write_rslice_position
+
       open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown')
-      write (lun_output, '(l5,i5," XY")') lwrite_slice_xy, iz_loc
+      write (lun_output, '(l5,i5," XY")' ) lwrite_slice_xy, iz_loc
       write (lun_output, '(l5,i5," XY2")') lwrite_slice_xy2, iz2_loc
       write (lun_output, '(l5,i5," XY3")') lwrite_slice_xy3, iz3_loc
       write (lun_output, '(l5,i5," XY4")') lwrite_slice_xy4, iz4_loc
-      write (lun_output, '(l5,i5," XZ")') lwrite_slice_xz, iy_loc
+      write (lun_output, '(l5,i5," XZ")' ) lwrite_slice_xz, iy_loc
       write (lun_output, '(l5,i5," XZ2")') lwrite_slice_xz2, iy2_loc
-      write (lun_output, '(l5,i5," YZ")') lwrite_slice_yz, ix_loc
+      write (lun_output, '(l5,i5," YZ")' ) lwrite_slice_yz, ix_loc
+      call write_rslice_position(lun_output)
+
       close (lun_output)
 !
     endsubroutine hdf5_output_slice_position
