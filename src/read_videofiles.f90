@@ -352,7 +352,8 @@ program read_videofiles
               elseif (suffix(1:2) == 'xy') then
                 glob_slice(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,frame,iyy) = loc_slice
               elseif (suffix(1:1) == 'r') then
-                glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy) = glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy)+loc_slice
+                glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy) = &
+                      glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy)+loc_slice
               endif
             enddo
             close (lun)
