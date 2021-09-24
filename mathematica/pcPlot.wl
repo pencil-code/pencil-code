@@ -83,7 +83,10 @@ pcPlotStyle[]:={
   Map[SetOptions[#,{
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
       FrameStyle->pcLabelStyle,ImageSize->{300,300/GoldenRatio}
-    }]&,{Plot,ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot}
+    }]&,{
+      Plot,LogPlot,LogLogPlot,LogLinearPlot,
+      ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot
+    }
   ];
   Map[SetOptions[#,{
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,PlotLegends->Automatic,
