@@ -341,6 +341,11 @@ class SliceSeries(object):
                     if extension == "yz":
                         hsize = dim.ny
                         vsize = dim.nz
+                    if extension == "r":
+                        # Read grid size of radial slices
+                        par = read.param()
+                        hsize = par.nph_rslice
+                        vsize = par.nth_rslice
 
                     try:
                         infile = FortranFile(file_name)
