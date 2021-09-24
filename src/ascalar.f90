@@ -1,4 +1,3 @@
-module Ascalar
 ! This module is used to solve the equation of supersaturation
 ! for either the Smoluchowski approach or the swarm model.
 !
@@ -21,7 +20,8 @@ module Ascalar
 ! PENCILS PROVIDED del2ttc
 !
 !***************************************************************
-
+module Ascalar
+!
   use Cdata
   use Cparam
   use Messages
@@ -113,9 +113,7 @@ module Ascalar
           "$Id$")
 !
     endsubroutine register_ascalar
-    
 !***********************************************************************
-   
     subroutine initialize_ascalar(f)
 !
 !  Perform any necessary post-parameter read initialization
@@ -142,7 +140,6 @@ module Ascalar
 !      endif
 !
     endsubroutine initialize_ascalar
-!
 !***********************************************************************
     subroutine init_acc(f)
 !
