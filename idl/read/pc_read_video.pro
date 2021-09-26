@@ -18,8 +18,8 @@
 ;
 pro pc_read_video, field=field, object=object, nt=nt, njump=njump, stride=stride, $
     dim=dim, datadir=datadir, proc=proc, swap_endian=swap_endian, help=help, $
-    xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, $
-    xz2read=xz2read, print=print, mask=mask, fail=fail, old_format=old_form, single=single
+    xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, xz2read=xz2read, $
+    rread=rread, print=print, mask=mask, fail=fail, old_format=old_form, single=single
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -30,7 +30,7 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default values.
 ;
-planes = [ 'xy', 'xz', 'yz', 'xy2', 'xy3', 'xy4', 'xz2' ]
+planes = [ 'xy', 'xz', 'yz', 'xy2', 'xy3', 'xy4', 'xz2', 'r' ]
 datadir = pc_get_datadir(datadir)
 default, proc, -1
 default, nt, 100
@@ -44,6 +44,7 @@ default, xy4read, 1
 default, xzread, 1
 default, xz2read, 1
 default, yzread, 1
+default, rread, 1
 default, print, 1
 default, single, 0
 ;
@@ -91,7 +92,7 @@ endif else begin
   endif
 endelse
 ;
-if not check_slices_par(field, readdir, s) then goto, slices_par_missing
+if not check_slices_par(field, stride, readdir, s) then goto, slices_par_missing
 ;
 ; Combine with switch preselection
 ;
@@ -102,17 +103,19 @@ s.xy4read = s.xy4read and xy4read
 s.xzread = s.xzread and xzread 
 s.xz2read = s.xz2read and xz2read 
 s.yzread = s.yzread and yzread 
+if (is_defined(s.rread)) then s.rread = s.rread and rread 
 ;
 ; Combine with mask
 ;
 if arg_present(mask) then begin
-  s.xyread = s.xyread and mask[0]
-  s.xzread = s.xzread and mask[1]
-  s.yzread = s.yzread and mask[2]
-  s.xy2read = s.xy2read and mask[3]
-  s.xy3read = s.xy3read and mask[4]
-  s.xy4read = s.xy4read and mask[5]
-  s.xz2read = s.xz2read and mask[6]
+  if (size(mask) ge 1) then s.xyread = s.xyread and mask[0]
+  if (size(mask) ge 2) then s.xzread = s.xzread and mask[1]
+  if (size(mask) ge 3) then s.yzread = s.yzread and mask[2]
+  if (size(mask) ge 4) then s.xy2read = s.xy2read and mask[3]
+  if (size(mask) ge 5) then s.xy3read = s.xy3read and mask[4]
+  if (size(mask) ge 6) then s.xy4read = s.xy4read and mask[5]
+  if (size(mask) ge 7) then s.xz2read = s.xz2read and mask[6]
+  if (is_defined(s.rread) and size(mask) ge 8) then s.rread = s.rread and mask[7]
 endif
 ;
 ; Define filenames of slices, declare arrays for reading and storing, open slice files,
@@ -203,6 +206,19 @@ if (s.yzread) then begin
     present=1
   endif
 endif
+if (s.rread) then begin
+  tag='r'
+  file_slice=readdir+'/slice_'+field+'.r'
+  pc_read_param, obj=param, /run_, datadir=readdir, /quiet
+  r_tmp =make_array(param.nth_rslice,param.nph_rslice, type=type_idl)
+  r =make_array(param.nth_rslice,param.nph_rslice,nt, type= single ? 4 : type_idl)
+  if (proc eq -1) and (not file_test(file_slice)) then $
+    spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
+  if (file_test(file_slice)) then begin
+    openr, lun_8, file_slice, /f77, /get_lun, swap_endian=swap_endian
+    present=1
+  endif
+endif
 if not present then goto, data_file_missing
 ;
 t_tmp=one & t=make_array(nt, type= single ? 4 : type_idl)
@@ -246,6 +262,11 @@ if (njump gt 0) then begin
       tag='yz'
       readu, lun_7, dummy1
       if (eof(lun_7)) then goto, jumpfail
+    endif
+    if is_defined(lun_8)  then begin
+      tag='r'
+      readu, lun_8, dummy1
+      if (eof(lun_8)) then goto, jumpfail
     endif
   endfor
 endif
@@ -294,6 +315,11 @@ for it=0,nt-1,stride do begin
     readu, lun_7, yz_tmp, t_tmp, slice_xpos 
     yz [*,*,it]=yz_tmp
   endif
+  if is_defined(lun_8) then begin
+    if (eof(lun_8)) then break
+    readu, lun_8, r_tmp, t_tmp, slice_rpos
+    r [*,*,it]=r_tmp
+  endif
   t[it]=t_tmp
 endfor
 ;
@@ -306,6 +332,7 @@ if is_defined(lun_4) then free_lun, lun_4
 if is_defined(lun_5) then free_lun, lun_5
 if is_defined(lun_6) then free_lun, lun_6
 if is_defined(lun_7) then free_lun, lun_7
+if is_defined(lun_8) then free_lun, lun_8
 ;
 ; Truncate the data if less than nt slices were read.
 ;
@@ -318,6 +345,7 @@ if it lt nt then begin
   if s.xzread  then xz = xz[*,*,0:it]
   if s.xz2read then xz2 = xz2[*,*,0:it]
   if s.yzread  then yz = yz[*,*,0:it]
+  if s.rread  then r = r[*,*,0:it]
   t = t[0:it]
 endif
 ;
@@ -331,6 +359,7 @@ if s.xy2read then object=create_struct(object,'xy2',xy2)
 if s.xy3read then object=create_struct(object,'xy3',xy3)
 if s.xy4read then object=create_struct(object,'xy4',xy4)
 if s.xz2read then object=create_struct(object,'xz2',xz2)
+if s.rread then object=create_struct(object,'r',r)
 ;
 ; If requested print a summary.
 ;
@@ -344,9 +373,10 @@ if keyword_set(print) then begin
   if s.xy3read then print, 'min(xy3), max(xy3) = ', min(xy3), ', ', max(xy3)
   if s.xy4read then print, 'min(xy4), max(xy4) = ', min(xy4), ', ', max(xy4)
   if s.xz2read then print, 'min(xz2), max(xz2) = ', min(xz2), ', ', max(xz2)
+  if s.rread   then print, 'min(r),   max(r)   = ', min(r), ', ', max(r)
 endif
 
-mask = [s.xyread,s.xzread,s.yzread,s.xy2read,s.xy3read,s.xy4read,s.xz2read]
+mask = [s.xyread,s.xzread,s.yzread,s.xy2read,s.xy3read,s.xy4read,s.xz2read,s.rread]
 if arg_present(fail) then fail=0
 return
 ;

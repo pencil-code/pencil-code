@@ -1,4 +1,4 @@
-function check_slices_par, field, readdir, switches
+function check_slices_par, field, stride, readdir, switches
 ;
 ; Checks whether <field> is in video.in. 
 ; Reads slice switches from <readdir>/slice_position.dat into structure <switches>.
@@ -37,23 +37,36 @@ endif
 ; Read slice switches
 ;
 cdum=''
-switches=create_struct('xyread',0,'xzread',0,'yzread',0,'xy2read',0,'xy3read',0,'xy4read',0,'xz2read',0)
-on_ioerror, noposition
-openr, lun_1, readdir+'/slice_position.dat', /get_lun
-on_ioerror, NULL
-readf, lun_1, cdum & switches.xyread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.xy2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.xy3read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.xy4read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.xzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.xz2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-readf, lun_1, cdum & switches.yzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-close, 1
-free_lun, lun_1
-return, 1
-;
+switches=create_struct('xyread',0,'xzread',0,'yzread',0,'xy2read',0,'xy3read',0,'xy4read',0,'xz2read',0,'rread',0)
+
+for iread=0,1 do begin
+
+  on_ioerror, noposition
+  openr, lun_1, readdir+'/slice_position.dat', /get_lun
+  on_ioerror, cont
+  readf, lun_1, cdum & switches.xyread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.xy2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.xy3read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.xy4read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.xzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.xz2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.yzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum & switches.rread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+cont:
+  close, 1
+  free_lun, lun_1
+  on_ioerror,  NULL
+  return, 1
+
 noposition:
-print, 'No slice_position.dat found in "'+readdir+'"!!!'
+  if (iread eq 0) then begin
+    close, 1
+    print, 'No slice_position.dat found in "'+readdir+'"!!!'
+    if (n_params() eq 1) then stride=1
+    spawn, 'echo "- calling read_videofiles."; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
+  endif
+endfor
+
 print, 'For backwards compatibility it is assumed that XY, XY2, XZ and YZ slices do exist.'
 
 switches.xyread = 1
@@ -63,6 +76,7 @@ switches.xy4read = 0
 switches.xzread = 1
 switches.xz2read = 0
 switches.yzread = 1
+switches.rread = 0
 
 return, 1
 ;
