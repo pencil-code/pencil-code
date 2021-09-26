@@ -182,13 +182,14 @@ program read_videofiles
   if (lwritten_something) then
 
     open (lun,file=trim(datadir)//'/slice_position.dat',form='formatted',STATUS='replace')
-    write(lun,*) trufal(min(ipz1,0))
-    write(lun,*) trufal(min(ipz2,0))
-    write(lun,*) trufal(min(ipz3,0))
-    write(lun,*) trufal(min(ipz4,0))
-    write(lun,*) trufal(min(ipy1,0))
-    write(lun,*) trufal(min(ipy2,0))
-    write(lun,*) trufal(min(ipx1,0))
+    write(lun,*) trufal(min(ipz1,0)), ipz1
+    write(lun,*) trufal(min(ipz2,0)), ipz2
+    write(lun,*) trufal(min(ipz3,0)), ipz3
+    write(lun,*) trufal(min(ipz4,0)), ipz4
+    write(lun,*) trufal(min(ipy1,0)), ipy1
+    write(lun,*) trufal(min(ipy2,0)), ipy2
+    write(lun,*) trufal(min(ipx1,0)), ipx1
+    write(lun,*) trufal(min(ipr, 0)), ipr
     close(lun)
 
     print *,'last file read: ',trim(fullname)
@@ -201,7 +202,7 @@ program read_videofiles
     if (ipy1/=-1) print *,' xz-plane:',min_xz,max_xz
     if (ipy2/=-1) print *,'xz2-plane:',min_xz2,max_xz2
     if (ipx1/=-1) print *,' yz-plane:',min_yz,max_yz
-    if (ipr /=-1) print *,' r-surface:',min_r,max_r
+    if (ipr /=-1) print *,'r-surface:',min_r,max_r
     print *,'-------------------------------------------------'
     print *,'finished OK'
   endif

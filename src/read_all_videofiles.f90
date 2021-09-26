@@ -27,7 +27,7 @@ program rvid_box
 !
       integer :: ipx,ipy,ipz,iproc,it,istride
       integer :: ipx1 = -1
-      integer :: ipy1 = -1, ipy2 = -1
+      integer :: ipy1 = -1, ipy2 = -1, ipr=-1
       integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
       integer :: pos_x1 = -1, pos_r = -1
       integer :: pos_y1 = -1, pos_y2 = -1
@@ -73,7 +73,7 @@ program rvid_box
         endif
       endif
 !
-!  Put the stride in a file, stride.in
+!  Get the stride from a file, stride.in
 !
       inquire(file='stride.in',exist=exists)
       if (exists) then
@@ -153,7 +153,10 @@ program rvid_box
               ind_x1 = ind_x1 + ipx * nx
               if (pos_x1 < ind_x1) pos_x1 = ind_x1
             endif
-            if (lread_slice_r) pos_r = ind_r
+            if (lread_slice_r) then
+              ipr=iproc
+              pos_r = ind_r
+            endif
           enddo
         enddo
       enddo
@@ -167,7 +170,7 @@ program rvid_box
       write(lun_pos,*) trufal(min(ipy2,0)), pos_y2
       write(lun_pos,*) trufal(min(ipx1,0)), pos_x1
 
-      lread_slice_r=(ind_r>0)
+      lread_slice_r=(pos_r>0)
       if (lread_slice_r) then
         nth_rslice=get_from_nml_int('nth_rslice',lfound)
         if (.not.lfound) then
@@ -206,6 +209,7 @@ program rvid_box
 !
       read(lun_video,*,iostat=videostat) cfield
       if (videostat==0) then
+        if (index(cfield,'#')==1) cycle loop
         isep1=index(cfield,' ')
         field2=cfield(1:isep1-1)
         field=''
@@ -289,7 +293,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE "',trim(fullname),'" DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -582,6 +586,13 @@ program rvid_box
           do iproc=0,ncpus-1
 
             call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+            open (lun,file=trim(path)//'/slice_position.dat',status='old',position='append')
+            backspace(lun)
+            read(lun,*) ldummy,ith_min,ith_max,iph_min,iph_max
+            close(lun)
+            if (.not.ldummy) cycle
+print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,iph_max
+
             call safe_character_assign(file,'/slice_'//trim(field)//'.r')
             call safe_character_assign(fullname,trim(path)//trim(file))
             inquire(FILE=trim(fullname),EXIST=exists)
@@ -589,11 +600,6 @@ program rvid_box
               write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
               write (*,*) 'Maybe slice was added to video.in after simulation.'
             else
-              open (lun,file=trim(path)//'/slice_position.dat',status='old',position='append')
-              backspace(lun)
-              read(lun,*) ldummy,ith_min,ith_max,iph_min,iph_max
-              close(lun)
-!print*,'ith_min:ith_max,iph_min:iph_max', ith_min,ith_max,iph_min,iph_max
               if (allocated(r_loc)) deallocate(r_loc)
               allocate(r_loc(ith_min:ith_max,iph_min:iph_max))
               open(lun_read,file=trim(fullname),status='old',form='unformatted')
