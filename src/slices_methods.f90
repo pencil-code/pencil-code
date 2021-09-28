@@ -427,7 +427,6 @@ private
           xs=sth_slice(ith)*cph_slice(iph)
           ys=sth_slice(ith)*sph_slice(iph)
           zs=cth_slice(ith)
-!if (lroot) print*, 'xyzs=', xs, ys, zs
           if ( x(l1-1)<=xs.and.xs<=x(l2) .and. y(m1-1)<=ys.and.ys<=y(m2) .and. &
                z(n1-1)<=zs.and.zs<=z(n2) ) then
             iph_min=min(iph_min,iph); iph_max=max(iph_max,iph)
@@ -436,7 +435,7 @@ private
           endif
         enddo
       enddo
-!print*, 'iproc,ith_min,ith_max,iph_min,iph_max=',
+!print*, 'iproc,ith_min,ith_max,iph_min,iph_max=', &
 !iproc,ith_min,ith_max,iph_min,iph_max
 
       lwrite_slice_r = (ith_min/=0.and.iph_max/=0)
@@ -532,7 +531,7 @@ private
             mdif=m-rslice_adjec_corn_inds(ith,iph,2)
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
               ndif=n-rslice_adjec_corn_inds(ith,iph,3)
-              if (ndif==-1.or.ndif==0) then
+              if (ndif==-1.or.ndif==0) then                     ! n appropriate
                 lind=lind-nghost
                 rslice(ith,iph,:,mdif,ndif)=pencil((/max(lind-1,1),lind/)) ! take relevant part of pencil
               endif
@@ -553,12 +552,11 @@ private
       do ith=ith_min,ith_max
         do iph=iph_min,iph_max
           lind=rslice_adjec_corn_inds(ith,iph,1)
-          if (lind/=0) then                               !  proc has point
+          if (lind/=0) then                                     !  proc has point
             mdif=m-rslice_adjec_corn_inds(ith,iph,2)
-            if (mdif==-1.or.mdif==0) then                 ! m appropriate
+            if (mdif==-1.or.mdif==0) then                       ! m appropriate
               ndif=n-rslice_adjec_corn_inds(ith,iph,3)
-              if (ndif==-1.or.ndif==0) then               ! n appropriate
-                !if (iproc==3) print*, 'ith,iph,inds=', ith,iph,lind,mdif,ndif
+              if (ndif==-1.or.ndif==0) then                     ! n appropriate
                 lind=lind-nghost
                 rslice(ith,iph,:,mdif,ndif,:)=pencil((/max(lind-1,1),lind/),:) ! take relevant part of pencil
               endif
