@@ -7396,7 +7396,7 @@ module Mpicomm
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
-      integer :: ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
+      integer :: ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, iz, iy, &
                  irz, iry, irx, iza, ize, izs, iya, iye, iys, ixa, ixe, ixs, nsend, tag, unfilled
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)

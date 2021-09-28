@@ -115,7 +115,7 @@ subroutine init_special(f)
     real, dimension (mx,my,mz,mfarray) :: f
 !
     intent(inout) :: f
-    integer :: ix
+    integer :: ix,iy,iz
 !
     if (lroot) print*, '**************** init_special ****************'
     ! call pb_special_setup  is UNNEEDED

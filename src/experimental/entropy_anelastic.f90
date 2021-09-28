@@ -967,13 +967,12 @@ module Energy
       real :: zm,ztop,mixinglength_flux,lnrho,ss,lnTT
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
-      integer :: iter
+      integer :: iter,iz
       character (len=120) :: wfile
 !
       if (headtt) print*,'init_energy : mixinglength stratification'
-      if (.not.lgravz) then
+      if (.not.lgravz) &
         call fatal_error("mixinglength","works only for vertical gravity")
-      endif
 !
 !  do the calculation on all processors, and then put the relevant piece
 !  into the f array.
@@ -3138,7 +3137,7 @@ module Energy
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
               mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad
-      integer :: nbot1, nbot2
+      integer :: nbot1, nbot2, iz
 !
 !  inital values at the top
 !

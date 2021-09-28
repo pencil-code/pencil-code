@@ -772,7 +772,7 @@ module Particles_map
       real, save :: dx1dz2, dx2dz2, dx3dz2, dx4dz2
       real, save :: dx1dz3, dx2dz3, dx3dz3, dx4dz3
       real, save :: dx1dz4, dx2dz4, dx3dz4, dx4dz4
-      integer :: ix0, iy0, iz0, ipoint, ivar
+      integer :: ix, iz, ix0, iy0, iz0, ipoint, ivar
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1, inear

@@ -2296,7 +2296,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      integer :: j
+      integer :: ix,j
 !
       if (.not.lspherical_coords) &
         call fatal_error('bc_spr_x','only implemented for spherical coordinates')
@@ -3681,9 +3681,8 @@ module Boundcond
 !
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
-      integer :: k
+      integer :: iy, k
       real :: fac,sth,lambda_exp
-!
 !
 ! -------- Either case get the lambda variables first -----------
 !

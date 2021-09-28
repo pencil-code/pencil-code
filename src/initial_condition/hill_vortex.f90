@@ -55,6 +55,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: r, r2, r3, r5, pom2
       real :: a2_hill, a3_hill
+      integer :: iy,iz
 !
 !  initialize Hill vortex at x=y=z=0
 !

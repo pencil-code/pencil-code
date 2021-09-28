@@ -379,7 +379,8 @@ module Particles_potential
 !
       integer, intent(in) :: izmin,izmax,iymin,iymax,ixmin,ixmax
       integer, intent(out) :: npbuf
-      integer :: ipbuf
+      integer :: ipbuf,ix,iy,iz
+
       fp_buffer_out=0.
       npbuf=0
       ipbuf=0

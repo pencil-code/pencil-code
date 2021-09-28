@@ -4457,7 +4457,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: ix0,iy0,iz0,ix1,iy1,iz1,k
+      integer :: ix0,iy0,iz0,ix1,iy1,iz1,k,ix,iy,iz
       real, dimension (2,2,2) :: box_omega
       real, dimension (3) :: grad_omega,kvec !,bb_ext
       real :: local_omega,grav=1.

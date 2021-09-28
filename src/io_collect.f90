@@ -194,7 +194,7 @@ module Io
       real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=676
-      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size, na, ne
+      integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size, na, ne, iz
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
@@ -419,7 +419,7 @@ module Io
       real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz, buffer1D
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, z_start, io_len, alloc_err, io_size
+      integer :: pz, pa, z_start, io_len, alloc_err, io_size, iz
       integer(kind=8) :: rec_len
       real :: t_sp   ! t in single precision for backwards compatibility
 !

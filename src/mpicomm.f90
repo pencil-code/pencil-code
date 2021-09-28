@@ -3962,7 +3962,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       integer :: mpiprocs
 !
-!  Sum over all processors and return to root (MPI_COMM_GRID).
+!  Sum over all processors and return to all (MPI_COMM_GRID).
 !  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
 !  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
@@ -4831,6 +4831,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
+      !mpiwtime = 0.
 !
     endfunction mpiwtime
 !***********************************************************************
@@ -4840,6 +4841,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
       mpiwtick = MPI_WTICK()
+      !mpiwtick = 0.
 !
     endfunction mpiwtick
 !***********************************************************************
@@ -8347,21 +8349,21 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           recv_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
         else local                        ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
-          commun: if (iproc > partner) then  ! above diagonal: send first, receive then
+          if (iproc > partner) then  ! above diagonal: send first, receive then
             call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
             call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
-          else commun                        ! below diagonal: receive first, send then
+          else
             call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
             call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
-          endif commun
+          endif
         endif local
-        zscan: do iz = 1, inz
+        do iz = 1, inz
           out(ngc+bny*ibox+1:ngc+bny*(ibox+1),:,iz) = transpose(recv_buf(:,ngc+1:ngc+bny,iz))
-          ghost: if (ngc > 0) then
+          if (ngc > 0) then
             if (ibox == 0) out(1:ngc,:,iz) = transpose(recv_buf(:,1:ngc,iz))
             if (ibox == nprocxy - 1) out(onx-ngc+1:onx,:,iz) = transpose(recv_buf(:,ngc+bny+1:bny+2*ngc,iz))
-          endif ghost
-        enddo zscan
+          endif
+        enddo
       enddo box
 !
 !  Deallocate working arrays.
@@ -9013,7 +9015,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
-      integer :: ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
+      integer :: ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, iy, iz, &
                  irz, iry, irx, iza, ize, izs, iya, iye, iys, ixa, ixe, ixs, nsend, tag, unfilled
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)

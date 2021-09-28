@@ -117,7 +117,7 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: rsqr
-      integer :: j
+      integer :: j,ix,iy,iz
 !
       do j=1,ninit
 !
@@ -513,6 +513,7 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: rsqr
+      integer :: ix,iy,iz
 !
       select case (poly_model)
         case ('oldroyd-B')

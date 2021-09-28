@@ -2111,7 +2111,7 @@ module Energy
       real :: zm,ztop,mixinglength_flux,lnrho,ss,lnTT
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
-      integer :: iter
+      integer :: iter,iz
       character (len=120) :: wfile
 !
       if (headtt) print*,'init_energy : mixinglength stratification'
@@ -7652,6 +7652,7 @@ module Energy
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
               mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad
+      integer :: iz
 !
 !  Initial values at the top.
 !

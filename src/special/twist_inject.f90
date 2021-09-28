@@ -1386,6 +1386,7 @@ module Special
     endsubroutine generate_halfgrid
 !*******************************************************************************
     subroutine div_diff_flux(f,j,p,div_flux,lvar_nolog,flux_sld)
+
       intent(in) :: f,j, lvar_nolog
       intent(out) :: div_flux
       real, dimension (nx,3), optional, intent(out) :: flux_sld
@@ -1397,21 +1398,21 @@ module Special
       real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
       real, dimension (nx) :: fim1,fip1,rfac,q1
       type (pencil_case), intent(in) :: p
-      integer :: i,j,k
+      integer :: i,j,k,ix
       logical :: lvar_nolog
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
-        fim1=0
-        fip1=0
-        fim12_l=0
-        fim12_r=0
-        fip12_l=0
-        fip12_r=0
-        cmax_ip12=0
-        cmax_im12=0
+      fim1=0
+      fip1=0
+      fim12_l=0
+      fim12_r=0
+      fip12_l=0
+      fip12_r=0
+      cmax_ip12=0
+      cmax_im12=0
+
       do k=1,3
-!
 !
         call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
                                    fim1,fip1,k,lvar_nolog)      

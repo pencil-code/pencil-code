@@ -63,6 +63,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (3) :: tmpvec
       real, dimension (mx,my,mz,mfarray) :: fcopy
+      integer :: ix,iy,iz
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -104,6 +105,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mfarray) :: fcopy
       real :: tmpscl
+      integer :: ix,iy,iz
 
       if(lperturb) then 
           fcopy(:,:,:,ilnrho)=rho_save(:,:,:)
@@ -137,6 +139,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mfarray) :: fcopy
       real :: tmpscl
+      integer :: ix,iy,iz
 
       if(lperturb) then 
           fcopy(:,:,:,iss)=ss_save(:,:,:)
@@ -171,6 +174,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mfarray) :: fcopy
       real, dimension (3) :: tmpvec
+      integer :: ix,iy,iz
 
       if(lperturb) then 
           fcopy(:,:,:,iaa:iaa+2)=aa_save(:,:,:,1:3)

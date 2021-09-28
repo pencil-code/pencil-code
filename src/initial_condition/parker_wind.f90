@@ -93,8 +93,11 @@ module InitialCondition
 !
       use SharedVariables
       use EquationOfState
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
-!      
+! 
+      integer :: iy,iz
+     
       if (lanelastic) then
         call parker_wind_iteration(f,vv,den)
       do iy=m1,m2;do iz=n1,n2

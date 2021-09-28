@@ -356,7 +356,8 @@ module Particles_potential
 !
       integer, intent(in) :: izmin,izmax,iymin,iymax,ixmin,ixmax
       integer, intent(out) :: npbuf
-      integer :: ipbuf
+      integer :: ipbuf,ix,iy,iz
+
       fp_buffer_out=0.
       npbuf=0
       ipbuf=0
@@ -502,7 +503,7 @@ module Particles_potential
         ip = head(ix,iy,iz)
         call get_cell_neighbours(ix,iy,iz,neighbours)
         do while (ip.ne.0) 
-          do inab = 1,Nnab						
+          do inab = 1,Nnab
             ix2 = neighbours(inab,1)      
             iy2 = neighbours(inab,2)
             iz2 = neighbours(inab,3)
