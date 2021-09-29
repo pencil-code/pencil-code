@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou;  oxu(3); uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
 ! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
+! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel(3); divss_rel
 !
 !***************************************************************
 module Hydro
@@ -275,6 +276,11 @@ module Hydro
       if (lpenc_loc(i_del2u)) p%del2u=0.0
 ! curlo
       if (lpenc_loc(i_curlo)) p%curlo=0.0
+! relativistic stuff
+      if (lpenc_loc(i_lorentz_gamma2)) p%lorentz_gamma2=0.
+      if (lpenc_loc(i_lorentz_gamma)) p%lorentz_gamma=0.
+      if (lpenc_loc(i_ss_rel)) p%ss_rel=0.
+      if (lpenc_loc(i_divss_rel)) p%divss_rel=0.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
