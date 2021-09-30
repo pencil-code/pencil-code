@@ -24,7 +24,7 @@ program read_videofiles
   logical :: lyinyang=.false.
   real :: t
 !
-  character (len=fnlen) :: file='',fullname='',directory=''
+  character (len=fnlen) :: directory=''
   character (len=fnlen) :: datadir='data',path='',cfield=''
   character (len=labellen) :: field='lnrho', cn_every=''
 !
@@ -98,6 +98,7 @@ program read_videofiles
           call safe_character_assign(directory, trim(datadir)//'/proc'//itoa(iproc))
           ! check for existence first
           inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
+
           if (exists) then
 !
 !  File found for iyy=ncpus, i.e. iproc=ncpus --> a Yin-Yang grid supposed.
@@ -192,7 +193,6 @@ program read_videofiles
     write(lun,*) trufal(min(ipr, 0)), ipr
     close(lun)
 
-    print *,'last file read: ',trim(fullname)
     print *,'-------------------------------------------------'
     print *,'minimum and maximum values:'
     if (ipz1/=-1) print *,' xy-plane:',min_xy,max_xy
@@ -240,6 +240,7 @@ program read_videofiles
       real,    dimension(:,:), optional, intent(in) :: yz
       integer, dimension(:),   optional, intent(in) :: inds
 !
+      character (len=fnlen) :: file='',fullname=''
       integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2
       integer :: ipx_start, ipx_end, ipy_start, ipy_end, ipz_start, ipz_end, &
                  ith_min,ith_max,iph_min,iph_max
@@ -313,15 +314,24 @@ program read_videofiles
 
             call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             !get ith_min:ith_max,iph_min:iph_max from slice_position.dat
+            lfound=.true.
             if (lrslice) then
               open (lun,file=trim(path)//'/slice_position.dat',status='old',position='append')
               backspace(lun)
-              read(lun,*) lrslice,ith_min,ith_max,iph_min,iph_max
+              read(lun,*) lfound,ith_min,ith_max,iph_min,iph_max
               close(lun)
-!print*,'ith_min:ith_max,iph_min:iph_max', ith_min,ith_max,iph_min,iph_max
-              if (allocated(loc_slice)) deallocate(loc_slice)
-              allocate (loc_slice(ith_min:ith_max,iph_min:iph_max))
+!print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,iph_max
             endif
+
+            if (lrslice) then
+              if (lfound) then
+                if (allocated(loc_slice)) deallocate(loc_slice)
+                allocate (loc_slice(ith_min:ith_max,iph_min:iph_max))
+              else
+                cycle
+              endif
+            endif
+       
             call safe_character_assign(file,'/slice_'//trim(field)//'.'//trim(suffix))
             call safe_character_assign(fullname,trim(path)//trim(file))
 !
@@ -364,6 +374,7 @@ program read_videofiles
       enddo
 !
       call safe_character_assign(fullname,trim(datadir)//trim(file))
+
       if (lyinyang.and.suffix(1:2) == 'yz') then
         ind=1; iyy=0
         do i=1,2*nygrid
@@ -424,7 +435,7 @@ program read_videofiles
 !
       integer :: frame
 !
-      open (lun,file=filename,form='unformatted',status='replace')
+      open (lun,file=trim(filename),form='unformatted',status='replace')
       if (present(yz)) then
         write (lun) size(yz,2)
         write (lun) yz
