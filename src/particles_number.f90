@@ -110,42 +110,44 @@ module Particles_number
 !***********************************************************************
     subroutine set_particle_number(f,fp,npar_low,npar_high,init)
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
-      integer :: j, npar_low, npar_high
+      integer :: npar_low, npar_high
       logical, optional :: init
-      logical :: initial=.false.
+
+      logical :: initial
+      integer :: j
 !
-      if (present(init)) then
-        if (init) initial=.true.
-      endif
+      initial=lroot.and.loptest(init)
 !
       do j=1,ninit
         select case (initnpswarm(j))
         case ('nothing')
-          if (lroot.and.j==1.and.initial) print*, 'init_particles_number: nothing'
+          if (initial.and.j==1) print*, 'init_particles_number: nothing'
         case ('constant')
-          if (lroot.and.initial) then
+          if (initial) then
             print*, 'init_particles_number: constant internal number'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
           endif
           fp(npar_low:npar_high,inpswarm)=np_swarm0
         case ('constant_rhop_swarm')
-          if (lroot.and.initial) then
+          if (initial) then
             print*, 'init_particles_number: constant mass density per particle'
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
           fp(npar_low:npar_high,inpswarm)=rhop_swarm0/ &
               (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
         case ('constant_rhop')
-          if (lroot.and.initial) then
+          if (initial) then
             print*, 'init_particles_number: constant mass density'
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
           fp(npar_low:npar_high,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
               (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
         case ('constant_luck')
-          if (lroot.and.initial) then
+          if (initial) then
             print*, 'init_particles_number: constant internal number, luck'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
             print*, 'init_particles_number: np_swarm0_luck=', np_swarm0_luck
@@ -158,7 +160,7 @@ module Particles_number
             endif
           enddo
         case ('constant_luck_proc')
-          if (lroot.and.initial) then
+          if (initial) then
             print*, 'init_particles_number: constant internal number, luck, proc'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
             print*, 'init_particles_number: np_swarm0_luck=', np_swarm0_luck

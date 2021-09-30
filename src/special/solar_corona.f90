@@ -56,7 +56,7 @@ module Special
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
   real :: lnrho_max=max_real
-  real, dimension(2) :: nwave,w_ff,z_ff
+  real, dimension(2) :: nwave=(/0.,0./),w_ff=(/0.,0./),z_ff=(/0.,0./)
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
