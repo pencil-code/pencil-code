@@ -25,7 +25,7 @@ program rvid_box
       real, dimension (ny,nz) :: yz_loc,yz_loc_dummy
       real, dimension (:,:), allocatable :: r_loc 
 !
-      integer :: ipx,ipy,ipz,iproc,it,istride
+      integer :: ip,ipx,ipy,ipz,iproc,it,istride
       integer :: ipx1 = -1
       integer :: ipy1 = -1, ipy2 = -1, ipr=-1
       integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
@@ -247,22 +247,43 @@ program rvid_box
     endif fieldname
     write(*,*) "Reading next: ", field
 !
-!  Try to find number of timesteps, therefore asume xy-slice is written
+!  Try to find number of timesteps from any existing slice.
 !
     if (lfirst_slice) then
-      ipz=ipz1
-      ipx=0
-      ipy=0
-      iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-      call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
-      call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
-      call safe_character_assign(fullname,trim(path)//trim(file))
-      !
-      inquire(FILE=trim(fullname),EXIST=exists)
+
+      if (lread_slice_xy) exists=find_slice(0,0,ipz1,field,'xy',fullname)
       if (.not.exists) then
-        print*,"Slice not found: ", fullname
+        if (lread_slice_xy2) exists=find_slice(0,0,ipz2,field,'xy2',fullname)
       endif
-      !
+      if (.not.exists) then
+        if (lread_slice_xy3) exists=find_slice(0,0,ipz3,field,'xy3',fullname)
+      endif
+      if (.not.exists) then
+        if (lread_slice_xy4) exists=find_slice(0,0,ipz4,field,'xy4',fullname)
+      endif
+      if (.not.exists) then
+        if (lread_slice_xz) exists=find_slice(0,ipy1,0,field,'xz',fullname)
+      endif
+      if (.not.exists) then
+        if (lread_slice_xz2) exists=find_slice(0,ipy2,0,field,'xz2',fullname)
+      endif
+      if (.not.exists) then
+        if (lread_slice_yz) exists=find_slice(ipx1,0,0,field,'yz',fullname)
+      endif
+      if (.not.exists) then
+        if (lread_slice_r) then
+          do ip=0,ncpus-1
+            exists=find_slice(-ip,0,0,field,'r',fullname)
+            if (exists) exit
+          enddo
+        endif
+      endif
+
+      if (.not.exists) then
+        print*,'No slices for field "'//trim(field)//'"found!!!'
+        stop
+      endif
+
       it = 0
       iostat=0
       open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -277,6 +298,7 @@ program rvid_box
       !
       allocate(t_array(it),stat=iostat)
       lfirst_slice=.false.
+
     endif
 !
 !  First xy plane
@@ -293,7 +315,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE "',trim(fullname),'" DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE "'//trim(fullname)//'" DOES NOT EXIST!!!'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -668,5 +690,27 @@ contains
     call safe_character_assign(string2, trim(string1) // trim(itoa(k)))
 !
   endsubroutine append_number
+!***********************************************************************
+  function find_slice(ipx,ipy,ipz,field,ext,fullname) result(exists)
+
+    integer, intent(IN) :: ipx,ipy,ipz
+    character(LEN=*), intent(IN) :: field,ext
+    character(LEN=*), intent(OUT) :: fullname
+    logical :: exists
+
+    character(LEN=fnlen) :: path, file
+    integer :: iproc
+
+    if (ipx>=0) then
+      iproc=find_proc(ipx,ipy,ipz)
+    else
+      iproc=-ipx
+    endif
+    call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+    call safe_character_assign(file,'/slice_'//trim(field)//'.'//trim(ext))
+    call safe_character_assign(fullname,trim(path)//trim(file))
+    inquire(FILE=trim(fullname),EXIST=exists)
+
+  endfunction find_slice
 !***********************************************************************
 endprogram rvid_box
