@@ -301,7 +301,7 @@ program read_videofiles
           return
         endif
       endif
-      allocate (glob_slice(glob_ndim1,glob_ndim2,num_frames,0:nyy-1)); glob_slice=0
+      allocate (glob_slice(glob_ndim1,glob_ndim2,num_frames,0:nyy-1)); glob_slice=0.
       if (.not.lrslice) allocate (loc_slice(ndim1,ndim2))
 !
 !  Try to read 

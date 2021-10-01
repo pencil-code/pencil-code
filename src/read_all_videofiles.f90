@@ -603,7 +603,7 @@ program rvid_box
       endif
 
       if (lread_slice_r) then
-        allocate(r_t(nth_rslice,nph_rslice,it),stat=stat)
+        allocate(r_t(nth_rslice,nph_rslice,it),stat=stat); r_t=0.
         if (stat==0) then
           do iproc=0,ncpus-1
 
