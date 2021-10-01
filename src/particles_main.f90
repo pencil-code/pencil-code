@@ -73,7 +73,6 @@ module Particles_main
       call register_particles_chem         
       call register_particles_ads          
       call register_particles_surfspec     
-      call register_particles_coagulation
       call register_pars_diagnos_state     
       call register_particles_special      (npvar)
 !
