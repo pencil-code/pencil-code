@@ -47,7 +47,7 @@ module Particles_main
 !
   contains
 !***********************************************************************
-    subroutine particles_register_modules()
+    subroutine particles_register_modules
 !
 !  Register particle modules.
 !
@@ -57,23 +57,24 @@ module Particles_main
 !
       integer :: ipvar
 !
-      call register_particles              ()
-      call register_particles_lyapunov    ()
-      call register_particles_radius       ()
-      call register_particles_grad         ()
-      call register_particles_spin         ()
-      call register_particles_number       ()
-      call register_particles_density      ()
-      call register_particles_stirring     ()
-      call register_particles_selfgrav     ()
-      call register_particles_sink         ()
-      call register_particles_TT           ()
-      call register_particles_mass         ()
-      call register_particles_drag         ()
-      call register_particles_chem         ()
-      call register_particles_ads          ()
-      call register_particles_surfspec     ()
-      call register_pars_diagnos_state     ()
+      call register_particles              
+      call register_particles_lyapunov    
+      call register_particles_radius       
+      call register_particles_grad         
+      call register_particles_spin         
+      call register_particles_number       
+      call register_particles_density      
+      call register_particles_stirring     
+      call register_particles_selfgrav     
+      call register_particles_sink         
+      call register_particles_TT           
+      call register_particles_mass         
+      call register_particles_drag         
+      call register_particles_chem         
+      call register_particles_ads          
+      call register_particles_surfspec     
+      call register_particles_coagulation
+      call register_pars_diagnos_state     
       call register_particles_special      (npvar)
 !
 !  Print summary of variable names.
@@ -252,7 +253,7 @@ module Particles_main
 !
 !  Make sure all requested interpolation variables are available.
 !
-      call interpolation_consistency_check()
+      call interpolation_consistency_check
 !
 !  Set internal and external radii of particles.
 !
@@ -297,17 +298,17 @@ module Particles_main
 !
     endsubroutine particles_init
 !***********************************************************************
-    subroutine particles_finalize()
+    subroutine particles_finalize
 !
 !  Finalize particle modules.
 !
 !  01-May-2019/PABourdin: coded
 !
-      if (lparticles_stalker) call finalize_particles_stalker()
+      if (lparticles_stalker) call finalize_particles_stalker
 !
     endsubroutine particles_finalize
 !***********************************************************************
-    subroutine read_snapshot_particles()
+    subroutine read_snapshot_particles
 !
       call particles_read_snapshot("pvar.dat")
       if (lparticles_lyapunov) call init_particles_lyapunov(fp)
@@ -325,7 +326,7 @@ module Particles_main
 !
     endsubroutine write_dim_particles
 !***********************************************************************
-    subroutine read_all_particles_init_pars()
+    subroutine read_all_particles_init_pars
 !
       use File_io, only: read_namelist
 !
@@ -348,7 +349,7 @@ module Particles_main
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
-    subroutine read_all_particles_run_pars()
+    subroutine read_all_particles_run_pars
 !
       use File_io, only: read_namelist
 !
@@ -527,7 +528,7 @@ module Particles_main
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !   This call also sorts the particles into mn
 !
-      call particles_discrete_collisions()
+      call particles_discrete_collisions
 !
 !  Adapt the number of particles in each grid cell to a desired number
 !
@@ -560,7 +561,7 @@ module Particles_main
 !
     endsubroutine split_update_particles
 !***********************************************************************
-    subroutine particles_discrete_collisions()
+    subroutine particles_discrete_collisions
 !
 !  Discrete particle collisions.
 !
@@ -718,22 +719,22 @@ module Particles_main
 !
     endsubroutine particles_special_after_dtsub
 !***********************************************************************
-    subroutine particles_pencil_criteria()
+    subroutine particles_pencil_criteria
 !
 !  Request pencils for particles.
 !
 !  20-apr-06/anders: coded
 !
-      if (lparticles)             call pencil_criteria_particles()
-      if (lparticles_radius)      call pencil_criteria_par_radius()
-      if (lparticles_spin)        call pencil_criteria_par_spin()
-      if (lparticles_number)      call pencil_criteria_par_number()
-      if (lparticles_density)     call pencil_criteria_par_density()
-      if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
-      if (lparticles_temperature) call pencil_criteria_par_TT()
-      if (lparticles_mass)        call pencil_criteria_par_mass()
-      if (lparticles_adsorbed)    call pencil_criteria_par_ads()
-      if (lparticles_chemistry)   call pencil_criteria_par_chem()
+      if (lparticles)             call pencil_criteria_particles
+      if (lparticles_radius)      call pencil_criteria_par_radius
+      if (lparticles_spin)        call pencil_criteria_par_spin
+      if (lparticles_number)      call pencil_criteria_par_number
+      if (lparticles_density)     call pencil_criteria_par_density
+      if (lparticles_selfgravity) call pencil_criteria_par_selfgrav
+      if (lparticles_temperature) call pencil_criteria_par_TT
+      if (lparticles_mass)        call pencil_criteria_par_mass
+      if (lparticles_adsorbed)    call pencil_criteria_par_ads
+      if (lparticles_chemistry)   call pencil_criteria_par_chem
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -886,9 +887,9 @@ module Particles_main
       if (lparticles_coagulation) &
           call particles_coagulation_timestep(fp,ineargrid)
 !
-      call cleanup_chemistry_pencils()
-      call cleanup_surf_pencils()
-      call cleanup_interpolated_quantities()
+      call cleanup_chemistry_pencils
+      call cleanup_surf_pencils
+      call cleanup_interpolated_quantities
       call timing('particles_pde_pencil','finished',mnloop=.true.)
 !
     endsubroutine particles_pde_pencil
@@ -1254,7 +1255,7 @@ module Particles_main
 !
     endsubroutine insert_particles_now
 !***********************************************************************
-    subroutine particles_stochastic()
+    subroutine particles_stochastic
       if (lparticles_lyapunov) call particles_stochastic_lyapunov(fp)
     endsubroutine particles_stochastic
 !***********************************************************************
@@ -1357,11 +1358,11 @@ module Particles_main
 !***********************************************************************
     subroutine particles_cleanup
 !
-!      call particles_final_clean_up()
+!      call particles_final_clean_up
       if (lparticles_chemistry) then
-        call particles_chemistry_clean_up()
-        call particles_surfspec_clean_up()
-        call particles_adsorbed_clean_up()
+        call particles_chemistry_clean_up
+        call particles_surfspec_clean_up
+        call particles_adsorbed_clean_up
       endif
 !
     endsubroutine particles_cleanup

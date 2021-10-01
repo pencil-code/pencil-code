@@ -86,7 +86,7 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
-      lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, &
+      lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, lread_oldsnap_noisothmhd, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_nomu5, &
       lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
@@ -152,7 +152,7 @@ module Param_IO
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
-      lread_oldsnap_onlyA, &
+      lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
       lread_aux, comment_char, ix, iy, iy2, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &

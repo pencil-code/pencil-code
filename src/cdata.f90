@@ -167,6 +167,7 @@ module Cdata
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfirstpoint=.false., llastpoint=.false.
+!$omp THREADPRIVATE(lfirstpoint,llastpoint)
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
@@ -208,6 +209,7 @@ module Cdata
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestflow=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lread_oldsnap_noisothmhd=.false.
   logical :: lread_oldsnap_nosink=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.true.
@@ -302,7 +304,7 @@ module Cdata
   logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
-  logical :: lvisc_hyper=.false.,lvisc_LES=.false.
+  logical :: lvisc_hyper=.false.
   logical :: lvisc_smagorinsky=.false.
   logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
@@ -433,6 +435,7 @@ module Cdata
 !
   integer :: imn
   integer, target :: lglob=1,m,n
+!$omp THREADPRIVATE(m,n)
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
@@ -477,6 +480,7 @@ module Cdata
                                          cnamexy(:),cnamexz(:),cnamerz(:), &
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
+!$omp THREADPRIVATE(headtt)
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.

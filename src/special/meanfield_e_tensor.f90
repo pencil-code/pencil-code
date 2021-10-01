@@ -1236,7 +1236,7 @@ enddo; enddo
       intent(in) :: f
       intent(inout) :: p
 !
-      integer :: i,j,k, ind(1),iii,nind
+      integer :: i,j,k,iii,nind
       real, dimension(nx) :: jrt,jtr
       character(LEN=80) :: mess
       character(LEN=20) :: cbuf

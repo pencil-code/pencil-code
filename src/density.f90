@@ -1740,10 +1740,10 @@ module Density
 !***********************************************************************
     subroutine update_char_vel_density(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
-!   9-oct-15/MR: added updateing of characteristic velocity by density
+!   9-oct-15/MR: added updating of characteristic velocity by density
 !                not yet activated (weight=0), tb reconsidered
 !
       use General, only: staggered_mean_scal
@@ -2616,7 +2616,7 @@ module Density
           call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
           fdiff=fdiff+tmp*p%rho1
         endif
-     endif
+      endif
 !
 !  Add diffusion term to continuity equation
 !

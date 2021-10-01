@@ -10,7 +10,8 @@
       character(LEN=linelen) :: message
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
-!
+      integer, parameter :: lun_input1=89
+
       if (lserial_io) call start_serialize
 
       readdir = directory_snap

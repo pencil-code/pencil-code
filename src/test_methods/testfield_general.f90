@@ -539,7 +539,7 @@ module Testfield_general
            do i=1,3 ; daatest(:,i)=etatest*((1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i)+ampl_eta_uz*uijtest(:,3,i)*divatest) ; enddo
         endif
 !
-!  diffusive time step, just take the max of diffus_eta (if existent)
+!  diffusive time step, just take the max of diffus_eta
 !  and whatever is calculated here
 !
         if (lfirst.and.ldt) then

@@ -283,7 +283,7 @@ module Testfield
       call farray_register_pde('lnrhotest',ihhtest,array=-njtest)
       call farray_index_append('ntestlnrho',njtest)
 !
-!  Set first and last index of text field
+!  Set first and last index of test solution.
 !  These values are used in this form in start, but later overwritten.
 !
       iaztestpq=iaatest+ntestfield-1

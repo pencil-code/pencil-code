@@ -2620,24 +2620,24 @@ module Sub
         bbr1(:,i)=bb(:,i)*r1_mn
       enddo
 !
-!  d B_r/dr
+!  d B_r/dr = (1/r) d^2 A_phi/(dr dtheta) - B_r/r - cot(theta)*(B_theta/r + A_phi/r^2)
 !      
       do i=1,2 
         aar2(:,i+1)=f(l1:l2,m,n,iaa+i)*r2_mn
       enddo
 !
-      call derij(f,iaz,d2adrdt,1,2)     ! (1/r) d^2 a_phi/dr dtheta
+      call derij(f,iaz,d2adrdt,1,2)     ! (1/r) d^2 A_phi/dr dtheta
 
       bijtilde(:,1,1) = d2adrdt - (bbr1(:,1) + cotth(m)*(bbr1(:,2)+aar2(:,3)))
 !
 !  (1/r) d B_r/d theta
 !      
-      call der2(f,iaz,tmp,2)            ! (1/r^2) d^2 a_phi/dtheta^2
+      call der2(f,iaz,tmp,2)            ! (1/r^2) d^2 A_phi/dtheta^2
       bijtilde(:,1,2) = tmp - aar2(:,3)*(cotth(m)*cotth(m) + sin2th(m)) + cotth(m)*bbr1(:,1)
 !
 !  d B_theta/dr
 !      
-      call der2(f,iaz,tmp,1)            ! d^2 a_phi/dr^2
+      call der2(f,iaz,tmp,1)            ! d^2 A_phi/dr^2
       bijtilde(:,2,1) = -tmp + (bbr1(:,2)+2.*aar2(:,3))
 !
 !  (1/r) d B_theta/d theta
@@ -2646,16 +2646,16 @@ module Sub
 !
 !  d B_phi/dr
 !      
-      call der2(f,iay,tmp,1)            ! d^2 a_theta/dr^2
-      call derij(f,iax,d2adrdt,1,2)     ! (1/r) d^2 a_r/dr dtheta
-      call der(f,iax,tmp1,2)            ! (1/r) d a_r/dtheta
+      call der2(f,iay,tmp,1)            ! d^2 A_theta/dr^2
+      call derij(f,iax,d2adrdt,1,2)     ! (1/r) d^2 A_r/dr dtheta
+      call der(f,iax,tmp1,2)            ! (1/r) d A_r/dtheta
       bijtilde(:,3,1) = tmp - d2adrdt + bbr1(:,3) - 2.*(aar2(:,2)-tmp1*r1_mn)
 !
 !  (1/r) d B_phi/d theta
 !      
-      call der2(f,iax,tmp,2)            ! (1/r^2) d^2 a_r/dtheta^2
-      call derij(f,iay,d2adrdt,1,2)     ! (1/r) d^2 a_theta/dr dtheta
-      call der(f,iay,tmp1,2)            ! (1/r) d a_theta/dtheta
+      call der2(f,iax,tmp,2)            ! (1/r^2) d^2 A_r/dtheta^2
+      call derij(f,iay,d2adrdt,1,2)     ! (1/r) d^2 A_theta/dr dtheta
+      call der(f,iay,tmp1,2)            ! (1/r) d A_theta/dtheta
       bijtilde(:,3,2) = tmp1*r1_mn - (tmp - d2adrdt)
  
       bijtilde(:,:,3)=0. 
@@ -3090,16 +3090,16 @@ module Sub
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
 !
+!  Exit if this is requested for non-cartesian runs.
+!
+      if (.not.lcartesian_coords) &
+          call fatal_error('del6_other', &
+          'not implemented for non-cartesian coordinates')
+!
       call der6(f,d6fdx,1)
       call der6(f,d6fdy,2)
       call der6(f,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
-!
-!  Exit if this is requested for non-cartesian runs.
-!
-      if (lcylindrical_coords.or.lspherical_coords) &
-          call fatal_error('del6_other', &
-          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6_other
 !***********************************************************************

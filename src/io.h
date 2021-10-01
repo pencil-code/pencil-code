@@ -23,7 +23,7 @@
   public :: directory_names, log_filename_to_file
 !
   ! define unique logical unit number for input and output calls
-  integer, parameter :: lun_input=88,lun_input1=89
+  integer, parameter :: lun_input=88
   integer, parameter :: lun_output=91
 
   logical :: persist_initialized = .false.
