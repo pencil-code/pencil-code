@@ -155,7 +155,7 @@ module InitialCondition
         do m=m1,m2
           do n=n1,n2
             f(l1:l2,m,n,ilnrho)=log(rho0)-hp1*(1.0-1.0/x(l1:l2))
-          if (iglobal_d2rho0) &
+          if (ld2rho0_global) &
             f(l1:l2,m,n,iglobal_d2rho0)=exp(f(l1:l2,m,n,ilnrho))* &
                                         (2*hp1/x(l1:l2)**2-hp1**2/x(l1:l2)**4)
           end do

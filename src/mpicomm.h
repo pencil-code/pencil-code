@@ -23,9 +23,9 @@
   public :: mpiallreduce_sum_arr, mpiallreduce_sum_arr2
   public :: mpiallreduce_or
   public :: mpireduce_or, mpireduce_and
-  public :: mpibcast, mpibcast_real, mpibcast_logical
+  public :: mpibcast, mpibcast_real, mpibcast_logical,mpibcast_logical_scl,mpibcast_logical_arr
   public :: mpibcast_real_arr, mpibcast_cmplx_arr_dbl, mpibcast_cmplx
-  public :: mpibcast_double
+  public :: mpibcast_double,mpibcast_double_scl,mpibcast_real_scl
   public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
   public :: mpiscatter
   public :: mpigather_scl_str, mpigather_xy, mpimerge_1d, mpigather_z, &

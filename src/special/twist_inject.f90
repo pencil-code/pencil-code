@@ -89,7 +89,9 @@ module Special
   integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff=2,cool_type=5
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
              lslope_limited_special=.false.
-  real, dimension (mx) :: x12,dx12
+  real, dimension (mx) :: x12p,dx12p
+  real, dimension (my) :: y12p
+  real, dimension (mz) :: z12p
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
           lnTT_min=-max_real, lnTT_min_tau=1.0
   real :: cool_RTV,z_cutoff
@@ -147,8 +149,8 @@ module Special
         if (lslope_limited_special) then
           if (ibb==0)  &
             call fatal_error ('initialize_special', "set lbb_as_aux=T in start.in")
-          if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-          call generate_halfgrid(x12,y12,z12)
+          if (lroot) print*,'initialize_special: Set up half grid x12p, y12p, z12p'
+          call generate_halfgrid(x12p,y12p,z12p)
           do n=n1,n2
             do m=m1,m2
               call gij(f,iaa,aij,1)
@@ -697,7 +699,7 @@ module Special
 !
       use Deriv, only: der
       use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
-      use Mpicomm, only: mpibcast_double,mpibcast_logical
+      use Mpicomm, only: mpibcast_real_scl,mpibcast_logical_scl
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn
 !
@@ -736,16 +738,16 @@ module Special
         Iring=Iring+dIring*dt_
         tilt=tilt+dtilt*dt_
       endif
-      call mpibcast_double(posxold)
-      call mpibcast_double(posx)
-      call mpibcast_double(velx)
-      call mpibcast_double(poszold)
-      call mpibcast_double(posz)
-      call mpibcast_double(dposz)
-      call mpibcast_double(Iringold)
-      call mpibcast_double(Iring)
-      call mpibcast_double(dIring)
-      call mpibcast_logical(lring)
+      call mpibcast_real_scl(posxold)
+      call mpibcast_real_scl(posx)
+      call mpibcast_real_scl(velx)
+      call mpibcast_real_scl(poszold)
+      call mpibcast_real_scl(posz)
+      call mpibcast_real_scl(dposz)
+      call mpibcast_real_scl(Iringold)
+      call mpibcast_real_scl(Iring)
+      call mpibcast_real_scl(dIring)
+      call mpibcast_logical_scl(lring)
       if (ldiagnos) then
         if (idiag_posx/=0) &
           call save_name(posx,idiag_posx)
@@ -1357,30 +1359,30 @@ module Special
     endsubroutine bc_go_x
 !***********************************************************************
 
-    subroutine generate_halfgrid(x12,y12,z12)
+    subroutine generate_halfgrid(x12p,y12p,z12p)
 !
 ! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
 !
-      real, dimension (mx), intent(out) :: x12
-      real, dimension (my), intent(out) :: y12
-      real, dimension (mz), intent(out) :: z12
+      real, dimension (mx), intent(out) :: x12p
+      real, dimension (my), intent(out) :: y12p
+      real, dimension (mz), intent(out) :: z12p
 !
       if (nxgrid == 1) then
-        x12 = x
+        x12p = x
       else
-        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+        x12p = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
       endif
 !
       if (nygrid == 1) then
-        y12 = y
+        y12p = y
       else
-        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+        y12p = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
       endif
 !
       if (nzgrid == 1) then
-        z12 = z
+        z12p = z
       else
-        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+        z12p = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
       endif
 !
     endsubroutine generate_halfgrid
@@ -1445,8 +1447,8 @@ module Special
 !
       if (lspherical_coords) then
         div_flux=0.0
-        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
+        div_flux=div_flux+(x12p(l1:l2)**2*flux_ip12(:,1)-x12p(l1-1:l2-1)**2*flux_im12(:,1))&
+                 /(x(l1:l2)**2*(x12p(l1:l2)-x12p(l1-1:l2-1))) &
         +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
                 sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
