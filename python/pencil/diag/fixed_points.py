@@ -114,6 +114,7 @@ class FixedPoint(object):
         var = read.var(
             var_file=var_file, datadir=datadir, magic=magic, quiet=True, trimall=True
         )
+
         self.t[0] = var.t
         grid = read.grid(datadir=datadir, quiet=True, trim=True)
         field = getattr(var, trace_field)
@@ -813,4 +814,4 @@ class FixedPoint(object):
             if quiet:
                 pass
             else:
-                print('Warning: no tracer file found.')
+                print("Warning: no tracer file found.")
