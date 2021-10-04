@@ -75,7 +75,7 @@ class Tracers(object):
 
         # Multi core setup.
         if not (np.isscalar(self.params.n_proc)) or (self.params.n_proc % 1 != 0):
-            print("error: invalid processor number")
+            print("Error: invalid processor number")
             return -1
         queue = mp.Queue()
 
@@ -294,8 +294,6 @@ class Tracers(object):
         xx[:, :, 1] = self.y0[i_proc : self.x0.shape[0] : n_proc, :, t_idx].copy()
         xx[:, :, 2] = self.z1[i_proc : self.x0.shape[0] : n_proc, :, t_idx].copy()
 
-#        time = np.linspace(0, self.params.Lz/np.max(abs(field[2])), 100)
-
         # Initialize the local arrays for this core.
         sub_x1 = np.zeros(xx[:, :, 0].shape)
         sub_y1 = np.zeros(xx[:, :, 0].shape)
@@ -358,14 +356,9 @@ class Tracers(object):
                         sub_mapping[int(ix / n_proc), iy, :] = [0, 0, 1]
                     else:
                         sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
-#                else:
-#                    sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
-
-        queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_tracers,
-                   sub_curly_A, sub_ee))
 
         queue.put(
-            (i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_curly_A, sub_ee)
+            (i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_tracers, sub_curly_A, sub_ee)
         )
 
     def write(self, datadir="data", destination="tracers.hdf5"):
@@ -404,14 +397,12 @@ class Tracers(object):
             set_y1 = f.create_dataset("y1", self.y1.shape, dtype=self.y1.dtype)
             set_z1 = f.create_dataset("z1", self.z1.shape, dtype=self.z1.dtype)
             set_l = f.create_dataset("l", self.l.shape, dtype=self.l.dtype)
-            set_tracers = f.create_dataset("tracers", self.tracers.shape, dtype=h5py.special_dtype(vlen=np.float64))
             set_x0[...] = self.x0[...]
             set_y0[...] = self.y0[...]
             set_x1[...] = self.x1[...]
             set_y1[...] = self.y1[...]
             set_z1[...] = self.z1[...]
             set_l[...] = self.l[...]
-            set_tracers[...] = self.tracers[...]
 #            set_q = []
 #            if not self.params.int_q == '':
 #                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
@@ -432,7 +423,7 @@ class Tracers(object):
                         group_params.attrs[key] = value
             f.close()
         else:
-            print("error: empty destination file")
+            print("Error: empty destination file")
 
     def read(self, datadir="data", file_name="tracers.hdf5"):
         """
@@ -469,9 +460,7 @@ class Tracers(object):
         self.y1 = f['y1'].value
         self.z1 = f['z1'].value
         self.l = f['l'].value
-        self.tracers = f['tracers'].value
         self.mapping = f['mapping'].value
-        print(f.keys())
         if "curly_A" in list(f.keys()):
             self.curly_A = f["curly_A"].value
         if "ee" in list(f.keys()):
@@ -483,11 +472,6 @@ class Tracers(object):
         for param in params.attrs.keys():
             setattr(self.params, param, params.attrs[param])
 
-        # Reshape the tracers.
-        for i in range(self.tracers.shape[0]):
-            for j in range(self.tracers.shape[1]):
-                for k in range(self.tracers.shape[2]):
-                    self.tracers[i, j, k] = self.tracers[i, j, k].reshape([int(self.tracers[i, j, k].shape[0]/3), 3])
         f.close()
 
 
