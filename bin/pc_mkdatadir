@@ -135,7 +135,7 @@ else if ($hn =~ *stampede*) then #stampede.tacc.utexas.edu
     echo "Special entry for Chao-Chin Yang"
     set str='s/work\/01074\/ccyang\/stampede2/scratch\/01074\/ccyang/g'
   else
-    set str='s/home1/scratch/g'
+    set str='s/work/scratch/g'
   endif
 else if ($USER =~ ccyang) then
   echo "Special entry for Chao-Chin Yang"
