@@ -2,7 +2,7 @@ program magic_emul
 
   implicit none
   include 'mpif.h'
-  integer:: mpierr, ncpus,i
+  integer:: mpierr, ncpus,i,iproc,iproc_save,MPI_COMM_MAGIC,nprocs,tag
   integer, dimension(MPI_STATUS_SIZE) :: stat
   real :: pi=3.1415, dx
   logical :: lok
@@ -11,25 +11,23 @@ program magic_emul
   real, dimension(64,64,64,3) :: uu_data
   real, dimension(:,:,:,:), allocatable :: buffer
 
-  integer :: nprocs, iproc, MPI_COMM_MAGIC, tag, iproc_save
   INTEGER(KIND=MPI_ADDRESS_KIND) :: iapp
-  logical :: flag
   integer, dimension(2) :: xind_rng
+  logical :: flag
 !
       call MPI_INIT(mpierr)
-      call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
-print*, '#Magic app, flag=', iapp, flag
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
 !
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
 !
-!
 ! If mpirun/mpiexec calls also other applications than Pencil:
 ! Get rank within the set of applications, iapp.
 ! iapp=0 if there is only one application or Pencil is the first one.
 !
+      call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
+!print*, 'MAGIC: iapp,flag=', iapp, flag
 ! New comm MPI_COMM_MAGIC which comprises only the procs of the Pencil
 ! application. iproc becomes rank in MPI_COMM_MAGIC.
 ! Attention: If there is more than one application envisaged, Pencil needs to be
@@ -43,8 +41,8 @@ print*, '#Magic app, flag=', iapp, flag
       call MPI_COMM_RANK(MPI_COMM_MAGIC, iproc, mpierr)
       call MPI_COMM_SIZE(MPI_COMM_MAGIC, ncpus, mpierr)
 
-print*, '#Magic-World cpus, rank=', nprocs, iproc_save
-print*, '#Magic cpus, rank=', ncpus, iproc
+!print*, '#Magic-World cpus, rank=', nprocs, iproc_save
+!print*, '#Magic cpus, rank=', ncpus, iproc
       if (iproc==0) then
 !
 !  Send length of name of foreign code.
@@ -57,7 +55,7 @@ print*, '#Magic cpus, rank=', ncpus, iproc
 !
 !  Send processor numbers of foreign code.
 !
-          call MPI_SEND((/2,1,1/),3,MPI_INTEGER,0,tag_foreign, MPI_COMM_WORLD, mpierr)
+          call MPI_SEND((/ncpus,1,1/),3,MPI_INTEGER,0,tag_foreign, MPI_COMM_WORLD, mpierr)
 !
 !  Send gridpoint numbers of foreign code.
 !
@@ -82,29 +80,28 @@ print*, '#Magic cpus, rank=', ncpus, iproc
 !
           dx=0.3/63.
           do i=0,63
-            xcoors(i+1)=.7+i*dx
+            xcoors(i+1)=i*dx
           enddo 
-!!!          call MPI_SEND(xcoors,64,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+          xcoors=atan(10.*xcoors)
+          xcoors=.3*xcoors/maxval(xcoors)+.7
+          call MPI_SEND(xcoors,64,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
 !
         endif
-      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-      call MPI_FINALIZE(mpierr)
-stop
 !
 !  Receive index range of buddy processors.
 !
         tag=tag_foreign+iproc
-print*, 'emul: iproc_save, iproc, tag=', iproc_save, iproc, tag
+!print*, 'Magic: iproc_save, iproc, tag=', iproc_save, iproc, tag
         call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
-print*, 'emul: xind:rng=', xind_rng
-        allocate(buffer(xind_rng(2):xind_rng(1),64,64,3))
+print*, 'Magic: xind_rng=', xind_rng
+        allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
         buffer=uu_data(xind_rng(1):xind_rng(2),:,:,:)
 
         call MPI_SEND(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
                       MPI_REAL,iproc,tag,MPI_COMM_WORLD,mpierr)
 
-!print*, 'emul: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
-!print*, 'emul: successful'
+!print*, 'Magic: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
+print*, 'Magic: successful'
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
 stop

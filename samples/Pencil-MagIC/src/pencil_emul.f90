@@ -4,25 +4,30 @@ program pencil_emul
   include 'mpif.h'
   integer:: mpierr, ncpus,i
   integer, dimension(MPI_STATUS_SIZE) :: stat
-  real :: pi=3.1415, dx
+  real, parameter :: pi=3.1415
   logical :: lok
   integer :: tag_foreign=1734
-  real, dimension(64) :: xcoors
   real, dimension(64,64,64,3) :: uu_data
   real, dimension(:,:,:,:), allocatable :: buffer
 
-  integer :: nprocs, iproc, MPI_COMM_PENCIL, tag, iproc_save
+  integer :: nprocs, iproc, MPI_COMM_PENCIL, tag, iproc_save, nxdel, ind1, ind2
+  integer, parameter :: nprocx=8, nprocy=1, nprocz=1, nprocxy=nprocx*nprocy
+  integer :: MPI_COMM_XBEAM, ipx, ipy, ipz
+  integer, parameter :: nx=16
   INTEGER(KIND=MPI_ADDRESS_KIND) :: iapp
   logical :: flag
-  integer, dimension(2) :: xind_rng, foreign_name_len
+  integer, dimension(2) :: xind_rng
+  integer :: foreign_name_len
   character(LEN=5) :: foreign_name
   real, dimension(6) :: foreign_extents
   integer, dimension(3) :: nforeign_procs, nforeign_grid
-  real :: foreign_dt
+  real :: foreign_dt, dx
+  real, dimension(:), allocatable :: xcoors
+  real, dimension(nx) :: x
 !
       call MPI_INIT(mpierr)
       call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
-print*, '#Pencil app, flag=', iapp, flag
+!print*, '#Pencil app, flag=', iapp, flag
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
 !
@@ -47,8 +52,20 @@ print*, '#Pencil app, flag=', iapp, flag
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL,mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, ncpus, mpierr)
-print*, '#Pencil-World cpus,rank=', nprocs, iproc_save
-print*, '#Pencil cpus,rank=', ncpus, iproc
+!print*, '#Pencil cpus,rank=', ncpus, iproc
+      if (ncpus/=nprocx*nprocy*nprocz) then
+        print*, 'Pencil: inconsistent proc numbers!'
+        call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+        call MPI_FINALIZE(mpierr)
+        stop
+      endif
+
+      ipx = modulo(iproc, nprocx)
+      ipy = modulo(iproc/nprocx, nprocy)
+      ipz = iproc/nprocxy
+
+      call MPI_COMM_SPLIT(MPI_COMM_PENCIL, ipy+nprocy*ipz, ipx, &
+                          MPI_COMM_XBEAM, mpierr)
       if (iproc==0) then
 !
 !  Receive length of name of foreign code.
@@ -57,7 +74,7 @@ print*, '#Pencil cpus,rank=', ncpus, iproc
 !
 !  Receive name of foreign code.
 !
-          call MPI_RECV(foreign_name,5,MPI_CHARACTER,ncpus,tag_foreign,MPI_COMM_WORLD, stat, mpierr)
+          call MPI_RECV(foreign_name,foreign_name_len,MPI_CHARACTER,ncpus,tag_foreign,MPI_COMM_WORLD, stat, mpierr)
 !
 !  Receive processor numbers of foreign code.
 !
@@ -77,36 +94,106 @@ print*, '#Pencil cpus,rank=', ncpus, iproc
 !
 !  Send confirmation flag that setup is acceptable.
 !
+          lok=.true.
           call MPI_SEND(lok,1,MPI_LOGICAL,ncpus,tag_foreign,MPI_COMM_WORLD,mpierr)
           if (.not.lok) then
-            print*, 'not ok'
+            print*, 'Pencil: not ok'
           endif
+        endif
+!
+!  Broadcast nforeign_grid
+!
+        if (iproc<nprocx) then
+          call MPI_BCAST(nforeign_grid,3,MPI_INTEGER,0,MPI_COMM_XBEAM,mpierr)
+          allocate(xcoors(nforeign_grid(1)))
+        endif
+        if (iproc==0) then
 !
 !  Receive vector of global r-grid points.
 !
-          !!!call
-          !MPI_RECV(xcoors,64,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_RECV(xcoors,nforeign_grid(1),MPI_REAL,ncpus,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
 !
+!print*, 'foreign_name_len, foreign_name=', foreign_name_len, foreign_name
+!print*, 'nforeign_procs, nforeign_grid=', nforeign_procs, nforeign_grid
+!print*, 'foreign_extents, foreign_dt=', foreign_extents, foreign_dt
+!print*, 'xcoors=', xcoors  !(1:10)
         endif
+!
+!  Broadcast xcoors
+!
+        if (iproc<nprocx) then
+          call MPI_BCAST(xcoors,nforeign_grid(1),MPI_REAL,0,MPI_COMM_XBEAM,mpierr)
+!
+!  Local grid, assume parallization only in x.
+!
+          dx=0.3/(nprocx*nx)
+          x=rangegen(0,nx-1)*dx+dx/2 + iproc*nx*dx + .7
+!print*, 'Pencil: iproc, x=', iproc, x
+
+          ind1=find_index(xcoors,x(1))
+          if (xcoors(ind1)>x(1).and.ind1>1) ind1=ind1-1 
+          ind2=find_index(xcoors,x(nx))
+          if (xcoors(ind2)<x(nx).and.ind2<nforeign_grid(1)) ind2=ind2+1 
+          xind_rng=(/ind1,ind2/)     
+print*, 'Pencil: iproc, xind_rng=', iproc, xind_rng, xcoors(ind1), xcoors(ind2)
+!
+!  Send index range of buddy processors. Assumes that number of procs in x-direction is equal.
+!
+          tag=tag_foreign+iproc
+!print*, 'Pencil: iproc_save, iproc, tag=', iproc_save, iproc, tag
+          call MPI_SEND(xind_rng,2,MPI_INTEGER,ncpus+iproc,tag,MPI_COMM_WORLD,mpierr)
+
+           allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
+
+          call MPI_RECV(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
+                        MPI_REAL,ncpus+iproc,tag,MPI_COMM_WORLD,stat, mpierr)
+        endif
+!print*, 'Pencil: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
+print*, 'Pencil: successful'
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
 stop
+contains
+!****************************************************************************
+    function rangegen(start,end,step)
 !
-!  Send index range of buddy processors.
+! Generates vector of integers  start,...,end, analogous to IDL-rangegen.
 !
-        tag=tag_foreign+iproc
-print*, 'emul: iproc_save, iproc, tag=', iproc_save, iproc, tag
-        call MPI_SEND(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,mpierr)
-print*, 'emul: xind:rng=', xind_rng
-        allocate(buffer(xind_rng(2):xind_rng(1),64,64,3))
-        buffer=uu_data(xind_rng(1):xind_rng(2),:,:,:)
+! 5-feb-14/MR: coded
+!
+      integer, intent(in) :: start, end
+      integer, intent(in), optional :: step
+      integer, dimension(end-start+1) :: rangegen
 
-        call MPI_RECV(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
-                      MPI_REAL,iproc,tag,MPI_COMM_WORLD,stat, mpierr)
+      integer :: i
 
-!print*, 'emul: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
-!print*, 'emul: successful'
-      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-      call MPI_FINALIZE(mpierr)
-stop
+      do i=start,end
+        rangegen(i-start+1)=i
+      enddo
+
+    endfunction rangegen
+!****************************************************************************
+    pure integer function find_index(xa, x, dx)
+!
+!  Returns the index of the element in array xa that is closest to x.
+!  with dx present: if distance is bigger than dx/2: return value negative.
+!
+!  24-feb-13/ccyang: coded
+!  14-may-20/MR: new optional argument dx
+!               
+      real, dimension(:), intent(in) :: xa
+      real, intent(in) :: x
+      real, intent(in), optional :: dx
+!
+      integer :: closest(1)
+!
+      closest = minloc(abs(x - xa))
+      find_index = closest(1)
+
+      if (present(dx)) then
+        if (abs(x-xa(find_index))>.5*dx) find_index=-find_index
+      endif
+!
+    endfunction find_index
+!***********************************************************************
 end
