@@ -406,34 +406,70 @@ private
 !***********************************************************************
     subroutine prep_rslice
 
-      integer :: ith,iph,ll,mm,nn
-      real :: xs,ys,zs,dth,dphi,dth0,dxs,dys,dzs,wsum
+      integer :: ith,iph,ll,mm,nn,iph_min_loc,iph_max_loc,iphm,iph_min_loc0
+      real :: xs,ys,zs,dth,dphi,dth0,dph0,dxs,dys,dzs,wsum
+      logical :: lfound
 
       if (allocated(cph_slice)) deallocate(cph_slice,sph_slice,cth_slice,sth_slice)
 
       allocate(cph_slice(nph_rslice),sph_slice(nph_rslice))
       allocate(cth_slice(nth_rslice),sth_slice(nth_rslice))
 
-      dth=pi/nth_rslice; dphi=2*pi/nph_rslice; dth0=.5*dth
+      dth=pi/nth_rslice; dphi=2*pi/nph_rslice; dth0=.5*dth; dph0=0. !pi/4.
       do iph=1,nph_rslice
-        cph_slice(iph)=cos((iph-1)*dphi); sph_slice(iph)=sin((iph-1)*dphi)
+        cph_slice(iph)=cos((iph-1)*dphi+dph0)
+        sph_slice(iph)=sin((iph-1)*dphi+dph0)
       enddo
 
-      ith_min=0; ith_max=0; iph_min=max_int; iph_max=0
+      ith_min=0; iph_min=0
       do ith=1,nth_rslice
+
         cth_slice(ith)=r_rslice*cos(dth0+(ith-1)*dth)
         sth_slice(ith)=r_rslice*sin(dth0+(ith-1)*dth)
-        do iph=1,nph_rslice
-          xs=sth_slice(ith)*cph_slice(iph)
-          ys=sth_slice(ith)*sph_slice(iph)
-          zs=cth_slice(ith)
-          if ( x(l1-1)<=xs.and.xs<=x(l2) .and. y(m1-1)<=ys.and.ys<=y(m2) .and. &
-               z(n1-1)<=zs.and.zs<=z(n2) ) then
-            iph_min=min(iph_min,iph); iph_max=max(iph_max,iph)
-            if (ith_min==0) ith_min=ith
-            ith_max=ith
+        zs=cth_slice(ith)
+
+        if (z(n1-1)<=zs.and.zs<=z(n2)) then
+
+          iph_min_loc=0; iph_max_loc=0; iph_min_loc0=0; lfound=.false.
+
+          do iph=1,nph_rslice
+
+            xs=sth_slice(ith)*cph_slice(iph)
+            ys=sth_slice(ith)*sph_slice(iph)
+
+            if ( x(l1-1)<=xs.and.xs<=x(l2) .and. y(m1-1)<=ys.and.ys<=y(m2) ) then
+              if (iph_min_loc==0) iph_min_loc=iph
+              iph_max_loc=max(iph,iph_max_loc)
+              lfound=.true.
+              if (iph_min_loc0==0) iph_min_loc0=iph
+            elseif (lfound) then
+              if (iph_min_loc>0) iph_max_loc=iph_max_loc+nph_rslice
+              iph_min_loc=0
+            endif
+
+          enddo
+!if (iproc==1) print*,'ith,iph,iph_min_loc,iph_max_loc=', ith, iph_min_loc, iph_max_loc
+
+          if (lfound) then
+            if (iph_max_loc>nph_rslice) then
+              if (iph_min_loc==0) then
+                iph_min_loc=iph_min_loc0
+              else
+                iph_min_loc=iph_min_loc-nph_rslice
+              endif
+              iph_max_loc=iph_max_loc-nph_rslice
+            endif
+            if (iph_min==0) then
+              iph_min=iph_min_loc; iph_max=iph_max_loc
+            else
+              iph_min=min(iph_min,iph_min_loc)
+              iph_max=max(iph_max,iph_max_loc)
+            endif
+
+            if (ith_min==0) ith_min=ith; ith_max=ith
           endif
-        enddo
+        endif
+
       enddo
 !print*, 'iproc,ith_min,ith_max,iph_min,iph_max=', &
 !iproc,ith_min,ith_max,iph_min,iph_max
@@ -449,10 +485,15 @@ private
         rslice_adjec_corn_inds=0
 
         do ith=ith_min,ith_max
+          zs=cth_slice(ith)
           do iph=iph_min,iph_max
-            xs=sth_slice(ith)*cph_slice(iph)
-            ys=sth_slice(ith)*sph_slice(iph)
-            zs=cth_slice(ith)
+            if (iph<1) then
+              iphm=nph_rslice+iph
+            else
+              iphm=iph
+            endif
+            xs=sth_slice(ith)*cph_slice(iphm)
+            ys=sth_slice(ith)*sph_slice(iphm)
             do nn=n1,n2
               dzs=z(nn)-zs
               if (dzs>=0.) then
@@ -468,8 +509,8 @@ private
                                    (/dxs*dys,(dx-dxs)*dys,dxs*(dy-dys),(dx-dxs)*(dy-dys)/)*(dz-dzs) /), &
                         shape(rslice_interp_weights(ith,iph,:,:,:)))/(dx*dy*dz)
                                                                     ! Requires equidistant grid
-!wsum=sum(rslice_interp_weights(ith,iph,:,:,:))
-!if (abs(wsum-1.)>1e-14) print*, iproc,ith,iph,wsum
+wsum=sum(rslice_interp_weights(ith,iph,:,:,:))
+if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
                         goto 100
                       endif
                     enddo
@@ -481,7 +522,7 @@ private
           enddo
         enddo
 !write(20+iproc,'(5(i3,1x))') ((ith, iph, rslice_adjec_corn_inds(ith,iph,:),ith=ith_min,ith_max),iph=iph_min,iph_max)
-!write(20+iproc,'(3(i3,1x))') rslice_adjec_corn_inds
+!write(20+iproc,'(3(i3,1x)/)') (rslice_adjec_corn_inds(ith_min,ll,:), ll=iph_min,iph_max)
 !(ith,iph,:), ith=ith_min,ith_max),iph=iph_min,iph_max)
       endif
 
