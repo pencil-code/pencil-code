@@ -53,6 +53,7 @@ module Magnetic_meanfield
   real :: gamma_effect=0.0, gamma_quenching=0.0
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
+  real :: meanfield_delta_height=10., meanfield_delta_width=.05
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
   real :: alpha_eps=0.0, alpha_pom0=0.0
@@ -84,6 +85,7 @@ module Magnetic_meanfield
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0, qp_aniso_factor=1.0
+  real :: kx_alpha=1.
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(my,3,3) :: alpha_tensor_y=0.
@@ -112,7 +114,7 @@ module Magnetic_meanfield
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
       x_surface, x_surface2, z_surface, &
-      alpha_rmin,&
+      alpha_rmin, kx_alpha, &
       qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
@@ -121,6 +123,7 @@ module Magnetic_meanfield
       meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
       meanfield_Beq_profile, uturb, &
+      meanfield_delta_height, meanfield_delta_width, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lchit_Bext2_equil, &
@@ -442,6 +445,14 @@ module Magnetic_meanfield
           detat_x=2.*sin(x(l1:l2))*cos(x(l1:l2))
           detat_y=0.
           detat_z=-etat_z/meanfield_etat_height
+        case ('surface_z'); etat_z=0.5 &
+          *(1.-erfunc((z-z_surface)/meanfield_etat_width))
+          etat_y=meanfield_etat
+          etat_x=1.
+          detat_z=-1./(meanfield_etat_width*sqrtpi) &
+            *exp(-((z-z_surface)/meanfield_etat_width)**2)
+          detat_y=0.
+          detat_x=0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile profile')
@@ -938,6 +949,7 @@ module Magnetic_meanfield
           else
             alpha_tmp=0.
           endif
+        case ('coskx'); alpha_tmp=cos(kx_alpha*x(l1:l2))
         case ('siny'); alpha_tmp=sin(y(m))
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
@@ -1062,6 +1074,7 @@ module Magnetic_meanfield
         case ('cos(theta)'); delta_tmp=cos(y(m))
         case ('sin(theta)'); delta_tmp=sin(y(m))
         case ('cosy*sin4y'); delta_tmp=cos(y(m))*sin(y(m))**4
+        case ('tanhz'); delta_tmp=.5*(1.-tanh((abs(z(n))-meanfield_delta_height)/meanfield_delta_width))
         case default;
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'delta_profile no such delta profile')
