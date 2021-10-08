@@ -699,7 +699,7 @@ module Special
 !
       use Deriv, only: der
       use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
-      use Mpicomm, only: mpibcast_real_scl,mpibcast_logical_scl
+      use Mpicomm, only: mpibcast
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn
 !
@@ -738,16 +738,16 @@ module Special
         Iring=Iring+dIring*dt_
         tilt=tilt+dtilt*dt_
       endif
-      call mpibcast_real_scl(posxold)
-      call mpibcast_real_scl(posx)
-      call mpibcast_real_scl(velx)
-      call mpibcast_real_scl(poszold)
-      call mpibcast_real_scl(posz)
-      call mpibcast_real_scl(dposz)
-      call mpibcast_real_scl(Iringold)
-      call mpibcast_real_scl(Iring)
-      call mpibcast_real_scl(dIring)
-      call mpibcast_logical_scl(lring)
+      call mpibcast(posxold)
+      call mpibcast(posx)
+      call mpibcast(velx)
+      call mpibcast(poszold)
+      call mpibcast(posz)
+      call mpibcast(dposz)
+      call mpibcast(Iringold)
+      call mpibcast(Iring)
+      call mpibcast(dIring)
+      call mpibcast(lring)
       if (ldiagnos) then
         if (idiag_posx/=0) &
           call save_name(posx,idiag_posx)
