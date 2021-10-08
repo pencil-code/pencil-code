@@ -249,6 +249,7 @@ program read_videofiles
       real, dimension (:,:), allocatable :: loc_slice
       real, dimension (:,:,:,:), allocatable :: glob_slice
       real, dimension (:,:), allocatable :: glob_slice_yy
+      integer, dimension(:), allocatable :: phinds
       real :: slice_pos
       logical :: lexists,lrslice,lfound
 !
@@ -327,6 +328,8 @@ program read_videofiles
               if (lfound) then
                 if (allocated(loc_slice)) deallocate(loc_slice)
                 allocate (loc_slice(ith_min:ith_max,iph_min:iph_max))
+                if (allocated(phinds)) deallocate(phinds)
+                allocate (phinds(iph_min:iph_max))
               else
                 cycle
               endif
@@ -363,8 +366,13 @@ program read_videofiles
               elseif (suffix(1:2) == 'xy') then
                 glob_slice(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,frame,iyy) = loc_slice
               elseif (suffix(1:1) == 'r') then
-                glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy) = &
-                      glob_slice(ith_min:ith_max,iph_min:iph_max,frame,iyy)+loc_slice
+                if (iph_min<1) then
+                  phinds=(/rangegen(iph_min,0)+glob_ndim2,rangegen(1,iph_max)/)
+                else
+                  phinds=rangegen(iph_min,iph_max)
+                endif
+                glob_slice(ith_min:ith_max,phinds,frame,iyy) = &
+                      glob_slice(ith_min:ith_max,phinds,frame,iyy)+loc_slice
               endif
             enddo
             close (lun)

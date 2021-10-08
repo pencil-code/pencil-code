@@ -46,6 +46,7 @@ program rvid_box
       real :: t,t_dummy
       real :: slice_pos=0.,slice_pos_dummy
       integer :: stride=0,lun
+      integer, dimension(:), allocatable :: phinds
 !
       character (len=fnlen) :: file='',fullname='',wfile='',directory=''
       character (len=fnlen) :: datadir='data',path='',cfield=''
@@ -624,13 +625,23 @@ print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,ip
             else
               if (allocated(r_loc)) deallocate(r_loc)
               allocate(r_loc(ith_min:ith_max,iph_min:iph_max))
+
+              if (allocated(phinds)) deallocate(phinds)
+              allocate (phinds(iph_min:iph_max))
+
+              if (iph_min<1) then
+                phinds=(/rangegen(iph_min,0)+nph_rslice,rangegen(1,iph_max)/)
+              else
+                phinds=rangegen(iph_min,iph_max)
+              endif
               open(lun_read,file=trim(fullname),status='old',form='unformatted')
+
               do i=1,it
                 do istride=1,stride
                   read(lun_read,iostat=iostat) r_loc,t_dummy,slice_pos_dummy
                 enddo
                 read(lun_read,iostat=iostat) r_loc,t,slice_pos
-                r_t(ith_min:ith_max,iph_min:iph_max,i)=r_t(ith_min:ith_max,iph_min:iph_max,i)+r_loc
+                r_t(ith_min:ith_max,phinds,i)=r_t(ith_min:ith_max,phinds,i)+r_loc
                 t_array(i) = t
               enddo
               close(lun_read)
