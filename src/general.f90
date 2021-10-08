@@ -42,7 +42,7 @@ module General
   public :: lextend_vector
   public :: operator(.in.)
   public :: loptest, ioptest, roptest, doptest, coptest
-  public :: indgen
+  public :: indgen,rangegen
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
   public :: staggered_max_scal, staggered_max_vec
@@ -4236,6 +4236,23 @@ endfunction
       enddo
 
     endfunction indgen
+!****************************************************************************
+    function rangegen(start,end)
+!
+! Generates vector of integers  start,...,end, analogous to IDL-rangegen.
+!
+! 5-feb-14/MR: coded
+!
+      integer, intent(in) :: start, end
+      integer, dimension(end-start+1) :: rangegen
+
+      integer :: i
+
+      do i=start,end
+        rangegen(i-start+1)=i
+      enddo
+
+    endfunction rangegen
 !****************************************************************************
     subroutine ranges_dimensional(jrange)
 !
