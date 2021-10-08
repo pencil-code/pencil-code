@@ -384,11 +384,17 @@ contains
         if (coord_system/='cartesian') then
           call warning('setup_slices','r-slices only meaningful in Cartesian runs')
           lwrite_slice_r=.false.
+        elseif (r_rslice>min(xyz1(1),-xyz0(1)) .or. r_rslice>min(xyz1(2),-xyz0(2)) &
+                                               .or. r_rslice>min(xyz1(3),-xyz0(3)) ) then
+          call warning('setup_slices','rslice partially outside box')
+          lwrite_slice_r=.false.
         elseif (dimensionality<3) then
           call warning('setup_slices','r-slices only meaningful in 3D- runs')
           lwrite_slice_r=.false.
         elseif (any(.not.lequidist)) then
           call not_implemented('setup_slices','r-slices in non-equidistannt grids')
+        elseif (nprocx>1.and.mod(nprocx,2)/=0 .or. nprocy>1.and.mod(nprocy,2)/=0) then
+          call not_implemented('setup_slices','r-slices for odd nprocx or nprocy')
         else
           call prep_rslice
         endif
