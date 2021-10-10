@@ -52,9 +52,12 @@ module Testfield
   real :: ktestfield=1., ktestfield1=1.
   real :: kdamp_2ndord=0., kdamp_iter=0., dt_iter=0., reduce_iter=1.
   real :: chiraltest=0.
+  real :: alpha_incoherent=0.
+  real, dimension(nx) :: alpha_tmp
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
   logical :: ltest_uxb=.false.,ltest_jxb=.false.
+  logical :: lalpha_incoherent=.false.
 
   !!!! new input pars
   namelist /testfield_run_pars/ &
@@ -70,6 +73,7 @@ module Testfield
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,tau_aatest, &
+       lalpha_incoherent, alpha_incoherent, &
 !
 !                                         the following parameter relevant for artificically introduced 2nd order in time equation for a_test for suppressing
 !                                         unstable eigenmodes of the homogeneous equations
@@ -392,6 +396,12 @@ module Testfield
         endif
       endif
 !
+!  incoherent alpha effect
+!
+      if (lalpha_incoherent) then
+        alpha_tmp=sqrt2*alpha_incoherent*cos(x(l1:l2))
+      endif
+!
 !  allocate slice buffers
 !
       if (lwrite_slices) then
@@ -457,6 +467,7 @@ module Testfield
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
 !  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0
+!  10-oct-21/axel: added possibility of incoherent alpha effect
 !
       use Diagnostics
       use Cdata
@@ -608,6 +619,7 @@ module Testfield
 !
         if (lfirst_iter) then 
           call cross_mn(uufluct,B0test,uxb)
+          if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,B0test,uxb)
           daatest=daatest+uxb
         endif
 !
@@ -622,6 +634,7 @@ module Testfield
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
           endif
+          if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxb)
 !
 !  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
 !
@@ -853,6 +866,7 @@ module Testfield
            idiag_M11z/=0.or.idiag_M22z/=0.or.idiag_M33z/=0)) then
 
           call calc_uxb(f,p,iaxtest,uxb,bbtest)
+          if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxb)
           if (lcomplex) call calc_uxb(f,p,iaxtest2,uxb2,bbtest2)
 
           if (idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
@@ -1038,7 +1052,7 @@ module Testfield
             endif
           endif
 !
-!  Subtract E0 field if it has been calculated
+!  Subtract E0 field if it has been calculated.
 !  Do this only for the leta_rank2=T option.
 !
         else
@@ -1403,6 +1417,7 @@ module Testfield
 !
               call calc_pencils_hydro(f,p(1),lpenc_loc)
               call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
+              if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxbtest)
 !
               juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
