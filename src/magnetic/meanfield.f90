@@ -949,7 +949,7 @@ module Magnetic_meanfield
           else
             alpha_tmp=0.
           endif
-        case ('coskx'); alpha_tmp=cos(kx_alpha*x(l1:l2))
+        case ('coskx'); alpha_tmp=sqrt2*cos(kx_alpha*x(l1:l2))
         case ('siny'); alpha_tmp=sin(y(m))
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
