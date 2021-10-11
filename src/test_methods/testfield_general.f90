@@ -30,7 +30,7 @@ module Testfield_general
 ! initial parameters
 !
   real, dimension(3)                        :: B_ext=(/0.,0.,0./)
-  character (len=labellen), dimension(ninit):: initaatest='zero'
+  character (len=labellen), dimension(ninit):: initaatest='nothing'
   real,                     dimension(ninit):: amplaatest=0.,                            &
                                                kx_aatest=0.,ky_aatest=0.,kz_aatest=0.,   &
                                                phasex_aatest=0.,phasey_aatest=0.,phasez_aatest=0.
@@ -244,10 +244,11 @@ module Testfield_general
       integer :: j, indx, jtest, istart, iend, ios
       character(LEN=labellen) :: init_type
 !
+      f(:,:,:,iaatest:iaztestpq)=0.
       do j=1,ninit
 
         indx = index(initaatest(j),'-',BACK=.true.)+1
-        if (indx>1 .and. indx<=len(trim(initaatest(j)))) then
+        if (indx>2 .and. indx<=len(trim(initaatest(j)))) then
 !
           read(initaatest(j)(indx:),'(i3)',IOSTAT=ios) jtest
 !
@@ -265,7 +266,7 @@ module Testfield_general
             cycle
           endif
 
-          init_type=initaatest(j)(1:indx-1)          
+          init_type=initaatest(j)(1:indx-2)          
         else
 !
 !  All test solutions set with same IC.
@@ -284,7 +285,7 @@ module Testfield_general
         case ('zero'); f(:,:,:,istart:iend)=0.
         case ('gaussian-noise'); call gaunoise(amplaatest(j),f,istart,iend)
         case ('sinwave-x'); if (istart>0) call sinwave(amplaatest(j),f,istart+1,kx=kx_aatest(j))   ! sets y-component!!
-!      case ('sinwave-x-1'); if (istart>0) call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))        
+        case ('sinwave-z'); if (istart>0) call sinwave(amplaatest(j),f,istart+1,kz=kz_aatest(j))
         case ('Beltrami-x'); if (istart>0) call beltrami(amplaatest(j),f,istart,kx=-kx_aatest(j),phase=phasex_aatest(j))
         case ('Beltrami-z'); if (istart>0) call beltrami(amplaatest(j),f,istart,kz=-kz_aatest(j),phase=phasez_aatest(j))
         case ('nothing'); !(do nothing)
