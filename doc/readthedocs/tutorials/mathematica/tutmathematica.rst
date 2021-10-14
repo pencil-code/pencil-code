@@ -6,10 +6,6 @@ Pencil Mathematica Tutorials
 
 Here you can find some tutorials on using Mathematica for post-processing.
 
-.. warning::
-
-        This page is still under development.
-
 
 Loading the package
 ===================
@@ -43,6 +39,23 @@ To use the package, call ``Needs["pc`"]`` in a notebook or a script.
  Needs["pc`","path/to/this/package"]
 
 each time.
+
+.. admonition:: Note:
+
+        To run the package on subkernels you may need to do something like:
+
+        .. code::
+
+          LaunchKernels[];
+          AppendTo[$Path, "your/pencil/home/mathematica"]//ParallelEvaluate;
+          Needs["pc`"]
+          ParallelNeeds["pc`"]
+
+        Then you can do things like ``ParallelTable[readTS[...],...]``.
+        Note that both ``Needs`` on the master kernel and ``ParallelNeeds`` on subkernels are needed.
+        See also the discussions `here <https://mathematica.stackexchange.com/questions/11595/package-found-with-needs-but-not-with-parallelneeds>`_, and the 'Possible issues' section
+        `here <https://reference.wolfram.com/language/ref/ParallelNeeds.html>`_.
+
 
 
 Pencil Code Commands in General

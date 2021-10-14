@@ -15,10 +15,11 @@ BeginPackage["pcPowercor`"]
 (*Usage messages*)
 
 
-autoCor::usage="autoCor[ts] computes auto-correlation of ts.
+autoCor::usage="autoCor[ts,n:3] computes auto-correlation of ts.
 Input:
   ts:  List. A time series data; for example readTS[sim,\"t\",\"urms\"]//Transpose.
        Need not start from t=0.
+  n:  Optional. Integer. The autocorrelation function is computed up to time tmax/n.
 Output:
   {{0,1},{t2,ac2},{t3,ac3},...}"
 
@@ -30,6 +31,15 @@ Input:
   n:  Size of the ensemble. By default n=8.
 Output:
   A List of length n, each of the form {{0,1},{t2,ac2},{t3,ac3},...}"
+
+fitTime::usage="fitTime[ts,lmodel,nfit] fits a time series using its first nfit points and 
+a model specified by lmodel.
+Input:
+  ts:  List. Time series.
+  lmodel:  String. Currently availabel models: \"EXP\", \"EXPCOS\", \"HALF\", \"AUTO\".
+  nfit:  Integer.
+Output:
+  The decaying time as a real number."
 
 showResetTime::usage="showResetTime[{t,f},dtcor,shift:0,plotStyle:{}] returns a ListPlot that
 shows both the original curve and the identified resetting points.
@@ -116,13 +126,13 @@ splitCurve[t_,f_,dtcor_]:=With[{pos=findResetTime[t,dtcor]},Module[{pos1,t1,f1,l
 
 
 autocor[f_,\[Tau]_,dt_]:=With[{times=If[Length[Dimensions[f]]==1,Times,Dot]},
-  MapThread[times[#1,#2]*#3&,{Drop[f,-\[Tau]],Drop[RotateLeft[f,\[Tau]],-\[Tau]],Drop[dt,-\[Tau]]}]//Total
+  MapThread[times[Conjugate[#1],#2]*#3&,{Drop[f,-\[Tau]],Drop[RotateLeft[f,\[Tau]],-\[Tau]],Drop[dt,-\[Tau]]}]//Total
 ]
-autoCor[ts_]:=With[{ts0=timeShift[ts]},Module[{t,f,dt,norm,\[Tau]max},
+autoCor[ts_,ndivide_Integer:3]:=With[{ts0=timeShift[ts]},Module[{t,f,dt,norm,\[Tau]max},
   {t,f}=Transpose[ts0];
   f=Most[f];
   dt=Differences[t];
-  \[Tau]max=Round[Length[dt]/3];
+  \[Tau]max=Round[Length[dt]/ndivide];
   norm=autocor[f,0,dt];
   {t[[1;;\[Tau]max+1]],autocor[f,#,dt]/norm&/@Range[0,\[Tau]max]}//Transpose
 ]]
@@ -141,6 +151,18 @@ fitTime[ts_List,model_String,nFit_Integer]:=Module[{a,x},
       "EXPCOS",a[2]*Cos[a[3]*x]*Exp[-x/a[1]]
     ],{a[1],a[2],a[3]},x]
 ]
+fitTime[ts_List,"HALF",nFit_Integer]:=Module[{t,v,pos,t1,t2,v1,v2},
+  {t,v}=Transpose[Take[ts,nFit]];
+  pos=Nearest[v->"Index",0.5,2];
+  If[Abs[Subtract@@pos]!=1,t[[pos//Min]]//Return];
+  {t1,t2}=Extract[t,List/@pos];{v1,v2}=Extract[v,List/@pos];
+  (t1-t2+2t2*v1-2t1*v2)/(2v1-2v2)
+]
+fitTime[ts_List,"AUTO",nFit_Integer]:=Cases[
+  fitTime[ts,#,nFit]&/@{"EXP","EXPCOS","HALF"},
+  x_?Positive
+]//Min
+
 fitTime[ts_String,model_String,nFit_Integer]:=ts
 
 
@@ -181,7 +203,7 @@ End[]
 
 
 Protect[
-  autoCor,autoCorEnsemble,
+  autoCor,autoCorEnsemble,fitTime,
   showResetTime,
   corrTime,corrTimeAC
 ]
