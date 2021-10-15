@@ -53,6 +53,7 @@ module Energy
   real :: khor_ss=1.0, ss_const=0.0
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
+  real :: ampl_imp_ss=0.01
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real, dimension(ninit) :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: center2_x=0.0, center2_y=0.0, center2_z=0.0
@@ -239,7 +240,7 @@ module Energy
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
-      kx_ss, ky_ss, kz_ss, tau_relax_ss
+      kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -5972,11 +5973,11 @@ module Energy
 !  Relax horizontally averaged entropy toward a cos(kz) profile
 !
       if (tau_relax_ss/=0.) then
-         prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
-         if (lcalc_ssmean) then
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_ss*prof(n))/tau_relax_ss
+        prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
+        if (lcalc_ssmean) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_imp_ss*prof)/tau_relax_ss
         else
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss(l1:l2)-ss_const-ampl_ss*prof(n))/tau_relax_ss
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const-ampl_imp_ss*prof)/tau_relax_ss
         endif
       endif
 !
