@@ -126,7 +126,7 @@ splitCurve[t_,f_,dtcor_]:=With[{pos=findResetTime[t,dtcor]},Module[{pos1,t1,f1,l
 
 
 autocor[f_,\[Tau]_,dt_]:=With[{times=If[Length[Dimensions[f]]==1,Times,Dot]},
-  MapThread[times[Conjugate[#1],#2]*#3&,{Drop[f,-\[Tau]],Drop[RotateLeft[f,\[Tau]],-\[Tau]],Drop[dt,-\[Tau]]}]//Total
+  MapThread[times[Conjugate[#1],#2]*#3&,{Drop[f,-\[Tau]],Drop[RotateLeft[f,\[Tau]],-\[Tau]],Drop[dt,-\[Tau]]}]//Mean
 ]
 autoCor[ts_,ndivide_Integer:3]:=With[{ts0=timeShift[ts]},Module[{t,f,dt,norm,\[Tau]max},
   {t,f}=Transpose[ts0];
