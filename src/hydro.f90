@@ -7637,10 +7637,10 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (velocity_ceiling>0.0) then
-        where (f(:,:,:,iux:iuz)> velocity_ceiling) &
-            f(:,:,:,iux:iuz)= velocity_ceiling
-        where (f(:,:,:,iux:iuz)<-velocity_ceiling) &
-            f(:,:,:,iux:iuz)=-velocity_ceiling
+        where (f(l1:l2,m,n,iux:iuz)> velocity_ceiling) &
+            f(l1:l2,m,n,iux:iuz)= velocity_ceiling
+        where (f(l1:l2,m,n,iux:iuz)<-velocity_ceiling) &
+            f(l1:l2,m,n,iux:iuz)=-velocity_ceiling
       endif
 !
     endsubroutine impose_velocity_ceiling
