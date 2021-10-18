@@ -116,7 +116,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; HDF5 file format - check validity of input object.
 ;
-    if is_valid(object,'GRID',filename) then return
+    if is_valid(object,'GRID',filename,single=single) then return
 
     start = [ 0, 0, 0 ]
     count = [ dim.mx, dim.my, dim.mz ]
@@ -419,7 +419,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ;  Build structure of all the variables
 ;
-  object = create_struct(name="PC_GRID"+':'+strtrim(filename), $
+  object = create_struct(name="PC_GRID"+':'+strtrim(filename)+':'+(precision eq 'S' or single ? 'S' : 'D'), $
       ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
        'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
        'lequidist','lperi','ldegenerated'], $

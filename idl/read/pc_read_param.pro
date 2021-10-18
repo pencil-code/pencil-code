@@ -75,7 +75,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Check validity of input object.
 ;
-  if is_valid(object,'PARAM',filename) then return
+  if is_valid(object,'PARAM',filename, single=single) then return
 ;
 ; Check if we are prepared for reading anything.
 ;
@@ -150,7 +150,7 @@ COMPILE_OPT IDL2,HIDDEN
       obj = create_struct (obj, struct)
     end
   end
-  object = create_struct(name='PC_PARAM:'+strtrim(filename), obj)
+  object = create_struct(name='PC_PARAM:'+strtrim(filename)+':'+(precision eq 'S' or single ? 'S' : 'D'), obj)
 ;
 ; If requested print a summary
 ;
