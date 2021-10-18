@@ -135,7 +135,7 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
-    lturnoff, tturnoff
+    lturnoff, tturnoff, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -554,7 +554,7 @@ module Special
         if (lstress_ramp) then
           fact=min(real(t-tstart)/tstress_ramp, 1.)
           p%stress_ij(:,:)=p%stress_ij(:,:)*fact
-        else (lturnoff) then
+        elseif (lturnoff) then
           if (t>tturnoff) p%stress_ij(:,:)=0.
         endif
       endif
