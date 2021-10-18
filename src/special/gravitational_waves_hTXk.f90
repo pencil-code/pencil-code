@@ -104,11 +104,11 @@ module Special
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false.
   logical :: lonly_mag=.false.
-  logical :: lstress=.true., lstress_ramp=.false., ldelkt=.false.
+  logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0.
+  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1.
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
@@ -135,6 +135,7 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
+    lturnoff, tturnoff
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -546,10 +547,15 @@ module Special
         enddo
 !
 !  Possibility of gradually ramping up the stress on time scale tstress_ramp.
+!  Here, (t-tstart)/tstress_ramp increases linearly starting with tstart,
+!  which is always our initial time, until t-tstart=tstress_ramp.
+!  To turn off the stress at t=tturnoff, ..
 !
         if (lstress_ramp) then
           fact=min(real(t-tstart)/tstress_ramp, 1.)
           p%stress_ij(:,:)=p%stress_ij(:,:)*fact
+        else (lturnoff) then
+          if (t>tturnoff) p%stress_ij(:,:)=0.
         endif
       endif
 !
