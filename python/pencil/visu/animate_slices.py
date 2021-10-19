@@ -121,7 +121,7 @@ def animate_slices(
             ifirst = False
             islice += 1
 
-            time.sleep(wait)
+            plt.pause(wait)
 
         if t > tmax:
             break
