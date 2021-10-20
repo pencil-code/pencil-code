@@ -91,8 +91,10 @@ class Power(object):
         import numpy as np
         from pencil import read
         from pencil.util import ffloat
-        import sys
+
+        # import sys
         import matplotlib as plt
+        import re
 
         power_list = []
         file_list = []
@@ -203,37 +205,81 @@ class Power(object):
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
+                # Now read z-positions, if any
+                if "z-pos" in line_list[ini]:
+                    print("More than 1 z-pos")
+                    nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
+                    ini += 1
+                    zpos = np.array([float(j) for j in line_list[ini].split()])
+                    ini += 1
+                    setattr(self, "nzpos", nzpos)
+                    setattr(self, "zpos", zpos)
+                else:
+                    nzpos = 1
+                # If more than one z-pos, the file will give the results concatenated for the 3 positions and the lenght of the block will increase
+
                 # Now read the rest of the file
                 # print('ini', ini)
                 line_list = line_list[ini:]
-                if line_list[0].strip() == "-Infinity":
-                    line_list = line_list[1:]
-                if line_list[0][0] == "z":
-                    line_list = line_list[2:]
+                # I think this is not needed now
+                # if line_list[0].strip() == "-Infinity":
+                #    line_list = line_list[1:]
+                # if line_list[0][0] == "z":
+                #    line_list = line_list[2:]
                 time = []
                 power_array = []
                 # print('nk', nk)
-                block_size = np.ceil(int(nk * 2) / 16.0) + 1
+                # The power spectrum can be complex or real, hence len 8 or 16
+                linelen = len(line_list[1].strip().split())
+
+                # if linelen == 8:
+                #    print("Reading a real power spectrum")
+                #    block_size = np.ceil(int(nk*nzpos) / linelen) + 1
+
+                # elif linelen == 16:
+                #    print("Reading a complex power spectrum")
+                #    block_size = np.ceil(int(nk *nzpos * 2) / linelen) + 1
+
+                block_size = np.ceil(int(nk * nzpos) / 8) + 1
+                # print(f"block size {block_size}")
+
                 n_blocks = int(len(line_list) / block_size)
+
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
                         # print(float(line.strip()))
                         time.append(float(line.strip()))
                         # print("line_idx", line_idx)
                     else:
-                        maxi = len(line.strip().split())
-                        for j in range(0, maxi, 2):
-                            a = line.strip().split()[j]
+                        # maxi = len(line.strip().split())
+                        if linelen == 8:
+                            for value_string in line.strip().split():
+                                power_array.append(ffloat(value_string))
 
-                            b = line.strip().split()[j + 1]
+                        elif linelen == 16:
+                            for j in range(0, linelen, 2):
+                                a = line.strip().split()[j]
 
-                            power_array.append(complex(real=ffloat(a), imag=ffloat(b)))
+                                b = line.strip().split()[j + 1]
+
+                                power_array.append(
+                                    complex(real=ffloat(a), imag=ffloat(b))
+                                )
+
                 time = np.array(time)
-                power_array = (
-                    np.array(power_array)
-                    .reshape([n_blocks, int(nk)])
-                    .astype(np.complex)
-                )
+                if linelen == 8:
+                    power_array = (
+                        np.array(power_array)
+                        .reshape([n_blocks, int(nzpos), int(nk)])
+                        .astype(np.float32)
+                    )
+
+                if linelen == 16:
+                    power_array = (
+                        np.array(power_array)
+                        .reshape([n_blocks, int(nzpos), int(nk)])
+                        .astype(np.complex)
+                    )
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
