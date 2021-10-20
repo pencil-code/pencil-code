@@ -595,6 +595,9 @@ module Forcing
 !  cosx modulation
 !
       elseif (iforce_profile=='cosx2') then
+        print*,'--------------------'
+        print*,'using iforce profile ', iforce_profile
+        print*,'--------------------'
         profx_ampl=cos(kx_ff*x(l1:l2))**2
         profx_hel=1.
         profy_ampl=1.; profy_hel=1.
@@ -603,7 +606,7 @@ module Forcing
 !  cosx modulation
 !
       elseif (iforce_profile=='cosx^nexp') then
-        profx_ampl=cos(kx_ff*x(l1:l2))**nexp_ff
+        profx_ampl=fountain*cos(kx_ff*x(l1:l2))**nexp_ff
         profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
@@ -1038,6 +1041,7 @@ module Forcing
 !
 !  calculate and add forcing function
 !
+
         select case (iforce)
         case ('2drandom_xy');     call forcing_2drandom_xy(f)
         case ('2drxy_simple');    call forcing_2drandom_xy_simple(f)
