@@ -22,7 +22,6 @@ default, single, 0
 ;  Default data directory.
 ;
 datadir = pc_get_datadir(datadir)
-print,'NS1', datadir
 ;
 ;  Get necessary dimensions.
 ;
@@ -101,7 +100,6 @@ openr, lun, run_dir+in_file, /get_lun
 readf, lun, varnames
 close, lun
 free_lun, lun
-print, 'NS3=' , varnames
 ;
 ; Remove commented and empty elements from allvariables
 ;
