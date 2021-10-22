@@ -35,6 +35,10 @@ ioerr:
         cd, current=wd
         data=strtrim(wd,2)+'/'+data
       endif
+;
+;  If no slash at end of string, append it.
+;
+      if stregex(data,'.*\/$') eq -1 then data=data+'/'
       return, data 
 
 end
