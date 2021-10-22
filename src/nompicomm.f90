@@ -688,12 +688,13 @@ module Mpicomm
     endsubroutine mpisendrecv_real_scl
 !***********************************************************************
     subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
-      recv_array,proc_src,recvtag)
+      recv_array,proc_src,recvtag,idir)
 
     integer :: sendcnt
     real, dimension(sendcnt) :: send_array
     real, dimension(sendcnt) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag
+    integer, optional :: idir
 
     call keep_compiler_quiet(sendtag, recvtag, proc_dest, proc_src)
     call keep_compiler_quiet(send_array,recv_array)
@@ -701,12 +702,13 @@ module Mpicomm
     endsubroutine mpisendrecv_real_arr
 !***********************************************************************
     subroutine mpisendrecv_real_arr2(send_array,sendcnt_arr,proc_dest,sendtag, &
-     recv_array,proc_src,recvtag)
+     recv_array,proc_src,recvtag,idir)
 
     integer, dimension(2) :: sendcnt_arr
     real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: send_array
     real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag
+    integer, optional :: idir
 
     call keep_compiler_quiet(sendtag, recvtag, proc_dest, proc_src)
     call keep_compiler_quiet(send_array,recv_array)

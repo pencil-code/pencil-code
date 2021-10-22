@@ -3121,12 +3121,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     endsubroutine mpisendrecv_real_scl
 !***********************************************************************
     subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
-                                    recv_array,proc_src,recvtag)
+                                    recv_array,proc_src,recvtag,idir)
+
+      use General, only: ioptest
 
       integer :: sendcnt
       real, dimension(sendcnt) :: send_array
       real, dimension(sendcnt) :: recv_array
       integer :: proc_src, proc_dest, sendtag, recvtag
+      integer, optional :: idir
+
       integer, dimension(MPI_STATUS_SIZE) :: stat
 
       intent(out) :: recv_array
@@ -3135,12 +3139,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
                         recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_GRID,stat,mpierr)
+                        mpigetcomm(ioptest(idir)),stat,mpierr)
 !
     endsubroutine mpisendrecv_real_arr
 !***********************************************************************
     subroutine mpisendrecv_real_arr2(send_array,nbcast_array,proc_dest,sendtag, &
-                                     recv_array,proc_src,recvtag)
+                                     recv_array,proc_src,recvtag,idir)
+
+      use General, only: ioptest
 
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: send_array
@@ -3148,13 +3154,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: proc_src, proc_dest, sendtag, recvtag, num_elements
       integer, dimension(MPI_STATUS_SIZE) :: stat
       intent(out) :: recv_array
+      integer, optional :: idir
  
       if (any(nbcast_array == 0)) return
 
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
                         recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_GRID,stat,mpierr)
+                        mpigetcomm(ioptest(idir)),stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr2
 !***********************************************************************
