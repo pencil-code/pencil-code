@@ -5,7 +5,7 @@
   public :: deri_3d_inds
   public :: der_x,der2_x
   public :: der_z,der2_z
-  public :: der_upwind1st
+  public :: der_upwind1st,distr_der
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
