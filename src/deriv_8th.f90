@@ -263,6 +263,21 @@ module Deriv
 !
     endsubroutine der_pencil
 !***********************************************************************
+    subroutine distr_der(arr,idir,der,order)
+!
+!  Dummy
+!
+    real, dimension(:,:) :: arr, der
+    integer :: idir
+    integer, optional :: order
+
+    call not_implemented('distr_der','for 8th order')
+    call keep_compiler_quiet(idir)
+    call keep_compiler_quiet(arr)
+    call keep_compiler_quiet(der)
+    
+    endsubroutine distr_der
+!***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
