@@ -9,7 +9,7 @@
 !***************************************************************
 module Deriv
 !
-  use Messages, only: fatal_error, warning
+  use Messages, only: fatal_error, warning, not_implemented
   use Cdata
 !
   implicit none
@@ -403,6 +403,73 @@ module Deriv
       endif
 !
     endsubroutine der_pencil
+!***********************************************************************
+  subroutine distr_der(arr,idir,der,order)
+!
+!  Calculates 1st or 2nd derivative of a 1D array (of vectors, so 2nd dim for components),
+!  which is distributed across the procs of its dimension.
+!  At the moment only for z-direction (idir=IZBEAM=3).
+!
+!  20-oct-21/MR: coded
+!
+    use Mpicomm, only: mpisendrecv_real,IXBEAM,IYBEAM,IZBEAM
+    use General, only: ioptest
+
+    real, dimension(:,:) :: arr, der
+    integer :: idir
+    integer, optional :: order
+
+    integer :: len,nc,j,ilneigh,iuneigh, &
+               tagl_send,tagu_send,tagl_recv,tagu_recv
+    integer, parameter :: tagl=nprocz, tagu=2*nprocz
+
+    len=size(arr,1); nc=size(arr,2)
+
+    select case(idir)
+
+    case(IXBEAM); call not_implemented('distr_der','for x-direction')
+    case(IYBEAM); call not_implemented('distr_der','for y-direction')
+    case(IZBEAM)
+      
+      if (ipz==0) then 
+        ilneigh=nprocz-1
+      else
+        ilneigh=ipz-1
+      endif
+      iuneigh=mod(ipz+1,nprocz)
+      tagl_send=tagl+ipz; tagl_recv=tagu+ilneigh
+      tagu_send=tagu+ipz; tagu_recv=tagl+iuneigh
+
+      ! send to left neighbor, recv from right
+      call mpisendrecv_real(arr(n1:n1i,        :),(/nghost,nc/),ilneigh,tagl_send, &
+                            arr(n2+1:n2+nghost,:),              iuneigh,tagu_recv,idir=IZBEAM)
+      if (ipz==0.and..not.lperi(3)) then
+        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,'bot',j); enddo
+      endif
+
+      ! send to right neighbor, recv from left
+!print*, iproc, 'sendrecv tom', ineigh, 'with', tagu_send, 'receives with ', tagu_recv
+      call mpisendrecv_real(arr(n2i:n2,  :),(/nghost,nc/),iuneigh,tagu_send, &
+                            arr(1:nghost,:),              ilneigh,tagl_recv,idir=IZBEAM)
+      if (ipz==nprocz-1.and..not.lperi(3)) then
+        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,'top',j); enddo
+      endif
+
+      do j=1,nc
+        if (ioptest(order,1)==2) then
+          call der2_z(arr(:,j),der(:,j))
+        elseif (ioptest(order,1)==1) then
+          call der_z(arr(:,j),der(:,j))
+        else
+          call fatal_error('distr_der','only order=1|2 possible')
+        endif
+      enddo
+
+    case default; call fatal_error('distr_der','illegal derivative direction')
+
+    end select 
+
+  endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
 !
@@ -5666,8 +5733,51 @@ module Deriv
 
     endsubroutine bval_from_4th_scl
 !***********************************************************************
-    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd)
+    subroutine set_ghosts_for_onesided_ders_1D(arr,topbot,j,l2nd)
+!
+!  Sets ghost zones in 1D array (of vectors, so 2nd dim for components) 
+!  for one-sided derivatives of 1st and 2nd order.
+!
+!  20-oct-21/MR: derived from set_ghosts_for_onesided_ders
+!
+      use General, only: loptest
 
+      real, dimension(:,:) :: arr
+      character(LEN=3) :: topbot
+      integer :: j
+      logical, optional :: l2nd
+
+      integer :: k,off,k2
+
+      if (loptest(l2nd)) then
+        off=nghost-1
+      else
+        off=nghost
+      endif
+
+      if (topbot=='bot') then
+        do k=nghost,nghost+1-off,-1
+          arr(k,j)=  7.*(arr(k+1,j)-arr(k+6,j)) &
+                   -21.*(arr(k+2,j)-arr(k+5,j)) &
+                   +35.*(arr(k+3,j)-arr(k+4,j)) &
+                       + arr(k+7,j)
+        enddo
+      else
+        k2=size(arr,1)-nghost
+        do k=k2+1,k2+off
+          arr(k,j)=   7.*(arr(k-1,j)-arr(k-6,j)) &
+                    -21.*(arr(k-2,j)-arr(k-5,j)) &
+                    +35.*(arr(k-3,j)-arr(k-4,j)) &
+                        + arr(k-7,j)
+        enddo
+      endif
+
+    endsubroutine set_ghosts_for_onesided_ders_1D
+!***********************************************************************
+    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd)
+!
+!  Sets ghost zones in f-array for one-sided derivatives of 1st and 2nd order.
+!
 !  20-sep-16/MR: added optional parameter bval for boundary value.
 !                added ghost value setting for having the second derivative
 !                correct in one-sided formulation for first inner point.
@@ -5684,9 +5794,9 @@ module Deriv
       integer :: k,off
 
       if (loptest(l2nd)) then
-        off=2
+        off=nghost-1
       else
-        off=3
+        off=nghost
       endif
 
       if (topbot=='bot') then
