@@ -1258,17 +1258,18 @@ module Energy
         idiag_chikrammin=0; idiag_chikrammax=0
       endif
 
+      if (.not.(lheatc_Kprof.or.lheatc_kramers)) idiag_fturbxy=0
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) &
         idiag_fturbz=0
       if (.not.lheatc_chiconst) then 
-       idiag_fradz_constchi=0
-       idiag_fradr_constchixy=0
+        idiag_fradz_constchi=0
+        idiag_fradr_constchixy=0
       endif       
       if (.not.(lheatc_Kprof.or.lheatc_Kconst)) idiag_fradmx=0
 
       if (.not.lheatc_Kprof) then
         idiag_fradz_Kprof=0; idiag_fturbmx=0; idiag_fradxy_Kprof=0
-        idiag_fradymxy_Kprof=0; idiag_fturbxy=0; idiag_fturbymxy=0
+        idiag_fradymxy_Kprof=0; idiag_fturbymxy=0
         idiag_fturbrxy=0; idiag_fturbthxy=0
       endif
 
@@ -5153,7 +5154,8 @@ module Energy
         if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
         if (idiag_fradrsphmphi_kramers/=0) &
             call phisum_mn_name_rz(-Krho1*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
-              p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_kramers)
+            p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_kramers)
+        if (idiag_fturbxy/=0  ) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
       endif
 !
 !  Check for NaNs initially.
