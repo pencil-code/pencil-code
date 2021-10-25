@@ -197,7 +197,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ;  Check validity of input object.
 ;
-    if is_valid(object,'GRID',filename) then return
+    if is_valid(object,'GRID',filename,single=single,trimmed=trimxyz) then return
     filename_loc=filename
     print, 'Reading grid data from ' , filename, ' ...'
 ;
@@ -419,7 +419,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ;  Build structure of all the variables
 ;
-  object = create_struct(name="PC_GRID"+':'+strtrim(filename)+':'+(precision eq 'S' or single ? 'S' : 'D'), $
+  object = create_struct(name="PC_GRID"+':'+strtrim(filename)+':'+(precision eq 'S' or single ? 'S' : 'D')+(keyword_set (trimxyz) ? ':T':''), $
       ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
        'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
        'lequidist','lperi','ldegenerated'], $
