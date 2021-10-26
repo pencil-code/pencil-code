@@ -164,7 +164,7 @@ module Cdata
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
   real :: reac_pchem,dt1_preac
-  real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
+  real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfirstpoint=.false., llastpoint=.false.
 !$omp THREADPRIVATE(lfirstpoint,llastpoint)
