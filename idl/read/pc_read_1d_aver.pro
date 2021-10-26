@@ -81,20 +81,7 @@ pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
 ;
 ;  Read variables from '*aver.in' file
 ;
-;run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
-;
-; Nishant (NS): the above fails if the path to the run directory has
-; the structure, say, "pc_data/folders/run_dir/data" where
-; "run_dir" is the run-directory containing xyaver.in
-; Modified as below to read the relevant "xyaver.in" and hope that
-; it works in a more general setting
-; Also, './'+ before "datadir" does not seem necessary
-
-run_dir_ex = stregex (datadir, '(.*)data', /extract ,/subexpr)
-; NS: we need only the subexpression which is the second element
-;     of the string array from the above, giving thus
-run_dir = strtrim(run_dir_ex[1],2)
-;print, '(NS) run_dir=' , run_dir
+run_dir = (stregex (datadir, '^(.*)data\/ *$', /extract, /subexpr))[1]
 varnames = strarr(file_lines(run_dir+in_file))
 openr, lun, run_dir+in_file, /get_lun
 readf, lun, varnames
