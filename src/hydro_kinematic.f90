@@ -148,18 +148,9 @@ module Hydro
 !
   logical :: lupdate_aux=.false.
 !
-  type foreign_setup
-    character(LEN=labellen) :: name
-    integer :: ncpus,peer,tag,irecv
-    real :: dt_out, t_last_out
-    integer, dimension(3) :: procnums
-    integer, dimension(3) :: dims
-    real, dimension(2,3) :: extents
-  endtype foreign_setup
-  
-  type(foreign_setup) :: frgn_setup
-  real, dimension(:), allocatable :: x_foreign
-  real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer
+!  Foreign data.
+!
+  real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
 
   contains
 !***********************************************************************
@@ -172,8 +163,6 @@ module Hydro
 !
       use Mpicomm, only: lroot
       use SharedVariables, only: put_shared_variable
-!
-      integer :: ierr
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -207,12 +196,7 @@ module Hydro
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (:,:), allocatable :: yz
-      integer :: iyz, root_foreign
-      logical :: lok
-      character(LEN=128) :: messg
-      integer, dimension(3) :: intbuf
-      real, dimension(6) :: floatbuf
-      integer :: ind,j,ll,name_len,ipx_foreign,nx_foreign
+      integer :: iyz
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -360,145 +344,26 @@ module Hydro
       endif
 
       if (lforeign.and.kinematic_flow=='from-foreign-snap') then
-   
-        root_foreign=ncpus
-        frgn_setup%peer=iproc+ncpus
-        frgn_setup%tag=tag_foreign
 
-if (.false.) then
-!if (iproc_world/=iproc) then
-if (iproc_world==2) then
-  print*, 'sending MagIC to root=', root, 'from proc', iproc, iproc_world
-  name_len=5
-  call mpisend_int(name_len,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_char('MagIC',root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_int((/nprocx,2,2/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpisend_int((/nxgrid,nygrid,nzgrid/),3,root,tag_foreign,MPI_COMM_UNIVERSE)
-  !call mpisend_real((/xyz0(1),xyz1(1)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  !call mpisend_real((/xyz0(2),xyz1(2)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  !call mpisend_real((/xyz0(3),xyz1(3)/),2,root,tag_foreign,MPI_COMM_UNIVERSE)
-  !call mpisend_real(0.1,root,tag_foreign,MPI_COMM_UNIVERSE)
-  !call mpirecv_logical(lok,root,tag_foreign,MPI_COMM_UNIVERSE)
-  call mpibarrier(MPI_COMM_PENCIL)
-  !stop
-endif
-return
-endif
-        if (lroot) then
-          lok=.true.; messg=''
+        call initialize_foreign_comm(frgn_buffer) 
 !
-!  Receive length of name of foreign code.
-!      
-          call mpirecv_int(name_len,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          if (name_len<=0) then
-            call fatal_error('initialize_hydro','length of foreign name <=0 or >')
-          elseif (name_len>labellen) then
-            call fatal_error('initialize_hydro','length of foreign name > labellen ='// &
-                            trim(itoa(labellen)))
-          endif
+!  Initially, take two snapshots.
 !
-!  Receive name of foreign code.
-!      
-          call mpirecv_char(frgn_setup%name(1:name_len),root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          frgn_setup%name=frgn_setup%name(1:name_len)
-          if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
-            call fatal_error('initialize_hydro', &
-             'communication with foreign code"'//trim(frgn_setup%name)//'" not supported')
-          !print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
-!
-!  Receive processor numbers of foreign code.
-!      
-          call mpirecv_int(intbuf,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          if ( frgn_setup%name=='MagIC' ) then
-            if (any(intbuf/=(/nprocx,1,1/))) then
-              messg='MagIC processor numbers '//trim(itoa(intbuf(1)))//', '// &
-                    trim(itoa(intbuf(2)))//', '//trim(itoa(intbuf(3)))//' not consistent with (nprocx,1,1)'
-              lok=.false.
-            endif
-          elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
-            messg="foreign proc numbers don't match;"
-            lok=.false.
-          endif
+        call get_foreign_snap_initiate(f,iux,iuz,frgn_buffer)   !,lnonblock=.true.)
+        if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
+        call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3)) 
+        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer)
+        call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)
+!        call get_foreign_snap_initiate(uu_2,1,3,lnonblock=.true.)  ! prepare receiving next snapshot
 
-          frgn_setup%ncpus=product(intbuf)
-          if (ncpus+frgn_setup%ncpus/=nprocs) &
-            call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
-                    ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
-
-          frgn_setup%procnums=intbuf
-!
-!  Receive gridpoint numbers of foreign code.
-!      
-          call mpirecv_int(frgn_setup%dims,3,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-
-          if ( frgn_setup%name/='MagIC'.and.any(frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))) then
-            messg=trim(messg)//" foreign grid sizes don't match;"
-            lok=.false.   !MR: alleviate to interpolation
-          endif
-!
-!  Receive domain extents of foreign code. j loops over r, theta, phi.
-!      
-          call mpirecv_real(floatbuf,6,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          ind=1
-          do j=1,3
-            frgn_setup%extents(:,j)=floatbuf(ind:ind+1); ind=ind+2
-            if (j/=2.and.any(frgn_setup%extents(:,j)/=(/xyz0(j),xyz1(j)/))) then
-              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
-              lok=.false. !MR: alleviate to selection
-            endif
-          enddo
-!
-!  Receive output timestep of foreign code (code units).
-!      
-          call mpirecv_real(frgn_setup%dt_out,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          if (frgn_setup%dt_out<=0.) then
-            messg=trim(messg)//' foreign output step<=0'
-            lok=.false.
-          endif
-!
-!  Send confirmation flag that setup is acceptable.
-! 
-          call mpisend_logical(lok,root_foreign,tag_foreign,MPI_COMM_UNIVERSE)
-          if (.not.lok) call fatal_error('initialize_hydro',messg)
-        endif
-
-        call mpibarrier(MPI_COMM_PENCIL)
-        call mpibcast_real(frgn_setup%dt_out,MPI_COMM_PENCIL)
-       
-        frgn_setup%t_last_out=t
-        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
-
-        if (iproc<ncpus) then
-
-          if (frgn_setup%name=='MagIC') then
-            nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
-            allocate(frgn_buffer(nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3))
-            allocate(x_foreign(frgn_setup%dims(1)))
-!
-!  Receive vector of global r-grid points.
-!
-            call mpirecv_real(x_foreign,frgn_setup%dims(1),root_foreign,tag_foreign)
-          endif
-
-          do j=1,2
-            if (frgn_setup%name=='MagIC') then
-              !do ipx_foreign=1,frgn_setup%procnums(1)
-              call mpirecv_real(frgn_buffer,(/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/), &
-                               frgn_setup%peer,tag_foreign,MPI_COMM_UNIVERSE)
-              !enddo
-              ! TODO: interpolate/restrict/scatter data to f(l1:l2,m1:m2,n1:n2,iux:iuz), uu_2
-            else
-              if (j==1) then
-                call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,iux:iuz),(/nx,ny,nz,3/), &
-                                           frgn_setup%peer,tag_foreign,frgn_setup%irecv,MPI_COMM_UNIVERSE)
-              else
-                call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer,tag_foreign, &
-                                           frgn_setup%irecv,MPI_COMM_UNIVERSE)
-              endif
-            endif
-          enddo
-        endif
-
+print*, 'Pencil successful', iproc
+        call mpibarrier(MPI_COMM_UNIVERSE)
+if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+if (allocated(uu_2)) deallocate(uu_2)
+if (allocated(interp_buffer)) deallocate(interp_buffer)
+call mpifinalize
+stop
       endif
 
       call calc_means_hydro(f)
@@ -2506,34 +2371,23 @@ endif
 !
 !   16-dec-10/bing: coded
 !
-      use Mpicomm, only: mpiwait, mpirecv_nonblock_real
-
+      use Mpicomm, only: update_foreign_data
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: fac
-      integer :: ipx_foreign,nx_foreign
+      real, save :: dt_foreign=0.
 
       if (kinematic_flow=='from-foreign-snap') then
 
-
-        if (lfirst) then
-          if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
-            call mpiwait(frgn_setup%irecv)
-            frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
-            if (frgn_setup%name=='MagIC') then
-              nx_foreign=frgn_setup%dims(1)/frgn_setup%procnums(1)
-              call mpirecv_nonblock_real(frgn_buffer, &
-                                         (/nx_foreign,frgn_setup%dims(2),frgn_setup%dims(3),3/),frgn_setup%peer, &
-                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
-                !TODO: interpolate/restrict/scatter into uu_2(ll,:,:,:)
-            else
-              call mpirecv_nonblock_real(uu_2,(/nx,ny,nz,3/),frgn_setup%peer, &
-                                         frgn_setup%tag,frgn_setup%irecv,MPI_COMM_UNIVERSE)
-            endif
+        if (lfirst.or.dt_foreign==0.) then
+          if (update_foreign_data(t,dt_foreign)) then
+            !!call get_foreign_snap_finalize(uu_2,1,3)
+            !!call get_foreign_snap_initialize(uu_2,1,3)
           endif
         endif
 
-        fac=dt/(frgn_setup%dt_out-t+dt)
+        fac=dt/(dt_foreign-t+dt)
         f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
 
       endif
@@ -2646,8 +2500,8 @@ endif
       call kinematic_random_ampl
       call kinematic_random_wavenumber
 !
-!    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
+!    Slope-limited diffusion: update characteristic speed.
+!    Not staggered yet.
 !
       if (lslope_limit_diff .and. llast) then
         if (lkinflow_as_aux) then
@@ -3363,12 +3217,16 @@ endif
 !  Loop over slices
 !
       select case (trim(slices%name))
+!
+!  Velocity field.
+!
         case ('uu')
           if (lkinflow_as_aux) then
             call assign_slices_vec(slices,f,iuu)
           else
             call assign_slices_vec(slices,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
           endif
+!
       endselect
 !
     endsubroutine get_slices_hydro
@@ -3547,7 +3405,7 @@ endif
           random_ampl=1.
         endif
 !
-!  Writing down the location.
+!  Writing down the amplitude.
 !
         if (lroot .and. lwrite_random_ampl) then
           open(1,file=trim(datadir)//'/random_ampl.dat',status='unknown',position='append')
@@ -3558,7 +3416,7 @@ endif
 !  Update next tsforce_ampl.
 !
         tsforce_ampl=t+dtforce
-        if (ip<=6) print*,'kinematic_random_phase: location=',location
+        if (ip<=6) print*,'kinematic_random_ampl: amplitude=',random_ampl
       endif
 !
     endsubroutine kinematic_random_ampl
@@ -3583,7 +3441,7 @@ endif
           random_wavenumber=1.
         endif
 !
-!  Writing down the location.
+!  Writing down the random_wavenumber.
 !
         if (lroot .and. lwrite_random_wavenumber) then
           open(1,file=trim(datadir)//'/random_wavenumber.dat',status='unknown',position='append')
@@ -3594,7 +3452,7 @@ endif
 !  Update next tsforce_wavenumber.
 !
         tsforce_wavenumber=t+dtforce
-        if (ip<=6) print*,'kinematic_random_phase: location=',location
+        if (ip<=6) print*,'kinematic_random_wavenumber: wavenumber=',random_wavenumber
       endif
 !
     endsubroutine kinematic_random_wavenumber
