@@ -19,7 +19,11 @@ module Timestep
     subroutine initialize_timestep
 !
 !  Coefficients for up to order 3.
-
+!  26-oct-21/wlyra: added 2N-RK4 coefficients. The coefficients are for
+!                   for 4th order, but use 5 stages. Since itorder is used      
+!                   in the code for the number of stages, it should be 5
+!                   to use it. 
+!
       use Messages, only: fatal_error
       use General, only: itoa
 !
