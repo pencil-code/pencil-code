@@ -15,7 +15,7 @@
 
   public :: mpirecv_logical, mpirecv_real, mpirecv_int, mpirecv_char  !, mpirecv_cmplx
   public :: mpisend_logical, mpisend_real, mpiscan_int, mpisend_int, mpisend_char   !, mpisend_cmplx
-  public :: mpisendrecv_real
+  public :: mpisendrecv_real, mpisendrecv_int
   public :: mpireduce_sum_int, mpireduce_sum             !, mpireduce_sum_double
   public :: mpireduce_max, mpireduce_max_int, mpireduce_min
   public :: mpiallreduce_max, mpiallreduce_min
@@ -47,7 +47,7 @@
   public :: communicate_vect_field_ghosts, communicate_xy_ghosts
   public :: fill_zghostzones_3vec
 
-  public :: sum_xy, distribute_xy, collect_xy
+  public :: sum_xy, distribute_xy, collect_xy, distribute_yz
   public :: distribute_z, collect_z
   public :: globalize_xy, localize_xy
   public :: globalize_z, localize_z
@@ -70,6 +70,8 @@
   public :: radboundary_yz_sendrecv, radboundary_zx_sendrecv
   public :: radboundary_yz_periodic_ray, radboundary_zx_periodic_ray
 
+! Foreign application routines.
+  public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data
 ! Variables
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, nprocs
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
@@ -120,6 +122,10 @@
     module procedure mpisend_real_arr5
   endinterface
 !
+  interface mpisendrecv_int
+     module procedure mpisendrecv_int_arr
+  endinterface
+
   interface mpisendrecv_real
     module procedure mpisendrecv_real_scl
     module procedure mpisendrecv_real_arr
@@ -271,6 +277,11 @@
     module procedure distribute_xy_4D
   endinterface
 !
+  interface distribute_yz
+    module procedure distribute_yz_3D
+    module procedure distribute_yz_4D
+  endinterface
+!
   interface collect_xy
     module procedure collect_xy_0D
     module procedure collect_xy_2D
@@ -395,7 +406,7 @@
 ! 
   integer, parameter, public :: MPI_COMM_UNIVERSE=MPI_COMM_WORLD
 !
-! symbolic cinstants for beams and planes
+! symbolic constants for beams and planes
 !
   integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, IYZPLANE=23
 

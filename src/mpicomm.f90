@@ -143,6 +143,24 @@ module Mpicomm
   integer :: len_cornbuf, len_cornstrip_y, len_cornstrip_z, ycornstart, zcornstart
   integer, dimension(3) :: yy_buflens
 !
+!  Data for communication with foreign code.
+!
+  type foreign_setup
+    character(LEN=labellen) :: name
+    integer :: ncpus,tag,root
+    integer, dimension(:), allocatable :: recv_req
+    real :: dt_out, t_last_out
+    integer, dimension(2) :: peer_rng
+    integer, dimension(3) :: procnums
+    integer, dimension(3) :: dims
+    real, dimension(2,3) :: extents
+    logical :: lnprocx_mismat
+    real, dimension(:), allocatable :: xgrid
+    integer, dimension(:,:), allocatable :: xind_rng
+  endtype foreign_setup
+  
+  type(foreign_setup) :: frgn_setup
+!
   contains
 !
 !***********************************************************************
@@ -183,6 +201,7 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
+!if (lroot) print*, 'Pencil: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
@@ -2611,10 +2630,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       use General, only: ioptest
 
-      character(LEN=*) :: str
-      integer :: proc_src, tag_id
+      character(LEN=*), intent(OUT) :: str
+      integer,          intent(IN ) :: proc_src, tag_id
+      integer, optional,intent(IN)  :: comm
+
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer, optional :: comm
 !
       call MPI_RECV(str, len(str), MPI_CHARACTER, proc_src, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
@@ -2623,7 +2643,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpisend_char_scl(str,proc_src,tag_id,comm)
 !
-!  Receive character scalar from other processor.
+!  Send character scalar to other processor.
 !
 !  04-sep-06/wlad: coded
 !
@@ -2676,7 +2696,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id,comm,nonblock)
 !
-!  Receive real scalar from other processor.
+!  Receive real scalar from other processor. 
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
 !
@@ -2703,6 +2724,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive real array from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
 !
@@ -2755,6 +2777,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpirecv_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive real array(:,:,:) from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  20-may-06/anders: adapted
 !
@@ -2784,6 +2807,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpirecv_cmplx_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive complex array(:,:,:) from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  20-may-06/anders: adapted
 !
@@ -2810,9 +2834,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_cmplx_arr3
 !***********************************************************************
-    subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,comm)
+    subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive real array(:,:,:,:) from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  20-may-06/anders: adapted
 !
@@ -2822,15 +2847,20 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer, optional :: comm
+      integer, optional :: comm,nonblock
 !
       intent(out) :: bcast_array
 !
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
@@ -2858,6 +2888,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive integer scalar from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
 !
@@ -2881,6 +2912,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive integer array from other processor.
+!  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
 ! 
@@ -3020,6 +3052,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpisend_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !
 !  Send real array(:,:,:) to other processor.
+!  If present, nonblock is the request id for non-blockin send.
 !
 !  20-may-06/anders: adapted
 !
@@ -3046,6 +3079,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpisend_cmplx_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !
 !  Send real array(:,:,:) to other processor.
+!  If present, nonblock is the request id for non-blockin send.
 !
 !  20-may-06/anders: adapted
 !
@@ -3069,21 +3103,24 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_cmplx_arr3
 !***********************************************************************
-    subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
 !  Send real array(:,:,:,:) to other processor.
 !
 !  20-may-06/anders: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
+      integer, optional :: comm
 !
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
       call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_GRID,mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
@@ -3104,6 +3141,26 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                     tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_real_arr5
+!***********************************************************************
+    subroutine mpisendrecv_int_arr(send_array,sendcnt,proc_dest,sendtag, &
+                                   recv_array,proc_src,recvtag,comm)
+      use General, only: ioptest
+
+      integer :: sendcnt
+      integer, dimension(sendcnt) :: send_array, recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag
+      integer, optional :: comm
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+
+      intent(out) :: recv_array
+!
+      if (sendcnt==0) return
+
+      call MPI_SENDRECV(send_array,sendcnt,MPI_INTEGER,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_INTEGER,proc_src,recvtag, &
+                        ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+!
+    endsubroutine mpisendrecv_int_arr
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,proc_dest,sendtag, &
                                     recv_array,proc_src,recvtag)
@@ -3515,9 +3572,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_nonblock_int_arr2
 !***********************************************************************
-    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !
 !  Send integer array to other processor.
+!  If present, nonblock is the request id for non-blockin send.
 !
 !  02-jul-05/anders: coded
 !
@@ -3526,12 +3584,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
-      integer, optional :: comm
+      integer, optional :: comm,nonblock
 !
       if (nbcast_array == 0) return
 !
-      call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
+      if (present(nonblock)) then
+        call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else 
+        call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
+      endif
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -4828,6 +4891,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpifinalize
 !
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+
+      !if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
+      !if (allocated(frgn_setup%xgrid)) deallocate(frgn_setup%xgrid)
+      !if (allocated(frgn_setup%xind_rng)) deallocate(frgn_setup%xind_rng)
+
       call MPI_FINALIZE(mpierr)
 !
     endsubroutine mpifinalize
@@ -6034,6 +6102,119 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
     endsubroutine distribute_xy_2D
+!***********************************************************************
+    subroutine distribute_yz_3D(out, in)
+!
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the yz-plane.
+!
+!  07-oct-2021/MR: coded
+!
+      real, dimension(:,:,:), intent(out):: out
+      real, dimension(:,:,:), intent(in) :: in
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: pz, py, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+!
+      if (lfirst_proc_yz) then
+
+        if (bnx /= size (in, 1)) &
+            call stop_fatal ('distribute_yz_3D: x dim must equal between in and out', .true.)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_yz_3D: input y dim must be nprocy*output', .true.)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_yz_3D: input z dim must be nprocz*output', .true.)
+!
+!  Distribute the data.
+!
+        nbox = bnx*bny*bnz
+        do pz = 0, nprocz-1
+          do py = 0, nprocy-1
+            if (lprocz_slowest) then
+              partner = py + nprocy*pz
+            else
+              partner = pz + nprocz*py
+            endif
+            if (partner==0) then
+              ! copy local data on broadcaster
+              out = in(:,1:bny,1:bnz)
+            else
+              ! send to partner
+              out = in(:,py*bny+1:(py+1)*bny,pz*bnz+1:(pz+1)*bnz)
+              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_YZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, MPI_REAL, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_yz_3D
+!***********************************************************************
+    subroutine distribute_yz_4D(out, in)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the yz-plane.
+!
+!  07-oct-2021/MR: coded
+!
+      real, dimension(:,:,:,:), intent(out):: out
+      real, dimension(:,:,:,:), intent(in) :: in
+!
+      integer :: bnx, bny, bnz, bnv ! transfer box sizes
+      integer :: pz, py, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bnv = size (out, 4)
+!
+      if (lfirst_proc_yz) then
+
+        if (bnx /= size (in, 1)) &
+            call stop_fatal ('distribute_yz_3D: x dim must equal between in and out', .true.)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_yz_3D: input y dim must be nprocy*output', .true.)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_yz_3D: input z dim must be nprocz*output', .true.)
+        if (bnv /= size (in, 4)) &
+            call stop_fatal ('distribute_yz_3D: var dim must equal between in and out', .true.)
+!
+!  Distribute the data.
+!
+        nbox = bnx*bny*bnz*bnv
+        do pz = 0, nprocz-1
+          do py = 0, nprocy-1
+            if (lprocz_slowest) then
+              partner = py + nprocy*pz
+            else
+              partner = pz + nprocz*py
+            endif
+            if (partner==0) then
+              ! copy local data on broadcaster
+              out = in(:,1:bny,1:bnz,:)
+            else
+              ! send to partner
+              out = in(:,py*bny+1:(py+1)*bny,pz*bnz+1:(pz+1)*bnz,:)
+              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_YZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, MPI_REAL, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_yz_4D
 !***********************************************************************
     subroutine distribute_xy_3D(out, in, source_proc)
 !
@@ -9809,5 +9990,357 @@ endif
       endif
 
     endfunction mpiscatterv_int
+!***********************************************************************
+    subroutine initialize_foreign_comm(frgn_buffer)
+!
+! Initializes communication with foreign code by fetching the foreign setup
+! and establishing relationships.
+! Partly specific for coupling with MagIC.
+!
+! 20-oct-21/MR: coded
+!
+      use General, only: itoa, find_index_range
+
+      real, dimension(:,:,:,:), allocatable :: frgn_buffer
+!
+!  Variables for data transfer from foreign code.
+!
+      integer, dimension(3) :: intbuf
+      real, dimension(6) :: floatbuf
+
+      logical :: lok
+      character(LEN=128) :: messg
+      integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
+                 il1,il2,lenx,px
+
+      if (lforeign) then
+
+        frgn_setup%root=ncpus
+        frgn_setup%peer_rng=0
+        frgn_setup%tag=tag_foreign
+        frgn_setup%t_last_out=t
+
+!print*, 'iproc, iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD=', iproc, &
+!        iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD
+        if (lroot) then
+          lok=.true.; messg=''
+!
+!  Receive length of name of foreign code.
+!
+          call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+!print*, 'received foreign name_len=', name_len
+          if (name_len<=0) then
+            call stop_it('initialize_foreign_comm: length of foreign name <=0 or >')
+          elseif (name_len>labellen) then
+            call stop_it('initialize_foreign_comm: length of foreign name > labellen ='// &
+                         trim(itoa(labellen)))
+          endif
+!
+!  Receive name of foreign code.
+!      
+          call mpirecv_char(frgn_setup%name(1:name_len),frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          frgn_setup%name=frgn_setup%name(1:name_len)
+          if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
+            call stop_it('initialize_foreign_comm: communication with foreign code "'// &
+                         trim(frgn_setup%name)//'" not supported')
+!print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
+!
+!  Receive processor numbers of foreign code.
+!      
+          call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          
+          if ( frgn_setup%name=='MagIC' ) then
+          elseif ( frgn_setup%name=='Eulag' ) then
+          elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
+            messg="foreign proc numbers don't match;"
+            lok=.false.
+          endif
+          frgn_setup%ncpus=product(intbuf)
+          !if (ncpus+frgn_setup%ncpus/=nprocs) &
+          !  call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
+          !          ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
+
+          frgn_setup%procnums=intbuf
+!
+!  Receive gridpoint numbers of foreign code.
+!      
+          call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+!print*, 'Pencil: received frgn_setup%dims=', frgn_setup%dims
+!
+!  Receive domain extents of foreign code. j loops over r, theta, phi.
+!      
+          call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+!print*, 'received extents=', floatbuf, ((xyz0(j),xyz1(j)),j=1,3)
+          ind=1
+          do j=1,3
+            frgn_setup%extents(:,j)=floatbuf(ind:ind+1); ind=ind+2
+            if (j/=2.and.any(abs(frgn_setup%extents(:,j)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
+              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
+              !lok=.false. !MR: alleviate to selection
+            endif
+          enddo
+!
+!  Receive output timestep of foreign code (code units).
+!      
+          call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          if (frgn_setup%dt_out<=0.) then
+            messg=trim(messg)//' foreign output step<=0'
+            lok=.false.
+          endif
+!print*, 'received dt_out=', frgn_setup%dt_out
+!
+!  Send confirmation flag that setup is acceptable.
+! 
+          call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
+
+        else
+          frgn_setup%name=''
+        endif
+
+        call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
+!                                                                              
+!  Broadcast foreign processor numbers and grid size.                                                    
+!                                                                              
+        if (lfirst_proc_yz) then                                                 
+          call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_XBEAM)
+          ncpus_foreign=product(frgn_setup%procnums)
+          call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_XBEAM)
+          nxgrid_foreign=frgn_setup%dims(1)
+          allocate(frgn_setup%xgrid(nxgrid_foreign))
+        endif 
+                                                                 
+        if (lroot) then
+!
+!  Receive vector of foreign global r-grid points.
+!
+          call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+!
+!  Send number of x-procs to foreign.
+!
+          call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+!
+        endif
+!                              
+        if (lfirst_proc_yz) then 
+
+          if ( frgn_setup%name=='MagIC' ) then
+            frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
+          elseif ( frgn_setup%name=='Eulag' ) then
+            frgn_setup%lnprocx_mismat = nprocx>1
+          elseif (any(frgn_setup%procnums/=(/nprocx,nprocy,nprocz/))) then
+            frgn_setup%lnprocx_mismat=.false.
+          endif
+!                              
+!  Broadcast frgn_setup%xgrid to all procs with iprocx=0.
+!                              
+          call mpibcast_real(frgn_setup%xgrid,nxgrid_foreign,comm=MPI_COMM_XBEAM)
+!
+!  Determine index range frgn_setup%xind_rng in frgn_setup%xgrid which is needed for individual
+!  processors in x direction.
+!
+!print*, 'iproc,x(l1),x(l2)=', iproc,x(l1),x(l2)
+          call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2)
+          if (.not.lfirst_proc_x) il1=il1-1
+          if (.not.llast_proc_x) il2=il2+1
+!
+!  Allocate array for index ranges w.r.t. frgn_setup%xgrid for each foreign
+!  proc. frgn_setup%xind_rng(-1,:) is overall index range.
+!
+          allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
+          allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1))
+
+          frgn_setup%xind_rng(-1,:)=(/il1,il2/)
+
+!print*, 'iproc,frgn_setup%peer_rng,tag_foreign+iproc,il1,il2=', iproc,frgn_setup%peer_rng,tag_foreign+iproc,il1,il2
+!print*, 'Pencil: iproc, frgn_setup%xind_rng=', iproc, frgn_setup%xind_rng
+!print*, 'Pencil: iproc, xgrid(il1,il2), x(l1,l2)', iproc, frgn_setup%xgrid(il1), frgn_setup%xgrid(il2), x(l1), x(l2)
+
+          if (frgn_setup%lnprocx_mismat) then
+!
+!  When processor numbers in x-direction don't match, ask all foreign processors
+!  about their share in frgn_setup%xind_rng. No share: receive [0,0]
+!
+            if (frgn_setup%procnums(1)>1) then
+              do px=0,frgn_setup%procnums(1)-1
+
+!print*, 'Pencil: sendrecv to', iproc, ncpus+px,tag_foreign+iproc,tag_foreign+ncpus_foreign+px
+                call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,ncpus+px,tag_foreign+iproc, &
+                                     frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE)
+                if (frgn_setup%peer_rng(1)>0) then
+                  if (frgn_setup%xind_rng(px,1)==0) frgn_setup%xind_rng(px,2)=px-1
+                else
+                  if (frgn_setup%xind_rng(px,1)>0) frgn_setup%peer_rng(1)=px
+                endif
+              enddo
+!print*, 'iproc,frgn_setup%xind_rng', iproc, frgn_setup%xind_rng
+            else
+              frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
+            endif
+            
+          else
+!                                                                                                
+!  Send index range of buddy processors frgn_setup%peer_rng. Assumes that number of procs in x-direction is equal, so only one buddy.  
+!                                                   
+            frgn_setup%peer_rng=iproc+ncpus                                             
+            call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_UNIVERSE)
+          endif
+!
+          lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
+          if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+          allocate(frgn_buffer(lenx,frgn_setup%dims(2),frgn_setup%dims(3),3)) ! Would be full data cube size/nprocx. Tb improved.
+!print*, 'Pencil: lenx =',iproc, lenx
+  
+        endif  ! if (lfirst_proc_yz)
+      endif    ! if (lforeign)
+
+    endsubroutine initialize_foreign_comm
+!***********************************************************************
+    subroutine get_foreign_snap_initiate(f,ivar1,ivar2,frgn_buffer,lnonblock)
+!
+! Initializes fetching of data snapshot from foreign code.
+! Non-blocking mode not yet operational.
+!
+! 20-oct-21/MR: coded
+!
+      use General, only: loptest
+
+      real, dimension(:,:,:,:) :: f,frgn_buffer
+      integer :: ivar1, ivar2
+      logical, optional :: lnonblock
+
+      integer :: nvars,istart,lenx_loc,ncpus_foreign,px
+
+      if (lfirst_proc_yz) then
+
+        if (frgn_setup%lnprocx_mismat) then
+
+          nvars=ivar2-ivar1+1
+          ncpus_foreign=product(frgn_setup%procnums)
+          do px=0,frgn_setup%procnums(1)-1
+            if (frgn_setup%xind_rng(px,1)>0) then
+
+              lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
+              istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
+              if (loptest(lnonblock)) then
+                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
+                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE,frgn_setup%recv_req(px))
+print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
+              else
+                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
+                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE)    !,frgn_setup%recv_req(px))
+!print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
+!call mpiwait(frgn_setup%recv_req(px))
+              endif
+
+            endif
+          enddo
+
+        else               ! else nest not yet valid
+          !call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,ivar2-ivar1+1/), &
+          !                           frgn_setup%peer_rng(1),tag_foreign,frgn_setup%recv_req,MPI_COMM_UNIVERSE)
+        endif
+
+      endif
+
+    endsubroutine get_foreign_snap_initiate
+!***********************************************************************
+    subroutine get_foreign_snap_finalize(f,ivar1,ivar2,frgn_buffer,interp_buffer,lnonblock)
+!
+! Finalizes fetching of data snapshot from foreign code: when nonblocking, call MPI_WAIT; 
+! interpolate data and scatter across processors.
+! Non-blocking mode not yet operational.
+!
+! 20-oct-21/MR: coded
+! 
+      use General, only: loptest,linear_interpolate_1d
+
+      real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
+      integer :: ivar1, ivar2
+      logical, optional :: lnonblock
+
+      integer, parameter :: ytag=115
+      integer :: istart_y,istart_z,istop_y,istop_z,px,py,pz,partner,ll,nvars
+
+      if (trim(frgn_setup%name)=='MagIC') then
+
+        !if (mod(frgn_setup%dims(2),nygrid)==0 .and. mod(frgn_setup%dims(3),nzgrid)==0) then
+        if (.true.) then  ! assume here that frgn_setup%dims([23])=n[yz]grid
+!
+! Interpolate/scatter data to array f
+!          
+          if (lfirst_proc_yz) then 
+            if (frgn_setup%lnprocx_mismat) then
+
+            if (loptest(lnonblock)) then
+              do px=0,frgn_setup%procnums(1)-1
+                if (frgn_setup%xind_rng(px,1)>0) then
+print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
+                  call mpiwait(frgn_setup%recv_req(px))
+                endif
+              enddo
+            endif
+
+            nvars=ivar2-ivar1+1
+
+            do pz=0,nprocz-1
+              istart_z=pz*nz+1; istop_z=istart_z+nz-1
+
+              do py=0,nprocy-1
+
+                if (lprocz_slowest) then
+                  partner = py + nprocy*pz
+                else
+                  partner = pz + nprocz*py
+                endif
+!print*, 'iproc, py,pz,partner=', iproc, py,pz,partner
+                istart_y=py*ny+1; istop_y=istart_y+ny-1
+
+                do ll=l1,l2
+                  call linear_interpolate_1d(frgn_buffer(:,istart_y:istop_y,istart_z:istop_z,:), &
+                                             frgn_setup%xgrid(frgn_setup%xind_rng(-1,1):frgn_setup%xind_rng(-1,2)), &
+                                             x(ll),interp_buffer(ll,:,:,:),.true.)
+                enddo
+                call mpisend_real(interp_buffer,(/nx,ny,nz,nvars/),partner,ytag,MPI_COMM_YZPLANE)
+
+                if (size(f,1)==mx) then     ! f has ghosts
+                  f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=interp_buffer
+                else
+                  f(:,:,:,ivar1:ivar2)=interp_buffer
+                endif
+              enddo
+            enddo
+          endif
+          else
+            !call mpirecv_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,nvars/),0,ytag,MPI_COMM_YZPLANE)
+          endif
+
+        else    ! if (lfirst_proc_yz)
+! What tb done now?  
+        endif   ! if (.true.)
+
+      endif     ! if (name==MagIC)
+
+    endsubroutine get_foreign_snap_finalize
+!***********************************************************************
+    logical function update_foreign_data(t,dt_foreign)
+!
+! Determines whether it is time to fetch new data from foreign code.
+! Returns delivery cadence of foreign code in dt_foreign.
+!
+! 20-oct-21/MR: coded
+! 
+      double precision :: t
+      real :: dt_foreign
+
+      if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
+        frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
+        update_foreign_data=.true.
+      else
+        update_foreign_data=.false.
+      endif
+
+    endfunction update_foreign_data
 !***********************************************************************
   endmodule Mpicomm

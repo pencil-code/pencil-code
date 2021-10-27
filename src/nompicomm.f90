@@ -364,25 +364,25 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
-    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id,comm,noblock)
+    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id,comm,nonblock)
 !
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_src, tag_id
-      integer, optional :: comm,noblock
+      integer, optional :: comm,nonblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id,comm,noblock
+      if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id,comm,nonblock
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
-    subroutine mpirecv_real_arr4(bcast_array,nb,proc_src,tag_id,comm)
+    subroutine mpirecv_real_arr4(bcast_array,nb,proc_src,tag_id,comm,nonblock)
 !
       integer, dimension(4) :: nb
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer :: proc_src, tag_id
-      integer, optional :: comm
+      integer, optional :: comm,nonblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id, comm, nonblock
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
@@ -395,6 +395,21 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_real_arr5
+!***********************************************************************
+    subroutine mpisendrecv_int_arr(send_array,sendcnt,proc_dest,sendtag, &
+                                   recv_array,proc_src,recvtag,comm)
+      use General, only: ioptest
+
+      integer :: sendcnt
+      integer, dimension(sendcnt) :: send_array, recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag
+      integer, optional :: comm
+
+      recv_array=send_array
+
+      if (ALWAYS_FALSE) print*, sendcnt, proc_src, proc_dest, sendtag, recvtag
+!
+    endsubroutine mpisendrecv_int_arr
 !***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id,comm)
 !
@@ -762,14 +777,14 @@ module Mpicomm
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
-      integer, optional :: comm
+      integer, optional :: comm,nonblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, comm
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, comm, nonblock
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -1944,6 +1959,32 @@ module Mpicomm
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
+    subroutine distribute_yz_3D(out, in)
+!
+!  Dummy.
+!
+!  07-oct-2021/MR: coded
+!
+      real, dimension(:,:,:), intent(out):: out
+      real, dimension(:,:,:), intent(in) :: in
+
+      out=in
+
+    endsubroutine distribute_yz_3D
+!***********************************************************************
+    subroutine distribute_yz_4D(out, in)
+!
+!  Dummy.
+!
+!  07-oct-2021/MR: coded
+!
+      real, dimension(:,:,:,:), intent(out):: out
+      real, dimension(:,:,:,:), intent(in) :: in
+
+      out=in
+
+    endsubroutine distribute_yz_4D
+!***********************************************************************
     subroutine collect_xy_0D(in, out, dest_proc)
 !
 !  Collect 0D data from all processors in the xy-plane
@@ -2844,5 +2885,44 @@ module Mpicomm
       lerr=.false.
 
     endfunction mpiscatterv_int
+!***********************************************************************
+    subroutine initialize_foreign_comm(frgn_buffer)
+!
+! 20-oct-21/MR: coded
+!
+      real, dimension(:,:,:,:), allocatable :: frgn_buffer
+
+    endsubroutine initialize_foreign_comm
+!***********************************************************************
+    subroutine get_foreign_snap_initiate(f,ivar1,ivar2,frgn_buffer,lnonblock)
+!
+! 20-oct-21/MR: coded
+!
+      real, dimension(:,:,:,:) :: f,frgn_buffer
+      integer :: ivar1, ivar2
+      logical, optional :: lnonblock
+
+    endsubroutine get_foreign_snap_initiate
+!***********************************************************************
+    subroutine get_foreign_snap_finalize(f,ivar1,ivar2,frgn_buffer,interp_buffer,lnonblock)
+!
+! 20-oct-21/MR: coded
+! 
+      real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
+      integer :: ivar1, ivar2
+      logical, optional :: lnonblock
+
+    endsubroutine get_foreign_snap_finalize
+!***********************************************************************
+    logical function update_foreign_data(t,dt_foreign)
+!
+! 20-oct-21/MR: coded
+! 
+      double precision :: t
+      real :: dt_foreign
+      
+      update_foreign_data=.false.
+
+    endfunction update_foreign_data
 !***********************************************************************
 endmodule Mpicomm
