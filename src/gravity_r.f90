@@ -61,6 +61,7 @@ module Gravity
   real :: t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
   character (len=labellen) :: ipotential_secondary='plummer'
+  character (len=labellen) :: iramp_function='linear'
 !
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
@@ -77,15 +78,15 @@ module Gravity
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass,&
-      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass, &
+      ipotential_secondary,lsecondary_wait,t_start_secondary,iramp_function, &
       lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      ipotential_secondary,lsecondary_wait,t_start_secondary,iramp_function, &
       lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   integer :: idiag_torque=0
@@ -578,7 +579,17 @@ module Gravity
 !
 !  Ramp up g1 for the first 5 orbits, to prevent to big an initial impulse
 !
-        g2 = g1/rp1**2 * t*t1_ramp_mass
+        select case (iramp_function)
+!
+        case ('linear')
+           g2 = g1/rp1**2 * t*t1_ramp_mass
+        case ('sinusoidal')
+           g2 = g1/rp1**2 * (sin(t*t1_ramp_mass*.5*pi))**2
+        case default
+           call fatal_error("indirect_plus_inertial_terms",&
+                "no ramping function selected")
+        endselect
+!
       else
         g2 = g1/rp1**2
       endif
