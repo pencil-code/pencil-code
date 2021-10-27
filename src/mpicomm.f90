@@ -10224,11 +10224,13 @@ endif
               lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
               istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
               if (loptest(lnonblock)) then
-                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
+                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
+                                  (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
                                   ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE,frgn_setup%recv_req(px))
 print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
               else
-                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
+                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
+                                  (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
                                   ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE)    !,frgn_setup%recv_req(px))
 !print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
 !call mpiwait(frgn_setup%recv_req(px))

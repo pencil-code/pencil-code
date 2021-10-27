@@ -58,11 +58,13 @@ module General
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
-  public :: linear_interpolate_2d
+  public :: linear_interpolate_2d, linear_interpolate_1d
   public :: chk_time
   public :: get_species_nr
   public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
   public :: compress_nvidia
+  public :: qualify_position_bilin, qualify_position_bicub, &
+            qualify_position_biquin
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -173,7 +175,17 @@ module General
 !
   integer, save, dimension(mseed) :: rstate=0, rstate2=0
   character (len=labellen) :: random_gen='min_std'
-
+!
+!  Indicators for situations in which the interpolation stencil overlaps with
+!  the
+!  present and the neighboring processor domain: L/R - at left/right domain
+!  bound; GAP - in gap; MARG/MARG2 - one/two cell(s) away from domain bound; 
+!  NEIGH/NEIGH2 - in domain of neighboring processor one/two cell(s) away from
+!  domain bound. 
+!                
+  integer, parameter :: LGAP=-3, RGAP=3, NOGAP=0, LNEIGH=-4, RNEIGH=4, LMARG=-2, RMARG=2, &          
+                        LMARG2=-1, RMARG2=1, LNEIGH2=-5, RNEIGH2=5
+!
   include 'general.h'
   !include 'general_f2003.h'
 !
@@ -2707,6 +2719,55 @@ endfunction
 !
     endsubroutine cyclic
 !***********************************************************************
+   subroutine linear_interpolate_1d(f,xx,xxp,res,lcheck)
+!
+!  Linear interpolation of an farray w.r.t. 1st dimension.
+!
+!  07-oct-21/MR: coded
+!
+      real, dimension(:,:,:,:) :: f
+      real, dimension(:,:,:) :: res
+      real, dimension(:) :: xx
+      real :: xxp
+      logical :: lcheck
+!
+      intent(in) :: f, xx, xxp, lcheck
+      intent(out):: res
+!
+      real, parameter :: eps=1.e-5
+      real :: w1, w2, dx1
+      integer :: ix0
+!
+!  Determine index value of lower point of grid box w.r.t.
+!  the interpolation point.
+!
+      do ix0=1,size(xx)
+        if ( xx(ix0)>=xxp ) exit
+      enddo
+      if (ix0>1) ix0=ix0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if ( .not.( xx(ix0)-eps<=xxp .and. xx(ix0+1)+eps>=xxp )) then
+        if (lcheck) then
+          print*, 'linear_interpolate_1d: Interpolation point does not ' // &
+                  'lie within the calculated grid point interval.'
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'xp, xp0, xp1 = ', xxp, xx(ix0), xx(ix0+1)
+        endif
+        return
+      endif
+!
+!  Local gridsize & interpolation weights.
+!
+      dx1=xx(ix0+1)-xx(ix0)
+      w1 = dx1*(xx(ix0+1)-xxp); w2=dx1*(xxp-xx(ix0))
+!
+!  Interpolation formula.
+!
+      res(:,:,:) = w1*f(ix0,:,:,:) + w2*f(ix0+1,:,:,:)
+
+    endsubroutine linear_interpolate_1d
+!***********************************************************************
    function linear_interpolate_2d(f,xx,yy,xxp,lcheck) result(gp)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -2759,7 +2820,7 @@ endfunction
         ! Everything okay
       else
         if (lcheck) then
-          print*, 'linear_interpolate: Interpolation point does not ' // &
+          print*, 'linear_interpolate_2d: Interpolation point does not ' // &
                   'lie within the calculated grid point interval.'
           print'(a,f8.3,1x,f8.3,1x,f8.3)', 'xp, xp0, xp1 = ', xxp(1), xx(ix0), xx(ix0+1)
           print'(a,f8.3,1x,f8.3,1x,f8.3)', 'yp, yp0, yp1 = ', xxp(2), yy(iy0), yy(iy0+1)
@@ -4237,13 +4298,16 @@ endfunction
 
     endfunction indgen
 !****************************************************************************
-    function rangegen(start,end)
+    function rangegen(start,end,step)
 !
 ! Generates vector of integers  start,...,end, analogous to IDL-rangegen.
+! Argument step not yet used.
 !
 ! 5-feb-14/MR: coded
 !
       integer, intent(in) :: start, end
+      integer, intent(in), optional :: step
+
       integer, dimension(end-start+1) :: rangegen
 
       integer :: i
@@ -5909,5 +5973,89 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       enddo
 
     endsubroutine compress_nvidia
+!***********************************************************************
+    function qualify_position_biquin(ind,nl,nu,lrestr_par_low,lrestr_par_up,lrestr_perp) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for quintic
+! interpolation (six-points-stencil).
+! If the calling proc is the first (lrestr_par_low=T) or last (lrestr_par_up=T)
+! proc in the considered direction, a position near the margin of its domain is
+! not special, likewise not if it is not the first or last in the perpendicular
+! direction (lrestr_perp=F).
+!
+      integer, intent(IN) :: ind, nl, nu
+      logical, intent(IN) :: lrestr_par_low,lrestr_par_up,lrestr_perp
+      integer :: qual
+
+      if (ind==nl-2) then       ! in penultimate grid cell of left neighbor's domain
+        qual=LNEIGH2
+      elseif (ind==nl-1) then   ! in last grid cell of left neighbor's domain
+        qual=LNEIGH
+      elseif (ind==nl) then     ! in gap to left neighbor's domain
+        qual=LGAP
+      elseif (ind==nl+1.and..not.lrestr_par_low.and.lrestr_perp) then  ! in first grid cell of calling proc
+        qual=LMARG
+      elseif (ind==nl+2.and..not.lrestr_par_low.and.lrestr_perp) then  ! in second grid cell of calling proc 
+        qual=LMARG2
+      elseif (ind==nu-1.and..not.lrestr_par_up.and.lrestr_perp) then   ! in penultimate grid cell of calling proc
+        qual=RMARG2
+      elseif (ind==nu.and..not.lrestr_par_up.and.lrestr_perp) then     ! in last grid cell of calling proc
+        qual=RMARG
+      elseif (ind==nu+1) then   ! in gap to right neighbor's domain
+        qual=RGAP
+      elseif (ind==nu+2) then   ! in first grid cell of right neighbor's domain
+        qual=RNEIGH
+      elseif (ind==nu+3) then   ! in second grid cell of right neighbor's domain
+        qual=RNEIGH2
+      else
+        qual=NOGAP
+      endif
+
+    endfunction qualify_position_biquin
+!***********************************************************************
+    function qualify_position_bicub(ind,nl,nu,lrestr_par_low,lrestr_par_up,lrestr_perp) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for
+! cubic interpolation (four-points-stencil).
+!
+      integer, intent(IN) :: ind, nl, nu
+      logical, intent(IN) :: lrestr_par_low,lrestr_par_up,lrestr_perp
+      integer :: qual
+
+      if (ind==nl-1) then
+        qual=LNEIGH
+      elseif (ind==nl) then
+        qual=LGAP
+      elseif (ind==nl+1.and..not.lrestr_par_low.and.lrestr_perp) then
+        qual=LMARG
+      elseif (ind==nu.and..not.lrestr_par_up.and.lrestr_perp) then
+        qual=RMARG
+      elseif (ind==nu+1) then
+        qual=RGAP
+      elseif (ind==nu+2) then
+        qual=RNEIGH
+      else
+        qual=NOGAP
+      endif
+
+    endfunction qualify_position_bicub
+!***********************************************************************
+    function qualify_position_bilin(ind,nl,nu) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for
+! linear interpolation (two-points-stencil).
+!
+      integer, intent(IN) :: ind, nl, nu
+      integer :: qual
+
+      if (ind==nl) then
+        qual=LGAP
+      elseif (ind==nu+1) then
+        qual=RGAP
+      else
+        qual=NOGAP
+      endif
+
+    endfunction qualify_position_bilin
 !***********************************************************************
   endmodule General
