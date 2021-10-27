@@ -26,17 +26,17 @@ module Timestep
       use General, only: itoa
 !
       if (itorder==1) then
-        alpha_ts=(/ 0.0, 0.0, 0.0 /)
-        beta_ts =(/ 1.0, 0.0, 0.0 /)
+        alpha_ts= 0.0
+        beta_ts =(/ 1.0, 0.0, 0.0, 0., 0. /)
       elseif (itorder==2) then
-        alpha_ts=(/   0.0, -1/2.0, 0.0 /)
-        beta_ts =(/ 1/2.0,    1.0, 0.0 /)
+        alpha_ts=(/   0.0, -1/2.0, 0.0, 0., 0. /)
+        beta_ts =(/ 1/2.0,    1.0, 0.0, 0., 0. /)
       elseif (itorder==3) then
         !alpha_ts=(/   0.0, -2/3.0, -1.0   /)
         !beta_ts =(/ 1/3.0,    1.0,  1/2.0 /)
         !  use coefficients of Williamson (1980)
-        alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
-        beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
+        alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0., 0. /)
+        beta_ts =(/ 1/3.0, 15/16.0,    8/15.0, 0., 0.  /)
       else
         call fatal_error('initialize_timestep','Not implemented: itorder= '// &
                          trim(itoa(itorder)))
