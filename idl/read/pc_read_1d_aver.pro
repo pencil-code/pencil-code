@@ -81,7 +81,7 @@ pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
 ;
 ;  Read variables from '*aver.in' file
 ;
-run_dir = (stregex (datadir, '^(.*)data\/ *$', /extract, /subexpr))[1]
+run_dir = (stregex (datadir, '^(.*)data[\/]{0,1} *$', /extract, /subexpr))[1]
 varnames = strarr(file_lines(run_dir+in_file))
 openr, lun, run_dir+in_file, /get_lun
 readf, lun, varnames

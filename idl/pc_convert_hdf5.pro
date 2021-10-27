@@ -127,7 +127,7 @@ pro pc_convert_hdf5, all=all, old=old, delete=delete, datadir=datadir, dim=dim, 
 
 	; video files
 	varfiles = file_search (datadir+'/*proc*/slice_*.*')
-        run_dir = (stregex (datadir, '^(.*)data\/ *$', /extract, /subexpr))[1]     ; parent of datadir
+        run_dir = (stregex (datadir, '^(.*)data[\/]{0,1} *$', /extract, /subexpr))[1]     ; parent of datadir
 
 	if (file_test (run_dir+'video.in') and keyword_set (varfiles) and (keyword_set (old) or keyword_set (all))) then begin
 		if (not file_test ('src/read_all_videofiles.x')) then spawn, 'make "read_all_videofiles"'
