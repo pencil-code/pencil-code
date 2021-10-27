@@ -1008,42 +1008,8 @@ module Hydro
          deallocate(KS_B)
          deallocate(KS_omega)
        endif
-      print*, 'Done.'
 !
     endsubroutine hydro_clean_up
-!***********************************************************************
-    subroutine kinematic_random_phase
-!
-!  This is a dummy routine.
-!
-!  16-feb-2010/bing:
-!
-      call fatal_error('kinematic_random_phase', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_phase
-!***********************************************************************
-    subroutine kinematic_random_ampl
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_ampl', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_ampl
-!***********************************************************************
-    subroutine kinematic_random_wavenumber
-!
-!  This is a dummy routine.
-!
-!  26-jun-2019/axel: coded
-!
-      call fatal_error('kinematic_random_wavenumber', &
-          'Use HYDRO=hydro_kinematic in Makefile.local instead')
-!
-    endsubroutine kinematic_random_wavenumber
 !***********************************************************************
     subroutine find_umax(f,umax)
 !
