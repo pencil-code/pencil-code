@@ -61,7 +61,9 @@ end
 ;  Set path and file names if necessary
 ;
 datatopdir = pc_get_datadir(datatopdir)
-default, tsfile, datatopdir+'/time_series.dat'
+cd, cur=wd
+if strtrim(wd,2)+'/data/' ne strtrim(datatopdir,2) then datatopdir=strtrim(wd,2)+'/data/'
+tsfile=strtrim(datatopdir,2)+'/time_series.dat'
 ;
 ;  read header
 ;
