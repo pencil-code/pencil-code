@@ -21,5 +21,5 @@
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
-  public :: lnrhomz,glnrhomz,lcalc_lnrhomean,lcalc_glnrhomean,lupw_lnrho
+  public :: lnrhomz,lcalc_lnrhomean,lupw_lnrho
   public :: beta_glnrho_global,beta_glnrho_scaled

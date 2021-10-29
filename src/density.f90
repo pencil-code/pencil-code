@@ -41,7 +41,7 @@ module Density
   real, dimension (ninit) :: xblob=0.0, yblob=0.0, zblob=0.0
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
-  real, dimension (nz) :: lnrhomz,glnrhomz
+  real, dimension (mz,1) :: lnrhomz
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
@@ -404,7 +404,6 @@ module Density
         if (.not.ldensity_nolog) & 
           call fatal_error('initialize_density','use of reference state requires use of linear density')
 
-        lcalc_glnrhomean=.false.     !?
         lcheck_negative_density=.false.
 
         if (.not.lentropy) then
@@ -1621,7 +1620,9 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine density_after_boundary(f)
+    subroutine density_before_boundary(f)
+!
+!  Actions to take before boundary conditions are applied.
 !
 !   31-aug-09/MR: adapted from hydro_after_boundary
 !    3-oct-12/MR: global averaging corrected
@@ -1642,66 +1643,39 @@ module Density
       real, dimension (nx,3) :: gradlnrho
       real, dimension (nx) :: tmp
 !
-      integer :: nl,j
+      integer :: j
 !
-      fact=1./nxygrid
+      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
 !  Calculate mean (= xy-average) of lnrho.
 !
       if (lcalc_lnrhomean) then
 !
+        fact=1./nxygrid
         lnrhomz=0.
         do n=n1,n2
-          nl = n-n1+1
-!
-          do m=m1,m2
-            if (ldensity_nolog) then
-              lnrhomz(nl)=lnrhomz(nl)+sum(alog(f(l1:l2,m,n,irho)))
-            else
-              lnrhomz(nl)=lnrhomz(nl)+sum(f(l1:l2,m,n,ilnrho))
-            endif
-          enddo
+          if (ldensity_nolog) then
+            lnrhomz(n,1)=lnrhomz(n,1)+sum(alog(f(l1:l2,m1:m2,n,irho)))
+          else
+            lnrhomz(n,1)=lnrhomz(n,1)+sum(f(l1:l2,m1:m2,n,ilnrho))
+          endif
         enddo
         lnrhomz=fact*lnrhomz
         call finalize_aver(nprocxy,12,lnrhomz)
 
         if (lrho_flucz_as_aux) then
-           do n=n1,n2
-              nl = n-n1+1
-              f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(nl))
-           enddo
-        endif
-      endif
-!
-!  Calculate mean (= xy-average) gradient of lnrho.
-!
-      if (lcalc_glnrhomean) then
-!
-        do n=n1,n2
-          nl = n-n1+1
-          glnrhomz(nl)=0.
-!
-          do m=m1,m2
-            call grad(f,ilnrho,gradlnrho)   ! tb restricted to z comp
-            if (ldensity_nolog) then
-              tmp=1./f(l1:l2,m,n,irho)
-              do j=1,3 
-                gradlnrho(:,j) = gradlnrho(:,j)*tmp
-              enddo
-            endif
-            glnrhomz(nl)=glnrhomz(nl)+sum(gradlnrho(:,3))
+          do n=n1,n2
+            f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
           enddo
-!
-        enddo
-        glnrhomz=fact*glnrhomz
-        call finalize_aver(nprocxy,12,glnrhomz)
+        endif
       endif
 !   
       if (lrmv) then
 !
 !  Force mass conservation if requested
 !
-        masscons: if (lconserve_total_mass .and. total_mass > 0.0) then
+        if (lconserve_total_mass .and. total_mass > 0.0) then
 !
           cur_mass=box_volume*mean_density(f)
 !
@@ -1720,23 +1694,23 @@ module Density
                 enddo
               enddo
             else
-              f(:,:,:,irho) = f(:,:,:,irho)*fact
+              f(l1:l2,m1:m2,n1:n2,irho) = f(l1:l2,m1:m2,n1:n2,irho)*fact
             endif
           else
-            f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
+            f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho)+alog(fact)
           endif
 !
 !  Conserve the momentum.
 !
-          if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
+          if (lhydro) f(l1:l2,m1:m2,n1:n2,iux:iuz) = f(l1:l2,m1:m2,n1:n2,iux:iuz)/fact
 !
-        endif masscons
+        endif
       endif
 
       lupdate_mass_source = lmass_source .and. t>=tstart_mass_source .and. &
                             (tstop_mass_source==-1.0 .or. t<=tstop_mass_source)
 !
-   endsubroutine density_after_boundary
+   endsubroutine density_before_boundary
 !***********************************************************************
     subroutine update_char_vel_density(f)
 !
@@ -2390,18 +2364,17 @@ module Density
 !
     endsubroutine calc_pencils_log_density_pnc
 !***********************************************************************
-    subroutine density_before_boundary(f)
+    subroutine density_after_boundary(f)
 !
-!  Actions to take before boundary conditions are set.
+!  Actions to take after boundary conditions are set.
 !
 !   2-apr-08/anders: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
-          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      call keep_compiler_quiet(f)
 !
-    endsubroutine density_before_boundary
+    endsubroutine density_after_boundary
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
