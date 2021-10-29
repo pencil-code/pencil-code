@@ -55,7 +55,7 @@ nosignal_handling.o: nosignal_handling.f90 $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OB
 #
 nopolymer.o: polymer.h nopolymer.f90 $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(MPICOMM_OBJ) $(DIAGNOSTICS_OBJ)
 #
-$(DERIV_OBJ): $(DERIV_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ)
+$(DERIV_OBJ): $(DERIV_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ)
 #
 $(FARRAY_OBJ): $(FARRAY_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(HDF5_IO_OBJ)
 #

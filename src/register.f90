@@ -42,7 +42,7 @@ module Register
       use Dustvelocity,     only: register_dustvelocity
       use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
-      use FArrayManager, only: farray_index_reset
+      use FArrayManager,    only: farray_index_reset
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
       use Heatflux,         only: register_heatflux
@@ -58,7 +58,7 @@ module Register
       use PointMasses,      only: register_pointmasses
       use Polymer,          only: register_polymer
       use Pscalar,          only: register_pscalar
-      use Ascalar,         only: register_ascalar
+      use Ascalar,          only: register_ascalar
       use Radiation,        only: register_radiation
       use Selfgravity,      only: register_selfgravity
       use Shear,            only: register_shear

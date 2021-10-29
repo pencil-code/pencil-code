@@ -96,7 +96,6 @@ module Magnetic
   real, dimension(3) :: B_ext = 0.0
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
-  real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
   real :: ux_const=0., ampl_uy=0.
   logical :: lelectron_inertia=.false.

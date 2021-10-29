@@ -627,7 +627,6 @@ module Testfield_general
 
       real, dimension(size(x)):: cx1
       real, dimension(size(z)):: cz1
-
 !
 ! calculate inverse matrix for determination of the turbulent coefficients
 !

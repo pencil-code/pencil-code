@@ -1279,7 +1279,7 @@ module Energy
 
       if (.not.lstart) then
         if (lFenth_as_aux.and..not. lcalc_cs2mz_mean_diag) &
-             call stop_it('energy_after_boundary: Need to set lcalc_cs2mz_mean_diag=T'// &
+             call stop_it('initialize_energy: Need to set lcalc_cs2mz_mean_diag=T'// &
                           ' in entropy_run_pars for enthalpy diagnostics.')
 !
         if ((idiag_Fenthz/=0 .or. idiag_Fenthupz/=0 .or. idiag_Fenthdownz/=0) &

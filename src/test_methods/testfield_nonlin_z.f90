@@ -221,6 +221,7 @@ module Testfield
 !  arrays for horizontally averaged uxb and jxb
 !
   real, dimension (nz,3,njtest) :: uxbtestmz,jxbtestmz,ugutestmz
+  real, dimension(nz,3) :: guumz, bbmz, jjmz
 
   contains
 
@@ -605,8 +606,8 @@ module Testfield
 !                  maxadvec now updated by uutest; upwinding enabled for most u.\nabla terms (default is off)
 !
       use Diagnostics
-      use Hydro, only: uumz,guumz,lcalc_uumeanz, coriolis_cartesian
-      use Magnetic, only: bbmz,jjmz,lcalc_aameanz,B_ext_inv
+      use Hydro, only: uumz,lcalc_uumeanz, coriolis_cartesian
+      use Magnetic, only: aamz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
       use Slices_methods, only: store_slices
@@ -1320,9 +1321,10 @@ module Testfield
 !  17-oct-18/MR  : intro'd luse_main_run (=F -> kinematic case
 !
       use Sub
+      use Deriv, only: distr_der
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-                          aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
+                          aamz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1335,6 +1337,7 @@ module Testfield
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3) :: uufluct,bbfluct,jjfluct
       real, dimension (mz,3) :: aatestmz, uutestmz
+      real, dimension (nz,3) :: tmp
 !
       integer :: jtest,j,juxb,jjxb,jugu,nl,jaatest,juutest,jaa,juu
       logical :: headtt_save
@@ -1354,6 +1357,26 @@ module Testfield
 !
       if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need njtest=5 for u0ref')
+
+      if (luse_main_run) then
+!
+!  Calculate gradient of mean uu.
+!
+        if (lcalc_uumeanz) call distr_der(uumz,3,guumz)
+!
+!  Compute mean magnetic field and current density.
+!
+        if (lcalc_aameanz) then
+          call distr_der(aamz,3,tmp)
+          bbmz(:,1)=-tmp(:,2)
+          bbmz(:,2)=+tmp(:,1)
+          bbmz(:,3)=0.
+          call distr_der(aamz,3,tmp,order=2)
+          jjmz(:,1)=-tmp(:,1)
+          jjmz(:,2)=-tmp(:,2)
+          jjmz(:,3)=0.
+        endif
+      endif
 
       if (lrmv.and.lremove_zmeans_NLTFM_zero) then
 !
