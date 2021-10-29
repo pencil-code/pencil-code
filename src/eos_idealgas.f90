@@ -2766,7 +2766,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: dsdx_yz, TT_yz, rho_yz, dlnrhodx_yz
+      real, dimension (my,mz) :: dsdx_yz, TT_yz, rho_yz, dlnrhodx_yz, Kxbot
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
@@ -2841,11 +2841,12 @@ module EquationOfState
           endif
 !
           if (lheatc_kramers) then
-            dsdx_yz=gamma1*(Fbot/hcond0_kramers)*rho_yz**(2.*nkramers)/TT_yz**(6.5*nkramers+1.)
-                            ! no turbulent diffusivity considered here!
+            Kxbot=hcond0_kramers*TT_yz**(6.5*nkramers)/rho_yz**(2.*nkramers)
           else
-            dsdx_yz=(Fbot/TT_yz)/(chit_prof1*chi_t*rho_yz + hcondxbot*gamma)
+            Kxbot=hcondxbot
           endif
+!
+          dsdx_yz=(Fbot/TT_yz)/(chit_prof1*chi_t*rho_yz + Kxbot*gamma)
 !
 !  Add gradient of reference entropy.
 !
@@ -2856,7 +2857,7 @@ module EquationOfState
           do i=1,nghost
             call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrhodx_yz)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &
-                cp*(hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
+                cp*(Kxbot*gamma_m1/(gamma*Kxbot+chit_prof1*chi_t*rho_yz))* &
                    dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
           enddo
         endif
