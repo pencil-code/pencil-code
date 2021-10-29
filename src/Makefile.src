@@ -2144,6 +2144,47 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-r8 #(beskow*)
 ##FFLAGS_DOUBLE=-s default64 #(beskow*)
 ##
+##  Dardel (Axel, Cray compiler)
+##
+#ALLOW_ARG_MISMATCH = -fallow-argument-mismatch #(uan02*)
+#FC=ftn #(uan02*)
+#F90=$(FC) #(uan02*)
+#CC=cc #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan02*)
+##NS: added compiler option -ffree-line-length-0
+##NS: to allow for long lines in source codes (max col no def was 132)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(uan02*)
+#FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
+#FFLAGS=-O3 -mcmodel=large #(uan02*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan02*)
+#FFLAGS=-O2 -mcmodel=large #(uan02*)
+#FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(uan02*)
+#FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
+#FFLAGS=-O0 #(uan02*)
+#FFLAGS=-O2 #(uan02*)
+##NS: use following for debugging the code
+##FFLAGS=-O3 -fcheck=all #(uan02*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
+#FFLAGS_DOUBLE=-s default64 #(uan02*)
+##
+##  Dardel (Axel, gFortran compiler)
+##
+#FC=ftn #(uan02*)
+#F90=$(FC) #(uan02*)
+#CC=cc #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan02*)
+##NS: added compiler option -ffree-line-length-0
+##NS: to allow for long lines in source codes (max col no def was 132)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(uan02*)
+#FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
+#FFLAGS=-O3 -mcmodel=large #(uan02*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan02*)
+#FFLAGS=-O2 #(uan02*)
+#FFLAGS=-O1 #(uan02*)
+##NS: use following for debugging the code
+##FFLAGS=-O3 -fcheck=all #(uan02*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
+##
 ##
 ##HP CP4000 BL Proliant supercluster
 ##Vuori - (Espoo, Finland)
@@ -2571,11 +2612,13 @@ COMPILER = $(notdir $(firstword $(FC)))
 ifneq (,$(filter mpif%,$(COMPILER)))
   COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
 endif
+
 $(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
 ifneq (,$(filter gfortran%,$(COMPILER)))
   GCC_VERSION = $(shell $(FC) -dumpversion)
   $(info GCC version: $(GCC_VERSION))
+$(shell echo "AXEL GCC version: " $(GCC_VERSION))
   ifeq ($(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true),true)
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
