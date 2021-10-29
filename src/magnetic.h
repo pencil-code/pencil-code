@@ -15,7 +15,7 @@
   public :: get_bext
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
-  public :: lcalc_aameanz, lcalc_aamean, aamz, bbmz, jjmz
+  public :: lcalc_aameanz, lcalc_aamean, aamz
   public :: rescaling_magnetic
   public :: B_ext_inv
   public :: bb_unitvec_shock

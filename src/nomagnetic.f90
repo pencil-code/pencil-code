@@ -27,7 +27,6 @@ module Magnetic
 !
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
-  real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.

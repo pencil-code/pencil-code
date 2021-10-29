@@ -255,7 +255,8 @@ module Testfield
 !
   logical :: lBext
   integer :: jtest_start
-
+  real, dimension(nz,3) :: guumz, bbmz, jjmz
+  real, dimension(nz,1) :: glnrhomz
   contains
 
 !***********************************************************************
@@ -767,9 +768,9 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Hydro, only: uumz,guumz,lcalc_uumeanz,coriolis_cartesian
-      use Density, only: lnrhomz,glnrhomz,lcalc_glnrhomean
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
+      use Hydro, only: uumz,lcalc_uumeanz,coriolis_cartesian
+      use Density, only: lnrhomz,lcalc_lnrhomean
+      use Magnetic, only: lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
       use Slices_methods, only: store_slices
@@ -911,9 +912,9 @@ module Testfield
 !  Contribution 2*nu(stest.grad Hmean + Smean.grad htest).
 !
             sglnrho=0.
-            if (ldensity.and.lcalc_glnrhomean) then
+            if (ldensity.and.lcalc_lnrhomean) then
               call traceless_strain(uijtest,divutest,sijtest,uutest,.true.)
-              sglnrho = sglnrho+sijtest(:,:,3)*glnrhomz(nl)                             ! sij^T.grad(Hbar)
+              sglnrho = sglnrho+sijtest(:,:,3)*glnrhomz(nl,1)                           ! sij^T.grad(Hbar)
             endif
             if (lcalc_uumeanz) sglnrho(:,3) = sglnrho(:,3) + guumz(nl,3)*ghhtest(:,3)   ! Sijbar.grad(hh^T)
 
@@ -981,8 +982,8 @@ module Testfield
 !  mean density terms
 !
 !if (lroot.and.m==m1.and.n==n1) print*, 'glnrhomz,ughm=', maxval(abs(glnrhomz)), maxval(abs(ughm))
-          if (ldensity.and.lcalc_glnrhomean) &
-            ughm = ughm + uutest(:,3)*glnrhomz(nl)                                     ! u^T.grad Hbar
+          if (ldensity.and.lcalc_lnrhomean) &
+            ughm = ughm + uutest(:,3)*glnrhomz(nl,1)                                   ! u^T.grad Hbar
 
           df(l1:l2,m,n,ihxtest)=df(l1:l2,m,n,ihxtest)-ughm
         endif
@@ -1201,7 +1202,8 @@ module Testfield
 !if (ldiagnos.and.m==m1.and.lroot) print*, 'maxmin(ugutestmz etc.)=', &
 !maxval(abs(ugutestmz(nl,:,iE0)-jxbtestmz(nl,:,iE0)*rho0test1-2.*nutest*Sghtestmz(nl,:,iE0)))
         do j=1,3 
-          df(l1:l2,m,n,iux+j-1) = df(l1:l2,m,n,iux+j-1)+ugutestmz(nl,j,iE0)-jxbtestmz(nl,j,iE0)*rho0test1-2.*nutest*Sghtestmz(nl,j,iE0)
+          df(l1:l2,m,n,iux+j-1) = df(l1:l2,m,n,iux+j-1)+ugutestmz(nl,j,iE0) &
+                                 -jxbtestmz(nl,j,iE0)*rho0test1-2.*nutest*Sghtestmz(nl,j,iE0)
         enddo
       endif
       if (lremove_Q0) then
@@ -1573,11 +1575,12 @@ module Testfield
 !                  pencil calculation corrected; communication simplified
 !
       use Cdata
+      use Deriv, only: distr_der
       use Sub
-      use Density, only: glnrhomz,lcalc_glnrhomean,calc_pencils_density
-      use Hydro, only: calc_pencils_hydro,uumz,guumz,lcalc_uumeanz
+      use Density, only: lcalc_lnrhomean,calc_pencils_density,lnrhomz
+      use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz,uumz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-                          aamz,bbmz,jjmz,lcalc_aameanz
+                          lcalc_aameanz,aamz
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1595,12 +1598,39 @@ module Testfield
       real, dimension (mx,3) :: aatestmx,uutestmx
       real, dimension (my,3) :: aatestmy,uutestmy
       real, dimension (3) :: uutestm0
+      real, dimension(nz,3) :: tmp
       integer :: jtest,j,juxb,jjxb,jugu,jugh,jSgh,nl,lll,mmm
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
 !
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+
+      if (luse_main_run) then
+!
+!  Calculate gradient of mean uu.
+!
+        if (lcalc_uumeanz) call distr_der(uumz,3,guumz)
+!if (lroot) print'(8(e9.3,1x)/)', guumz
+!
+!  Compute mean magnetic field and current density.
+!
+        if (lcalc_aameanz) then
+          call distr_der(aamz,3,tmp)
+          bbmz(:,1)=-tmp(:,2)
+          bbmz(:,2)=+tmp(:,1)
+          bbmz(:,3)=0.
+          call distr_der(aamz,3,tmp,order=2)
+          jjmz(:,1)=-tmp(:,1)
+          jjmz(:,2)=-tmp(:,2)
+          jjmz(:,3)=0.
+        endif
+!
+!  Calculate gradient of mean lnrho.
+!
+        if (lcalc_lnrhomean) call distr_der(lnrhomz,3,glnrhomz)
+
+      endif
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -1656,7 +1686,7 @@ mn:   do n=n1,n2
 !  Calculate ghhfluct = grad(H) - d_z Hmean.
 !
             ghhfluct=p%glnrho
-            if (lcalc_glnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl)
+            if (lcalc_lnrhomean) ghhfluct(:,3)=ghhfluct(:,3)-glnrhomz(nl,1)
           else
             ghhfluct=0.
           endif
@@ -2011,7 +2041,7 @@ mn:   do n=n1,n2
                   f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
                   f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
                 enddo
-                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n-n1+1)
+                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n-n1+1,1)
               enddo
             else
               call fatal_error('rescaling_testfield', &

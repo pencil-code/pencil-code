@@ -84,10 +84,9 @@ module Magnetic
 !  xy-averaged field
 !
   real, dimension (mz,3) :: aamz
-  real, dimension (nz,3) :: bbmz,jjmz
-  real, dimension (:,:), allocatable :: aamxy
+  real, dimension (:,:), allocatable :: aamxy, aamxz
 !
-! Ventor potential from file
+! Vector potential from file
 !
   real, dimension (:,:,:,:), allocatable :: ap
 !
@@ -307,7 +306,7 @@ module Magnetic
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
   logical :: lcalc_aameanz=.false.,lcalc_aamean
-  equivalence (lcalc_aameanz,lcalc_aamean)     ! for compatibility
+  equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
   logical :: lforcing_cont_aa=.false.
   integer :: iforcing_cont_aa=0
   logical :: lelectron_inertia=.false.
@@ -1032,7 +1031,7 @@ module Magnetic
         ltime_integrals=.true.
       endif
 !
-      if (lua_as_aux ) call register_report_aux('ua',iua)
+      if (lua_as_aux ) call register_report_aux('ua',iua,communicated=.true.)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
 !
 !PJK: moved back to initialize_magnetic at least temporarily
@@ -1107,7 +1106,7 @@ module Magnetic
       !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,myl,nycap
+      integer :: i,j,nyl,nycap
       real :: J_ext2, eta_zdep_exponent
 
 !PJK: moved from register_magnetic at least temporarily
@@ -1768,14 +1767,22 @@ module Magnetic
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
 !
+      lcalc_aameanz = lcalc_aameanz.or.lremove_meanaz
+      if ((lspherical_coords.or.lcylindrical_coords).and.(lremove_meanax.or.lremove_meanaxy.or.lremove_meanaxz)) &
+        call warning('initialize_magnetic','removing x or x[yz] average not precise for curvilinear coordinates')
+
+      if (lspherical_coords.and.lremove_meanay) &
+        call warning('initialize_magnetic','removing y average not precise for spherical coordinates')
+
       if (lremove_meanaxy) then
-        myl=my
+        nyl=ny
         if (lyinyang) then
-          call fatal_error('initialize_magnetic','Removal of z average not implmented for Yin-Yang')
-          call initialize_zaver_yy(myl,nycap)
+          call fatal_error('initialize_magnetic','Removal of z average not implemented for Yin-Yang')
+          call initialize_zaver_yy(nyl,nycap)
         endif
-        if (.not.allocated(aamxy)) allocate(aamxy(mx,myl))
+        if (.not.allocated(aamxy)) allocate(aamxy(nx,nyl))
       endif
+      if (lremove_meanaxz.and..not.allocated(aamxz)) allocate(aamxz(nx,nz))
 !
       llorentz_rhoref = llorentzforce .and. rhoref/=impossible .and. rhoref>0.
       if (llorentz_rhoref) rhoref1=1./rhoref
@@ -3207,28 +3214,160 @@ module Magnetic
 !
 !  Conduct pre-processing required before boundary conditions and pencil
 !  calculations.
+!  In particular, calculate means for removal and test-field methods.
 !
 !  30-may-14/ccyang: coded
+!  20-oct-21/MR: moved average removal from magnetic_after_boundary
 !
       use Boundcond, only: update_ghosts, zero_ghosts
-      use Sub, only: gij, gij_etc, curl_mn, dot2_mn
+      use Sub, only: gij, gij_etc, curl_mn, dot2_mn, finalize_aver
       use EquationOfState, only: rho0
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout):: f
-!
+      use Yinyang_mpi, only: zsum_yy
+      use Mpicomm, only: mpiallreduce_sum
+
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+
+      real :: fact
+      integer :: l,n,j,ml,nl
+      real, dimension(:,:,:), allocatable :: buffer
+      real, dimension(nx,3) :: aamx,bb,jj
+      real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
-      real, dimension(nx,3) :: bb, jj
       real, dimension(nx) :: rho1, b2, tmp, tmp2
       real, dimension(3) :: b_ext
-      integer :: j
+!
+!  Compute mean field (xy verage) for each component. Do not include the ghost zones.
+!
+      if (lrmv) then
+        if (lremove_meanax) then
+
+          fact=1./nyzgrid
+          do j=1,3
+            do l=l1,l2
+              aamx(l-nghost,j)=fact*sum(f(l,m1:m2,n1:n2,iax+j-1))
+            enddo
+          enddo
+          call finalize_aver(nprocyz,23,aamx)
+!
+          do j=1,3
+            do l=l1,l2
+              f(l,m1:m2,n1:n2,iax+j-1) = f(l,m1:m2,n1:n2,iax+j-1)-aamx(l-nghost,j)
+            enddo
+          enddo
+
+        endif
+!
+        if (lremove_meanay) then
+
+          fact=1./nxzgrid
+          do j=1,3
+            do m=m1,m2
+              aamy(m-nghost,j)=fact*sum(f(l1:l2,m,n1:n2,iax+j-1))
+            enddo
+          enddo
+          call finalize_aver(nprocxz,13,aamy)
+!
+          do j=1,3
+            do m=m1,m2
+              f(l1:l2,m,n1:n2,iax+j-1) = f(l1:l2,m,n1:n2,iax+j-1)-aamy(m-nghost,j)
+            enddo
+          enddo
+
+        endif
+      endif
+!
+      if (lcalc_aameanz .or. lrmv.and.lremove_meanaz) then
+!
+        fact=1./nxygrid
+        do j=1,3
+          do n=n1,n2
+            aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocxy,12,aamz)
+!
+        if (lrmv.and.lremove_meanaz) then
+          do j=1,3
+            do n=n1,n2
+              f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
+            enddo
+          enddo
+        endif
+
+      endif
+!
+!  Calculate Arms for quenching.  MR: should be Brms or not?
+!
+      if (lquench_eta_aniso) then
+        Arms=sum(f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)**2)  ! requires equidistant grid
+        call mpiallreduce_sum(Arms,fact)
+        Arms=sqrt(fact/nwgrid)
+      endif
+!
+!  Remove mean field (y average).
+!
+      if (lrmv) then
+
+        if (lremove_meanaxz) then
+!
+          fact=1./nygrid
+          do j=1,3
+
+            aamxz=fact*sum(f(l1:l2,m1:m2,n1:n2,iaa+j-1),2)  ! requires equidistant grid
+            call finalize_aver(nprocy,2,aamxz)
+!
+            do m=m1,m2
+              f(l1:l2,m,n1:n2,iaa+j-1) = f(l1:l2,m,n1:n2,iaa+j-1)-aamxz
+            enddo
+
+          enddo
+        endif
+!
+!  Remove mean field (z average).
+!
+        if (lremove_meanaxy) then
+!
+          fact=1./nzgrid_eff
+          if (lyang.and..not.allocated(buffer)) allocate(buffer(1,mx,ny))
+
+          do j=1,3
+
+            if (lyang) then
+!
+!  On Yang grid:
+!
+              do nl=n1,n2
+                do ml=m1,m2
+                  call zsum_yy(buffer,1,ml,nl,f(:,ml,nl,iaa+j-1))
+                enddo
+              enddo
+              aamxy=fact*buffer(1,:,:)
+            else
+!
+! Normal summing-up in Yin procs.
+! 
+              aamxy=fact*sum(f(l1:l2,m1:m2,n1:n2,iaa+j-1),3)  ! requires equidistant grid
+            endif
+
+            call finalize_aver(nprocz,3,aamxy)
+!
+            do n=n1,n2
+              f(l1:l2,m1:m2,n,iaa+j-1) = f(l1:l2,m1:m2,n,iaa+j-1)-tau_remove_meanaxy*aamxy
+            enddo
+          enddo
+
+        endif
+      endif
 !
 !  Find bb and jj if as communicated auxiliary.
 !
       getbb: if (lbb_as_comaux .or. ljj_as_comaux .or. &
                  lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
-        call zero_ghosts(f, iax, iaz)
-        call update_ghosts(f, iax, iaz)
-        mn_loop: do imn = 1, ny * nz
+        call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
+        call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
+
+        mn_loop: do imn = 1, ny*nz
+
           m = mm(imn)
           n = nn(imn)
           call gij(f, iaa, aij, 1)
@@ -3250,16 +3389,16 @@ module Magnetic
 !
 !  Add imposed field, if any
 !
-          bext: if (lB_ext_in_comaux) then
+          if (lB_ext_in_comaux) then
             call get_bext(b_ext)
             forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
             if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', b_ext
-          endif bext
+          endif
           if (lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = bb
 !
-!  Find alfven speed as communicated auxiliary
+!  Find Alfven speed as communicated auxiliary
 !
-          if (lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
+          if (lalfven_as_aux .or. (lslope_limit_diff .and. llast)) then
             if (ldensity) then
               if (ldensity_nolog) then
                 rho1=1./f(l1:l2,m,n,irho)
@@ -3289,6 +3428,14 @@ module Magnetic
           endif
         enddo mn_loop
       endif getbb
+!
+!  put u.a into auxiliary array
+!
+      if (lua_as_aux) & 
+      !MR: ghost zones not up-to-date, so here better than in magnetic_after_boundary,
+      !    but not yet correct in terms of "real" boundary conditions.
+      !    Comes at the price of f(:,:,:,iua) being communicated.
+        f(:,:,:,iua)=sum(f(:,:,:,iux:iuz)*f(:,:,:,iax:iaz),4)
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
@@ -6404,186 +6551,19 @@ module Magnetic
 !***********************************************************************
     subroutine magnetic_after_boundary(f)
 !
-!  Calculate <A>, which is needed for test-field methods.
-!
 !   2-jan-10/axel: adapted from hydro_after_boundary
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !  15-oct-15/MR: changes for slope-limited diffusion
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet incomplete
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion, now in daa_dt
+!  20-oct-21/MR: moved averages/removal to magetic_before_boundary
 !
-      use Deriv, only: der_z,der2_z
-      use Sub, only: finalize_aver, div, calc_all_diff_fluxes, dot2_mn
-      use Yinyang_mpi, only: zsum_yy
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
-      use Density, only: calc_pencils_density
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: div, calc_all_diff_fluxes, dot2_mn
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-
-      real :: fact
-      integer :: l,n,j,ml,nl
-      real, dimension(nz,3) :: gaamz,d2aamz
-      real, dimension(:,:,:), allocatable :: buffer
       real, dimension(nx) :: tmp
-      real, dimension(mx,3) :: aamx
-      real, dimension(my,3) :: aamy
-      real, dimension(mx,mz) :: aamxz
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
-!
-!  Compute mean field (xy verage) for each component. Include the ghost zones,
-!  because they have just been set.
-!
-      if (lrmv) then
-        if (lremove_meanax) then
-
-          fact=1./nyzgrid
-          do j=1,3
-            do l=1,mx
-              aamx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iax+j-1))
-            enddo
-          enddo
-          call finalize_aver(nprocyz,23,aamx)
-!
-          do j=1,3
-            do l=1,mx
-              f(l,:,:,iax+j-1) = f(l,:,:,iax+j-1)-aamx(l,j)
-            enddo
-          enddo
-
-        endif
-!
-        if (lremove_meanay) then
-
-          fact=1./nxzgrid
-          do j=1,3
-            do m=1,my
-              aamy(m,j)=fact*sum(f(l1:l2,m,n1:n2,iax+j-1))
-            enddo
-          enddo
-          call finalize_aver(nprocxz,13,aamy)
-!
-          do j=1,3
-            do m=1,my
-              f(:,m,:,iax+j-1) = f(:,m,:,iax+j-1)-aamy(m,j)
-            enddo
-          enddo
-
-        endif
-      endif
-!
-      if (lcalc_aameanz .or. lrmv.and.lremove_meanaz) then
-!
-        fact=1./nxygrid
-        do j=1,3
-          do n=1,mz
-            aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
-          enddo
-        enddo
-        call finalize_aver(nprocxy,12,aamz)
-!
-        if (lrmv.and.lremove_meanaz) then
-          do j=1,3
-            do n=1,mz
-              f(:,:,n,iax+j-1) = f(:,:,n,iax+j-1)-aamz(n,j)
-            enddo
-          enddo
-        endif
-
-        if (lcalc_aameanz) then
-!
-!  Compute first and second derivatives.
-!
-          do j=1,3
-            call der_z(aamz(:,j),gaamz(:,j))
-            call der2_z(aamz(:,j),d2aamz(:,j))
-          enddo
-!
-!  Compute mean magnetic field and current density.
-!
-          bbmz(:,1)=-gaamz(:,2)
-          bbmz(:,2)=+gaamz(:,1)
-          bbmz(:,3)=0.
-          jjmz(:,1)=-d2aamz(:,1)
-          jjmz(:,2)=-d2aamz(:,2)
-          jjmz(:,3)=0.
-        endif
-      endif
-!
-!  Calculate Arms for quenching.
-!
-      if (lquench_eta_aniso) then
-        Arms=sum(f(l1:l2,m1:m2,n1:n2,iaa:iaa+2)**2)  ! requires equidistant grid
-        call mpiallreduce_sum(Arms,fact)
-        Arms=sqrt(fact/nwgrid)
-      endif
-!
-!  Remove mean field (y average).
-!
-      if (lrmv) then
-
-        if (lremove_meanaxz) then
-!
-          fact=1./nygrid
-          do j=1,3
-
-            aamxz=fact*sum(f(:,m1:m2,:,iaa+j-1),2)  ! requires equidistant grid
-            call finalize_aver(nprocy,2,aamxz)
-!
-            do m=1,my
-              f(:,m,:,iaa+j-1) = f(:,m,:,iaa+j-1)-aamxz
-            enddo
-
-          enddo
-        endif
-!
-!  Remove mean field (z average).
-!
-        if (lremove_meanaxy) then
-!
-          fact=1./nzgrid_eff
-          if (lyang) allocate(buffer(1,mx,my))
-
-          do j=1,3
-
-            if (lyang) then
-!
-!  On Yang grid:
-!
-              do nl=n1,n2
-                do ml=1,my
-                  call zsum_yy(buffer,1,ml,nl,f(:,ml,nl,iaa+j-1))
-                enddo
-              enddo
-              aamxy=fact*buffer(1,:,:)
-            else
-!
-! Normal summing-up in Yin procs.
-! 
-              aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
-            endif
-
-            call finalize_aver(nprocz,3,aamxy)
-!
-            do n=1,mz
-              f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-tau_remove_meanaxy*aamxy
-            enddo
-          enddo
-
-        endif
-      endif
-!
-!  put u.a into auxiliary array
-!
-      if (lua_as_aux) then
-        do n=1,mz
-          do m=1,my
-            f(:,m,n,iua)=sum(f(:,m,n,iux:iuz)*f(:,m,n,iax:iaz),2)
-          enddo
-        enddo
-      endif
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -6617,7 +6597,7 @@ module Magnetic
 !
           enddo; enddo
 !
-          call update_ghosts(f,ietasmag)
+          call update_ghosts(f,ietasmag)  !MR: can this be avoided (do earlier)?
 !
         endif
       endif

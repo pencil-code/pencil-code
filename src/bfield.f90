@@ -164,7 +164,6 @@ module Magnetic
 !  Dummy but public variables (unfortunately)
 !
   real, dimension(mz,3), parameter :: aamz = 0.0
-  real, dimension(nz,3), parameter :: bbmz = 0.0, jjmz = 0.0
   logical, dimension(7) :: lresi_dep = .false.
   real, dimension(3) :: b_ext_inv = 0.0
   logical, parameter :: lcalc_aamean = .false.
