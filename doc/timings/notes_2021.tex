@@ -25,14 +25,6 @@ The time step is third-order.
 In this sample, we run isothermal magnetohydrodynamics
 in a periodic domain\footnote{A sample run directory is available on
 \url{https://github.com/pencil-code/pencil-code/tree/master/doc/timings/N4096_32x32x32}}.
-Power spectra are computed during the run, but our
-current parallelization of the Fourier transform
-requires that the meshpoint number is an integer multiple
-of the product of processor numbers in the $y$ and $z$ directions
-and the product of processor numbers in the $x$ and $y$ directions.
-In addition, the number of processors in one direction should not
-be so large that the number of mesh points per processor becomes
-comparable to or less than the number of ghost zones (which is 6).
 
 \begin{table}[t!]\caption{
 Dardel timings
@@ -81,11 +73,11 @@ To run the code, get one of the sample run directories, e.g.,
 The relevant file to be changed is \url{src/cparam.local}
 \scriptsize
 \begin{verbatim}
-ncpus=2048,nprocx=4,nprocy=16,nprocz=ncpus/(nprocx*nprocy)
-nxgrid=512,nygrid=nxgrid,nzgrid=nxgrid
+ncpus=32768,nprocx=32,nprocy=32,nprocz=ncpus/(nprocx*nprocy)
+nxgrid=4096,nygrid=nxgrid,nzgrid=nxgrid
 \end{verbatim}
 \normalsize
-in particular the values of ncpus, nprocx, nprocy, and nxgrid.
+In particular, the values of ncpus, nprocx, nprocy, and nxgrid.
 Once they are chosen, say make, and submit
 start\_run.csh.
 
@@ -95,10 +87,10 @@ start\_run.csh.
 Strong scaling on Dardel.
 }\label{pdardel_strong}\end{figure}
 
-\section{Dardel}
+\section{Dardel results}
 
 On Dardel, strong scaling tests have been performed
-for three mesh sizes.
+for five mesh sizes.
 The time per time step and mesh point is given for
 different processor numbers and layouts.
 Generally, it is advantageous to minimize the
@@ -106,9 +98,9 @@ processor surface area, and to keep the number
 of processors in the $x$ direction small.
 
 {\em Comments}.~
-Performancewise, cray-O2 is equivalent to gnu-03.
-While gnu-03 is able to handle memory or whatever compiler problems much
-better, it is otherwise not better than Cray-02, and often some 10--20\%
+Performancewise, Cray with O2 optimization is equivalent to gnu with O3.
+While gnu-O3 is able to handle memory or whatever compiler problems much
+better, it is otherwise not better than Cray-O2, and often some 10--20\%
 slows, but this is within the measurement accuracy.
 
 %r e f
