@@ -3,12 +3,13 @@
 \documentclass[twocolumn]{article}
 \setlength{\textwidth}{170mm}
 \setlength{\oddsidemargin}{-0mm}
-\setlength{\textheight}{260mm}
-\setlength{\topmargin}{-28mm}
+\setlength{\textheight}{265mm}
+\setlength{\topmargin}{-34mm}
 \usepackage{graphicx,natbib}
 \usepackage{bm,html,url}
 \graphicspath{{./fig/}{./png/}}
-\input macros
+\newcommand{\yjourN}[5]{:~#1, ``#5,'' {\em #2} {\bf #3}, #4}
+%\input macros
 \title{Timing results for Dardel}
 \author{Axel Brandenburg}
 \date{\today,~ $ $Revision: 1.2 $ $}
@@ -17,14 +18,13 @@
 
 \section{Code and test case}
 
-For all tests, the {\sc Pencil Code} was used.
+For all tests, the {\sc Pencil Code} \cite{PCcollab} was used.
 It is publicly available on \url{http://github.com/pencil-code},
 where also detailed documentation is available.
 The code uses explicit sixth order finite differences.
 The time step is third-order.
 In this sample, we run isothermal magnetohydrodynamics
-in a periodic domain\footnote{A sample run directory is available on
-\url{https://github.com/pencil-code/pencil-code/tree/master/doc/timings/N4096_32x32x32}}.
+in a periodic domain.
 
 \begin{table}[h!]\caption{
 Dardel timings
@@ -37,10 +37,10 @@ proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout & comp
 1024 & 1.505E-03 &$256^3$ & 8x8x16 & Cray\\
 2048 & 1.884E-03 &$256^3$ & 8x16x16 & Cray\\
 \hline
- 512 & 1.571E-03 &$512^3$ & 8x8x8\\
-1024 & 1.102E-03 &$512^3$ & 8x8x16b\\
-2048 & 5.508E-04 &$512^3$ & 8x16x16\\
-4096 & 7.461E-04 &$512^3$ & 16x16x16\\
+ 512 & 1.571E-03 &$512^3$ & 8x8x8 & Cray\\
+1024 & 1.102E-03 &$512^3$ & 8x8x16b & Cray\\
+2048 & 5.508E-04 &$512^3$ & 8x16x16 & Cray\\
+4096 & 7.461E-04 &$512^3$ & 16x16x16 & Cray\\
  512 & 1.568E-03 &$512^3$ & 8x8x8 & gnu\\
 1024 & 9.260E-04 &$512^3$ & 8x8x16 & gnu\\
 2048 & 5.550E-04 &$512^3$ & 8x16x16 & gnu\\
@@ -54,16 +54,16 @@ proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout & comp
 16384 & 6.046E-05 &$1024^3$ & 16x32x32 & gnu\\
 32768 & 3.953E-05 &$1024^3$ & 32x32x32 & gnu\\
 \hline
- 2048 & 3.416E-04 &$2048^3$ & 8x16x16 \\
- 4096 & 1.859E-04 &$2048^3$ & 8x16x32 \\
- 4096 & 1.674E-04 &$2048^3$ & 16x16x16 \\
- 8192 & 9.271E-05 &$2048^3$ & 16x16x32 \\
-16384 & 6.853E-05 &$2048^3$ & 16x32x32 \\
-32768 & 2.909E-05 &$2048^3$ & 32x32x32 \\
+ 2048 & 3.416E-04 &$2048^3$ & 8x16x16 & gnu\\
+ 4096 & 1.859E-04 &$2048^3$ & 8x16x32 & gnu\\
+ 4096 & 1.674E-04 &$2048^3$ & 16x16x16 & gnu\\
+ 8192 & 9.271E-05 &$2048^3$ & 16x16x32 & gnu\\
+16384 & 6.853E-05 &$2048^3$ & 16x32x32 & gnu\\
+32768 & 2.909E-05 &$2048^3$ & 32x32x32 & gnu\\
 \hline
- 8192 & 8.588E-05 &$4096^3$ & 16x16x32 \\
-16384 & 4.368E-05 &$4096^3$ & 16x32x32 \\
-32768 & 3.153E-05 &$4096^3$ & 32x32x32 \\
+ 8192 & 8.588E-05 &$4096^3$ & 16x16x32 & gnu\\
+16384 & 4.368E-05 &$4096^3$ & 16x32x32 & gnu\\
+32768 & 3.153E-05 &$4096^3$ & 32x32x32 & gnu\\
 \label{Tsummary}\end{tabular}}\end{table}
 
 \section{Running the code}
@@ -101,19 +101,19 @@ Generally, it is advantageous to minimize the
 processor surface area, and to keep the number
 of processors in the $x$ direction small.
 
-{\em Comments}.~
 Performancewise, Cray with O2 optimization is equivalent to gnu with O3.
 While gnu-O3 is able to handle memory or whatever compiler problems much
 better, it is otherwise not better than Cray-O2, and often some 10--20\%
 slows, but this is within the measurement accuracy.
 
 %r e f
-%\begin{thebibliography}{}
+\begin{thebibliography}{}
 
-%\bibitem[Biskamp \& M\"uller(1999)]{BM99}
-%Biskamp, D., \& M\"uller, W.-C.\yprl{1999}{83}{2195}
+\bibitem[Pencil Code Collaboration(2021)]{PCcollab}
+Pencil Code Collaboration\yjourN{2021}{J. Open Source Software}{6}{2807}
+{The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained}
 
-%\end{thebibliography}
+\end{thebibliography}
 
 \vfill\bigskip\noindent\tiny\begin{verbatim}
 $Header: /var/cvs/brandenb/tex/pencil-code/performance/notes_2021.tex,v 1.2 2021/10/31 03:19:57 brandenb Exp $
