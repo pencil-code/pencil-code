@@ -1,0 +1,3 @@
+cvs -d :ext:cvs@norlx65.nordita.org:/srv/cvs/brandenb co axel/forced/bforced/N4096_32x32x32
+mv axel/forced/bforced/N4096_32x32x32 .
+

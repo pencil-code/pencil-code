@@ -1,0 +1,9 @@
+-rw-r--r-- 1 brandenb sac-2020-4-12 640601 okt 30 04:00 k.dat
+-rw-r--r-- 1 brandenb sac-2020-4-12     37 okt 30 04:00 parameters.pro
+-rw-r--r-- 1 brandenb sac-2020-4-12    154 okt 30 04:00 print.in
+-rw-r--r-- 1 brandenb sac-2020-4-12    580 okt 30 04:00 run.in
+-rw-r--r-- 1 brandenb sac-2020-4-12     58 okt 30 04:00 src/compile-history.local
+-rw-r--r-- 1 brandenb sac-2020-4-12     57 okt 30 04:00 src/compile_info.local
+-rw-r--r-- 1 brandenb sac-2020-4-12    336 okt 30 04:01 src/cparam.local
+-rw-r--r-- 1 brandenb sac-2020-4-12    340 okt 30 04:00 src/Makefile.local
+-rw-r--r-- 1 brandenb sac-2020-4-12    308 okt 30 04:00 start.in

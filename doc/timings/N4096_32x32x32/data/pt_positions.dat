@@ -1,0 +1,7 @@
+Positions where pt and p2 variables are written:
+
+x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint=
+  -3.0442      -3.0442      -3.0442          67    67    67
+
+kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)=
+   63.000       63.000       63.000    

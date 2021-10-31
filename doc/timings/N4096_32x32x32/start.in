@@ -1,0 +1,17 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for forced MHD turbulence with shear
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2021/10/31 03:05:58 cvs Exp $'
+  lwrite_ic=F
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+/

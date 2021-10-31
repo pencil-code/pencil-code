@@ -1,0 +1,32 @@
+!
+!  Run parameters for shear turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2021/10/31 03:05:58 cvs Exp $',
+  nt=200, it1=50, isave=10000, itorder=3, ialive=20, cdt=.9
+  downsampl=8,8,8, dsnap_down=2.
+  dsnap=2., dvid=1., d2davg=1000.
+  dspec=1., ou_spec=T, ab_spec=T
+  lwrite_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  iforce='helical', force=.0005, relhel=1.
+  lmagnetic_forcing=T
+/
+&magnetic_run_pars
+  lbb_as_aux=T, ljj_as_aux=T
+  eta=2e-5
+/
+&viscosity_run_pars
+  nu=2e-5
+/
+&power_spectrum_run_pars
+/

@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  =   magnetic
+FORCING   =   forcing
+SHEAR     = noshear
+FOURIER   =   fourier_fftpack
+POWER     =   power_spectrum
