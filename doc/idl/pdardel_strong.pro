@@ -1,1 +1,0 @@
-/home/brandenb/tex/pencil-code/performance/idl/pdardel_strong.pro
