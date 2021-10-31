@@ -1,0 +1,1 @@
+/home/brandenb/tex/pencil-code/performance/idl/dardel_4096.txt
