@@ -6,7 +6,7 @@ import f90nml
 def clone_sims(simset,simsdir=None):
     """
     Create a set of simulation directories from a dictionary object, simset,
-    which contains the list of parameters to combine across set of clones
+    which contains the list of parameters to combine across set of clones.
 
     Signature:
 
@@ -21,10 +21,11 @@ def clone_sims(simset,simsdir=None):
     Returns
     -------
     Set of uncompiled and unexecuted simulation run directories with 
-    parameters updated
+    parameters updated.
 
     Notes
     -----
+    It is assumed that the user is working in the compiled source directory.
 
     Examples
     --------
@@ -39,11 +40,21 @@ def clone_sims(simset,simsdir=None):
         simsdir = os.getcwd().strip(os.getcwd().split('/')[-1])
     mkdir(simsdir)
     #For each set of simulation parameters create new simulation subdirectory
+    sourced = False
     for sim in simset:
         newdir = join(simsdir,sim)
         cmd = ['pc_newrun',"-s",newdir]
         #Only compile if makefile.local or cparam.local change
         if "compile" in simset[sim].keys():
+            if not sourced:
+                moduleinfo = "src/.moduleinfo"
+                cmd = ["source "+ moduleinfo]
+                process = subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
+                try:
+                    outs, errs = process.communicate()
+                except TimeoutExpired:
+                    process.kill()
+                    outs, errs = process.communicate()
             if simset[sim]['compile']:
                 cmd = ['pc_newrun',newdir]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
