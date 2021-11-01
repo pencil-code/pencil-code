@@ -2618,7 +2618,7 @@ $(info Compiler: $(COMPILER))
 ifneq (,$(filter gfortran%,$(COMPILER)))
   GCC_VERSION = $(shell $(FC) -dumpversion)
   $(info GCC version: $(GCC_VERSION))
-$(shell echo "AXEL GCC version: " $(GCC_VERSION))
+#$(shell echo "AXEL GCC version: " $(GCC_VERSION))
   ifeq ($(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true),true)
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
