@@ -31,6 +31,7 @@ from . import tool_kit
 from . import export
 from . import backpack
 from . import ism_dyn
+from . import pipelines
 from pencil.util import is_sim_dir
 
 # Internal routines.
