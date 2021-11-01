@@ -1,0 +1,6 @@
+run.in/viscosity_run_pars/nu: 1e-3: 1e-4: 1e-5
+run.in/viscosity_run_pars/ivisc: ['nu-shock', 'nu-const', 'nu-hyper3']:  ['nu-shock', 'nu-hyper3']
+run.in/viscosity_run_pars/nu_hyper3: 1e-9: 1e-10: 1e-11
+cparam.local/nxgrid: 400: 800
+run.in/entropy_run_pars/chi_hyper3:  1e-9:  1e-10: 1e-11
+run.in/entropy_run_pars/iheatcond: 'hyper3'
