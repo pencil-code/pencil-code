@@ -145,10 +145,15 @@ def get_value_from_file(
                     str.count(line[0 : quantity_match.start()], "'") % 2 == 0
                     and str.count(line[0 : quantity_match.start()], '"') % 2 == 0
                 ):
-                    if line_matches:
-                        line_matches[0] = ii
-                    else:
-                        line_matches.append(ii)
+                    if ("run" in filename or "start" in filename or ".local"
+                              in filename or "print" in filename):
+                        if ("=" in quantity_match_tmp.string[quantity_match_tmp.start()
+                              +2:quantity_match_tmp.end()]):
+                            if line_matches:
+                                line_matches[0] = ii
+                            else:
+                                line_matches.append(ii)
+                        quantity_match = quantity_match_tmp
 
     elif filename.startswith("submit") and filename.split(".")[-1] in ["csh", "sh"]:
         FILE_IS = "SUBMIT"
@@ -194,7 +199,6 @@ def get_value_from_file(
 
     ######## get line with quantity inside
     line = data_raw[line_matches[0]]
-
     ######## do separation of quantity from rest of line, i.e. get rid of comments and other quantities defined in this line
     comment = ""
     if SYM_COMMENT:
@@ -293,9 +297,17 @@ def get_value_from_file(
     if change_quantity_to != None:
 
         ####### prepare change_quantity_to for string injection
-        if q_type == "STRING":
-            if not FILE_IS == "SUBMIT":
-                change_quantity_to = "'" + change_quantity_to + "'"
+        if q_type == 'STRING':
+            if not FILE_IS=='SUBMIT':
+                if type(change_quantity_to) == list:
+                    tmp = ""
+                    for a in change_quantity_to:
+                        tmp+="'"+a+"',"
+                    change_quantity_to = tmp[:-1]
+                elif type(change_quantity_to) == int:
+                    change_quantity_to = str(change_quantity_to)                    
+                else:
+                    change_quantity_to = "'"+change_quantity_to+"'"
 
         elif q_type == "BOOL":
             change_quantity_to = bool(change_quantity_to in ["T", "t", True])
@@ -304,20 +316,23 @@ def get_value_from_file(
             elif change_quantity_to == False:
                 change_quantity_to = "F"
             else:
-                print(
-                    "! ERROR: There is something deeply wrong here! change_quantity_to should be bool..."
-                )
-                debug_breakpoint()
-                return None
+                print('! ERROR: There is something deeply wrong here!'+
+                      ' change_quantity_to should be bool...')
+                debug_breakpoint(); return None
 
-        elif q_type == "FLOAT":
-            change_quantity_to = "%e" % change_quantity_to
+        elif q_type == 'FLOAT':
+            if type(change_quantity_to) == str:
+                change_quantity_to = float(change_quantity_to)
+            change_quantity_to = '%e' % change_quantity_to
 
-        elif q_type.startswith("TUPLE"):
-            if q_type.endswith("BOOL"):
-                if type(change_quantity_to) == type(
-                    ["list", "of", "bool", "or", "strings"]
-                ):
+        elif q_type == 'INT':
+            if type(change_quantity_to) == str:
+                change_quantity_to = int(change_quantity_to)
+            change_quantity_to = '%i' % change_quantity_to
+
+        elif q_type.startswith('TUPLE'):
+            if q_type.endswith('BOOL'):
+                if type(change_quantity_to) == type(['list', 'of', 'bool', 'or', 'strings']):
                     for ii, val in enumerate(change_quantity_to):
                         if val in ["T", "t", True]:
                             change_quantity_to[ii] = "T"
@@ -370,12 +385,11 @@ def get_value_from_file(
 
         if not DEBUG:
             ####### do backup of file before changing it
-            from shutil import copyfile
-
-            target = join(sim.path, "pc/backups/" + timestamp())
-            mkdir(target)
-            target = join(target, filename)
-            copyfile(absolute_filepath, target)
+            if sim:
+                from shutil import copyfile
+                target = join(sim.path, 'pc/backups/'+timestamp())
+                mkdir(target); target = join(target, filename)
+                copyfile(absolute_filepath, target)
 
             # replace line in raw data
             data_raw[line_matches[0]] = new_line
