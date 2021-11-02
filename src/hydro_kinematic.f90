@@ -19,6 +19,8 @@
 ! PENCILS PROVIDED der6u(3); curlo(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
+! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
+! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
 !***********************************************************************
 module Hydro
 !
@@ -84,6 +86,8 @@ module Hydro
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: wind_ampz=0., wind_z=0., wind_radius=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
+  real :: dkx_uukin=0., dky_uukin=0., dkz_uukin=0.
+  real :: kx_uukin1=1., ky_uukin1=1., kz_uukin1=1.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
   real :: phasex_uukin=0., phasey_uukin=0., phasez_uukin=0.
@@ -108,6 +112,7 @@ module Hydro
       wind_ampz, wind_z, wind_radius, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
       ampl_kinflow, relhel_uukin, chi_uukin, del_uukin, &
+      dkx_uukin, dky_uukin, dkz_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
@@ -206,6 +211,10 @@ module Hydro
 !  Spoke-like differential rotation profile.
 !  The minus sign is needed for equatorward acceleration.
 !
+      case ('ABC')
+        kx_uukin1=kx_uukin+dkx_uukin
+        ky_uukin1=ky_uukin+dky_uukin
+        kz_uukin1=kz_uukin+dkz_uukin
       case ('Brandt')
         if (lcylindrical_coords) then
           exp_kinflow1=1./exp_kinflow
@@ -630,9 +639,9 @@ stop
           ABC_A1=ABC_A*cos(omega_kinflow*t+phasex_uukin)
           ABC_B1=ABC_B*cos(omega_kinflow*t+phasey_uukin)
           ABC_C1=ABC_C*cos(omega_kinflow*t+phasez_uukin)
-          p%uu(:,1)=ABC_A1*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
-          p%uu(:,2)=ABC_B1*sin(kx_uukin*x(l1:l2))+ABC_A1*cos(kz_uukin*z(n))
-          p%uu(:,3)=ABC_C1*sin(ky_uukin*y(m))    +ABC_B1*cos(kx_uukin*x(l1:l2))
+          p%uu(:,1)=ABC_A1*sin(kz_uukin1*z(n))    +ABC_C1*cos(ky_uukin*y(m))
+          p%uu(:,2)=ABC_B1*sin(kx_uukin1*x(l1:l2))+ABC_A1*cos(kz_uukin*z(n))
+          p%uu(:,3)=ABC_C1*sin(ky_uukin1*y(m))    +ABC_B1*cos(kx_uukin*x(l1:l2))
         endif
         if (lpenc_loc(i_oo)) then
           p%oo(:,1)=ABC_A1*kz_uukin*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
@@ -781,8 +790,8 @@ stop
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2)    )*sin(ky_uukin*y(m)    )
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)    )*cos(ky_uukin*y(m)    )
-          !p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2)+del)*cos(ky_uukin*y(m)+del)
-          p%uu(:,3)=fac2*sin(kx_uukin*x(l1:l2)+del)*sin(ky_uukin*y(m)+del)
+          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2)+del)*cos(ky_uukin*y(m)+del)
+          !p%uu(:,3)=fac2*sin(kx_uukin*x(l1:l2)+del)*sin(ky_uukin*y(m)+del)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -884,6 +893,47 @@ stop
           p%oo(:,1)=fac2*kx_uukin*cos(ky_uukin*y(m))
           p%oo(:,2)=0.
           p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
+!
+!  Rotated Roberts IV flow
+!
+      case ('Roberts-IV-rot')
+        if (headtt) print*,'rotated Roberts-IV flow; eps_kinflow=',eps_kinflow
+        if (eps_kinflow==0.) &
+          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+                                      'eps_kinflow=0')
+        fac=sqrt(2./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac2*sin(ky_uukin*y(m))
+          p%uu(:,2)=+fac*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)=-fac*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=2.*fac*ky_uukin*sin(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          p%oo(:,2)=0.
+          p%oo(:,3)=-fac2*ky_uukin*cos(ky_uukin*y(m))
+        endif
+!
+!  Rotated Roberts IV flow
+!
+      case ('Roberts-IV-oldrot')
+        if (headtt) print*,'Rotated Roberts-IV flow; eps_kinflow=',eps_kinflow
+        fac=sqrt(2./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac2*sin(kz_uukin*z(n))
+          p%uu(:,2)=+fac*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)=-fac*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=fac2*ky_uukin*cos(kz_uukin*z(n))
+          p%oo(:,2)=0.
+          p%oo(:,3)=2.*fac*ky_uukin*sin(ky_uukin*y(m))*sin(kz_uukin*z(n))
         endif
 !
 !  Glen-Roberts flow (positive helicity), alternative version
