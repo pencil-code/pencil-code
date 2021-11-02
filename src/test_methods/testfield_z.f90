@@ -53,11 +53,13 @@ module Testfield
   real :: kdamp_2ndord=0., kdamp_iter=0., dt_iter=0., reduce_iter=1.
   real :: chiraltest=0.
   real :: alpha_incoherent=0.
+  real, dimension(3,3) :: alpha_incoh_tens=0., eta_incoh_tensor=0.
   real, dimension(nx) :: alpha_tmp
+  real, dimension(nx,3,3) :: alpij_tmp, etaij_tmp
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
   logical :: ltest_uxb=.false.,ltest_jxb=.false.
-  logical :: lalpha_incoherent=.false.
+  logical :: lalpha_incoherent=.false., lalpha_incoh_tens=.false., leta_incoh_tensor=.false.
 
   !!!! new input pars
   namelist /testfield_run_pars/ &
@@ -74,6 +76,8 @@ module Testfield
        daainit,linit_aatest,bamp, &
        rescale_aatest,tau_aatest, &
        lalpha_incoherent, alpha_incoherent, &
+       lalpha_incoh_tens, alpha_incoh_tens, &
+       leta_incoh_tensor, eta_incoh_tensor, &
 !
 !                                         the following parameter relevant for artificically introduced 2nd order in time equation for a_test for suppressing
 !                                         unstable eigenmodes of the homogeneous equations
@@ -402,6 +406,26 @@ module Testfield
         alpha_tmp=sqrt2*alpha_incoherent*cos(x(l1:l2))
       endif
 !
+!  incoherent alpha tensor
+!
+      if (lalpha_incoh_tens) then
+        alpij_tmp=0.
+        alpij_tmp(:,1,1)=sqrt2*alpha_incoh_tens(1,1)*sin(x(l1:l2))
+        alpij_tmp(:,1,2)=sqrt2*alpha_incoh_tens(1,2)*sin(2.*x(l1:l2))
+        alpij_tmp(:,2,1)=sqrt2*alpha_incoh_tens(2,1)*sin(2.*x(l1:l2))
+        alpij_tmp(:,2,2)=sqrt2*alpha_incoh_tens(2,2)*sin(x(l1:l2))
+      endif
+!
+!  incoherent eta tensor (averages are treated separately)
+!
+      if (leta_incoh_tensor) then
+        etaij_tmp=0.
+        etaij_tmp(:,1,1)=sqrt2*eta_incoh_tensor(1,1)*cos(2.*x(l1:l2))
+        etaij_tmp(:,1,2)=sqrt2*eta_incoh_tensor(1,2)*cos(x(l1:l2))
+        etaij_tmp(:,2,1)=sqrt2*eta_incoh_tensor(2,1)*cos(x(l1:l2))
+        etaij_tmp(:,2,2)=sqrt2*eta_incoh_tensor(2,2)*cos(2.*x(l1:l2))
+      endif
+!
 !  allocate slice buffers
 !
       if (lwrite_slices) then
@@ -620,6 +644,8 @@ module Testfield
         if (lfirst_iter) then 
           call cross_mn(uufluct,B0test,uxb)
           if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,B0test,uxb)
+          if (lalpha_incoh_tens) call multmv(alpij_tmp,B0test,uxb,ladd=.true.)
+          if (leta_incoh_tensor) call multmv(etaij_tmp,J0test,uxb,ladd=.true.)
           daatest=daatest+uxb
         endif
 !
@@ -635,6 +661,8 @@ module Testfield
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
           endif
           if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxb)
+          if (lalpha_incoh_tens) call multmv(alpij_tmp,bbtest,uxb,ladd=.true.)
+          if (leta_incoh_tensor) call multmv(etaij_tmp,jjtest,uxb,ladd=.true.)
 !
 !  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
 !
@@ -867,6 +895,8 @@ module Testfield
 
           call calc_uxb(f,p,iaxtest,uxb,bbtest)
           if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxb)
+          if (lalpha_incoh_tens) call multmv(alpij_tmp,bbtest,uxb,ladd=.true.)
+          if (leta_incoh_tensor) call multmv(etaij_tmp,jjtest,uxb,ladd=.true.)
           if (lcomplex) call calc_uxb(f,p,iaxtest2,uxb2,bbtest2)
 
           if (idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
@@ -1418,6 +1448,8 @@ module Testfield
               call calc_pencils_hydro(f,p(1),lpenc_loc)
               call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
               if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxbtest)
+              if (lalpha_incoh_tens) call multmv(alpij_tmp,bbtest,uxbtest,ladd=.true.)
+              if (leta_incoh_tensor) call multmv(etaij_tmp,jjtest,uxbtest,ladd=.true.)
 !
               juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
