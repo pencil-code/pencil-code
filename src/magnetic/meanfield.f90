@@ -88,7 +88,7 @@ module Magnetic_meanfield
   real :: kx_alpha=1.
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
-  real, dimension(my,3,3) :: alpha_tensor_y=0.
+  real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
   real, dimension(nz,2,2) :: alpha_tensor_z=0., eta_tensor_z=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
@@ -103,8 +103,8 @@ module Magnetic_meanfield
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
   logical :: lNEMPI_correction_qp_profile=.true.
   logical :: lqp_aniso_factor=.false.
-  logical :: lread_alpha_tensor_z=.false.
-  logical :: lread_eta_tensor_z=.false.
+  logical :: lread_alpha_tensor_z=.false., lread_alpha_tensor_z_as_y=.false.
+  logical :: lread_eta_tensor_z=.false., lread_eta_tensor_z_as_y=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -138,6 +138,7 @@ module Magnetic_meanfield
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
+      lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
       x1_alp, x2_alp, y1_alp, y2_alp
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -224,11 +225,11 @@ module Magnetic_meanfield
           alpha_tensor(1,1)=1.
           alpha_tensor(2,2)=1.
           alpha_tensor(3,3)=1.
-          alpha_tensor_y(:,1,1)=-alpha_zz*cos(y)**2
-          alpha_tensor_y(:,2,2)=-alpha_zz*sin(y)**2
-          alpha_tensor_y(:,1,2)=+alpha_zz*sin(y)*cos(y)
+          alpha_tensor_y(:,1,1)=-alpha_zz*cos(y(m1:m2))**2
+          alpha_tensor_y(:,2,2)=-alpha_zz*sin(y(m1:m2))**2
+          alpha_tensor_y(:,1,2)=+alpha_zz*sin(y(m1:m2))*cos(y(m1:m2))
           alpha_tensor_y(:,2,1)=alpha_tensor_y(:,1,2)
-        elseif (lread_alpha_tensor_z) then
+        elseif (lread_alpha_tensor_z.or.lread_alpha_tensor_z_as_y) then
 !
 !  Read in alpha tensor (z-dependent, and only 2x2)
 !
@@ -242,6 +243,15 @@ module Magnetic_meanfield
           do i=1,2; do j=1,2
             alpha_tensor_z(:,i,j)=alpha_tensor(i,j)*alpha_tensor_z(:,i,j)
           enddo; enddo
+!
+!  if lread_alpha_tensor_z_as_y: swap back (x,y,z) <-- (y,z,x)
+!
+          if (lread_alpha_tensor_z_as_y) then
+            alpha_tensor_y(:,3,3)=alpha_tensor_z(:,1,1)
+            alpha_tensor_y(:,3,1)=alpha_tensor_z(:,1,2)
+            alpha_tensor_y(:,1,3)=alpha_tensor_z(:,2,1)
+            alpha_tensor_y(:,1,1)=alpha_tensor_z(:,2,2)
+          endif
         endif
       else
         lalpha_tensor=.false.
@@ -253,7 +263,7 @@ module Magnetic_meanfield
 !
       if (any(eta_tensor/=0.)) then
         leta_tensor=.true.
-        if (lread_eta_tensor_z) then
+        if (lread_eta_tensor_z.or.lread_eta_tensor_z_as_y) then
 !
 !  Read in eta tensor (z-dependent, and only 2x2)
 !
@@ -267,6 +277,15 @@ module Magnetic_meanfield
           do i=1,2; do j=1,2
             eta_tensor_z(:,i,j)=eta_tensor(i,j)*eta_tensor_z(:,i,j)
           enddo; enddo
+!
+!  if lread_alpha_tensor_z_as_y: swap back (x,y,z) <-- (y,z,x)
+!
+          if (lread_eta_tensor_z_as_y) then
+            eta_tensor_y(:,3,3)=eta_tensor_z(:,1,1)
+            eta_tensor_y(:,3,1)=eta_tensor_z(:,1,2)
+            eta_tensor_y(:,1,3)=eta_tensor_z(:,2,1)
+            eta_tensor_y(:,1,1)=eta_tensor_z(:,2,2)
+          endif
         endif
       else
         leta_tensor=.false.
@@ -639,7 +658,8 @@ module Magnetic_meanfield
       if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
           alpha_effect/=0.0 .or. delta_effect/=0.0 .or. &
           gamma_effect/=0.0 .or. lread_alpha_tensor_z .or. &
-          lread_eta_tensor_z) &
+          lread_eta_tensor_z .or. lread_alpha_tensor_z_as_y .or. &
+          lread_eta_tensor_z_as_y) &
           lpenc_requested(i_mf_EMF)=.true.
       if (delta_effect/=0.0) lpenc_requested(i_oxJ)=.true.
 !
@@ -1169,7 +1189,10 @@ module Magnetic_meanfield
             do j=1,3
               if (alpha_zz /= 0.) then
                 p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
-                  *(alpha_tensor(i,j)+alpha_tensor_y(m,i,j))*p%bb(:,j)
+                  *(alpha_tensor(i,j)+alpha_tensor_y(m-m1+1,i,j))*p%bb(:,j)
+              elseif (lread_alpha_tensor_z_as_y) then
+                p%mf_EMF(:,i)=p%mf_EMF(:,i)+ &
+                  alpha_tensor_y(m-m1+1,i,j)*p%bb(:,j)
               elseif (lread_alpha_tensor_z) then
                 if (i<=2.and.j<=2) then
                   !p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
@@ -1202,12 +1225,21 @@ module Magnetic_meanfield
 !  effect, but is always needed because the pure Weyl gauge is unstable.
 !
         if (leta_tensor) then
-          do i=1,2
-            do j=1,2
-              p%mf_EMF(:,i)=p%mf_EMF(:,i)-eta_tensor_z(n-n1+1,i,j)*p%jj(:,j)
+          if (lread_eta_tensor_z_as_y) then
+            do i=1,3
+              do j=1,3
+                p%mf_EMF(:,i)=p%mf_EMF(:,i)-eta_tensor_y(m-m1+1,i,j)*p%jj(:,j)
+              enddo
+              p%mf_EMF(:,i)=p%mf_EMF(:,i)+meanfield_etat*p%jj(:,i)
             enddo
-            p%mf_EMF(:,i)=p%mf_EMF(:,i)+meanfield_etat*p%jj(:,i)
-          enddo
+          else
+            do i=1,2
+              do j=1,2
+                p%mf_EMF(:,i)=p%mf_EMF(:,i)-eta_tensor_z(n-n1+1,i,j)*p%jj(:,j)
+              enddo
+              p%mf_EMF(:,i)=p%mf_EMF(:,i)+meanfield_etat*p%jj(:,i)
+            enddo
+          endif
         endif
 !
 !  Add possible delta x J effect and turbulent diffusion to EMF.
@@ -1402,7 +1434,6 @@ module Magnetic_meanfield
           call ysum_mn_name_xz(alpha_total,idiag_alpmxz)
         endif
       endif
-!print*,'AXEL1',n,p%mf_EMF(:,1),p%mf_EMF(:,2)
 !
     endsubroutine calc_pencils_magn_mf
 !***********************************************************************
@@ -1459,7 +1490,8 @@ module Magnetic_meanfield
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
         alpha_effect/=0.0 .or. delta_effect/=0.0) .or. &
         gamma_effect/=0.0 .or. lread_alpha_tensor_z .or. &
-        lread_eta_tensor_z) then
+        lread_eta_tensor_z .or. lread_alpha_tensor_z_as_y .or. &
+        lread_eta_tensor_z_as_y) then
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
