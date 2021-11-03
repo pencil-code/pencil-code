@@ -100,8 +100,8 @@ def trim_table(params,quiet=True):
     #When changing src parameter set compile to true
     params['compile'][params['cparam.local/nxgrid'] == '800'] = True
     """
-    params = params[params['run.in/viscosity_run_pars/ivisc'] != "['nu-shock',
-                                                                 'nu-hyper3']"
+    params = params[params['run.in/viscosity_run_pars/ivisc']] != \
+                           "['nu-shock','nu-hyper3']"
     params['compile'][params['cparam.local/nxgrid'] == '800'] = True
     
     return params
