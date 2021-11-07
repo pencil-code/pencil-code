@@ -63,6 +63,7 @@ module Selfgravity
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
+  integer :: idiag_rugpotselfm=0 ! DIAG_DOC: $\left<\rho\uv\cdot\nabla\Phi\right>$
 !
 !  Module Variables
 !
@@ -258,6 +259,11 @@ module Selfgravity
         lpenc_diagnos(i_cs2)=.true.
       endif
 !
+      if (idiag_rugpotselfm/=0) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_uu)=.true.
+      endif
+!
       if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
 !
     endsubroutine pencil_criteria_selfgravity
@@ -414,9 +420,11 @@ module Selfgravity
 !  15-may-06/anders+jeff: coded
 !
       use Diagnostics
+      use Sub, only: dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: ugpotself
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -438,6 +446,9 @@ module Selfgravity
       if (ldiagnos) then
         if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
         if (idiag_potself2m/=0) call sum_mn_name(p%potself**2,idiag_potself2m)
+        if (idiag_rugpotselfm/=0) &
+            call dot_mn(p%uu,p%gpotself,ugpotself)
+            call sum_mn_name(-p%rho*ugpotself,idiag_rugpotselfm)
         if (idiag_gpotselfxm/=0) &
             call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
         if (idiag_gpotselfym/=0) &
@@ -576,11 +587,13 @@ module Selfgravity
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
         idiag_qtoomre=0; idiag_qtoomremin=0
         idiag_jeanslength=0; idiag_ljeans2d=0
+        idiag_rugpotselfm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rugpotselfm',idiag_rugpotselfm)
         call parse_name(iname,cname(iname),cform(iname),'potselfm', &
             idiag_potselfm)
         call parse_name(iname,cname(iname),cform(iname),'potself2m', &
