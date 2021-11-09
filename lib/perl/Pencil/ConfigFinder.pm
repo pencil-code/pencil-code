@@ -254,7 +254,7 @@ sub add_host_id_from_fqdn {
 #
     my ($ids_ref) = @_;
 
-    my $fqdname = first_line_from_cmd('hostname --fqdn');
+    my $fqdname = first_line_from_cmd('hostname -f');
     $fqdname = first_line_from_cmd('hostname')
 	unless $fqdname;
     return unless $fqdname;
