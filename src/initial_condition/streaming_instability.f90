@@ -389,12 +389,10 @@ module InitialCondition
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
 !
-      real, dimension(npar_species) :: vpx, vpy
       real :: argx, argz, sinkx, coskx, sinkz, coskz
       real :: dv, dvpx, dvpy, dvpz
 !
       integer :: k, p, i
-      real :: ux, uy, hgas, zp
 !
       call keep_compiler_quiet(f)
 !
