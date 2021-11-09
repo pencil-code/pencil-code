@@ -48,31 +48,50 @@ module InitialCondition
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 25-jul-20/ccyang: coded
+! 09-nov-21/ccyang: coded
 !
       use EquationOfState, only: cs0, rho0
       use Mpicomm, only: mpibcast
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
+      real, dimension(:), pointer :: tausp_species, tausp1_species
       integer :: i
       real :: dlogtaus
 !
       if (lrun) return
       call keep_compiler_quiet(f)
 !
+      call get_shared_variable("tausp_species", tausp_species)
+      settaus: if (npar_species > 1 .and. all(tausp_species == 0.0)) then
+!
 ! Assemble stopping times.
 !
-      dlogtaus = (logtausmax - logtausmin) / real(npar_species)
-      gettaus: if (ltaus_log_center) then
-        taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
-        if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
-        taus = 10.0**taus
-      else gettaus
-        taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
-                                         10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
+        dlogtaus = (logtausmax - logtausmin) / real(npar_species)
+        gettaus: if (ltaus_log_center) then
+          taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
+          if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
+          taus = 10.0**taus
+        else gettaus
+          taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
+                                           10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
+          if (lroot) print *, "initialize_initial_condition: taus = ", taus
+        endif gettaus
+!
+! Override the stopping times in particles_dust.
+!
+        call get_shared_variable("tausp1_species", tausp1_species)
+        tausp_species = taus / omega
+        tausp1_species = omega / taus
+        if (lroot) print *, "initialize_initial_condition: override tausp_species = ", tausp_species
+      else settaus
+!
+! Convert stopping times to dimensionless ones.
+!
+        taus = omega * tausp_species
         if (lroot) print *, "initialize_initial_condition: taus = ", taus
-      endif gettaus
+      endif settaus
 !
 ! Evaluate the radial pressure gradient support.
 !
@@ -365,14 +384,10 @@ module InitialCondition
 !
 ! Initialize particles' mass and velocity.
 !
-! 25-jul-20/ccyang: coded
-!
-      use SharedVariables, only: get_shared_variable
+! 09-nov-21/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
-!
-      real, dimension(:), pointer :: tausp_species, tausp1_species
 !
       real, dimension(npar_species) :: vpx, vpy
       real :: argx, argz, sinkx, coskx, sinkz, coskz
@@ -382,16 +397,6 @@ module InitialCondition
       real :: ux, uy, hgas, zp
 !
       call keep_compiler_quiet(f)
-!
-! Override the stopping times in particles_dust.
-!
-      multisp: if (npar_species > 1) then
-        call get_shared_variable("tausp_species", tausp_species)
-        call get_shared_variable("tausp1_species", tausp1_species)
-        tausp_species = taus / omega
-        tausp1_species = omega / taus
-        if (lroot) print *, "initial_condition_vvp: override tausp_species = ", tausp_species
-      endif multisp
 !
 ! Assign the mass and the equilibrium velocity of each particle.
 !
