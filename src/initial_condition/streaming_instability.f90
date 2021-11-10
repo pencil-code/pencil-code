@@ -26,6 +26,7 @@ module InitialCondition
 ! Input Parameters
 !
   complex, dimension(4*(npar_species+1)) :: si_ev = (0.0, 0.0)
+  real, dimension(npar_species) :: taus = 0.0, eps = 0.0
   logical :: lsi_random = .false.
   logical :: ltaus_log_center = .true.
   real :: logtausmin = -4.0, logtausmax = -1.0
@@ -34,11 +35,11 @@ module InitialCondition
   real :: si_kx = 0.0, si_kz = 0.0, si_amp = 1E-6
 !
   namelist /initial_condition_pars/ &
-    lsi_random, ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
+    taus, eps, lsi_random, ltaus_log_center, logtausmin, logtausmax, dlnndlntaus, dlnrhodlnr, si_kx, si_kz, si_ev, si_amp
 !
 ! Module Variables
 !
-  real, dimension(npar_species) :: taus = 0.0, eps0 = 0.0, rhopj = 0.0, vpx0 = 0.0, vpy0 = 0.0
+  real, dimension(npar_species) :: rhopj = 0.0, vpx0 = 0.0, vpy0 = 0.0
   real :: eta_vK = 0.0, ux0 = 0.0, uy0 = 0.0
   real :: amp_scale = 0.0
 !
@@ -65,19 +66,23 @@ module InitialCondition
 !
       call get_shared_variable("tausp_species", tausp_species)
       settaus: if (npar_species > 1 .and. all(tausp_species == 0.0)) then
+        preset: if (any(taus /= 0.0)) then
+          if (lroot) print *, "initialize_initial_condition: taus = ", taus
+        else preset
 !
 ! Assemble stopping times.
 !
-        dlogtaus = (logtausmax - logtausmin) / real(npar_species)
-        gettaus: if (ltaus_log_center) then
-          taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
-          if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
-          taus = 10.0**taus
-        else gettaus
-          taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
-                                           10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
-          if (lroot) print *, "initialize_initial_condition: taus = ", taus
-        endif gettaus
+          dlogtaus = (logtausmax - logtausmin) / real(npar_species)
+          gettaus: if (ltaus_log_center) then
+            taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
+            if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
+            taus = 10.0**taus
+          else gettaus
+            taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
+                                             10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
+            if (lroot) print *, "initialize_initial_condition: taus = ", taus
+          endif gettaus
+        endif preset
 !
 ! Override the stopping times in particles_dust.
 !
@@ -93,25 +98,31 @@ module InitialCondition
         if (lroot) print *, "initialize_initial_condition: taus = ", taus
       endif settaus
 !
+! Find the density ratio for each species.
+!
+      seteps: if (all(eps == 0.0)) then
+        eps = taus**(4.0 + dlnndlntaus)
+        eps = eps_dtog / sum(eps) * eps
+      else seteps
+        eps_dtog = sum(eps)
+        if (lroot) print *, "initialize_initial_condition: override eps_dtog = ", eps_dtog
+      endif seteps
+      if (lroot) print *, "initialize_initial_condition: eps = ", eps
+!
+! Find the mass of each particle.
+!
+      rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps
+      if (lroot) print *, "initialize_initial_condition: rhopj = ", rhopj
+!
 ! Evaluate the radial pressure gradient support.
 !
       eta_vK = -0.5 * dlnrhodlnr * cs0
       if (lroot) print*, 'initialize_initial_condition: eta * v_K = ', eta_vK
 !
-! Find the density ratio for each species.
-!
-      eps0 = taus**(4.0 + dlnndlntaus)
-      eps0 = eps_dtog / sum(eps0) * eps0
-!
-! Find the mass of each particle.
-!
-      rhopj = rho0 / real(npar / (npar_species * nxgrid * nygrid * nzgrid)) * eps0
-      if (lroot) print *, "initialize_initial_condition: rhopj = ", rhopj
-!
 ! Find the equilibrium velocities.
 !
       eqvel: if (lroot) then
-        call dragforce_equi_multispecies(npar_species, taus, eps0, eta_vK, vpx0, vpy0, ux0, uy0)
+        call dragforce_equi_multispecies(npar_species, taus, eps, eta_vK, vpx0, vpy0, ux0, uy0)
         print *, "initialize_initial_condition: ux0, uy0 = ", ux0, uy0
         print *, "initialize_initial_condition: vpx0 = ", vpx0
         print *, "initialize_initial_condition: vpy0 = ", vpy0
@@ -329,8 +340,8 @@ module InitialCondition
         c1x = c1x * si_kx
         c2x = c2x * si_kx**3
 !
-        ar = amp_scale * real(si_ev(8::4)) / eps0
-        ai = amp_scale * aimag(si_ev(8::4)) / eps0
+        ar = amp_scale * real(si_ev(8::4)) / eps
+        ai = amp_scale * aimag(si_ev(8::4)) / eps
         a1 = 0.25 * (ar**2 - ai**2)
         a2 = 0.5 * ar * ai
         a3 = 0.25 * (ar**2 + ai**2)
