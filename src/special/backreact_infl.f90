@@ -193,6 +193,17 @@ module Special
 !!
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('nophi')
+          Vpotential=.5*axionmass2*phi0**2
+          dphi0=0.
+          tstart=-sqrt(3./(8.*pi))/(ascale_ini*sqrt(Vpotential))
+          t=tstart
+          Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
+          lnascale=log(ascale_ini)
+          f(:,:,:,ispecial+0)=0.
+          f(:,:,:,ispecial+1)=0.
+          f(:,:,:,ispecial+2)=Hubble_ini
+          f(:,:,:,ispecial+3)=lnascale
         case ('default')
           Vpotential=.5*axionmass2*phi0**2
           dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
