@@ -229,7 +229,7 @@ module disp_current
 !
       if (lmagnetic) then
         if (t==0.) call fatal_error('disp_current: dspecial_dt', 't=0 not allowed')
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-constf/t**2*p%aa
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a !-constf/t**2*p%aa
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
       endif
 !
