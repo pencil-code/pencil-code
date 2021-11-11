@@ -177,6 +177,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -199,6 +200,13 @@ module Particles
           communicated=lcommunicate_np)
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
+!
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein) then
+        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
 !
     endsubroutine register_particles
 !***********************************************************************
@@ -288,13 +296,6 @@ module Particles
              'drag laws are switched on. You cannot have '//&
              'both. Stop and choose only one.'
         call fatal_error('initialize_particles','')
-      endif
-!
-!  Share friction time (but only if Epstein drag regime!).
-!
-      if (ldraglaw_epstein) then
-        call put_shared_variable( 'tausp_species', tausp_species)
-        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
       if (ldraglaw_eps_stk_transonic) then

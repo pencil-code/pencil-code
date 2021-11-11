@@ -346,6 +346,7 @@ program start
 !
   call initialize_boundcond
   call initialize_modules(f)
+  if (lparticles) call particles_initialize_modules(f)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
 !  alternatively: read existing snapshot and overwrite only some fields
@@ -445,12 +446,9 @@ program start
 !
   if (linitial_condition) call initial_condition_all(f)
 !
-!  Initialize particle modules.
+!  Initialize particles.
 !
-  if (lparticles) then 
-    call particles_initialize_modules(f)
-    call particles_init(f)
-  endif
+  if (lparticles) call particles_init(f)
 !
 !  If requested, write original (z-dependent) stratification to file.
 !

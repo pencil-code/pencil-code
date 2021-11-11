@@ -433,7 +433,15 @@ module Particles
         call farray_register_auxiliary('waterMixingRatio', iwaterMixingRatio)
       endif
 !
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein .or. ldraglaw_simple) then
+        call put_shared_variable( 'tausp_species', tausp_species, caller='initialize_particles')
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
+!
 !  Kill particles that spend enough time in birth ring
+!
       if (lbirthring_depletion) call append_npvar('ibrtime',ibrtime)
 !
 !  If we are using caustics, here we should call the correspoding register equation:
@@ -621,13 +629,6 @@ module Particles
         endif
         tausp_species(1) = tausp
         if (tausp_species(1) /= 0.0) tausp1_species(1) = 1/tausp_species(1)
-      endif
-!
-!  Share friction time (but only if Epstein drag regime!).
-!
-      if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species, caller='initialize_particles')
-        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
