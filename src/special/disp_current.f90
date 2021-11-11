@@ -29,7 +29,7 @@ module disp_current
   include '../special.h'
 !
   ! input parameters
-  real :: ampl=1e-3, constf=1. !,etaphi=0.,kx=1., ky=0., kz=0.
+  real :: ampl=1e-3, alpf=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
@@ -37,7 +37,7 @@ module disp_current
   real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
   character(len=50) :: initee='zero'
   namelist /disp_current_init_pars/ &
-    initee, constf, &
+    initee, alpf, &
     ampl_ex, ampl_ey, ampl_ez, &
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
@@ -46,7 +46,7 @@ module disp_current
 !
   ! run parameters
   namelist /disp_current_run_pars/ &
-    constf
+    alpf
 !
 ! Declare any index variables necessary for main or
 !
@@ -74,12 +74,15 @@ module disp_current
 !  18-mar-21/axel: coded Faraday displacement current
 !
       use FArrayManager
+!     use SharedVariables, only: put_shared_variable
 !
 !  It would have been more consistent to call the indices to the
 !  three components iex, iey, and iez
 !
       call farray_register_pde('ee',iee,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
+!
+!--   call put_shared_variable('alpf',alpf,caller='register_disp_current')
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -147,6 +150,11 @@ module disp_current
 !  25-feb-07/axel: adapted
 !
       lpenc_requested(i_aa)=.true.
+      if (alpf/=0.) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_infl_dphi)=.true.
+        lpenc_requested(i_infl_a2)=.true.
+      endif
       lpenc_requested(i_el)=.true.
       lpenc_requested(i_curlB)=.true.
       lpenc_requested(i_del2a)=.true.
@@ -213,8 +221,9 @@ module disp_current
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi,del2phi
+      real, dimension (nx,3) :: gtmp
+      !real, dimension (nx) :: tmp
+      real :: dphi=1.
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -229,7 +238,11 @@ module disp_current
 !
       if (lmagnetic) then
         if (t==0.) call fatal_error('disp_current: dspecial_dt', 't=0 not allowed')
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a !-constf/t**2*p%aa
+        if (alpf/=0.) then
+          call multsv(alpf*p%infl_dphi,p%bb,gtmp)
+        endif
+        !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-alpf*dphi*p%bb
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-gtmp
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
       endif
 !

@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of backreact_infl_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -40,6 +40,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -71,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module backreact_infl
 !
   use Cparam
   use Cdata
@@ -88,13 +89,15 @@ module Special
   integer :: ispecial=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5
+  !real, pointer :: alpf
+  real :: alpf=30.
 !
   character (len=labellen) :: initspecial='nothing'
 !
-  namelist /special_init_pars/ &
+  namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini
 !
-  namelist /special_run_pars/ &
+  namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -109,8 +112,6 @@ module Special
   subroutine initialize_mult_special
 !
 ! Dummy routine.
-!
-      axionmass2=axionmass**2
 !
   endsubroutine initialize_mult_special
 !***********************************************************************
@@ -161,7 +162,13 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      axionmass2=axionmass**2
+!
+!--   call get_shared_variable('alpf', alpf, caller='initialize_backreact_infl')
 !
       call keep_compiler_quiet(f)
 !
@@ -257,8 +264,21 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+! infl_phi
+      if (lpencil(i_infl_phi)) p%infl_dphi=f(l1:l2,m,n,ispecial+0)
+!
+! infl_dphi
+      if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,ispecial+1)
+!
+! infl_a2
+      if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,ispecial+3))
+!
+!  Magnetic field needed for Maxwell stress
+!
+      if (lmagnetic) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_el)=.true.
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -284,6 +304,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx) :: phi, dphi, Hscript, lnascale, ascale, a2scale, a2rhop, Vprime
+      real, dimension (nx) :: tmp
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -311,6 +332,14 @@ module Special
         df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
         df(l1:l2,m,n,ispecial+3)=df(l1:l2,m,n,ispecial+3)+Hscript
 !
+!  magnetic terms
+!
+      if (lmagnetic) then
+        call dot(p%el,p%bb,tmp)
+        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a2*tmp
+print*,'alpf*p%infl_a2*tmp=',alpf,p%infl_a2,tmp
+      endif
+!
 !  Diagnostics
 !
       if (ldiagnos) then
@@ -330,7 +359,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -338,7 +367,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=backreact_infl_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -348,7 +377,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -356,7 +385,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=backreact_infl_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -734,4 +763,4 @@ module Special
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
-endmodule Special
+endmodule backreact_infl
