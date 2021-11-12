@@ -298,6 +298,7 @@ module backreact_infl
 !   2-nov-21/axel: first set of equations coded
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
+      use Sub, only: dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -335,7 +336,7 @@ module backreact_infl
 !  magnetic terms
 !
       if (lmagnetic) then
-        call dot(p%el,p%bb,tmp)
+        call dot_mn(p%el,p%bb,tmp)
         df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a2*tmp
 print*,'alpf*p%infl_a2*tmp=',alpf,p%infl_a2,tmp
       endif
