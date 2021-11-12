@@ -12,6 +12,7 @@
 %%   1D_loop.f90
 %%   advective_gauge.f90
 %%   anelastic.f90
+%%   backreact_infl.f90
 %%   bfield.f90
 %%   chemistry.f90
 %%   chemistry_simple.f90
@@ -48,7 +49,9 @@
 %%   particles_surfspec.f90
 %%   particles_tetrad.f90
 %%   polymer.f90
+%%   radial_dist_func.f90
 %%   reaction_0D.f90
+%%   selfgravity.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
@@ -104,8 +107,6 @@
                     dt'\right>$ \\
   \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
-  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
-                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
   \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
   \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
@@ -213,18 +214,13 @@
                     \quad(time step relative to
                     advective time step;
                     see \S~\ref{time-step}) \\
-  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
-  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
-  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
-  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{oum}       & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>$ \\
   \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
   \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
   \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
-  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
-  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
-                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
@@ -363,6 +359,8 @@
   \var{Kkramersm} & $\left< K_{\rm kramers} \right>$ \\
   \var{chikrammin} & $\min (\chi_{\rm kramers})$ \\
   \var{chikrammax} & $\max (\chi_{\rm kramers})$ \\
+  \var{TT2m}      & $\left<(T)^2\right>$
+                    \quad(mean squared temperature) \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -522,7 +520,7 @@
   \var{bym}       & $\left<B_y\right>$ \\
   \var{bzm}       & $\left<B_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
-  \var{bij_cov_diffmax} & difference between two mplementations of covariant derivatives \\
+  \var{bij_cov_diffmax} & difference between two implementations of covariant derivatives \\
   \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
@@ -699,6 +697,13 @@
   \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{backreact_infl.f90}} \\
+\midrule
+  \var{phim}      & $\left<\phi\right>$ \\
+  \var{dphim}     & $\left<d\phi\right>$ \\
+  \var{Hubblem}   & $\left<{\cal H}\right>$ \\
+  \var{lnam}      & $\left<\ln a\right>$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
   \var{bmax}      & $\max B$ \\
@@ -762,12 +767,14 @@
 \midrule
   \var{muSm}      & $\left<\mu_S\right>$ \\
   \var{muSrms}    & $\left<\mu_S^2\right>^{1/2}$ \\
+  \var{muSmax}    & $\max\mu$ \\
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu51m}     & $\left<|\mu_5|\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{mu5min}    & $\min\mu_5$ \\
   \var{mu5max}    & $\max\mu_5$ \\
   \var{mu5abs}    & $\max|\mu_5|$ \\
+  \var{gamf5m}    & $\left<\Gamma_5\right>$ \\
   \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{gmuSrms}   & $\left<(\nabla\mu_S)^2\right>^{1/2}$ \\
   \var{gmu5mx}    & $\left<\nabla\mu_5\right>_x$ \\
@@ -786,6 +793,7 @@
   \var{dt_chiral} & total time-step contribution from chiral MHD \\
   \var{mu5bxm}    & $\left<\mu_5B_x\right>$ \\
   \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
+  \var{mu5jbm}    & $\left<\mu_5\Jv\cdot\Bv\right>$ \\
   \var{jxm}       & $\langle J_x\rangle$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
@@ -1561,6 +1569,16 @@
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{radial_dist_func.f90}} \\
+\midrule
+  \var{rad}       & $r/r_\ast$ \\
+  \var{tauk}      & $\tau_k$ \\
+  \var{tt1m}      & $\langle T \rangle$ \\
+  \var{qq1m}      & $\langle \ln T \rangle$ \\
+  \var{qq2m}      & $\langle \ln T^2 \rangle$ \\
+  \var{qq3m}      & $\langle \ln T^3 \rangle$ \\
+  \var{qq4m}      & $\langle \ln T^4 \rangle$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{reaction_0D.f90}} \\
 \midrule
   \var{eem}       & $\langle \eta \rangle$ \\
@@ -1592,6 +1610,10 @@
   \var{L3}        & $L_3$ \\
   \var{L4}        & $L_4$ \\
   \var{L5}        & $L_5$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{selfgravity.f90}} \\
+\midrule
+  \var{rugpotselfm} & $\left<\rho\uv\cdot\nabla\Phi\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
