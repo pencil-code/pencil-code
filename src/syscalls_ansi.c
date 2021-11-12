@@ -179,23 +179,39 @@ void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
 {
  const int ALLNOW=1;
  void *pointer;
- void *p1;
- char *name;
+ char *error; 
 
- //dlerror();
- //pointer = dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); //RTLD_LAZY); 
-
+ dlerror();
  if (*flag==ALLNOW)
-   return dlopen(filename, RTLD_GLOBAL|RTLD_NOW); 
+   pointer=dlopen(filename, RTLD_GLOBAL|RTLD_NOW); 
  else
-   return dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); 
- return NULL;
+   pointer=dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); 
+
+ error=dlerror();
+ if (error!=NULL) {
+   printf("Error - %s\n", error);
+   return NULL;
+ }
+
+ return pointer;
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlsym_c)(void **handle, const char *symbol)
 {
+  void *pointer;
+  char *error; 
+
 //printf("symbol address= %p\n", dlsym(*handle, symbol));
- return dlsym(*handle, symbol); 
+  dlerror();
+  pointer=dlsym(*handle, symbol); 
+
+  error=dlerror();
+  if (error!=NULL) {
+   printf("Error - %s\n", error);
+   return NULL;
+  }
+
+  return pointer;
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(dlclose_c)(void **handle)
@@ -203,11 +219,10 @@ void FTNIZE(dlclose_c)(void **handle)
  dlclose(*handle);
 }
 /* ---------------------------------------------------------------------- */
-char* FTNIZE(dlerror_c)(void)
+void FTNIZE(dlerror_c)(void)
 {
  char *error=dlerror();
  printf("error = %s\n", error);
- return error;
 }       
 /* ---------------------------------------------------------------------- */
 void FTNIZE(write_binary_file_c)
@@ -338,4 +353,3 @@ void FTNIZE(sizeof_real_c)
     *dest=src;
   }
 /* ---------------------------------------------------------------------- */
-
