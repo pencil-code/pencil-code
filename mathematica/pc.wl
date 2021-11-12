@@ -13,7 +13,7 @@
 
 
 BeginPackage["pc`",
-  "pcReadBasic`","pcRead1D`","pcRead2D`",
+  "pcReadBasic`","pcRead1D`","pcRead2D`","pcRead3D`",
   "pcReadVAR`","pcGetParam`","pcPlot`",
   "pcTFM`","pcParticleStalker`","pcDerivative`",
   "pcPowercor`"
@@ -25,6 +25,7 @@ BeginPackage["pc`",
 
 
 pcInitialize::usage="pcInitialize[] is equivalent to (pcReload[];pcPlotStyle[]).";
+pcParallelize::usage="pcParallelize[] sets up the package for multi kernels.";
 
 pcFunctions::usage="pcFunctions[] returns a list of all available functions in this package."
 
@@ -41,6 +42,14 @@ Begin["`Private`"]
 
 
 pcInitialize[]:=(pcReload[];pcPlotStyle[];)
+pcParallelize[]:=(
+  LaunchKernels[]//Quiet;
+  ParallelEvaluate[
+    AppendTo[$Path, "/Users/hzhou/Work/pencilCode/pencil-code/mathematica"];
+    Needs["pc`"];
+    pcInitialize[]
+  ];
+)
 
 
 (* ::Section:: *)
@@ -58,7 +67,7 @@ End[]
 
 
 Protect[
-  pcInitialize,
+  pcInitialize,pcParallelize,
   pcFunctions
 ]
 

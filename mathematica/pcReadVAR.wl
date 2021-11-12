@@ -204,7 +204,7 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
     trim[{}]={};
     trim[f_]:=Switch[ltrim,
       False,f,
-      True,ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
+      True,  ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
       "More",ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
     ];
     If[ltrim==False,Message[readVARN::ghvalues]];

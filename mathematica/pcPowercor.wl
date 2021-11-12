@@ -15,22 +15,12 @@ BeginPackage["pcPowercor`"]
 (*Usage messages*)
 
 
-autoCor::usage="autoCor[ts,n:3] computes auto-correlation of ts.
+autoCor::usage="autoCor[ts] computes auto-correlation of ts.
 Input:
   ts:  List. A time series data; for example readTS[sim,\"t\",\"urms\"]//Transpose.
-       Need not start from t=0.
-  n:  Optional. Integer. The autocorrelation function is computed up to time tmax/n.
+       Need not start from t=0. Uses FFT.
 Output:
   {{0,1},{t2,ac2},{t3,ac3},...}"
-
-autoCorEnsemble::usage="autoCorEnsemble[ts,n:8] cuts ts into 8 pieces and then
-computes the auto-correlation of each of them.
-Input:
-  ts:  List. A time series data; for example readTS[sim,\"t\",\"urms\"]//Transpose.
-       Need not start from t=0.
-  n:  Size of the ensemble. By default n=8.
-Output:
-  A List of length n, each of the form {{0,1},{t2,ac2},{t3,ac3},...}"
 
 fitTime::usage="fitTime[ts,lmodel,nfit] fits a time series using its first nfit points and 
 a model specified by lmodel.
@@ -94,10 +84,6 @@ timeShift[l_List]:=With[{t0=l[[1,1]]},l/.{x_,y_}:>{x-t0,y}]
 valueNorm[l_List]:=With[{l0=l[[1,2]]},l/.{x_,y_}:>{x,y/l0}]
 signChange[l_List]:=With[{s=Sign[l[[1,2]]]},l/.{x_,y_}:>{x,y/s}]
 
-(*findResetTime[t_,dtcor_]:=Rest[Most[
-  Nearest[t->"Index",0.05+#,2][[2]]&/@Range[0,t[[-1]],dtcor]
-]]*)
-
 findResetTime[t_,dtcor_]:=Module[{pos},
   pos=Position[t,tt_/;tt>dtcor && Mod[Round[tt],Round[dtcor]]==1]//Flatten;
   Extract[pos,Position[Differences[pos],d_/;d>5]]
@@ -125,17 +111,13 @@ splitCurve[t_,f_,dtcor_]:=With[{pos=findResetTime[t,dtcor]},Module[{pos1,t1,f1,l
 (*Auto-correlation*)
 
 
-autocor[f_,\[Tau]_,dt_]:=With[{times=If[Length[Dimensions[f]]==1,Times,Dot]},
-  MapThread[times[Conjugate[#1],#2]*#3&,{Drop[f,-\[Tau]],Drop[RotateLeft[f,\[Tau]],-\[Tau]],Drop[dt,-\[Tau]]}]//Mean
+autoCor[ts_]:=Module[{t,f,fft,ac},
+  {t,f}=Transpose[ts];
+  f=Transpose[Transpose[f]-Mean[f]];
+  fft=If[Depth[f]==2,Fourier[f],Transpose[Fourier/@Transpose[f]]];
+  ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
+  {t-t[[1]],ac/ac[[1]]}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
-autoCor[ts_,ndivide_Integer:3]:=With[{ts0=timeShift[ts]},Module[{t,f,dt,norm,\[Tau]max},
-  {t,f}=Transpose[ts0];
-  f=Most[f];
-  dt=Differences[t];
-  \[Tau]max=Round[Length[dt]/ndivide];
-  norm=autocor[f,0,dt];
-  {t[[1;;\[Tau]max+1]],autocor[f,#,dt]/norm&/@Range[0,\[Tau]max]}//Transpose
-]]
 
 autoCorEnsemble[ts_,npiece_Integer:8]:=autoCor/@Partition[ts,Floor[Length[ts]/npiece]]
 
@@ -144,12 +126,14 @@ autoCorEnsemble[ts_,npiece_Integer:8]:=autoCor/@Partition[ts,Floor[Length[ts]/np
 (*Fitting*)
 
 
-fitTime[ts_List,model_String,nFit_Integer]:=Module[{a,x},
-  a[1]/.FindFit[Take[ts,nFit]//valueNorm,
-    Switch[model,
-      "EXP",a[2]*Exp[-x/a[1]],
-      "EXPCOS",a[2]*Cos[a[3]*x]*Exp[-x/a[1]]
-    ],{a[1],a[2],a[3]},x]
+fitTime[ts_List,"EXP",-1]:=Module[{a,x},
+  a[1]/.FindFit[ts//valueNorm,1*Exp[-x/a[1]],{a[1],a[2]},x]
+]
+fitTime[ts_List,"EXPCOS",-1]:=Module[{a,x},
+  a[1]/.FindFit[ts//valueNorm,Cos[a[2]*x]*Exp[-x/a[1]],{a[1],a[2]},x]
+]
+fitTime[ts_List,"EXPCOSOMEGA",-1]:=Module[{a,x},
+  a[2]/.FindFit[ts//valueNorm,Cos[a[2]*x]*Exp[-x/a[1]],{a[1],a[2]},x]
 ]
 fitTime[ts_List,"HALF",nFit_Integer]:=Module[{t,v,pos,t1,t2,v1,v2},
   {t,v}=Transpose[Take[ts,nFit]];
@@ -158,11 +142,29 @@ fitTime[ts_List,"HALF",nFit_Integer]:=Module[{t,v,pos,t1,t2,v1,v2},
   {t1,t2}=Extract[t,List/@pos];{v1,v2}=Extract[v,List/@pos];
   (t1-t2+2t2*v1-2t1*v2)/(2v1-2v2)
 ]
+fitTime[ts_List,"FFTSIN",nFit_Integer]:=Module[{t,v,fft},
+  {t,v}=Transpose[ts];
+  fft=Table[{i,Sin[i*t] . v},{i,0,2\[Pi]/Mean[Differences[t]],2\[Pi]/Last[t]}];
+  2\[Pi]/6/MaximalBy[fft,Last][[1,1]]
+]
 fitTime[ts_List,"AUTO",nFit_Integer]:=Cases[
-  fitTime[ts,#,nFit]&/@{"EXP","EXPCOS","HALF"},
+  fitTime[ts,#,nFit]&/@{"EXP","EXPCOS","HALF","FFTSIN"},
   x_?Positive
 ]//Min
 
+(*using different models for k< or >kf*)
+fitTime[ts_List,"EXPKF",nFit_Integer,knorm_:1,kf_:0]:=
+  If[knorm<=kf+0.5,fitTime[ts,"EXPCOS",nFit],fitTime[ts,"EXP",nFit]
+]
+fitTime[ts_List,lFit_,nFit_Integer,knorm_,kf_]:=fitTime[ts,lFit,nFit]
+
+fitTime[ts_List,model_String,nFit_Integer]:=Module[{a,x},
+  a[1]/.FindFit[Take[ts,nFit]//valueNorm,
+    Switch[model,
+      "EXP",a[2]*Exp[-x/a[1]],
+      "EXPCOS",a[2]*Cos[a[3]*x]*Exp[-x/a[1]]
+    ],{a[1],a[2],a[3]},x]
+]
 fitTime[ts_String,model_String,nFit_Integer]:=ts
 
 
@@ -175,7 +177,8 @@ corrTime[{t_List,f_List},dtcor_,model_String,nFit_Integer,OptionsPattern[]]:=Wit
   nBin=5, (*bin neighboring 5 curves*)
   nMinCurve=3 (*min size of ensemble*)
   },Module[{selectGood,ts=splitCurve[t,f,dtcor]}, 
-    selectGood[tss_]:=If[Union[Take[tss,nFit]//Differences//Transpose//Last//Sign]=={-1},True,False];
+    selectGood[tss_]:=If[nFit==-1,True,
+      If[Union[Take[tss,nFit]//Differences//Transpose//Last//Sign]=={-1},True,False]];
     If[Length[ts[[-1]]]<nFit,ts=Most[ts]];
     ts=signChange/@ts;
     If[OptionValue["lSelectGood"],ts=Cases[ts,x_?selectGood]];
@@ -203,7 +206,7 @@ End[]
 
 
 Protect[
-  autoCor,autoCorEnsemble,fitTime,
+  autoCor,fitTime,
   showResetTime,
   corrTime,corrTimeAC
 ]

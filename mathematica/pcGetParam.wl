@@ -48,6 +48,13 @@ pcReload[]:=Module[{},
   Clear[urms];
   urms[sim_]:=urms[sim]=With[{u=readTS[sim,"urms"]},u[[-Round[Length[u]/3];;-1]]//Mean];
   
+  Clear[urmskf];(*urms of modes with k\[GreaterEqual]kf*)
+  urmskf[sim_]:=With[{file=sim<>"/data/power_kin.dat"},
+    If[FileExistsQ[file],
+      Sqrt[2*Total[(read1D2Scale[sim,"power_kin.dat"])//Last//Last]],
+      "NaN"
+    ]];
+  
   Clear[kf];
   kf[sim_]:=kf[sim]=
     If[readParamNml[sim,"start.in","lforcing"] && readParamNml[sim,"run.in","FORCE"]!=0.,
@@ -114,6 +121,7 @@ getParam[sim_,"Nxyz"]:=readDim[sim]/@{"nx","ny","nz"}
 getParam[sim_,"LXYZ"]:=readParamNml[sim,"start.in","LXYZ"]
 
 getParam[sim_,"urms"]:=urms[sim]
+getParam[sim_,"urmskf"]:=urmskf[sim]
 getParam[sim_,"kf"]:=kf[sim]
 getParam[sim_,"nu"]:=nu[sim]
 getParam[sim_,"eta"]:=eta[sim]
@@ -121,19 +129,32 @@ getParam[sim_,"eta"]:=eta[sim]
 (*dimensionless numbers*)
 getParam[sim_,"ReN"]:=urms[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReN",k2_]:=urms[sim]/k2/nu[sim] (*supply kf by hand*)
+getParam[sim_,"ReNkf"]:=urmskf[sim]/kf[sim]/nu[sim]
+
 getParam[sim_,"ReM"]:=urms[sim]/kf[sim]/eta[sim]
 getParam[sim_,"ReM",k2_]:=urms[sim]/k2/eta[sim] (*supply kf by hand*)
 getParam[sim_,"PrM"]:=PrM[sim]
+
 getParam[sim_,"Ro"]:=If[omega[sim]==0,"No rotation",kf[sim]*urms[sim]/2/omega[sim]]
 getParam[sim_,"Ro",k2_]:=If[omega[sim]==0,"No rotation",k2*urms[sim]/2/omega[sim]]
+getParam[sim_,"Rokf"]:=If[omega[sim]==0,"No rotation",kf[sim]*urmskf[sim]/2/omega[sim]]
+
 getParam[sim_,"Co"]:=If[omega[sim]==0,0,1/getParam[sim,"Ro"]]
 getParam[sim_,"Co",k2_]:=If[omega[sim]=0,0,1/getParam[sim,"Ro",k2]]
+getParam[sim_,"Cokf"]:=If[omega[sim]==0,0,1/getParam[sim,"Rokf"]]
+
 getParam[sim_,"Sh"]:=
   If[readParamNml[sim,"start.in","lshear"],
     readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/kf[sim],
     0
   ]
+getParam[sim_,"Shkf"]:=
+  If[readParamNml[sim,"start.in","lshear"],
+    readParamNml[sim,"run.in","SSHEAR"]/urmskf[sim]/kf[sim],
+    0
+  ]
 getParam[sim_,"-Sh"]:=-getParam[sim,"Sh"]
+getParam[sim_,"-Shkf"]:=-getParam[sim,"Shkf"]
 getParam[sim_,"Sh",k2_]:=
   If[readParamNml[sim,"start.in","lshear"],
     readParamNml[sim,"run.in","SSHEAR"]/urms[sim]/k2,

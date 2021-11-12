@@ -140,11 +140,15 @@ read1DSigned[sim_,file_,l_Integer:0,testF_:Positive]:=Module[{t,spec},
   spec=Rest/@spec;
   {t,spec/.x_?(!testF[#]&)->0,spec/.x_?testF->0}
 ]
-read1D2Scale[sim_,file_,kf_Integer]:=Module[{t,spec,n,specL,specS},
+read1D2Scale[sim_,file_,kf_Integer:-1]:=Module[{t,spec,n,specL,specS,kff},
   {t,spec}=read1D[sim,file];
+  kff=Round@If[kf==-1,
+    If[Length[#[[1]]]==1,#[[2,1]],#[[1,2]]]&@Import[FileNameJoin[{sim,"k.dat"}]],
+    kf
+  ];
   n=spec//First//Length;
-  specL=(UnitStep[kf-#]&/@Range[n])*#&/@spec;
-  specS=(UnitStep[#-kf-1]&/@Range[n])*#&/@spec;
+  specL=(UnitStep[kff-#]&/@Range[n])*#&/@spec;
+  specS=(UnitStep[#-kff-1]&/@Range[n])*#&/@spec;
   {t,specL,specS}
 ]
 
