@@ -38,11 +38,11 @@ module Special
 !
   ! run parameters
   real :: kp=.0, km=.0, kC=.9, kX=.1
-  real :: fidelity=1., betaD=.0, betaL=.0
+  real :: fidelity=1., betaD=.0, betaL=.0, react_diff=0.
   real :: fidelity_factor1, fidelity_factor2
   real, dimension (nx) :: Ntot
   namelist /special_run_pars/ &
-    kp, km, kC, kX, fidelity, betaD, betaL
+    kp, km, kC, kX, fidelity, betaD, betaL, react_diff
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -223,7 +223,9 @@ module Special
       real, dimension (nx) :: qA, qD, qL
       real, dimension (nx) :: dqA, dqD, dqL
       real, dimension (nx) :: ee, ee1, ee10, ee50, ee90, ee99
+      real, dimension (nx) :: del2j
       type (pencil_case) :: p
+      integer :: j
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -313,6 +315,21 @@ module Special
         dqD=-1
         dqL=-1
       endwhere
+!
+!  Spatial diffusion.
+!
+      if (react_diff/=0.) then
+        do j=1,3
+          call del2(f,j,del2j)
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)+react_diff*del2j
+        enddo
+!
+!  For the timestep calculation, need maximum diffusion
+!
+        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,react_diff)
+      endif
+!
+!  Update rhs.
 !
       df(l1:l2,m,n,1)=df(l1:l2,m,n,1)+dqA
       df(l1:l2,m,n,2)=df(l1:l2,m,n,2)+dqD
@@ -471,7 +488,38 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'L5',idiag_L5)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='qq' &
+             ) cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of Special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      use Slices_methods, only: assign_slices_vec
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  qq
+!
+        case ('qq')
+          call assign_slices_vec(slices,f,iqq)
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
 !
 !********************************************************************

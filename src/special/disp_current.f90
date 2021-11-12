@@ -74,7 +74,7 @@ module disp_current
 !  18-mar-21/axel: coded Faraday displacement current
 !
       use FArrayManager
-!     use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
 !  It would have been more consistent to call the indices to the
 !  three components iex, iey, and iez
@@ -82,7 +82,7 @@ module disp_current
       call farray_register_pde('ee',iee,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
 !
-!--   call put_shared_variable('alpf',alpf,caller='register_disp_current')
+      call put_shared_variable('alpf',alpf,caller='register_disp_current')
 !
       if (lroot) call svn_id( &
            "$Id$")

@@ -89,8 +89,7 @@ module backreact_infl
   integer :: ispecial=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5
-  !real, pointer :: alpf
-  real :: alpf=30.
+  real, pointer :: alpf
 !
   character (len=labellen) :: initspecial='nothing'
 !
@@ -168,7 +167,7 @@ module backreact_infl
 !
       axionmass2=axionmass**2
 !
-!--   call get_shared_variable('alpf', alpf, caller='initialize_backreact_infl')
+      call get_shared_variable('alpf', alpf, caller='initialize_backreact_infl')
 !
       call keep_compiler_quiet(f)
 !
@@ -338,7 +337,6 @@ module backreact_infl
       if (lmagnetic) then
         call dot_mn(p%el,p%bb,tmp)
         df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a2*tmp
-print*,'alpf*p%infl_a2*tmp=',alpf,p%infl_a2,tmp
       endif
 !
 !  Diagnostics
