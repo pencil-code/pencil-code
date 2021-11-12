@@ -3432,9 +3432,9 @@ module Magnetic
 !  put u.a into auxiliary array
 !
       if (lua_as_aux) & 
-      !MR: ghost zones not up-to-date, so here better than in magnetic_after_boundary,
-      !    but not yet correct in terms of "real" boundary conditions.
-      !    Comes at the price of f(:,:,:,iua) being communicated.
+      !29-Oct-21/MR: ghost zones not up-to-date, so here better than in magnetic_after_boundary,
+      !              but not yet correct in terms of "real" boundary conditions.
+      !              Comes at the price of f(:,:,:,iua) being communicated.
         f(:,:,:,iua)=sum(f(:,:,:,iux:iuz)*f(:,:,:,iax:iaz),4)
 !
     endsubroutine magnetic_before_boundary
@@ -5983,6 +5983,7 @@ module Magnetic
 !
 !  Maximum difference of covariant B_i,j from bij and from bijtilde+bij_cov_corr
 ! 
+!if (ldiagnos.and.m==m2) write(iproc+10,*) p%bijtilde(:,1,1)
       if (idiag_bij_cov_diffmax/=0) &
         call max_mn_name(maxval(maxval(abs(p%bij-(p%bijtilde+p%bij_cov_corr)),3),2),idiag_bij_cov_diffmax)   !not ok
         !call max_mn_name(maxval(abs(p%bij(:,:,3)-(p%bijtilde(:,:,3)+p%bij_cov_corr(:,:,3))),2),idiag_bij_cov_diffmax) !ok

@@ -7949,6 +7949,9 @@ In the {\tt Makefile.local} file, the requested special modules are simply speci
 In contrast to the case with only a single special module, where the namelists' names are \\
 {\tt special_init_pars} and {\tt special_run_pars},
 these are individualized for multiple special modules, viz. $\langle${\it module name}$\rangle${\tt _init_pars} etc. .
+As explicit linking at runtime is employed for multiple special modules, code errors, which normally would break the build, show possibly up only at runtime
+and are hence hard to debug. Therefore in case of unclear runtime failure, it is useful to perform tests with only one of the special modules at a time, thus
+guaranteeing full linking at build time.
 
 \subsection{Adding switchable modules}
 
