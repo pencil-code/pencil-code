@@ -44,7 +44,6 @@ module Io
   integer :: persist_last_id=-max_int
 !
   integer :: local_type, global_type, mpi_err, io_dims
-  integer, parameter :: mpi_comm=MPI_COMM_WORLD
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer (kind=MPI_OFFSET_KIND), parameter :: displacement=0
   integer, parameter :: order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
@@ -455,7 +454,8 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
 !
-      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN (MPI_COMM_WORLD, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, &
+                          io_info, handle, mpi_err)
       call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
 ! Truncate the file to fit the global data.
@@ -588,7 +588,7 @@ module Io
 !  Open the slice file for write.
 !
       fpath = trim(directory_snap) // "/slice_" // trim(label) // '.' // trim(suffix)
-      call MPI_FILE_OPEN(mpi_comm, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot open file '" // trim(fpath) // "'")
 !
 !  Check the file size.
@@ -699,7 +699,7 @@ module Io
 !  Open snapshot file for write.
 !
       fpath = trim(directory_snap) // '/' // file
-      call MPI_FILE_OPEN(mpi_comm, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
       call check_success("output_part", "open", fpath)
 !
 !  Write total number of particles.
@@ -875,7 +875,7 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('input', 'commit global subarray', file)
 !
-      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN (MPI_COMM_WORLD, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
       call check_success ('input', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and read raw binary data, ie. 'native'.
@@ -1010,7 +1010,7 @@ module Io
 !  Open snapshot file for read.
 !
       fpath = trim(directory_snap) // '/' // file
-      call MPI_FILE_OPEN(mpi_comm, fpath, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, io_info, handle, mpi_err)
       call check_success("input_part", "open", fpath)
 !
 !  Read total number of particles.
@@ -2048,7 +2048,7 @@ module Io
 !
 ! Open file.
 !
-      call MPI_FILE_OPEN(mpi_comm, trim(file), ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not open file " // trim(file))
 !
 ! Write proc[xyz]_bounds.
@@ -2087,7 +2087,7 @@ module Io
 !
 ! Open file.
 !
-      call MPI_FILE_OPEN(mpi_comm, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not open file " // trim(file))
 !
       call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
