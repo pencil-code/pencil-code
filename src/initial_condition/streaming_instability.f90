@@ -49,7 +49,7 @@ module InitialCondition
 !
 ! Initialize any module variables which are parameter dependent.
 !
-! 09-nov-21/ccyang: coded
+! 13-nov-21/ccyang: coded
 !
       use EquationOfState, only: cs0, rho0
       use Mpicomm, only: mpibcast
@@ -64,39 +64,46 @@ module InitialCondition
       if (lrun) return
       call keep_compiler_quiet(f)
 !
-      call get_shared_variable("tausp_species", tausp_species)
-      settaus: if (npar_species > 1 .and. all(tausp_species == 0.0)) then
-        preset: if (any(taus /= 0.0)) then
-          if (lroot) print *, "initialize_initial_condition: taus = ", taus
-        else preset
-!
 ! Assemble stopping times.
 !
-          dlogtaus = (logtausmax - logtausmin) / real(npar_species)
-          gettaus: if (ltaus_log_center) then
-            taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
-            if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
-            taus = 10.0**taus
-          else gettaus
-            taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
-                                             10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
-            if (lroot) print *, "initialize_initial_condition: taus = ", taus
-          endif gettaus
-        endif preset
+      msp: if (npar_species > 1) then
+        call get_shared_variable("tausp_species", tausp_species)
+        settaus: if (all(tausp_species == 0.0)) then
 !
-! Override the stopping times in particles_dust.
+!         If not set, assume a power-law distribution.
 !
-        call get_shared_variable("tausp1_species", tausp1_species)
-        tausp_species = taus / omega
-        tausp1_species = omega / taus
-        if (lroot) print *, "initialize_initial_condition: override tausp_species = ", tausp_species
-      else settaus
+          powerlaw: if (all(taus == 0.0)) then
+            dlogtaus = (logtausmax - logtausmin) / real(npar_species)
+            gettaus: if (ltaus_log_center) then
+              taus = logtausmin + real((/ (i, i = 1, npar_species) /) - 0.5) * dlogtaus
+              if (lroot) print *, "initialize_initial_condition: log(taus) = ", taus
+              taus = 10.0**taus
+            else gettaus
+              taus = 0.5 * 10.0**logtausmin * (10.0**(real((/ (i, i = 0, npar_species - 1) /)) * dlogtaus) + &
+                                               10.0**(real((/ (i, i = 1, npar_species) /)) * dlogtaus))
+            endif gettaus
+          endif powerlaw
 !
-! Convert stopping times to dimensionless ones.
+!         Override the stopping times in Particles_dust.
 !
-        taus = omega * tausp_species
-        if (lroot) print *, "initialize_initial_condition: taus = ", taus
-      endif settaus
+          call get_shared_variable("tausp1_species", tausp1_species)
+          tausp_species = taus / omega
+          tausp1_species = omega / taus
+          if (lroot) print *, "initialize_initial_condition: override tausp_species = ", tausp_species
+        else settaus
+!
+!         Or, use stopping times from Particles_dust.
+!
+          taus = omega * tausp_species
+        endif settaus
+      elseif (all(taus == 0.0)) then msp
+!
+! For single species, both taus here and tausp in Particles_dust needs to be set consistently.
+!
+        call fatal_error("initialize_initial_condition", &
+            "Both taus in &initial_condition_pars/ and tausp in &particles_init_pars/ needs to be set and taus = omega * tausp. ")
+      endif msp
+      if (lroot) print *, "initialize_initial_condition: taus = ", taus
 !
 ! Find the density ratio for each species.
 !
