@@ -10298,15 +10298,35 @@ module Magnetic
 !
 !  Make the field gently increasing.
 !
-      gentle: if (t_bext > 0.0 .and. t < t_bext) then
+      if (t_bext > 0.0 .and. t < t_bext) then
         if (t <= t0_bext) then
           B_ext_out = B0_ext
         else
-          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext_out - B0_ext)
+          B_ext_out = B0_ext + 0.5*(1.-cos(pi*(t-t0_bext)/(t_bext-t0_bext)))*(B_ext_out-B0_ext)
         endif
-      endif gentle
+      endif
 !
     endsubroutine get_bext
+!***********************************************************************
+    real function beltrami_phase()
+ 
+      use Mpicomm, only: mpibcast_real
+
+      real :: bcosphz, bsinphz
+
+      if (lroot) then
+        if (idiag_bcosphz/=0.and.idiag_bsinphz/=0) then
+          bcosphz=fname(idiag_bcosphz)
+          bsinphz=fname(idiag_bsinphz)
+          beltrami_phase=atan2(bsinphz,bcosphz)
+        else
+          call fatal_error('testfield_after_boundary', &
+                           'need bcosphz, bsinphz in print.in for beltrami_phase')
+        endif
+      endif
+      call mpibcast_real(beltrami_phase)
+
+    endfunction beltrami_phase
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
