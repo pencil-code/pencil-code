@@ -32,7 +32,7 @@ module Magnetic
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
 !
@@ -169,7 +169,6 @@ module Magnetic
   logical, parameter :: lcalc_aamean = .false.
   logical, parameter :: lcalc_aameanz = .false.
   logical, parameter :: lelectron_inertia = .false.
-  integer, parameter :: idiag_bcosphz = 0, idiag_bsinphz = 0
   integer, parameter :: idiag_axmz = 0, idiag_aymz = 0
   real, parameter :: inertial_length = 0.0, linertial_2 = 0.0
 !
@@ -1476,6 +1475,15 @@ module Magnetic
 !  Dummy
 !
     endsubroutine expand_shands_magnetic
+!***********************************************************************
+    real function beltrami_phase()
+!
+!  Dummy
+!
+      call not_implemented('beltrami_phase','for bfield')
+      beltrami_phase=0.
+
+    endfunction beltrami_phase
 !***********************************************************************
     subroutine get_bext(B_ext_out)
 !

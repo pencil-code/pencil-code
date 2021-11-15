@@ -14,7 +14,7 @@
   public :: calc_pencils_magnetic
   public :: get_bext
 
-  public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
+  public :: calc_mfield
   public :: lcalc_aameanz, lcalc_aamean, aamz
   public :: rescaling_magnetic
   public :: B_ext_inv
@@ -30,6 +30,7 @@
   public :: pushpars2c, pushdiags2c
   public :: calc_diagnostics_magnetic
   public :: magnetic_calc_spectra
+  public :: beltrami_phase
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

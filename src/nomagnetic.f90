@@ -19,7 +19,7 @@ module Magnetic
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
 !
@@ -36,7 +36,6 @@ module Magnetic
 !
   integer :: idiag_axmz=0,idiag_aymz=0
   integer :: idiag_bxmz=0,idiag_bymz=0
-  integer :: idiag_bsinphz=0,idiag_bcosphz=0
 !
   contains
 !***********************************************************************
@@ -417,6 +416,15 @@ module Magnetic
 !  Dummy
 !
     endsubroutine expand_shands_magnetic
+!***********************************************************************
+    real function beltrami_phase()
+!
+!  Dummy
+!
+      call not_implemented('beltrami_phase','for nomagnetic')
+      beltrami_phase=0.
+
+    endfunction beltrami_phase
 !***********************************************************************
     subroutine get_bext(B_ext_out)
 !

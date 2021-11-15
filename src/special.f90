@@ -47,10 +47,10 @@
                           I_SPECIAL_AFTER_BOUNDARY=27,  &
                           I_SPECIAL_AFTER_TIMESTEP=28,  &
                           I_SET_INIT_PARAMETERS=29, &
-                          I_SPECIAL_CALC_SPECTRA=30  
+                          I_SPECIAL_CALC_SPECTRA=30
     
     integer, parameter :: n_subroutines=30
-    integer, parameter :: n_special_modules_max=5
+    integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
     character(LEN=256) :: special_modules_list = ''

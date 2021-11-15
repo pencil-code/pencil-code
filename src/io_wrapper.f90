@@ -694,19 +694,4 @@ module Io
 !
     endfunction write_persist_torus_rect
 !***********************************************************************
-    subroutine write_slice(lwrite, time, label, suffix, pos, grid_pos, data)
-!
-      !use HDF5_IO_out, only: output_slice_ => output_slice
-
-      logical, intent(in) :: lwrite
-      real, intent(in) :: time
-      character (len=*), intent(in) :: label, suffix
-      real, intent(in) :: pos
-      integer, intent(in) :: grid_pos
-      real, dimension (:,:), pointer :: data
-
-      !call output_slice_(lwrite, time, label, suffix, pos, grid_pos, data)
-
-    endsubroutine write_slice
-!***********************************************************************
 end module Io
