@@ -80,9 +80,12 @@ mean[x_List]:=With[{y=Cases[x,e_?NumericQ]},
   If[Length[y]==1,y[[1]],Around[Mean[y],StandardDeviation[y]]]
 ]
 
-timeShift[l_List]:=With[{t0=l[[1,1]]},l/.{x_,y_}:>{x-t0,y}]
-valueNorm[l_List]:=With[{l0=l[[1,2]]},l/.{x_,y_}:>{x,y/l0}]
-signChange[l_List]:=With[{s=Sign[l[[1,2]]]},l/.{x_,y_}:>{x,y/s}]
+(*shift an autocorrelation horizontally to start from t=0*)
+timeShift[l_List]:=Transpose[Transpose[l]-{l[[1,1]],0}]
+(*shift an autocorrelation vertically to start from value 1*)
+valueNorm[l_List]:=Transpose[Transpose[l]/{1,l[[1,2]]}]
+(*do both timeShift and valueNorm*)
+normalizeAC[l_List]:=l//timeShift//valueNorm
 
 findResetTime[t_,dtcor_]:=Module[{pos},
   pos=Position[t,tt_/;tt>dtcor && Mod[Round[tt],Round[dtcor]]==1]//Flatten;
@@ -98,13 +101,13 @@ showResetTime[{t_,f_},dtcor_,shift_Integer:0,plotStyle_List:{}]:=With[
   ]
 ]
 
-splitCurve[t_,f_,dtcor_]:=With[{pos=findResetTime[t,dtcor]},Module[{pos1,t1,f1,lmin},
+splitCurve[t_,f_,dtcor_]:=Module[{pos=findResetTime[t,dtcor],pos1,t1,f1,lmin},
   pos1=Partition[pos,2,1]/.{x_?NumericQ,y_}:>{x,y-1};
   t1=Take[t,#]&/@pos1;
   f1=Take[f,#]&/@pos1;
   lmin=Max[16,Min[Length/@f1]];
-  timeShift/@MapThread[Take[Transpose[{#1,#2}],lmin]&,{t1,f1}]
-]]
+  Most[timeShift/@MapThread[Take[Transpose[{#1,#2}],lmin]&,{t1,f1}]]
+]
 
 
 (* ::Section:: *)
@@ -116,85 +119,78 @@ autoCor[ts_]:=Module[{t,f,fft,ac},
   f=Transpose[Transpose[f]-Mean[f]];
   fft=If[Depth[f]==2,Fourier[f],Transpose[Fourier/@Transpose[f]]];
   ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
-  {t-t[[1]],ac/ac[[1]]}//Transpose//Take[#,Length[t]/2//Floor]&
+  {t-t[[1]],ac}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
 
-autoCorEnsemble[ts_,npiece_Integer:8]:=autoCor/@Partition[ts,Floor[Length[ts]/npiece]]
+autoCorEnsemble[ts_,npiece_Integer:3]:=Map[
+  autoCor[#]&,Partition[ts,Floor[Length[ts]/npiece]]
+]
 
 
 (* ::Section:: *)
 (*Fitting*)
 
 
-fitTime[ts_List,"EXP",-1]:=Module[{a,x},
-  a[1]/.FindFit[ts//valueNorm,1*Exp[-x/a[1]],{a[1],a[2]},x]
+fitTime[ts_List,model_String,nFit_]:=Module[{a,x},
+  a[1]/.FindFit[Take[ts,nFit]//normalizeAC,
+    Switch[model,
+      "EXP",Exp[-x/a[1]],
+      "EXP+C",1-a[2]+a[2]*Exp[-x/a[1]],
+      "EXPCOS",Cos[a[2]*x]*Exp[-x/a[1]],
+      "EXPCOSOMEGA",Cos[a[1]*x]*Exp[-x/a[2]]
+    ],{a[1],a[2]},x]
 ]
-fitTime[ts_List,"EXPCOS",-1]:=Module[{a,x},
-  a[1]/.FindFit[ts//valueNorm,Cos[a[2]*x]*Exp[-x/a[1]],{a[1],a[2]},x]
-]
-fitTime[ts_List,"EXPCOSOMEGA",-1]:=Module[{a,x},
-  a[2]/.FindFit[ts//valueNorm,Cos[a[2]*x]*Exp[-x/a[1]],{a[1],a[2]},x]
-]
-fitTime[ts_List,"HALF",nFit_Integer]:=Module[{t,v,pos,t1,t2,v1,v2},
-  {t,v}=Transpose[Take[ts,nFit]];
+fitTime[ts_List,"HALF",nFit_]:=Module[{t,v,pos,t1,t2,v1,v2},
+  {t,v}=Transpose[Take[ts,nFit]//normalizeAC];
   pos=Nearest[v->"Index",0.5,2];
   If[Abs[Subtract@@pos]!=1,t[[pos//Min]]//Return];
   {t1,t2}=Extract[t,List/@pos];{v1,v2}=Extract[v,List/@pos];
   (t1-t2+2t2*v1-2t1*v2)/(2v1-2v2)
 ]
-fitTime[ts_List,"FFTSIN",nFit_Integer]:=Module[{t,v,fft},
-  {t,v}=Transpose[ts];
+fitTime[ts_List,"FFTSIN",nFit_]:=Module[{t,v,fft},
+  {t,v}=Transpose[Take[ts,nFit]//normalizeAC];
   fft=Table[{i,Sin[i*t] . v},{i,0,2\[Pi]/Mean[Differences[t]],2\[Pi]/Last[t]}];
   2\[Pi]/6/MaximalBy[fft,Last][[1,1]]
 ]
-fitTime[ts_List,"AUTO",nFit_Integer]:=Cases[
-  fitTime[ts,#,nFit]&/@{"EXP","EXPCOS","HALF","FFTSIN"},
+fitTime[ts_List,"INT",nFit_]:=Module[{t,v},
+  {t,v}=Transpose[Take[ts,nFit]//normalizeAC];
+  Total[v]*Mean[Differences[t]]
+]
+fitTime[ts_List,"MIN",nFit_Integer]:=Cases[
+  fitTime[ts,#,nFit]&/@{"EXP","EXPCOS","HALF","FFTSIN","INT"},
   x_?Positive
 ]//Min
 
 (*using different models for k< or >kf*)
-fitTime[ts_List,"EXPKF",nFit_Integer,knorm_:1,kf_:0]:=
+fitTime[ts_List,"EXPKF",nFit_,knorm_:1,kf_:0]:=
   If[knorm<=kf+0.5,fitTime[ts,"EXPCOS",nFit],fitTime[ts,"EXP",nFit]
 ]
-fitTime[ts_List,lFit_,nFit_Integer,knorm_,kf_]:=fitTime[ts,lFit,nFit]
-
-fitTime[ts_List,model_String,nFit_Integer]:=Module[{a,x},
-  a[1]/.FindFit[Take[ts,nFit]//valueNorm,
-    Switch[model,
-      "EXP",a[2]*Exp[-x/a[1]],
-      "EXPCOS",a[2]*Cos[a[3]*x]*Exp[-x/a[1]]
-    ],{a[1],a[2],a[3]},x]
-]
-fitTime[ts_String,model_String,nFit_Integer]:=ts
+fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 
 
 (* ::Section:: *)
 (*Find correlation time*)
 
 
-Options[corrTime]={"lSingle"->False,"lSelectGood"->True}
-corrTime[{t_List,f_List},dtcor_,model_String,nFit_Integer,OptionsPattern[]]:=With[{
-  nBin=5, (*bin neighboring 5 curves*)
-  nMinCurve=3 (*min size of ensemble*)
-  },Module[{selectGood,ts=splitCurve[t,f,dtcor]}, 
-    selectGood[tss_]:=If[nFit==-1,True,
-      If[Union[Take[tss,nFit]//Differences//Transpose//Last//Sign]=={-1},True,False]];
-    If[Length[ts[[-1]]]<nFit,ts=Most[ts]];
-    ts=signChange/@ts;
-    If[OptionValue["lSelectGood"],ts=Cases[ts,x_?selectGood]];
-    If[ts=={},Return["Bad curve."]];
-    If[Length[ts]<nBin*nMinCurve || OptionValue["lSingle"],
-      fitTime[Mean[ts],model,nFit],
-      mean[fitTime[Mean[#],model,nFit]&/@Partition[ts,nBin]]
-    ]
-]]
-
-corrTimeAC[{t_List,f_List},model_String,nFit_Integer,npiece_Integer:8]:=
-  With[{ts=Transpose[{t,f}]},
-  If[npiece==1,
-    fitTime[autoCor[ts],model,nFit],
-    mean[fitTime[#,model,nFit]&/@autoCorEnsemble[ts,npiece]]
+Options[corrTime]={"lSingle"->False}
+corrTime[{t_List,f_List},dtcor_,model_String,nFit_,OptionsPattern[]]:=Module[
+  {nEnsemble=3,ts=splitCurve[t,f,dtcor]},
+  If[Length[ts]<10*nEnsemble || OptionValue["lSingle"],
+    fitTime[Mean[ts],model,nFit],
+    mean[fitTime[Mean[#],model,nFit]&/@Partition[ts,Length[ts]/nEnsemble//Floor]]
   ]
+]
+
+corrTimeAC[{t_List,f_List},model_String,nFit_,npiece_Integer:3]:=
+  Module[{t1},
+    t1=mean[fitTime[#,model,nFit]&/@autoCorEnsemble[Transpose[{t,f}],npiece]];
+    If[npiece>=2 && Less@@t1,corrTimeAC[{t,f},model,nFit,1],t1]
+  ]
+
+corrTimeACAve[{t_List,f_List},model_String,nFit_,npiece_Integer:3]:=
+  Module[{t1,data=autoCorEnsemble[Transpose[{t,#}],npiece,"lNormalize"->False]&/@Transpose[f]},
+  t1=mean[fitTime[#,model,nFit]&/@Mean[data]];
+  If[npiece>=2 && Less@@t1,corrTimeACAve[{t,f},model,nFit,1],t1]
 ]
 
 
