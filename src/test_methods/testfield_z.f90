@@ -1085,7 +1085,7 @@ module Testfield
 !  Subtract E0 field if it has been calculated.
 !  Do this only for the leta_rank2=T option.
 !
-        else
+        else   ! iE0/=0
           if (idiag_alp11/=0) call sum_mn_name(  +cz(n)*(Eipq(:,:,1,i1)-Eipq(:,:,1,iE0)) &
                                                  +sz(n)*(Eipq(:,:,1,i2)-Eipq(:,:,1,iE0)),idiag_alp11)
           if (idiag_alp21/=0) call sum_mn_name(  +cz(n)*(Eipq(:,:,2,i1)-Eipq(:,:,2,iE0)) &
@@ -1182,7 +1182,7 @@ module Testfield
                   call sum_mn_name(s2z(n)*(-sz(n)*Eipq(:,:,2,i3)+cz(n)*Eipq(:,:,2,i4))*ktestfield1,idiag_eta22ss)
               endif
             endif
-          else
+          else    ! iE0/=0
             if (idiag_alp12/=0) call sum_mn_name( +cz(n)*(Eipq(:,:,1,i3)-Eipq(:,:,1,iE0)) &
                                                   +sz(n)*(Eipq(:,:,1,i4)-Eipq(:,:,1,iE0)),idiag_alp12)
             if (idiag_alp22/=0) call sum_mn_name( +cz(n)*(Eipq(:,:,2,i3)-Eipq(:,:,2,iE0)) &
@@ -1379,7 +1379,7 @@ module Testfield
       use Sub
       use Cdata
       use Hydro, only: calc_pencils_hydro
-      use Magnetic, only: idiag_bcosphz, idiag_bsinphz
+      use Magnetic, only: beltrami_phase
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1518,25 +1518,15 @@ module Testfield
 !
 !  Calculate phase_testfield (for Beltrami fields)
 !
-      if (lphase_adjust) then
-        if (lroot) then
-          if (idiag_bcosphz/=0.and.idiag_bsinphz/=0) then
-            bcosphz=fname(idiag_bcosphz)
-            bsinphz=fname(idiag_bsinphz)
-            phase_testfield=atan2(bsinphz,bcosphz)
-          else
-            call fatal_error('testfield_after_boundary', &
-            'need bcosphz, bsinphz in print.in for lphase_adjust=T')
-          endif
-        endif
-        call mpibcast_real(phase_testfield)
+      if (lphase_adjust.and.lmagnetic) then
+        phase_testfield=beltrami_phase()
         c=cos(z+phase_testfield)
         s=sin(z+phase_testfield)
         c2z=c**2
         s2z=s**2
         csz=c*s
+        if (ip<13) print*,'iproc,phase_testfield=',iproc,phase_testfield
       endif
-      if (ip<13) print*,'iproc,phase_testfield=',iproc,phase_testfield
 !
 !  reset headtt
 !
