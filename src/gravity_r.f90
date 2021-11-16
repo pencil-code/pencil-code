@@ -575,24 +575,9 @@ module Gravity
       real :: c2,s2,g2
       type (pencil_case) :: p
 !
-      if (lramp_mass.and.(t<=t_ramp_mass)) then 
+      g2 = g1/rp1**2
 !
-!  Ramp up g1 for the first 5 orbits, to prevent to big an initial impulse
-!
-        select case (iramp_function)
-!
-        case ('linear')
-           g2 = g1/rp1**2 * t*t1_ramp_mass
-        case ('sinusoidal')
-           g2 = g1/rp1**2 * (sin(t*t1_ramp_mass*.5*pi))**2
-        case default
-           call fatal_error("indirect_plus_inertial_terms",&
-                "no ramping function selected")
-        endselect
-!
-      else
-        g2 = g1/rp1**2
-      endif
+      if (lramp_mass) call rampup_secondary_mass(g2)
 !
 !  Do not allow secondary before t_start_secondary
 !
@@ -654,6 +639,32 @@ module Gravity
       endif
 !
     endsubroutine indirect_plus_inertial_terms
+!***********************************************************************
+    subroutine rampup_secondary_mass(gp)
+!
+!  Increase the mass of the secondary gradually, linearly or 
+!  sinusoidally, to prevent too strong an impulse in the
+!  beginning of the simulation.
+!
+!  15-nov-21/wlyra: coded
+!
+      real :: gp
+
+      if (t<=t_ramp_mass) then
+!
+        select case (iramp_function)
+!
+        case ('linear')
+           gp = gp * t*t1_ramp_mass
+        case ('sinusoidal')
+           gp = gp * (sin(t*t1_ramp_mass*.5*pi))**2
+        case default
+           call fatal_error("rampup_secondary_mass",&
+                "no ramping function selected")
+        endselect
+      endif
+!
+    endsubroutine rampup_secondary_mass
 !***********************************************************************
     subroutine potential_global(pot,pot0)
 !
@@ -1053,7 +1064,7 @@ module Gravity
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rhill,rhill1
+      real :: rhill,rhill1,g2
       integer :: i
 !
       if (lcylindrical_coords) then
@@ -1070,20 +1081,23 @@ module Gravity
 !
 !  Select the potential smoothing for the secondary. 
 !      
+      g2=g1
+      if (lramp_mass) call rampup_secondary_mass(g2)
+!
       select case (ipotential_secondary)
 !
       case ('plummer')
-        gp = -g1*(rr2_pm+rp1_smooth**2)**(-1.5)
+        gp = -g2*(rr2_pm+rp1_smooth**2)**(-1.5)
 !           
-     case ('boley')
+      case ('boley')
 !
 !  Correct potential outside a sphere of radius rsmooth. Default to Hill sphere.
 !
         do i=1,nx
           if (rr2_pm(i) .gt. rp1_smooth**2) then
-            gp(i) = -g1*rr2_pm(i)**(-1.5)
+            gp(i) = -g2*rr2_pm(i)**(-1.5)
           else
-            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rp1_smooth1 - 4)*rp1_smooth1**3
+            gp(i) =  g2*(3*sqrt(rr2_pm(i))*rp1_smooth1 - 4)*rp1_smooth1**3
           endif
         enddo
 !           
@@ -1097,7 +1111,6 @@ module Gravity
 !
       endselect
 !
-      if (lramp_mass     .and.(t<=t_ramp_mass)      ) gp = gp * t*t1_ramp_mass
       if (lsecondary_wait.and.(t<=t_start_secondary)) gp = 0.
 !       
 !  Set the acceleration
