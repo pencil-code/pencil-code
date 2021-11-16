@@ -7741,7 +7741,7 @@ $\rm{mz}$ large the wasted storage becomes negligible.
 Similar to the `f' array the code also has a 'fp' array which contains current
 states of all the particles. Like the f-array the fp-array also has a time
 derivative part, the dfp-array. The dimension of the fp-array is
-$mpar_local\times mpvar$ where $mpar_local$ is the number of particles in the
+$mpar\_local\times mpvar$ where $mpar\_local$ is the number of particles in the
 local processor (for serial runs this is the total number of particles) and
 $mpvar$ depends on the problem at hand. For example if we are solving for only
 tracer particles then $mpvar=3$, for dust particles $mpvar=6$  The sequence in
@@ -7771,7 +7771,7 @@ following are the relevant lines from \code{particles_main.f90}.
 !***********************************************************************
 \end{verbatim}
 
-The subroutine \code{resister_particles} can mean either the tracer particles
+The subroutine \code{register_particles} can mean either the tracer particles
 or dust particles. For the former the first three slots of the fp-array are the
 three spatial coordinates. For the latter the first six slots of the fp-array
 are the three spatial coordinates followed by the three velocity components.
@@ -9834,9 +9834,11 @@ and
 on the boundary, where the subscript $n$ denotes the normal component, and
 $\vec{E}_t$ denotes the tangential components of the electric field.
 
-In Cartesian geometry, these conditions can be implemented by setting
-the two tangential components of the vector potential $\vec{A}$ to zero
-on the boundary.
+In Cartesian geometry, and when the boundary is impenetrable, these conditions can be implemented by employing the \code{'a'} condition for
+the two tangential components of the vector potential $\vec{A}$, which forces both their values 
+and their second normal derivatives to be zero on the boundary.
+In addition the normal derivative of the normal $\vec{A}$ component must be zero, hence use \code{'s'} for it.
+%MR: any thoughts about mathematical legality of this?
 It is easy to see that this also works in arbitrary curvilinear
 coordinates.
 
