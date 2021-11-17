@@ -101,7 +101,7 @@ my %tests = (
                          meissner
                          conv-slab-noequi
                          2d-tests/selfgravitating-shearwave
-                         2d-tests/streaming_instability
+                         2d-tests/streaming_instability/single-species
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
                          2d-tests/planet-disk-fargo

@@ -1,5 +1,5 @@
 Directory:
-    ${PENCIL_HOME}/samples/2d-tests/streaming_instability
+    ${PENCIL_HOME}/samples/2d-tests/streaming_instability/single-species
 SVN Id:
     $Id$
 Maintainer:
