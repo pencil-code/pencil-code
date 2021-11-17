@@ -220,7 +220,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (nz,3,njtest) :: uxbtestmz,jxbtestmz,ugutestmz
+  real, dimension(nz,3,njtest) :: uxbtestmz,jxbtestmz,ugutestmz
   real, dimension(nz,3) :: guumz, bbmz, jjmz
 
   contains
@@ -607,7 +607,7 @@ module Testfield
 !
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumeanz, coriolis_cartesian
-      use Magnetic, only: aamz,lcalc_aameanz,B_ext_inv
+      use Magnetic, only: lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
       use Slices_methods, only: store_slices
@@ -1323,13 +1323,12 @@ module Testfield
       use Sub
       use Deriv, only: distr_der
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
-      use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-                          aamz,lcalc_aameanz,B_ext_inv
+      use Magnetic, only: calc_pencils_magnetic,aamz,lcalc_aameanz,B_ext_inv,beltrami_phase
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c,s
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+      real, dimension (mz) :: c,s
       real, dimension (nx,3,3) :: aijtest,bijtest,uijtest,uij0ref
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uutest,uxbtest,jxbtest,ugutest
       real, dimension (nx,3) :: uxbtest1,jxbtest1
@@ -1345,8 +1344,6 @@ module Testfield
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(inout) :: f
-!
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
 !
@@ -1360,7 +1357,7 @@ module Testfield
 
       if (luse_main_run) then
 !
-!  Calculate gradient of mean uu.
+!  Compute gradient of mean uu.
 !
         if (lcalc_uumeanz) call distr_der(uumz,3,guumz)
 !
@@ -1603,17 +1600,8 @@ mn:   do n=n1,n2
 !
 !  Calculate phase_testfield (for Beltrami fields)
 !
-      if (lphase_adjust) then
-        if (lroot) then
-          if (idiag_bcosphz/=0.and.idiag_bsinphz/=0) then
-            bcosphz=fname(idiag_bcosphz)
-            bsinphz=fname(idiag_bsinphz)
-            phase_testfield=atan2(bsinphz,bcosphz)
-          else
-            call fatal_error('testfield_after_boundary', &
-            'need bcosphz, bsinphz in print.in for lphase_adjust=T')
-          endif
-        endif
+      if (lphase_adjust.and.lmagnetic) then
+        phase_testfield=beltrami_phase()
         call mpibcast_real(phase_testfield)
         c=cos(z+phase_testfield)
         s=sin(z+phase_testfield)
