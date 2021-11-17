@@ -3,6 +3,10 @@
 !  This module sets up nonlinear streaming instability with
 !  multiple particle species.
 !
+! References:
+!  Zhu, Z. & Yang, C.-C. 2021, MNRAS, 501, 467. doi:10.1093/mnras/staa3628
+!  Yang, C.-C. & Zhu, Z. 2021, MNRAS, 508, 5538. doi:10.1093/mnras/stab2959
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module

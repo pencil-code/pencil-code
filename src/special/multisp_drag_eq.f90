@@ -1,7 +1,12 @@
 ! $Id$
 !
-!  This module provide a way for users to specify custom
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
+!  This module handles diagnostics that are related with dust-gas
+!  velocities in drag equilibrium, computed by
+!  initial_condition/streaming_instability.f90.
+!
+! References:
+!  Zhu, Z. & Yang, C.-C. 2021, MNRAS, 501, 467. doi:10.1093/mnras/staa3628
+!  Yang, C.-C. & Zhu, Z. 2021, MNRAS, 508, 5538. doi:10.1093/mnras/stab2959
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of special_dummies.inc) the number of f array
