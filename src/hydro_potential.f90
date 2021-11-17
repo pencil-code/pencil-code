@@ -23,7 +23,8 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
-! PENCILS PROVIDED lorentz_gamma; ss_relativistic2; ss_relativistic(3)
+! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
+! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
 !
 !***************************************************************
 !
@@ -136,7 +137,7 @@ module Hydro
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
-  real :: amp_factor=0.,kx_uu_perturb=0.
+  real :: amp_factor=0.,kx_uu_perturb=0., delta_u=1.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
 !
   namelist /hydro_init_pars/ &
@@ -168,7 +169,7 @@ module Hydro
   real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
-  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0., delta_u=1.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: lupw_uu=.false.
   logical :: lremove_mean_angmom=.false.
