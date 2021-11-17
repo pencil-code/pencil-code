@@ -38,7 +38,8 @@ module Diagnostics
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
-  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
+  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar, &
+            zsum_mn_name_xy_arr, zsum_mn_name_xy_arr2
 ! GPU-END
   public :: allocate_fnames,allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
@@ -82,6 +83,8 @@ module Diagnostics
   interface zsum_mn_name_xy
     module procedure zsum_mn_name_xy_scal
     module procedure zsum_mn_name_xy_vec
+    module procedure zsum_mn_name_xy_arr
+    module procedure zsum_mn_name_xy_arr2
   endinterface zsum_mn_name_xy
 
   interface zsum_mn_name_xy_mpar
@@ -100,7 +103,7 @@ module Diagnostics
 ! Variables for Yin-Yang grid: z-averages.
 !
   real, dimension(:,:,:), allocatable :: fnamexy_cap
-!
+
   contains
 !***********************************************************************
     subroutine initialize_diagnostics
@@ -320,24 +323,34 @@ module Diagnostics
 !
 !  12-jan-17/MR: coded
 !
+      use General, only: itoa
+      use Syscalls, only: system_cmd
+
       character(len=*), dimension(:), intent(IN) :: cname,cform
       integer,                        intent(IN) :: len
       character(len=*),               intent(IN) :: file
 
-      integer :: ind, i
+      integer :: ind,i
       character(LEN=512) :: text
+      character(LEN=512) :: sedstring
 
+      sedstring=''
       text='WARNING:'; ind=-1
       do i=1,len
         if (cname(i)/=''.and.cform(i)=='') then
-          ind=index(cname(i),'('); if (ind==0) ind=31
+          ind=index(cname(i),'('); if (ind==0) ind=len_trim(cname(i))+1
           text=trim(text)//' '//trim(cname(i)(1:ind-1))//','
+          sedstring=trim(sedstring)//" -e'"//trim(itoa(i))//" s/^\(.\)/#\1/'"
         endif
       enddo
 
       if (ind/=-1) then
-        text=text(1:index(text,',',BACK=.true.)-1)//' diagnostic(s) in '//trim(file)//' not defined!'
+!
+!  If there are undefined diagnostics, comment them out in *.in.
+!
+        text=text(1:index(text,',',BACK=.true.)-1)//' diagnostic(s) in '//trim(file)//' undefined or multiply defined!'
         print*, trim(text)
+        call system_cmd('sed '//trim(sedstring)//' -isv '//trim(file))
       endif
 
     endsubroutine report_undefined
@@ -382,7 +395,7 @@ module Diagnostics
 !
       character, parameter :: comma=','
       character(len=40)    :: tform
-      integer              :: iname, index_i, index_d, length
+      integer              :: iname,index_i,index_d,length
       logical              :: lcompl
       real                 :: rlength
 !
@@ -1106,7 +1119,7 @@ module Diagnostics
 !  24-Nov-2018/PABourdin: redesigned
 !
       use HDF5_IO, only: output_average
-      use Mpicomm,         only: mpiwtime
+      use Mpicomm, only: mpiwtime
 !
       real :: taver
 !
@@ -1128,9 +1141,9 @@ module Diagnostics
         else
           ! z-beam root (Yin)
           call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+
           if (ip<=12.and.lroot) print*,&
-              'write_2daverages: write z averages in ',&
-                           mpiwtime()-taver,' seconds'
+              'write_2daverages: write z averages in ', mpiwtime()-taver,' seconds'
         endif
       endif
 !
@@ -1170,7 +1183,7 @@ module Diagnostics
 !
     endsubroutine trim_averages
 !***********************************************************************
-    integer function fparse_name(iname,cname,ctest,itest,cform)
+    integer function fparse_name(iname,cname,ctest,itest,cform,ncomp)
 !
 !  Parse name and format of scalar print variable
 !  On output, ITEST is set to INAME if CNAME matches CTEST
@@ -1182,8 +1195,8 @@ module Diagnostics
 !
 !   return value is iname if ctest matches
 !                   -1    if so and itest/=0 at call (indicates multiple
-!                         occurrence of the same diagnostic in print.in
-!                   0     if ctest does not match
+!                         occurrence of the same diagnostic in print.in)
+!                    0    if ctest does not match
 !
 !   4-may-02/axel: coded
 !   6-apr-04/wolf: more liberate format reading
@@ -1197,12 +1210,14 @@ module Diagnostics
 !
       character (len=*) :: cname, cform
       character (len=*) :: ctest
-      integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
+      integer           :: iname,itest
+      integer, optional :: ncomp
 !
-      intent(in)    :: iname,ctest
+      intent(in)    :: iname,ctest,ncomp
       intent(inout) :: cname,itest
       intent(out)   :: cform
 
+      integer :: iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
       character(len=fmtlen) :: tmp
 !
 !  Check whether format is given.
@@ -1234,11 +1249,12 @@ module Diagnostics
           fparse_name=iname
         else
           fparse_name=-1
+          return          ! diagnostic already defined
         endif
 
         if (scan(cform(1:1), 'eEdDgG')==1) then
 !
-!Increase d in [ED]w.d if insufficient to hold a sign.
+!  Increase d in [ED]w.d if insufficient to hold a sign.
 !
           if (scan(cform(1:1), "eEdD")==1) then
 
@@ -1252,20 +1268,20 @@ module Diagnostics
               if (idiff<0) then
                 cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
 !
-!Put changed format back into cname.
+!  Put changed format back into cname.
 !
                 if (iform1>0) cname(iform1:)='('//trim(cform)//')'
               endif
             endif
           endif
 !
-!Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
+!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
 !
           call safe_character_assign(cform, '1p'//trim(cform)//',0p')
 
         endif
 !
-!Integer formats are turned into floating point numbers.
+!  Integer formats are turned into floating point numbers.
 !
         index_i=scan(cform,'iI',.true.)
 
@@ -1280,7 +1296,7 @@ module Diagnostics
 !
     endfunction fparse_name
 !***********************************************************************
-    subroutine parse_name_s(iname,cname,cform,ctest,itest)
+    subroutine parse_name_s(iname,cname,cform,ctest,itest,ncomp)
 !
 !   subroutine wrapper around fparse_name function: ignores return value
 !
@@ -1289,18 +1305,19 @@ module Diagnostics
       character (len=*) :: cname, cform
       character (len=*) :: ctest
       integer :: iname,itest
+      integer, optional :: ncomp
 !
-      intent(in)  :: iname,ctest
+      intent(in)  :: iname,ctest,ncomp
       intent(out) :: cform
       intent(inout) :: cname,itest
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname,ctest,itest,cform)
+      iret = fparse_name(iname,cname,ctest,itest,cform,ncomp)
 !
     endsubroutine parse_name_s
 !***********************************************************************
-    subroutine parse_name_sa(iname,cname,cform,ctest,itest)
+    subroutine parse_name_sa(iname,cname,cform,ctest,itest,ncomp)
 !
 !   alternative form of parse_name_s: adopts full vectors for cname and cform
 !
@@ -1309,22 +1326,23 @@ module Diagnostics
       character (len=*), dimension(*) :: cname,cform
       character (len=*) :: ctest
       integer :: iname,itest
+      integer, optional :: ncomp
 !
-      intent(in)  :: iname,ctest
+      intent(in)  :: iname,ctest,ncomp
       intent(out) :: cform
       intent(inout) :: cname,itest
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname(iname),ctest,itest,cform(iname))
+      iret = fparse_name(iname,cname(iname),ctest,itest,cform(iname),ncomp)
 !
     endsubroutine parse_name_sa
 !***********************************************************************
-    subroutine parse_name_v( cname,cform,cdiag,idiag )
+    subroutine parse_name_v(cname,cform,cdiag,idiag,ncomp)
 !
 !   extension to parse_name_s: cname, cform now vectors;
 !                              names to look for now in vector cdiag,
-!                              indices for found ones in vector idiag
+!                              indices for found ones in vector idiag;
 !                              both do loops incorporated
 !
 !   29-jun-12/MR: coded
@@ -1332,8 +1350,9 @@ module Diagnostics
       character (len=*), dimension(:) :: cname,cform
       character (len=*), dimension(:) :: cdiag
       integer,           dimension(:) :: idiag
+      integer, optional :: ncomp
 !
-      intent(in)   :: cdiag
+      intent(in)   :: cdiag,ncomp
       intent(inout):: cname
       intent(out)  :: cform,idiag
 !
@@ -1341,7 +1360,7 @@ module Diagnostics
 !
       do i=1,size(cname)
         do j=1,size(cdiag)
-          if ( fparse_name(i,cname(i),cdiag(j),idiag(j),cform(i)) /= 0 ) exit
+          if (fparse_name(i,cname(i),cdiag(j),idiag(j),cform(i),ncomp) /= 0) exit
         enddo
       enddo
 !
@@ -2539,6 +2558,58 @@ module Diagnostics
 !
     endsubroutine zsum_mn_name_xy_scal
 !***********************************************************************
+    subroutine zsum_mn_name_xy_arr2(arr,iname)
+!
+!  Stores multi-component diagnostics. 
+!
+!  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
+!
+      use Cdata,   only: n,m
+!
+      real,    dimension(:,:,:),      intent(in) :: arr
+      integer,                        intent(in) :: iname
+!
+      integer :: ml,ind,i,j
+
+      if (iname==0) return
+!
+      if (lfirstpoint) fnamexy(iname,:,:)=0.
+
+      ml=m-nghost
+
+      ind=iname
+      do i=1,size(arr,2); do j=1,size(arr,3)
+        fnamexy(ind,:,ml)=fnamexy(ind,:,ml)+arr(:,i,j)
+        ind=ind+1
+      enddo; enddo
+
+    endsubroutine zsum_mn_name_xy_arr2
+!***********************************************************************
+    subroutine zsum_mn_name_xy_arr(arr,iname)
+!
+!  Stores multi-component diagnostics. 
+!
+!  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
+!
+      use Cdata,   only: n,m
+!
+      real,    dimension(:,:),        intent(in) :: arr
+      integer,                        intent(in) :: iname
+!
+      integer :: ml,i
+
+      if (iname==0) return
+!
+      if (lfirstpoint) fnamexy(iname,:,:)=0.
+
+      ml=m-nghost
+
+      do i=iname,iname+size(arr,2)-1
+        fnamexy(i,:,ml)=fnamexy(i,:,ml)+arr(:,i)
+      enddo
+
+    endsubroutine zsum_mn_name_xy_arr
+!***********************************************************************
     subroutine zsum_mn_name_xy_vec(avec,iname,powers,scal,lint)
 !
 !  Wrapper for zsum_mn_name_xy_mpar_vec..
@@ -2642,7 +2713,7 @@ module Diagnostics
 !  Sum up result like a scalar.
 !
       call zsum_mn_name_xy_mpar(quan,m,iname)
-
+!
     endsubroutine zsum_mn_name_xy_mpar_vec
 !***********************************************************************
     subroutine zsum_mn_name_xy_mpar_scal(a,m,iname)
