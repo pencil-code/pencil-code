@@ -4,7 +4,7 @@
 ! particle species.
 !
 &run_pars
-    nt = 20001, it1 = 5000, isave = 5000
+    nt = 10001, it1 = 2000, isave = 10000
     tmax = 0.5, dsnap = 0.5
     loutput_varn_at_exact_tsnap = .true.
     ldynamical_diffusion = .true., Re_mesh = 0.2
