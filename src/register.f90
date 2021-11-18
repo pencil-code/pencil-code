@@ -1069,7 +1069,7 @@ module Register
           enddo
 
           call allocate_phiaverages(nnamerz+iadd)
-          cnamerz(1:nnamerz)=ctmp
+          cnamerz(1:nnamerz)=ctmp(1:nnamerz)
         endif
         deallocate(ctmp)
 !
