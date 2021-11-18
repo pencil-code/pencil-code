@@ -344,24 +344,25 @@ module InitialCondition
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
-      use General, only: random_number_wrapper
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i1,i2
 !
       real, dimension (nx) :: r,p,tmp,ampl
-      integer :: i
+      integer :: i,j
 !
       intent(in)    :: ampl,i1,i2
       intent(inout) :: f
+      integer, save, dimension(mseed) :: rstate=0
 !
 !  set gaussian random noise vector
 !
       do i=i1,i2
         if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
         if (modulo(i-i1,2)==0) then
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
+           do j=1,nx
+              r(j)=ran0(rstate(1))
+              p(j)=ran0(rstate(1))
+          enddo
           tmp=sqrt(-2*log(r))*sin(2*pi*p)
         else
           tmp=sqrt(-2*log(r))*cos(2*pi*p)
@@ -370,6 +371,30 @@ module InitialCondition
       enddo
 !
     endsubroutine gaunoise_vect
+!***********************************************************************
+    function ran0(dummy)
+!
+!  The 'Minimal Standard' random number generator
+!  by Lewis, Goodman and Miller.
+!
+!  28.08.02/nils: Adapted from Numerical Recipes
+!
+      integer, intent(inout) :: dummy
+!
+      integer :: k
+      integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836, &
+           mask=123459876
+      real, parameter :: am=1./im
+      real :: ran0
+!
+      dummy=ieor(dummy,mask)
+      k=dummy/iq
+      dummy=ia*(dummy-k*iq)-ir*k
+      if (dummy<0) dummy=dummy+im
+      ran0=am*dummy
+      dummy=ieor(dummy,mask)
+!
+    endfunction ran0
 !***********************************************************************
     subroutine poly_fit(cs2)
 !
