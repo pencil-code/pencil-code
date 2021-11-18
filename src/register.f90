@@ -1056,18 +1056,21 @@ module Register
 !
         allocate(ctmp(nnamerz))
         lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
+        
+        if (lwrite_phiaverages) then
 
-        iadd=0
-        do i=1,nnamerz
-          cname_tmp=ctmp(i)
-          if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
-               cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
-               cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
-            iadd=iadd+2
-        enddo
+          iadd=0
+          do i=1,nnamerz
+            cname_tmp=ctmp(i)
+            if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
+                 cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
+                 cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
+              iadd=iadd+2
+          enddo
 
-        call allocate_phiaverages(nnamerz+iadd)
-        cnamerz(1:nnamerz)=ctmp
+          call allocate_phiaverages(nnamerz+iadd)
+          cnamerz(1:nnamerz)=ctmp
+        endif
         deallocate(ctmp)
 !
       endif
