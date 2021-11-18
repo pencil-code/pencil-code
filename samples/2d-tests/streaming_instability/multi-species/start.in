@@ -1,0 +1,52 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Start parameters for nonlinear streaming instability with multiple
+! particle species.
+!
+&init_pars
+    xyz0 = -0.00314159265358979324, -0.5, -0.00314159265358979324
+    Lxyz =  0.00628318530717958648,  1.0,  0.00628318530717958648
+    lwrite_ic = .true., lwrite_aux = .true.
+/
+&initial_condition_pars
+    taus = 0.0425, 0.1
+    eps = 1.0, 0.5
+    dlnrhodlnr = -0.1
+    si_kx = 1E3, si_kz = 1E3
+    si_ev = (-0.1587288108, +0.0213251096),
+            (+0.1327989476, +0.0674232641),
+            (+0.1587286212, -0.0213252588),
+            (+0.0000061052, +0.0000080743),
+            (-0.1461274403, +0.0234873672),
+            (+0.1325843682, +0.0691301709),
+            (+0.1571142133, -0.0174328415),
+            (+1.0,           0.0),
+            (-0.1335593453, +0.0025396632),
+            (+0.1092222067, +0.0952973332),
+            (+0.1485545469, +0.0200753935),
+            (+0.1522281314, +0.1836379253)
+/
+&eos_init_pars
+    rho0 = 1.0, cs0 = 6.28318530717958648
+/
+&hydro_init_pars
+    Omega = 6.28318530717958648
+/
+&density_init_pars
+    ldensity_nolog = .true.
+    beta_glnrho_global = -0.1, 0.0, 0.0
+/
+&shear_init_pars
+    qshear = 1.5
+/
+&special_init_pars
+/
+&particles_init_pars
+    lcalc_uup = .true.
+    particle_mesh = 'tsc'
+    ldraglaw_simple = .true.
+    ldragforce_dust_par = .true., ldragforce_gas_par = .true.
+    lmigration_redo = .true.
+/
+&particles_dens_init_pars
+/

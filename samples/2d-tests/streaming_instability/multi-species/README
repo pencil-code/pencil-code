@@ -1,0 +1,22 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/streaming_instability/multi-species
+SVN Id:
+    $Id$
+Maintainer:
+    Chao-Chin Yang <ccyang/unlv[dot]edu>
+Added:
+    18-nov-2021
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    None, but varying the resolution is a good test of how many grid
+    points the code needs to resolve the streaming instability.
+Comments:
+    Linear mode (Lin3) of the streaming instability with two species.
+References:
+    Benítez-Llambay, P., Krapp, L., & Pessah, M. E. 2019, ApJS, 241, 25.
+        doi:10.3847/1538-4365/ab0a0e
+    Zhu, Z. & Yang, C.-C. 2021, MNRAS, 501, 467.
+        doi:10.1093/mnras/staa3628
+    Yang, C.-C. & Zhu, Z. 2021, MNRAS, 508, 5538.
+        doi:10.1093/mnras/stab2959
