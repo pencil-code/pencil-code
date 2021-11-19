@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of backreact_infl_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2
+! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module backreact_infl
+module Special
 !
   use Cparam
   use Cdata
@@ -88,16 +88,21 @@ module backreact_infl
 !
   integer :: ispecial=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5
+  real :: phi0=.44, dphi0=-1e-5, c_light_axion=0., lambda_axion=0.
+  real :: amplphi=.1, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real, pointer :: alpf
+  logical :: lbackreact_infl=.true.
 !
   character (len=labellen) :: initspecial='nothing'
 !
-  namelist /backreact_infl_init_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini
+  namelist /special_init_pars/ &
+      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+      c_light_axion, lambda_axion, amplphi, &
+      kx_phi, ky_phi, kz_phi, phase_phi, width, offset
 !
-  namelist /backreact_infl_run_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini
+  namelist /special_run_pars/ &
+      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+      lbackreact_infl, c_light_axion, lambda_axion
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -167,7 +172,9 @@ module backreact_infl
 !
       axionmass2=axionmass**2
 !
-      call get_shared_variable('alpf', alpf, caller='initialize_backreact_infl')
+      if (lmagnetic .and. lbackreact_infl) then
+        call get_shared_variable('alpf', alpf, caller='initialize_backreact_infl')
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -189,6 +196,8 @@ module backreact_infl
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
+!
+      use Initcond, only: gaunoise, sinwave_phase, hat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, eps=.01, Hubble_ini, lnascale
@@ -221,6 +230,19 @@ module backreact_infl
           f(:,:,:,ispecial+1)=dphi0
           f(:,:,:,ispecial+2)=Hubble_ini
           f(:,:,:,ispecial+3)=lnascale
+        case ('gaussian-noise')
+          call gaunoise(amplphi,f,ispecial+0)
+          f(:,:,:,ispecial+1)=0.
+          f(:,:,:,ispecial+2)=0.
+          f(:,:,:,ispecial+3)=0.
+        case ('sinwave-phase')
+          !call sinwave_phase(f,ispecial+0,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
+          !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
+          call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
+          f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
+          f(:,:,:,ispecial+1)=0.
+          f(:,:,:,ispecial+2)=0.
+          f(:,:,:,ispecial+3)=0.
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -235,6 +257,10 @@ module backreact_infl
 !  All pencils that this special module depends on are specified here.
 !
 !  18-07-06/tony: coded
+!
+      if (lmagnetic .and. lbackreact_infl) then
+        lpenc_requested(i_infl_a21)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -272,6 +298,9 @@ module backreact_infl
 ! infl_a2
       if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,ispecial+3))
 !
+! infl_a21
+      if (lpencil(i_infl_a21)) p%infl_a21=exp(-2.*f(l1:l2,m,n,ispecial+3))
+!
 !  Magnetic field needed for Maxwell stress
 !
       if (lmagnetic) then
@@ -297,14 +326,14 @@ module backreact_infl
 !   2-nov-21/axel: first set of equations coded
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn
+      use Sub, only: dot_mn, del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: phi, dphi, Hscript, lnascale, ascale, a2scale, a2rhop, Vprime
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: tmp, del2phi
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -320,23 +349,37 @@ module backreact_infl
       lnascale=f(l1:l2,m,n,ispecial+3)
       ascale=exp(lnascale)
       a2scale=ascale**2
-      Vprime=axionmass2*phi
       a2rhop=dphi**2
 !
 !  Update df.
 !  dphi/dt = psi
 !  dpsi/dt = - ...
 !
+!  Choice of different potentials
+!
+!     Vprime=axionmass2*phi
+      !Vprime=axionmass2*phi+(lambda_axion/6.)*phi**3
+      Vprime=axionmass*lambda_axion*sin(lambda_axion*phi)
+!
+a2scale=1.
+Hscript=0.
         df(l1:l2,m,n,ispecial+0)=df(l1:l2,m,n,ispecial+0)+f(l1:l2,m,n,ispecial+1)
-        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)-2.*Hscript*dphi-a2scale*Vprime !+E.B term
+        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)-2.*Hscript*dphi-a2scale*Vprime
         df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
         df(l1:l2,m,n,ispecial+3)=df(l1:l2,m,n,ispecial+3)+Hscript
 !
+!  speed of light term
+!
+        if (c_light_axion/=0.) then
+          call del2(f,ispecial+0,del2phi)
+          df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+c_light_axion**2*del2phi
+        endif
+!
 !  magnetic terms
 !
-      if (lmagnetic) then
+      if (lmagnetic .and. lbackreact_infl) then
         call dot_mn(p%el,p%bb,tmp)
-        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a2*tmp
+        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a21*tmp
       endif
 !
 !  Diagnostics
@@ -358,7 +401,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -366,7 +409,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -376,7 +419,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -384,7 +427,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -762,4 +805,4 @@ module backreact_infl
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
-endmodule backreact_infl
+endmodule Special
