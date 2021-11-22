@@ -358,7 +358,7 @@ module Special
         a2scale=1.
         Hscript=0.
       endif
-;
+!
 !  Choice of different potentials
 !
       select case (Vprime_choice)
