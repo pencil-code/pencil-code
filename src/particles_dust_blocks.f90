@@ -332,7 +332,7 @@ module Particles
           rhom = sqrt(2.0 * pi) / Lz
           if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          rhom = mean_density(f)
+          rhom = rho0
           if (lreference_state) then
             call get_shared_variable('reference_state_mass',reference_state_mass, &
                                      caller='initialize_particles')

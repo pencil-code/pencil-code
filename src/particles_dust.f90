@@ -656,16 +656,11 @@ module Particles
           rhom = sqrt(2.0 * pi) / Lz
           if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          ! for backward compatibility
-          if (lcartesian_coords) then
-            rhom = rho0
-          else
-            rhom = mean_density(f)
-            if (lreference_state) then
-              call get_shared_variable('reference_state_mass',reference_state_mass, &
-                                       caller = 'initialize_particles')
-              rhom = rhom+reference_state_mass/box_volume
-            endif
+          rhom = rho0
+          if (lreference_state) then
+            call get_shared_variable('reference_state_mass',reference_state_mass, &
+                 caller = 'initialize_particles')
+            rhom = rhom+reference_state_mass/box_volume
           endif
         endif
         if (rhop_swarm == 0.0) rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
