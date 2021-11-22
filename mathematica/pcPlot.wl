@@ -75,9 +75,6 @@ Begin["`Private`"]
 (*Plot style related*)
 
 
-pcColorFunction[z_]:=Blend[{RGBColor[0.368417, 0.506779, 0.709798],White,RGBColor[0.880722, 0.611041, 0.142051]},z]
-pcColorFunction[x_,y_,z_]:=pcColorFunction[z]
-
 pcLabelStyle=Directive[Thick,Black,14,FontFamily->"Times"];
 pcPlotStyle[]:={
   Map[SetOptions[#,{
@@ -90,7 +87,7 @@ pcPlotStyle[]:={
   ];
   Map[SetOptions[#,{
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,PlotLegends->Automatic,
-      FrameStyle->pcLabelStyle,ImageSize->200,ColorFunction->pcColorFunction
+      FrameStyle->pcLabelStyle,ImageSize->200,ColorFunction->"Rainbow",InterpolationOrder->0
     }]&,{ListDensityPlot}
   ];
 }
@@ -102,7 +99,7 @@ pcPlotStyle[]:={
 
 Options[showVideo]={"lFrames"->False};
 showVideo[sim_,var_,loc_,plotStyle_List:{},aniStyle_List:{},OptionsPattern[]]:=
-  Module[{sp,slice,time,pos,max,cf,frames},
+  Module[{sp,slice,time,pos,max,frames},
     sp=", "<>Which[
       StringMatchQ[loc,"xy"~~___],"z=",
       StringMatchQ[loc,"yz"~~___],"x=",
@@ -111,10 +108,9 @@ showVideo[sim_,var_,loc_,plotStyle_List:{},aniStyle_List:{},OptionsPattern[]]:=
     ];
   {slice,time,pos}=readSlice[sim,var,loc];
   max=1.1*Max[slice//Flatten//Abs];
-  cf[z_]:=pcColorFunction[(z+max)/(2*max)];
   frames=MapThread[ListDensityPlot[#1,plotStyle,
-    ColorFunction->cf,ColorFunctionScaling->False,
-    PlotLegends->BarLegend[{cf,{-max,max}}],FrameTicks->None,
+    ColorFunction->"Rainbow",ColorFunctionScaling->False,
+    PlotLegends->BarLegend[{"Rainbow",{-max,max}}],FrameTicks->None,
     PlotLabel->StringJoin["t=",ToString[NumberForm[#2,3]],sp,ToString[NumberForm[pos[[1]],3]]]
   ]&,{slice,time}];
   If[OptionValue["lFrames"],frames,ListAnimate[frames,aniStyle,AnimationRunning->False]]

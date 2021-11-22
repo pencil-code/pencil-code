@@ -142,7 +142,8 @@ fitTime[ts_List,model_String,nFit_]:=Module[{a,x},
 ]
 fitTime[ts_List,"EXPPOS",nFit_]:=Module[{t,v,pos,x,a},
   {t,v}=Transpose[ts//normalizeAC];
-  pos=FirstPosition[v,_?Negative][[1]];
+  pos=-1+FirstPosition[v,_?Negative][[1]];
+  If[pos==1,Return[-1]];
   a[1]/.FindFit[Take[ts//normalizeAC,pos],Exp[-x/a[1]],a[1],x]
 ]
 fitTime[ts_List,"HALF",nFit_]:=Module[{t,v,pos,t1,t2,v1,v2},
