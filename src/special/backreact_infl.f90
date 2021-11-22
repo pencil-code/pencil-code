@@ -91,9 +91,9 @@ module Special
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=0., lambda_axion=0.
   real :: amplphi=.1, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real, pointer :: alpf
-  logical :: lbackreact_infl=.true.
+  logical :: lbackreact_infl=.true., lzeroHubble=.false.
 !
-  character (len=labellen) :: initspecial='nothing'
+  character (len=labellen) :: initspecial='nothing', Vprime_choice='quadratic'
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
@@ -102,7 +102,8 @@ module Special
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
-      lbackreact_infl, c_light_axion, lambda_axion
+      lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
+      lzeroHubble
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -203,9 +204,9 @@ module Special
       real :: Vpotential, eps=.01, Hubble_ini, lnascale
 !
       intent(inout) :: f
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
+!
+!  SAMPLE IMPLEMENTATION
+!
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('nophi')
@@ -351,18 +352,28 @@ module Special
       a2scale=ascale**2
       a2rhop=dphi**2
 !
+!  Possibility of turning off evolution of scale factor and Hubble parameter
+!
+      if (lzeroHubble) then
+        a2scale=1.
+        Hscript=0.
+      endif
+;
+!  Choice of different potentials
+!
+      select case (Vprime_choice)
+        case ('quadratic'); Vprime=axionmass2*phi
+        case ('quartic'); Vprime=axionmass2*phi+(lambda_axion/6.)*phi**3
+        case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*phi)
+        case default
+          call fatal_error("init_special: No such value for initspecial:" &
+              ,trim(initspecial))
+      endselect
+!
 !  Update df.
 !  dphi/dt = psi
 !  dpsi/dt = - ...
 !
-!  Choice of different potentials
-!
-!     Vprime=axionmass2*phi
-      !Vprime=axionmass2*phi+(lambda_axion/6.)*phi**3
-      Vprime=axionmass*lambda_axion*sin(lambda_axion*phi)
-!
-a2scale=1.
-Hscript=0.
         df(l1:l2,m,n,ispecial+0)=df(l1:l2,m,n,ispecial+0)+f(l1:l2,m,n,ispecial+1)
         df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)-2.*Hscript*dphi-a2scale*Vprime
         df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
