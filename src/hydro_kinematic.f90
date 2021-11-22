@@ -795,6 +795,23 @@ stop
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Roberts I flow (normalization as in Rheinhardt+14 with w0=eps_kinflow)
+!
+      case ('Roberts-I')
+        if (headtt) print*,'Roberts-I flow; eps_kinflow=',eps_kinflow
+        fac=ampl_kinflow
+        fac2=ampl_kinflow*eps_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=fac2*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
+!
+! The following not true for kx_uukin \ne ky_uukin.
+!
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Roberts II flow (from Tilgner 2004)
 !
       case ('Roberts-II')
@@ -863,6 +880,28 @@ stop
                                       'eps_kinflow=0')
         fac=sqrt(2./eps_kinflow)*ampl_kinflow
         fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=+fac2*sin(kx_uukin*x(l1:l2))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=0.
+          p%oo(:,2)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2))
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
+!
+!  Modified Roberts flow (normalization as in Rheinhardt+14 with w0=eps_kinflow)
+!
+      case ('Roberts-IVc')
+        if (headtt) print*,'Roberts-IVc flow; eps_kinflow=',eps_kinflow
+        if (eps_kinflow==0.) &
+          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+                                      'eps_kinflow=0')
+        fac=ampl_kinflow
+        fac2=eps_kinflow*ampl_kinflow
 ! uu
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
