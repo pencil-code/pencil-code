@@ -22,6 +22,13 @@ def fit_gaussm1(ell, sigma, L0):
     """
     return 2 * sigma ** 2 * (1 - np.exp(-0.5 * ell ** 2 / L0 ** 2))
 
+# ------------------------------------------------------------------------------
+# standard gaussian fitting function
+def fit_gauss(ell, sigma, L0):
+    """Fit for 2nd order structure function, Eq. 6 DOI 10.3847/1538-4357/aa93e7
+    correlation length = sqrt(pi/2)L0
+    """
+    return sigma * np.exp(-0.5 * ell ** 2 / L0 ** 2)
 
 # ------------------------------------------------------------------------------
 # temporal fitting function
@@ -31,6 +38,13 @@ def fit_expm1(t, sigma, L0):
     """
     return 2 * sigma ** 2 * (1 - np.exp(-t / L0))
 
+# ------------------------------------------------------------------------------
+# standard exponential fitting function
+def fit_exp(t, sigma, L0):
+    """Fit for 2nd order structure function, Eq. 5 DOI 10.3847/1538-4357/aa93e7
+    correlation length = L0
+    """
+    return sigma * np.exp(t * L0)
 
 # ------------------------------------------------------------------------------
 
