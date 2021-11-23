@@ -14,7 +14,7 @@ GRAVITY   = nogravity
 SHEAR     =   shear
 SHOCK     =   shock_highorder
 
-#INITIAL_CONDITION = initial_condition/baroclinic_init
+INITIAL_CONDITION = initial_condition/baroclinic_init
 SPECIAL   =         special/baroclinic_run
 
 REAL_PRECISION = double
