@@ -1,0 +1,82 @@
+!                               -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2021/11/22 22:50:45 wlyra Exp $',
+  xyz0  =  -0.2,  -0.8,  -0.1
+  xyz1  =   0.2,   0.8,   0.1
+  lperi =      T,      T,      T
+  ip=14
+  lwrite_ic=T
+  lwrite_aux=T
+  !lread_oldsnap=T
+  !ireset_tstart = 0
+/
+&initial_condition_pars
+  rho_rms=0.05
+  lgaussian_distributed_noise=F
+/
+&eos_init_pars
+  cs0=0.1
+  gamma=1.4
+  rho0=1.0
+/
+&hydro_init_pars
+  Omega=1.0
+  !inituu='sinwave-ux-kz','coswave-y'
+  !ampluu=1e-4,-5e-5
+  !kz_uu=62.8319
+  inituu='gaussian-noise'
+  ampluu=1e-4
+  !inituu='nothing'
+/
+&density_init_pars
+  ldensity_nolog=T
+  !initlnrho='nothing'
+/
+&entropy_init_pars
+  !initss='nothing'
+/
+&shear_init_pars
+  qshear=1.5
+  lshearadvection_as_shift=F
+/
+&special_init_pars
+/
+&particles_init_pars
+  initxxp='gaussian-z',initvvp='dragforce_equilibrium'
+  zp0=0.01
+  bcpx='p',bcpy='p',bcpz='p'
+  lparticlemesh_tsc=T
+  !tausp_species=0.01,0.1,0.3,1.
+  lmigration_real_check=T
+  rhopmat=1.0
+  eps_dtog=0.03
+  tausp=0.3
+  gravz_profile='linear', nu_epicycle=1.0
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  lmigration_redo=T
+/
+&selfgrav_init_pars
+  rhs_poisson_const=0.1
+  lselfgravity_gas=F
+/
+&poisson_init_pars
+/
+&particles_selfgrav_init_pars
+  lselfgravity_particles=F
+/
+&particles_dens_init_pars
+  initrhopswarm = 'particles-to-gas-ratio'
+  eps_dtog=0.03
+/
+&particles_sink_init_pars
+  sink_birth_radius=1.0
+  lsink_radius_dx_unit=T
+  lsink_communication_all_to_all=T
+/
+&particles_stalker_init_pars
+  dstalk = 0.05
+  lstalk_sink_particles = T
+/
