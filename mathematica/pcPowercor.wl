@@ -180,10 +180,11 @@ fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 
 Options[corrTime]={"lSingle"->False}
 corrTime[{t_List,f_List},dtcor_,model_String,nFit_,OptionsPattern[]]:=Module[
-  {nEnsemble=3,ts=splitCurve[t,f,dtcor]},
+  {nEnsemble=3,ts=splitCurve[t,f,dtcor],t1},
   If[Length[ts]<10*nEnsemble || OptionValue["lSingle"],
     fitTime[Mean[ts],model,nFit],
-    mean[fitTime[Mean[#],model,nFit]&/@Partition[ts,Length[ts]/nEnsemble//Floor]]
+    t1=mean[fitTime[Mean[#],model,nFit]&/@Partition[ts,Length[ts]/nEnsemble//Floor]];
+    If[Less@@t1,corrTime[{t,f},dtcor,model,nFit,"lSingle"->True],t1]
   ]
 ]
 
