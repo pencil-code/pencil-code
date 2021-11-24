@@ -354,6 +354,13 @@ module Particles_selfgravity
             endif
 !
           enddo
+!         
+!  Patch to call sum_par_name from every processor
+!  (even those that do not have any particle). 
+!
+          if (ldiagnos .and. idiag_potselfpm /= 0 .and. npar_loc <= 0) &
+              call sum_par_name(fp(1:npar_loc,ixp), idiag_potselfpm)
+!
         endif
 !
       endif ! if (t>=tstart_selfgrav) then
