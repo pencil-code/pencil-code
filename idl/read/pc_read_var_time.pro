@@ -79,13 +79,13 @@ COMPILE_OPT IDL2,HIDDEN
     return
   end
 ;
-; find varfile and set configuration parameters accordingly
-;
-  pc_find_config, varfile, datadir=datadir, procdir=procdir, procdim=procdim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
-;
 ; Set precision for all Pencil Code tools.
 ;
   pc_set_precision, datadir=datadir, /quiet
+;
+; find varfile and set configuration parameters accordingly
+;
+  pc_find_config, varfile, datadir=datadir, procdir=procdir, procdim=procdim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
 ;
 ; Initialize / set default returns for ALL variables.
 ;
