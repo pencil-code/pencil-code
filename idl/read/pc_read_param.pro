@@ -51,7 +51,12 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory.
 ;
   datadir = pc_get_datadir(datadir)
-  if (keyword_set(dim) and size(dim,/tname) ne 'STRUCT') then pc_read_dim, datadir=datadir, object=dim, quiet=quiet
+
+  if (arg_present(dim) and not is_defined(dim)) then $
+    pc_read_dim, datadir=datadir, object=dim, quiet=quiet $
+  else $
+    pc_set_precision, datadir=datadir, quiet=quiet
+    
 ;
 ; Build the full path and filename and check for existence.
 ;
