@@ -51,17 +51,28 @@ Input:
 Output:
   A vector plot of var at location loc in the sp direction"
 
-(*some problems with using Hyperplane*)
-(*renderBox::usage="renderBox[sim,var,xy,yz,xz,{time},{style}] gives 3D plots.
+makeBox::usage="makeBox[dataTop,dataLeft,dataRight,time,minmax:{},plotStyle:] visualizes data
+  in a 3D box.
 Input:
-  sim: String. Directory of the run
-  var: String, variable to be read
-  xy,yz,xz: String. Optional, top, left and right slice specifications;
-            by default xy=\"xy2\", yz=\"yz\", xz=\"xz\"
-  time: List. one or more values. The plots are made at time closest to the specified ones.
-  style: List. Optional, additional style specification
+  dataTop: List. The values to be plotted on the top plane. Must have depth=3.
+  dataLeft: List. The values to be plotted on the left plane. Must have depth=3.
+  dataRight: List. The values to be plotted on the right plane. Must have depth=3.
+  time: NumericQ. Time will be displayed on the top right in the figure.
+  minmax: List, Optional. Must have the form {min,max}, which will then determine
+          the color range. If not provided then MinMax[{dataTop,dataLeft,dataRight}//Flatten]
+          will be used.
+  plotStyle: Rule, Optional. Will overwrite other options of the plot.
 Output:
-  A List of 3D plots"*)
+  A Graphics3D object."
+
+makeBoxes::usage="makeBoxes[sim,var,plotStyle:] reads video files and returns a list of
+  3D box view of var. You can then make the legend by hand using, e.g., DensityPlot[...].
+Input:
+  sim: String. The run directory.
+  var: String. The variable needed to plot. Must be present in video.in.
+  plotStyle: Rule, Optional. Will overwrite other options of the plot.
+Output:
+  A list of Graphics3D object."
 
 
 Begin["`Private`"]
@@ -81,13 +92,17 @@ pcPlotStyle[]:={
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
       FrameStyle->pcLabelStyle,ImageSize->{300,300/GoldenRatio}
     }]&,{
-      Plot,LogPlot,LogLogPlot,LogLinearPlot,
-      ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot
+      Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
+      ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
+      ListDensityPlot
     }
   ];
   Map[SetOptions[#,{
-      PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,PlotLegends->Automatic,
-      FrameStyle->pcLabelStyle,ImageSize->200,ColorFunction->"Rainbow",InterpolationOrder->0
+      PlotLegends->Automatic,ColorFunction->"Rainbow"
+    }]&,{DensityPlot,ListDensityPlot}
+  ];
+  Map[SetOptions[#,{
+      InterpolationOrder->0
     }]&,{ListDensityPlot}
   ];
 }
@@ -99,7 +114,7 @@ pcPlotStyle[]:={
 
 Options[showVideo]={"lFrames"->False};
 showVideo[sim_,var_,loc_,plotStyle_List:{},aniStyle_List:{},OptionsPattern[]]:=
-  Module[{sp,slice,time,pos,max,frames},
+  Module[{sp,slice,time,pos,minmax,frames},
     sp=", "<>Which[
       StringMatchQ[loc,"xy"~~___],"z=",
       StringMatchQ[loc,"yz"~~___],"x=",
@@ -107,10 +122,10 @@ showVideo[sim_,var_,loc_,plotStyle_List:{},aniStyle_List:{},OptionsPattern[]]:=
       True,""
     ];
   {slice,time,pos}=readSlice[sim,var,loc];
-  max=1.1*Max[slice//Flatten//Abs];
+  minmax=MinMax[slice//Flatten];
   frames=MapThread[ListDensityPlot[#1,plotStyle,
     ColorFunction->"Rainbow",ColorFunctionScaling->False,
-    PlotLegends->BarLegend[{"Rainbow",{-max,max}}],FrameTicks->None,
+    PlotLegends->BarLegend[{"Rainbow",minmax}],FrameTicks->None,
     PlotLabel->StringJoin["t=",ToString[NumberForm[#2,3]],sp,ToString[NumberForm[pos[[1]],3]]]
   ]&,{slice,time}];
   If[OptionValue["lFrames"],frames,ListAnimate[frames,aniStyle,AnimationRunning->False]]
@@ -172,34 +187,42 @@ showSliceVector[data_,var_String,{sp_String,loc_Integer},plotStyle_List:{},Optio
 (*3D Plots*)
 
 
-renderBox[sim_,var_,xy_String:"xy2",yz_String:"yz",xz_String:"xz",{time__},style_List:{}]:=
-  Module[{nx,ny,nz,slices,l,left,right,top,t,pos,plot},
-    {nx,ny,nz}=readDim[sim]/@{"nx","ny","nz"};
-    t=readSlice[sim,var,xy][[2]];
-    Print["Available snapshots at: ",t];
-    pos=Nearest[t->"Index",#][[1]]&/@{time};
-    slices=readSlice[sim,var,#]&/@{xy,yz,xz};
-    Print["{x,y,z} position: ",slices[[#,3]]&/@{2,3,1}];
-    Do[
-      {top,left,right}=(#[[1,i]])&/@slices;
-      l=ConstantArray[0.,{nz,ny,nx}];
-      l[[nz,All,All]]=top;
-      l[[All,1,All]]=right;
-      l[[All,All,1]]=left;
-      plot[i]=ListSliceDensityPlot3D[l,
-        {Hyperplane[{0,0,1},{1,1,nz}],Hyperplane[{0,1,0},{1,1,1}],Hyperplane[{1,0,0},{1,1,1}]},
-        Flatten[{style,
-         BoxRatios->{nx,ny,nz},Axes->None,Boxed->False,
-         ViewPoint->{-0.7nx,-0.6ny,0.32nz},ViewVertical->{0,0,1},
-         ImageSize->{400,400},PlotLegends->Automatic,
-         PlotLabel->"\!\(\*
-StyleBox[\"t\",\nFontSlant->\"Italic\"]\)="<>ToString[t[[i]]],
-         LabelStyle->Directive[Thick,Black,14,FontFamily->"Times"]
-       }]
-      ],{i,pos}
+makeBox[dataTop_,dataLeft_,dataRight_,time_,minmax_List:{},plotStyle___Rule]:=
+  Module[{minMax,cf,mkImg,img,mkSlice},
+    minMax=If[minmax!={},minmax,MinMax[Flatten[{dataTop,dataLeft,dataRight}]]];
+    cf=ColorData["Rainbow"][Rescale[#,minMax]]&;
+    mkImg[data_]:=ListDensityPlot[data,PlotRange->All,
+      PlotLegends->None,Frame->False,ColorFunction->cf,ColorFunctionScaling->False,
+      ImagePadding->None,PlotRangePadding->None,ImageMargins->None,ImageSize->{200,200}
     ];
-    plot/@pos
+    {img["T"],img["L"],img["R"]}=mkImg/@{dataTop,dataLeft,dataRight};
+    mkSlice[sp_]:=Module[{pol},
+      pol=Polygon[Switch[sp,
+          "T",{{1,0,1},{1,1,1},{0,1,1},{0,0,1}},
+          "L",{{1,0,0},{1,0,1},{0,0,1},{0,0,0}},
+          "R",{{1,1,0},{1,1,1},{1,0,1},{1,0,0}}
+        ],VertexTextureCoordinates->{{1,0}, {1,1}, {0,1}, {0,0}}];
+      Graphics3D[{Texture[img[sp]],pol}]
+    ];
+    Show[mkSlice["T"],mkSlice["L"],mkSlice["R"],plotStyle,
+      PlotRange->{{0,1},{0,1},{0,1}},Lighting->{"Ambient",White},
+      AxesLabel->{"x/(2\[Pi])","y/(2\[Pi])","z/(2\[Pi])"},Axes->True,
+      LabelStyle->pcLabelStyle,Frame->True,FrameStyle->pcLabelStyle,
+      ViewPoint->{2,-2,1.7},ImageSize->Medium,
+      Epilog->{Inset[Style["t="<>ToString@time,pcLabelStyle],Scaled[{0.9,0.94}]]}
+    ]
   ]
+
+makeBoxes[sim_,var_,plotStyle___Rule]:=Module[{top,left,right,t,minmax,legend},
+  {top,t}=Most@readSlice[sim,var,"xy"];
+  {left,right}=First[readSlice[sim,var,#]]&/@{"xz","yz"};
+  minmax=MinMax[Flatten[{top,left,right}]];
+  Print["PlotRange is {All,All,All,",minmax,"}"];
+  MapThread[
+    makeBox[#1,#2,#3,#4,minmax,plotStyle,PlotLabel->var]&,
+    {top,left,right,t}
+  ]
+]
 
 
 (* ::Chapter:: *)
@@ -212,7 +235,8 @@ End[]
 Protect[
   pcLabelStyle,pcPlotStyle,
   showVideo,
-  showSlice,showSliceVector
+  showSlice,showSliceVector,
+  makeBox,makeBoxes
 ]
 
 
