@@ -122,9 +122,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	nghostz = dim.nghostz
 
 	; Subvolume grid indizes.
-	xgs = xs
-	ygs = ys
-	zgs = zs
 	if (addghosts) then begin
 		default, xs, 0
 		default, ys, 0
@@ -146,6 +143,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		yge = ye
 		zge = ze
 	end
+	xgs = xs
+	ygs = ys
+	zgs = zs
 	xns = xgs + nghostx
 	xne = xge - nghostx
 	yns = ygs + nghosty
