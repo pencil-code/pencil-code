@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
-! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
+! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
@@ -3127,6 +3127,8 @@ module Magnetic
         lpencil_in(i_jj)=.true.
       endif
 !
+      if (lpencil_in(i_b21)) lpencil_in(i_b2)=.true.
+!
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_jxb)=.true.
@@ -3143,8 +3145,8 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_bgbp)) then
-        lpencil_in(i_b2)=.true.
         lpencil_in(i_bb)=.true.
+        lpencil_in(i_b21)=.true.
         lpencil_in(i_bij)=.true.
         lpencil_in(i_bgb)=.true.
       endif
@@ -3634,6 +3636,14 @@ module Magnetic
       endif
       if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
+      if (lpenc_loc(i_b21)) then
+        where (p%b2 > 0.) 
+          p%b21=1./p%b2
+        elsewhere
+          p%b21=0.
+        endwhere
+      endif
+!
 ! rho=(rho0/10+B^2) !!!MR: below it is /100!
 !
       if (lmagneto_friction.and.lpenc_loc(i_rho1)) then
@@ -3962,7 +3972,7 @@ module Magnetic
 ! bgbp
       if (lpenc_loc(i_bgbp)) then
         call dot_mn(p%bb,p%bgb,bbgb)
-        call multsv(bbgb/p%b2,p%bb,p%bgbp)
+        call multsv(bbgb*p%b21,p%bb,p%bgbp)
       endif
 !
 ! u.(B.gradB)
@@ -9624,8 +9634,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'uxDxuxbm',idiag_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',idiag_uxDxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
         call parse_name(iname,cname(iname),cform(iname),'b3b12m',idiag_b3b12m)
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
@@ -10125,7 +10134,7 @@ module Magnetic
 !****************************************************************************
     subroutine braginsky
 !
-print*,'AXEL-b2'
+print*,'AXEL-not implemented yet'
     endsubroutine braginsky
 !***********************************************************************
     subroutine keplerian_gauge(f)
