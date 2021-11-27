@@ -22,6 +22,7 @@
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
+! PENCILS PROVIDED gb22(3); ugb22; bgb(3); bgbp(3); ubgbp
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
@@ -679,6 +680,8 @@ module Magnetic
   integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
   integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
+  integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
+  integer :: idiag_ugb22m=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\Bv^2/2)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
@@ -2706,6 +2709,8 @@ module Magnetic
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
 !
+      if (ldiamagnetism) lpenc_requested(i_gb22)=.true.
+!
 !  Take care of Lorentz force for potential flows.
 !  In that case, use only the magnetic pressure.
 !
@@ -2881,6 +2886,8 @@ module Magnetic
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_b2)=.true.
       if (idiag_ujxbm/=0) lpenc_diagnos(i_ujxb)=.true.
+      if (idiag_ubgbpm/=0) lpenc_diagnos(i_ubgbp)=.true.
+      if (idiag_ugb22m/=0) lpenc_diagnos(i_ugb22)=.true.
       if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
       if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
@@ -3123,6 +3130,23 @@ module Magnetic
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_jxb)=.true.
+      endif
+!
+      if (lpencil_in(i_ugb22)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_gb22)=.true.
+      endif
+!
+      if (lpencil_in(i_ubgbp)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_bgbp)=.true.
+      endif
+!
+      if (lpencil_in(i_bgbp)) then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_bij)=.true.
+        lpencil_in(i_bgb)=.true.
       endif
 !
 !AB   if (lpencil_in(i_oxu)) then
@@ -3517,7 +3541,7 @@ module Magnetic
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
@@ -3925,6 +3949,24 @@ module Magnetic
       if (lpenc_loc(i_jo)) call dot(p%jj,p%oo,p%jo)
 ! ujxb
       if (lpenc_loc(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
+! Bk*Bk,i = grad(b^2/2)
+      if (lpenc_loc(i_gb22)) call multmv_transp(p%bij,p%bb,p%gb22)
+! u.grad(b^2)
+      if (lpenc_loc(i_ugb22)) call dot_mn(p%uu,p%gb22,p%ugb22)
+!
+! bgb
+      if (lpenc_loc(i_bgb)) then
+        call multmv(p%bij,p%bb,p%bgb)
+      endif
+!
+! bgbp
+      if (lpenc_loc(i_bgbp)) then
+        call dot_mn(p%bb,p%bgb,bbgb)
+        call multsv(bbgb/p%b2,p%bb,p%bgbp)
+      endif
+!
+! u.(B.gradB)
+      if (lpenc_loc(i_ubgbp)) call dot_mn(p%uu,p%bgbp,p%ubgbp)
 ! oxu
 !AB   if (lpenc_loc(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
 ! oxuxb
@@ -4092,8 +4134,10 @@ module Magnetic
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
-      call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-      call multsv(-.5*chi_diamag/p%b2,Bk_Bki,gchi_diamag)
+   !  call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+   !  call multsv(-.5*chi_diamag/p%b2,Bk_Bki,gchi_diamag)
+   !AB: now outsourced p%gb22 = grad(B^2/2)
+      call multsv(chi_diamag/p%b2,p%gb22,gchi_diamag)
       call cross(gchi_diamag,p%bb,jj_diamag)
       call multsv_add(jj_diamag,chi_diamag,p%jj,tmp)
       jj_diamag=tmp
@@ -5967,6 +6011,14 @@ module Magnetic
 !  Calculate <u.(jxb)>.
 !
       call sum_mn_name(p%ujxb,idiag_ujxbm)
+!
+!  Calculate <u.(B.gradB)>_\|.
+!
+      call sum_mn_name(p%ubgbp,idiag_ubgbpm)
+!
+!  Calculate <u.(gradB^2/2)>.
+!
+      call sum_mn_name(p%ugb22,idiag_ugb22m)
 !
 !  Calculate <jxb>.B_0/B_0^2.
 !
@@ -9356,7 +9408,7 @@ module Magnetic
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
-        idiag_ujxbm=0; idiag_b2divum=0
+        idiag_ujxbm=0; idiag_ugb22m=0; idiag_ubgbpm=0; idiag_b2divum=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -9566,6 +9618,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'jdel2am',idiag_jdel2am)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
+        call parse_name(iname,cname(iname),cform(iname),'ubgbpm',idiag_ubgbpm)
+        call parse_name(iname,cname(iname),cform(iname),'ugb22m',idiag_ugb22m)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
