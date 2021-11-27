@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
-! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlB(3); e3xa(3)
+! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
@@ -234,6 +234,7 @@ module Magnetic
   logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
+  logical :: lbraginsky=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -395,7 +396,8 @@ module Magnetic
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
-      lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame
+      lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
+      lbraginsky
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2055,6 +2057,7 @@ module Magnetic
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
+        case ('Ax_cosxcosycosz'); call cosx_cosy_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case ('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case ('x3sinycosy'); call x3_siny_cosz(amplaa(j),f,iay,xyz0(1),xyz1(1),ky_aa(j),kz_aa(j))
         case ('x3cosycosz'); call x3_cosy_cosz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
@@ -2532,7 +2535,7 @@ module Magnetic
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux.or. &
-          lpenc_requested(i_curlB) .or. lresi_eta_aniso) &
+          lpenc_requested(i_curlb) .or. lresi_eta_aniso) &
           lpenc_requested(i_jj)=.true.
       if (battery_term/=0.0) then
         lpenc_requested(i_fpres)=.true.
@@ -3037,6 +3040,8 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_j2)) lpencil_in(i_jj)=.true.
+!
+      if (lpencil_in(i_curlb)) lpencil_in(i_jj)=.true.
 !
       if (lpencil_in(i_uxj)) then
         lpencil_in(i_uu)=.true.
@@ -3742,7 +3747,7 @@ module Magnetic
 ! jj
 !
       if (lpenc_loc(i_jj)) then
-        p%curlB=p%jj
+        p%curlb=p%jj
         p%jj=mu01*p%jj
 !
 !  Add external j-field.
@@ -10063,6 +10068,11 @@ module Magnetic
       call keep_compiler_quiet(dtsub)
 !
     endsubroutine magnetic_after_timestep
+!****************************************************************************
+    subroutine braginsky
+!
+print*,'AXEL-b2'
+    endsubroutine braginsky
 !***********************************************************************
     subroutine keplerian_gauge(f)
 !
