@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; el(3)
+! PENCILS PROVIDED e2; el(3); a0; ga0(3)
 !***************************************************************
 !
 module disp_current
@@ -35,6 +35,8 @@ module disp_current
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
   real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
   real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
+  integer :: ia0
+  logical :: llorentz_gauge=.false.
   character(len=50) :: initee='zero'
   namelist /disp_current_init_pars/ &
     initee, alpf, &
@@ -42,11 +44,12 @@ module disp_current
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
     kz_ex, kz_ey, kz_ez, &
-    phase_ex, phase_ey, phase_ez
+    phase_ex, phase_ey, phase_ez, &
+    llorentz_gauge
 !
   ! run parameters
   namelist /disp_current_run_pars/ &
-    alpf
+    alpf, llorentz_gauge
 !
 ! Declare any index variables necessary for main or
 !
@@ -56,6 +59,7 @@ module disp_current
 !
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
+  integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -81,6 +85,10 @@ module disp_current
 !
       call farray_register_pde('ee',iee,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
+!
+      if (llorentz_gauge) then
+        call farray_register_pde('a0',ia0)
+      endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
 !
@@ -156,9 +164,14 @@ module disp_current
         lpenc_requested(i_infl_a2)=.true.
       endif
       lpenc_requested(i_el)=.true.
-      lpenc_requested(i_curlB)=.true.
-      lpenc_requested(i_del2a)=.true.
+      lpenc_requested(i_ga0)=.true.
+!
+      lpenc_requested(i_curlb)=.true.
+      if (llorentz_gauge) then
+        lpenc_requested(i_diva)=.true.
+      endif
 
+      if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -196,6 +209,10 @@ module disp_current
       p%el=f(l1:l2,m,n,iex:iez)
 ! e2
       call dot2_mn(p%el,p%e2)
+! a0
+      p%a0=f(l1:l2,m,n,ia0)
+! ga0
+      call grad(f,ia0,p%ga0)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -221,9 +238,7 @@ module disp_current
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp
-      !real, dimension (nx) :: tmp
-      real :: dphi=1.
+      real, dimension (nx,3) :: gtmp, gphi
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -233,17 +248,31 @@ module disp_current
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
       if (headtt) call identify_bcs('ee',iee)
 !
-!  solve: dE/dt = curlB - (const/t^2)*aa
+!  solve: dE/dt = curlB - ...
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
-        if (t==0.) call fatal_error('disp_current: dspecial_dt', 't=0 not allowed')
-        if (alpf/=0.) then
-          call multsv(alpf*p%infl_dphi,p%bb,gtmp)
-        endif
-        !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-alpf*dphi*p%bb
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*p%del2a-gtmp
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*p%curlb
+!
+!  A0 equation: 3 terms
+!  dA0/dt = divA
+!  dAA/dt = ... + gradA0
+!
+        if (llorentz_gauge) then
+          df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
+        endif
+!
+!  helical term:
+!  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
+!
+        if (alpf/=0.) then
+          call grad(f,iinfl_phi,gphi)
+          call cross(gphi,p%el,gtmp)
+          call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+        endif
       endif
 !
 !  timestep constraint
@@ -255,6 +284,7 @@ module disp_current
       if (ldiagnos) then
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
+        call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
@@ -324,6 +354,7 @@ module disp_current
 !
       if (lreset) then
         idiag_erms=0; idiag_emax=0
+        idiag_a0rms=0
         cformv=''
       endif
 !
@@ -332,6 +363,7 @@ module disp_current
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
+        call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
       enddo
 !
       do inamez=1,nnamez
