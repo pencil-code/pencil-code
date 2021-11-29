@@ -715,6 +715,7 @@ module Special
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
               prof,ymid,zmid,umax,cs2,rho_corr,cp1
       real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
+      real :: uborder, border_width, lborder
       logical :: lring=.true.
       integer :: l,k,ig
 !
