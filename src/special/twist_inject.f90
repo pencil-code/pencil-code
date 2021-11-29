@@ -701,7 +701,7 @@ module Special
       use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
       use Mpicomm, only: mpibcast
       use Diagnostics, only: save_name
-      use Sub, only: cross,gij,curl_mn
+      use Sub, only: cross,gij,curl_mn,step
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -959,8 +959,7 @@ module Special
                                  lnTT_sponge_tau*(1.-&
                                  TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
                                  step(z(n),uborder,0.1)*dt_
-          else
-          if (z(n) .gt. 0.9*lborder .and. z(n) .lt. 1.1*lborder) then
+          else if (z(n) .gt. 0.9*lborder .and. z(n) .lt. 1.1*lborder) then
             f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
                                  lnTT_sponge_tau*(1.-&
                                  TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
