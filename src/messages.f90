@@ -385,7 +385,7 @@ module Messages
         if (.not. directory_exists (datadir)) &
           call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
         if (lstart) then
-          open(unit, file=trim(datadir)//'/svnid.dat', status='new')
+          open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
         else
           open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
         endif
