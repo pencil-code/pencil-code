@@ -38,7 +38,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 !
