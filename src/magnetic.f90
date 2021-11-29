@@ -2538,7 +2538,7 @@ module Magnetic
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux.or. &
-          lpenc_requested(i_curlb) .or. lresi_eta_aniso) &
+          lresi_eta_aniso) &
           lpenc_requested(i_jj)=.true.
       if (battery_term/=0.0) then
         lpenc_requested(i_fpres)=.true.
