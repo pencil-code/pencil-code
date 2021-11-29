@@ -94,13 +94,13 @@ module Special
   real, dimension (mz) :: z12p
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
           lnTT_min=-max_real, lnTT_min_tau=1.0
-  real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0
+  real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
            lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
            cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
-           lset_sponge_lnTT,TTsponge,lnTT_sponge_tau
+           lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -715,7 +715,7 @@ module Special
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
               prof,ymid,zmid,umax,cs2,rho_corr,cp1
       real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
-      real :: uborder, border_width, lborder
+      real :: uborder, lborder
       logical :: lring=.true.
       integer :: l,k,ig
 !
@@ -950,7 +950,6 @@ module Special
 ! Allow adding a sponge zone near z=uborder to prevent temperature increasing beyond TTsponge
 !
       if (lset_sponge_lnTT) then
-          border_width=border_frac_z(2)*Lxyz(3)/2
           uborder=xyz1(3)-1.1*border_width
           lborder=xyz0(3)+1.1*border_width
         do m=m1, m2; do n=n1, n2
