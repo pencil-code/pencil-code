@@ -4434,10 +4434,16 @@ module Magnetic
       endif
 !
       if (lresi_xdep) then
-        do j=1,3
-          fres(:,j)=fres(:,j)+eta_x(l1:l2)*p%del2a(:,j)
-        enddo
-        fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
+        if (lweyl_gauge) then
+          do j=1,3
+            fres(:,j) = fres(:,j) - eta_x(l1:l2) * mu0 * p%jj(:,j)
+          enddo
+        else
+          do j=1,3
+            fres(:,j)=fres(:,j)+eta_x(l1:l2)*p%del2a(:,j)
+          enddo
+          fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
+        endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
         etatotal=etatotal+eta_x(l1:l2)
       endif
