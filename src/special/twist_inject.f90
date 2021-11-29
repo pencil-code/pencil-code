@@ -88,19 +88,19 @@ module Special
   real, save :: posx,posz,Iring
   integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff=2,cool_type=5
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
-             lslope_limited_special=.false.
+             lslope_limited_special=.false.,lset_sponge_lnTT=.false.
   real, dimension (mx) :: x12p,dx12p
   real, dimension (my) :: y12p
   real, dimension (mz) :: z12p
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
           lnTT_min=-max_real, lnTT_min_tau=1.0
-  real :: cool_RTV,z_cutoff
+  real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
            lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
-           cool_RTV,cool_RTV_cutoff,z_cutoff,cool_type
-!
+           cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
+           lset_sponge_lnTT,TTsponge,lnTT_sponge_tau
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -946,6 +946,28 @@ module Special
         endif
       endif
 !
+! Allow adding a sponge zone near z=uborder to prevent temperature increasing beyond TTsponge
+!
+      if (lset_sponge_lnTT) then
+          border_width=border_frac_z(2)*Lxyz(3)/2
+          uborder=xyz1(3)-1.1*border_width
+          lborder=xyz0(3)+1.1*border_width
+        do m=m1, m2; do n=n1, n2
+          if (z(n) .gt. 0.9*uborder .and. z(n) .lt. 1.1*uborder) then
+            f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
+                                 lnTT_sponge_tau*(1.-&
+                                 TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
+                                 step(z(n),uborder,0.1)*dt_
+          else
+          if (z(n) .gt. 0.9*lborder .and. z(n) .lt. 1.1*lborder) then
+            f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
+                                 lnTT_sponge_tau*(1.-&
+                                 TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
+                                 step(z(n),lborder,-0.1)*dt_
+          endif
+        enddo; enddo
+      endif
+
     endsubroutine  special_after_timestep
 !***********************************************************************
     subroutine norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,vv,profile)
@@ -1751,7 +1773,7 @@ module Special
 !
       case(2)
         rtv_cool = rtv_cool &
-          *step(z(n),z_cutoff,0.2)
+          *step(x(l1:l2),x_cutoff,0.2)
       case default
         call fatal_error('cool_RTV_cutoff:','wrong value')
       endselect
