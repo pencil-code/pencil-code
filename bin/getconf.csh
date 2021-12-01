@@ -71,7 +71,16 @@ if (! -e "NEVERLOCK") touch LOCK
 # echo $$ > PID
 
 # Are we running the MPI version?
-set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
+if (-e src/start.x || -l src/start.x) then
+  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
+else if (-e src/run.x || -l src/run.x) then
+  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/run.x`
+else
+  echo "Neither start.x nor run.x found!"
+  (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
+  kill -TERM $$                                 # .. but try exiting in civilized manner
+endif
+#
 # Determine number of CPUS
 set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
