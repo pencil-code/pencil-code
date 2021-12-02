@@ -407,7 +407,7 @@ private
     subroutine prep_rslice
 
       integer :: ith,iph,ll,mm,nn,iph_min_loc,iph_max_loc,iphm,iph_min_loc0
-      real :: xs,ys,zs,dth,dphi,dth0,dph0,dxs,dys,dzs,wsum
+      real :: xs,ys,zs,dth,dphi,dth0,dph0,dxs,dys,dzs,wsum,poms
       logical :: lfound
 
       if (allocated(cph_slice)) deallocate(cph_slice,sph_slice,cth_slice,sth_slice)
@@ -422,17 +422,17 @@ private
       enddo
 
       ith_min=0; iph_min=0
-      do ith=1,nth_rslice
+      do ith=1,nth_rslice      ! loop over all parallels of the r-slice
 
         cth_slice(ith)=r_rslice*cos(dth0+(ith-1)*dth)
         sth_slice(ith)=r_rslice*sin(dth0+(ith-1)*dth)
-        zs=cth_slice(ith)
+        zs=cth_slice(ith); poms=sth_slice(ith)**2
 
-        if (z(n1-1)<=zs.and.zs<=z(n2)) then
+        if (z(n1-1)<=zs.and.zs<=z(n2).and.poms>dx**2+dy**2) then   ! equidistant grid!!!
 
           iph_min_loc=0; iph_max_loc=0; iph_min_loc0=0; lfound=.false.
 
-          do iph=1,nph_rslice
+          do iph=1,nph_rslice  ! loop over all points on a parallel
 
             xs=sth_slice(ith)*cph_slice(iph)
             ys=sth_slice(ith)*sph_slice(iph)
@@ -446,11 +446,10 @@ private
               if (iph_min_loc>0) iph_max_loc=iph_max_loc+nph_rslice
               iph_min_loc=0
             endif
-
+! write(10+iproc,'(i3,2f8.4,4i3)') iph,xs,ys,iph_min_loc,iph_max_loc,iph_min_loc0
           enddo
-!if (iproc==1) print*,'ith,iph,iph_min_loc,iph_max_loc=', ith, iph_min_loc, iph_max_loc
 
-          if (lfound) then
+          if (lfound) then    ! rank has points on the parallel
             if (iph_max_loc>nph_rslice) then
               if (iph_min_loc==0) then
                 iph_min_loc=iph_min_loc0
@@ -459,6 +458,8 @@ private
               endif
               iph_max_loc=iph_max_loc-nph_rslice
             endif
+!if (ith<3) &
+! write(10+iproc,*) ith,iph_min_loc,iph_max_loc
             if (iph_min==0) then
               iph_min=iph_min_loc; iph_max=iph_max_loc
             else
@@ -470,9 +471,7 @@ private
           endif
         endif
 
-      enddo
-!print*, 'iproc,ith_min,ith_max,iph_min,iph_max=', &
-!iproc,ith_min,ith_max,iph_min,iph_max
+      enddo    ! end loop over r-slice parallels
 
       lwrite_slice_r = (ith_min/=0.and.iph_max/=0)
       if (lwrite_slice_r) then
@@ -484,14 +483,18 @@ private
         allocate(rslice_interp_weights(ith_min:ith_max,iph_min:iph_max,2,2,2))
         rslice_adjec_corn_inds=0
 
-        do ith=ith_min,ith_max
+        do ith=ith_min,ith_max     ! loop over all r-slice parallels shared by the rank
           zs=cth_slice(ith)
           do iph=iph_min,iph_max
-            if (iph<1) then
+            if (iph<1) then        ! correction for negative indices
               iphm=nph_rslice+iph
             else
               iphm=iph
             endif
+!
+!  For each point of the r-slice on one of its parallels.
+!  If the rank shares it, store neighbor indices and calculate weights.
+!
             xs=sth_slice(ith)*cph_slice(iphm)
             ys=sth_slice(ith)*sph_slice(iphm)
             do nn=n1,n2
@@ -499,11 +502,14 @@ private
               if (dzs>=0.) then
                 do mm=m1,m2
                   dys=y(mm)-ys
-                  if (dys>=0.) then
+                  if (dys>=0..and.dys<dy) then
                     do ll=l1,l2
                       dxs=x(ll)-xs
-                      if (dxs>=0.) then
+                      if (dxs>=0..and.dxs<dx) then
                         rslice_adjec_corn_inds(ith,iph,:)=(/ll,mm,nn/)
+!
+!  Weights for linear interpolation.
+!
                         rslice_interp_weights(ith,iph,:,:,:)= &
                         reshape((/ (/dxs*dys,(dx-dxs)*dys,dxs*(dy-dys),(dx-dxs)*(dy-dys)/)*dzs, &
                                    (/dxs*dys,(dx-dxs)*dys,dxs*(dy-dys),(dx-dxs)*(dy-dys)/)*(dz-dzs) /), &
@@ -568,7 +574,7 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
       do ith=ith_min,ith_max
         do iph=iph_min,iph_max
           lind=rslice_adjec_corn_inds(ith,iph,1)
-          if (lind/=0) then                                     !  proc has point
+          if (lind/=0) then                                     ! rank has point
             mdif=m-rslice_adjec_corn_inds(ith,iph,2)
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
               ndif=n-rslice_adjec_corn_inds(ith,iph,3)
@@ -620,6 +626,7 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
       integer :: ith,iph,lind,mind,nind
 
       do ith=ith_min,ith_max
+
         do iph=iph_min,iph_max
           lind=rslice_adjec_corn_inds(ith,iph,1)
           if (lind/=0) then      !  proc has point

@@ -35,7 +35,8 @@ program rvid_box
       integer :: ind_x1 = -1, ind_r = -1
       integer :: ind_y1 = -1, ind_y2 = -1
       integer :: ind_z1 = -1, ind_z2 = -1, ind_z3 = -1, ind_z4 = -1
-      integer :: nth_rslice, nph_rslice, ith_min,ith_max,iph_min,iph_max
+      integer :: nth_rslice, nph_rslice, ith_min,ith_max,iph_min,iph_max, &
+                 ith_min_glob, ith_max_glob, ishift
       integer :: lun_pos=33, lun_video=34, i
       integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
@@ -94,6 +95,7 @@ program rvid_box
 ! Loop over all processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
 !
+      ith_min_glob=max_int; ith_max_glob=0
       do ipx=0,nprocx-1
         do ipy=0,nprocy-1
           do ipz=0,nprocz-1
@@ -116,7 +118,10 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xz, ind_y1
             read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
             read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
-            read(lun_pos,*,end=100) lread_slice_r, ind_r
+            read(lun_pos,*,end=100) lread_slice_r,ith_min,ith_max
+            ith_min_glob=min(ith_min_glob,ith_min)
+            ith_max_glob=max(ith_max_glob,ith_max)
+
   100       close(lun_pos)
 
             if (lread_slice_xy) then
@@ -156,7 +161,7 @@ program rvid_box
             endif
             if (lread_slice_r) then
               ipr=iproc
-              pos_r = ind_r
+              pos_r = ith_min
             endif
           enddo
         enddo
@@ -176,16 +181,18 @@ program rvid_box
         nth_rslice=get_from_nml_int('nth_rslice',lfound)
         if (.not.lfound) then
           print*, 'r-slice expected, but nth_rslice not found in param2.nml'
-          lread_slice_r=.false.; nph_rslice=0
+          lread_slice_r=.false.; nth_rslice=0; nph_rslice=0
         endif
       endif
       if (lread_slice_r) then
         nph_rslice=get_from_nml_int('nph_rslice',lfound)
         if (.not.lfound) then
           print*, 'r-slice expected, but nph_rslice not found in param2.nml'
-          lread_slice_r=.false.
+          lread_slice_r=.false.; nph_rslice=0
         endif
       endif
+      nth_rslice=ith_max_glob-ith_min_glob+1
+
       write(lun_pos,*) lread_slice_r, nth_rslice, nph_rslice
       close(lun_pos)
 !
@@ -614,7 +621,8 @@ program rvid_box
             read(lun,*) ldummy,ith_min,ith_max,iph_min,iph_max
             close(lun)
             if (.not.ldummy) cycle
-print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,iph_max
+
+            ishift=ith_min_glob-1
 
             call safe_character_assign(file,'/slice_'//trim(field)//'.r')
             call safe_character_assign(fullname,trim(path)//trim(file))
@@ -641,8 +649,10 @@ print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,ip
                   read(lun_read,iostat=iostat) r_loc,t_dummy,slice_pos_dummy
                 enddo
                 read(lun_read,iostat=iostat) r_loc,t,slice_pos
-                r_t(ith_min:ith_max,phinds,i)=r_t(ith_min:ith_max,phinds,i)+r_loc
+
+                r_t(ith_min-ishift:ith_max-ishift,phinds,i)=r_t(ith_min-ishift:ith_max-ishift,phinds,i)+r_loc
                 t_array(i) = t
+
               enddo
               close(lun_read)
             endif
