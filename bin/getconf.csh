@@ -71,9 +71,9 @@ if (! -e "NEVERLOCK") touch LOCK
 # echo $$ > PID
 
 # Are we running the MPI version?
-if (-e src/start.x || -l src/start.x) then
+if ( -e "src/start.x" || -l "src/start.x" ) then
   set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
-else if (-e src/run.x || -l src/run.x) then
+else if ( -e "src/run.x" || -l "src/run.x" ) then
   set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/run.x`
 else
   echo "Neither start.x nor run.x found!"
@@ -2186,8 +2186,23 @@ else # no MPI
 endif
 
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
-eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
-#echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+if ( -e src/start.x ) then
+  eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+else if ( -l src/start.x ) then
+  set tmp = `readlink src/start.x`
+  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+else if ( -e src/run.x ) then
+  eval `nm src/run.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+else if ( -l src/run.x ) then
+  set tmp = `readlink src/run.x`
+  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+else
+  echo "Neither start.x nor run.x found!"
+  (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
+  kill -TERM $$                                 # .. but try exiting in civilized manner
+endif
+ 
+echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
 setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 
 # Determine data directory (defaults to `data')
