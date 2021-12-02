@@ -247,10 +247,15 @@ module Magnetic_meanfield
 !  if lread_alpha_tensor_z_as_y: swap back (x,y,z) <-- (y,z,x)
 !
           if (lread_alpha_tensor_z_as_y) then
-            alpha_tensor_y(:,3,3)=alpha_tensor_z(:,1,1)
-            alpha_tensor_y(:,3,1)=alpha_tensor_z(:,1,2)
-            alpha_tensor_y(:,1,3)=alpha_tensor_z(:,2,1)
-            alpha_tensor_y(:,1,1)=alpha_tensor_z(:,2,2)
+            if (ny==nz) then
+              alpha_tensor_y(n1:n2,3,3)=alpha_tensor_z(:,1,1)
+              alpha_tensor_y(n1:n2,3,1)=alpha_tensor_z(:,1,2)
+              alpha_tensor_y(n1:n2,1,3)=alpha_tensor_z(:,2,1)
+              alpha_tensor_y(n1:n2,1,1)=alpha_tensor_z(:,2,2)
+            else
+              call fatal_error('initialize_magn_mf', &
+                'lread_alpha_tensor_z_as_y works only when ny=nz')
+            endif
           endif
         endif
       else
@@ -281,10 +286,15 @@ module Magnetic_meanfield
 !  if lread_alpha_tensor_z_as_y: swap back (x,y,z) <-- (y,z,x)
 !
           if (lread_eta_tensor_z_as_y) then
-            eta_tensor_y(:,3,3)=eta_tensor_z(:,1,1)
-            eta_tensor_y(:,3,1)=eta_tensor_z(:,1,2)
-            eta_tensor_y(:,1,3)=eta_tensor_z(:,2,1)
-            eta_tensor_y(:,1,1)=eta_tensor_z(:,2,2)
+            if (ny==nz) then
+              eta_tensor_y(n1:n2,3,3)=eta_tensor_z(:,1,1)
+              eta_tensor_y(n1:n2,3,1)=eta_tensor_z(:,1,2)
+              eta_tensor_y(n1:n2,1,3)=eta_tensor_z(:,2,1)
+              eta_tensor_y(n1:n2,1,1)=eta_tensor_z(:,2,2)
+            else
+              call fatal_error('initialize_magn_mf', &
+                'lread_eta_tensor_z_as_y works only when ny=nz')
+            endif
           endif
         endif
       else
