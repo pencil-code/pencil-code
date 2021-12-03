@@ -227,6 +227,9 @@ module backreact_infl
 
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
+          case ('phi=sinkx')
+            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0) &
+              +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
           case ('nophi')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=0.
@@ -234,10 +237,8 @@ module backreact_infl
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            f(:,:,:,ispecial+0)=0.
-            f(:,:,:,ispecial+1)=0.
-            f(:,:,:,ispecial+2)=Hubble_ini
-            f(:,:,:,ispecial+3)=lnascale
+            f(:,:,:,ispecial+2)=f(:,:,:,ispecial+2)+Hubble_ini
+            f(:,:,:,ispecial+3)=f(:,:,:,ispecial+3)+lnascale
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
@@ -245,23 +246,17 @@ module backreact_infl
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            f(:,:,:,ispecial+0)=phi0
-            f(:,:,:,ispecial+1)=dphi0
-            f(:,:,:,ispecial+2)=Hubble_ini
-            f(:,:,:,ispecial+3)=lnascale
+            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+phi0
+            f(:,:,:,ispecial+1)=f(:,:,:,ispecial+1)+dphi0
+            f(:,:,:,ispecial+2)=f(:,:,:,ispecial+2)+Hubble_ini
+            f(:,:,:,ispecial+3)=f(:,:,:,ispecial+3)+lnascale
           case ('gaussian-noise')
             call gaunoise(amplphi,f,ispecial+0)
-            f(:,:,:,ispecial+1)=0.
-            f(:,:,:,ispecial+2)=0.
-            f(:,:,:,ispecial+3)=0.
           case ('sinwave-phase')
             !call sinwave_phase(f,ispecial+0,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
             !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
             call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
             f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
-            f(:,:,:,ispecial+1)=0.
-            f(:,:,:,ispecial+2)=0.
-            f(:,:,:,ispecial+3)=0.
           case ('power_randomphase')
             call power_randomphase(amplphi,initpower_phi,kgaussian_phi,kpeak_phi,cutoff_phi,&
               f,ispecial+0,ispecial+0)
