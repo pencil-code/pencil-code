@@ -55,6 +55,7 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
   real, target, dimension (:,:), allocatable :: ou_xy,ou_xy2,ou_xy3,ou_xy4
   real, target, dimension (:,:), allocatable :: ou_xz,ou_yz,ou_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: divu_r
 
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
   real, dimension (nz,3) :: guumz=0.0
@@ -925,7 +926,7 @@ module Hydro
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
-      !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_rslice   !alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1431,6 +1432,7 @@ module Hydro
         if (lwrite_slice_xy3.and..not.allocated(divu_xy3)) allocate(divu_xy3(nx,ny))
         if (lwrite_slice_xy4.and..not.allocated(divu_xy4)) allocate(divu_xy4(nx,ny))
         if (lwrite_slice_xz2.and..not.allocated(divu_xz2)) allocate(divu_xz2(nx,nz))
+        if (lwrite_slice_r  .and..not.allocated(divu_r  )) call alloc_rslice(divu_r)
       endif
       if (ivid_Ma2 /=0) then
         !call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
@@ -4534,7 +4536,7 @@ module Hydro
 !  This must be done outside the diagnostics loop (accessed at different times).
 !
       if (lvideo.and.lfirst) then
-        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
         if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
@@ -6509,7 +6511,7 @@ module Hydro
 !  Divergence of velocity.
 !
         case ('divu')
-          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
 !
 !  Velocity squared.
 !
