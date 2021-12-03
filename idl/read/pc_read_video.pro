@@ -92,7 +92,7 @@ endif else begin
   endif
 endelse
 ;
-if not check_slices_par(field, stride, readdir, s) then goto, slices_par_missing
+if not check_slices_par(field, stride, readdir, s, nth_rslice=nth_rslice) then goto, slices_par_missing
 ;
 ; Combine with switch preselection
 ;
@@ -210,8 +210,8 @@ if (s.rread) then begin
   tag='r'
   file_slice=readdir+'/slice_'+field+'.r'
   pc_read_param, obj=param, /run_, datadir=readdir, /quiet
-  r_tmp =make_array(param.nth_rslice,param.nph_rslice, type=type_idl)
-  r =make_array(param.nth_rslice,param.nph_rslice,nt, type= single ? 4 : type_idl)
+  r_tmp =make_array(nth_rslice,param.nph_rslice, type=type_idl)
+  r =make_array(nth_rslice,param.nph_rslice,nt, type= single ? 4 : type_idl)
   if (proc eq -1) and (not file_test(file_slice)) then $
     spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
   if (file_test(file_slice)) then begin

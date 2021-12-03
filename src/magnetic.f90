@@ -63,6 +63,7 @@ module Magnetic
   real, target, dimension (:,:,:), allocatable :: bb_xz, jj_xz, poynting_xz ,bb_sph_xz
   real, target, dimension (:,:,:), allocatable :: bb_yz, jj_yz, poynting_yz ,bb_sph_yz
   real, target, dimension (:,:,:), allocatable :: bb_xz2,jj_xz2,poynting_xz2,bb_sph_xz2
+  real, target, dimension (:,:,:,:,:,:), allocatable :: bb_r,jj_r
 !
   real, target, dimension (:,:), allocatable :: b2_xy, jb_xy, j2_xy,  ab_xy
   real, target, dimension (:,:), allocatable :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
@@ -1108,7 +1109,7 @@ module Magnetic
       use Initcond
       use Forcing, only: n_forcing_cont
       use Yinyang_mpi, only: initialize_zaver_yy
-      !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_rslice    !alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,nyl,nycap
@@ -1813,6 +1814,7 @@ module Magnetic
         if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
         if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
         if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
+        if (lwrite_slice_r  .and..not.allocated(bb_r)  ) call alloc_rslice(bb_r)
       endif
       if (ivid_jj/=0) then
         !call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
@@ -1823,6 +1825,7 @@ module Magnetic
         if (lwrite_slice_xy3.and..not.allocated(jj_xy3)) allocate(jj_xy3(nx,ny,3))
         if (lwrite_slice_xy4.and..not.allocated(jj_xy4)) allocate(jj_xy4(nx,ny,3))
         if (lwrite_slice_xz2.and..not.allocated(jj_xz2)) allocate(jj_xz2(nx,nz,3))
+        if (lwrite_slice_r  .and..not.allocated(jj_r)  ) call alloc_rslice(jj_r)
       endif
       if (ivid_b2/=0) then
         !call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
@@ -5539,8 +5542,8 @@ module Magnetic
       if (lvideo.and.lfirst) then
 !
         if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
-        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
-        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
+        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
         if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
         if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
         if (ivid_bb_sph/=0) call store_slices(p%bb_sph,bb_sph_xy,bb_sph_xz,bb_sph_yz,bb_sph_xy2,bb_sph_xy3,bb_sph_xy4,bb_sph_xz2)
@@ -7229,12 +7232,12 @@ module Magnetic
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          call assign_slices_vec(slices,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+          call assign_slices_vec(slices,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
 !
 !  Current density (derived variable)
 !
         case ('jj')
-          call assign_slices_vec(slices,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+          call assign_slices_vec(slices,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
 !
 !  Magnetic field squared (derived variable)
 !

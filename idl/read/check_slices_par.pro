@@ -1,4 +1,4 @@
-function check_slices_par, field, stride, readdir, switches
+function check_slices_par, field, stride, readdir, switches, nth_rslice=nth_rslice
 ;
 ; Checks whether <field> is in video.in. 
 ; Reads slice switches from <readdir>/slice_position.dat into structure <switches>.
@@ -36,7 +36,7 @@ endif
 ;
 ; Read slice switches
 ;
-cdum=''
+cdum='' & nth=0
 switches=create_struct('xyread',0,'xzread',0,'yzread',0,'xy2read',0,'xy3read',0,'xy4read',0,'xz2read',0,'rread',0)
 
 for iread=0,1 do begin
@@ -51,11 +51,12 @@ for iread=0,1 do begin
   readf, lun_1, cdum & switches.xzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
   readf, lun_1, cdum & switches.xz2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
   readf, lun_1, cdum & switches.yzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-  readf, lun_1, cdum & switches.rread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum, nth, format='(a2,i12)' & switches.rread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
 cont:
   close, 1
   free_lun, lun_1
   on_ioerror,  NULL
+  if (arg_present(nth_rslice)) then nth_rslice=nth 
   return, 1
 
 noposition:
@@ -63,7 +64,7 @@ noposition:
     close, 1
     print, 'No slice_position.dat found in "'+readdir+'"!!!'
     if (n_params() eq 1) then stride=1
-    spawn, 'echo "- calling read_videofiles."; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
+    spawn, 'echo "- calling read_videofiles."; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)   ;+' >& /dev/null'
   endif
 endfor
 
