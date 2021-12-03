@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of backreact_infl_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module backreact_infl
 !
   use Cparam
   use Cdata
@@ -88,19 +88,23 @@ module Special
 !
   integer :: ispecial=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5, c_light_axion=0., lambda_axion=0.
+  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
   real :: amplphi=.1, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
+  real :: initpower_phi=0., cutoff_phi=0.
+  real :: kgaussian_phi=0.,kpeak_phi=0.
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
 !
-  character (len=labellen) :: initspecial='nothing', Vprime_choice='quadratic'
+  character (len=labellen) :: Vprime_choice='quadratic'
+  character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
-  namelist /special_init_pars/ &
+  namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, &
-      kx_phi, ky_phi, kz_phi, phase_phi, width, offset
+      kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
+      initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi
 !
-  namelist /special_run_pars/ &
+  namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble
@@ -108,8 +112,12 @@ module Special
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_phim=0      ! DIAG_DOC: $\left<\phi\right>$
-  integer :: idiag_dphim=0      ! DIAG_DOC: $\left<d\phi\right>$
-  integer :: idiag_Hubblem=0      ! DIAG_DOC: $\left<{\cal H}\right>$
+  integer :: idiag_phi2m=0     ! DIAG_DOC: $\left<\phi^2\right>$
+  integer :: idiag_phirms=0    ! DIAG_DOC: $\left<\phi^2\right>^{1/2}$
+  integer :: idiag_dphim=0     ! DIAG_DOC: $\left<\phi'\right>$
+  integer :: idiag_dphi2m=0    ! DIAG_DOC: $\left<(\phi')^2\right>$
+  integer :: idiag_dphirms=0   ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
+  integer :: idiag_Hubblem=0   ! DIAG_DOC: $\left<{\cal H}\right>$
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
 !
   contains
@@ -140,6 +148,13 @@ module Special
            "$Id$")
 !
       call farray_register_pde('special',ispecial,array=4)
+      iinfl_phi=ispecial
+      iinfl_dphi=ispecial+1
+!
+!  for power spectra, it is convenient to use ispecialvar and
+!
+      ispecialvar=ispecial
+      ispecialvar2=ispecial+1
 !
     endsubroutine register_special
 !***********************************************************************
@@ -198,56 +213,65 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, eps=.01, Hubble_ini, lnascale
+      integer :: j
 !
       intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
-      select case (initspecial)
-        case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('nophi')
-          Vpotential=.5*axionmass2*phi0**2
-          dphi0=0.
-          tstart=-sqrt(3./(8.*pi))/(ascale_ini*sqrt(Vpotential))
-          t=tstart
-          Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
-          lnascale=log(ascale_ini)
-          f(:,:,:,ispecial+0)=0.
-          f(:,:,:,ispecial+1)=0.
-          f(:,:,:,ispecial+2)=Hubble_ini
-          f(:,:,:,ispecial+3)=lnascale
-        case ('default')
-          Vpotential=.5*axionmass2*phi0**2
-          dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
-          tstart=-sqrt(3./(8.*pi))/(ascale_ini*sqrt(Vpotential))
-          t=tstart
-          Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
-          lnascale=log(ascale_ini)
-          f(:,:,:,ispecial+0)=phi0
-          f(:,:,:,ispecial+1)=dphi0
-          f(:,:,:,ispecial+2)=Hubble_ini
-          f(:,:,:,ispecial+3)=lnascale
-        case ('gaussian-noise')
-          call gaunoise(amplphi,f,ispecial+0)
-          f(:,:,:,ispecial+1)=0.
-          f(:,:,:,ispecial+2)=0.
-          f(:,:,:,ispecial+3)=0.
-        case ('sinwave-phase')
-          !call sinwave_phase(f,ispecial+0,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
-          !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
-          call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
-          f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
-          f(:,:,:,ispecial+1)=0.
-          f(:,:,:,ispecial+2)=0.
-          f(:,:,:,ispecial+3)=0.
-        case default
-          call fatal_error("init_special: No such value for initspecial:" &
-              ,trim(initspecial))
-      endselect
+      do j=1,ninit
+
+        select case (initspecial(j))
+          case ('nothing'); if (lroot) print*,'init_special: nothing'
+          case ('nophi')
+            Vpotential=.5*axionmass2*phi0**2
+            dphi0=0.
+            tstart=-sqrt(3./(8.*pi))/(ascale_ini*sqrt(Vpotential))
+            t=tstart
+            Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
+            lnascale=log(ascale_ini)
+            f(:,:,:,ispecial+0)=0.
+            f(:,:,:,ispecial+1)=0.
+            f(:,:,:,ispecial+2)=Hubble_ini
+            f(:,:,:,ispecial+3)=lnascale
+          case ('default')
+            Vpotential=.5*axionmass2*phi0**2
+            dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
+            tstart=-sqrt(3./(8.*pi))/(ascale_ini*sqrt(Vpotential))
+            t=tstart
+            Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
+            lnascale=log(ascale_ini)
+            f(:,:,:,ispecial+0)=phi0
+            f(:,:,:,ispecial+1)=dphi0
+            f(:,:,:,ispecial+2)=Hubble_ini
+            f(:,:,:,ispecial+3)=lnascale
+          case ('gaussian-noise')
+            call gaunoise(amplphi,f,ispecial+0)
+            f(:,:,:,ispecial+1)=0.
+            f(:,:,:,ispecial+2)=0.
+            f(:,:,:,ispecial+3)=0.
+          case ('sinwave-phase')
+            !call sinwave_phase(f,ispecial+0,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
+            !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
+            call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
+            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
+            f(:,:,:,ispecial+1)=0.
+            f(:,:,:,ispecial+2)=0.
+            f(:,:,:,ispecial+3)=0.
+          case ('power_randomphase')
+            call power_randomphase(amplphi,initpower_phi,kgaussian_phi,kpeak_phi,cutoff_phi,&
+              f,ispecial+0,ispecial+0)
+              !f,ispecial+0,ispecial+0,lscale_tobox=.false.)
+  
+          case default
+            call fatal_error("init_special: No such value for initspecial:" &
+                ,trim(initspecial(j)))
+        endselect
+      enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -353,6 +377,7 @@ module Special
       a2rhop=dphi**2
 !
 !  Possibility of turning off evolution of scale factor and Hubble parameter
+!  By default, lzeroHubble=F, so we use the calculation from above.
 !
       if (lzeroHubble) then
         a2scale=1.
@@ -367,7 +392,7 @@ module Special
         case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*phi)
         case default
           call fatal_error("init_special: No such value for initspecial:" &
-              ,trim(initspecial))
+              ,trim(Vprime_choice))
       endselect
 !
 !  Update df.
@@ -386,7 +411,7 @@ module Special
           df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+c_light_axion**2*del2phi
         endif
 !
-!  magnetic terms
+!  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
       if (lmagnetic .and. lbackreact_infl) then
         call dot_mn(p%el,p%bb,tmp)
@@ -397,7 +422,11 @@ module Special
 !
       if (ldiagnos) then
         if (idiag_phim/=0) call sum_mn_name(phi,idiag_phim)
+        if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
+        if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
         if (idiag_dphim/=0) call sum_mn_name(dphi,idiag_dphim)
+        if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
+        if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
         if (idiag_Hubblem/=0) call sum_mn_name(Hscript,idiag_Hubblem)
         if (idiag_lnam/=0) call sum_mn_name(lnascale,idiag_lnam)
       endif
@@ -412,7 +441,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -420,7 +449,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=backreact_infl_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -430,7 +459,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -438,7 +467,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=backreact_infl_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -457,12 +486,18 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_phim=0; idiag_dphim=0; idiag_Hubblem=0; idiag_lnam=0
+        idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
+        idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
+        idiag_Hubblem=0; idiag_lnam=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'phim',idiag_phim)
+        call parse_name(iname,cname(iname),cform(iname),'phi2m',idiag_phi2m)
+        call parse_name(iname,cname(iname),cform(iname),'phirms',idiag_phirms)
         call parse_name(iname,cname(iname),cform(iname),'dphim',idiag_dphim)
+        call parse_name(iname,cname(iname),cform(iname),'dphi2m',idiag_dphi2m)
+        call parse_name(iname,cname(iname),cform(iname),'dphirms',idiag_dphirms)
         call parse_name(iname,cname(iname),cform(iname),'Hubblem',idiag_Hubblem)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
       enddo
@@ -816,4 +851,4 @@ module Special
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
-endmodule Special
+endmodule backreact_infl
