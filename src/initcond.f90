@@ -4950,7 +4950,8 @@ module Initcond
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
-!  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
+!  and since (in 3-D): E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
+!  but in 2-D, we have: E(k) ~ u^2 k, so we have n=2m+1, so m=(n-1)/2.
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
         mhalf=.5*(.5*initpower-1)
@@ -4998,7 +4999,7 @@ module Initcond
 !
           ! back to real space
           call fft_xyz_parallel(u_re,u_im,linv=.true.)
-          f(l1:l2,m1:m2,n1:n2,i)=u_re
+          f(l1:l2,m1:m2,n1:n2,i)=f(l1:l2,m1:m2,n1:n2,i)+u_re
           if (lroot) then
             if (cutoff==0) then
               print*,'powern: k^',initpower,' spectrum : var  i=',i
