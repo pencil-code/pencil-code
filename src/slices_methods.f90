@@ -72,7 +72,7 @@ private
       type (slice_data),                      intent(OUT):: slices
       real, dimension(:,:), target,           intent(IN) :: xy
       real, dimension(:,:), target, optional, intent(IN) :: xz,yz,xy2,xy3,xy4,xz2
-      real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0), target, optional, intent(IN) :: r
+      real, dimension(:,:,:,:,:), target, optional, intent(IN) :: r
 
       if (lwrite_slice_yz ) slices%yz =>yz
       if (lwrite_slice_xz ) slices%xz =>xz
@@ -81,7 +81,9 @@ private
       if (lwrite_slice_xy3) slices%xy3=>xy3
       if (lwrite_slice_xy4) slices%xy4=>xy4
       if (lwrite_slice_xz2) slices%xz2=>xz2
-      if (present(r).and.lwrite_slice_r) call interp_rslice(slices%r,rslice=r)
+      if (lwrite_slice_r) then
+        if (present(r)) call interp_rslice(slices%r,rslice=r)
+      endif
 
       slices%ready=.true.
 
@@ -97,7 +99,7 @@ private
 !
     type (slice_data)             , intent(INOUT):: slices
     real, dimension(:,:,:), target, intent(IN)   :: xy,xz,yz,xy2,xy3,xy4,xz2
-    real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0,3), target, optional, intent(IN)   :: r
+    real, dimension(:,:,:,:,:,:), target, optional, intent(IN)   :: r
     integer, optional             , intent(IN)   :: ncomp
 
     integer :: nc
@@ -116,8 +118,10 @@ private
       if (lwrite_slice_xy3) slices%xy3=>xy3(:,:,slices%index)
       if (lwrite_slice_xy4) slices%xy4=>xy4(:,:,slices%index)
       if (lwrite_slice_xz2) slices%xz2=>xz2(:,:,slices%index)
-      if (present(r).and.lwrite_slice_r) &
-        call interp_rslice(slices%r,rslice=r(:,:,:,:,:,slices%index))
+      if (lwrite_slice_r) then
+        if (present(r)) &
+          call interp_rslice(slices%r,rslice=r(:,:,:,:,:,slices%index))
+      endif
       if (slices%index<=nc) slices%ready=.true.
     endif
 
@@ -230,7 +234,7 @@ private
       real, dimension(nx) , intent(IN)           :: pencil
       real, dimension(:,:), intent(OUT)          :: xy
       real, dimension(:,:), intent(OUT),optional :: xz,yz,xy2,xy3,xy4,xz2
-      real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0), intent(OUT), optional :: r
+      real, dimension(:,:,:,:,:), intent(OUT), optional :: r
 
       if (n==iz_loc) xy(:,m-m1+1)=pencil
       if (present(xz) .and.m==iy_loc)  xz(:,n-n1+1)=pencil
@@ -239,8 +243,9 @@ private
       if (present(xy3).and.n==iz3_loc) xy3(:,m-m1+1)=pencil
       if (present(xy4).and.n==iz4_loc) xy4(:,m-m1+1)=pencil
       if (present(xz2).and.m==iy2_loc) xz2(:,n-n1+1)=pencil
-      if (present(r)  .and.lwrite_slice_r) call store_rslice_scal(pencil,r)
-
+      if (lwrite_slice_r) then
+        if (present(r)) call store_rslice_scal(pencil,r)
+      endif
     endsubroutine store_slices_scal
 !***********************************************************************
     subroutine store_slices_vec(pencil,xy,xz,yz,xy2,xy3,xy4,xz2,r,ncomp)
@@ -253,7 +258,7 @@ private
 
       real, dimension(:,:)  , intent(IN) :: pencil
       real, dimension(:,:,:), intent(OUT):: xy,xz,yz,xy2,xy3,xy4,xz2
-      real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0,3), intent(OUT), optional :: r
+      real, dimension(:,:,:,:,:,:), intent(OUT), optional :: r
       integer, optional     , intent(IN) :: ncomp
 
       real, dimension(1,3) :: tmp
@@ -280,7 +285,9 @@ private
       if (n==iz3_loc) xy3(:,m-m1+1,:)=pencil
       if (n==iz4_loc) xy4(:,m-m1+1,:)=pencil
       if (m==iy2_loc) xz2(:,n-n1+1,:)=pencil
-      if (present(r).and.lwrite_slice_r) call store_rslice_vec(pencil,r)
+      if (lwrite_slice_r) then
+        if (present(r)) call store_rslice_vec(pencil,r)
+      endif
 
     endsubroutine store_slices_vec
 !***********************************************************************
