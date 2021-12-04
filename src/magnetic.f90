@@ -3640,7 +3640,7 @@ module Magnetic
       if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
       if (lpenc_loc(i_b21)) then
-        where (p%b2 > 0.) 
+        where (p%b2>tini) 
           p%b21=1./p%b2
         elsewhere
           p%b21=0.
