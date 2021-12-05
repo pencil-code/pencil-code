@@ -118,7 +118,7 @@ module Special
    logical :: ldiffmuS_hyper2_simplified=.false.
    logical :: ldiffmu5_hyper3_simplified=.false.
    logical :: ldiffmuS_hyper3_simplified=.false.
-   logical :: lremove_mean_mu5=.false.
+   logical :: lremove_mean_mu5=.false., lremove_mean_muS=.false.
    logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
    logical :: ldt_chiral_mhd=.true.
    logical :: reinitialize_mu5=.false.
@@ -132,7 +132,7 @@ module Special
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
-      initpower_muS, cutoff_muS, lremove_mean_mu5, &
+      initpower_muS, cutoff_muS, lremove_mean_mu5, lremove_mean_muS, &
       kgaussian_mu5, kpeak_mu5, kgaussian_muS, kpeak_muS, &
       radius_mu5, sigma_mu5
 !
@@ -321,7 +321,9 @@ module Special
             f,imu5,imu5,lscale_tobox=.false.)
           if(lremove_mean_mu5) call remove_mean(f,imu5)
           if (lmuS) then
-            f(:,:,:,imuS) = muS_const
+            call power_randomphase(amplmuS,initpower_muS,kgaussian_muS,kpeak_muS,cutoff_muS,&
+              f,imuS,imuS,lscale_tobox=.false.)
+            if(lremove_mean_muS) call remove_mean(f,imuS)
           endif
         case default
           call fatal_error("init_special: No such value for initspecial:" &
