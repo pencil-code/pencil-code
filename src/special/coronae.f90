@@ -104,12 +104,16 @@ module Special
 !
   real, target, dimension (:,:), allocatable :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
   real, target, dimension (:,:), allocatable :: spitzer_xz,spitzer_yz,spitzer_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: spitzer_r
   real, target, dimension (:,:), allocatable :: newton_xy,newton_xy2,newton_xy3,newton_xy4
   real, target, dimension (:,:), allocatable :: newton_xz,newton_yz,newton_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: newton_r
   real, target, dimension (:,:), allocatable :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (:,:), allocatable :: rtv_xz,rtv_yz,rtv_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: rtv_r
   real, target, dimension (:,:), allocatable :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
   real, target, dimension (:,:), allocatable :: hgrad_xz,hgrad_yz,hgrad_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: hgrad_r
 !
 !  variables for granulation driver
 !
@@ -178,6 +182,7 @@ module Special
       use EquationOfState, only: gamma,get_cp1
       use File_io, only: parallel_file_exists
       use SharedVariables, only: get_shared_variable
+      use Slices_methods, only: alloc_slice_buffers
 !
       integer :: ierr
 !
@@ -303,49 +308,20 @@ module Special
         endif
       endif
 !
-      if (ivid_rtv/=0) then
-        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
-        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
-      endif
+      if (ivid_rtv/=0) &
+        call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
 !
-      if (ivid_spitzer/=0) then
-        !call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
-        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
-      endif
+      if (ivid_spitzer/=0) &
+        call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3, &
+                                 spitzer_xy4,spitzer_xz2,spitzer_r)
 !
-      if (ivid_newton/=0) then
-        !call alloc_slice_buffers(newton_xy,newton_xz,newton_yz,newton_xy2,newton_xy3,newton_xy4,newton_xz2)
-        if (lwrite_slice_xy .and..not.allocated(newton_xy) ) allocate(newton_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(newton_xz) ) allocate(newton_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(newton_yz) ) allocate(newton_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(newton_xy2)) allocate(newton_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(newton_xy3)) allocate(newton_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(newton_xy4)) allocate(newton_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(newton_xz2)) allocate(newton_xz2(nx,nz))
-      endif
+      if (ivid_newton/=0) &
+        call alloc_slice_buffers(newton_xy,newton_xz,newton_yz,newton_xy2,newton_xy3, &
+                                 newton_xy4,newton_xz2,newton_r)
 !
-      if (ivid_hgrad/=0) then
-        !call alloc_slice_buffers(hgrad_xy,hgrad_xz,hgrad_yz,hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
-        if (lwrite_slice_xy .and..not.allocated(hgrad_xy) ) allocate(hgrad_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(hgrad_xz) ) allocate(hgrad_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(hgrad_yz) ) allocate(hgrad_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(hgrad_xy2)) allocate(hgrad_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(hgrad_xy3)) allocate(hgrad_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(hgrad_xy4)) allocate(hgrad_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(hgrad_xz2)) allocate(hgrad_xz2(nx,nz))
-      endif
+      if (ivid_hgrad/=0) &
+        call alloc_slice_buffers(hgrad_xy,hgrad_xz,hgrad_yz,hgrad_xy2,hgrad_xy3, &
+                                 hgrad_xy4,hgrad_xz2,hgrad_r)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -649,16 +625,16 @@ module Special
 !
       case ('newton')
         call assign_slices_scal(slices,newton_xy,newton_xz,newton_yz, &
-                                newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+                                newton_xy2,newton_xy3,newton_xy4,newton_xz2,newton_r)
       case ('spitzer')
         call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz, &
-                                spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+                                spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
       case ('rtv')
         call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz, &
-                                rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+                                rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
       case ('hgrad')
         call assign_slices_scal(slices,hgrad_xy,hgrad_xz,hgrad_yz, &
-                                hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+                                hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2,hgrad_r)
       endselect
 !
     endsubroutine get_slices_special
@@ -1256,7 +1232,7 @@ module Special
 !
         if (ivid_spitzer/=0) &
           call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
-                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1343,7 +1319,7 @@ module Special
 !
         if (ivid_spitzer/=0) &
           call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
-                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1714,7 +1690,7 @@ module Special
 !        
         if (ivid_hgrad/=0) &
           call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
-                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2,hgrad_r)
       endif
 !
 !  for timestep extension multiply with the
@@ -1801,7 +1777,7 @@ module Special
 !
         if (ivid_hgrad/=0) &
           call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
-                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2,hgrad_r)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1901,7 +1877,7 @@ module Special
 !
         if (ivid_rtv/=0) &
           call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz, &
-                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
       endif
 !
       if (lfirst.and.ldt) then
@@ -2286,16 +2262,16 @@ module Special
         dumpenc=-1.
         if (ivid_newton/=0) &
           call store_slices(dumpenc,newton_xy,newton_xz,newton_yz, &
-                            newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+                            newton_xy2,newton_xy3,newton_xy4,newton_xz2,newton_r)
         if (ivid_spitzer/=0) &
           call store_slices(dumpenc,spitzer_xy,spitzer_xz,spitzer_yz, &
-                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
         if (ivid_rtv/=0) & 
           call store_slices(dumpenc,rtv_xy,rtv_xz,rtv_yz, &
-                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,trv_r)
         if (ivid_hgrad/=0) &
           call store_slices(dumpenc,hgrad_xy,hgrad_xz,hgrad_yz, &
-                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2,hgrad_r)
       endif
 !
       if (lfirst.and.ldt) then

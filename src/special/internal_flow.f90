@@ -27,8 +27,10 @@ module Special
   !
   real, target, dimension(:,:,:), allocatable :: oo_xy_meanx,oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx
   real, target, dimension(:,:,:), allocatable :: oo_xz_meanx,oo_xz2_meanx,oo_yz_meanx
+  real, target, dimension(:,:,:,:,:,:), allocatable :: oo_r_meanx
   real, target, dimension(:,:,:), allocatable :: uu_xy_meanx,uu_xy2_meanx,uu_xy3_meanx,uu_xy4_meanx
   real, target, dimension(:,:,:), allocatable :: uu_xz_meanx,uu_xz2_meanx,uu_yz_meanx
+  real, target, dimension(:,:,:,:,:,:), allocatable :: uu_r_meanx
 
   real, dimension(nygrid,3) :: mean_u
 !
@@ -66,33 +68,20 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Slices_methods, only: alloc_slice_buffers
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
       call keep_compiler_quiet(f)
 !
-      if (ivid_uu_meanx/=0) then
-        !call alloc_slice_buffers(uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx,uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx)
-        if (lwrite_slice_xy .and..not.allocated(uu_xy_meanx) ) allocate(uu_xy_meanx (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(uu_xz_meanx) ) allocate(uu_xz_meanx (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(uu_yz_meanx) ) allocate(uu_yz_meanx (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(uu_xy2_meanx)) allocate(uu_xy2_meanx(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(uu_xy3_meanx)) allocate(uu_xy3_meanx(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(uu_xy4_meanx)) allocate(uu_xy4_meanx(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(uu_xz2_meanx)) allocate(uu_xz2_meanx(nx,nz,3))
-      endif
+      if (ivid_uu_meanx/=0) &
+        call alloc_slice_buffers(uu_xy_meanx,uu_xz_meanx,uu_yz_meanx, &
+                                 uu_xy2_meanx,uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx,uu_r_meanx)
 
-      if (ivid_oo_meanx/=0) then
-        !call alloc_slice_buffers(oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx)
-        if (lwrite_slice_xy .and..not.allocated(oo_xy_meanx) ) allocate(oo_xy_meanx (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(oo_xz_meanx) ) allocate(oo_xz_meanx (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(oo_yz_meanx) ) allocate(oo_yz_meanx (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(oo_xy2_meanx)) allocate(oo_xy2_meanx(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(oo_xy3_meanx)) allocate(oo_xy3_meanx(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(oo_xy4_meanx)) allocate(oo_xy4_meanx(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(oo_xz2_meanx)) allocate(oo_xz2_meanx(nx,nz,3))
-      endif
+      if (ivid_oo_meanx/=0) &
+        call alloc_slice_buffers(oo_xy_meanx,oo_xz_meanx,oo_yz_meanx, &
+                                 oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx,oo_r_meanx)
 
     endsubroutine initialize_special
 !***********************************************************************
@@ -233,14 +222,14 @@ module Special
             ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy-nghost,j)
           enddo
           call store_slices(ufluct,uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx,uu_xy3_meanx, &
-                            uu_xy4_meanx,uu_xz2_meanx)
+                            uu_xy4_meanx,uu_xz2_meanx,uu_r_meanx)
         endif
         if (ivid_oo_meanx/=0) then
           do j=1,3
             ufluct(:,j)=p%oo(:,j)-sum(p%oo(:,j))/nx
           enddo
           call store_slices(ufluct,oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx,oo_xy3_meanx, &
-                            oo_xy4_meanx,oo_xz2_meanx)
+                            oo_xy4_meanx,oo_xz2_meanx,oo_r_meanx)
         endif
       endif
 !
@@ -370,10 +359,10 @@ module Special
         !
       case ('oo_meanx')
         call assign_slices_vec(slices,oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx, &
-                                      oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx)
+                                      oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx,oo_r_meanx)
       case ('uu_meanx')
         call assign_slices_vec(slices,uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx, &
-                                      uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx)
+                                      uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx,uu_r_meanx)
       endselect
 !
     endsubroutine get_slices_special

@@ -74,10 +74,13 @@ module Special
 
   real, target, dimension(:,:), allocatable :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
   real, target, dimension(:,:), allocatable :: rtv_xz, rtv_yz, rtv_xz2
+  real, target, dimension(:,:,:,:,:), allocatable :: rtv_r
   real, target, dimension(:,:), allocatable :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
   real, target, dimension(:,:), allocatable :: logQ_xz, logQ_xz2, logQ_yz
+  real, target, dimension(:,:,:,:,:), allocatable :: logQ_r
   real, target, dimension(:,:), allocatable :: spitzer_xy, spitzer_xy2, spitzer_xy3, spitzer_xy4
   real, target, dimension(:,:), allocatable :: spitzer_xz, spitzer_xz2, spitzer_yz
+  real, target, dimension(:,:,:,:,:), allocatable :: spitzer_r
 !
 !  miscellaneous variables
 !
@@ -102,6 +105,8 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
+      use Slices_methods, only: alloc_slice_buffers
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: xtmp
       character (len=*), parameter :: filename='/strat.dat'
@@ -138,35 +143,13 @@ module Special
         Ltot = 0.
       endselect
 !
-      if (ivid_rtv/=0) then
-        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
-        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
-      endif
-      if (ivid_logQ/=0) then
-        !call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
-        if (lwrite_slice_xy .and..not.allocated(logQ_xy) ) allocate(logQ_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(logQ_xz) ) allocate(logQ_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(logQ_yz) ) allocate(logQ_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(logQ_xy2)) allocate(logQ_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(logQ_xy3)) allocate(logQ_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(logQ_xy4)) allocate(logQ_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
-      endif
-      if (ivid_spitzer/=0) then
-        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
-      endif
+      if (ivid_rtv/=0) &
+        call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
+      if (ivid_logQ/=0) &
+        call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2,logQ_r)
+      if (ivid_spitzer/=0) &
+        call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz, &
+                                 spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -411,14 +394,14 @@ module Special
       select case (trim(slices%name))
 !
       case ('rtv'); call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
-                                            rtv_xy3,rtv_xy4,rtv_xz2)
+                                            rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
 !
       case ('logQ'); call assign_slices_scal(slices,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
-                                             logQ_xy3,logQ_xy4,logQ_xz2)
+                                             logQ_xy3,logQ_xy4,logQ_xz2,logQ_r)
 !
       case ('spitzer')
         call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2, &
-                                spitzer_xy3,spitzer_xy4,spitzer_xz2)
+                                spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
       endselect
 !
       call keep_compiler_quiet(f)
@@ -714,7 +697,8 @@ module Special
 ! slices
 !
         if (ivid_spitzer/=0) &
-          call store_slices(1./chi,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+          call store_slices(1./chi,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -857,9 +841,10 @@ module Special
 !
     if (lvideo) then
       if (ivid_rtv/=0) &
-        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
       if (ivid_logQ/=0) &
-        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz, &
+                          logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2,logQ_r)
     endif
 !
   endsubroutine calc_heat_cool_RTV
