@@ -456,7 +456,7 @@ private
 
       integer :: ith,iph,ll,mm,nn,iph_min_loc,iph_max_loc,iphm,iph_min_loc0
       real :: xs,ys,zs,dth,dphi,dth0,dph0,dxs,dys,dzs,wsum,poms
-      logical :: lfound
+      logical :: lfound,l0
 
       if (allocated(cph_slice)) deallocate(cph_slice,sph_slice,cth_slice,sth_slice)
 
@@ -469,7 +469,7 @@ private
         sph_slice(iph)=sin((iph-1)*dphi+dph0)
       enddo
 
-      ith_min=0; iph_min=0
+      ith_min=0; iph_min=0; l0=.true.
       do ith=1,nth_rslice      ! loop over all parallels of the r-slice
 
         cth_slice(ith)=r_rslice*cos(dth0+(ith-1)*dth)
@@ -494,7 +494,8 @@ private
               if (iph_min_loc>0) iph_max_loc=iph_max_loc+nph_rslice
               iph_min_loc=0
             endif
-! write(10+iproc,'(i3,2f8.4,4i3)') iph,xs,ys,iph_min_loc,iph_max_loc,iph_min_loc0
+!if (ith<3) &
+! write(10+iproc,'(2i3,2f8.4,4i3)') ith,iph,xs,ys,iph_min_loc,iph_max_loc,iph_min_loc0
           enddo
 
           if (lfound) then    ! rank has points on the parallel
@@ -506,10 +507,9 @@ private
               endif
               iph_max_loc=iph_max_loc-nph_rslice
             endif
-!if (ith<3) &
-! write(10+iproc,*) ith,iph_min_loc,iph_max_loc
-            if (iph_min==0) then
-              iph_min=iph_min_loc; iph_max=iph_max_loc
+ 
+            if (l0) then
+              iph_min=iph_min_loc; iph_max=iph_max_loc; l0=.false.
             else
               iph_min=min(iph_min,iph_min_loc)
               iph_max=max(iph_max,iph_max_loc)
@@ -519,6 +519,8 @@ private
           endif
         endif
 
+!if (ith<4) &
+! write(10+iproc,*) 'ith,iphmm=',ith,iph_min,iph_max
       enddo    ! end loop over r-slice parallels
 
       lwrite_slice_r = (ith_min/=0.and.iph_max/=0)
@@ -575,9 +577,7 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
 100         continue
           enddo
         enddo
-!write(20+iproc,'(5(i3,1x))') ((ith, iph, rslice_adjec_corn_inds(ith,iph,:),ith=ith_min,ith_max),iph=iph_min,iph_max)
 !write(20+iproc,'(3(i3,1x)/)') (rslice_adjec_corn_inds(ith_min,ll,:), ll=iph_min,iph_max)
-!(ith,iph,:), ith=ith_min,ith_max),iph=iph_min,iph_max)
       endif
 
     endsubroutine prep_rslice
@@ -630,8 +630,13 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
               ndif=n-rslice_adjec_corn_inds(ith,iph,3)
               if (ndif==-1.or.ndif==0) then                     ! n appropriate
-                lind=lind-nghost
-                rslice(ith,iph,:,mdif,ndif)=pencil((/max(lind-1,1),lind/)) ! take relevant part of pencil
+                lind=lind-nghost                                ! take relevant part of pencil
+                if (lind==0) then
+                  rslice(ith,iph,-1,mdif,ndif)=2.*pencil(lind)-pencil(lind+1)  ! extrapolate
+                  rslice(ith,iph, 0,mdif,ndif)=pencil(lind)
+                else
+                  rslice(ith,iph,:,mdif,ndif)=pencil(lind-1:lind)
+                endif
               endif
             endif
           endif
@@ -655,8 +660,13 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
               ndif=n-rslice_adjec_corn_inds(ith,iph,3)
               if (ndif==-1.or.ndif==0) then                     ! n appropriate
-                lind=lind-nghost
-                rslice(ith,iph,:,mdif,ndif,:)=pencil((/max(lind-1,1),lind/),:) ! take relevant part of pencil
+                lind=lind-nghost                                ! take relevant part of pencil
+                if (lind==0) then
+                  rslice(ith,iph,-1,mdif,ndif,:)=2.*pencil(lind,:)-pencil(lind+1,:)  ! extrapolate
+                  rslice(ith,iph, 0,mdif,ndif,:)=pencil(lind,:)
+                else
+                  rslice(ith,iph,:,mdif,ndif,:)=pencil(lind-1:lind,:)
+                endif
               endif
             endif
           endif
