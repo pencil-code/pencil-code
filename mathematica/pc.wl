@@ -14,7 +14,7 @@
 
 BeginPackage["pc`",
   "pcReadBasic`","pcRead1D`","pcRead2D`","pcRead3D`",
-  "pcReadVAR`","pcGetParam`","pcPlot`",
+  "pcReadVAR`","pcGetParam`","pcPlot`","pcPlot3D`",
   "pcTFM`","pcParticleStalker`","pcDerivative`",
   "pcPowercor`"
 ]

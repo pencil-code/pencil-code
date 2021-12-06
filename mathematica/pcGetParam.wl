@@ -45,11 +45,10 @@ Begin["`Private`"]
 (*some frequently read variables; better to dynamically define*)
 (*when data file is updated, pcReload[] is needed to clear existing definitions*)
 pcReload[]:=Module[{},
-  Clear[urms];
+  Clear[urms,urmskf];
   urms[sim_]:=urms[sim]=With[{u=readTS[sim,"urms"]},u[[-Round[Length[u]/3];;-1]]//Mean];
-  
-  Clear[urmskf];(*urms of modes with k\[GreaterEqual]kf*)
-  urmskf[sim_]:=With[{file=sim<>"/data/power_kin.dat"},
+  (*urms of modes with k\[GreaterEqual]kf*)
+  urmskf[sim_]:=urmskf[sim]=With[{file=sim<>"/data/power_kin.dat"},
     If[FileExistsQ[file],
       Sqrt[2*Total[(read1D2Scale[sim,"power_kin.dat"])//Last//Last]],
       "NaN"
@@ -62,8 +61,9 @@ pcReload[]:=Module[{},
       "No forcing"
     ];
   
-  Clear[ted];
-  ted[sim_]:=ted[sim]=2\[Pi]/(kf[sim]*urms[sim]);		
+  Clear[ted,tedkf];
+  ted[sim_]:=ted[sim]=1/(kf[sim]*urms[sim]);	
+  tedkf[sim_]:=tedkf[sim]=1/(kf[sim]*urmskf[sim]);
   
   Clear[nu];
   nu[sim_]:=nu[sim]=readParamNml[sim,"run.in","NU"];
@@ -165,6 +165,7 @@ getParam[sim_,"-Sh",k2_]:=-getParam[sim,"Sh",k2]
 (*secondaries*)
 getParam[sim_,"ted"]:=ted[sim]
 getParam[sim_,"ted",k2_]:=2\[Pi]/urms[sim]/k2
+getParam[sim_,"tedkf"]:=tedkf[sim]
 getParam[sim_,"knu"]:=kf[sim]*getParam[sim,"ReN"]^(3/4)
 getParam[sim_,"knu",k2_]:=k2*getParam[sim,"ReN",k2]^(3/4) (*supply kf by hand*)
 getParam[sim_,"knumax"]:=(Max[readTS[sim,"urms"]]/nu[sim])^(3/4)*kf[sim]^(1/4)
