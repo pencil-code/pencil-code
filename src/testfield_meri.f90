@@ -23,6 +23,7 @@ module Testfield
 !
   real, target, dimension (:,:,:), allocatable :: bb11_xy,bb11_xy2,bb11_xy3,bb11_xy4
   real, target, dimension (:,:,:), allocatable :: bb11_xz,bb11_xz2,bb11_yz
+  real, target, dimension (:,:,:,:,:,:), allocatable :: bb11_r
 !
 ! Define the EMF and the Test fields here
 !
@@ -213,6 +214,7 @@ module Testfield
       use Mpicomm, only : stop_it
       use FArrayManager
       use SharedVariables, only : get_shared_variable
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: jtest, ierr
@@ -326,15 +328,8 @@ module Testfield
         endif
       endif
 
-      if (ivid_bb11/=0) then
-        if (lwrite_slice_xy .and..not.allocated(bb11_xy) ) allocate(bb11_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(bb11_xz) ) allocate(bb11_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(bb11_yz) ) allocate(bb11_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(bb11_xy2)) allocate(bb11_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(bb11_xy3)) allocate(bb11_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(bb11_xy4)) allocate(bb11_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(bb11_xz2)) allocate(bb11_xz2(nx,nz,3))
-      endif
+      if (ivid_bb11/=0) &
+        call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_xz2,bb11_r)
 !
 !  write testfield information to a file (for convenient post-processing)
 !

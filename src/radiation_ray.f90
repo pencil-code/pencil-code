@@ -64,6 +64,8 @@ module Radiation
   real, target, dimension (:,:,:), allocatable :: Jrad_xz
   real, target, dimension (:,:,:), allocatable :: Jrad_yz
   real, target, dimension (:,:,:), allocatable :: Jrad_xz2
+  real, target, dimension (:,:,:,:,:,:), allocatable :: Jrad_r
+
   type (radslice), dimension (maxdir), target :: Isurf
 
   real, dimension (maxdir,3) :: unit_vec
@@ -243,7 +245,7 @@ module Radiation
 !  19-feb-14/axel: read tabulated source function
 !
       use Sub, only: parse_bc_rad
-      !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_slice_buffers
 !
       integer :: itable
       real :: radlength,arad_normal
@@ -411,16 +413,8 @@ module Radiation
         dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
       endif
 !
-      if (ivid_Jrad/=0) then
-        !call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,nnu)
-        if (lwrite_slice_xy .and..not.allocated(Jrad_xy) ) allocate(Jrad_xy (nx,ny,nnu))
-        if (lwrite_slice_xz .and..not.allocated(Jrad_xz) ) allocate(Jrad_xz (nx,nz,nnu))
-        if (lwrite_slice_yz .and..not.allocated(Jrad_yz) ) allocate(Jrad_yz (ny,nz,nnu))
-        if (lwrite_slice_xy2.and..not.allocated(Jrad_xy2)) allocate(Jrad_xy2(nx,ny,nnu))
-        if (lwrite_slice_xy3.and..not.allocated(Jrad_xy3)) allocate(Jrad_xy3(nx,ny,nnu))
-        if (lwrite_slice_xy4.and..not.allocated(Jrad_xy4)) allocate(Jrad_xy4(nx,ny,nnu))
-        if (lwrite_slice_xz2.and..not.allocated(Jrad_xz2)) allocate(Jrad_xz2(nx,nz,nnu))
-      endif
+      if (ivid_Jrad/=0) &
+        call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
 
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -544,48 +538,48 @@ module Radiation
 !
 !  Do loop over all frequency bins.
 !
-      do inu=1,nnu
+        do inu=1,nnu
 !
 !  Calculate source function and opacity.
 !
-        call source_function(f,inu)
-        call opacity(f,inu)
+          call source_function(f,inu)
+          call opacity(f,inu)
 !
 !  Do the rest only if we do not do diffusion approximation.
 !  If *either* lrad_cool_diffus *or* lrad_pres_diffus, no rays are computed.
 !
-        if (lrad_cool_diffus.or.lrad_pres_diffus) then
-          if (headt) print*, 'radtransfer: do diffusion approximation, no rays'
-        else
+          if (lrad_cool_diffus.or.lrad_pres_diffus) then
+            if (headt) print*, 'radtransfer: do diffusion approximation, no rays'
+          else
 !
 !  Initialize heating rate and radiative flux only at first frequency point.
 !
-          if (inu==1) then
-            f(:,:,:,iQrad)=0.0
-            if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
-          endif
+            if (inu==1) then
+              f(:,:,:,iQrad)=0.0
+              if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
+            endif
 !
 !  Loop over rays.
 !
-          do idir=1,ndir
-            call raydirection
+            do idir=1,ndir
+              call raydirection
 !
 !  Do the 3 steps: first intrinsic (compute intensive),
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !
-            if (lintrinsic) call Qintrinsic(f)
+              if (lintrinsic) call Qintrinsic(f)
 !
-            if (lcommunicate) then
-              if (lperiodic_ray) then
-                call Qperiodic
-              else
-                call Qpointers
-                call Qcommunicate
+              if (lcommunicate) then
+                if (lperiodic_ray) then
+                  call Qperiodic
+                else
+                  call Qpointers
+                  call Qcommunicate
+                endif
               endif
-            endif
 !
-            if (lrevision) call Qrevision
+              if (lrevision) call Qrevision
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -593,18 +587,18 @@ module Radiation
 !  Turn this now into heating rate by multiplying with opacity.
 !  This allows the opacity to be frequency-dependent.
 !
-            f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
+              f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
 !
 !  Calculate radiative flux. Multiply it here by opacity to have the correct
 !  frequency-dependent contributions from all frequencies.
 !
-            if (lradflux) then
-              do j=1,3
-                k=iKR_Frad+(j-1)
-                f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
-                  *(Qrad+Srad)*f(:,:,:,ikapparho)
-              enddo
-            endif
+              if (lradflux) then
+                do j=1,3
+                  k=iKR_Frad+(j-1)
+                  f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
+                    *(Qrad+Srad)*f(:,:,:,ikapparho)
+                enddo
+              endif
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
 !  We need to set Iup=Idown+I0 at the lower boundary. We must first integrate
@@ -620,42 +614,42 @@ module Radiation
 !
 !  where dtau=kappa*rho(n1)*dz.
 !
-            if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
-              if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
-                  Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
-                  (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
-            endif
+              if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
+                if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
+                    Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
+                    (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
+              endif
 !
 !  enddo from idir.
 !
-          enddo
+            enddo
 !
 !  End of no-diffusion approximation query.
 !
-        endif
+          endif
 !
 !  Calculate slices of J=S+Q/(4pi).
 !
-        if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
-          if (lwrite_slice_yz) &
-            Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
-          if (lwrite_slice_xz) &
-            Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
-          if (lwrite_slice_xz2) &
-            Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
-          if (lwrite_slice_xy) &
-            Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
-          if (lwrite_slice_xy2) &
-            Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
-          if (lwrite_slice_xy3) &
-            Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
-          if (lwrite_slice_xy4) &
-            Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
-        endif
+          if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
+            if (lwrite_slice_yz) &
+              Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
+            if (lwrite_slice_xz) &
+              Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
+            if (lwrite_slice_xz2) &
+              Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
+            if (lwrite_slice_xy) &
+              Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
+            if (lwrite_slice_xy2) &
+              Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
+            if (lwrite_slice_xy3) &
+              Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
+            if (lwrite_slice_xy4) &
+              Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
+          endif
 !
 !  End of frequency loop (inu).
 !
-      enddo
+        enddo
 !
 !  endif from single ray check
 !

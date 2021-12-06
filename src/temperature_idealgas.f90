@@ -211,6 +211,7 @@ module Energy
 ! variables for slices given in video.in
 !
   real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4,pp_xz2
+  real, dimension(:,:,:,:,:), allocatable :: pp_r
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -341,7 +342,7 @@ module Energy
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Mpicomm, only: stop_it
-      !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: dhcond
@@ -638,16 +639,8 @@ module Energy
         endif
       endif
 !
-      if (ivid_pp/=0) then
-        !call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
-        if (lwrite_slice_xy .and..not.allocated(pp_xy) ) allocate(pp_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(pp_xz) ) allocate(pp_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(pp_yz) ) allocate(pp_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(pp_xy2)) allocate(pp_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(pp_xy3)) allocate(pp_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(pp_xy4)) allocate(pp_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(pp_xz2)) allocate(pp_xz2(nx,nz))
-      endif
+      if (ivid_pp/=0) &
+        call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -1462,7 +1455,7 @@ module Energy
       call calc_0d_diagnostics_energy(p)
 
       if (lvideo.and.lfirst) then
-        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
       endif
 !
     endsubroutine calc_diagnostics_energy
@@ -2852,7 +2845,7 @@ module Energy
           if (iTT>0) call process_slices(slices,log2d)
 !  Pressure
         case ('pp')
-          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 !
       endselect
 !

@@ -34,21 +34,21 @@ module Slices_methods
     module procedure alloc_rslice_vec
   endinterface
 
+  interface alloc_slice_buffers
+    module procedure alloc_slice_buffers_scal
+    module procedure alloc_slice_buffers_vec
+  endinterface
+
   public :: store_slices
   public :: process_slices, addto_slices
   public :: assign_slices_vec
   public :: assign_slices_scal, assign_slices_f_scal
-  !public :: alloc_slice_buffers
+  public :: alloc_slice_buffers
   public :: nullify_slice_pointers
   public :: write_rslice_position
   public :: alloc_rslice, prep_rslice
   public :: exp2d, log2d, abs2d
 
-!  interface alloc_slice_buffers
-!    module procedure alloc_slice_buffers_scal
-!    module procedure alloc_slice_buffers_vec
-!  endinterface
-!
 private
 !
 !  For spherical slices in Cartesian geometry:
@@ -56,11 +56,52 @@ private
   real, dimension(:), allocatable :: cph_slice,sph_slice,cth_slice,sth_slice
   integer :: ith_min,ith_max,iph_min,iph_max
   real, dimension(:,:,:,:,:), allocatable :: rslice_interp_weights
-  integer, dimension(:,:,:),allocatable :: rslice_adjec_corn_inds
+  integer, dimension(:,:,:), allocatable :: rslice_adjec_corn_inds
 
   contains
 !***********************************************************************
-!  include 'slice_methods.f90.removed'
+   subroutine alloc_slice_buffers_scal(xy,xz,yz,xy2,xy3,xy4,xz2,r)
+
+      real, dimension(:,:), allocatable :: xy,xz,yz,xy2,xy3,xy4,xz2
+      real, dimension(:,:,:,:,:), allocatable, optional :: r
+
+      if (lwrite_slice_xy .and..not.allocated(xy) ) allocate(xy (nx,ny))
+      if (lwrite_slice_xz .and..not.allocated(xz) ) allocate(xz (nx,nz))
+      if (lwrite_slice_yz .and..not.allocated(yz) ) allocate(yz (ny,nz))
+      if (lwrite_slice_xy2.and..not.allocated(xy2)) allocate(xy2(nx,ny))
+      if (lwrite_slice_xy3.and..not.allocated(xy3)) allocate(xy3(nx,ny))
+      if (lwrite_slice_xy4.and..not.allocated(xy4)) allocate(xy4(nx,ny))
+      if (lwrite_slice_xz2.and..not.allocated(xz2)) allocate(xz2(nx,nz))
+      if (lwrite_slice_r.and.present(r)) then
+        if (.not.allocated(r)) call alloc_rslice(r)
+      endif
+
+   endsubroutine alloc_slice_buffers_scal
+!***********************************************************************
+   subroutine alloc_slice_buffers_vec(xy,xz,yz,xy2,xy3,xy4,xz2,r,ncomp)
+
+      use General, only: ioptest
+
+      real, dimension(:,:,:), allocatable :: xy,xz,yz,xy2,xy3,xy4,xz2
+      real, dimension(:,:,:,:,:,:), allocatable, optional :: r
+      integer, optional :: ncomp
+
+      integer :: nc
+
+      nc=ioptest(ncomp,3)
+
+      if (lwrite_slice_xy .and..not.allocated(xy) ) allocate(xy (nx,ny,nc))
+      if (lwrite_slice_xz .and..not.allocated(xz) ) allocate(xz (nx,nz,nc))
+      if (lwrite_slice_yz .and..not.allocated(yz) ) allocate(yz (ny,nz,nc))
+      if (lwrite_slice_xy2.and..not.allocated(xy2)) allocate(xy2(nx,ny,nc))
+      if (lwrite_slice_xy3.and..not.allocated(xy3)) allocate(xy3(nx,ny,nc))
+      if (lwrite_slice_xy4.and..not.allocated(xy4)) allocate(xy4(nx,ny,nc))
+      if (lwrite_slice_xz2.and..not.allocated(xz2)) allocate(xz2(nx,nz,nc))
+      if (lwrite_slice_r.and.present(r)) then 
+        if (.not.allocated(r)) call alloc_rslice(r,nc)
+      endif
+
+   endsubroutine alloc_slice_buffers_vec
 !***********************************************************************
     subroutine assign_slices_sep_scal(slices,xy,xz,yz,xy2,xy3,xy4,xz2,r)
 !
@@ -561,12 +602,15 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
 
     endsubroutine alloc_rslice_scal_2D
 !***********************************************************************
-    subroutine alloc_rslice_vec(slice)
+    subroutine alloc_rslice_vec(slice,ncomp)
+
+      use General, only: ioptest
 
       real, dimension(:,:,:,:,:,:), allocatable :: slice
+      integer, optional :: ncomp
 
       if (allocated(slice)) deallocate(slice)
-      allocate(slice(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0,3))
+      allocate(slice(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0,ioptest(ncomp,3)))
       slice=0.
 
     endsubroutine alloc_rslice_vec

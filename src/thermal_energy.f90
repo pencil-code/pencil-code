@@ -114,6 +114,7 @@ module Energy
 !
   integer :: ivid_pp=0
   real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4,pp_xz2
+  real, dimension(:,:,:,:,:), allocatable :: pp_r
 !
 ! General variables for operator split terms.
 !
@@ -173,9 +174,9 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
-      !use Slice_methods, only: alloc_slice_buffers
       use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
       use SharedVariables
+      use Slice_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -249,16 +250,8 @@ module Energy
           'llocal_iso switches on the local isothermal approximation. ' // &
           'Use ENERGY=noenergy in src/Makefile.local')
 !
-      if (ivid_pp/=0) then
-        !call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4)
-        if (lwrite_slice_xy .and..not.allocated(pp_xy) ) allocate(pp_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(pp_xz) ) allocate(pp_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(pp_yz) ) allocate(pp_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(pp_xy2)) allocate(pp_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(pp_xy3)) allocate(pp_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(pp_xy4)) allocate(pp_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(pp_xz2)) allocate(pp_xz2(nx,nz))
-      endif
+      if (ivid_pp/=0) &
+        call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_r)
 
       call keep_compiler_quiet(f)
 !
@@ -631,7 +624,7 @@ module Energy
       endif
 !
       if (lvideo.and.lfirst) then
-        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
       endif
 
     endsubroutine calc_diagnostics_energy
@@ -836,7 +829,7 @@ module Energy
 !  Pressure
 !
         case ('pp') slice_name
-          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 !
 !  Temperature
 !

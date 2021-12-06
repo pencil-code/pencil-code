@@ -32,6 +32,7 @@ module Testfield
 !
   real, target, dimension (:,:,:), allocatable :: bb1_xy,bb1_xy2,bb1_xy3,bb1_xy4
   real, target, dimension (:,:,:), allocatable :: bb1_xz,bb1_xz2,bb1_yz
+  real, target, dimension (:,:,:,:,:,:), allocatable :: bb1_r
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -178,6 +179,7 @@ module Testfield
 !
       use Cdata
       use FArrayManager
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
@@ -331,15 +333,8 @@ module Testfield
         endif
       endif
 !
-      if (ivid_bb1/=0) then
-        if (lwrite_slice_xy .and..not.allocated(bb1_xy) ) allocate(bb1_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(bb1_xz) ) allocate(bb1_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(bb1_yz) ) allocate(bb1_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(bb1_xy2)) allocate(bb1_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(bb1_xy3)) allocate(bb1_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(bb1_xy4)) allocate(bb1_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(bb1_xz2)) allocate(bb1_xz2(nx,nz,3))
-      endif
+      if (ivid_bb1/=0) &
+        call alloc_slice_buffers(bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -813,7 +808,7 @@ module Testfield
 !  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst.and.ivid_bb1/=0) &
-        call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
+        call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -836,7 +831,7 @@ module Testfield
 !  Magnetic field
 !
       case ('bb1')
-        call assign_slices_vec(slices,bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
+        call assign_slices_vec(slices,bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 
       endselect
 !

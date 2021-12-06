@@ -198,8 +198,7 @@ contains
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
-      !use Slices_methods, only: alloc_slice_buffers
-      use Slices_methods, only: alloc_rslice, prep_rslice
+      use Slices_methods, only: alloc_slice_buffers, alloc_rslice, prep_rslice
       use General, only: itoa
       use IO, only: output_slice_position
     
@@ -439,15 +438,8 @@ contains
         write (*,*) 'setup_slices: '//trim(text)//' (video files) = '//data
       endif
 !
-      !call alloc_slice_buffers(slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)
-      if (lwrite_slice_xy .and..not.allocated(slice_xy) ) allocate(slice_xy (nx,ny))
-      if (lwrite_slice_xz .and..not.allocated(slice_xz) ) allocate(slice_xz (nx,nz))
-      if (lwrite_slice_yz .and..not.allocated(slice_yz) ) allocate(slice_yz (ny,nz))
-      if (lwrite_slice_xy2.and..not.allocated(slice_xy2)) allocate(slice_xy2(nx,ny))
-      if (lwrite_slice_xy3.and..not.allocated(slice_xy3)) allocate(slice_xy3(nx,ny))
-      if (lwrite_slice_xy4.and..not.allocated(slice_xy4)) allocate(slice_xy4(nx,ny))
-      if (lwrite_slice_xz2.and..not.allocated(slice_xz2)) allocate(slice_xz2(nx,nz))
-      if (lwrite_slice_r  .and..not.allocated(slice_r)  ) call alloc_rslice(slice_r)
+      call alloc_slice_buffers(slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)
+      if (lwrite_slice_r .and. .not.allocated(slice_r)) call alloc_rslice(slice_r)
 
     endsubroutine setup_slices
 !***********************************************************************

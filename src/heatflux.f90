@@ -46,6 +46,7 @@ module Heatflux
 !
   real, target, dimension (:,:), allocatable :: divq_xy,divq_xy2,divq_xy3,divq_xy4
   real, target, dimension (:,:), allocatable :: divq_xz,divq_xz2,divq_yz
+  real, target, dimension (:,:,:,:,:), allocatable :: divq_r
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -103,7 +104,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
-    !use Slices_methods, only: alloc_slice_buffers
+    use Slices_methods, only: alloc_slice_buffers
     use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -131,16 +132,8 @@ contains
 !
     if (lreset_heatflux) f(:,:,:,iqx:iqz)=0.
 !
-    if (ivid_divq/=0) then
-      !call alloc_slice_buffers(divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
-      if (lwrite_slice_xy .and..not.allocated(divq_xy) ) allocate(divq_xy (nx,ny))
-      if (lwrite_slice_xz .and..not.allocated(divq_xz) ) allocate(divq_xz (nx,nz))
-      if (lwrite_slice_yz .and..not.allocated(divq_yz) ) allocate(divq_yz (ny,nz))
-      if (lwrite_slice_xy2.and..not.allocated(divq_xy2)) allocate(divq_xy2(nx,ny))
-      if (lwrite_slice_xy3.and..not.allocated(divq_xy3)) allocate(divq_xy3(nx,ny))
-      if (lwrite_slice_xy4.and..not.allocated(divq_xy4)) allocate(divq_xy4(nx,ny))
-      if (lwrite_slice_xz2.and..not.allocated(divq_xz2)) allocate(divq_xz2(nx,nz))
-    endif
+    if (ivid_divq/=0) &
+      call alloc_slice_buffers(divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
 
   endsubroutine initialize_heatflux
 !***********************************************************************
@@ -455,7 +448,7 @@ contains
       endif
 !
     case ('divq')
-      call assign_slices_scal(slices,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+      call assign_slices_scal(slices,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
 
     endselect
 !
@@ -719,7 +712,7 @@ contains
 !
     if (lvideo.and.lfirst) then
       if (ivid_divq/=0) call store_slices((p%divq - tmp)*exp(-p%lnrho), &
-        divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+        divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
     endif
 !
   endsubroutine non_fourier_spitzer
