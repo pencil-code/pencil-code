@@ -59,6 +59,7 @@ module Magnetic
   real, target, dimension (:,:,:), allocatable :: bb_xz, jj_xz, poynting_xz
   real, target, dimension (:,:,:), allocatable :: bb_yz, jj_yz, poynting_yz
   real, target, dimension (:,:,:), allocatable :: bb_xz2,jj_xz2,poynting_xz2
+  real, target, dimension (:,:,:,:,:,:), allocatable :: bb_r,jj_r,poynting_r
 !
   real, target, dimension (:,:), allocatable :: b2_xy, jb_xy, j2_xy,  ab_xy
   real, target, dimension (:,:), allocatable :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
@@ -67,6 +68,7 @@ module Magnetic
   real, target, dimension (:,:), allocatable :: b2_yz, jb_yz, j2_yz,  ab_yz
   real, target, dimension (:,:), allocatable :: b2_xz, jb_xz, j2_xz,  ab_xz
   real, target, dimension (:,:), allocatable :: b2_xz2,jb_xz2,j2_xz2, ab_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: b2_r,jb_r,j2_r, ab_r
 !
   real, target, dimension (:,:), allocatable :: beta1_xy
   real, target, dimension (:,:), allocatable :: beta1_xy2
@@ -75,6 +77,7 @@ module Magnetic
   real, target, dimension (:,:), allocatable :: beta1_yz
   real, target, dimension (:,:), allocatable :: beta1_xz
   real, target, dimension (:,:), allocatable :: beta1_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: beta1_r
 !
 !  xy-averaged field
 !
@@ -894,7 +897,8 @@ module Magnetic
       use EquationOfState, only: cs0
       use Initcond
       use Forcing, only: n_forcing_cont
-!
+      use Slices_methods, only: alloc_slice_buffers
+
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
       real :: J_ext2
@@ -1439,88 +1443,24 @@ module Magnetic
 !
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
-      if (ivid_bb/=0) then
-        !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
-        if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(bb_xz) ) allocate(bb_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(bb_yz) ) allocate(bb_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(bb_xy2)) allocate(bb_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
-      endif
-      if (ivid_jj/=0) then
-        !call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
-        if (lwrite_slice_xy .and..not.allocated(jj_xy) ) allocate(jj_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(jj_xz) ) allocate(jj_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(jj_yz) ) allocate(jj_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(jj_xy2)) allocate(jj_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(jj_xy3)) allocate(jj_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(jj_xy4)) allocate(jj_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(jj_xz2)) allocate(jj_xz2(nx,nz,3))
-      endif
-      if (ivid_b2/=0) then
-        !call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(b2_xy) ) allocate(b2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(b2_xz) ) allocate(b2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(b2_yz) ) allocate(b2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(b2_xy2)) allocate(b2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(b2_xy3)) allocate(b2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(b2_xy4)) allocate(b2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(b2_xz2)) allocate(b2_xz2(nx,nz))
-      endif
-      if (ivid_j2/=0) then
-        !call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(j2_xy) ) allocate(j2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(j2_xz) ) allocate(j2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(j2_yz) ) allocate(j2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(j2_xy2)) allocate(j2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(j2_xy3)) allocate(j2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(j2_xy4)) allocate(j2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(j2_xz2)) allocate(j2_xz2(nx,nz))
-      endif
-      if (ivid_ab/=0) then
-        !call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
-        if (lwrite_slice_xy .and..not.allocated(ab_xy) ) allocate(ab_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(ab_xz) ) allocate(ab_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(ab_yz) ) allocate(ab_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(ab_xy2)) allocate(ab_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(ab_xy3)) allocate(ab_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(ab_xy4)) allocate(ab_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(ab_xz2)) allocate(ab_xz2(nx,nz))
-      endif
-      if (ivid_jb/=0) then
-        !call alloc_slice_buffers(jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
-        if (lwrite_slice_xy .and..not.allocated(jb_xy) ) allocate(jb_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(jb_xz) ) allocate(jb_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(jb_yz) ) allocate(jb_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(jb_xy2)) allocate(jb_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(jb_xy3)) allocate(jb_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(jb_xy4)) allocate(jb_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(jb_xz2)) allocate(jb_xz2(nx,nz))
-      endif
-      if (ivid_beta1/=0) then
-        !call alloc_slice_buffers(beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
-        !                         beta1_xy3,beta1_xy4,beta1_xz2)
-        if (lwrite_slice_xy .and..not.allocated(beta1_xy) ) allocate(beta1_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(beta1_xz) ) allocate(beta1_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(beta1_yz) ) allocate(beta1_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(beta1_xy2)) allocate(beta1_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(beta1_xy3)) allocate(beta1_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(beta1_xy4)) allocate(beta1_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(beta1_xz2)) allocate(beta1_xz2(nx,nz))
-      endif
-      if (ivid_poynting/=0) then
-        !call alloc_slice_buffers(poynting_xy,poynting_xz,poynting_yz,poynting_xy2,&
-        !                         poynting_xy3,poynting_xy4,poynting_xz2)
-        if (lwrite_slice_xy .and..not.allocated(poynting_xy) ) allocate(poynting_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(poynting_xz) ) allocate(poynting_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(poynting_yz) ) allocate(poynting_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(poynting_xy2)) allocate(poynting_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(poynting_xy3)) allocate(poynting_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(poynting_xy4)) allocate(poynting_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(poynting_xz2)) allocate(poynting_xz2(nx,nz,3))
-      endif
+      if (ivid_bb/=0) &
+        call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
+      if (ivid_jj/=0) &
+        call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
+      if (ivid_b2/=0) &
+        call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2,b2_r)
+      if (ivid_j2/=0) &
+        call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2,j2_r)
+      if (ivid_ab/=0) &
+        call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
+      if (ivid_jb/=0) &
+        call alloc_slice_buffers(jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2,jb_r)
+      if (ivid_beta1/=0) &
+        call alloc_slice_buffers(beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
+                                 beta1_xy3,beta1_xy4,beta1_xz2,beta1_r)
+      if (ivid_poynting/=0) &
+        call alloc_slice_buffers(poynting_xy,poynting_xz,poynting_yz,poynting_xy2,&
+                                 poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -4670,14 +4610,14 @@ module Magnetic
 !
       if (lvideo.and.lfirst) then
 
-        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
-        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
-        if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
-        if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
-        if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
-        if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
+        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
+        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
+        if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2,b2_r)
+        if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2,j2_r)
+        if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2,jb_r)
+        if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
         if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
-                                             beta1_xy3,beta1_xy4,beta1_xz2)
+                                             beta1_xy3,beta1_xy4,beta1_xz2,beta1_r)
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
@@ -4687,7 +4627,7 @@ module Magnetic
             poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
           enddo
           call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
-                            poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2)
+                            poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
         endif
 !
       endif
@@ -5374,51 +5314,44 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          call assign_slices_vec(slices,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+          call assign_slices_vec(slices,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
 !
 !  Current density (derived variable)
 !
         case ('jj')
-          call assign_slices_vec(slices,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+          call assign_slices_vec(slices,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
 !
 !  Magnetic field squared (derived variable)
 !
         case ('b2')
-          call assign_slices_scal(slices,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
+          call assign_slices_scal(slices,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2,b2_r)
 !
 !  Current squared (derived variable)
 !
         case ('j2')
-          call assign_slices_scal(slices,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+          call assign_slices_scal(slices,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2,j2_r)
 !
 !  Current density times magnetic field (derived variable)
 !
         case ('jb')
-          call assign_slices_scal(slices,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
+          call assign_slices_scal(slices,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2,jb_r)
 !
 !  Plasma beta
 !
-       case ('beta1')
-          call assign_slices_scal(slices,beta1_xy,beta1_xz,beta1_yz,beta1_xy2,beta1_xy3,&
-                                  beta1_xy4,beta1_xz2)
-!
-       case ('beta')
-         if (lroot) then
-           print*,"The 'beta' slice was renamed to 'beta1'. Please "
-           print*,"update the label in your video.in file."
-         endif
-         call fatal_error("get_slices_magnetic","")
+       case ('beta1','beta')
+         call assign_slices_scal(slices,beta1_xy,beta1_xz,beta1_yz,beta1_xy2,beta1_xy3,&
+                                 beta1_xy4,beta1_xz2,beta1_r)
 !
 ! Poynting vector
 !
         case ('poynting')
           call assign_slices_vec(slices,poynting_xy,poynting_xz,poynting_yz,poynting_xy2,&
-                                 poynting_xy3,poynting_xy4,poynting_xz2)
+                                 poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
 !
 !  Magnetic helicity density
 !
         case ('ab')
-          call assign_slices_scal(slices,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
+          call assign_slices_scal(slices,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
 !
       endselect
 !
@@ -7250,6 +7183,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
       use Diagnostics
       use FArrayManager, only: farray_index_append
+      use Messages, only: warning
 !
       integer :: iname,inamex,inamey,inamez,inamev,ixy,ixz,irz,inamer,iname_half,iname_sound,idum
       logical :: lreset
@@ -7903,7 +7837,14 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'j2',ivid_j2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'ab',ivid_ab)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jb',ivid_jb)
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta',ivid_beta1)
+        if (ivid_beta1/=0) then
+          if (lroot) call warning('rprint_magnetic', &
+                                  "The 'beta' slice was renamed to 'beta1'. Please " // &
+                                  "update the label in your video.in file.")
+        else
+          call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
+        endif
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
       enddo
 !

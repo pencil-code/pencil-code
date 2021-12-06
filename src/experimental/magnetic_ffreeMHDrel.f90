@@ -55,6 +55,7 @@ module Magnetic
   real, target, dimension (:,:,:), allocatable :: bb_xz
   real, target, dimension (:,:,:), allocatable :: bb_yz
   real, target, dimension (:,:,:), allocatable :: bb_xz2
+  real, target, dimension (:,:,:,:,:,:), allocatable :: bb_r
 
   namelist /magnetic_init_pars/ &
        eta,A0,B_ext,k_aa, &
@@ -127,18 +128,12 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine - nothing to do at present
+  
+      use Slices_methods, only: alloc_slice_buffers
       mu01=1./mu0
 
-      if (ivid_bb/=0) then
-        !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
-        if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(bb_xz) ) allocate(bb_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(bb_yz) ) allocate(bb_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(bb_xy2)) allocate(bb_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
-      endif
+      if (ivid_bb/=0) &
+        call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -410,7 +405,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  Note: ix is the index with respect to array with ghost zones.
 !
         if (lvideo.and.lfirst.and.ivid_bb) then
-          call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+          call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
           call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
 !
