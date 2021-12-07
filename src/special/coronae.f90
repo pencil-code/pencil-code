@@ -2268,7 +2268,7 @@ module Special
                             spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2,spitzer_r)
         if (ivid_rtv/=0) & 
           call store_slices(dumpenc,rtv_xy,rtv_xz,rtv_yz, &
-                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,trv_r)
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
         if (ivid_hgrad/=0) &
           call store_slices(dumpenc,hgrad_xy,hgrad_xz,hgrad_yz, &
                             hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2,hgrad_r)
