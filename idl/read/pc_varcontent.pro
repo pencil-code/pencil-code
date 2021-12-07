@@ -114,11 +114,13 @@ indices = [ $
   { name:'irhs', label:'RHS', dims:3 }, $
   { name:'iss_b', label:'Base Entropy', dims:1 }, $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
+  { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
-  { name:'iemf', label:'Current density', dims:3 }, $
+  { name:'iemf', label:'Electromotive force', dims:3 }, $
+  { name:'iee', label:'Electric field', dims:3 }, $
   { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
   { name:'iggT', label:'ggT', dims:1 }, $
@@ -190,13 +192,13 @@ indices_shortcut = [ $
   { name:'iaa', replace:'ia' }, $
   { name:'ibb', replace:'ib' }, $
   { name:'ijj', replace:'ij' }, $
-  { name:'iqq', replace:'iq' } $
+  { name:'iqq', replace:'iq' }, $
+  { name:'iee', replace:'ie' } $
   ; don't forget to add a comma above when extending
 ]
 
 ; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
-  { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iQrad', label:'Radiative heating rate', dims:1 }, $
   { name:'ikapparho', label:'Opacity', dims:1 }, $
   { name:'isss', label:'Entropy as auxiliary variable', dims:1 }, $
@@ -351,10 +353,9 @@ offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsa
 for tag = 1, num_tags do begin
   original = indices[tag-1].name
   vector = indices[tag-1].dims
-
 ; Quick fix to read scalar arrays (e.g. inp_ap1...inp_ap7)
   if (vector eq 7) then begin 
-     vector=1
+    vector=1
   endif
   ; Identify f-array variables with multiple vectors or components (arrays & arrays of vectors)
   matches = stregex (index_pro, '^ *'+original+'([1-9][0-9]*)[xyz]? *= *(.*) *$', /extract, /sub)
@@ -370,10 +371,14 @@ for tag = 1, num_tags do begin
     ; Translate shortcuts (e.g. iuu => iu[x,y,z])
     search = original
     found = where (search eq indices_shortcut[*].name, num)
-    if (num ge 1) then search = indices_shortcut[found].replace
+    if (num ge 1) then begin
+      search = indices_shortcut[found].replace
     ; Identify f-array variables with scalars & vectors (e.g. ilnrho, iu[x,y,z])
-    matches = stregex (index_pro, '^ *'+search+'([xyz]?) *= *([1-9][0-9]*) *$', /extract, /sub)
+      matches = stregex (index_pro, '^ *'+search+'([xyz])? *= *([1-9][0-9]*) *$', /extract, /sub)
+    endif else $
+      matches = stregex (index_pro, '^ *'+search+'( *)?= *([1-9][0-9]*) *$', /extract, /sub)
     lines = where (matches[0,*] ne '', num)
+    
     if (num ge 1) then begin
       pos = min (long (matches[2,lines]))
       if (vector eq 3) then begin
