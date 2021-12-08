@@ -49,6 +49,28 @@ module Slices_methods
   public :: alloc_rslice, prep_rslice
   public :: exp2d, log2d, abs2d
 
+!  type slices_scal
+!    real, dimension (:,:), allocatable :: xy
+!    real, dimension (:,:), allocatable :: xz
+!    real, dimension (:,:), allocatable :: xz2
+!    real, dimension (:,:), allocatable :: yz
+!    real, dimension (:,:), allocatable :: xy2
+!    real, dimension (:,:), allocatable :: xy3
+!    real, dimension (:,:), allocatable :: xy4
+!    real, dimension (:,:,:,:,:), allocatable :: r
+!  endtype slices_scal
+
+!  type slices_vec
+!    real, dimension (:,:,:), allocatable :: xy
+!    real, dimension (:,:,:), allocatable :: xz
+!    real, dimension (:,:,:), allocatable :: xz2
+!    real, dimension (:,:,:), allocatable :: yz
+!    real, dimension (:,:,:), allocatable :: xy2
+!    real, dimension (:,:,:), allocatable :: xy3
+!    real, dimension (:,:,:), allocatable :: xy4
+!    real, dimension (:,:,:,:,:,:), allocatable :: r
+!  endtype slices_vec
+
 private
 !
 !  For spherical slices in Cartesian geometry:
@@ -60,8 +82,9 @@ private
 
   contains
 !***********************************************************************
-   subroutine alloc_slice_buffers_scal(xy,xz,yz,xy2,xy3,xy4,xz2,r)
+   subroutine alloc_slice_buffers_scal(xy,xz,yz,xy2,xy3,xy4,xz2,r)  !(slices)
 
+      !type(slices_scal) :: slices
       real, dimension(:,:), allocatable :: xy,xz,yz,xy2,xy3,xy4,xz2
       real, dimension(:,:,:,:,:), allocatable, optional :: r
 
@@ -620,23 +643,36 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
       real, dimension(nx) :: pencil
       real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0) :: rslice
 
-      integer :: ith, iph, mdif, ndif, lind
+      integer :: ith,iph,mdif,ndif,lind,mind,nind
 
       do ith=ith_min,ith_max
         do iph=iph_min,iph_max
           lind=rslice_adjec_corn_inds(ith,iph,1)
           if (lind/=0) then                                     ! rank has point
-            mdif=m-rslice_adjec_corn_inds(ith,iph,2)
+            mind=rslice_adjec_corn_inds(ith,iph,2)
+            mdif=m-mind
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
-              ndif=n-rslice_adjec_corn_inds(ith,iph,3)
+              nind=rslice_adjec_corn_inds(ith,iph,3)
+              ndif=n-nind
               if (ndif==-1.or.ndif==0) then                     ! n appropriate
                 lind=lind-nghost                                ! take relevant part of pencil
-                if (lind==0) then
+                if (lind==1) then
                   rslice(ith,iph,-1,mdif,ndif)=2.*pencil(lind)-pencil(lind+1)  ! extrapolate
                   rslice(ith,iph, 0,mdif,ndif)=pencil(lind)
                 else
                   rslice(ith,iph,:,mdif,ndif)=pencil(lind-1:lind)
                 endif
+
+                nind=nind-nghost; mind=mind-nghost
+                if (mind==1) &               ! m=m1: duplicate in y-direction
+                  rslice(ith,iph,:,-1,ndif)=rslice(ith,iph,:,mdif,ndif)
+ 
+                if (nind==1) &               ! n=n1: duplicate in z-direction
+                  rslice(ith,iph,:,mdif,-1)=rslice(ith,iph,:,mdif,ndif)
+
+                if (nind==1.and.mind==1) &   ! m=m1 and n=n1: populate 3rd edge of cubicle
+                    rslice(ith,iph,:,-1,-1)=rslice(ith,iph,:,mdif,ndif)
+
               endif
             endif
           endif
@@ -650,23 +686,36 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
       real, dimension(nx,3) :: pencil
       real, dimension(ith_min:ith_max,iph_min:iph_max,-1:0,-1:0,-1:0,3) :: rslice
 
-      integer :: ith, iph, mdif, ndif, lind
+      integer :: ith,iph,mdif,ndif,lind,mind,nind
 
       do ith=ith_min,ith_max
         do iph=iph_min,iph_max
           lind=rslice_adjec_corn_inds(ith,iph,1)
-          if (lind/=0) then                                     !  proc has point
-            mdif=m-rslice_adjec_corn_inds(ith,iph,2)
+          if (lind/=0) then                                     ! rank has point
+            mind=rslice_adjec_corn_inds(ith,iph,2)
+            mdif=m-mind
             if (mdif==-1.or.mdif==0) then                       ! m appropriate
-              ndif=n-rslice_adjec_corn_inds(ith,iph,3)
+              nind=rslice_adjec_corn_inds(ith,iph,3)
+              ndif=n-nind
               if (ndif==-1.or.ndif==0) then                     ! n appropriate
                 lind=lind-nghost                                ! take relevant part of pencil
-                if (lind==0) then
+                if (lind==1) then
                   rslice(ith,iph,-1,mdif,ndif,:)=2.*pencil(lind,:)-pencil(lind+1,:)  ! extrapolate
                   rslice(ith,iph, 0,mdif,ndif,:)=pencil(lind,:)
                 else
                   rslice(ith,iph,:,mdif,ndif,:)=pencil(lind-1:lind,:)
                 endif
+
+                nind=nind-nghost; mind=mind-nghost
+                if (mind==1) &               ! m=m1: duplicate in y-direction
+                  rslice(ith,iph,:,-1,ndif,:)=rslice(ith,iph,:,mdif,ndif,:)
+ 
+                if (nind==1) &               ! n=n1: duplicate in z-direction
+                  rslice(ith,iph,:,mdif,-1,:)=rslice(ith,iph,:,mdif,ndif,:)
+
+                if (nind==1.and.mind==1) &   ! m=m1 and n=n1: populate 3rd edge of cubicle
+                    rslice(ith,iph,:,-1,-1,:)=rslice(ith,iph,:,mdif,ndif,:)
+
               endif
             endif
           endif
