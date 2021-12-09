@@ -35,8 +35,12 @@ module disp_current
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
   real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
   real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
+  real :: amplee=0.0, initpower_ee=0.0, initpower2_ee=0.0
+  real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
+  real :: relhel_ee=0.0, kgaussian_ee=0.0
   integer :: ia0
-  logical :: llorentz_gauge=.false.
+  logical :: llorentz_gauge=.false., lskip_projection_ee=.false.
+  logical :: lscale_tobox=.true.
   character(len=50) :: initee='zero'
   namelist /disp_current_init_pars/ &
     initee, alpf, &
@@ -45,7 +49,9 @@ module disp_current
     ky_ex, ky_ey, ky_ez, &
     kz_ex, kz_ey, kz_ez, &
     phase_ex, phase_ey, phase_ez, &
-    llorentz_gauge
+    llorentz_gauge, &
+    amplee, initpower_ee, initpower2_ee, lscale_tobox, &
+    cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
 !
   ! run parameters
   namelist /disp_current_run_pars/ &
@@ -138,6 +144,11 @@ module disp_current
           call coswave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
           call coswave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
           call coswave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
+
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
+            cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
+            lskip_projection_ee, lscale_tobox)
 !
         case default
           !

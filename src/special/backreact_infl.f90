@@ -89,9 +89,9 @@ module backreact_infl
   integer :: ispecial=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
-  real :: amplphi=.1, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
-  real :: initpower_phi=0., cutoff_phi=0.
-  real :: kgaussian_phi=0.,kpeak_phi=0.
+  real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
+  real :: initpower_phi=0., cutoff_phi=0., initpower_dphi=0., cutoff_dphi=0.
+  real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0.,kpeak_dphi=0.
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
 !
@@ -100,9 +100,10 @@ module backreact_infl
 !
   namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
-      c_light_axion, lambda_axion, amplphi, &
+      c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
-      initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi
+      initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
+      initpower_dphi, cutoff_dphi, kgaussian_dphi, kpeak_dphi
 !
   namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
@@ -257,10 +258,12 @@ module backreact_infl
             !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
             call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
             f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
-          case ('power_randomphase')
+          case ('phi_power_randomphase')
             call power_randomphase(amplphi,initpower_phi,kgaussian_phi,kpeak_phi,cutoff_phi,&
-              f,ispecial+0,ispecial+0)
-              !f,ispecial+0,ispecial+0,lscale_tobox=.false.)
+              f,ispecial+0,ispecial+0,lscale_tobox=.false.)
+          case ('dphi_power_randomphase')
+            call power_randomphase(ampldphi,initpower_dphi,kgaussian_dphi,kpeak_dphi,cutoff_dphi,&
+              f,ispecial+1,ispecial+1,lscale_tobox=.false.)
   
           case default
             call fatal_error("init_special: No such value for initspecial:" &
