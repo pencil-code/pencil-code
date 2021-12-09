@@ -676,7 +676,7 @@ module Snapshot
         if (SCL_spec) call powerGWs(f,'SCL',lfirstcall)
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
-	if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
+        if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
         if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)
         if (GWe_spec) call powerhel(f,'GWe',lfirstcall_powerhel)
         if (GWf_spec) call powerhel(f,'GWf',lfirstcall_powerhel)
