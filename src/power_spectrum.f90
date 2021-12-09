@@ -2626,6 +2626,7 @@ module power_spectrum
   kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  if (nzgrid==1) kz=0. !(needed for 2-D runs)
   !
   !  initialize power spectrum to zero
   !
