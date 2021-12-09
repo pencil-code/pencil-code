@@ -1292,6 +1292,24 @@ module power_spectrum
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       a_im=0.
       b_im=0.
+!
+!  Spectrum of electric field, Sp(E) and E.B spectrum
+!
+    elseif (sp=='ele') then
+      if (iee==0.or.iaa==0) call fatal_error('powerhel','iee or iaa=0')
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+        enddo
+      enddo
+      a_im=0.
+      b_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
+      b_im=0.
+    else
+      call fatal_error('powerhel','no spectrum defined for '//sp)
     endif
 !
 !  Doing the Fourier transform
