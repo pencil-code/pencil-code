@@ -32,6 +32,7 @@ module FArrayManager
   public :: farray_use_global
   public :: farray_size_by_name
   public :: farray_type_by_name
+  public :: farray_index_by_name
 !
   public :: farray_check_maux
 !
@@ -791,36 +792,27 @@ module FArrayManager
         return
       endif
       farray_type_by_name=iFARRAY_TYPE_NOSUCHTYPE
-      return
 !
     endfunction farray_type_by_name
-!!***********************************************************************
-!    function farray_index_by_name(varname,component,ierr)
-!      character (len=*) :: varname
-!      integer, pointer :: farray_find_by_name
-!      integer, optional :: component
-!      integer, optional :: ierr
-!      type (farray_contents_list), pointer :: item
-!!
-!      intent(in) :: varname,component,ierr
-!!
-!      item=>thelist
-!      do while (associated(item))
-!        if (item%varname==varname) then
-!          if (present(component)) then
-!            if ((component<=0).or.(component>item%ncomponents) then
-!            endif
-!            farray_find_by_name=>item%ivar(component)
-!          else
-!            farray_find_by_name=>item%ivar(1)
-!          return
-!        endif
-!        item=>item%next
-!      enddo
-!      NULLIFY(farray_find_by_name)
-!      return
-!!
-!    endfunction farray_index_by_name
+!***********************************************************************
+    function farray_index_by_name(varname,component) result(indx)
+
+      integer :: indx
+      character (len=*), intent(IN) :: varname
+      integer, optional, intent(OUT):: component
+
+      type (farray_contents_list), pointer :: item
+!
+      item=>find_by_name(varname)
+      if (associated(item)) then
+        indx=item%ivar(1)%p 
+        if (present(component)) component=item%ncomponents
+      else
+        indx=-1
+        if (present(component)) component=0
+      endif
+!
+    endfunction farray_index_by_name
 !***********************************************************************
     subroutine farray_check_maux
 !
