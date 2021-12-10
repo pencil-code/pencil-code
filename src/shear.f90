@@ -1062,25 +1062,19 @@ module Shear
 !  a must be defined on (l1:l2,m1:m2,n1:n2)
 !
 !  31-jun-21/hongzhe: coded
+!  10-dec-21/hongzhe: using fft to shift, allowing for nprocy>1
+!
+      use Fourier, only: fourier_shift_y
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
 !
-      real, dimension(nx,ny,nz) :: tmp
-      integer :: ikx,iky,jky,nshear
+      real, dimension(nx) :: nshear
 !
-!   For now do not allow for y-parallelization; can be improved
+!  Need to use S*t directly rather than deltay, because the latter has
+!  already modulo'ed Ly
 !
-      if (nprocy/=1) call fatal_error('shear_frame_transform',&
-          'nprocy=1 required for lshear_frame_correlation')
-      do ikx=l1,l2
-        nshear=nint( -Sshear*x(ikx)*t/dy  )
-        do iky=1,ny
-          jky=mod(iky-nshear,ny)
-          if (jky<=0) jky=jky+ny
-          tmp(ikx-nghost,iky,:)=a(ikx-nghost,jky,:)
-        enddo
-      enddo
-      a=tmp
+      nshear=-Sshear*t*x(l1:l2)
+      call fourier_shift_y(a,nshear)
 !
     endsubroutine shear_frame_transform
 !***********************************************************************
