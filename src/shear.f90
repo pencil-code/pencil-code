@@ -1064,17 +1064,23 @@ module Shear
 !  31-jun-21/hongzhe: coded
 !  10-dec-21/hongzhe: using fft to shift, allowing for nprocy>1
 !
-      use Fourier, only: fourier_shift_y
+      use Fourier, only: fourier_shift_yz_y
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
 !
-      real, dimension(nx) :: nshear
+      real :: nshear
+      real, dimension(ny,nz) :: tmp
+      integer :: ikx
 !
 !  Need to use S*t directly rather than deltay, because the latter has
 !  already modulo'ed Ly
 !
-      nshear=-Sshear*t*x(l1:l2)
-      call fourier_shift_y(a,nshear)
+      do ikx=l1,l2
+        nshear=-Sshear*t*x(ikx)
+        tmp=a(ikx-nghost,:,:)
+        call fourier_shift_yz_y(tmp,nshear)
+        a(ikx-nghost,:,:)=tmp
+      enddo
 !
     endsubroutine shear_frame_transform
 !***********************************************************************
