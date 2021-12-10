@@ -15,7 +15,7 @@ BeginPackage["pcRead3D`","pcReadBasic`","pcRead1D`"]
 (*Usage messages*)
 
 
-read3DFFT::usage="read3DFFT[sim,sp] reads 3D data from file data/fft_*.dat. The dimension of the data
+read3DFFT::usage="read3DFFT[sim,sp] reads 3D data from file data/fft*.dat. The dimension of the data
  should be given by kout_max in run.in.
 Input:
   sim: Run directory
@@ -34,10 +34,10 @@ Begin["`Private`"]
 (*Functions*)
 
 
-read3DFFT[sim_,sp_]:=Module[{km,kvec,t,f},
+read3DFFT[sim_,file_]:=Module[{km,kvec,t,f},
   km=readParamNml[sim,"run.in","KOUT_MAX"];
   kvec=Flatten[Table[{kx,ky,kz},{kz,-km,km},{ky,-km,km},{kx,-km,km}],2];
-  {t,f}=read1D[sim,"fft_"<>sp<>".dat"];
+  {t,f}=read1D[sim,file];
   {t,kvec,f}
 ]
 
