@@ -683,6 +683,8 @@ module Magnetic
   integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
   integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
+  integer :: idiag_WL2D=0       ! DIAG_DOC: $\left<J_i u_j A_{i,j} \right>$
+  integer :: idiag_WL3D=0       ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
   integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
   integer :: idiag_ugb22m=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\Bv^2/2)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
@@ -2817,6 +2819,15 @@ module Magnetic
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_b2)=.true.
       if (idiag_ujxbm/=0) lpenc_diagnos(i_ujxb)=.true.
+      if (idiag_WL2D/=0) then
+        lpenc_diagnos(i_jj)=.true.
+        lpenc_diagnos(i_uga)=.true.
+      endif
+      if (idiag_WL3D/=0) then
+        lpenc_diagnos(i_jj)=.true.
+        lpenc_diagnos(i_aa)=.true.
+        lpenc_diagnos(i_uij)=.true.
+      endif
       if (idiag_ubgbpm/=0) lpenc_diagnos(i_ubgbp)=.true.
       if (idiag_ugb22m/=0) lpenc_diagnos(i_ugb22)=.true.
       if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
@@ -5503,16 +5514,17 @@ module Magnetic
 !  Calculate diagnostic quantities.
 !
       use Diagnostics
-      use Sub, only: dot, dot2, multvs,cross_mn, multmv_transp,dot2_mn,cross_mn, dot2_mn, dot_mn_sv
+      use Sub, only: dot, dot2, multvs, cross_mn, multmv_transp, dot2_mn, &
+        cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
-      real, dimension (nx,3) :: exj,dexb,phib,jxbb,uxDxuxb
+      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: aj,tmp1,fres2
+      real, dimension (nx) :: aj, tmp, tmp1, fres2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: uj,phi,dub,dob,jdel2a,epsAD
@@ -5954,6 +5966,21 @@ module Magnetic
       if (idiag_jdel2am/=0) then
         call dot(p%jj,p%del2a,jdel2a)
         call sum_mn_name(jdel2a,idiag_jdel2am)
+      endif
+!
+!  Calculate WL2D = <JiujAij>.
+!
+      if (idiag_WL2D/=0) then
+        call dot(p%jj,p%uga,tmp)
+        call sum_mn_name(tmp,idiag_WL2D)
+      endif
+!
+!  Calculate WL3D = <JiujAij>.
+!
+      if (idiag_WL3D/=0) then
+        call dot_mn_vm_trans(p%aa,p%uij,tmpv)
+        call dot(p%jj,tmpv,tmp)
+        call sum_mn_name(tmp,idiag_WL3D)
       endif
 !
 !  Calculate <u.(jxb)>.
@@ -9352,6 +9379,7 @@ module Magnetic
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
         idiag_ujxbm=0; idiag_ugb22m=0; idiag_ubgbpm=0; idiag_b2divum=0
+        idiag_WL2D=0; idiag_WL3D=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -9561,6 +9589,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'jdel2am',idiag_jdel2am)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
+        call parse_name(iname,cname(iname),cform(iname),'WL2D',idiag_WL2D)
+        call parse_name(iname,cname(iname),cform(iname),'WL3D',idiag_WL3D)
         call parse_name(iname,cname(iname),cform(iname),'ubgbpm',idiag_ubgbpm)
         call parse_name(iname,cname(iname),cform(iname),'ugb22m',idiag_ugb22m)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
