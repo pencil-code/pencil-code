@@ -180,6 +180,8 @@ Currently we use a range of routines to register variables in the f-array:
         call farray_register_global('gg',iglobal_gg,vector=3)
         call farray_index_append('iacc',iacc)
         call farray_acquire_scratch_area('scratch',iscratch)
+        call register_report_aux('AAk'  , iAAk  , iAkx  , iAky  , iAkz)
 
 Auxiliary variables can be either communicated or not.
 Some of the routines may be somewhat outdated.
+
