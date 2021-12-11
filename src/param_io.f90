@@ -93,7 +93,7 @@ module Param_IO
       lread_oldsnap_onlyA, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      pretend_lnTT, lprocz_slowest, &
+      pretend_lnTT, lprocz_slowest, lzorder, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       tstart, lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -553,8 +553,6 @@ module Param_IO
       endif
 
       if (lactive_dimension(3)) lzaver_on_input=.false.
-
-      if (tag_foreign>0) lforeign=.true.
 !
       it_rmv=max(it_rmv,0)
 

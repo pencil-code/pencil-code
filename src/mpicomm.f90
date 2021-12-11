@@ -157,6 +157,9 @@ module Mpicomm
     logical :: lnprocx_mismat
     real, dimension(:), allocatable :: xgrid
     integer, dimension(:,:), allocatable :: xind_rng
+    character(LEN=5) :: unit_system
+    real :: unit_length, unit_time, unit_BB, unit_T, &
+            renorm_UU
   endtype foreign_setup
   
   type(foreign_setup) :: frgn_setup
@@ -179,6 +182,7 @@ module Mpicomm
       integer :: flag
 
       lmpicomm = .true.
+      if (tag_foreign>0) lforeign=.true.
 !
       call MPI_INIT(mpierr)
 !
@@ -10027,7 +10031,7 @@ endif
 !
 !  Receive length of name of foreign code.
 !
-          call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'received foreign name_len=', name_len
           if (name_len<=0) then
             call stop_it('initialize_foreign_comm: length of foreign name <=0 or >')
@@ -10038,7 +10042,7 @@ endif
 !
 !  Receive name of foreign code.
 !      
-          call mpirecv_char(frgn_setup%name(1:name_len),frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_char(frgn_setup%name(1:name_len),frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           frgn_setup%name=frgn_setup%name(1:name_len)
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call stop_it('initialize_foreign_comm: communication with foreign code "'// &
@@ -10047,7 +10051,7 @@ endif
 !
 !  Receive processor numbers of foreign code.
 !      
-          call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           
           if ( frgn_setup%name=='MagIC' ) then
           elseif ( frgn_setup%name=='Eulag' ) then
@@ -10064,12 +10068,12 @@ endif
 !
 !  Receive gridpoint numbers of foreign code.
 !      
-          call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'Pencil: received frgn_setup%dims=', frgn_setup%dims
 !
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
 !      
-          call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'received extents=', floatbuf, ((xyz0(j),xyz1(j)),j=1,3)
           ind=1
           do j=1,3
@@ -10080,26 +10084,56 @@ endif
             endif
           enddo
 !
-!  Receive output timestep of foreign code (code units).
+!  Receive output timestep of foreign code.
 !      
-          call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           if (frgn_setup%dt_out<=0.) then
             messg=trim(messg)//' foreign output step<=0'
             lok=.false.
           endif
 !print*, 'received dt_out=', frgn_setup%dt_out
 !
+!  Receive units of foreign code.
+!      
+          call mpirecv_char(frgn_setup%unit_system,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (trim(frgn_setup%unit_system)/='SI'.and.trim(frgn_setup%unit_system)/='CGS') then
+            messg=trim(messg)//' foreign unit system unknown'
+            lok=.false.
+          endif
+          call mpirecv_real(frgn_setup%unit_length,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (frgn_setup%unit_length<=0.) then
+            messg=trim(messg)//' foreign length unit <=0'
+            lok=.false.
+          endif
+          call mpirecv_real(frgn_setup%unit_time,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (frgn_setup%unit_time<=0.) then
+            messg=trim(messg)//' foreign time unit <=0'
+            lok=.false.
+          endif
+          call mpirecv_real(frgn_setup%unit_BB,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (frgn_setup%unit_BB<=0.) then
+            messg=trim(messg)//' foreign B unit <=0'
+            lok=.false.
+          endif
+          call mpirecv_real(frgn_setup%unit_T,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (frgn_setup%unit_T<=0.) then
+            messg=trim(messg)//' foreign temperature unit <=0'
+            lok=.false.
+          endif
+          if (lok) frgn_setup%renorm_UU=frgn_setup%unit_time/frgn_setup%unit_length  !not the full truth yet
+!
 !  Send confirmation flag that setup is acceptable.
 ! 
-          call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
-          if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
-
+          call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
         else
           frgn_setup%name=''
         endif
 
+        call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
+        if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
 !                                                                              
 !  Broadcast foreign processor numbers and grid size.                                                    
 !                                                                              
@@ -10115,23 +10149,17 @@ endif
 !
 !  Receive vector of foreign global r-grid points.
 !
-          call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
 !  Send number of x-procs to foreign.
 !
-          call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_UNIVERSE)
+          call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
 !                              
         if (lfirst_proc_yz) then 
 
-          if ( frgn_setup%name=='MagIC' ) then
-            frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
-          elseif ( frgn_setup%name=='Eulag' ) then
-            frgn_setup%lnprocx_mismat = nprocx>1
-          elseif (any(frgn_setup%procnums/=(/nprocx,nprocy,nprocz/))) then
-            frgn_setup%lnprocx_mismat=.false.
-          endif
+          frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
 !                              
 !  Broadcast frgn_setup%xgrid to all procs with iprocx=0.
 !                              
@@ -10167,7 +10195,7 @@ endif
 
 !print*, 'Pencil: sendrecv to', iproc, ncpus+px,tag_foreign+iproc,tag_foreign+ncpus_foreign+px
                 call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,ncpus+px,tag_foreign+iproc, &
-                                     frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE)
+                                     frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD)
                 if (frgn_setup%peer_rng(1)>0) then
                   if (frgn_setup%xind_rng(px,1)==0) frgn_setup%xind_rng(px,2)=px-1
                 else
@@ -10184,7 +10212,7 @@ endif
 !  Send index range of buddy processors frgn_setup%peer_rng. Assumes that number of procs in x-direction is equal, so only one buddy.  
 !                                                   
             frgn_setup%peer_rng=iproc+ncpus                                             
-            call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_UNIVERSE)
+            call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_WORLD)
           endif
 !
           lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
@@ -10226,12 +10254,12 @@ endif
               if (loptest(lnonblock)) then
                 call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
                                   (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
-                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE,frgn_setup%recv_req(px))
+                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD,frgn_setup%recv_req(px))
 print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
               else
                 call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
                                   (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
-                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_UNIVERSE)    !,frgn_setup%recv_req(px))
+                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD)    !,frgn_setup%recv_req(px))
 !print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
 !call mpiwait(frgn_setup%recv_req(px))
               endif
@@ -10241,7 +10269,7 @@ print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign
 
         else               ! else nest not yet valid
           !call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,ivar2-ivar1+1/), &
-          !                           frgn_setup%peer_rng(1),tag_foreign,frgn_setup%recv_req,MPI_COMM_UNIVERSE)
+          !                           frgn_setup%peer_rng(1),tag_foreign,frgn_setup%recv_req,MPI_COMM_WORLD)
         endif
 
       endif
@@ -10304,6 +10332,7 @@ print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
                                              frgn_setup%xgrid(frgn_setup%xind_rng(-1,1):frgn_setup%xind_rng(-1,2)), &
                                              x(ll),interp_buffer(ll,:,:,:),.true.)
                 enddo
+                interp_buffer=frgn_setup%renorm_UU*interp_buffer
                 call mpisend_real(interp_buffer,(/nx,ny,nz,nvars/),partner,ytag,MPI_COMM_YZPLANE)
 
                 if (size(f,1)==mx) then     ! f has ghosts
