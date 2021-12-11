@@ -684,6 +684,7 @@ module Magnetic
   integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
   integer :: idiag_WL2D=0       ! DIAG_DOC: $\left<J_i u_j A_{i,j} \right>$
+  integer :: idiag_WL3D2=0      ! DIAG_DOC: $\left<J_i u_j A_{j,i} \right>$
   integer :: idiag_WL3D=0       ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
   integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
   integer :: idiag_ugb22m=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\Bv^2/2)\right>$
@@ -2827,6 +2828,11 @@ module Magnetic
         lpenc_diagnos(i_jj)=.true.
         lpenc_diagnos(i_aa)=.true.
         lpenc_diagnos(i_uij)=.true.
+      endif
+      if (idiag_WL3D2/=0) then
+        lpenc_diagnos(i_jj)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_aij)=.true.
       endif
       if (idiag_ubgbpm/=0) lpenc_diagnos(i_ubgbp)=.true.
       if (idiag_ugb22m/=0) lpenc_diagnos(i_ugb22)=.true.
@@ -5975,12 +5981,20 @@ module Magnetic
         call sum_mn_name(tmp,idiag_WL2D)
       endif
 !
-!  Calculate WL3D = <JiujAij>.
+!  Calculate WL3D = <JiAjaji>.
 !
       if (idiag_WL3D/=0) then
         call dot_mn_vm_trans(p%aa,p%uij,tmpv)
         call dot(p%jj,tmpv,tmp)
         call sum_mn_name(tmp,idiag_WL3D)
+      endif
+!
+!  Calculate WL3D2 = <JiujAji>.
+!
+      if (idiag_WL3D2/=0) then
+        call dot_mn_vm_trans(p%uu,p%aij,tmpv)
+        call dot(p%jj,tmpv,tmp)
+        call sum_mn_name(tmp,idiag_WL3D2)
       endif
 !
 !  Calculate <u.(jxb)>.
@@ -9379,7 +9393,7 @@ module Magnetic
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
         idiag_ujxbm=0; idiag_ugb22m=0; idiag_ubgbpm=0; idiag_b2divum=0
-        idiag_WL2D=0; idiag_WL3D=0
+        idiag_WL2D=0; idiag_WL3D=0; idiag_WL3D2=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -9591,6 +9605,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'WL2D',idiag_WL2D)
         call parse_name(iname,cname(iname),cform(iname),'WL3D',idiag_WL3D)
+        call parse_name(iname,cname(iname),cform(iname),'WL3D2',idiag_WL3D2)
         call parse_name(iname,cname(iname),cform(iname),'ubgbpm',idiag_ubgbpm)
         call parse_name(iname,cname(iname),cform(iname),'ugb22m',idiag_ugb22m)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
