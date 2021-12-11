@@ -684,8 +684,8 @@ module Magnetic
   integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
   integer :: idiag_WL2D=0       ! DIAG_DOC: $\left<J_i u_j A_{i,j} \right>$
-  integer :: idiag_WL3D2=0      ! DIAG_DOC: $\left<J_i u_j A_{j,i} \right>$
-  integer :: idiag_WL3D=0       ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
+  integer :: idiag_WL3D=0       ! DIAG_DOC: $-\left<J_i u_j A_{j,i} \right>$
+  integer :: idiag_WL3D2=0      ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
   integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
   integer :: idiag_ugb22m=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\Bv^2/2)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
@@ -2826,13 +2826,13 @@ module Magnetic
       endif
       if (idiag_WL3D/=0) then
         lpenc_diagnos(i_jj)=.true.
-        lpenc_diagnos(i_aa)=.true.
-        lpenc_diagnos(i_uij)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_aij)=.true.
       endif
       if (idiag_WL3D2/=0) then
         lpenc_diagnos(i_jj)=.true.
-        lpenc_diagnos(i_uu)=.true.
-        lpenc_diagnos(i_aij)=.true.
+        lpenc_diagnos(i_aa)=.true.
+        lpenc_diagnos(i_uij)=.true.
       endif
       if (idiag_ubgbpm/=0) lpenc_diagnos(i_ubgbp)=.true.
       if (idiag_ugb22m/=0) lpenc_diagnos(i_ugb22)=.true.
@@ -5981,18 +5981,18 @@ module Magnetic
         call sum_mn_name(tmp,idiag_WL2D)
       endif
 !
-!  Calculate WL3D = <JiAjaji>.
+!  Calculate WL3D = -<JiujAji>.
 !
       if (idiag_WL3D/=0) then
-        call dot_mn_vm_trans(p%aa,p%uij,tmpv)
-        call dot(p%jj,tmpv,tmp)
+        call dot_mn_vm_trans(p%uu,p%aij,tmpv)
+        call dot(-p%jj,tmpv,tmp)
         call sum_mn_name(tmp,idiag_WL3D)
       endif
 !
-!  Calculate WL3D2 = <JiujAji>.
+!  Calculate WL3D2 = <JiAjaji>.
 !
       if (idiag_WL3D2/=0) then
-        call dot_mn_vm_trans(p%uu,p%aij,tmpv)
+        call dot_mn_vm_trans(p%aa,p%uij,tmpv)
         call dot(p%jj,tmpv,tmp)
         call sum_mn_name(tmp,idiag_WL3D2)
       endif
