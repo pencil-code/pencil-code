@@ -209,6 +209,8 @@ module Mpicomm
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
+      if (iapp>0) call stop_it('in MPMD mode, Pencil must be the first application')
+
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
         if (lroot) then
