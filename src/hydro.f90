@@ -757,6 +757,7 @@ module Hydro
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
   real, dimension(nx) :: Fmax,advec_uu=0.
+  real :: t_vart=0.
 !$omp THREADPRIVATE(advec_uu)
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
@@ -4582,6 +4583,10 @@ module Hydro
 !   1-jul-08/axel: moved this part to hydro
 !  29-oct-20/hongzhe: coding for computing frequency-fft'ed u(x,y,z,omega_fourier)
 !  19-may-21/axel: possibility of ltime_integrals_always=F to compute <u(t,x).u(t0,x)>
+!  11-dec-21/hongzhe: uut and oot are now always in lab frame, but their update time
+!                     is write to file for future shear-frame transformation.
+!
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -4590,8 +4595,7 @@ module Hydro
       intent(in) :: p
 !
       integer :: ikx, nshear, iky
-      real :: fact_cos
-      real :: fact_sin
+      real :: fact_cos,fact_sin,t_cor=0.
       logical :: lreset_vart=.false.
 !
       fact_cos=cos(omega_fourier*t)
@@ -4599,13 +4603,25 @@ module Hydro
 !
 !  reset uut etc. if lreset_vart=.true.
 !
-      if (ltime_integrals_always) then
+      if (ltime_integrals_always .or. dtcor<=0.) then
         if (it==1) lreset_vart=.true.
       else
-        if (nint(dtcor)<=0.) then
-          if (it==1) lreset_vart=.true.
-        else
-          if (mod(nint(t),nint(dtcor))==1) lreset_vart=.true.
+        if (t>t_vart) then
+          lreset_vart=.true.
+          t_cor=t
+          call put_shared_variable('t_cor',t_cor)
+!
+!  If uut and oot are updated, write t to file and advance t_var.
+!  These only happen at the last point in the mn loop.
+!
+          if (llastpoint) then
+            if (lroot) then
+              open(1,file=trim(datadir)//'/tvart.dat',status='unknown',position='append')
+              write(1,'(4f14.7)') t_cor
+              close (1)
+            endif
+            t_vart=t_vart+dtcor
+          endif
         endif
       endif
 !
@@ -4627,26 +4643,12 @@ module Hydro
         if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=0.
         if (lreset_vart) then
-          if (lvart_in_shear_frame) then
-            !
-            !  store iuut etc. in the shear frame
-            !  Must have nprocy=1 because we shift in the y direction
-            !
-            if (.not. lshear) call fatal_error('time_integrals_hydro',&
-                'lshear=F; cannot do frame transform')
-            if (nprocy/=1) call fatal_error&
-                ('time_integrals_hydro','nprocy=1 required for lvart_in_shear_frame')
-            do ikx=l1,l2
-              nshear=nint( -Sshear*x(ikx)*t/dy  )
-              iky=mod(m-nshear,ny)
-              if (iky<=0) iky=iky+ny
-              if (iuxt/=0)              f(ikx,m,n,iuxt:iuzt) = f(ikx,iky,n,iux:iuz)
-              if (ioxt/=0 .and. iox/=0) f(ikx,m,n,ioxt:iozt) = f(ikx,iky,n,iox:ioz)
-            enddo
-          else
-            if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
-            if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
-          endif
+          if (lvart_in_shear_frame) &
+              call fatal_error('time_integrals_hydro',&
+                  'lvart_in_shear_frame is no longer supported in hydro. uut etc. are alwyas&
+                   in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
+          if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
+          if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
         endif
       endif
       lreset_vart=.false.
