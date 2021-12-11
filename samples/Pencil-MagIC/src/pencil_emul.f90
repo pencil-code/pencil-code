@@ -10,13 +10,13 @@ program pencil_emul
   real, dimension(64,64,64,3) :: uu_data
   real, dimension(:,:,:,:), allocatable :: buffer
 
-  integer :: nprocs, iproc, MPI_COMM_PENCIL, tag, iproc_save, nxdel, ind1, ind2
-  integer, parameter :: nprocx=8, nprocy=1, nprocz=1, nprocxy=nprocx*nprocy
+  integer :: nprocs, iproc, MPI_COMM_PENCIL, tag, iproc_save, nxdel, ind1, ind2, peer
+  integer, parameter :: nprocx=1, nprocy=1, nprocz=1, nprocxy=nprocx*nprocy
   integer :: MPI_COMM_XBEAM, ipx, ipy, ipz
   integer, parameter :: nx=16
   INTEGER(KIND=MPI_ADDRESS_KIND) :: iapp
-  logical :: flag
-  integer, dimension(2) :: xind_rng
+  logical :: flag,lnprocx_mismat
+  integer, dimension(-1:0,2) :: xind_rng
   integer :: foreign_name_len
   character(LEN=5) :: foreign_name
   real, dimension(6) :: foreign_extents
@@ -25,9 +25,11 @@ program pencil_emul
   real, dimension(:), allocatable :: xcoors
   real, dimension(nx) :: x
 !
+  character(LEN=5) :: unit_system
+  real :: unit_length, unit_time, unit_BB, unit_T
+
       call MPI_INIT(mpierr)
       call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
-!print*, '#Pencil app, flag=', iapp, flag
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
 !
@@ -52,7 +54,7 @@ program pencil_emul
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL,mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, ncpus, mpierr)
-!print*, '#Pencil cpus,rank=', ncpus, iproc
+!print*, '#Pencil app,cpus,rank=', iapp,ncpus, iproc
       if (ncpus/=nprocx*nprocy*nprocz) then
         print*, 'Pencil: inconsistent proc numbers!'
         call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
@@ -66,7 +68,7 @@ program pencil_emul
 
       call MPI_COMM_SPLIT(MPI_COMM_PENCIL, ipy+nprocy*ipz, ipx, &
                           MPI_COMM_XBEAM, mpierr)
-      if (iproc==0) then
+        if (iproc==0) then
 !
 !  Receive length of name of foreign code.
 !
@@ -88,9 +90,17 @@ program pencil_emul
 !
           call MPI_RECV(foreign_extents,6,MPI_REAL,ncpus,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
 !
-!  Receive output timestep of foreign code (code units).
+!  Receive output timestep of foreign code.
 !
           call MPI_RECV(foreign_dt,1,MPI_REAL,ncpus,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+!
+!  Send unit system name and units.
+!
+          call MPI_RECV(unit_system,5,MPI_CHARACTER,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_RECV(unit_length,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_RECV(unit_time,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_RECV(unit_BB,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_RECV(unit_T,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
 !
 !  Send confirmation flag that setup is acceptable.
 !
@@ -117,42 +127,55 @@ program pencil_emul
 !print*, 'nforeign_procs, nforeign_grid=', nforeign_procs, nforeign_grid
 !print*, 'foreign_extents, foreign_dt=', foreign_extents, foreign_dt
 !print*, 'xcoors=', xcoors  !(1:10)
+!
+!  Send number of x-procs to foreign.
+!
+          call MPI_SEND(nprocx,1,MPI_INTEGER,ncpus,tag_foreign,MPI_COMM_WORLD,mpierr)
+!
         endif
 !
 !  Broadcast xcoors
 !
         if (iproc<nprocx) then
+          lnprocx_mismat = nprocx>1
           call MPI_BCAST(xcoors,nforeign_grid(1),MPI_REAL,0,MPI_COMM_XBEAM,mpierr)
 !
 !  Local grid, assume parallization only in x.
 !
           dx=0.3/(nprocx*nx)
           x=rangegen(0,nx-1)*dx+dx/2 + iproc*nx*dx + .7
-!print*, 'Pencil: iproc, x=', iproc, x
 
           ind1=find_index(xcoors,x(1))
           if (xcoors(ind1)>x(1).and.ind1>1) ind1=ind1-1 
           ind2=find_index(xcoors,x(nx))
           if (xcoors(ind2)<x(nx).and.ind2<nforeign_grid(1)) ind2=ind2+1 
-          xind_rng=(/ind1,ind2/)     
-print*, 'Pencil: iproc, xind_rng=', iproc, xind_rng, xcoors(ind1), xcoors(ind2)
-!
-!  Send index range of buddy processors. Assumes that number of procs in x-direction is equal.
-!
-          tag=tag_foreign+iproc
-!print*, 'Pencil: iproc_save, iproc, tag=', iproc_save, iproc, tag
-          call MPI_SEND(xind_rng,2,MPI_INTEGER,ncpus+iproc,tag,MPI_COMM_WORLD,mpierr)
+          xind_rng(-1,:)=(/ind1,ind2/)     
+!print*, 'Pencil: iproc, xind_rng=', iproc, xind_rng(-1,:), xcoors(ind1), xcoors(ind2)
 
-           allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
-
-          call MPI_RECV(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
-                        MPI_REAL,ncpus+iproc,tag,MPI_COMM_WORLD,stat, mpierr)
+          if (lnprocx_mismat) then
+!
+!  If number of procs in x-direction is unequal.
+!
+            if (nforeign_procs(1)>1) then !non-EULAG case
+            !tag=tag_foreign+iproc
+            !call MPI_SEND(xind_rng,2,MPI_INTEGER,ncpus+iproc,tag,MPI_COMM_WORLD,mpierr)
+            !allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
+            !call MPI_RECV(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
+            !              MPI_REAL,ncpus+iproc,tag,MPI_COMM_WORLD,stat, mpierr)
+            else   ! EULAG case
+              xind_rng(0,:)=xind_rng(-1,:)
+            endif
+          else
+!
+!  Send index range of buddy processors if number of procs in x-direction is equal.
+!
+            peer=iproc+ncpus
+            call MPI_SEND(xind_rng(-1,:),2,MPI_INTEGER,peer,tag_foreign+iproc,MPI_COMM_WORLD,mpierr)
+          endif
         endif
-!print*, 'Pencil: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
-print*, 'Pencil: successful'
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
-stop
+      print*, 'Pencil: successful'
 contains
 !****************************************************************************
     function rangegen(start,end,step)

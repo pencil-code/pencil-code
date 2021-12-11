@@ -2,7 +2,8 @@ program magic_emul
 
   implicit none
   include 'mpif.h'
-  integer:: mpierr, ncpus,i,iproc,iproc_save,MPI_COMM_MAGIC,nprocs,tag
+  integer:: mpierr,ncpus,i,iproc,iproc_save,MPI_COMM_MAGIC, &
+            nprocs,tag,nprocx_penc, nprocx
   integer, dimension(MPI_STATUS_SIZE) :: stat
   real :: pi=3.1415, dx
   logical :: lok
@@ -40,6 +41,7 @@ program magic_emul
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_MAGIC, mpierr)
       call MPI_COMM_RANK(MPI_COMM_MAGIC, iproc, mpierr)
       call MPI_COMM_SIZE(MPI_COMM_MAGIC, ncpus, mpierr)
+      nprocx=ncpus ! for MagIC only
 
 !print*, '#Magic-World cpus, rank=', nprocs, iproc_save
 !print*, '#Magic cpus, rank=', ncpus, iproc
@@ -65,9 +67,17 @@ program magic_emul
 !
           call MPI_SEND((/.7,1.,0.,pi,0.,2*pi/),6,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
 !
-!  Send output timestep of foreign code (code units).
+!  Send output timestep of foreign code.
 !
           call MPI_SEND(1.e-3,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+!
+!  Send unit system name and units.
+!
+          call MPI_SEND('SI   ',5,MPI_CHARACTER,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+          call MPI_SEND(1.   ,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+          call MPI_SEND(3600.,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+          call MPI_SEND(1.e-4,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
+          call MPI_SEND(1.e6 ,1,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
 !
 !  Receive confirmation flag that setup is acceptable.
 !
@@ -86,21 +96,27 @@ program magic_emul
           xcoors=.3*xcoors/maxval(xcoors)+.7
           call MPI_SEND(xcoors,64,MPI_REAL,0,tag_foreign,MPI_COMM_WORLD,mpierr)
 !
+!  Receive number of x-procs from Pencil.
+!
+          call MPI_RECV(nprocx_penc,1,MPI_INTEGER,ncpus,tag_foreign,MPI_COMM_WORLD,stat,mpierr)
+!
         endif
 !
 !  Receive index range of buddy processors.
 !
-        tag=tag_foreign+iproc
-!print*, 'Magic: iproc_save, iproc, tag=', iproc_save, iproc, tag
-        call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
+        if (nprocx_penc==nprocx .and. nprocx>1) then     ! non-EULAG case
+          tag=tag_foreign+iproc
+          call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
 print*, 'Magic: xind_rng=', xind_rng
+        endif
+
         allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
         buffer=uu_data(xind_rng(1):xind_rng(2),:,:,:)
 
         call MPI_SEND(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
                       MPI_REAL,iproc,tag,MPI_COMM_WORLD,mpierr)
 
-!print*, 'Magic: iapp,iproc,iproc_save=', iapp,iproc,iproc_save
+!print*, 'Magic: iproc_save, iproc=', iproc_save, iproc
 print*, 'Magic: successful'
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
