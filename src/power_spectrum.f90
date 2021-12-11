@@ -4184,11 +4184,13 @@ endsubroutine pdf
     use Chiral, only: iXX_chiral, iYY_chiral
     use Magnetic, only: magnetic_calc_spectra
     use Shear, only: shear_frame_transform
+    use SharedVariables, only: get_shared_variable
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
   integer :: nshear, jkx,jky
   real :: k2
+  real, pointer :: t_cor
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,ny,nz) :: h_re,ht_re
@@ -4302,11 +4304,12 @@ endsubroutine pdf
       b_im=0.
     endif
 !
-!  Transform b_re to the shear frame. a_re has been recorded and
-!  transformed at some previous time using lvart_in_shear_frame=T.
+!  Transform a and b to the shear frame.
 !
     if (lshear_frame_correlation) then
+      call get_shared_variable('t_cor',t_cor)
       if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
+      call shear_frame_transform(a_re,t_cor)
       call shear_frame_transform(b_re)
     endif
 !

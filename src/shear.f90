@@ -1056,7 +1056,7 @@ module Shear
 !
      endsubroutine bcx_periodic
 !***********************************************************************
-    subroutine shear_frame_transform(a)
+    subroutine shear_frame_transform(a,tshift)
 !
 !  Transforms a variable a from lab frame to shear frame in the x space
 !  a must be defined on (l1:l2,m1:m2,n1:n2)
@@ -1067,16 +1067,22 @@ module Shear
       use Fourier, only: fourier_shift_yz_y
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
+      real, optional :: tshift
 !
-      real :: nshear
+      real :: nshear, ttmp
       real, dimension(ny,nz) :: tmp
       integer :: ikx
 !
 !  Need to use S*t directly rather than deltay, because the latter has
 !  already modulo'ed Ly
 !
+      if (present(tshift)) then
+        ttmp=tshift
+      else
+        ttmp=t
+      endif
       do ikx=l1,l2
-        nshear=-Sshear*t*x(ikx)
+        nshear=-Sshear*ttmp*x(ikx)
         tmp=a(ikx-nghost,:,:)
         call fourier_shift_yz_y(tmp,nshear)
         a(ikx-nghost,:,:)=tmp
