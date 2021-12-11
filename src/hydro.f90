@@ -4645,8 +4645,8 @@ module Hydro
         if (lreset_vart) then
           if (lvart_in_shear_frame) &
               call fatal_error('time_integrals_hydro',&
-                  'lvart_in_shear_frame is no longer supported in hydro. uut etc. are alwyas&
-                   in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
+                  'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always &
+                   &in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
           if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
           if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
         endif
