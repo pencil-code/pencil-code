@@ -254,13 +254,14 @@ module Shear
 !
     endsubroutine get_hyper3x_mesh
 !***********************************************************************
-    subroutine shear_frame_transform(a)
+    subroutine shear_frame_transform(a,tshift)
 !
 !  Transforms a variable a from lab frame to shear frame in the x space
 !
 !  31-jun-21/hongzhe: coded
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
+      rreal, optional :: tshift
 !
       call keep_compiler_quiet(a)
 !
