@@ -1067,7 +1067,7 @@ module Shear
       use Fourier, only: fourier_shift_yz_y
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
-      real, optional :: tshift
+      real, intent(in), optional :: tshift
 !
       real :: nshear, ttmp
       real, dimension(ny,nz) :: tmp
