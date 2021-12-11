@@ -261,7 +261,7 @@ module Shear
 !  31-jun-21/hongzhe: coded
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
-      rreal, optional :: tshift
+      real, optional :: tshift
 !
       call keep_compiler_quiet(a)
 !
