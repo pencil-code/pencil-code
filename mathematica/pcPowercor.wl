@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcPowercor`"]
+BeginPackage["pcPowercor`","pcRead1D`"]
 
 
 (* ::Chapter:: *)
@@ -31,37 +31,15 @@ Input:
 Output:
   The decaying time as a real number."
 
-showResetTime::usage="showResetTime[{t,f},dtcor,shift:0,plotStyle:{}] returns a ListPlot that
-shows both the original curve and the identified resetting points.
+corrTimePowercor::usage="corrTime[sim,tsat,file,lFit,nFit] returns the correlation times.
 Input:
-  t,f:  List
-  dtcor:  Resetting time
-  shift:  Integer. Optional. Shift red dots.
-  plotStyle:  List. Optional
+  sim: String. Run directory.
+  tsat: NumericQ. Starting point of the saturated phase.
+  file: String. powercor_*.dat or correlation_*.dat.
+  lFit: String. Fitting model.
+  nFit: Integer or All. Number of points to be fitted.
 Output:
-  A ListPlot where the original curve is black and reseting points are red."
-
-corrTime::usage="corrTime[{t,f},dtcor,model,nFit,\"lSingle\"->False] returns the correlation time.
-If t and f are long enough then produces a mean with its standard deviation.
-For now neighboring 5 curves are binned and the size of the ensemble is at least 3.
-Input:
-  t,f:  List. Data produced with dtcor
-  dtcor:  Resetting time
-  model:  String. Specifies model: \"EXP\", \"EXPCOS\", \"LIN\"
-  nFit:  Integer. Number of points to take to fit
-  lSingle:  Optional. If True then forces to produce a single value
-Output:
-  Around[mean,sd] or mean depending on the length of t and f"
-
-corrTimeAC::usage="corrTime[{t,f},model,nFit,npiece:8] returns the correlation
-time computed from the auto-correlation function formed by {t,f}.
-Input:
-  t,f:  List. Time series data.
-  model:  String. Specifies model: \"EXP\", \"EXPCOS\", \"LIN\"
-  nFit:  Integer. Number of points to take to fit
-  npiece:  Size of the ensemble. If =1 then produces a single value
-Output:
-  Around[mean,sd] or mean depending on npiece"
+  {correlation time of the mean of all AC's, a List of correlation times for each AC}"
 
 
 Begin["`Private`"]
@@ -75,39 +53,12 @@ Begin["`Private`"]
 (*Utils*)
 
 
-mean[x_List]:=With[{y=Cases[x,e_?NumericQ]},
-  If[y=={},Return["Bad curve"]];
-  If[Length[y]==1,y[[1]],Around[Mean[y],StandardDeviation[y]]]
-]
-
 (*shift an autocorrelation horizontally to start from t=0*)
 timeShift[l_List]:=Transpose[Transpose[l]-{l[[1,1]],0}]
 (*shift an autocorrelation vertically to start from value 1*)
 valueNorm[l_List]:=Transpose[Transpose[l]/{1,l[[1,2]]}]
 (*do both timeShift and valueNorm*)
 normalizeAC[l_List]:=l//timeShift//valueNorm
-
-findResetTime[t_,dtcor_]:=Module[{pos},
-  pos=Position[t,tt_/;tt>dtcor && Mod[Round[tt],Round[dtcor]]==1]//Flatten;
-  Extract[pos,Position[Differences[pos],d_/;d>5]]
-]
-
-showResetTime[{t_,f_},dtcor_,shift_Integer:0,plotStyle_List:{}]:=With[
-  {pos=findResetTime[t,dtcor],ts=Transpose[{t,f}]},
-  ListPlot[{ts,ts[[pos+shift]]},Join[plotStyle,{
-      ImageSize->800,Joined->{True,False},
-      PlotStyle->{Black,Red},PlotRange->All
-      }]
-  ]
-]
-
-splitCurve[t_,f_,dtcor_]:=Module[{pos=findResetTime[t,dtcor],pos1,t1,f1,lmin},
-  pos1=Partition[pos,2,1]/.{x_?NumericQ,y_}:>{x,y-1};
-  t1=Take[t,#]&/@pos1;
-  f1=Take[f,#]&/@pos1;
-  lmin=Max[16,Min[Length/@f1]];
-  Most[timeShift/@MapThread[Take[Transpose[{#1,#2}],lmin]&,{t1,f1}]]
-]
 
 
 (* ::Section:: *)
@@ -121,10 +72,7 @@ autoCor[ts_]:=Module[{t,f,fft,ac},
   ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
   {t-t[[1]],ac}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
-
-autoCorEnsemble[ts_,npiece_Integer:3]:=Map[
-  autoCor[#]&,Partition[ts,Floor[Length[ts]/npiece]]
-]
+autoCor[t_,var_]:=autoCor[{t,var}//Transpose]
 
 
 (* ::Section:: *)
@@ -143,7 +91,7 @@ fitTime[ts_List,model_String,nFit_]:=Module[{a,x},
 fitTime[ts_List,"EXPPOS",nFit_]:=Module[{t,v,pos,x,a},
   {t,v}=Transpose[ts//normalizeAC];
   pos=FirstPosition[v,_?Negative,All];
-  If[pos=!=All,pos=pos[[1]]-1;If[pos==1,Return[-1]]];
+  If[pos=!=All,pos=pos[[1]]-1;If[pos<=2,Return[-1]]];
   a[1]/.FindFit[Take[ts//normalizeAC,pos],Exp[-x/a[1]],a[1],x]
 ]
 fitTime[ts_List,"HALF",nFit_]:=Module[{t,v,pos,t1,t2,v1,v2},
@@ -178,26 +126,21 @@ fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 (*Find correlation time*)
 
 
-Options[corrTime]={"lSingle"->False}
-corrTime[{t_List,f_List},dtcor_,model_String,nFit_,OptionsPattern[]]:=Module[
-  {nEnsemble=3,ts=splitCurve[t,f,dtcor],t1},
-  If[Length[ts]<10*nEnsemble || OptionValue["lSingle"],
-    fitTime[Mean[ts],model,nFit],
-    t1=mean[fitTime[Mean[#],model,nFit]&/@Partition[ts,Length[ts]/nEnsemble//Floor]];
-    If[Less@@t1,corrTime[{t,f},dtcor,model,nFit,"lSingle"->True],t1]
-  ]
-]
-
-corrTimeAC[{t_List,f_List},model_String,nFit_,npiece_Integer:3]:=
-  Module[{t1},
-    t1=mean[fitTime[#,model,nFit]&/@autoCorEnsemble[Transpose[{t,f}],npiece]];
-    If[npiece>=2 && Less@@t1,corrTimeAC[{t,f},model,nFit,1],t1]
-  ]
-
-corrTimeACAve[{t_List,f_List},model_String,nFit_,npiece_Integer:3]:=
-  Module[{t1,data=autoCorEnsemble[Transpose[{t,#}],npiece,"lNormalize"->False]&/@Transpose[f]},
-  t1=mean[fitTime[#,model,nFit]&/@Mean[data]];
-  If[npiece>=2 && Less@@t1,corrTimeACAve[{t,f},model,nFit,1],t1]
+corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_]:=Module[{tvart,t,spec,pos,d},
+  (*find reset time of sp*)
+  tvart=Import[sim<>"/data/tvart.dat"]//Flatten//Cases[#,tt_/;tt>tsat]&//Most;
+  (*read spectra*)
+  {t,spec}=read1D[sim,file];
+  (*find positions of tvart*)
+  pos=Nearest[t->"Index",#]&/@tvart//Flatten;
+  (*cut spec into intervals*)
+  d=pos//Differences//Min;
+  pos={pos,pos+d-1}//Transpose;
+  spec=Transpose@Mean[Take[spec,#]&/@pos];
+  (*form time series*)
+  spec=Transpose[{Range[0,d-1]*(t//Differences//Mean),#}]&/@spec;
+  (*fitting*)
+  {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec}
 ]
 
 
@@ -210,8 +153,7 @@ End[]
 
 Protect[
   autoCor,fitTime,
-  showResetTime,
-  corrTime,corrTimeAC
+  corrTimePowercor
 ]
 
 
