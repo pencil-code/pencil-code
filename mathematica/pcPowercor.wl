@@ -17,10 +17,10 @@ BeginPackage["pcPowercor`","pcRead1D`"]
 
 autoCor::usage="autoCor[ts] computes auto-correlation of ts.
 Input:
-  ts:  List. A time series data; for example readTS[sim,\"t\",\"urms\"]//Transpose.
-       Need not start from t=0. Uses FFT.
+  ts: List. Time series; can be, for example, either readTS[sim,\"t\",\"urms\"]
+       or readTS[sim,\"t\",\"urms\"]//Transpose. Need not start from t=0.
 Output:
-  {{0,1},{t2,ac2},{t3,ac3},...}"
+  A List object."
 
 fitTime::usage="fitTime[ts,lmodel,nfit] fits a time series using its first nfit points and 
 a model specified by lmodel.
@@ -31,15 +31,18 @@ Input:
 Output:
   The decaying time as a real number."
 
-corrTimePowercor::usage="corrTime[sim,tsat,file,lFit,nFit] returns the correlation times.
+corrTimePowercor::usage="corrTime[sim,tsat,file,lFit,nFit,\"lAC\"->False] returns the correlation times.
 Input:
   sim: String. Run directory.
   tsat: NumericQ. Starting point of the saturated phase.
   file: String. powercor_*.dat or correlation_*.dat.
   lFit: String. Fitting model.
   nFit: Integer or All. Number of points to be fitted.
+Options:
+  \"lAC\": False by default. If True, also return autocorrelations in the third entry.
 Output:
-  {correlation time of the mean of all AC's, a List of correlation times for each AC}"
+  {correlation time of the mean of all AC's, a List of correlation times for each AC,
+   a List of autocorrelation functions if \"lAC\"->True)}"
 
 
 Begin["`Private`"]
@@ -126,7 +129,8 @@ fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 (*Find correlation time*)
 
 
-corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_]:=Module[{tvart,t,spec,pos,d},
+Options[corrTimePowercor]={"lAC"->False};
+corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t,spec,pos,d},
   (*find reset time of sp*)
   tvart=Import[sim<>"/data/tvart.dat"]//Flatten//Cases[#,tt_/;tt>tsat]&//Most;
   (*read spectra*)
@@ -139,8 +143,11 @@ corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_]:=Module[{tvart,t,spec,pos,d},
   spec=Transpose@Mean[Take[spec,#]&/@pos];
   (*form time series*)
   spec=Transpose[{Range[0,d-1]*(t//Differences//Mean),#}]&/@spec;
-  (*fitting*)
-  {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec}
+  (*fitting and return*)
+  If[OptionValue["lAC"],
+    {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec,spec},
+    {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec}
+  ]
 ]
 
 

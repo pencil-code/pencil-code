@@ -111,6 +111,110 @@ To export the figure in ``.eps`` format,
   Export["directory/to/export/figure.eps",fig]
 
 
+Reading VAR files
+================================
+
+VAR files can be read using
+
+.. code ::
+
+  data = readVARN[sim,iVAR]
+
+Here ``iVAR`` is the index of the VAR file and starts from 0.
+
+By default, ghost zones will not be trimmed.
+You can do it using the option ``"ltrim"->True``, or ``"ltrim"->More``;
+the latter will trim ``2*nghost`` cells on each boundary.
+
+To compute "magic" variables, you can use
+
+.. code ::
+
+  data = readVARN[sim,iVAR,{"oo","bb","jj"}]
+
+Here "oo", "bb", "jj" refer to vorticity, magnetic, and current fields, respectively.
+
+The return of ``readVARN`` is an ``Association`` object (i.e., ``Head[data]=Association``).
+You can obtain all of its keys by ``Keys[data]``. Here is an example of its return:
+
+.. code ::
+
+  data = readVARN[sim,iVAR,{"oo","bb","jj"}];
+  Keys[data]
+  (* {"t", "dx", "dy", "dz", "deltay", "lx", "ly", "lz", "x", "y", "z",
+     "uu1", "uu2", "uu3", "lnrho", "ooo1", "ooo2", "ooo3", "bbb1", "bbb2",
+     "bbb3", "jjj1", "jjj2", "jjj3"} *)
+
+Magic variables are named using triple characters, to avoid shadowing the auxilliary ones
+written by the code (which will be "oo1" etc.).
+
+The ``x`` coordinates of the mesh points is then ``data["x"]``, which will have length
+``(16+6)^3`` if the resolutoin is ``16^3`` and ``nghost=3``.
+One can form a three-dimensional map of ``uu1`` using
+
+.. code ::
+
+  uu1 = Transpose[ data/@{"x","y","z","uu1"} ];
+  (* {{x1,y1,z1,f1},{x2,y2,z2,f2},...} *)
+
+Sometimes the following method is also useful:
+
+.. code ::
+
+  Clear[uu1]
+  grid = Transpose[ data/@{"x","y","z"} ];
+  uu1 = Association[ Thread[ grid->data["uu1"] ] ];
+
+Then ``uu1`` becomes a "function" and its value at ``{x1,y1,z1}`` is simply ``uu1[{x1,y1,z1}]``.
+
+Visualizing slices from VAR files
+================================
+
+A quick way to make a density plot from ``data`` is
+
+.. code ::
+
+  showSlice[data, "uu1", {"z", 8}]
+
+Here ``{"z",8}`` instructs to plot the 8th slice in the ``z`` direction.
+
+For vector fields one can also use
+
+.. code ::
+
+  showSliceVector[data, "uu", {"z", 8}]
+
+Notice the second argument is just ``"uu"`` with no index.
+The function then makes a density plot of the out-of-plane component of (here ``"uu3"``),
+and a superposed vector plot of the in-plane components (here ``"uu1"`` and ``"uu2"``).
+
+Reading video files
+================================
+
+To read video or slice files, one uses
+
+.. code ::
+
+  {slices,times,position}=readSlice[sim,"uu1","xy2"]
+
+The returned ``slices`` variable is a ``List`` of all slices at different times, and can
+be visualized by, say, ``DensityPlot[ slices[[1]] ]``.
+``position`` tells you the spatial coordinate of the slices.
+
+Here is an example to make a video:
+
+.. code ::
+
+  Clear[makeFrame]
+  makeFrame[ slice_,time_ ] := DensityPlot[ slice, PlotLabel->"t="<>ToString@time]
+  frames = MapThread[ makeFrame, {slices,times} ];
+  (* to view the video in the notebook; can be slow if too many frames*)
+  ListAnimate[ frame, AnimationRunning->False ]
+  (* output to a movie file *)
+  Export[ "your/output/directory/video.mov", frames, FrameRate->24 ]
+
+One can also visualize variables in a 3D box.
+For more information see the comments of ``makeBox`` and ``makeBoxes``.
 
 
 
