@@ -130,7 +130,8 @@ fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 
 
 Options[corrTimePowercor]={"lAC"->False};
-corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t,spec,pos,d},
+corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t,spec,pos,d,i,tcor},
+  PrintTemporary[sim, ", ", file, ": Starting to read data files..."];
   (*find reset time of sp*)
   tvart=Import[sim<>"/data/tvart.dat"]//Flatten//Cases[#,tt_/;tt>tsat]&//Most;
   (*read spectra*)
@@ -143,10 +144,17 @@ corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t
   spec=Transpose@Mean[Take[spec,#]&/@pos];
   (*form time series*)
   spec=Transpose[{Range[0,d-1]*(t//Differences//Mean),#}]&/@spec;
+  PrintTemporary[sim, ", ", file, ": Starting to fit..."];
   (*fitting and return*)
+  SetSharedVariable[i];
+  i=0;
+  tcor=Monitor[
+    ParallelMap[(i++;fitTime[#,lFit,nFit])&,spec],
+    StringJoin["Fitting all modes: ",ToString@i,"/",spec//Length//ToString]
+  ];
   If[OptionValue["lAC"],
-    {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec,spec},
-    {fitTime[spec//Mean,lFit,nFit],fitTime[#,lFit,nFit]&/@spec}
+    {fitTime[spec//Mean,lFit,nFit],tcor,spec},
+    {fitTime[spec//Mean,lFit,nFit],tcor}
   ]
 ]
 
