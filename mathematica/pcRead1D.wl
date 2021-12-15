@@ -103,7 +103,7 @@ readTS[sim_,vars__]:=Module[{file,ts,head,pos},
   Table[
     If[(pos=Position[head,var])=={},
       Message[readTS::novar,sim,var];
-      $Failed,
+      ConstantArray[$Failed,ts//Length],
       (*else*)
       ts[[;;,pos[[1,1]]]]
     ],
