@@ -93,12 +93,13 @@ module Special
   real, dimension (my) :: y12p
   real, dimension (mz) :: z12p
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
-          lnTT_min=-max_real, lnTT_min_tau=1.0
+          lnTT_min=-max_real, lnTT_min_tau=1.0,lnTT_max=-max_real,lnTT_max_tau=1.0
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
            lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
+           lnTT_max,lnTT_max_tau, &
            cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
            lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width
 ! Declare index of new variables in f array (if any).
@@ -500,6 +501,17 @@ module Special
         where (fdiff < 0.0) fdiff = 0.0
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + lnTT_min_tau * fdiff
       endif
+!
+      if (lnTT_max > -max_real) then
+        if (dt * lnTT_max_tau > 1.0) then
+          if (lroot) print *, "ERROR: dt=", dt, " lnTT_max_tau=", lnTT_max_tau
+          call fatal_error ('special_calc_density', "dt too large: dt * lnrho_max_tau > 1")
+        endif
+        fdiff = (p%lnTT-lnTT_max)
+        where (fdiff < 0.0) fdiff = 0.0
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + lnTT_max_tau * fdiff
+      endif
+!
       if (lslope_limited_special .and. lentropy .and. llast) then
         if (headtt) print*,'special_calc_energy: call div_diff_flux'
         if (ltemperature_nolog) then
@@ -950,23 +962,20 @@ module Special
 ! Allow adding a sponge zone near z=uborder to prevent temperature increasing beyond TTsponge
 !
       if (lset_sponge_lnTT) then
-          uborder=xyz1(3)-1.1*border_width
-          lborder=xyz0(3)+1.1*border_width
+          uborder=xyz1(3)-border_width
+          lborder=xyz0(3)+border_width
         do m=m1, m2; do n=n1, n2
-          if (z(n) .gt. 0.9*uborder .and. z(n) .lt. 1.1*uborder) then
-            f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
-                                 lnTT_sponge_tau*(1.-&
-                                 TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
-                                 step(z(n),uborder,0.1)*dt_
-          else if (z(n) .gt. 0.9*lborder .and. z(n) .lt. 1.1*lborder) then
-            f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
-                                 lnTT_sponge_tau*(1.-&
-                                 TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
-                                 step(z(n),lborder,-0.1)*dt_
+          f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
+                               lnTT_sponge_tau*(1.-&
+                               TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
+                               step(z(n),uborder,0.05*Lxyz(3))*dt_ - &
+                               lnTT_sponge_tau*(1.-&
+                               TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
+                               step(z(n),lborder,-0.05*Lxyz(3))*dt_
           endif
         enddo; enddo
       endif
-
+!
     endsubroutine  special_after_timestep
 !***********************************************************************
     subroutine norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,vv,profile)
