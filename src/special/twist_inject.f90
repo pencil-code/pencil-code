@@ -972,7 +972,6 @@ module Special
                                lnTT_sponge_tau*(1.-&
                                TTsponge/exp(f(l1:l2,m,n,ilnTT)))* &
                                step(z(n),lborder,-0.05*Lxyz(3))*dt_
-          endif
         enddo; enddo
       endif
 !
