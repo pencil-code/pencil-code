@@ -3,7 +3,7 @@ program magic_emul
   implicit none
   include 'mpif.h'
   integer:: mpierr,ncpus,i,iproc,iproc_save,MPI_COMM_MAGIC, &
-            nprocs,tag,nprocx_penc, nprocx
+            nprocs,tag,nprocx_penc, nprocx, ip
   integer, dimension(MPI_STATUS_SIZE) :: stat
   real :: pi=3.1415, dx
   logical :: lok
@@ -13,7 +13,7 @@ program magic_emul
   real, dimension(:,:,:,:), allocatable :: buffer
 
   INTEGER(KIND=MPI_ADDRESS_KIND) :: iapp
-  integer, dimension(2) :: xind_rng
+  integer, dimension(:,:), allocatable :: xind_rng
   logical :: flag
 !
       call MPI_INIT(mpierr)
@@ -108,6 +108,13 @@ program magic_emul
           tag=tag_foreign+iproc
           call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
 print*, 'Magic: xind_rng=', xind_rng
+        else    ! EULAG case
+          if (iproc==0) then
+            allocate(xind_rng(0:nprocx_penc-1,2))
+            do ip=0,nprocx_penc-1
+              call MPI_RECV(xind_rng(ip,:),2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
+            enddo
+          endif     
         endif
 
         allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))

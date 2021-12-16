@@ -150,21 +150,21 @@ program pencil_emul
           ind2=find_index(xcoors,x(nx))
           if (xcoors(ind2)<x(nx).and.ind2<nforeign_grid(1)) ind2=ind2+1 
           xind_rng(-1,:)=(/ind1,ind2/)     
+          if (nforeign_procs(1)==1) xind_rng(0,:)=xind_rng(-1,:)      !EULAG case
+
 !print*, 'Pencil: iproc, xind_rng=', iproc, xind_rng(-1,:), xcoors(ind1), xcoors(ind2)
 
           if (lnprocx_mismat) then
 !
 !  If number of procs in x-direction is unequal.
 !
-            if (nforeign_procs(1)>1) then !non-EULAG case
-            !tag=tag_foreign+iproc
+            tag=tag_foreign+iproc
             !call MPI_SEND(xind_rng,2,MPI_INTEGER,ncpus+iproc,tag,MPI_COMM_WORLD,mpierr)
             !allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
             !call MPI_RECV(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
             !              MPI_REAL,ncpus+iproc,tag,MPI_COMM_WORLD,stat, mpierr)
-            else   ! EULAG case
-              xind_rng(0,:)=xind_rng(-1,:)
-            endif
+            ! EULAG case
+            call MPI_SEND(xind_rng(-1,:),2,MPI_INTEGER,ncpus,tag,MPI_COMM_WORLD,mpierr)
           else
 !
 !  Send index range of buddy processors if number of procs in x-direction is equal.
