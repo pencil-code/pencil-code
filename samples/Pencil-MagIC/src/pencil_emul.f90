@@ -136,15 +136,17 @@ program pencil_emul
 !
 !  Broadcast xcoors
 !
-        if (iproc<nprocx) then
-          lnprocx_mismat = nprocx>1
-          call MPI_BCAST(xcoors,nforeign_grid(1),MPI_REAL,0,MPI_COMM_XBEAM,mpierr)
+        if (iproc<nprocx) then     ! on processors of first XBEAM
 !
 !  Local grid, assume parallization only in x.
 !
           dx=0.3/(nprocx*nx)
           x=rangegen(0,nx-1)*dx+dx/2 + iproc*nx*dx + .7
 
+          xcoors=xcoors/maxval(xcoors)
+          call MPI_BCAST(xcoors,nforeign_grid(1),MPI_REAL,0,MPI_COMM_XBEAM,mpierr)
+
+          lnprocx_mismat = nprocx/=nforeign_procs(1)
           ind1=find_index(xcoors,x(1))
           if (xcoors(ind1)>x(1).and.ind1>1) ind1=ind1-1 
           ind2=find_index(xcoors,x(nx))
