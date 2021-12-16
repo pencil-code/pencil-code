@@ -10,7 +10,6 @@ program magic_emul
   integer :: tag_foreign=1734
   real, dimension(64) :: xcoors
   real, dimension(64,64,64,3) :: uu_data
-  real, dimension(:,:,:,:), allocatable :: buffer
 
   INTEGER(KIND=MPI_ADDRESS_KIND) :: iapp
   integer, dimension(:,:), allocatable :: xind_rng
@@ -45,7 +44,7 @@ program magic_emul
 
 !print*, '#Magic-World cpus, rank=', nprocs, iproc_save
 !print*, '#Magic cpus, rank=', ncpus, iproc
-      if (iproc==0) then
+        if (iproc==0) then
 !
 !  Send length of name of foreign code.
 !
@@ -105,23 +104,27 @@ program magic_emul
 !  Receive index range of buddy processors.
 !
         if (nprocx_penc==nprocx .and. nprocx>1) then     ! non-EULAG case
+          call MPI_BCAST(nprocx_penc,1,MPI_INTEGER,0,MPI_COMM_MAGIC,mpierr)
           tag=tag_foreign+iproc
-          call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
+          !call MPI_RECV(xind_rng,2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
 print*, 'Magic: xind_rng=', xind_rng
-        else    ! EULAG case
+        elseif (nprocx==1) then                          ! EULAG case
           if (iproc==0) then
             allocate(xind_rng(0:nprocx_penc-1,2))
             do ip=0,nprocx_penc-1
-              call MPI_RECV(xind_rng(ip,:),2,MPI_INTEGER,iproc,tag,MPI_COMM_WORLD,stat,mpierr)
+              tag=tag_foreign+ip
+              call MPI_RECV(xind_rng(ip,:),2,MPI_INTEGER,ip,tag,MPI_COMM_WORLD,stat,mpierr)
             enddo
-          endif     
+          endif
         endif
 
-        allocate(buffer(xind_rng(1):xind_rng(2),64,64,3))
-        buffer=uu_data(xind_rng(1):xind_rng(2),:,:,:)
-
-        call MPI_SEND(buffer,(xind_rng(2)-xind_rng(1)+1)*64*64*3, &
-                      MPI_REAL,iproc,tag,MPI_COMM_WORLD,mpierr)
+        if (nprocx==1.and.iproc==0) then                              ! EULAG case
+          do ip=0,nprocx_penc-1
+            tag=tag_foreign+ip
+            call MPI_SEND(uu_data(:,:,xind_rng(ip,1):xind_rng(ip,2),:),(xind_rng(ip,2)-xind_rng(ip,1)+1)*64*64*3, &
+                          MPI_REAL,ip,tag,MPI_COMM_WORLD,mpierr)
+          enddo
+        endif
 
 !print*, 'Magic: iproc_save, iproc=', iproc_save, iproc
 print*, 'Magic: successful'
