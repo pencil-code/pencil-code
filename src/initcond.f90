@@ -4899,8 +4899,7 @@ module Initcond
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
-        f(:,:,:,i1:i2)=0
-        if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'power_randomphase: zero, nothing added to variables i1,i2=',i1,i2
       else
 !
 !  calculate k^2
