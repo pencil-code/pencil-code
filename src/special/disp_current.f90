@@ -60,6 +60,7 @@ module disp_current
 ! Declare any index variables necessary for main or
 !
   real :: c_light2
+! integer :: iinfl_phi!, iinfl_dphi
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -109,6 +110,8 @@ module disp_current
 !
 !  20-mar-21/axel: coded
 !
+      use FArrayManager
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Initialize module variables which are parameter dependent
@@ -117,6 +120,9 @@ module disp_current
 !
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
+!
+      !iinfl_phi=farray_index_by_name('infl_phi')
+!print*,'AXEL0: iinfl_phi',iinfl_phi
 !
       call keep_compiler_quiet(f)
 !

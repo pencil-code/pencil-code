@@ -87,6 +87,7 @@ module backreact_infl
 ! Declare index of new variables in f array (if any).
 !
   integer :: ispecial=0
+! integer :: iinfl_phi=0, iinfl_dphi=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
@@ -783,11 +784,9 @@ module backreact_infl
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, em_term
-      real :: fact
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
-      fact=1./nwgrid
       a2rhopm=0.
       do n=n1,n2
       do m=m1,m2
@@ -796,7 +795,7 @@ module backreact_infl
         else
           a21=exp(-2.*f(l1:l2,m,n,ispecial+3))
           el=f(l1:l2,m,n,iex:iez)
-          call curl(f,ibb,bb)
+          call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
           call dot2_mn(el,e2)
           em_term=fourthird*(e2+b2)*a21
@@ -808,7 +807,7 @@ module backreact_infl
         a2rhopm=a2rhopm+sum(a2rhop)
       enddo
       enddo
-      call mpireduce_sum(a2rhopm,a2rhopm_all)
+      call mpireduce_sum(a2rhopm/nwgrid,a2rhopm_all)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
