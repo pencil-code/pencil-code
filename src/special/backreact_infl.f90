@@ -92,6 +92,7 @@ module backreact_infl
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real :: initpower_phi=0., cutoff_phi=0., initpower_dphi=0., cutoff_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0.,kpeak_dphi=0.
+  real :: a2rhopm, a2rhopm_all
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
 !
@@ -372,7 +373,8 @@ module backreact_infl
       lnascale=f(l1:l2,m,n,ispecial+3)
       ascale=exp(lnascale)
       a2scale=ascale**2
-      a2rhop=dphi**2
+!     a2rhop=dphi**2
+!     a2rhopm=<dphi**2+gphi**2+(4./3.)*a^*(E^2+B^2)
 !
 !  Possibility of turning off evolution of scale factor and Hubble parameter
 !  By default, lzeroHubble=F, so we use the calculation from above.
@@ -399,7 +401,8 @@ module backreact_infl
 !
         df(l1:l2,m,n,ispecial+0)=df(l1:l2,m,n,ispecial+0)+f(l1:l2,m,n,ispecial+1)
         df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)-2.*Hscript*dphi-a2scale*Vprime
-        df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
+        !df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
+        df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhopm_all+Hscript**2
         df(l1:l2,m,n,ispecial+3)=df(l1:l2,m,n,ispecial+3)+Hscript
 !
 !  speed of light term
@@ -774,9 +777,38 @@ module backreact_infl
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      use Mpicomm, only: mpireduce_sum
+      use Sub, only: dot2_mn, grad, curl
 !
-      call keep_compiler_quiet(f)
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,3) :: el, bb, gphi
+      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, em_term
+      real :: fact
+!
+!  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
+!
+      fact=1./nwgrid
+      a2rhopm=0.
+      do n=n1,n2
+      do m=m1,m2
+        if (iex==0) then
+          em_term=0.
+        else
+          a21=exp(-2.*f(l1:l2,m,n,ispecial+3))
+          el=f(l1:l2,m,n,iex:iez)
+          call curl(f,ibb,bb)
+          call dot2_mn(bb,b2)
+          call dot2_mn(el,e2)
+          em_term=fourthird*(e2+b2)*a21
+        endif
+        dphi=f(l1:l2,m,n,iinfl_dphi)
+        call grad(f,iinfl_phi,gphi)
+        call dot2_mn(gphi,gphi2)
+        a2rhop=dphi**2+gphi2+em_term
+        a2rhopm=a2rhopm+sum(a2rhop)
+      enddo
+      enddo
+      call mpireduce_sum(a2rhopm,a2rhopm_all)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
