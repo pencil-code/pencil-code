@@ -77,7 +77,7 @@ module disp_current
   contains
 !
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -121,8 +121,7 @@ module disp_current
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
 !
-      !iinfl_phi=farray_index_by_name('infl_phi')
-!print*,'AXEL0: iinfl_phi',iinfl_phi
+      iinfl_phi=farray_index_by_name('infl_phi')
 !
       call keep_compiler_quiet(f)
 !

@@ -150,7 +150,7 @@ module backreact_infl
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('special',ispecial,array=4)
+      call farray_register_pde('infl_phi',ispecial,array=4)
       iinfl_phi=ispecial
       iinfl_dphi=ispecial+1
 !
