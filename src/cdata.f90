@@ -364,11 +364,9 @@ module Cdata
   integer :: ibb_sph=0, ibb_sphr=0, ibb_spht=0, ibb_sphp=0
   integer :: inusmag=0, ietasmag=0
   integer :: iaak, iaakim, ieek, ieekim
-  !integer :: iee=0,ieex=0,ieey=0,ieez=0,ialfven=0
   integer :: iee=0,iex=0,iey=0,iez=0,ialfven=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
              iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
-  integer :: iinfl_phi=0, iinfl_dphi=0
   integer :: isld_char=0, ivisc_forc=0,ivisc_forcx=0,ivisc_forcy=0,ivisc_forcz=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0,iSghtest=0

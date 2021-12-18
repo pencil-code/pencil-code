@@ -86,8 +86,7 @@ module backreact_infl
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ispecial=0
-! integer :: iinfl_phi=0, iinfl_dphi=0
+  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
@@ -143,21 +142,20 @@ module backreact_infl
 !
 !  6-oct-03/tony: coded
 !
-! use Sub, only: farray_register_pde
-! use Sub, only: register_report_aux
   use FArrayManager
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('infl_phi',ispecial,array=4)
-      iinfl_phi=ispecial
-      iinfl_dphi=ispecial+1
+      call farray_register_pde('infl_phi',iinfl_phi)
+      call farray_register_pde('infl_dphi',iinfl_dphi)
+      call farray_register_pde('infl_hubble',iinfl_hubble)
+      call farray_register_pde('infl_lna',iinfl_lna)
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
-      ispecialvar=ispecial
-      ispecialvar2=ispecial+1
+      ispecialvar=iinfl_phi
+      ispecialvar2=iinfl_dphi
 !
     endsubroutine register_special
 !***********************************************************************
@@ -172,7 +170,6 @@ module backreact_infl
       if (lroot) call svn_id( &
            "$Id$")
       call keep_compiler_quiet(npvar)
-!
 !
 !!      iqp=npvar+1
 !!      npvar=npvar+1
@@ -231,7 +228,7 @@ module backreact_infl
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
           case ('phi=sinkx')
-            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0) &
+            f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
           case ('nophi')
             Vpotential=.5*axionmass2*phi0**2
@@ -240,8 +237,8 @@ module backreact_infl
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            f(:,:,:,ispecial+2)=f(:,:,:,ispecial+2)+Hubble_ini
-            f(:,:,:,ispecial+3)=f(:,:,:,ispecial+3)+lnascale
+            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+            f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
@@ -249,23 +246,23 @@ module backreact_infl
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+phi0
-            f(:,:,:,ispecial+1)=f(:,:,:,ispecial+1)+dphi0
-            f(:,:,:,ispecial+2)=f(:,:,:,ispecial+2)+Hubble_ini
-            f(:,:,:,ispecial+3)=f(:,:,:,ispecial+3)+lnascale
+            f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
+            f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
+            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+            f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
           case ('gaussian-noise')
-            call gaunoise(amplphi,f,ispecial+0)
+            call gaunoise(amplphi,f,iinfl_phi)
           case ('sinwave-phase')
-            !call sinwave_phase(f,ispecial+0,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
-            !f(:,:,:,ispecial+0)=tanh(f(:,:,:,ispecial+0)/width)
-            call hat(amplphi,f,ispecial+0,width,kx_phi,ky_phi,kz_phi)
-            f(:,:,:,ispecial+0)=f(:,:,:,ispecial+0)+offset
+            !call sinwave_phase(f,iinfl_phi,amplphi,kx_phi,ky_phi,kz_phi,phase_phi)
+            !f(:,:,:,iinfl_phi)=tanh(f(:,:,:,iinfl_phi)/width)
+            call hat(amplphi,f,iinfl_phi,width,kx_phi,ky_phi,kz_phi)
+            f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi)+offset
           case ('phi_power_randomphase')
             call power_randomphase(amplphi,initpower_phi,kgaussian_phi,kpeak_phi,cutoff_phi,&
-              f,ispecial+0,ispecial+0,lscale_tobox=.false.)
+              f,iinfl_phi,iinfl_phi,lscale_tobox=.false.)
           case ('dphi_power_randomphase')
             call power_randomphase(ampldphi,initpower_dphi,kgaussian_dphi,kpeak_dphi,cutoff_dphi,&
-              f,ispecial+1,ispecial+1,lscale_tobox=.false.)
+              f,iinfl_dphi,iinfl_dphi,lscale_tobox=.false.)
   
           case default
             call fatal_error("init_special: No such value for initspecial:" &
@@ -315,16 +312,16 @@ module backreact_infl
       intent(inout) :: p
 !
 ! infl_phi
-      if (lpencil(i_infl_phi)) p%infl_dphi=f(l1:l2,m,n,ispecial+0)
+      if (lpencil(i_infl_phi)) p%infl_dphi=f(l1:l2,m,n,iinfl_phi)
 !
 ! infl_dphi
-      if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,ispecial+1)
+      if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
 !
 ! infl_a2
-      if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,ispecial+3))
+      if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
 !
 ! infl_a21
-      if (lpencil(i_infl_a21)) p%infl_a21=exp(-2.*f(l1:l2,m,n,ispecial+3))
+      if (lpencil(i_infl_a21)) p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
 !
 !  Magnetic field needed for Maxwell stress
 !
@@ -366,12 +363,11 @@ module backreact_infl
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!       if (headtt) call identify_bcs('special',ispecial)
 !
-      phi=f(l1:l2,m,n,ispecial+0)
-      dphi=f(l1:l2,m,n,ispecial+1)
-      Hscript=f(l1:l2,m,n,ispecial+2)
-      lnascale=f(l1:l2,m,n,ispecial+3)
+      phi=f(l1:l2,m,n,iinfl_phi)
+      dphi=f(l1:l2,m,n,iinfl_dphi)
+      Hscript=f(l1:l2,m,n,iinfl_hubble)
+      lnascale=f(l1:l2,m,n,iinfl_lna)
       ascale=exp(lnascale)
       a2scale=ascale**2
 !     a2rhop=dphi**2
@@ -400,24 +396,24 @@ module backreact_infl
 !  dphi/dt = psi
 !  dpsi/dt = - ...
 !
-        df(l1:l2,m,n,ispecial+0)=df(l1:l2,m,n,ispecial+0)+f(l1:l2,m,n,ispecial+1)
-        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)-2.*Hscript*dphi-a2scale*Vprime
-        !df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhop+Hscript**2
-        df(l1:l2,m,n,ispecial+2)=df(l1:l2,m,n,ispecial+2)-4.*pi*a2rhopm_all+Hscript**2
-        df(l1:l2,m,n,ispecial+3)=df(l1:l2,m,n,ispecial+3)+Hscript
+        df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
+        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime
+        !df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhop+Hscript**2
+        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
+        df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
 !
 !  speed of light term
 !
         if (c_light_axion/=0.) then
-          call del2(f,ispecial+0,del2phi)
-          df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+c_light_axion**2*del2phi
+          call del2(f,iinfl_phi,del2phi)
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
         endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
       if (lmagnetic .and. lbackreact_infl) then
         call dot_mn(p%el,p%bb,tmp)
-        df(l1:l2,m,n,ispecial+1)=df(l1:l2,m,n,ispecial+1)+alpf*p%infl_a21*tmp
+        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*tmp
       endif
 !
 !  Diagnostics
@@ -793,7 +789,7 @@ module backreact_infl
         if (iex==0) then
           em_term=0.
         else
-          a21=exp(-2.*f(l1:l2,m,n,ispecial+3))
+          a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
           el=f(l1:l2,m,n,iex:iez)
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
