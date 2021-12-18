@@ -54,6 +54,9 @@ pcReload[]:=Module[{},
       "NaN"
     ]];
   
+  Clear[hrms];
+  hrms[sim_]:=hrms[sim]=With[{h=readTS[sim,"oum"]},h[[-Round[Length[h]/3];;-1]]//RootMeanSquare];
+  
   Clear[kf];
   kf[sim_]:=kf[sim]=
     If[readParamNml[sim,"start.in","lforcing"] && readParamNml[sim,"run.in","FORCE"]!=0.,
@@ -122,6 +125,7 @@ getParam[sim_,"LXYZ"]:=readParamNml[sim,"start.in","LXYZ"]
 
 getParam[sim_,"urms"]:=urms[sim]
 getParam[sim_,"urmskf"]:=urmskf[sim]
+getParam[sim_,"hrms"]:=hrms[sim]
 getParam[sim_,"kf"]:=kf[sim]
 getParam[sim_,"nu"]:=nu[sim]
 getParam[sim_,"eta"]:=eta[sim]
