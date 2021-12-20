@@ -297,14 +297,18 @@ class Power(object):
                         # print(float(line.strip()))
                         time.append(float(line.strip()))
                     else:
-                        for value_string in line.strip().split("( ")[1:]:
-                            value_string = (
-                                value_string.replace(")", "j")
-                                .strip()
-                                .replace(", ", "")
-                                .replace(" ", "+")
-                            )
-                            power_array.append(complex(value_string))
+                        if line.find("j") == -1: # if the string does not contain 'j', assume it represents a real number.
+                            for value_string in line.strip().split():
+                                power_array.append(float(value_string))
+                        else: #Assume we have complex numbers.
+                            for value_string in line.strip().split("( ")[1:]:
+                                value_string = (
+                                    value_string.replace(")", "j")
+                                    .strip()
+                                    .replace(", ", "")
+                                    .replace(" ", "+")
+                                )
+                                power_array.append(complex(value_string))
 
                 time = np.array(time)
                 power_array = (
