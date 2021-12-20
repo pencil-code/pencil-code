@@ -314,9 +314,8 @@ class Power(object):
                 power_array = (
                     np.array(power_array)
                     .reshape([n_blocks, int(dim.nxgrid / 2)])
-                    .astype(np.complex)
                 )
-                self.t = time.astype(np.float32)
+                self.t = time
                 setattr(self, power_list[power_idx], power_array)
 
             elif fn == "power_krms.dat":
