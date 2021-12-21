@@ -115,12 +115,33 @@ indices = [ $
   { name:'iss_b', label:'Base Entropy', dims:1 }, $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
+  { name:'infl_phi', label:'infl_phi', dims:1 }, $
+  { name:'infl_dphi', label:'infl_dphi', dims:1 }, $
+  { name:'infl_hubble', label:'infl_hubble', dims:1 }, $
+  { name:'infl_lna', label:'infl_lna', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
+ ;{ name:'iee', label:'Electric field', dims:3 }, $
   { name:'iemf', label:'Electromotive force', dims:3 }, $
-  { name:'iee', label:'Electric field', dims:3 }, $
+ ;{ name:'iaak', label:'Real part of vector potential', dims:3 }, $
+  { name:'iaakx', label:'Real part of x-comp of vector potential', dims:1 }, $
+  { name:'iaaky', label:'Real part of y-comp of vector potential', dims:1 }, $
+  { name:'iaakz', label:'Real part of z-comp of vector potential', dims:1 }, $
+ ;{ name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $
+  { name:'iaakimx', label:'Imaginary part of x-comp of vector potential', dims:1 }, $
+  { name:'iaakimy', label:'Imaginary part of y-comp of vector potential', dims:1 }, $
+  { name:'iaakimz', label:'Imaginary part of z-comp of vector potential', dims:1 }, $
+ ;{ name:'ieek', label:'Real part of electric field', dims:3 }, $
+  { name:'ieekx', label:'Real part of x-comp of electric field', dims:1 }, $
+  { name:'ieeky', label:'Real part of y-comp of electric field', dims:1 }, $
+  { name:'ieekz', label:'Real part of z-comp of electric field', dims:1 }, $
+ ;{ name:'ieekim', label:'Imaginary part of electric field', dims:3 }, $
+  { name:'ieekimx', label:'Imaginary part of x-comp of electric field', dims:1 }, $
+  { name:'ieekimy', label:'Imaginary part of y-comp of electric field', dims:1 }, $
+  { name:'ieekimz', label:'Imaginary part of z-comp of electric field', dims:1 }, $
+ ;
   { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
   { name:'iggT', label:'ggT', dims:1 }, $
@@ -149,7 +170,7 @@ indices = [ $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
   { name:'ilnrhon', label:'Log density of neutrals', dims:1 }, $
   { name:'ifx', label:'Radiation vector', dims:3 }, $
-  { name:'ie', label:'Radiation scalar', dims:1 }, $
+ ;{ name:'ie', label:'Radiation scalar', dims:1 }, $
   { name:'icc', label:'Passive scalar', dims:1 }, $
   { name:'ilncc', label:'Log passive scalar', dims:1 }, $
   { name:'iacc', label:'Active Scalar', dims:1 }, $
@@ -188,10 +209,16 @@ indices = [ $
 ]
 
 indices_shortcut = [ $
+; { name:'iStr', replace:'iStr' }, $
   { name:'iuu', replace:'iu' }, $
   { name:'iaa', replace:'ia' }, $
   { name:'ibb', replace:'ib' }, $
+  { name:'iee', replace:'ie' }, $
   { name:'ijj', replace:'ij' }, $
+  { name:'iaak', replace:'iak' }, $
+  { name:'ieek', replace:'iek' }, $
+  { name:'iaakim', replace:'iakim' }, $
+  { name:'ieekim', replace:'iekim' }, $
   { name:'iqq', replace:'iq' }, $
   { name:'iee', replace:'ie' } $
   ; don't forget to add a comma above when extending
@@ -199,6 +226,7 @@ indices_shortcut = [ $
 
 ; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
+  { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iQrad', label:'Radiative heating rate', dims:1 }, $
   { name:'ikapparho', label:'Opacity', dims:1 }, $
   { name:'isss', label:'Entropy as auxiliary variable', dims:1 }, $
@@ -226,11 +254,19 @@ indices_aux = [ $
   { name:'iglhc', label:'Gradient of thermal conductivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
-  { name:'iStr', label:'Str', dims:6 }, $
+; { name:'iStr', label:'Str', dims:6 }, $
+  { name:'iSt1', label:'St1', dims:1 }, $
+  { name:'iSt2', label:'St2', dims:1 }, $
+  { name:'iSt3', label:'St3', dims:1 }, $
+  { name:'iSt4', label:'St4', dims:1 }, $
+  { name:'iSt5', label:'St5', dims:1 }, $
+  { name:'iSt6', label:'St6', dims:1 }, $
   { name:'iStT', label:'StT', dims:1 }, $
   { name:'iStX', label:'StX', dims:1 }, $
   { name:'iStTim', label:'StTim', dims:1 }, $
   { name:'iStXim', label:'StXim', dims:1 }, $
+  { name:'ihhT_realspace', label:'ihhT_realspace', dims:1 }, $
+  { name:'ihhX_realspace', label:'ihhX_realspace', dims:1 }, $
   { name:'isld_char', label:'SLD characteristic speed', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
   { name:'isigma', label:'Column density', dims:1 }, $
