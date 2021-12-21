@@ -154,6 +154,8 @@ module Special
   integer :: idiag_muSmax=0    ! DIAG_DOC: $\max\mu$
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu51m=0     ! DIAG_DOC: $\left<|\mu_5|\right>$
+  integer :: idiag_mu53m=0     ! DIAG_DOC: $\left<\mu_5^3\right>$
+  integer :: idiag_mu54m=0     ! DIAG_DOC: $\left<\mu_5^4\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_mu5min=0    ! DIAG_DOC: $\min\mu_5$
   integer :: idiag_mu5max=0    ! DIAG_DOC: $\max\mu_5$
@@ -616,6 +618,8 @@ module Special
         if (idiag_muSmax/=0) call max_mn_name(p%muS,idiag_muSmax)
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu51m/=0) call sum_mn_name(sqrt(p%mu5**2),idiag_mu51m)
+        if (idiag_mu53m/=0) call sum_mn_name(p%mu5**3,idiag_mu53m)
+        if (idiag_mu54m/=0) call sum_mn_name(p%mu5**4,idiag_mu54m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         if (idiag_mu5min/=0) call max_mn_name(-p%mu5,idiag_mu5min,lneg=.true.)
         if (idiag_mu5max/=0) call max_mn_name(p%mu5,idiag_mu5max)
@@ -728,7 +732,7 @@ module Special
 !
       if (lreset) then
         idiag_muSm=0; idiag_muSrms=0; idiag_muSmax=0;
-        idiag_mu5m=0; idiag_mu51m=0; idiag_mu5rms=0;
+        idiag_mu5m=0; idiag_mu51m=0; idiag_mu53m=0; idiag_mu54m=0; idiag_mu5rms=0;
         idiag_mu5min=0; idiag_mu5max=0; idiag_mu5abs=0;
         idiag_gamf5m=0; idiag_gmu5rms=0; idiag_gmuSrms=0; 
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
@@ -746,6 +750,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'muSmax',idiag_muSmax)
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu51m',idiag_mu51m)
+        call parse_name(iname,cname(iname),cform(iname),'mu53m',idiag_mu53m)
+        call parse_name(iname,cname(iname),cform(iname),'mu54m',idiag_mu54m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'mu5min',idiag_mu5min)
         call parse_name(iname,cname(iname),cform(iname),'mu5max',idiag_mu5max)
