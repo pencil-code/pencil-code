@@ -115,32 +115,20 @@ indices = [ $
   { name:'iss_b', label:'Base Entropy', dims:1 }, $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
-  { name:'infl_phi', label:'Inflaton phi', dims:1 }, $
-  { name:'infl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
-  { name:'infl_hubble', label:'Comoving Hubble parameter', dims:1 }, $
-  { name:'infl_lna', label:'Logarithmic scale factor', dims:1 }, $
+  { name:'iinfl_phi', label:'Inflaton phi', dims:1 }, $
+  { name:'iinfl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
+  { name:'iinfl_hubble', label:'Comoving Hubble parameter', dims:1 }, $
+  { name:'iinfl_lna', label:'Logarithmic scale factor', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
- ;{ name:'iee', label:'Electric field', dims:3 }, $
+  { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iemf', label:'Electromotive force', dims:3 }, $
- ;{ name:'iaak', label:'Real part of vector potential', dims:3 }, $
-  { name:'iaakx', label:'Real part of x-comp of vector potential', dims:1 }, $
-  { name:'iaaky', label:'Real part of y-comp of vector potential', dims:1 }, $
-  { name:'iaakz', label:'Real part of z-comp of vector potential', dims:1 }, $
- ;{ name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $
-  { name:'iaakimx', label:'Imaginary part of x-comp of vector potential', dims:1 }, $
-  { name:'iaakimy', label:'Imaginary part of y-comp of vector potential', dims:1 }, $
-  { name:'iaakimz', label:'Imaginary part of z-comp of vector potential', dims:1 }, $
- ;{ name:'ieek', label:'Real part of electric field', dims:3 }, $
-  { name:'ieekx', label:'Real part of x-comp of electric field', dims:1 }, $
-  { name:'ieeky', label:'Real part of y-comp of electric field', dims:1 }, $
-  { name:'ieekz', label:'Real part of z-comp of electric field', dims:1 }, $
- ;{ name:'ieekim', label:'Imaginary part of electric field', dims:3 }, $
-  { name:'ieekimx', label:'Imaginary part of x-comp of electric field', dims:1 }, $
-  { name:'ieekimy', label:'Imaginary part of y-comp of electric field', dims:1 }, $
-  { name:'ieekimz', label:'Imaginary part of z-comp of electric field', dims:1 }, $
+  { name:'iaak', label:'Real part of vector potential', dims:3 }, $
+  { name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $
+  { name:'ieek', label:'Real part of electric field', dims:3 }, $
+  { name:'ieekim', label:'Imaginary part of electric field', dims:3 }, $
  ;
   { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
@@ -219,14 +207,12 @@ indices_shortcut = [ $
   { name:'ieek', replace:'iek' }, $
   { name:'iaakim', replace:'iakim' }, $
   { name:'ieekim', replace:'iekim' }, $
-  { name:'iqq', replace:'iq' }, $
-  { name:'iee', replace:'ie' } $
+  { name:'iqq', replace:'iq' } $
   ; don't forget to add a comma above when extending
 ]
 
 ; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
-  { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iQrad', label:'Radiative heating rate', dims:1 }, $
   { name:'ikapparho', label:'Opacity', dims:1 }, $
   { name:'isss', label:'Entropy as auxiliary variable', dims:1 }, $
