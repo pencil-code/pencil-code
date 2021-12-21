@@ -115,10 +115,10 @@ indices = [ $
   { name:'iss_b', label:'Base Entropy', dims:1 }, $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
-  { name:'infl_phi', label:'infl_phi', dims:1 }, $
-  { name:'infl_dphi', label:'infl_dphi', dims:1 }, $
-  { name:'infl_hubble', label:'infl_hubble', dims:1 }, $
-  { name:'infl_lna', label:'infl_lna', dims:1 }, $
+  { name:'infl_phi', label:'Inflaton phi', dims:1 }, $
+  { name:'infl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
+  { name:'infl_hubble', label:'Comoving Hubble parameter', dims:1 }, $
+  { name:'infl_lna', label:'Logarithmic scale factor', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
