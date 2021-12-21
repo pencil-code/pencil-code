@@ -4029,12 +4029,14 @@ module Magnetic
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
 !
-!  Dummy pencils
+!  Dummy pencils. At the moment, we say that magnetic calculates the p%el pencil,
+!  but in reality it is calculated in one of the special routines (disp_current)
+!  or in magnetic/maxwell.
 !
-   !  if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
-   !      "Electric field is not currently computed in magnetic")
-      if ((lpenc_loc(i_el).or.lpenc_loc(i_e2)).and.headt) &
-          print*,'lets hope p%el and p%e2 are computed elsewhere...'
+   !!  if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
+   !!      "Electric field is not currently computed in magnetic")
+   !  if ((lpenc_loc(i_el).or.lpenc_loc(i_e2)).and.headt) &
+   !      print*,'lets hope p%el and p%e2 are computed elsewhere...'
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
