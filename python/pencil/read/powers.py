@@ -297,7 +297,7 @@ class Power(object):
                         # print(float(line.strip()))
                         time.append(float(line.strip()))
                     else:
-                        if line.find("j") == -1: # if the string does not contain 'j', assume it represents a real number.
+                        if line.find(",") == -1: # if the line does not contain ',', assume it represents a series of real numbers.
                             for value_string in line.strip().split():
                                 power_array.append(float(value_string))
                         else: #Assume we have complex numbers.
