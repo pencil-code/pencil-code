@@ -87,14 +87,19 @@ module backreact_infl
 ! Declare index of new variables in f array (if any).
 !
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0
+  real :: ncutoff_phi=1.
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
-  real :: initpower_phi=0., cutoff_phi=0., initpower_dphi=0., cutoff_dphi=0.
-  real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0.,kpeak_dphi=0.
+  real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
+  real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
+  real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
+  real :: relhel_phi=0.
   real :: a2rhopm, a2rhopm_all
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
+  logical :: lscale_tobox=.true.
+  logical :: lskip_projection_phi=.false., lvectorpotential=.false.
 !
   character (len=labellen) :: Vprime_choice='quadratic'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -104,7 +109,8 @@ module backreact_infl
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
-      initpower_dphi, cutoff_dphi, kgaussian_dphi, kpeak_dphi
+      initpower_dphi, cutoff_dphi, kpeak_dphi, &
+      ncutoff_phi, lscale_tobox
 !
   namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
@@ -213,7 +219,7 @@ module backreact_infl
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, eps=.01, Hubble_ini, lnascale
@@ -258,11 +264,15 @@ module backreact_infl
             call hat(amplphi,f,iinfl_phi,width,kx_phi,ky_phi,kz_phi)
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi)+offset
           case ('phi_power_randomphase')
-            call power_randomphase(amplphi,initpower_phi,kgaussian_phi,kpeak_phi,cutoff_phi,&
-              f,iinfl_phi,iinfl_phi,lscale_tobox=.false.)
+            call power_randomphase_hel(amplphi,initpower_phi,initpower2_phi, &
+              cutoff_phi,ncutoff_phi,kpeak_phi,f,iinfl_phi,iinfl_phi, &
+              relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false.)
           case ('dphi_power_randomphase')
-            call power_randomphase(ampldphi,initpower_dphi,kgaussian_dphi,kpeak_dphi,cutoff_dphi,&
-              f,iinfl_dphi,iinfl_dphi,lscale_tobox=.false.)
+            call power_randomphase_hel(ampldphi,initpower_dphi,initpower2_dphi, &
+              cutoff_phi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
+              relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false.)
   
           case default
             call fatal_error("init_special: No such value for initspecial:" &
