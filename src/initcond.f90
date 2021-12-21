@@ -5080,32 +5080,40 @@ module Initcond
       else
         lremain_in_fourier1 = .false.
       endif
+print*,'AXEL: ampl,initpower,initpower2,lscale_tobox1,lremain_in_fourier1=', &
+  ampl,initpower,initpower2,lscale_tobox1,lremain_in_fourier1
 !
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for k2')
       allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for r')
 !
-      allocate(u_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
-      allocate(u_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
-!
-      allocate(v_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for v_re')
-      allocate(v_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for v_im')
+      if (i2==i1) then
+        allocate(u_re(nx,ny,nz,1),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_re')
+        allocate(u_im(nx,ny,nz,1),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_im')
+      else
+        allocate(u_re(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_re')
+        allocate(u_im(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_im')
+        allocate(v_re(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for v_re')
+        allocate(v_im(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for v_im')
+      endif
 !
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
+      if (stat>0) call fatal_error('power_randomphase_hel', &
           'Could not allocate memory for kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
+      if (stat>0) call fatal_error('power_randomphase_hel', &
           'Could not allocate memory for ky')
       allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
+      if (stat>0) call fatal_error('power_randomphase_hel', &
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
@@ -5153,7 +5161,7 @@ module Initcond
 !
 !  generate flat spectrum with random phase (between -pi and pi)
 !
-        do i=1,3
+        do i=1,i2-i1+1
           call random_number_wrapper(r)
           u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
           u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
@@ -5235,48 +5243,34 @@ module Initcond
 !
 !  scale with r
 !
-        do i=1,3
-          u_re(:,:,:,i)=r*u_re(:,:,:,i)
-          u_im(:,:,:,i)=r*u_im(:,:,:,i)
-        enddo !i
+        if (i2==i1) then
+          u_re(:,:,:,1)=r*u_re(:,:,:,1)
+          u_im(:,:,:,1)=r*u_im(:,:,:,1)
+          if (lremain_in_fourier1) then
+            f(l1:l2,m1:m2,n1:n2,i1  )=f(l1:l2,m1:m2,n1:n2,i1  )+u_re(:,:,:,1)
+            f(l1:l2,m1:m2,n1:n2,i1+1)=f(l1:l2,m1:m2,n1:n2,i1+1)+u_im(:,:,:,1)
+          else
+            call fft_xyz_parallel(u_re(:,:,:,1),u_im(:,:,:,1),linv=.true.)
+            f(l1:l2,m1:m2,n1:n2,i1)=f(l1:l2,m1:m2,n1:n2,i1)+u_re(:,:,:,1)
+          endif
+        else
+          do i=1,3
+            u_re(:,:,:,i)=r*u_re(:,:,:,i)
+            u_im(:,:,:,i)=r*u_im(:,:,:,i)
+          enddo !i
 !
 !  Apply projection operator
 !  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
 !  Remember that for the return transform, data have to be
 !  arranged in the order (kz,kx,ky).
 !
-        if (lskip_projection) then
-          v_re=u_re
-          v_im=u_im
-        else
-!  In 2-D
-          if (nz==1) then
-            ikz=1
-            do iky=1,ny
-              do ikx=1,nx
-!
-!  Real part of (ux, uy, uz) -> vx, vy, vz
-!  (kk.uu)/k2, vi = ui - ki kj uj
-!
-                r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                               +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)
-!
-!  Imaginary part of (ux, uy, uz) -> vx, vy, vz
-!  (kk.uu)/k2, vi = ui - ki kj uj
-!
-                r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                               +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)
-              enddo
-            enddo
-!  In 3-D
+          if (lskip_projection) then
+            v_re=u_re
+            v_im=u_im
           else
-            do ikz=1,nz
+!  In 2-D
+            if (nz==1) then
+              ikz=1
               do iky=1,ny
                 do ikx=1,nx
 !
@@ -5284,96 +5278,87 @@ module Initcond
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
                   r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
-                                 +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                   v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                   v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
                   r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
-                                 +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                   v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                   v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)
                 enddo
               enddo
-            enddo
+!  In 3-D
+            else
+              do ikz=1,nz
+                do iky=1,ny
+                  do ikx=1,nx
+!
+!  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                                   +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                                   +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+!
+!  Imaginary part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                                   +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                                   +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  enddo
+                enddo
+              enddo
+            endif
           endif
-        endif
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
 !
-        r=relhel/sqrt(k2)
-        r(1,1,1)=0.
+          r=relhel/sqrt(k2)
+          r(1,1,1)=0.
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
-        if (present(k2hel) .and. present(k2hel)) then
-          if (k1hel>0. .and. k2hel<max_real) then
-            where (k2<k1hel**2 .or. k2>k2hel**2)
-              r = 0.
-            endwhere
+          if (present(k2hel) .and. present(k2hel)) then
+            if (k1hel>0. .and. k2hel<max_real) then
+              where (k2<k1hel**2 .or. k2>k2hel**2)
+                r = 0.
+              endwhere
+            endif
           endif
-        endif
 !
 !  In 2-D
-        if (nz==1) then
-          do iky=1,nz
-            do ikx=1,ny
-              ikz=1
-!
-!  (vx, vy, vz) -> ux
-!
-              u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                  -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-              u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                  +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-!
-!  (vx, vy, vz) -> uy
-!
-              u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                  +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-              u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                  -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-!
-!  (vx, vy, vz) -> uz
-!
-              u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
-                  +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                  -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-              u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
-                  -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                  +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-            enddo
-          enddo
-!  In 3-D
-        else
-          do ikz=1,nz
-            do iky=1,ny
-              do ikx=1,nx
+          if (nz==1) then
+            do iky=1,nz
+              do ikx=1,ny
+                ikz=1
 !
 !  (vx, vy, vz) -> ux
 !
                 u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                    +kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
                     -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                    -kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
                     +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
                 u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                    -kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz)
+                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                    +kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz)
+                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uz
 !
@@ -5383,32 +5368,67 @@ module Initcond
                 u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
                     -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
                     +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-!
               enddo
             enddo
-          enddo
-        endif
+!  In 3-D
+          else
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
+!
+!  (vx, vy, vz) -> ux
+!
+                  u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
+                      +kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
+                      -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
+                      -kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
+                      +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+!
+!  (vx, vy, vz) -> uy
+!
+                  u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
+                      +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
+                      -kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
+                      -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
+                      +kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz)
+!
+!  (vx, vy, vz) -> uz
+!
+                  u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
+                      +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
+                      -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
+                      -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
+                      +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
+!
+                enddo
+              enddo
+            enddo
+          endif
 !
 !  back to real space, unless lremain_in_fourier=T, in which case
 !  we assume that the imaginary part is just next to the real part.
 !
-        if (lremain_in_fourier1) then
-          f(l1:l2,m1:m2,n1:n2,i1  :i2  )=f(l1:l2,m1:m2,n1:n2,i1  :i2  )+u_re
-          f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)=f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)+u_im
-        else
-          do i=1,3
-            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
-          enddo !i
-          f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+          if (lremain_in_fourier1) then
+            f(l1:l2,m1:m2,n1:n2,i1  :i2  )=f(l1:l2,m1:m2,n1:n2,i1  :i2  )+u_re
+            f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)=f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)+u_im
+          else
+            do i=1,3
+              call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+            enddo !i
+            f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+          endif
         endif
 !
 !  notification
 !
         if (lroot) then
           if (cutoff==0) then
-            print*,'powern: k^',initpower,' spectrum : var  i=',i
+            print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
           else
-            print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+            print*,'power_randomphase_hel: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
                 initpower,', k0 =',cutoff,' : var  i=',i
           endif
         endif
