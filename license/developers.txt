@@ -13,7 +13,7 @@ Name,                 email,                         svn-name,             offic
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Omer Anjum,           oanjum/illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & Illinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
-Iouri Belokopytov,    iourib/kth.se,                 ,                     +46 8 553 784 29   ,                         ,            Nordita
+Iouri Belokopytov,    iourib/kth.se,                 ,                     +46 8 553 784 29   ,+46 705 933 639          ,            Nordita
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
 Philippe Bourdin,     pc/bourdin.ch,                 PABourdin,            +43 316 380 5258,  +43 720 513 493,          angiebecker.ch, University of Graz
