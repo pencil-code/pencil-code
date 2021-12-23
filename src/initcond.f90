@@ -5080,8 +5080,6 @@ module Initcond
       else
         lremain_in_fourier1 = .false.
       endif
-print*,'AXEL: ampl,initpower,initpower2,lscale_tobox1,lremain_in_fourier1=', &
-  ampl,initpower,initpower2,lscale_tobox1,lremain_in_fourier1
 !
 !  Allocate memory for arrays.
 !
