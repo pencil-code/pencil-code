@@ -208,7 +208,9 @@ module Testfield
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
   integer :: idiag_E22rms=0     ! DIAG_DOC: $\left<{\cal E}_{22}^2\right>^{1/2}$
   integer :: idiag_E0rms=0      ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
-  integer :: idiag_E0mrms=0     ! DIAG_DOC: $\left<\left<{\cal E}_{0}\right>^2\right>^{1/2}$
+  integer :: idiag_E0mrms=0     ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
+  integer :: idiag_E0xrms=0     ! DIAG_DOC: $\left<{\cal E}_{0,x}^2\right>^{1/2}$
+  integer :: idiag_E0yrms=0     ! DIAG_DOC: $\left<{\cal E}_{0,y}^2\right>^{1/2}$
   integer :: idiag_Ex11pt=0     ! DIAG_DOC: ${\cal E}_x^{11}$
   integer :: idiag_Ex21pt=0     ! DIAG_DOC: ${\cal E}_x^{21}$
   integer :: idiag_Ex12pt=0     ! DIAG_DOC: ${\cal E}_x^{12}$
@@ -232,6 +234,18 @@ module Testfield
   integer :: idiag_E122z=0      ! DIAG_DOC: ${\cal E}_1^{22}$
   integer :: idiag_E222z=0      ! DIAG_DOC: ${\cal E}_2^{22}$
   integer :: idiag_E322z=0      ! DIAG_DOC: ${\cal E}_3^{22}$
+!
+!  The following not yet implemented.
+!
+  integer :: idiag_alp11z=0     ! DIAG_DOC: $\alpha_{11}(z,t)$
+  integer :: idiag_alp21z=0     ! DIAG_DOC: $\alpha_{21}(z,t)$
+  integer :: idiag_alp12z=0     ! DIAG_DOC: $\alpha_{12}(z,t)$
+  integer :: idiag_alp22z=0     ! DIAG_DOC: $\alpha_{22}(z,t)$
+  integer :: idiag_eta11z=0     ! DIAG_DOC: $\eta_{11}(z,t)$
+  integer :: idiag_eta21z=0     ! DIAG_DOC: $\eta_{21}(z,t)$
+  integer :: idiag_eta12z=0     ! DIAG_DOC: $\eta_{12}(z,t)$
+  integer :: idiag_eta22z=0     ! DIAG_DOC: $\eta_{22}(z,t)$
+!
   integer :: idiag_E10z=0       ! DIAG_DOC: ${\cal E}_1^{0}$
   integer :: idiag_E20z=0       ! DIAG_DOC: ${\cal E}_2^{0}$
   integer :: idiag_E30z=0       ! DIAG_DOC: ${\cal E}_3^{0}$
@@ -1368,7 +1382,16 @@ module Testfield
                                              +uxbtestmz(nl,2,iE0)*p%oo(:,2) &
                                              +uxbtestmz(nl,3,iE0)*p%oo(:,3),idiag_E0Wm)
         endif
-        if (iE0/=0.and.idiag_E0mrms/=0) call sum_mn_name(sum(uxbtestmz(nl,:,iE0)**2)*unity,idiag_E0mrms,lsqrt=.true.)
+!
+        if (iE0/=0) then
+          if (idiag_E0rms/=0) then          ! should be equivalent to idiag_E0mrms 
+            call dot2(Eipq(:,:,iE0),Epq2)
+            call sum_mn_name(Epq2,idiag_E0rms,lsqrt=.true.)
+          endif
+          if (idiag_E0mrms/=0) call sum_mn_name(sum(uxbtestmz(nl,:,iE0)**2)*unity,idiag_E0mrms,lsqrt=.true.)
+          if (idiag_E0xrms/=0) call sum_mn_name(uxbtestmz(nl,1,iE0)**2*unity,idiag_E0xrms,lsqrt=.true.)
+          if (idiag_E0yrms/=0) call sum_mn_name(uxbtestmz(nl,2,iE0)**2*unity,idiag_E0yrms,lsqrt=.true.)
+        endif
 !
 !  diagnostics for delta function driving, but doesn't seem to work
 !
@@ -1489,11 +1512,6 @@ module Testfield
           call sum_mn_name(bpq2,idiag_b22rms,lsqrt=.true.)
         endif
 !
-        if (idiag_E0rms/=0) then
-          call dot2(Eipq(:,:,iE0),Epq2)
-          call sum_mn_name(Epq2,idiag_E0rms,lsqrt=.true.)
-        endif
-!
         if (idiag_E11rms/=0) then
           call dot2(Eipq(:,:,i1),Epq2)
           call sum_mn_name(Epq2,idiag_E11rms,lsqrt=.true.)
@@ -1579,9 +1597,8 @@ module Testfield
       use Sub
       use Density, only: lcalc_lnrhomean,calc_pencils_density,lnrhomz
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz,uumz
-      use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
+      use Magnetic, only: calc_pencils_magnetic,beltrami_phase, &
                           lcalc_aameanz,aamz
-      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: c,s
@@ -1695,7 +1712,16 @@ mn:   do n=n1,n2
 !  Note that glnrhomz has dimensions mz*3, not nz*3.
 !
           sijfluct=p%sij
-          if (lcalc_uumeanz) sijfluct(:,3,3) = sijfluct(:,3,3) - guumz(nl,3)
+          !!!if (lcalc_uumeanz) sijfluct(:,3,3) = sijfluct(:,3,3) - guumz(nl,3)
+          if (lcalc_uumeanz) then
+            sijfluct(:,1,1) = sijfluct(:,1,1) + 1./3.*guumz(nl,3)
+            sijfluct(:,2,2) = sijfluct(:,2,2) + 1./3.*guumz(nl,3)
+            sijfluct(:,3,3) = sijfluct(:,3,3) - 2./3.*guumz(nl,3)
+            sijfluct(:,1,3) = sijfluct(:,1,3) - 1./2.*guumz(nl,1)
+            sijfluct(:,3,1) = sijfluct(:,1,3)
+            sijfluct(:,2,3) = sijfluct(:,2,3) - 1./2.*guumz(nl,2)
+            sijfluct(:,3,2) = sijfluct(:,2,3)
+          endif
 !
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
@@ -1763,40 +1789,71 @@ mn:   do n=n1,n2
           else
 !
 !  Calculate uxb and jxb, depending on whether we use
-!  Testfield Method (i) or (ii), or mixed ones of either (iii) or (iv).
+!  testfield flavor (i) or (ii), or mixed ones of either (iii) or (iv).
 !
             select case (itestfield_method)
-            case ('ju', '(i)')
-              call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
-              call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+            case ('ju', '(i)', 'bu', '(iii)', 'jugu', '(v)', 'bugu', '(vii)')
               call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
               call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
-            case ('bb', '(ii)')
-              call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
-              call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
-              call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
-              call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
-            case ('bu', '(iii)')
-              call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
-              call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
-              call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
-              call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
-            case ('jb', '(iv)')
-              call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
-              call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+            case ('jb', '(iv)', 'bb', '(ii)', 'jbgu', '(viii)', 'bbgu', '(vi)')
               call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
               call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
             case default
               call fatal_error('testfield_after_boundary','unknown itestfield_method '//trim(itestfield_method))
             endselect
+
+            select case (itestfield_method)
+            case ('ju', '(i)', 'jb', '(iv)', 'jugu', '(v)', 'jbgu', '(viii)')
+              call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
+              call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+            case ('bb', '(ii)', 'bu', '(iii)', 'bbgu', '(vi)', 'bugu', '(vii)')
+              call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
+              call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
+            endselect
+            !case ('ju', '(i)')
+            !  call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
+            !  call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+            !  call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
+            !  call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
+            !case ('bb', '(ii)')
+            !  call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
+            !  call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
+            !  call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
+            !  call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
+            !case ('bu', '(iii)')
+            !  call cross_mn(j0ref,bbtest,jxbtest1)      ! j0 x btest
+            !  call cross_mn(jjtest,bbfluct,jxbtest2)    ! + jtest x b
+            !  call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
+            !  call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
+            !case ('jb', '(iv)')
+            !  call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
+            !  call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+            !  call cross_mn(u0ref,bbtest,uxbtest1)      ! u0 x btest
+            !  call cross_mn(uutest,bbfluct,uxbtest2)    ! + utest x b
 !
             uxbtest=uxbtest1+uxbtest2
             jxbtest=jxbtest1+jxbtest2
 !
-!  Only one of the two possibilities for ugu, ugh and sgh, respectively, implemented here.
+!  Calculate (u.grad) u, depending on whether we use
+!  testfield flavor (i) through (iv) or (v) through (viii).
 !
-            call u_dot_grad(f,iuxtest,uijtest,uufluct,ugutest,UPWIND=lupw_uutest)                         ! (u.grad)(utest)   tbc
-            call u_dot_grad(f,iuutest+3*(njtest-1),uij0ref,uutest,ugutest,UPWIND=lupw_uutest,LADD=.true.) ! (utest.grad)(u0)  tbc
+            select case (itestfield_method)
+            case ('ju', 'jb', 'bu', 'bb', '(i)', '(ii)', '(iii)', '(iv)')
+              call u_dot_grad(f,iuxtest,uijtest,uufluct,ugutest,UPWIND=lupw_uutest)                         ! (u.grad)(utest)   tbc
+              call u_dot_grad(f,iuutest+3*(njtest-1),uij0ref,uutest,ugutest,UPWIND=lupw_uutest,LADD=.true.) ! (utest.grad)(u0)  tbc
+            case ('jugu', 'jbgu', 'bugu', 'bbgu', '(v)', '(vi)', '(vii)', '(viii)')
+
+              call u_dot_grad(f,iuxtest,uijtest,u0ref,ugutest,UPWIND=lupw_uutest)                           ! (u0.grad)(utest)  tbc
+              call u_dot_grad(f,iux,p%uij,uutest,ugutest,UPWIND=lupw_uutest,LADD=.true.)                    ! (utest.grad)(U)   tbc
+              if (lcalc_uumeanz) then
+                do j=1,3
+                  ugutest(:,j) = ugutest(:,j) - uutest(:,3)*guumz(nl,j)                                     ! -(utest.grad) UUmean tbc
+                enddo
+              endif
+                                                                                                            ! =(utest.grad)(u)
+            endselect
+!
+!  Only one of the two possibilities for ugh and sgh, respectively, implemented here.
 !
             call u_dot_grad(f,ihxtest,ghhtest,uufluct,ughtest,UPWIND=lupw_hhtest)                         ! u.grad(htest)     tbc
             call u_dot_grad(f,ihhtest+3*(njtest-1),gh0ref,uutest,ughtest,UPWIND=lupw_hhtest,LADD=.true.)  ! utest.grad(h0)    tbc
@@ -1954,25 +2011,15 @@ mn:   do n=n1,n2
 !
 !  Calculate phase_testfield (for Beltrami fields)
 !
-      if (lphase_adjust) then
-        if (lroot) then
-          if (idiag_bcosphz/=0.and.idiag_bsinphz/=0) then
-            bcosphz=fname(idiag_bcosphz)
-            bsinphz=fname(idiag_bsinphz)
-            phase_testfield=atan2(bsinphz,bcosphz)
-          else
-            call fatal_error('testfield_after_boundary', &
-            'need bcosphz, bsinphz in print.in for lphase_adjust=T')
-          endif
-        endif
-        call mpibcast_real(phase_testfield)
+      if (lphase_adjust.and.lmagnetic) then
+        phase_testfield=beltrami_phase()
         c=cos(z+phase_testfield)
         s=sin(z+phase_testfield)
         c2z=c**2
         s2z=s**2
         csz=c*s
+        if (ip<9) print*,'iproc,phase_testfield=',iproc,phase_testfield
       endif
-      if (ip<9) print*,'iproc,phase_testfield=',iproc,phase_testfield
 !
 !  reset headtt
 !
@@ -2247,7 +2294,8 @@ mn:   do n=n1,n2
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
-        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0; idiag_E0mrms=0
+        idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_h0rms=0; idiag_E0rms=0;
+        idiag_E0mrms=0; idiag_E0xrms=0; idiag_E0yrms=0
         idiag_u0max=0; idiag_b0max=0; idiag_h0max=0; idiag_rho0m=0; idiag_bhrms=0
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
@@ -2365,6 +2413,8 @@ mn:   do n=n1,n2
         call parse_name(iname,cname(iname),cform(iname),'E22rms',idiag_E22rms)
         call parse_name(iname,cname(iname),cform(iname),'E0rms',idiag_E0rms)
         call parse_name(iname,cname(iname),cform(iname),'E0mrms',idiag_E0mrms)
+        call parse_name(iname,cname(iname),cform(iname),'E0xrms',idiag_E0xrms)
+        call parse_name(iname,cname(iname),cform(iname),'E0yrms',idiag_E0yrms)
         call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
         call parse_name(iname,cname(iname),cform(iname),'E0Um',idiag_E0Um)
         call parse_name(iname,cname(iname),cform(iname),'E0Wm',idiag_E0Wm)
