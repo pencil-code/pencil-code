@@ -2323,10 +2323,10 @@ module EquationOfState
             call bval_from_neumann(f,topbot,iss,3,rho_xy)
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
-             do i=1,nghost
-               call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
-               f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
-             enddo
+            do i=1,nghost
+              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+            enddo
           endif
         endif
 !
@@ -2335,7 +2335,7 @@ module EquationOfState
 !
       case ('top')
 !
-!  calculate Fbot/(K*cs2)
+!  calculate Ftop/(K*cs2)
 !
         if (pretend_lnTT) then
           tmp_xy=-FtopKtop/exp(f(:,:,n2,iss))
@@ -2846,7 +2846,7 @@ module EquationOfState
             Kxbot=hcondxbot
           endif
 !
-          dsdx_yz=(Fbot/TT_yz)/(chit_prof1*chi_t*rho_yz + Kxbot*gamma)
+          dsdx_yz=(Fbot/TT_yz)/(chit_prof1*chi_t*rho_yz + Kxbot*cv1)
 !
 !  Add gradient of reference entropy.
 !
@@ -2857,8 +2857,8 @@ module EquationOfState
           do i=1,nghost
             call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrhodx_yz)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &
-                cp*(Kxbot*gamma_m1/(gamma*Kxbot+chit_prof1*chi_t*rho_yz))* &
-                   dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
+                            Kxbot*gamma_m1/(Kxbot*cv1+chit_prof1*chi_t*rho_yz)* &
+                            dlnrhodx_yz + dx2_bound(-i)*dsdx_yz
           enddo
         endif
 !
