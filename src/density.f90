@@ -111,7 +111,7 @@ module Density
   logical :: lrho_flucz_as_aux=.false.
   logical :: lmassdiff_fix = .true.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
-  logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
+  logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree=.false.
   logical, target :: lreduced_sound_speed=.false.
@@ -166,7 +166,7 @@ module Density
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, &
       lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,&
-      lcalc_lnrhomean, lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
+      lcalc_lnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, &
       lreduced_sound_speed, lrelativistic_eos, ladvection_density, &

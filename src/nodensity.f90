@@ -27,8 +27,8 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_lnrhomean=.false., lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  real, dimension (mz) :: lnrhomz
+  logical :: lcalc_lnrhomean=.false.,lupw_lnrho=.false.
+  real, dimension (mz,1) :: lnrhomz
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   include 'density.h'

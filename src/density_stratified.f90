@@ -101,8 +101,8 @@ module Density
 !
 !  Dummy Variables
 !
-  real, dimension(mz) :: lnrhomz
-  logical :: lcalc_lnrhomean = .false.,lcalc_glnrhomean = .false.
+  real, dimension(mz,1) :: lnrhomz
+  logical :: lcalc_lnrhomean = .false.
   logical :: lupw_lnrho = .false.
 !
   contains
