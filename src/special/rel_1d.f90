@@ -86,10 +86,12 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ieee=0, isss=0, ibeteee=0
+  integer :: ieee=0, isss=0, ibee=0
   real, dimension (nx) :: ralp
   real :: amplspecial=.1, r0=3., width=.1
   real :: nu=0., alp=0.
+  !real :: bet0=10*tini
+  real :: bet0=1e-3
 !
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
@@ -132,7 +134,7 @@ module Special
       call farray_register_pde('eee',ieee)
       call farray_register_pde('sss',isss)
 !
-      call farray_register_auxiliary('beteee',ibeteee)
+      call farray_register_auxiliary('bee',ibee)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -240,13 +242,21 @@ module Special
 !  24-nov-04/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rat
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 !
 ! bet
-      if (lpencil(i_bet)) p%bet=.75*f(l1:l2,m,n,isss)/f(l1:l2,m,n,ieee)
+      if (lpencil(i_bet)) then
+        p%bet=.75*f(l1:l2,m,n,isss)/f(l1:l2,m,n,ieee)
+        where (p%bet >= bet0)
+          rat=2.*f(l1:l2,m,n,ieee)/f(l1:l2,m,n,isss)
+          p%bet=rat-sqrt(rat**2-3.)
+        endwhere
+      endif
+print*,'axel: p%bet=',p%bet
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -273,7 +283,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2eee, del2sss, deee, dsss, &
+      real, dimension (nx) :: del2eee, del2sss, dbee, dsss, &
         diffus_special
 !
       intent(in) :: f,p
@@ -287,12 +297,12 @@ module Special
       call del2(f,isss,del2sss)
 !
       call der(f,isss,dsss,1)
-      call der(f,ieee,deee,1)
+      call der(f,ibee,dbee,1)
 
 !  Update df
 !
         df(l1:l2,m,n,ieee)=df(l1:l2,m,n,ieee)+nu*del2eee-dsss
-        df(l1:l2,m,n,isss)=df(l1:l2,m,n,isss)+nu*del2sss-deee*0.
+        df(l1:l2,m,n,isss)=df(l1:l2,m,n,isss)+nu*del2sss-dbee
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -640,16 +650,17 @@ module Special
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
 !
-!  06-jul-06/tony: coded
-!
-      use Mpicomm, only: mpireduce_sum
-      use Sub, only: dot2_mn, grad, curl
+!  28-dec-21/axel: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: bet
+      real, dimension (mx) :: bet, rat
 !
-      bet=.75*f(l1:l2,m,n,isss)/f(l1:l2,m,n,ieee)
-      f(l1:l2,m1,n1,ibeteee)=f(l1:l2,m1,n1,ieee)*bet
+      bet=.75*f(:,m,n,isss)/f(:,m,n,ieee)
+      where (bet >= bet0)
+        rat=2.*f(:,m,n,ieee)/f(:,m,n,isss)
+        bet=rat-sqrt(rat**2-3.)
+      endwhere
+      f(:,m1,n1,ibee)=bet*f(:,m1,n1,ieee)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
