@@ -53,6 +53,7 @@ source getconf.csh
 #  then restart, i.e. jump to rerun.
 #
 if (-e "$datadir"/proc0/var.dat) then
+    echo "AXEL51:"
 #
 #  If necessary, distribute var.dat from the server to the various nodes
 #  Don't indent these lines so that it is easier to vimdiff against run.csh
@@ -107,9 +108,11 @@ if (-e "$datadir"/proc0/var.dat) then
     echo "AXEL6:"
   goto rerun
 endif
+    echo "AXEL52:"
 
 # First, check if NEWDIR is set and if yes, go there.
 if (-e "NEWDIR") then
+    echo "AXEL53:"
   goto checknewdir
 endif
 
