@@ -163,7 +163,8 @@ module Forcing
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_qfm=0, idiag_ffm=0
+  integer :: idiag_rufm=0, idiag_rufint=0, idiag_ufm=0, idiag_ofm=0
+  integer :: idiag_qfm=0, idiag_ffm=0
   integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
   integer :: idiag_ruxfym=0, idiag_ruyfxm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -5744,6 +5745,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
           call sum_mn_name(p%rho*uf,idiag_rufm)
         endif
 !
+        if (idiag_rufint/=0) then
+          call dot_mn(p%uu,p%fcont(:,:,1),uf)
+          call integrate_mn_name(p%rho*uf,idiag_rufint)
+        endif
+!
         if (idiag_ufm/=0) then
           call dot_mn(p%uu,p%fcont(:,:,1),uf)
           call sum_mn_name(uf,idiag_ufm)
@@ -5886,7 +5892,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
+        idiag_rufm=0; idiag_rufint=0; idiag_ufm=0; idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
         idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
         idiag_ruxfym=0; idiag_ruyfxm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
@@ -5897,6 +5903,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'rufint',idiag_rufint)
         call parse_name(iname,cname(iname),cform(iname),'ruxfxm',idiag_ruxfxm)
         call parse_name(iname,cname(iname),cform(iname),'ruxfym',idiag_ruxfym)
         call parse_name(iname,cname(iname),cform(iname),'ruyfxm',idiag_ruyfxm)
