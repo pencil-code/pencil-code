@@ -38,7 +38,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 2
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 !
 ! PENCILS PROVIDED bet
 !***************************************************************
@@ -86,20 +86,21 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ieee=0, isss=0, ibee=0
-  real, dimension (nx) :: ralp
+  integer :: ieee=0, isss=0, ibss=0, ibet=0, ippp=0
+  real, dimension (mx) :: ralp
   real :: amplspecial=.1, r0=3., width=.1
   real :: nu=0., alp=0.
   !real :: bet0=10*tini
   real :: bet0=1e-3
+  logical :: lbet_as_aux=.false.
 !
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial, amplspecial, r0, width
+      initspecial, amplspecial, r0, width, alp, lbet_as_aux
 !
   namelist /special_run_pars/ &
-      nu, alp
+      nu, alp, lbet_as_aux
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -134,8 +135,11 @@ module Special
       call farray_register_pde('eee',ieee)
       call farray_register_pde('sss',isss)
 !
-      call farray_register_auxiliary('bee',ibee)
+      call farray_register_auxiliary('bss',ibss)
+      call farray_register_auxiliary('ppp',ippp)
 !
+      if (lbet_as_aux) call farray_register_auxiliary('bet',ibet)
+
     endsubroutine register_special
 !***********************************************************************
     subroutine register_particles_special(npvar)
@@ -162,7 +166,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      ralp=x(l1:l2)**alp
+      ralp=x**alp
 !
       call keep_compiler_quiet(f)
 !
@@ -201,7 +205,7 @@ module Special
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing for j=',j
           case ('shock')
-            f(:,m1,n1,ieee)=f(:,m1,n1,ieee)+(1.-amplspecial)*.5*(1.-tanh((x-r0)/width))+amplspecial
+            f(:,m1,n1,ieee)=f(:,m1,n1,ieee)+((1.-amplspecial)*.5*(1.-tanh((x-r0)/width))+amplspecial)*ralp
           case default
             call fatal_error("init_special: No such value for initspecial:" &
                 ,trim(initspecial(j)))
@@ -216,7 +220,7 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
 !
-!  18-07-06/tony: coded
+!  18-jul-06/tony: coded
 !
       lpenc_requested(i_bet)=.true.
 !
@@ -226,7 +230,7 @@ module Special
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded
+!  18-jul-06/tony: coded
 !
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
@@ -256,7 +260,6 @@ module Special
           p%bet=rat-sqrt(rat**2-3.)
         endwhere
       endif
-print*,'axel: p%bet=',p%bet
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -283,7 +286,7 @@ print*,'axel: p%bet=',p%bet
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2eee, del2sss, dbee, dsss, &
+      real, dimension (nx) :: del2eee, del2sss, dbss, dsss, dppp, &
         diffus_special
 !
       intent(in) :: f,p
@@ -297,12 +300,13 @@ print*,'axel: p%bet=',p%bet
       call del2(f,isss,del2sss)
 !
       call der(f,isss,dsss,1)
-      call der(f,ibee,dbee,1)
+      call der(f,ibss,dbss,1)
+      call der(f,ippp,dppp,1)
 
 !  Update df
 !
         df(l1:l2,m,n,ieee)=df(l1:l2,m,n,ieee)+nu*del2eee-dsss
-        df(l1:l2,m,n,isss)=df(l1:l2,m,n,isss)+nu*del2sss-dbee
+        df(l1:l2,m,n,isss)=df(l1:l2,m,n,isss)+nu*del2sss-dbss-ralp(l1:l2)*dppp
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -383,6 +387,13 @@ print*,'axel: p%bet=',p%bet
         call parse_name(iname,cname(iname),cform(iname),'betmax',idiag_betmax)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='bet'.or.cnamev=='ppp' &
+             ) cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -391,8 +402,30 @@ print*,'axel: p%bet=',p%bet
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  bet
+!
+        case ('bet')
+          if (lbet_as_aux) then
+            call assign_slices_scal(slices,f,ibet)
+          else
+            call fatal_error('get_slices_special','bet not as aux')
+          endif
+!
+!  ppp
+!
+        case ('ppp')
+          call assign_slices_scal(slices,f,ippp)
+!
+      endselect
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -653,14 +686,17 @@ print*,'axel: p%bet=',p%bet
 !  28-dec-21/axel: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: bet, rat
+      real, dimension (mx) :: bet, bet2, rat
 !
-      bet=.75*f(:,m,n,isss)/f(:,m,n,ieee)
+      bet=.75*f(:,m1,n1,isss)/f(:,m1,n1,ieee)
       where (bet >= bet0)
-        rat=2.*f(:,m,n,ieee)/f(:,m,n,isss)
+        rat=2.*f(:,m1,n1,ieee)/f(:,m1,n1,isss)
         bet=rat-sqrt(rat**2-3.)
       endwhere
-      f(:,m1,n1,ibee)=bet*f(:,m1,n1,ieee)
+      bet2=bet**2
+      f(:,m1,n1,ibss)=bet*f(:,m1,n1,isss)
+      f(:,m1,n1,ippp)=f(:,m1,n1,ieee)*(1.-bet2)/(ralp*(3.+bet2))
+      if (lbet_as_aux) f(:,m1,n1,ibet)=bet
 !
     endsubroutine special_after_boundary
 !***********************************************************************
