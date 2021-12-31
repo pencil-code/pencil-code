@@ -25,7 +25,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real, pointer :: hcond0
-  real :: wheat,luminosity,r_bcz,widthss,alpha_MLT
+  real, pointer :: wheat,luminosity,r_bcz,widthss,alpha_MLT
   real, pointer :: mpoly0,mpoly1,mpoly2
 !
   contains
@@ -50,12 +50,19 @@ module InitialCondition
       real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,Rgas
       real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old, &
         rb_new,crit,r_max,hcond1,hcond2
-      real, dimension(:), pointer :: star_params
 !
 !  Get the needed parameters from the entropy module.
 !
-      call get_shared_variable('hcond0',hcond0,caller='initial_condition_ss')  
-      call get_shared_variable('star_params',star_params)
+      call get_shared_variable('hcond0',hcond0,caller='initial_condition_ss')
+!
+      call get_shared_variable('wheat', wheat)
+      call get_shared_variable('luminosity', luminosity)
+      call get_shared_variable('r_bcz', r_bcz)
+      call get_shared_variable('widthss', widthss)
+      call get_shared_variable('alpha_MLT', alpha_MLT)
+      print*, "get_shared_variable in star_box_layers=", wheat, &
+            luminosity, r_bcz, widthss, alpha_MLT
+!
       if (lentropy) then
         call get_shared_variable('mpoly0', mpoly0)
         call get_shared_variable('mpoly1', mpoly1)
@@ -65,13 +72,6 @@ module InitialCondition
         allocate(mpoly0,mpoly1,mpoly2)
         mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
       endif
-
-      wheat=star_params(1)
-      luminosity=star_params(2)
-      r_bcz=star_params(3)
-      widthss=star_params(4)
-      alpha_MLT=star_params(5)
-      print*, "star_params=", star_params
 !
 !  Define the radial grid r=[0,r_max] and needed radial profiles.
 !
@@ -195,7 +195,7 @@ module InitialCondition
     integer, dimension(1) :: i_ext
     real, dimension (nr) :: r,flux,g,lnrho,temp
     real :: dtemp,dlnrho,dr,rhotop,rhobot, &
-            polyad,delad,fr_frac,fc_frac,fc,del,Rgas
+            polyad,delad,fr_frac,fc_frac,fc,del,Rgas,lnrhobot
 !
 !  Needed for computing a MLT stratification.
 !

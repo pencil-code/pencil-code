@@ -606,7 +606,6 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nz) :: tmpz
-      real, dimension(5) :: star_params
       real :: beta1, cp1, beta0, TT_bcz, star_cte
       integer :: i, j, q, n, m, stat
       logical :: lnothing, exist
@@ -1300,9 +1299,16 @@ module Energy
                          ' in entropy_run_pars for temperature fluctuation diagnostics.')
         endif
       endif
-
-      star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
-      call put_shared_variable('star_params',star_params)
+!
+      if (initss(1)=='star_heat') then
+        print*, "put_shared_variable in entropy=", wheat, &
+            luminosity, r_bcz, widthss, alpha_MLT
+        call put_shared_variable('wheat', wheat)
+        call put_shared_variable('luminosity', luminosity)
+        call put_shared_variable('r_bcz', r_bcz)
+        call put_shared_variable('widthss', widthss)
+        call put_shared_variable('alpha_MLT', alpha_MLT)
+      endif
 !
 !  Check if reduced sound speed is used
 !
