@@ -849,7 +849,7 @@ The domain can be tiled in the $y$ and $z$ directions.
 On multiprocessor computers, the code can use \name{MPI}
 (Message Passing Interface) calls to communicate between processors.
 An easy switching mechanism allows the user to run the code on a machine
-without MPI libraries (e.g.\ a notebook computer).
+without MPI libraries (e.g., a notebook computer).
 Ghost zones are used to implement boundary conditions on physical and
 processor boundaries.
 
@@ -1179,7 +1179,7 @@ If you have reasons to believe that this is due to changes introduced on
 this by specifying a revision number with \cmd{svn update -r \#\#\#\#\#}.
 One reason why one cannot always reproduce exactly the same situation too far
 back in time is connected with the fact that processor architecture and the
-compiler were different, resulting e.g.\ in different rounding errors.
+compiler were different, resulting, e.g., in different rounding errors.
 
 % ---------------------------------------------------------------------- %
 
@@ -2787,7 +2787,7 @@ direction. The output is then stored to the files
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
 {\it Disadvantage}: The output files,
-e.g.\ \file[zaverages.dat]{data/zaverages.dat}, can be rather big because
+e.g., \file[zaverages.dat]{data/zaverages.dat}, can be rather big because
 each average is just appended to the file.
 
 \subsubsection{Azimuthal averages}
@@ -3096,9 +3096,9 @@ This is useful in the development phase when you changed something in
 the code, so you don't need to wait for a new slot in the queue!
 
 Even more naughty, as Tony says, is the \file{NEWDIR} file, where
-you can enter a new directory path (relative path is ok, e.g.\
+you can enter a new directory path (relative path is ok, e.g.,
 \code{../conv-slab}).
-If nothing is written in this file (e.g.\ via \cmd{touch NEWDIR})
+If nothing is written in this file (e.g., via \cmd{touch NEWDIR})
 it stays in the same directory.
 On distributed machines, the \file{NEWDIR} method will copy all the
 \file{VAR\#} and \file{var.dat} files back to and from the sever.
@@ -3308,7 +3308,7 @@ and temperatures are in
 For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
-On the other hand, as soon as material equations are used (e.g.\ one of
+On the other hand, as soon as material equations are used (e.g., one of
 the popular parameterizations for radiative losses, Kramers opacity,
 Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
@@ -3601,7 +3601,7 @@ fields, or test fields, see Sect.~\ref{RestartingFromLessPhysics}.
 \subsection{One- and two-dimensional runs}
 
 If you want to run two-dimensional problems, set the number
-of mesh points in one direction to unity, e.g.\ \var{nygrid}=1
+of mesh points in one direction to unity, e.g., \var{nygrid}=1
 or \var{nzgrid}=1 in \file{cparam.local}.
 Remember that the number of mesh points is still divisible by
 the number of processors.
@@ -3939,7 +3939,7 @@ will read the data written by processor 3.
 
 As an alternative to the method described above, there is also the possibility
 to read the data into structures. This makes some more operations possible,
-e.g.\ reading data from an IDL program where the command \cmd{.r} is not
+e.g., reading data from an IDL program where the command \cmd{.r} is not
 allowed.
 
 An efficient and still scriptable way would look like the following:
@@ -4153,7 +4153,7 @@ In [1]: ts = pc.read.ts()
 \end{alltt}
 and Python stores the data in the variable \texttt{ts}.
 The physical quantities are members of the object \texttt{ts} and can be accessed
-accordingly, e.g.\ \texttt{ts.t}, \texttt{ts.emag}.
+accordingly, e.g., \texttt{ts.t}, \texttt{ts.emag}.
 To check which other variables are stored simply do the tab auto completion \texttt{ts. <TAB>}.
 
 Plot the data with the matplotlib commands:
@@ -4180,7 +4180,7 @@ In [1]: slices = pc.read.slices(field='bb1', extension='xy')
 This returns the object \texttt{slices} with indices \texttt{slices[nTimes, my, mx]}
 and the time array \texttt{t}.
 
-If you want to plot e.g.\ the x-component of the magnetic field at the central plane simply type:
+If you want to plot, e.g., the x-component of the magnetic field at the central plane simply type:
 \begin{alltt}
 In [1]: plt.imshow(var.bb[0, 128, :, :].T, origin='lower', extent=[-4, 4, -4, 4])
 \end{alltt}
@@ -4684,7 +4684,7 @@ the particle part of \code{start.in} for dust particles:
 The initial positions and velocities of the dust particles are set in
 \code{initxxp} and \code{initvvp}. The next four input parameters are further
 specifications of the initial condition. Interaction between the particles and
-the mesh, e.g.\ through drag force or self-gravity, require a mapping of the
+the mesh, e.g., through drag force or self-gravity, require a mapping of the
 particles on the mesh. The {\sc Pencil Code} currently supports NGP (Nearest
 Grid Point, default), CIC (Cloud in Cell, set \code{lparticlemesh_cic=T}) and
 TSC (Triangular Shaped Cloud, set \code{lparticlemesh_tsc=T}). See Youdin \&
@@ -5782,7 +5782,7 @@ discs) must be treated as individual particles.
 To conserve momentum the dust particles must affect the gas with a friction
 force as well. The strength of this force depends on the dust-to-gas ratio
 $\epsilon_{\rm d}$, and it can be safely ignored when there is much more gas
-than there is dust, e.g.\ when $\epsilon_{\rm d}=0.01$. The friction force on
+than there is dust, e.g., when $\epsilon_{\rm d}=0.01$. The friction force on
 the gas appears in the equation of motion as
 \begin{equation}
   \frac{\partial \vec{u}}{\partial t} = \ldots - \frac{\rho_{\rm p}^{(i)}}{\rho}
@@ -5867,7 +5867,7 @@ to have a time-evolving mass.
 The test-field method is used to calculate turbulent transport coefficients
 for magnetohydrodynamics.
 This is a rapidly evolving field and we refer the interested reader to
-recent papers in this field, e.g.\ by Sur et al.\ (2008) or
+recent papers in this field, e.g., by Sur et al.\ (2008) or
 Brandenburg et al.\ (2008).
 For technical details; see also Sect.~\ref{RestartingFromLessPhysics}.
 
@@ -6334,7 +6334,7 @@ What is the problem?
   examples that work.
 
 \item One of the variables for \name{make} has a space appended to it,
-  e.g.\ if you use the line
+  e.g., if you use the line
   \begin{quote}
     \upshape\ttfamily
     MPICOMM = mpicomm_\textvisiblespace
@@ -6666,7 +6666,7 @@ much, at least for the corner cases like \file{RERUN}, \file{NEWDIR},
   Abort
 \end{Verbatim}
 
-{\bf A}: The string array for the boundary condition, e.g.\ \var{bcx} or
+{\bf A}: The string array for the boundary condition, e.g., \var{bcx} or
 \var{bcz} is too long. Make sure it has exactly as many elements as \var{nvar}
 is big.
 
@@ -7458,7 +7458,7 @@ the equation is assembled in the routine
 \end{verbatim}
 where the header tells you already a little bit of what comes below.
 It is also here where ohmic heating effects and other possible effects
-on other equations are included, e.g.\
+on other equations are included, e.g.,
 \begin{verbatim}
 !
 !  Add Ohmic heat to entropy or temperature equation.
@@ -7816,7 +7816,7 @@ interdependencies are sorted out in the subroutines
 In each time-step the values of the pencil logicals \code{lpenc_requested},
 \code{lpenc_diagnos}, \code{lpenc_diagnos2d}, and \code{lpenc_video} are
 combined to one single pencil array \code{lpencil} which is different from
-time-step to time-step depending on e.g.\ whether diagnostics or video output
+time-step to time-step depending on, e.g., whether diagnostics or video output
 are done in that time-step.  The pencils are then calculated in the subroutines
 \code{calc_pencils_modulename}. This is done before calculating the time
 evolution of the physical variables, as this depends very often on derived
@@ -8290,7 +8290,7 @@ The code will output the timing (in microseconds per grid point per time-step)
 at the end of a run. You can also specify \code{walltime} in \code{print.in}
 to have the code continuously output the physical time it took to reach the
 time-steps where diagnostics is done. The time-dependent code speed can then be
-calculated by differentiating, e.g.\ in \code{IDL} with\\
+calculated by differentiating, e.g., in \code{IDL} with\\
 \prompt{IDL> } \code{pc\_read\_ts, obj=ts}\\
 \prompt{IDL> } \code{plot, ts.it, 1/nw*deriv(ts.it,ts.walltime/1.0e-6), psym=2}\\
 where \code{nw=nx*ny*nz}.
@@ -8996,7 +8996,7 @@ All lines are kept to be not more than 80 characters long.
 Where lines are longer they must be explicitly wrapped using the
 Fortran continuation character `\&'.
 Longer lines (up to 132 characters) and additional spaces are allowed
-in cases where the readability of the code is enhanced, e.g.\ when one
+in cases where the readability of the code is enhanced, e.g., when one
 line is followed by a similar one with minor differences in some places.
 
 Code in syntactic blocks such as \code{if}--\code{endif}, \code{do}--\code{enddo},
@@ -10685,7 +10685,7 @@ once more with IO_IN removed
 
 First, prepare a new run directory with the new physics included.
 By new physics, we mean that the new run wants to read in more fields
-(e.g.\ magnetic fields, if the old run didn't have magnetic fields).
+(e.g., magnetic fields, if the old run didn't have magnetic fields).
 
 Example for test fields:
 
@@ -10719,7 +10719,7 @@ integer, parameter :: njtest=4
 
 \item Prepare \file{src/Makefile.local}
 
-Add the line \code{TESTFIELD=testfield_z} to the file.
+Add the line \code{TESTFIELD=test_methods/testfield_z} to the file.
 Finally, compile the code.
 
 \item Prepare restart data
@@ -10966,7 +10966,7 @@ $\sigma$ is called \var{relhel}.
 
 In the code, the possible wavevectors are pre-calculated and stored in
 \file{k.dat}, which is being read in the beginning the code runs.
-To change the wavevectors (e.g.\ the typical value of $k_{\rm f}$,
+To change the wavevectors (e.g., the typical value of $k_{\rm f}$,
 you need to change the file.
 In the directory \file[K_VECTORS/]{\${PENCIL_HOME}/samples/helical-MHDturb/K_VECTORS/}
 there are several such files prepared:
