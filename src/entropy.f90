@@ -2769,6 +2769,7 @@ module Energy
             elseif (lgravx) then
             else
               lpenc_requested(i_r_mn)=.true.
+              lpenc_requested(i_r_mn1)=.true.
             endif
           endif
           if (l1davgfirst) then
