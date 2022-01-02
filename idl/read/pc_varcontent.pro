@@ -255,6 +255,9 @@ indices_aux = [ $
   { name:'ihhX_realspace', label:'ihhX_realspace', dims:1 }, $
   { name:'isld_char', label:'SLD characteristic speed', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
+  { name:'ieee', label:'eee function', dims:1 }, $
+  { name:'ibss', label:'bss function', dims:1 }, $
+  { name:'ibet', label:'bet function', dims:1 }, $
   { name:'isigma', label:'Column density', dims:1 }, $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $
   { name:'itmid', label:'Midplane temperature', dims:1 }, $
