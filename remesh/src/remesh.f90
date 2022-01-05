@@ -72,7 +72,7 @@ program remesh
   integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv
   character(LEN=128) :: clperi
 
-  clperi=get_from_nml_str('LPERI',exist,trim(datadir)//'/param2.nml',lvec=.true.)
+  clperi=get_from_nml_str('LPERI',trim(datadir)//'/param2.nml',lvec=.true.)
   if (.not.exist) then
     print*, 'lperi could not be identified!'
     stop
