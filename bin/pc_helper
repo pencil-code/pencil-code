@@ -24,9 +24,9 @@ endif
 cd ..
 
 echo "Building" $0:t.x "(if necessary)"
-
+#echo ENVIRONMENT: $PENCIL_CONFIG_FILES
 #make $0:t > /dev/null
-pc_build -s -t $0:t > /dev/null
+pc_build -s -q -t $0:t > /dev/null
 
 if ( $? != 0) then
   echo "Build of executable $0:t.x failed."
