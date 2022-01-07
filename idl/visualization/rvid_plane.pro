@@ -118,7 +118,7 @@ sample = ~keyword_set(interp)
     return
   end
 ;
-if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
+if not check_slices_par(field, stride, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
 if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then begin
   print, "rvid_plane: ERROR: slice '"+extension+"' is missing!"

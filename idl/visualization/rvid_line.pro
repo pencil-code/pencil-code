@@ -81,7 +81,7 @@ if (not keyword_set(png)) then begin
   endif
 endif
 ;
-if (not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s)) then return
+if (not check_slices_par(field, stride, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s)) then return
 ;
 if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then begin
   print, "rvid_line: ERROR: slice '"+extension+"' is missing!"

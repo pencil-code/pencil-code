@@ -151,7 +151,7 @@ endif
 ;
 first_print = 1
 ;
-if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
+if not check_slices_par(field, stride, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
 if not (s.xyread and s.xy2read and s.xzread and s.yzread) then begin
   if not s.xyread then print, 'Slice xy missing!!!' 
