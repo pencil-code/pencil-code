@@ -39,7 +39,7 @@ module disp_current
   real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
   real :: relhel_ee=0.0, kgaussian_ee=0.0
   integer :: ia0
-  logical :: llorentz_gauge=.false., lskip_projection_ee=.false.
+  logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true.
   character(len=50) :: initee='zero'
   namelist /disp_current_init_pars/ &
@@ -49,13 +49,13 @@ module disp_current
     ky_ex, ky_ey, ky_ez, &
     kz_ex, kz_ey, kz_ez, &
     phase_ex, phase_ey, phase_ez, &
-    llorentz_gauge, &
+    llorenz_gauge_disp, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
 !
   ! run parameters
   namelist /disp_current_run_pars/ &
-    alpf, llorentz_gauge
+    alpf, llorenz_gauge_disp
 !
 ! Declare any index variables necessary for main or
 !
@@ -93,7 +93,7 @@ module disp_current
       call farray_register_pde('ee',iee,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
 !
-      if (llorentz_gauge) then
+      if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
       endif
 !
@@ -184,7 +184,7 @@ module disp_current
       lpenc_requested(i_ga0)=.true.
 !
       lpenc_requested(i_curlb)=.true.
-      if (llorentz_gauge) then
+      if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
       endif
 
@@ -276,7 +276,7 @@ module disp_current
 !  dA0/dt = divA
 !  dAA/dt = ... + gradA0
 !
-        if (llorentz_gauge) then
+        if (llorenz_gauge_disp) then
           df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
         endif
