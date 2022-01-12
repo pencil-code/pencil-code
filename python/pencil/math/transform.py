@@ -4,9 +4,68 @@
 #
 # Author:
 # J. Aarnes (jorgenaarnes@gmail.com)
+# S. Candelaresi (iomsn1@gmail.com)
 """
 Routines to transform coordinates and fields.
 """
+
+
+def coordinate_transformation(x, y, z, xyz_from='', xyz_to=''):
+    """
+    Tranform coordinates between coordinate systems.
+    Returns a tuple (x, y, z).
+
+    call signature:
+
+    coordinate_transformation(x, y, z, xyz_from='', xyz_to='')
+
+    Keyword arguments:
+
+    *x, y, z*: 1d ndarray
+      Input coordinates.
+
+    *xyz_from*: str
+      Origin coordinate system: 'cartesian', 'cylindrical' and 'spherical'.
+
+    *xyz_to*: str
+      Destination coordinate system: 'cartesian', 'cylindrical' and 'spherical'.
+    """
+
+    import numpy as np
+
+    x, y, z = np.meshgrid(x, y, z, indexing='ij')
+
+    if xyz_from == 'cartesian':
+        if xyz_to == 'cylindrical':
+            r = np.sqrt(x**2 + y**2)
+            phi = np.arctan2(y, x)
+            z = z
+            return (r, phi, z)
+        if xyz_to == 'spherical':
+            r = np.sqrt(x**2 + y**2 + z**2)
+            theta = np.arctan2(z, r)
+            phi = np.arctan2(y, x)
+            return (r, theta, phi)
+    if xyz_from == 'cylindrical':
+        if xyz_to == 'cartesian':
+            return (x*np.cos(y), x*np.sin(y), z)
+        if xyz_to == 'spherical':
+            r = np.sqrt(x**2 + z**2)
+            theta = np.arctan2(x, z)
+            phi = y
+            return (r, theta, phi)
+    if xyz_from == 'spherical':
+        if xyz_to == 'cartesian':
+            return (x*np.cos(y)*np.cos(z), x*np.sin(y)*np.cos(z), x*np.sin(z))
+        if xyz_to == 'cylindrical':
+            r = x*np.cos(z)
+            theta = x*np.sin(z)
+            phi = y
+            return (r, theta, phi)
+
+
+#def field_transformation():
+#    pass
 
 
 def pospolar2cart(r, th):
