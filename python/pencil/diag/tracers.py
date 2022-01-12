@@ -150,7 +150,7 @@ class Tracers(object):
                 int(self.params.trace_sub * dim.ny),
                 nTimes,
             ],
-            dtype=np.ndarray
+            dtype=np.ndarray,
         )
         if self.params.int_q == "curly_A":
             self.curly_A = np.zeros(
@@ -253,7 +253,9 @@ class Tracers(object):
                 self.mapping[sub_proc :: self.params.n_proc, :, t_idx, :] = sub_data[
                     i_proc
                 ][5]
-                self.tracers[sub_proc :: self.params.n_proc, :, t_idx] = sub_data[i_proc][6]
+                self.tracers[sub_proc :: self.params.n_proc, :, t_idx] = sub_data[
+                    i_proc
+                ][6]
                 if self.params.int_q == "curly_A":
                     self.curly_A[sub_proc :: self.params.n_proc, :, t_idx] = sub_data[
                         i_proc
@@ -264,9 +266,17 @@ class Tracers(object):
                     ][8]
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
-            print('find_tracers: self.tracers.shape = {0}'.format(self.tracers.shape))
-            print('find_tracers: self.tracers[0, 0, 0].shape = {0}'.format(self.tracers[0, 0, 0].shape))
-            print('find_tracers: self.tracers[5, 5, 0].shape = {0}'.format(self.tracers[5, 5, 0].shape))
+            print("find_tracers: self.tracers.shape = {0}".format(self.tracers.shape))
+            print(
+                "find_tracers: self.tracers[0, 0, 0].shape = {0}".format(
+                    self.tracers[0, 0, 0].shape
+                )
+            )
+            print(
+                "find_tracers: self.tracers[5, 5, 0].shape = {0}".format(
+                    self.tracers[5, 5, 0].shape
+                )
+            )
             return 0
 
     # Return the tracers for the specified starting locations.
@@ -367,10 +377,20 @@ class Tracers(object):
                     if (self.y0[ix, iy, t_idx] - sub_y1[int(ix / n_proc), iy]) > 0:
                         sub_mapping[int(ix / n_proc), iy, :] = [0, 0, 1]
                     else:
-                        sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
+                        sub_mapping[int(ix / n_proc), iy, :] = [1, 0, 0]
 
         queue.put(
-            (i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping, sub_tracers, sub_curly_A, sub_ee)
+            (
+                i_proc,
+                sub_x1,
+                sub_y1,
+                sub_z1,
+                sub_l,
+                sub_mapping,
+                sub_tracers,
+                sub_curly_A,
+                sub_ee,
+            )
         )
 
     def write(self, datadir="data", destination="tracers.hdf5"):
@@ -392,6 +412,7 @@ class Tracers(object):
 
         import os
         import numpy as np
+
         try:
             import h5py
         except:
@@ -409,7 +430,9 @@ class Tracers(object):
             set_y1 = f.create_dataset("y1", self.y1.shape, dtype=self.y1.dtype)
             set_z1 = f.create_dataset("z1", self.z1.shape, dtype=self.z1.dtype)
             set_l = f.create_dataset("l", self.l.shape, dtype=self.l.dtype)
-            set_tracers = f.create_dataset("tracers", self.tracers.shape, dtype=h5py.special_dtype(vlen=np.float64))
+            set_tracers = f.create_dataset(
+                "tracers", self.tracers.shape, dtype=h5py.special_dtype(vlen=np.float64)
+            )
             set_x0[...] = self.x0[...]
             set_y0[...] = self.y0[...]
             set_x1[...] = self.x1[...]
@@ -423,11 +446,11 @@ class Tracers(object):
                     for k in range(self.tracers.shape[2]):
                         tracers_flattened[i, j, k] = self.tracers[i, j, k].flatten()
             set_tracers[...] = tracers_flattened[:, :, :]
-#            set_q = []
-#            if not self.params.int_q == '':
-#                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
-#                                              dtype=getattr(self, self.params.int_q).dtype))
-#                set_q[-1][...] = getattr(self, self.params.int_q)[...]
+            #            set_q = []
+            #            if not self.params.int_q == '':
+            #                set_q.append(f.create_dataset(self.params.int_q, getattr(self, self.params.int_q).shape,
+            #                                              dtype=getattr(self, self.params.int_q).dtype))
+            #                set_q[-1][...] = getattr(self, self.params.int_q)[...]
             set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset(
                 "mapping", self.mapping.shape, dtype=self.mapping.dtype
@@ -444,7 +467,6 @@ class Tracers(object):
             f.close()
         else:
             print("Error: empty destination file")
-
 
     def read(self, datadir="data", file_name="tracers.hdf5"):
         """
@@ -474,15 +496,15 @@ class Tracers(object):
         f = h5py.File(os.path.join(datadir, file_name), "r")
 
         # Extract arrays.
-        self.t = f['t'].value
-        self.x0 = f['x0'].value
-        self.y0 = f['y0'].value
-        self.x1 = f['x1'].value
-        self.y1 = f['y1'].value
-        self.z1 = f['z1'].value
-        self.l = f['l'].value
-        self.tracers = f['tracers'].value
-        self.mapping = f['mapping'].value
+        self.t = f["t"].value
+        self.x0 = f["x0"].value
+        self.y0 = f["y0"].value
+        self.x1 = f["x1"].value
+        self.y1 = f["y1"].value
+        self.z1 = f["z1"].value
+        self.l = f["l"].value
+        self.tracers = f["tracers"].value
+        self.mapping = f["mapping"].value
         if "curly_A" in list(f.keys()):
             self.curly_A = f["curly_A"].value
         if "ee" in list(f.keys()):
@@ -500,10 +522,14 @@ class Tracers(object):
                 if self.tracers.ndim == 3:
                     for k in range(self.tracers.shape[2]):
                         print(self.tracers[i, j].shape)
-                        self.tracers[i, j, k] = self.tracers[i, j, k].reshape([int(self.tracers[i, j, k].shape[0]/3), 3])
+                        self.tracers[i, j, k] = self.tracers[i, j, k].reshape(
+                            [int(self.tracers[i, j, k].shape[0] / 3), 3]
+                        )
                 else:
                     print("self.tracers[i, j].shape = {0}".format(self.tracers[i, j]))
-                    self.tracers[i, j] = self.tracers[i, j].reshape([int(self.tracers[i, j].shape[0]/3), 3])
+                    self.tracers[i, j] = self.tracers[i, j].reshape(
+                        [int(self.tracers[i, j].shape[0] / 3), 3]
+                    )
 
         f.close()
 

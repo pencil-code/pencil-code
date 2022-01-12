@@ -3,7 +3,8 @@ import pandas as pd
 from flatdict import FlatDict
 from itertools import product
 
-def parameter_table(filename,quiet=True):
+
+def parameter_table(filename, quiet=True):
     """
     Extract and construct a table from a user file filename
 
@@ -16,15 +17,15 @@ def parameter_table(filename,quiet=True):
 
     *filename*: text file with parameter to each line, parameter name and list
                 of values all separated by colons. Parameter name (first
-                argument in each line) should give full path (see example 
+                argument in each line) should give full path (see example
                 below).
 
     *quiet*: Flag to print output.
 
     Returns
     -------
-    Table of full list of all parameter combinations 
-    
+    Table of full list of all parameter combinations
+
     Notes
     -----
 
@@ -39,35 +40,36 @@ def parameter_table(filename,quiet=True):
            'run.in/entropy_run_pars/iheatcond'],
           dtype='object')
     """
-    #Extract list of parameters from userfile
+    # Extract list of parameters from userfile
     lines = open(filename).readlines()
     if not quiet:
         print(lines)
-    #Pipe lines into dictionary
+    # Pipe lines into dictionary
     inputs = dict()
     for line in lines:
-        line = line.strip('\n').replace(' ','')
-        inputs[line.split(':')[0]] = list(line.split(':')[1:])
-    #Extract column headers from inputs
+        line = line.strip("\n").replace(" ", "")
+        inputs[line.split(":")[0]] = list(line.split(":")[1:])
+    # Extract column headers from inputs
     columns = list()
     for key in inputs.keys():
-        columns.append(key)  
-    #List parameter options for each column
+        columns.append(key)
+    # List parameter options for each column
     newlist = list()
     for key in inputs.keys():
         newlist.append(inputs[key])
-    #Create data matrix of parameter combinations
+    # Create data matrix of parameter combinations
     data = []
     for i in product(*newlist):
         if not quiet:
             print(i)
         data.append(i)
-    params = pd.DataFrame(data=data,columns=columns)
-    #Create column indicating whether to compile each clone simulation
-    params.insert(6, 'compile', False, allow_duplicates=True)
+    params = pd.DataFrame(data=data, columns=columns)
+    # Create column indicating whether to compile each clone simulation
+    params.insert(6, "compile", False, allow_duplicates=True)
     return params
 
-def trim_table(params,quiet=True):
+
+def trim_table(params, quiet=True):
     """
     Examples of operations to reduce the table or add columns and rows
 
@@ -77,7 +79,7 @@ def trim_table(params,quiet=True):
 
     Parameters
     ----------
-    *params*: Panda dataframe table. 
+    *params*: Panda dataframe table.
 
     *quiet*: Flag to print output.
 
@@ -88,9 +90,9 @@ def trim_table(params,quiet=True):
 
     Notes
     -----
-    Call this script after full table from parameter_table(filename) and before 
+    Call this script after full table from parameter_table(filename) and before
     creating dictionary of simulation parameters using make_sims_dict(params).
-    Examples are given below and other options can be seen using 
+    Examples are given below and other options can be seen using
     https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html
 
     Examples
@@ -100,13 +102,15 @@ def trim_table(params,quiet=True):
     #When changing src parameter set compile to true
     params['compile'][params['cparam.local/nxgrid'] == '800'] = True
     """
-    params = params[params['run.in/viscosity_run_pars/ivisc']] != \
-                           "['nu-shock','nu-hyper3']"
-    params['compile'][params['cparam.local/nxgrid'] == '800'] = True
-    
+    params = (
+        params[params["run.in/viscosity_run_pars/ivisc"]] != "['nu-shock','nu-hyper3']"
+    )
+    params["compile"][params["cparam.local/nxgrid"] == "800"] = True
+
     return params
 
-def make_sims_dict(params,quiet=True):
+
+def make_sims_dict(params, quiet=True):
     """
     Extracting values from pandas table to generate a nested dictionary
     simset which can be used by clone_sims to set up simulation array
@@ -137,24 +141,25 @@ def make_sims_dict(params,quiet=True):
             {'nu'        : ' 1e-3',
              'ivisc'     : " ['nu-shock', 'nu-const', 'nu-hyper3']",
              'nu_hyper3' : ' 1e-9'},
-         'entropy_run_pars'  : 
+         'entropy_run_pars'  :
             {'chi_hyper3': '  1e-9', 'iheatcond': " 'hyper3'"}},
      'cparam.local':
             {'nxgrid'    : ' 400'}}
     """
     simset = dict()
-    #Create nested dictionary of simulation values
+    # Create nested dictionary of simulation values
     for index, row in params.iterrows():
-        param_nested_dict = FlatDict(dict(row), delimiter='/').as_dict()
+        param_nested_dict = FlatDict(dict(row), delimiter="/").as_dict()
         simkey = ""
         if not quiet:
             print(param_nested_dict)
             print(row.keys)
-        for value,key in zip(row,row.keys()):
-            #Only 'compile' uses bool. Arguments otherwise are string.
+        for value, key in zip(row, row.keys()):
+            # Only 'compile' uses bool. Arguments otherwise are string.
             if not type(value) == bool:
                 if not "'" in value:
-                    simkey = simkey+"{}{}".format(key.split('/')[-1],value.strip(' '))
+                    simkey = simkey + "{}{}".format(
+                        key.split("/")[-1], value.strip(" ")
+                    )
         simset[simkey] = param_nested_dict
     return simset
-

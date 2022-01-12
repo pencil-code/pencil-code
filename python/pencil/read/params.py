@@ -359,7 +359,7 @@ class Param(object):
         # Contain the nest names for each parameter set
         for rawline in open(file_name):
             if len(rawline.strip()) == 0:
-                #This is a line that contains only whitespace; ignore it.
+                # This is a line that contains only whitespace; ignore it.
                 continue
             if "," in rawline[1]:
                 rawline = lastrawline + rawline
