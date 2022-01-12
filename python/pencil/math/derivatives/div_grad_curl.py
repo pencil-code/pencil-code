@@ -626,39 +626,39 @@ def gij(f, dx, dy, dz, nder=6):
         if nder == 1:
             from pencil.math.derivatives.der import xder, yder, zder
 
-            gij[i, 0] = xder(f[j], dx, dy, dz)
-            gij[i, 1] = yder(f[j], dx, dy, dz)
-            gij[i, 2] = zder(f[j], dx, dy, dz)
+            gij[i, 0] = xder(f[i], dx, dy, dz)
+            gij[i, 1] = yder(f[i], dx, dy, dz)
+            gij[i, 2] = zder(f[i], dx, dy, dz)
         elif nder == 2:
             from pencil.math.derivatives.der import xder2, yder2, zder2
 
-            gij[i, 0] = xder2(f[j], dx, dy, dz)
-            gij[i, 1] = yder2(f[j], dx, dy, dz)
-            gij[i, 2] = zder2(f[j], dx, dy, dz)
+            gij[i, 0] = xder2(f[i], dx, dy, dz)
+            gij[i, 1] = yder2(f[i], dx, dy, dz)
+            gij[i, 2] = zder2(f[i], dx, dy, dz)
         elif nder == 3:
             from pencil.math.derivatives.der import xder3, yder3, zder3
 
-            gij[i, 0] = xder3(f[j], dx, dy, dz)
-            gij[i, 1] = yder3(f[j], dx, dy, dz)
-            gij[i, 2] = zder3(f[j], dx, dy, dz)
+            gij[i, 0] = xder3(f[i], dx, dy, dz)
+            gij[i, 1] = yder3(f[i], dx, dy, dz)
+            gij[i, 2] = zder3(f[i], dx, dy, dz)
         elif nder == 4:
             from pencil.math.derivatives.der import xder4, yder4, zder4
 
-            gij[i, 0] = xder4(f[j], dx, dy, dz)
-            gij[i, 1] = yder4(f[j], dx, dy, dz)
-            gij[i, 2] = zder4(f[j], dx, dy, dz)
+            gij[i, 0] = xder4(f[i], dx, dy, dz)
+            gij[i, 1] = yder4(f[i], dx, dy, dz)
+            gij[i, 2] = zder4(f[i], dx, dy, dz)
         elif nder == 5:
             from pencil.math.derivatives.der import xder5, yder5, zder5
 
-            gij[i, 0] = xder5(f[j], dx, dy, dz)
-            gij[i, 1] = yder5(f[j], dx, dy, dz)
-            gij[i, 2] = zder5(f[j], dx, dy, dz)
+            gij[i, 0] = xder5(f[i], dx, dy, dz)
+            gij[i, 1] = yder5(f[i], dx, dy, dz)
+            gij[i, 2] = zder5(f[i], dx, dy, dz)
         elif nder == 6:
             from pencil.math.derivatives.der import xder6, yder6, zder6
 
-            gij[i, 0] = xder6(f[j], dx, dy, dz)
-            gij[i, 1] = yder6(f[j], dx, dy, dz)
-            gij[i, 2] = zder6(f[j], dx, dy, dz)
+            gij[i, 0] = xder6(f[i], dx, dy, dz)
+            gij[i, 1] = yder6(f[i], dx, dy, dz)
+            gij[i, 2] = zder6(f[i], dx, dy, dz)
 
     return gij
 
@@ -666,6 +666,8 @@ def gij(f, dx, dy, dz, nder=6):
 def traceless_strain(
     f, dx, dy, dz, x=None, y=None, z=None, coordinate_system="cartesian"
 ):
+
+    import numpy as np
 
     if f.ndim != 4 or f.shape[0] != 3:
         print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
