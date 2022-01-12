@@ -1,5 +1,3 @@
-$Id$
-
 This directory contains the python subroutines for postprocessing.
 sourceme.sh now resents your $PYTHONPATH to include $PENCIL_HOME/python,
 so you can just do
