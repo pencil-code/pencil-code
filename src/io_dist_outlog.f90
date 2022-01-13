@@ -1117,7 +1117,6 @@ module Io
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       init_read_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_read_persist
 !***********************************************************************

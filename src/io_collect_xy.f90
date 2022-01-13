@@ -933,7 +933,6 @@ module Io
       endif
 !
       init_read_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_read_persist
 !***********************************************************************
