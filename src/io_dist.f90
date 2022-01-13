@@ -390,6 +390,7 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
+!write(20+iproc,*) 'write_persist_id, label, persist_initialized=',label,persist_initialized 
       write_persist_id = .true.
       if (.not. persist_initialized) write_persist_id = init_write_persist()
       if (.not. persist_initialized) return
@@ -794,7 +795,6 @@ module Io
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       init_read_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_read_persist
 !***********************************************************************
