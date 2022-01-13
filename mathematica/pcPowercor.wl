@@ -15,6 +15,12 @@ BeginPackage["pcPowercor`","pcRead1D`"]
 (*Usage messages*)
 
 
+corrFunc::usage="corrFunc[t,f1,f2] computes the correlation function C(t)<f1(t')f2(t'+t)>.
+Input:
+  t,f1,f2: List. Time series of time, field 1, and field 2.
+Output:
+  List. {{t1,C1},{t2,C2},...}."
+
 autoCor::usage="autoCor[ts] computes auto-correlation of ts.
 Input:
   ts: List. Time series; can be, for example, either readTS[sim,\"t\",\"urms\"]
@@ -65,17 +71,38 @@ normalizeAC[l_List]:=l//timeShift//valueNorm
 
 
 (* ::Section:: *)
-(*Auto-correlation*)
+(*Correlation function*)
 
 
-autoCor[ts_]:=Module[{t,f,fft,ac},
+corrFunc[t_,f1_,f2_]:=Module[{a,b,corr},
+  (*subtract mean*)
+  a=Transpose[Transpose[f1]-Mean[f1]];
+  b=Transpose[Transpose[f2]-Mean[f2]];
+  
+  (*compute fft*)
+  a=If[Depth[a]==2,Fourier[a],Transpose[Fourier/@Transpose[a]]];
+  b=If[Depth[b]==2,Fourier[b],Transpose[Fourier/@Transpose[b]]];
+  
+  (*compute correlation function*)
+  corr=Re@InverseFourier[Total/@(Conjugate[a]*b)];
+  {t-t[[1]],corr}//Transpose//Take[#,Length[t]/2//Floor]&
+]
+
+autoCor[ts_]:=Module[{t,f},
+  {t,f}=Transpose[ts];
+  corrFunc[t,f,f]
+]
+autoCor[t_,f_]:=autoCor[{t,f}//Transpose]
+
+
+(*autoCor[ts_]:=Module[{t,f,fft,ac},
   {t,f}=Transpose[ts];
   f=Transpose[Transpose[f]-Mean[f]];
   fft=If[Depth[f]==2,Fourier[f],Transpose[Fourier/@Transpose[f]]];
   ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
   {t-t[[1]],ac}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
-autoCor[t_,var_]:=autoCor[{t,var}//Transpose]
+autoCor[t_,var_]:=autoCor[{t,var}//Transpose]*)
 
 
 (* ::Section:: *)
@@ -167,7 +194,7 @@ End[]
 
 
 Protect[
-  autoCor,fitTime,
+  corrFunc,autoCor,fitTime,
   corrTimePowercor
 ]
 

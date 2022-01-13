@@ -165,6 +165,13 @@ getParam[sim_,"Sh",k2_]:=
     0
   ]
 getParam[sim_,"-Sh",k2_]:=-getParam[sim,"Sh",k2]
+getParam[sim_,"qshear"]:=
+  Module[{s=readParamNml[sim,"run.in","SSHEAR"],o=readParamNml[sim,"start.in","OMEGA"]},
+    If[s===$Failed,s=0];
+    If[s==0&&o==0,"/"//Return];
+    If[s!=0&&o==0,"No rotatoin"//Return];
+    Rationalize[-s/o]/.Rational[x_,y_]:>ToString[x]<>"/"<>ToString[y]
+]
 
 (*secondaries*)
 getParam[sim_,"ted"]:=ted[sim]
