@@ -599,7 +599,7 @@ module Cdata
   logical :: ou_omega=.false., cor_uu=.false., ab_kzspec=.false.,ou_kzspec=.false.
   logical :: ou_polar=.false., ab_polar=.false., jb_polar=.false.
   logical :: uut_spec=.false., uut_polar=.false., ouout_spec=.false., ouout_polar=.false.
-  logical :: out_spec=.false.
+  logical :: out_spec=.false., uot_spec=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
