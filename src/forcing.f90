@@ -2200,9 +2200,10 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  06-dec-13/nishant: made kkx etc allocatable
 !
       use Diagnostics, only: sum_mn_name
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs0,rho0
       use General, only: random_number_wrapper
       use Sub, only: del2v_etc,curl,cross,dot,dot2
+      use DensityMethods, only: getrho1, getrho
 !
       real :: phase,ffnorm
       real, dimension (2) :: fran
@@ -2442,9 +2443,9 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
 !
             if (ldensity.and.lmomentum_ff) then
-              rho1=exp(-f(l1:l2,m,n,ilnrho))
+              call getrho1(f(:,m,n,ilnrho),rho1)
             else
-              rho1=1.
+              rho1=1./rho0
             endif
             if (lwork_ff) force_ampl=calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
                                                      *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2))
@@ -2511,7 +2512,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
                 if (lmomentum_ff) then
                   rho=1./rho1
                 else
-                  rho=exp(f(l1:l2,m,n,ilnrho))  !!! nolog density?
+                  call getrho(f(:,m,n,ilnrho),rho)
                 endif
 
                 uu=f(l1:l2,m,n,iux:iuz)
@@ -2569,9 +2570,9 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
 !
                 if (ldensity.and.lmomentum_ff) then
-                  rho1=exp(-f(l1:l2,m,n,ilnrho))
+                  call getrho1(f(:,m,n,ilnrho),rho1)
                 else
-                  rho1=1.
+                  rho1=1./rho0
                 endif
 
                 forcing_rhs(:,j)=rho1 &
@@ -2950,6 +2951,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
       use Mpicomm
       use Sub
+      use DensityMethods, only: getrho
 !
       real :: irufm
       real, dimension (nx) :: ruf,rho
@@ -2996,7 +2998,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3036,6 +3038,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
       use Mpicomm
       use Sub
+      use DensityMethods, only: getrho
 !
       real :: irufm
       real, dimension (nx) :: ruf,rho
@@ -3082,7 +3085,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3122,6 +3125,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
       use Mpicomm
       use Sub
+      use DensityMethods, only: getrho
 !
       real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
@@ -3174,7 +3178,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3213,6 +3217,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  17-jul-06/axel: coded
 !
       use Diagnostics
+      use DensityMethods, only: getrho
       use Mpicomm
       use Sub
 !
@@ -3268,7 +3273,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3315,6 +3320,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
 !  27-oct-04/axel: coded
 !
+      use DensityMethods, only: getrho
       use Mpicomm
       use Sub
 !
@@ -3367,7 +3373,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3406,6 +3412,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  19-dec-05/tony: coded, adapted from forcing_nocos
 !  14-jul-10/axel: in less then 3-D, project forcing to computational domain
 !
+      use DensityMethods, only: getrho
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm
@@ -3572,7 +3579,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
             if (lout) then
               if (idiag_rufm/=0) then
-                rho=exp(f(l1:l2,m,n,ilnrho))
+                call getrho(f(:,m,n,ilnrho),rho)
                 call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
                 call dot_mn(variable_rhs,force_all,ruf)
                 irufm=irufm+sum(ruf)
@@ -3611,6 +3618,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
 !  29-sep-15/axel: adapted from forcing_gaussianpot
 !
+      use DensityMethods, only: getrho
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm
@@ -3772,7 +3780,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,f(l1:l2,m,n,iux:iuz),force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3810,6 +3818,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
 !  19-dec-13/axel: added
 !
+      use DensityMethods, only: getrho
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm
@@ -3877,7 +3886,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           if (lout) then
             if (idiag_rufm/=0) then
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -3916,6 +3925,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
 !   7-sep-02/axel: coded
 !
+      use DensityMethods, only: getrho
       use Mpicomm
       use Sub
 !
@@ -3932,7 +3942,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
       rho_uu_ff=0.
       do n=n1,n2
         do m=m1,m2
-          rho=exp(f(l1:l2,m,n,ilnrho))
+          call getrho(f(:,m,n,ilnrho),rho)
           uu=f(l1:l2,m,n,iffx:iffz)
           udotf=0.
           do j=1,3
@@ -4553,6 +4563,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_hel_smooth(f)
 !
+      use DensityMethods, only: getrho
       use General, only: random_number_wrapper
       use Mpicomm
       use Sub
@@ -4612,7 +4623,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
             do m=m1,m2
               forcing_rhs=force_vec(l1:l2,m,n,:)
               variable_rhs=f(l1:l2,m,n,iffx:iffz)!-force_vec(l1:l2,m,n,:)
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -4670,6 +4681,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  21-jan-15/MR: changes for use of reference state.
 !
       use Diagnostics
+      use DensityMethods, only: getrho, getrho1
       use Mpicomm
       use Sub
 !
@@ -4709,6 +4721,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
               endif
             else
               rho1=exp(-f(l1:l2,m,n,ilnrho))
+              call getrho1(f(:,m,n,ilnrho),rho1)
             endif
           else
             rho1=1.
@@ -4731,7 +4744,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
