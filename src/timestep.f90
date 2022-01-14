@@ -179,7 +179,7 @@ module Timestep
 !
         t = t + dtsub
 !
-      enddo
+      enddo   ! substep loop
 !
 !  Integrate operator split terms.
 !

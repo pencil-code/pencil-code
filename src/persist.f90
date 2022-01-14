@@ -76,6 +76,7 @@ module Persist
         if (read_persist_id ('INITIAL_BLOCK_ID', id)) return
       else
         if (init_read_persist ()) return
+!print*,'nach read_persist_id, INITIAL3: id,id_block_PERSISTENT=', id,id_block_PERSISTENT
       endif
 !
       if (id /= id_block_PERSISTENT) then
@@ -145,14 +146,17 @@ module Persist
       use General, only: random_seed_wrapper
       use IO, only: read_persist
 !
-      integer :: ichannel
       integer, intent(in) :: id
       logical, intent(inout) :: done
+!
+      integer :: ichannel
+      real :: dely
 !
       select case (id)
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
+!print*, 'persist-in: seed=', seed(1:nseed)
           call random_seed_wrapper (PUT=seed,CHANNEL=1)
           done = .true.
         case (id_record_RANDOM_SEEDS2)
@@ -161,7 +165,8 @@ module Persist
           call random_seed_wrapper (PUT=seed2,CHANNEL=2)
           done = .true.
         case (id_record_SHEAR_DELTA_Y)
-          if (read_persist ('SHEAR_DELTA_Y', deltay)) return
+          if (read_persist ('SHEAR_DELTA_Y', dely)) return
+          deltay=dely
           done = .true.
       endselect
 !
@@ -179,11 +184,13 @@ module Persist
 !
       integer :: ichannel
       logical :: error
+      real :: dely
 !
       if (persist_exists ('RANDOM_SEEDS')) then
         call random_seed_wrapper (GET=seed,CHANNEL=1)
         error = read_persist ('RANDOM_SEEDS', seed(1:nseed))
         if (.not. error) call random_seed_wrapper (PUT=seed)
+!if (.not. error) print*, 'persist-in: seed=', seed(1:nseed)
       endif
 !
       if (persist_exists ('RANDOM_SEEDS2')) then
@@ -192,7 +199,8 @@ module Persist
         if (.not. error) call random_seed_wrapper (PUT=seed2)
       endif
 !
-      error = read_persist ('SHEAR_DELTA_Y', deltay)
+      error = read_persist ('SHEAR_DELTA_Y', dely)
+      if (.not.error) deltay=dely
 !
     endsubroutine input_persist_general_by_label
 !***********************************************************************
@@ -213,6 +221,7 @@ module Persist
       ! Don't write the seeds, if they are unchanged from their default value.
       call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
+!write(20+iproc,*) 'persist-out: seed=', seed(1:nseed)
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif

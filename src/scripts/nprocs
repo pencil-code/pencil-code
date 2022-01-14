@@ -1,3 +1,5 @@
+#!/bin/bash
+
 npxline=`grep '^[^!]*nprocx *=' cparam.local | sed -e's/!.*$//'`
 npyline=`grep '^[^!]*nprocy *=' cparam.local | sed -e's/!.*$//'`
 npzline=`grep '^[^!]*nprocz *=' cparam.local | sed -e's/!.*$//'`

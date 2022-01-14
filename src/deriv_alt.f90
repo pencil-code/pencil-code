@@ -14,61 +14,16 @@ module Deriv
 !
 ! 26-Mar-12/MR: derived from deriv.f90
 !
-  use Messages, only: fatal_error, warning
   use Cdata
+  use General, only: keep_compiler_quiet
+  use Messages, only: fatal_error, warning, not_implemented
 !
   implicit none
 !
   private
 !
-  public :: initialize_deriv, finalize_deriv
-  public :: deri_3d_inds
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
-  public :: der6_other, der_pencil, der2_pencil
-  public :: der_z,der2_z
-  public :: der_upwind1st
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2_minmod
-  public :: heatflux_deriv_x
+  include 'deriv.h'
 !
-  real, dimension( 4,6) :: der_coef
-  real, dimension(nx,6) :: r1i
-  real, dimension(my,6) :: sth1i
-!
-  real, dimension(:,:,:), allocatable :: coeffsx, coeffsy, coeffsz, coeffsx_1, coeffsy_1, coeffsz_1
-!
-!debug  integer, parameter :: icount_der   = 1         !DERCOUNT
-!debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
-!debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
-!debug  integer, parameter :: icount_der5  = 4         !DERCOUNT
-!debug  integer, parameter :: icount_der6  = 5         !DERCOUNT
-!debug  integer, parameter :: icount_derij = 6         !DERCOUNT
-!debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
-!debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-!
-  interface der                 ! Overload the der function
-    module procedure der_main   ! derivative of an 'mvar' variable
-    module procedure der_other  ! derivative of another field
-  endinterface
-!
-  interface der2                 ! Overload the der function
-    module procedure der2_main   ! derivative of an 'mvar' variable
-    module procedure der2_other  ! derivative of another field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module procedure derij_main   ! derivative of an 'mvar' variable
-    module procedure derij_other  ! derivative of another field
-  endinterface
-!
-  interface  der_onesided_4_slice                  ! Overload the der function
-    module procedure  der_onesided_4_slice_main    ! derivative of an 'mvar' variable
-    module procedure  der_onesided_4_slice_main_pt
-    module procedure  der_onesided_4_slice_other   ! derivative of another field
-    module procedure  der_onesided_4_slice_other_pt
-  endinterface
-
 !  interface deri_3d                  !not working, why?
 !    module procedure deri_3d_ind
 !    module procedure deri_3d_inds
@@ -822,7 +777,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind)
 !
 !  Calculate 6th derivative of a scalar, get scalar
 !    Used for hyperdiffusion that affects small wave numbers as little as
@@ -860,7 +815,24 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der6
+    endsubroutine der6_main
+!***********************************************************************
+    subroutine der6_pencil(j,pencil,df6)
+!
+!  Calculate 6th derivative of any x, y or z pencil.
+!
+      real, dimension (:) :: pencil,df6
+      integer :: j
+!
+      intent(in)  :: j, pencil
+      intent(out) :: df6
+
+      call not_implemented('der6:pencil','deriv_alt')
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(pencil)
+      call keep_compiler_quiet(df6)
+
+    endsubroutine der6_pencil
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
