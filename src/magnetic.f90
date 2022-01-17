@@ -5339,12 +5339,16 @@ module Magnetic
           dAtot=abs(dAdt(:,j))
           dt1_max=max(dt1_max,dAtot/(cdts*alev))
           dAmax=max(dAmax,dAtot/alev)
-          ftot=abs(df(l1:l2,m,n,iux+j-1))
-          dt1_max=max(dt1_max,ftot/(cdts*alev))
-          Fmax=max(Fmax,ftot/alev)
+          if (lhydro)
+            ftot=abs(df(l1:l2,m,n,iux+j-1))
+            dt1_max=max(dt1_max,ftot/(cdts*alev))
+            Fmax=max(Fmax,ftot/alev)
+          endif
         enddo
-        ss0 = abs(df(l1:l2,m,n,iss))
-        dt1_max=max(dt1_max,ss0*p%cv1/cdts)
+        if (lentropy)
+          ss0 = abs(df(l1:l2,m,n,iss))
+          dt1_max=max(dt1_max,ss0*p%cv1/cdts)
+        endif
       endif
 !
 ! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
