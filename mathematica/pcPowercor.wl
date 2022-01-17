@@ -37,7 +37,8 @@ Input:
 Output:
   The decaying time as a real number."
 
-corrTimePowercor::usage="corrTime[sim,tsat,file,lFit,nFit,\"lAC\"->False] returns the correlation times.
+corrTimePowercor::usage="corrTime[sim,tsat,file,lFit,nFit,\"lAC\"->False,\"lNormalization\"->None] 
+returns the correlation times.
 Input:
   sim: String. Run directory.
   tsat: NumericQ. Starting point of the saturated phase.
@@ -46,6 +47,7 @@ Input:
   nFit: Integer or All. Number of points to be fitted.
 Options:
   \"lAC\": False by default. If True, also return autocorrelations in the third entry.
+  \"lNormalization\": None by default. Specifies how time series should be normalized.
 Output:
   {correlation time of the mean of all AC's, a List of correlation times for each AC,
    a List of autocorrelation functions if \"lAC\"->True)}"
@@ -88,21 +90,15 @@ corrFunc[t_,f1_,f2_]:=Module[{a,b,corr},
   {t-t[[1]],corr}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
 
-autoCor[ts_]:=Module[{t,f},
-  {t,f}=Transpose[ts];
-  corrFunc[t,f,f]
-]
-autoCor[t_,f_]:=autoCor[{t,f}//Transpose]
 
-
-(*autoCor[ts_]:=Module[{t,f,fft,ac},
+autoCor[ts_]:=Module[{t,f,fft,ac},
   {t,f}=Transpose[ts];
   f=Transpose[Transpose[f]-Mean[f]];
   fft=If[Depth[f]==2,Fourier[f],Transpose[Fourier/@Transpose[f]]];
   ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
   {t-t[[1]],ac}//Transpose//Take[#,Length[t]/2//Floor]&
 ]
-autoCor[t_,var_]:=autoCor[{t,var}//Transpose]*)
+autoCor[t_,var_]:=autoCor[{t,var}//Transpose]
 
 
 (* ::Section:: *)
@@ -156,13 +152,19 @@ fitTime[ts_List,lFit_,nFit_,knorm_,kf_]:=fitTime[ts,lFit,nFit]
 (*Find correlation time*)
 
 
-Options[corrTimePowercor]={"lAC"->False};
+Options[corrTimePowercor]={"lAC"->False,"lNormalization"->None};
 corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t,spec,pos,d,i,tcor},
   PrintTemporary[sim, ", ", file, ": Starting to read data files..."];
   (*find reset time of sp*)
   tvart=Import[sim<>"/data/tvart.dat"]//Flatten//Cases[#,tt_/;tt>tsat]&//Most;
-  (*read spectra*)
-  {t,spec}=read1D[sim,file];
+  (*read spectra; exclude t=0*)
+  {t,spec}=Rest/@read1D[sim,file];
+  (*apply normalization*)
+  spec=Switch[OptionValue["lNormalization"],
+    None,spec,
+    "t",spec/t,
+    _,Return["No such normalization option available"]
+  ];
   (*find positions of tvart*)
   pos=Nearest[t->"Index",#]&/@tvart//Flatten;
   (*cut spec into intervals*)
