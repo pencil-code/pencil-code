@@ -10017,7 +10017,7 @@ endif
       logical :: lok
       character(LEN=128) :: messg
       integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
-                 il1,il2,lenx,px
+                 il1,il2,lenx,px,tag,peer
 
       if (lforeign) then
 
@@ -10073,28 +10073,6 @@ endif
           call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'Pencil: received frgn_setup%dims=', frgn_setup%dims
 !
-!  Receive domain extents of foreign code. j loops over r, theta, phi.
-!      
-          call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-!print*, 'received extents=', floatbuf, ((xyz0(j),xyz1(j)),j=1,3)
-          ind=1
-          do j=1,3
-            frgn_setup%extents(:,j)=floatbuf(ind:ind+1); ind=ind+2
-            if (j/=2.and.any(abs(frgn_setup%extents(:,j)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
-              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
-              !lok=.false. !MR: alleviate to selection
-            endif
-          enddo
-!
-!  Receive output timestep of foreign code.
-!      
-          call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-          if (frgn_setup%dt_out<=0.) then
-            messg=trim(messg)//' foreign output step<=0'
-            lok=.false.
-          endif
-!print*, 'received dt_out=', frgn_setup%dt_out
-!
 !  Receive units of foreign code.
 !      
           call mpirecv_char(frgn_setup%unit_system,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
@@ -10124,11 +10102,37 @@ endif
           endif
           if (lok) frgn_setup%renorm_UU=frgn_setup%unit_time/frgn_setup%unit_length  !not the full truth yet
 !
+!  Receive domain extents of foreign code. j loops over r, theta, phi.
+!      
+          call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+!print*, 'received extents=', floatbuf, ((xyz0(j),xyz1(j)),j=1,3)
+          ind=1
+          do j=1,3
+            frgn_setup%extents(:,j)=floatbuf(ind:ind+1)
+            if (j==1) then
+              floatbuf(1)=floatbuf(1)/floatbuf(2)*xyz1(1)     ! renormalize r-range for spherical coordinates
+              floatbuf(2)=xyz1(1)
+            endif
+            if (any(abs(floatbuf(ind:ind+1)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
+              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
+              !lok=.false. !MR: alleviate to selection
+            endif
+            ind=ind+2
+          enddo
+!
+!  Receive output timestep of foreign code.
+!      
+          call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          if (frgn_setup%dt_out<=0.) then
+            messg=trim(messg)//' foreign output step<=0'
+            lok=.false.
+          endif
+!Missing: renormalization of dt_out
+!print*, 'received dt_out=', frgn_setup%dt_out
+!
 !  Send confirmation flag that setup is acceptable.
 ! 
           call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-        else
-          frgn_setup%name=''
         endif
 
         call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
@@ -10153,13 +10157,17 @@ endif
 !
           call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
-!  Send number of x-procs to foreign.
+!  Send number of x- and y-procs to foreign.
 !
           call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          call mpisend_int(nprocy,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
 !                              
-        if (lfirst_proc_yz) then 
+        tag  = tag_foreign+iproc
+        peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
+
+        if (lfirst_proc_yz) then             ! on processors of first XBEAM
 
           frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
 !                              
@@ -10375,5 +10383,15 @@ print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
       endif
 
     endfunction update_foreign_data
+!***********************************************************************
+    subroutine set_rslice_communicator
+
+      integer :: rank
+
+      call MPI_COMM_SPLIT(MPI_COMM_PENCIL, lwrite_slice_r, iproc, MPI_COMM_RSLICE, mpierr)
+      call MPI_COMM_RANK(MPI_COMM_RSLICE,rank,mpierr)
+      if (rank==0) root_rslice=iproc
+
+    endsubroutine set_rslice_communicator
 !***********************************************************************
   endmodule Mpicomm
