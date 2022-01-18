@@ -1634,7 +1634,8 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+      call check_SN(f)
+      call addmassflux(f)
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
@@ -3821,7 +3822,7 @@ module Interstellar
         print "(1x,'explode_SN:  Ambient Nsol = ',   e10.3)",site_mass/solar_mass
         print "(1x,'explode_SN:    Sedov time = ',   e10.3)", SNR%feat%t_sedov
         print "(1x,'explode_SN:   Shell speed = ',   e10.3)",uu_sedov
-        write(1,'(i10,E13.5,5i6,16E13.5)') &
+        write(1,'(i10,E13.6,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
             SNR%feat%rhom, SNR%site%TT, SNR%feat%EE+SNR%feat%CR, &

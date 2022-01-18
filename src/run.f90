@@ -718,14 +718,14 @@ program run
     if (lrescaling_testfield) call rescaling_testfield(f)
     if (lrescaling_testscalar) call rescaling_testscalar(f)
 !
-!  Check for SNe, and update f if necessary (see interstellar.f90).
-!
-    if (linterstellar) call check_SN(f)
-!
-!  Check if mass flux replacement required fred test
-!
-    if (linterstellar) call addmassflux(f)
-!
+!!  Check for SNe, and update f if necessary (see interstellar.f90).
+!!
+!    if (linterstellar) call check_SN(f)
+!!
+!!  Check if mass flux replacement required fred test
+!!
+!    if (linterstellar) call addmassflux(f)
+!!
 !  Check wall clock time, for diagnostics and for user supplied simulation time
 !  limit.
 !
