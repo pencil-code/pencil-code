@@ -58,7 +58,7 @@
   public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
   public :: collect_grid
-
+  public :: set_rslice_communicator,root_rslice
   public :: y2x, z2x
 
   public :: report_clean_output
@@ -77,7 +77,7 @@
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
-            MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+            MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, MPI_COMM_RSLICE, &
             MPI_INFO_NULL, MPI_ANY_TAG, lyang
 !
   interface mpirecv_logical
@@ -400,7 +400,8 @@
 !
   integer :: MPI_COMM_GRID, MPI_COMM_PENCIL
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
-  integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
+  integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
+  integer :: root_rslice
 !
 ! for protecting MPI_COMM_WORLD to be redefined by preprocessor
 ! 
