@@ -5339,13 +5339,13 @@ module Magnetic
           dAtot=abs(dAdt(:,j))
           dt1_max=max(dt1_max,dAtot/(cdts*alev))
           dAmax=max(dAmax,dAtot/alev)
-          if (lhydro)
+          if (lhydro) then
             ftot=abs(df(l1:l2,m,n,iux+j-1))
             dt1_max=max(dt1_max,ftot/(cdts*alev))
             Fmax=max(Fmax,ftot/alev)
           endif
         enddo
-        if (lentropy)
+        if (lentropy) then
           ss0 = abs(df(l1:l2,m,n,iss))
           dt1_max=max(dt1_max,ss0*p%cv1/cdts)
         endif
