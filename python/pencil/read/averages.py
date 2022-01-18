@@ -68,6 +68,8 @@ class Averages(object):
         datadir="data",
         proc=-1,
         iter_list=None,
+        avfile_list=None,
+        infile_list=None,
         precision="f",
     ):
         """
@@ -85,6 +87,9 @@ class Averages(object):
 
         *iter_list*
           list of iteration indices for which to sample the slices
+
+        *file_list*
+          list of file names if alternative to standard files used
 
         *var_index*:
           Index of variable from among within the 'y' or 'z' averages.
@@ -122,59 +127,79 @@ class Averages(object):
             print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
             sys.stdout.flush()
         # Determine which average files to read.
-        in_file_name_list = []
-        aver_file_name_list = []
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            l_h5 = True
-            if plane_list.count("xy") > 0:
-                if os.path.exists("xyaver.in"):
-                    in_file_name_list.append("xyaver.in")
-                    aver_file_name_list.append(os.path.join("averages", "xy.h5"))
-            if plane_list.count("xz") > 0:
-                if os.path.exists("xzaver.in"):
-                    in_file_name_list.append("xzaver.in")
-                    aver_file_name_list.append(os.path.join("averages", "xz.h5"))
-            if plane_list.count("yz") > 0:
-                if os.path.exists("yzaver.in"):
-                    in_file_name_list.append("yzaver.in")
-                    aver_file_name_list.append(os.path.join("averages", "yz.h5"))
-            if plane_list.count("y") > 0:
-                if os.path.exists("yaver.in"):
-                    in_file_name_list.append("yaver.in")
-                    aver_file_name_list.append(os.path.join("averages", "y.h5"))
-            if plane_list.count("z") > 0:
-                if os.path.exists("zaver.in"):
-                    in_file_name_list.append("zaver.in")
-                    aver_file_name_list.append(os.path.join("averages", "z.h5"))
+        if avfile_list:
+            if isinstance(avfile_list, list):
+                aver_file_name_list = avfile_list
+            else:
+                aver_file_name_list = [avfile_list]
+            if infile_list:
+                if isinstance(infile_list, list):
+                    in_file_name_list = infile_list
+                else:
+                    in_file_name_list = [infile_list]
+            else:
+                in_file_name_list = []
+                if len(aver_file_name_list) == len(plane_list):
+                    for plane in plane_list:
+                        in_file_name_list.append(prefix + "aver.in")
+                else:
+                    print("plane_list and avfile_list must have matching length and order")
+                    sys.stdout.flush()
         else:
-            if plane_list.count("xy") > 0:
-                if os.path.exists("xyaver.in"):
-                    in_file_name_list.append("xyaver.in")
-                    aver_file_name_list.append("xyaverages.dat")
-            if plane_list.count("xz") > 0:
-                if os.path.exists("xzaver.in"):
-                    in_file_name_list.append("xzaver.in")
-                    aver_file_name_list.append("xzaverages.dat")
-            if plane_list.count("yz") > 0:
-                if os.path.exists("yzaver.in"):
-                    in_file_name_list.append("yzaver.in")
-                    aver_file_name_list.append("yzaverages.dat")
-            if plane_list.count("y") > 0:
-                if os.path.exists("yaver.in"):
-                    in_file_name_list.append("yaver.in")
-                    aver_file_name_list.append("yaverages.dat")
-            if plane_list.count("z") > 0:
-                if os.path.exists("zaver.in"):
-                    in_file_name_list.append("zaver.in")
-                    aver_file_name_list.append("zaverages.dat")
-        if not in_file_name_list:
-            print("error: invalid plane name")
-            sys.stdout.flush()
-            return -1
+            aver_file_name_list = []
+            in_file_name_list = []
+            if os.path.exists(os.path.join(datadir, "grid.h5")):
+                l_h5 = True
+                if plane_list.count("xy") > 0:
+                    if os.path.exists("xyaver.in"):
+                        in_file_name_list.append("xyaver.in")
+                        aver_file_name_list.append(os.path.join("averages", "xy.h5"))
+                if plane_list.count("xz") > 0:
+                    if os.path.exists("xzaver.in"):
+                        in_file_name_list.append("xzaver.in")
+                        aver_file_name_list.append(os.path.join("averages", "xz.h5"))
+                if plane_list.count("yz") > 0:
+                    if os.path.exists("yzaver.in"):
+                        in_file_name_list.append("yzaver.in")
+                        aver_file_name_list.append(os.path.join("averages", "yz.h5"))
+                if plane_list.count("y") > 0:
+                    if os.path.exists("yaver.in"):
+                        in_file_name_list.append("yaver.in")
+                        aver_file_name_list.append(os.path.join("averages", "y.h5"))
+                if plane_list.count("z") > 0:
+                    if os.path.exists("zaver.in"):
+                        in_file_name_list.append("zaver.in")
+                        aver_file_name_list.append(os.path.join("averages", "z.h5"))
+            else:
+                if plane_list.count("xy") > 0:
+                    if os.path.exists("xyaver.in"):
+                        in_file_name_list.append("xyaver.in")
+                        aver_file_name_list.append("xyaverages.dat")
+                if plane_list.count("xz") > 0:
+                    if os.path.exists("xzaver.in"):
+                        in_file_name_list.append("xzaver.in")
+                        aver_file_name_list.append("xzaverages.dat")
+                if plane_list.count("yz") > 0:
+                    if os.path.exists("yzaver.in"):
+                        in_file_name_list.append("yzaver.in")
+                        aver_file_name_list.append("yzaverages.dat")
+                if plane_list.count("y") > 0:
+                    if os.path.exists("yaver.in"):
+                        in_file_name_list.append("yaver.in")
+                        aver_file_name_list.append("yaverages.dat")
+                if plane_list.count("z") > 0:
+                    if os.path.exists("zaver.in"):
+                        in_file_name_list.append("zaver.in")
+                        aver_file_name_list.append("zaverages.dat")
+            if not in_file_name_list:
+                print("error: invalid plane name")
+                sys.stdout.flush()
+                return -1
 
         class Foo(object):
             pass
 
+        print(plane_list,in_file_name_list, aver_file_name_list)
         for plane, in_file_name, aver_file_name in zip(
             plane_list, in_file_name_list, aver_file_name_list
         ):
