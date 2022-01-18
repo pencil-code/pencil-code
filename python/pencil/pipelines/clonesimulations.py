@@ -3,7 +3,6 @@ import subprocess
 from os.path import join
 import f90nml
 
-
 def clone_sims(simset, simsdir=None):
     """
     Create a set of simulation directories from a dictionary object, simset,
