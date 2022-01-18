@@ -2925,4 +2925,10 @@ module Mpicomm
 
     endfunction update_foreign_data
 !***********************************************************************
+    subroutine set_rslice_communicator
+! 
+!  Dummy routine.
+!    
+    endsubroutine set_rslice_communicator
+!***********************************************************************
 endmodule Mpicomm
