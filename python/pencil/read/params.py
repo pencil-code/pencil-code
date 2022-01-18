@@ -14,6 +14,17 @@
 """
 Contains the parameters of the simulation.
 """
+try:
+    import f90nml
+    lnml = True
+except:
+    print(
+    "Warning: recommend to add f90nml to library with \
+    'pip3 install f90nml' (Python 3) or \
+    'pip install f90nml' (Python 2)."
+    )
+    lnml = False
+
 
 
 def param(*args, **kwargs):
@@ -357,54 +368,74 @@ class Param(object):
 
         # Contain the nested parameters to be retained
         # Contain the nest names for each parameter set
-        for rawline in open(file_name):
-            if len(rawline.strip()) == 0:
-                # This is a line that contains only whitespace; ignore it.
-                continue
-            if "," in rawline[1]:
-                rawline = lastrawline + rawline
-            if " " in rawline[1]:
-                rawline = lastrawline + rawline
-            if "'" in rawline[1]:
-                rawline = lastrawline + rawline
-            lastrawline = rawline
-            line = rawline.rstrip("\n")
-            if line[1] == "&" or line[0] == "&":
-                super_name = (
-                    line[2:]
-                    .lower()
-                    .rsplit("_pars")[0]
-                    .rsplit("_init")[0]
-                    .rsplit("_run")[0]
-                )
+        if lnml:
+            nmlobj = f90nml.read(file_name)
+            for super_name_full in nmlobj.keys():
+                super_name = (super_name_full.rsplit('_pars')[0].rsplit("_init")[0].rsplit("_run")[0])
                 if nest:
                     if not params.__contains__(super_name):
                         params[super_name] = dict()
                         super_name_list.append(super_name)
-            else:
-                line = re.sub("^ ", "", line)
-                if line != "/":
-                    split = re.split("=", line)
-                    name = re.sub(" ", "", split[0].lower())
-                    value = split[1]
-                    parts = r.findall(value)
-                    value = []
-                    for i in range(len(parts)):
-                        # IL: changed to allow for * in strings
-                        if "'" not in parts[i] and "*" in parts[i]:
-                            s = parts[i].split("*")
-                            for j in range(int(s[0])):
-                                value += [self.__tuple_catch(s[1])]
-                        else:
-                            value += [self.__tuple_catch(parts[i])]
-                    if len(value) == 1:
-                        value = value[0]
-                    params[name] = value
+                for name in nmlobj[super_name_full].keys():
+                    if type(nmlobj[super_name_full][name]) == str:
+                        params[name] = \
+                            nmlobj[super_name_full][name].strip(' ').strip('\n')
+                    else:
+                        params[name] = nmlobj[super_name_full][name]
                     name_list.append(name)
                     if nest:
                         # Save all parameters nested and unnested
                         if not super_name in ("run", "init"):
-                            params[super_name][name] = value
+                            params[super_name][name] = nmlobj[super_name_full][name]
+        else:
+            for rawline in open(file_name):
+                if len(rawline.strip()) == 0:
+                    # This is a line that contains only whitespace; ignore it.
+                    continue
+                if "," in rawline[1]:
+                    rawline = lastrawline + rawline.rstrip("\n")
+                if " " in rawline[1]:
+                    rawline = lastrawline + rawline.rstrip("\n")
+                if "'" in rawline[1]:
+                    rawline = lastrawline + rawline.rstrip("\n")
+                lastrawline = rawline.rstrip("\n")
+                line = rawline.rstrip("\n")
+                if len(line) > 1 and (line[1] == "&" or line[0] == "&"):
+                    super_name = (
+                        line[2:]
+                        .lower()
+                        .rsplit("_pars")[0]
+                        .rsplit("_init")[0]
+                        .rsplit("_run")[0]
+                    )
+                    if nest:
+                        if not params.__contains__(super_name):
+                            params[super_name] = dict()
+                            super_name_list.append(super_name)
+                else:
+                    line = re.sub("^ ", "", line)
+                    if line != "/" and len(line) > 0:
+                        split = re.split("=", line)
+                        name = re.sub(" ", "", split[0].lower())
+                        value = split[1]
+                        parts = r.findall(value)
+                        value = []
+                        for i in range(len(parts)):
+                            # IL: changed to allow for * in strings
+                            if "'" not in parts[i] and "*" in parts[i]:
+                                s = parts[i].split("*")
+                                for j in range(int(s[0])):
+                                    value += [self.__tuple_catch(s[1])]
+                            else:
+                                value += [self.__tuple_catch(parts[i])]
+                        if len(value) == 1:
+                            value = value[0]
+                        params[name] = value
+                        name_list.append(name)
+                        if nest:
+                            # Save all parameters nested and unnested
+                            if not super_name in ("run", "init"):
+                                params[super_name][name] = value
         # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
             if "run" in super_name_list:
