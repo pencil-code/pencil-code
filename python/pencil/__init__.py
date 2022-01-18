@@ -17,7 +17,6 @@ except:
         "Error: You need to install h5py library doing 'pip3 install h5py' (Python 3) \
            or 'pip install h5py' (Python 2)."
     )
-    import h5py
 
 # Load sub-modules.
 from . import io
