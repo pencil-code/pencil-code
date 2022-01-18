@@ -10057,6 +10057,13 @@ endif
           
           if ( frgn_setup%name=='MagIC' ) then
           elseif ( frgn_setup%name=='Eulag' ) then
+!
+!  For the moment being.
+!
+            if (any(intbuf(2:3)/=(/nprocy,nprocz/))) then 
+              messg="EULAG y or z proc numbers don't match;"
+              lok=.false.
+            endif
           elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
             messg="foreign proc numbers don't match;"
             lok=.false.
@@ -10187,7 +10194,6 @@ endif
 !  proc. frgn_setup%xind_rng(-1,:) is overall index range.
 !
           allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
-          allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1))
 
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
 
@@ -10201,6 +10207,7 @@ endif
 !  about their share in frgn_setup%xind_rng. No share: receive [0,0]
 !
             if (frgn_setup%procnums(1)>1) then
+              allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1))
               do px=0,frgn_setup%procnums(1)-1
 
 !print*, 'Pencil: sendrecv to', iproc, ncpus+px,tag_foreign+iproc,tag_foreign+ncpus_foreign+px
@@ -10213,24 +10220,32 @@ endif
                 endif
               enddo
 !print*, 'iproc,frgn_setup%xind_rng', iproc, frgn_setup%xind_rng
-            else
+            else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
             
           else
+            if (frgn_setup%procnums(1)>1) then
 !                                                                                                
 !  Send index range of buddy processors frgn_setup%peer_rng. Assumes that number of procs in x-direction is equal, so only one buddy.  
 !                                                   
-            frgn_setup%peer_rng=iproc+ncpus                                             
-            call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_WORLD)
+              frgn_setup%peer_rng=iproc+ncpus                    ! assumes same proc layout in Pencil and foreign
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_WORLD)
+            else       ! EULAG case
+              frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
+            endif
           endif
-!
+!noch falsch:
           lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
           if (allocated(frgn_buffer)) deallocate(frgn_buffer)
           allocate(frgn_buffer(lenx,frgn_setup%dims(2),frgn_setup%dims(3),3)) ! Would be full data cube size/nprocx. Tb improved.
 !print*, 'Pencil: lenx =',iproc, lenx
   
         endif  ! if (lfirst_proc_yz)
+        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_PENCIL)
+
       endif    ! if (lforeign)
 
     endsubroutine initialize_foreign_comm
