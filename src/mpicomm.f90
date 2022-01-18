@@ -182,7 +182,6 @@ module Mpicomm
       integer :: flag
 
       lmpicomm = .true.
-      if (tag_foreign>0) lforeign=.true.
 !
       call MPI_INIT(mpierr)
 !
@@ -289,6 +288,7 @@ module Mpicomm
       integer :: nprocs_penc, nprocs_foreign
 
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
+      if (tag_foreign>0) lforeign=.true.
 !
 !  Check total number of processors assigned to Pencil.
 !
