@@ -127,6 +127,8 @@ class Averages(object):
             print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
             sys.stdout.flush()
         # Determine which average files to read.
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
+            l_h5 = True
         if avfile_list:
             if isinstance(avfile_list, list):
                 aver_file_name_list = avfile_list
