@@ -141,6 +141,12 @@ class SliceSeries(object):
             import h5py
         else:
             l_h5 = False
+        if not isinstance(iter_list, list):
+            if not isinstance(iter_list, int):
+                print('iter_list must be an integer or integer list, ignoring')
+                iter_list = list()
+            else:
+                iter_list = [iter_list]
 
         if l_h5:
             # Define the directory that contains the slice files.
@@ -203,49 +209,66 @@ class SliceSeries(object):
                     # Compose the file name according to field & extension.
                     file_name = os.path.join(slice_dir, field + "_" + extension + ".h5")
                     with h5py.File(file_name, "r") as ds:
-                        if tstart > 0 or tend:
-                            iter_list = []
-                            it = 0
-                            while it < ds["last"][0]:
-                                if ds[str(it + 1) + "/time"][()] > tstart:
-                                    iter_list.append(it)
+                        if not nt:
+                            if not tend:
+                                nt = len(ds.keys())-1
+                                if tstart == 0:
+                                    iter_list = list(np.arange(nt)+1)
+                                else:
+                                    it = 1
+                                    while it < ds["last"][0]:
+                                        if ds[str(it) + "/time"][()] >= tstart:
+                                            break
+                                        it += 1
+                                        if not quiet:
+                                            print(
+                                        "iter_list: it={}, time={}".format(
+                                            it, ds[str(it + 1) + "/time"][()]
+                                                      )
+                                                 )
+                                    iter_list = list(np.arange(nt-it)+it+1)
+                            else:
+                                it = 1
+                                while it < ds["last"][0]:
+                                    if ds[str(it) + "/time"][()] >= tstart:
+                                        if ds[str(it) + "/time"][()] > tend:
+                                            break
+                                        iter_list.append(it)
+                                        if not quiet:
+                                            print(
+                                        "iter_list: it={}, time={}".format(
+                                            it, ds[str(it) + "/time"][()]
+                                                      )
+                                                 )
                                     it += 1
-                                if ds[str(it + 1) + "/time"][()] > tend:
-                                    it = ds["last"][0]
-                                print(
-                                    "iter_list: it={}, time={}".format(
-                                        it, ds[str(it + 1) + "/time"][()]
-                                    )
-                                )
-                            nt = len(iter_list)
-                        if not isinstance(nt, int):
-                            nt = ds["last"][0]
+                        nt = len(iter_list)
+                        istart = 0
+                        print('iter_list, start',iter_list, istart)
                         vsize = ds["1/data"].shape[0]
                         hsize = ds["1/data"].shape[1]
                         slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
-                        if len(iter_list) == 0:
-                            iter_list = list(range(nt))
                         for it in iter_list:
-                            if ds.__contains__(str(it + 1)):
-                                slice_series[it] = ds[str(it + 1) + "/data"][()]
+                            if ds.__contains__(str(it)):
+                                slice_series[istart] = ds[str(it) + "/data"][()]
                             else:
-                                print("no data at {} in ".format(it + 1) + file_name)
+                                print("no data at {} in ".format(it) + file_name)
+                            istart += 1
                         add_pos = len(pos_list) == 0
                         if self.t.size == 0:
-                            self.t = []
+                            self.t = list()
                             for it in iter_list:
-                                self.t.append(ds[str(it + 1) + "/time"][()])
+                                self.t.append(ds[str(it) + "/time"][()])
                                 if add_pos:
-                                    ind_list.append(ds[str(it + 1) + "/coordinate"][0])
-                                    pos_list.append(ds[str(it + 1) + "/position"][()])
+                                    ind_list.append(ds[str(it) + "/coordinate"][0])
+                                    pos_list.append(ds[str(it) + "/position"][()])
                             self.t = np.array(self.t).astype(precision)
                             setattr(pos_object, extension, np.array(pos_list))
                             setattr(ind_object, extension, np.array(ind_list))
                         else:
                             if add_pos:
                                 for it in iter_list:
-                                    ind_list.append(ds[str(it + 1) + "/coordinate"][0])
-                                    pos_list.append(ds[str(it + 1) + "/position"][()])
+                                    ind_list.append(ds[str(it) + "/coordinate"][0])
+                                    pos_list.append(ds[str(it) + "/position"][()])
                                 setattr(pos_object, extension, np.array(pos_list))
                                 setattr(ind_object, extension, np.array(ind_list))
                     setattr(ext_object, field, slice_series)
@@ -301,6 +324,17 @@ class SliceSeries(object):
             class Foo(object):
                 pass
 
+            if len(iter_list) > 0:
+                nt = len(iter_list)
+                if tstart > 0 or tend:
+                    print(
+                        "read.slices: using iter_list.",
+                        "If tstart or tend required set iter_list=None",
+                    )
+                tstart = 0
+                tend = None
+            else:
+                nt = None
             for extension in extension_list:
                 if not quiet:
                     print("Extension: " + str(extension))
@@ -353,12 +387,17 @@ class SliceSeries(object):
                         continue
 
                     islice = 0
-                    self.t = []
-                    slice_series = []
+                    it = 0
+                    self.t = list()
+                    slice_series = list()
 
                     if not quiet:
-                        print("  -> Reading... ")
+                        print("  -> Reading... ",file_name)
                         sys.stdout.flush()
+                    if not nt:
+                        iter_list = list()
+                    if not quiet:
+                        print("Entering while loop")
                     while True:
                         try:
                             raw_data = infile.read_record(dtype=read_precision).astype(
@@ -370,13 +409,26 @@ class SliceSeries(object):
                             break
 
                         if old_file:
-                            self.t.append(list(raw_data[-1]))
-                            slice_series.append(raw_data[:-1])
+                            time = raw_data[-1]
                         else:
-                            self.t.append(list(raw_data[-2:-1]))
-                            slice_series.append(raw_data[:-2])
-                        # print("islice", islice, "time: ", self.t)
-                        islice += 1
+                            time = raw_data[-2:-1]
+                        if time >= tstart:
+                            if tend:
+                                if time <= tend:
+                                    self.t.append(time)
+                                    if old_file:
+                                        slice_series.append(raw_data[:-1])
+                                    else:
+                                        slice_series.append(raw_data[:-2])
+                                    islice += 1
+                            elif it in iter_list or not nt:
+                                self.t.append(time)
+                                if old_file:
+                                    slice_series.append(raw_data[:-1])
+                                else:
+                                    slice_series.append(raw_data[:-2])
+                                islice += 1
+                        it += 1
                     if not quiet:
                         print("  -> Done")
                         sys.stdout.flush()
