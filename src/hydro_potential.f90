@@ -54,7 +54,6 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
 
   real, dimension (mz,3) :: uumz
-  real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (:,:,:), allocatable :: uumxy
   real, dimension (mx,mz,3) :: uumxz=0.0

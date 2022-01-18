@@ -32,7 +32,6 @@ module Hydro
   real, dimension (mx,3) :: uumx=0.
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.
-  real, dimension (nz,3) :: guumz=0.
   real, dimension (mx,my,3) :: uumxy=0.
   real, dimension (mx,mz,3) :: uumxz=0.
 !

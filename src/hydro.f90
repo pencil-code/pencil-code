@@ -58,7 +58,6 @@ module Hydro
   real, target, dimension (:,:,:,:,:), allocatable :: divu_r
 
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
-  real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (my,3) :: uumy=0.0
   real, dimension (:,:,:), allocatable :: uumxy, ruumxy
@@ -1531,11 +1530,6 @@ module Hydro
           enddo
         enddo
         call finalize_aver(nprocxy,12,uumz)
-!
-        do j=1,3
-          call der_z(uumz(:,j),guumz(:,j))
-        enddo
-!
       endif
 !
 !  do xy-averaged mean momentum for each component
