@@ -10242,6 +10242,7 @@ endif
 !print*, 'iproc,frgn_setup%xind_rng', iproc, frgn_setup%xind_rng
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
+              frgn_setup%peer_rng=peer
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
             
@@ -10257,15 +10258,13 @@ endif
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
           endif
-!noch falsch:
-          lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
-          if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-          allocate(frgn_buffer(lenx,frgn_setup%dims(2),frgn_setup%dims(3),3)) ! Would be full data cube size/nprocx. Tb improved.
-!print*, 'Pencil: lenx =',iproc, lenx
-  
+          call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
         endif  ! if (lfirst_proc_yz)
-        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_PENCIL)
 
+        lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
+        if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+        allocate(frgn_buffer(lenx,ny,nz,3)) ! Would be full data cube size/nprocx. Tb improved.
+!print*, 'Pencil: lenx =',iproc, lenx
       endif    ! if (lforeign)
 
     endsubroutine initialize_foreign_comm
@@ -10283,9 +10282,7 @@ endif
       integer :: ivar1, ivar2
       logical, optional :: lnonblock
 
-      integer :: nvars,istart,lenx_loc,ncpus_foreign,px
-
-      if (lfirst_proc_yz) then
+      integer :: nvars,istart,lenx_loc,ncpus_foreign,px,iv,peer
 
         if (frgn_setup%lnprocx_mismat) then
 
@@ -10301,10 +10298,12 @@ endif
                                   (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
                                   ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD,frgn_setup%recv_req(px))
 print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
-              else
-                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
-                                  (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
-                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD)    !,frgn_setup%recv_req(px))
+              else       ! EULAG case
+                peer=frgn_setup%peer_rng(1)
+                do iv=1,3
+                  call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                    (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
+                enddo
 !print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
 !call mpiwait(frgn_setup%recv_req(px))
               endif
@@ -10312,10 +10311,8 @@ print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign
             endif
           enddo
 
-        else               ! else nest not yet valid
           !call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,ivar2-ivar1+1/), &
           !                           frgn_setup%peer_rng(1),tag_foreign,frgn_setup%recv_req,MPI_COMM_WORLD)
-        endif
 
       endif
 
