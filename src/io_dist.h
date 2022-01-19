@@ -244,7 +244,7 @@ iloop:    do ii=iia,iie
 
       if (.not.lok) &
         call fatal_error('read_snap','neither '//trim(directory_snap)//'/'//trim(file)// &
-                         ' nor any rescue file could be opened ')
+                         ' nor any rescue file could be opened ', .true.)
 !
 !  Verify consistency of the snapshots regarding their timestamp,
 !  unless ireset_tstart=T, in which case we reset all times to tstart.
