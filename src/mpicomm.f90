@@ -4366,6 +4366,26 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
+    subroutine mpiallreduce_and_scl(fland_tmp, fland, comm)
+!
+!  Calculate logical or over all procs and return to all processors.
+!
+!  14-feb-14/ccyang: coded
+!
+      use General, only: ioptest
+
+      logical, intent(in) :: fland_tmp
+      logical, intent(out):: fland
+      integer, intent(in), optional :: comm
+!
+      if (nprocs == 1) then
+        fland = fland_tmp
+      else
+        call MPI_ALLREDUCE(fland_tmp, fland, 1, MPI_LOGICAL, MPI_LAND, ioptest(comm,MPI_COMM_GRID), mpierr)
+      endif
+!
+    endsubroutine mpiallreduce_and_scl
+!***********************************************************************
     subroutine mpiallreduce_or_scl(flor_tmp, flor, comm)
 !
 !  Calculate logical or over all procs and return to all processors.

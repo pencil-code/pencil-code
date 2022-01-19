@@ -230,6 +230,10 @@
     module procedure mpiallreduce_or_arr_inplace !!!
   endinterface
 !
+  interface mpiallreduce_and
+    module procedure mpiallreduce_and_scl
+  endinterface
+!
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr

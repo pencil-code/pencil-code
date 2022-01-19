@@ -1208,6 +1208,22 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_or_arr_inplace
 !***********************************************************************
+    subroutine mpiallreduce_and_scl(fland_tmp, fland, comm)
+!
+!  Calculate logical or over all procs and return to all processors.
+!
+!  14-feb-14/ccyang: coded
+!
+      use General, only: ioptest
+
+      logical, intent(in) :: fland_tmp
+      logical, intent(out):: fland
+      integer, intent(in), optional :: comm
+!
+      fland = fland_tmp
+!
+    endsubroutine mpiallreduce_and_scl
+!***********************************************************************
     subroutine mpireduce_max_scl_int(fmax_tmp,fmax,comm)
 !
       integer :: fmax_tmp, fmax
