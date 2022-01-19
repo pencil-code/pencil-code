@@ -96,20 +96,22 @@ module Special
   real :: nscale_factor_conformal=1., tshift=0.
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
+  logical :: lswitch_sign_e_X_boost=.true.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lelectmag=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
+  logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false.
   logical :: lonly_mag=.false.
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
-  logical :: reinitialize_GW=.false.
+  logical :: reinitialize_GW=.false., lboost=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
-  real :: rescale_GW=1.
+  real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -122,16 +124,19 @@ module Special
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
+    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag
 !
 ! run parameters
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
+    lswitch_sign_e_X_boost, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
+    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
@@ -194,6 +199,10 @@ module Special
 !
   integer :: ihhT_realspace, ihhX_realspace
   integer :: iggT_realspace, iggX_realspace
+  integer :: ihhT_realspace_boost, ihhX_realspace_boost
+  integer :: iggT_realspace_boost, iggX_realspace_boost
+  integer :: ihhT_boost=0,ihhX_boost=0,iggT_boost=0,iggX_boost=0
+  integer :: ihhTim_boost=0,ihhXim_boost=0,iggTim_boost=0,iggXim_boost=0
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
@@ -256,6 +265,37 @@ module Special
       if (lreal_space_gTX_as_aux) then
         call farray_register_auxiliary('ggT_realspace',iggT_realspace)
         call farray_register_auxiliary('ggX_realspace',iggX_realspace)
+      endif
+!
+!  boosted hT and hX in Fourier space
+!
+      if (lggTX_as_aux) then
+        call farray_register_auxiliary('ggT_boost',iggT_boost)
+        call farray_register_auxiliary('ggX_boost',iggX_boost)
+        call farray_register_auxiliary('ggTim_boost',iggTim_boost)
+        call farray_register_auxiliary('ggXim_boost',iggXim_boost)
+      endif
+!
+      if (lhhTX_as_aux) then
+        call farray_register_auxiliary('hhT_boost',ihhT_boost)
+        call farray_register_auxiliary('hhX_boost',ihhX_boost)
+        call farray_register_auxiliary('hhTim_boost',ihhTim_boost)
+        call farray_register_auxiliary('hhXim_boost',ihhXim_boost)
+      endif
+!
+!
+!  boosted hT and hX in real space
+!
+      if (lreal_space_hTX_boost_as_aux) then
+        call farray_register_auxiliary('hhT_realspace_boost',ihhT_realspace_boost)
+        call farray_register_auxiliary('hhX_realspace_boost',ihhX_realspace_boost)
+      endif
+!
+!  boosted gT and gX in real space
+!
+      if (lreal_space_gTX_boost_as_aux) then
+        call farray_register_auxiliary('ggT_realspace_boost',iggT_realspace_boost)
+        call farray_register_auxiliary('ggX_realspace_boost',iggX_realspace_boost)
       endif
 !
     endsubroutine register_special
@@ -1179,14 +1219,18 @@ module Special
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (6) :: e_T_boost, e_X_boost
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
+      real, dimension (3) :: e1_boost, e2_boost
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact, delkt
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
+      real :: gamma_boost, k1_boost, k1sqr_boost, ksqr_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2
+      real :: eTT, eTX, eXT, eXX
       intent(inout) :: f
       character (len=2) :: label
       logical :: lsign_om2
@@ -1258,6 +1302,8 @@ module Special
                 e1=0.
                 e2=0.
               else
+!
+!  compute e1 and e2 vectors (for lnonlinear_source only)
 !
                 if(abs(k1)<abs(k2)) then
                   if(abs(k1)<abs(k3)) then !(k1 is pref dir)
@@ -1442,6 +1488,13 @@ module Special
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
 !
+!  boosted x components of k, and squared quantities.
+!
+            gamma_boost=1./sqrt(1.-(vx_boost**2+vy_boost**2+vz_boost**2))
+            k1_boost=gamma_boost*(-vx_boost*ksqr+kx_fft(ikx+ipx*nx))
+            k1sqr_boost=k1_boost**2
+            ksqr_boost=k1sqr_boost+k2sqr+k3sqr
+!
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
@@ -1476,6 +1529,8 @@ module Special
                 lsign_om2=.true.
               endif
 !
+!  compute e1 and e2 vectors
+!
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
@@ -1493,6 +1548,9 @@ module Special
                   e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               endif
+!
+!  normalize e1 and e2 vectors and compute Pij
+!
               e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
               e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
               Pij(1)=1.-k1sqr*one_over_k2
@@ -1655,6 +1713,99 @@ module Special
             f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )=S_X_re(ikx,iky,ikz)
             f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)=S_X_im(ikx,iky,ikz)
 !
+!  option of computing boosted hT, hX gT, gX
+!  back to real space: hTX
+!  re-utilize S_T_re, etc as workspace.
+!  begin by initilizing them to zero
+!  compute boosted e1 and e2 vectors
+!
+            if (lboost) then
+              if(abs(k1_boost)<abs(k2)) then
+                if(abs(k1_boost)<abs(k3)) then !(k1_boost is pref dir)
+                  e1_boost=(/0.,-k3,+k2/)
+                  e2_boost=(/k2sqr+k3sqr,-k2*k1_boost,-k3*k1_boost/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3,k2*k3,-(k1sqr_boost+k2sqr)/)
+                endif
+              else !(k2 smaller than k1_boost)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1_boost=(/-k3,0.,+k1_boost/)
+                  e2_boost=(/+k1_boost*k2,-(k1sqr_boost+k3sqr),+k3*k2/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3,k2*k3,-(k1sqr_boost+k2sqr)/)
+                endif
+              endif
+!
+!  normalize boosted e1 and e2 vectors
+!
+              e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
+              e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+!
+!  compute e_T_boost and e_X_boost
+!
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                e_T_boost(ij)=e1_boost(i)*e1_boost(j)-e2_boost(i)*e2_boost(j)
+                e_X_boost(ij)=e1_boost(i)*e2_boost(j)+e2_boost(i)*e1_boost(j)
+              enddo
+              enddo
+!
+!  possibility of swapping the sign of e_X
+!
+              if (lswitch_sign_e_X_boost) then
+                if (k3<0.) then
+                  e_X_boost=-e_X_boost
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    e_X_boost=-e_X_boost
+                  elseif (k2==0.) then
+                    if (k1_boost<0.) then
+                      e_X_boost=-e_X_boost
+                    endif
+                  endif
+                endif
+              endif
+!
+!  compute 4 coefficients
+!
+              eTT=0.
+              eTX=0.
+              eXT=0.
+              eXX=0.
+              do j=1,3
+              do i=1,j
+                ij=ij_table(i,j)
+                eTT=eTT+.25*e_T_boost(ij)*e_T(ij)
+                eTX=eTX+.25*e_T_boost(ij)*e_X(ij)
+                eXT=eXT+.25*e_X_boost(ij)*e_T(ij)
+                eXX=eXX+.25*e_X_boost(ij)*e_X(ij)
+              enddo
+              enddo
+!
+!  apply transformation from unboosted to boosted h and g
+!
+              f(nghost+1,nghost+1,nghost+1,ihhT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
+                                                        +eTX*f(nghost+1,nghost+1,nghost+1,ihhX  )
+              f(nghost+1,nghost+1,nghost+1,ihhTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
+                                                        +eTX*f(nghost+1,nghost+1,nghost+1,ihhXim)
+              f(nghost+1,nghost+1,nghost+1,iggT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
+                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
+              f(nghost+1,nghost+1,nghost+1,iggTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,iggTim) &
+                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggXim)
+!
+              f(nghost+1,nghost+1,nghost+1,ihhX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
+                                                        +eXX*f(nghost+1,nghost+1,nghost+1,ihhX  )
+              f(nghost+1,nghost+1,nghost+1,ihhXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
+                                                        +eXX*f(nghost+1,nghost+1,nghost+1,ihhXim)
+              f(nghost+1,nghost+1,nghost+1,iggX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
+                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
+              f(nghost+1,nghost+1,nghost+1,iggXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,iggTim) &
+                                                        +eXX*f(nghost+1,nghost+1,nghost+1,iggXim)
+            endif
+!
 !  end of ikx, iky, and ikz loops
 !
           enddo
@@ -1662,6 +1813,7 @@ module Special
       enddo
 !
 !  back to real space: hTX
+!  re-utilize S_T_re, etc as workspace.
 !
       if (lreal_space_hTX_as_aux) then
         S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT  )
@@ -1685,6 +1837,32 @@ module Special
         call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iggT_realspace)=S_T_re
         f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
+      endif
+!
+!  back to real space: hTX
+!
+      if (lreal_space_hTX_boost_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT_boost  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,ihhX_boost  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,ihhTim_boost)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,ihhXim_boost)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,ihhT_realspace_boost)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,ihhX_realspace_boost)=S_X_re
+      endif
+!
+!  back to real space: gTX
+!
+      if (lreal_space_gTX_boost_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,iggT_boost  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,iggX_boost  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,iggTim_boost)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,iggXim_boost)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iggT_realspace_boost)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iggX_realspace_boost)=S_X_re
       endif
 !
     endsubroutine compute_gT_and_gX_from_gij
