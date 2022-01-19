@@ -3,7 +3,7 @@
 ! Code fragment to be used in both read_snap_single and read_snap_double - type agnostic
 !
       real :: t_test   ! t in single precision for backwards compatibility
-      logical :: ltest,lok,l0,lmail,lmail_
+      logical :: ltest,lok,lok_glob,l0,lmail,lmail_
       integer :: len1d,ios,iosr,ii,iia,jj,kk,iip,ind,ind1,kka,kke,jja,jje,iie
       integer :: nprocz_src, nzgrid_src, mz_src, ipz_src
       character(LEN=fnlen) :: readdir, srcdir
@@ -241,10 +241,11 @@ iloop:    do ii=iia,iie
           enddo iloop
         enddo jloop
       enddo kloop
-
-      if (.not.lok) &
+ 
+      call mpiallreduce_and(lok,lok_glob,comm=MPI_COMM_PENCIL)
+      if (.not.lok_glob) &
         call fatal_error('read_snap','neither '//trim(directory_snap)//'/'//trim(file)// &
-                         ' nor any rescue file could be opened ', .true.)
+                         ' nor any rescue file could be opened ')
 !
 !  Verify consistency of the snapshots regarding their timestamp,
 !  unless ireset_tstart=T, in which case we reset all times to tstart.

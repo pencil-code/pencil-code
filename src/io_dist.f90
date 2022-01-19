@@ -589,7 +589,7 @@ module Io
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
-                         mpisend_char, mpirecv_char, mpireduce_or
+                         mpisend_char, mpirecv_char, mpiallreduce_and
       use Syscalls, only: islink, system_cmd, readlink, extract_str
       use General, only: itoa, find_proc, atoi
 !
@@ -626,7 +626,7 @@ module Io
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL, &
-                         mpisend_char, mpirecv_char
+                         mpisend_char, mpirecv_char,mpiallreduce_and
       use Syscalls, only: islink, system_cmd, readlink, extract_str
       use General, only: itoa, find_proc, atoi
 !
