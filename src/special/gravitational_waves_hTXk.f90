@@ -100,6 +100,7 @@ module Special
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lelectmag=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
+  logical :: lggTX_as_aux_boost=.false., lhhTX_as_aux_boost=.false.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
@@ -125,7 +126,8 @@ module Special
     inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag, &
+    lggTX_as_aux_boost, lhhTX_as_aux_boost
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -139,6 +141,7 @@ module Special
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
+    lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
@@ -201,8 +204,8 @@ module Special
   integer :: iggT_realspace, iggX_realspace
   integer :: ihhT_realspace_boost, ihhX_realspace_boost
   integer :: iggT_realspace_boost, iggX_realspace_boost
-  integer :: ihhT_boost=0,ihhX_boost=0,iggT_boost=0,iggX_boost=0
-  integer :: ihhTim_boost=0,ihhXim_boost=0,iggTim_boost=0,iggXim_boost=0
+  integer :: ihhT_boost  =0, ihhX_boost  =0, iggT_boost  =0, iggX_boost  =0
+  integer :: ihhTim_boost=0, ihhXim_boost=0, iggTim_boost=0, iggXim_boost=0
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
@@ -269,14 +272,14 @@ module Special
 !
 !  boosted hT and hX in Fourier space
 !
-      if (lggTX_as_aux) then
+      if (lggTX_as_aux_boost) then
         call farray_register_auxiliary('ggT_boost',iggT_boost)
         call farray_register_auxiliary('ggX_boost',iggX_boost)
         call farray_register_auxiliary('ggTim_boost',iggTim_boost)
         call farray_register_auxiliary('ggXim_boost',iggXim_boost)
       endif
 !
-      if (lhhTX_as_aux) then
+      if (lhhTX_as_aux_boost) then
         call farray_register_auxiliary('hhT_boost',ihhT_boost)
         call farray_register_auxiliary('hhX_boost',ihhX_boost)
         call farray_register_auxiliary('hhTim_boost',ihhTim_boost)
