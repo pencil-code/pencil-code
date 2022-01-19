@@ -3977,72 +3977,76 @@ module Boundcond
       call get_shared_variable('nu',nu,caller='bc_set_sfree_y')
       call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
-         call get_shared_variable('Lambda_H1',Lambda_H1)
-         call get_shared_variable('LH1_rprof',LH1_rprof)
-         LH1=Lambda_H1*LH1_rprof
+        call get_shared_variable('Lambda_H1',Lambda_H1)
+        call get_shared_variable('LH1_rprof',LH1_rprof)
+        LH1=Lambda_H1*LH1_rprof
       endif
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        if ((llambda_effect).and.(j==iuz).and.(Lambda_H1/=0.)) then
-          do k=1,nghost
-              cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
-              cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
-            if (Omega==0) then
-               do ix=1,size(f,1)
-                  f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                       (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
-                       *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
-               enddo
-            else
-              do ix=1,size(f,1)
+        if (llambda_effect.and.(j==iuz)) then
+          if (Lambda_H1/=0.) then
+            do k=1,nghost
+                cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
+                cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
+              if (Omega==0) then
+                 do ix=1,size(f,1)
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                         (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                         *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
+                 enddo
+              else
+                do ix=1,size(f,1)
 ! DM+GG: temporally commented out
 !                somega=x(ix)*Omega*sinth(m1-k)*( &
 !                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                somega=x(ix)*Omega*sinth(m1-k)*( &
-                   exp(cos2thmpk*LH1(ix)/(4.*nu))&
-                        /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
-                f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                   (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
-                   *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
-                      +somega
-              enddo
-            endif
-          enddo
+                  somega=x(ix)*Omega*sinth(m1-k)*( &
+                     exp(cos2thmpk*LH1(ix)/(4.*nu))&
+                          /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
+                  f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                     (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                     *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
+                        +somega
+                enddo
+              endif
+            enddo
+          endif
         else
           do k=1,nghost
             f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sin(y(m1+k)-dy2_bound(-k))*sin1th(m1+k))
           enddo
         endif
       case ('top')               ! top boundary
-        if ((llambda_effect).and.(j==iuz).and.(Lambda_H1/=0)) then
-          do k=1,nghost
-            cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
-            cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
-            if (Omega==0)then
-               do ix=1,size(f,1)
-                  f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
-                   (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
-                  *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
-               enddo
-             else
-              do ix=1,size(f,1)
+        if ((llambda_effect).and.(j==iuz)) then
+          if (Lambda_H1/=0.) then
+            do k=1,nghost
+              cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
+              cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
+              if (Omega==0)then
+                 do ix=1,size(f,1)
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                     (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
+                    *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
+                 enddo
+               else
+                do ix=1,size(f,1)
 ! DM+GG: Temporally comented out
 !                somega=x(ix)*Omega*sinth(m2+k)*( &
 !                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                 somega=x(ix)*Omega*sinth(m2+k)*( &
-                      exp(cos2thm_k*LH1(ix)/(4.*nu))    &
-                      / exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
-                f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
-                     (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
-                    *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
-                      +somega
-              enddo
-             endif
-          enddo
+                   somega=x(ix)*Omega*sinth(m2+k)*( &
+                        exp(cos2thm_k*LH1(ix)/(4.*nu))    &
+                        / exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
+                  f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                       (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
+                      *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
+                        +somega
+                enddo
+               endif
+            enddo
+          endif
         else
           do k=1,nghost
             f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sin(y(m2-k)+dy2_bound(k))*sin1th(m2-k))
