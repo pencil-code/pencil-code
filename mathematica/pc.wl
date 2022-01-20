@@ -12,7 +12,7 @@
 *)
 
 
-BeginPackage["pc`",
+BeginPackage["pc`","pcUtils`",
   "pcReadBasic`","pcRead1D`","pcRead2D`","pcReadFFT`",
   "pcReadVAR`","pcGetParam`","pcPlot`","pcPlot3D`",
   "pcTFM`","pcParticleStalker`","pcDerivative`",

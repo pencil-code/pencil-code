@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcTFM`","pcReadBasic`","pcRead1D`"]
+BeginPackage["pcTFM`","pcReadBasic`","pcRead1D`","pcUtils`"]
 
 
 (* ::Chapter:: *)
@@ -59,55 +59,39 @@ Begin["`Private`"]
 (*TFM*)
 
 
-TFMextractTS[t_,var_,tReset_,{shift_,length_},tsat_]:=
-  With[{l=Length[t]},
-    TFMextractTS::badparam="Chosen range too large. Returning {}."; 
-    TFMextractTS::shorttime="Insufficient resetting. Returning {}.";
-    If[t[[-1]]/tReset<4,Message[TFMextractTS::shorttime];Return[{}]];
-    Module[{posReset,posPicked,posStart,posEnd,tsPicked},
-      posReset=1+First/@(Nearest[t->"Index",#]&/@Range[0.,t[[-1]],tReset]);
-      posPicked=posReset/.x_Integer:>{x+shift,x+shift+length};
-      If[Or@@Flatten[MapThread[Thread[#1>=#2]&,{Most@posPicked,Rest@posReset}]],
-        Message[TFMextractTS::badparam];Return[{}]];
-      posStart=First@FirstPosition[posPicked,x_List/;t[[x[[1]]]]>tsat];
-      posEnd=First@FirstPosition[posPicked,x_List/;t[[x[[1]]]]>t[[-1]]-2tReset];
-      posPicked=Take[posPicked,{posStart,posEnd}];
-      Take[Transpose[{t,var}],#]&/@posPicked
-    ]
-  ]
+TFMextractTS[t_,var_,tReset_,{shift_,length_},tsat_]:=Module[
+  {posReset,posPicked,posStart,posEnd,tsPicked},
+  TFMextractTS::badparam="Chosen range too large. Returning {}.";
+  posReset=1+First/@(Nearest[t->"Index",#]&/@Range[0.,t[[-1]],tReset]);
+  posPicked=posReset/.x_Integer:>{x+shift,x+shift+length};
+  If[Or@@Flatten[MapThread[Thread[#1>=#2]&,{Most@posPicked,Rest@posReset}]],
+    Message[TFMextractTS::badparam];Return[{}]];
+  posStart=First@FirstPosition[posPicked,x_List/;t[[x[[1]]]]>tsat];
+  posEnd=First@FirstPosition[posPicked,x_List/;t[[x[[1]]]]>t[[-1]]-2tReset];
+  posPicked=Take[posPicked,{posStart,posEnd}];
+  Take[Transpose[{t,var}],#]&/@posPicked
+]
 
-TFMfindRange[t_,var_,tReset_,{shift_,length_},tsat_,plotOption_:{}]:=
-  With[{labelstyle=Directive[Thick,Black,14,FontFamily->"Times"]},
-    ListLogPlot[
-      Abs[{Transpose[{t,var}],Flatten[TFMextractTS[t,var,tReset,{shift,length},tsat],1]}]/.{x___,{}}:>{x},
-      Join[plotOption,{
-          Frame->True,Joined->{True,False},PlotMarkers->{None,{Automatic,5}},
-          LabelStyle->labelstyle,FrameStyle->labelstyle,PlotStyle->{Black,Red},
-          GridLines->{{{tsat,{Red,Dashed,Thick}}},None}
-        }
-      ]
-    ]
-  ]
-
+TFMfindRange[t_,var_,tReset_,{shift_,length_},tsat_,plotOption___]:=ListLogPlot[
+  Abs[{Transpose[{t,var}],Flatten[TFMextractTS[t,var,tReset,{shift,length},tsat],1]}]/.{x___,{}}:>{x},
+  plotOption,ImageSize->Large,Joined->{True,False},PlotMarkers->{None,{Automatic,5}},
+  PlotStyle->{Black,Red},GridLines->{{{tsat,{Red,Dashed,Thick}}},None}
+]
+ 
 TFMResult[sim_,{varNames__},{shift_,length_},tsat_]:=
-  With[{t=readTS[sim,"t"],vars=readTS[sim,varNames],tReset=readParamNml[sim,"run.in","DAAINIT"]},
-    Map[
-      Map[MapThread[Around[#1,#2]&,{Mean[#],StandardDeviation[#]}]&,
-            TFMextractTS[t,#,tReset,{shift,length},tsat]
-      ]&,
-      If[Length[Dimensions@vars]==1,{vars},vars]
-    ]
+  Module[{t,vars,tReset,coeffTS},
+    t=readTS[sim,"t"];
+    vars=readTS[sim,varNames];
+    tReset=readParamNml[sim,"run.in","DAAINIT"];
+    coeffTS[var_]:=pcAround/@TFMextractTS[t,var,tReset,{shift,length},tsat];
+    coeffTS/@If[Length[Dimensions@vars]==1,{vars},vars]
   ]
 
 TFMResultMean[sim_,{varNames__},{shift_,length_},tsat_]:=
-  With[{datas=Map[Last[Transpose@#]&,TFMResult[sim,{varNames},{shift,length},tsat]]},
+  With[{vars=Map[Last[Transpose@#]&,TFMResult[sim,{varNames},{shift,length},tsat]]},
     Table[
-      With[{l=Length[data]},
-        If[l<37,Mean[data],
-          Around[Mean[#],StandardDeviation[#]]&@Map[Mean,Partition[data,6]]
-        ]
-      ],
-      {data,datas}
+      If[Length[data]<37,Mean[data],Around[Mean[#],StandardDeviation[#]]&@Map[Mean,Partition[data,6]]],
+      {data,vars}
     ]
   ]
 
