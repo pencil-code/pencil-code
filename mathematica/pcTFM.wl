@@ -59,6 +59,13 @@ Begin["`Private`"]
 (*TFM*)
 
 
+getDINIT[sim_,var_]:=Switch[StringTake[var,3],
+    "alp","DAAINIT",
+    "eta","DAAINIT",
+    "gam","DCCINIT",
+    "kap","DCCINIT"
+  ]//readParamNml[sim,"run.in",#]&
+
 TFMextractTS[t_,var_,tReset_,{shift_,length_},tsat_]:=Module[
   {posReset,posPicked,posStart,posEnd,tsPicked},
   TFMextractTS::badparam="Chosen range too large. Returning {}.";
@@ -72,23 +79,31 @@ TFMextractTS[t_,var_,tReset_,{shift_,length_},tsat_]:=Module[
   Take[Transpose[{t,var}],#]&/@posPicked
 ]
 
-TFMfindRange[t_,var_,tReset_,{shift_,length_},tsat_,plotOption___]:=ListLogPlot[
+(*TFMfindRange[t_,var_,tReset_,{shift_,length_},tsat_,plotOption___]:=ListLogPlot[
   Abs[{Transpose[{t,var}],Flatten[TFMextractTS[t,var,tReset,{shift,length},tsat],1]}]/.{x___,{}}:>{x},
   plotOption,ImageSize->Large,Joined->{True,False},PlotMarkers->{None,{Automatic,5}},
   PlotStyle->{Black,Red},GridLines->{{{tsat,{Red,Dashed,Thick}}},None}
+]*)
+
+TFMfindRange[sim_,tsat_,var_,{shift_,length_},plotOption___]:=Module[{t,f,dinit},
+  {t,f}=readTS[sim,"t",var];
+  dinit=getDINIT[sim,var];
+  ListLogPlot[
+    Abs[{Transpose[{t,f}],Flatten[TFMextractTS[t,f,dinit,{shift,length},tsat],1]}]/.{x___,{}}:>{x},
+    plotOption,ImageSize->Large,Joined->{True,False},PlotMarkers->{None,{Automatic,5}},
+    PlotStyle->{Black,Red},GridLines->{{{tsat,{Red,Dashed,Thick}}},None}
+  ]
 ]
  
-TFMResult[sim_,{varNames__},{shift_,length_},tsat_]:=
-  Module[{t,vars,tReset,coeffTS},
+TFMResult[sim_,tsat_,{vars__},{shift_,length_}]:=
+  Module[{t,coeffTS},
     t=readTS[sim,"t"];
-    vars=readTS[sim,varNames];
-    tReset=readParamNml[sim,"run.in","DAAINIT"];
-    coeffTS[var_]:=pcAround/@TFMextractTS[t,var,tReset,{shift,length},tsat];
-    coeffTS/@If[Length[Dimensions@vars]==1,{vars},vars]
+    coeffTS[var_]:=pcAround/@TFMextractTS[t,readTS[sim,var],getDINIT[sim,var],{shift,length},tsat];
+    coeffTS/@{vars}
   ]
 
-TFMResultMean[sim_,{varNames__},{shift_,length_},tsat_]:=
-  With[{vars=Map[Last[Transpose@#]&,TFMResult[sim,{varNames},{shift,length},tsat]]},
+TFMResultMean[sim_,tsat_,{varNames__},{shift_,length_}]:=
+  With[{vars=Map[Last[Transpose@#]&,TFMResult[sim,tsat,{varNames},{shift,length}]]},
     Table[
       If[Length[data]<37,Mean[data],Around[Mean[#],StandardDeviation[#]]&@Map[Mean,Partition[data,6]]],
       {data,vars}
