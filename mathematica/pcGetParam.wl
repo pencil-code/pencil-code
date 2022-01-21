@@ -71,12 +71,16 @@ pcReload[]:=Module[{},
   Clear[nu];
   nu[sim_]:=nu[sim]=readParamNml[sim,"run.in","NU"];
   
-  Clear[eta];
+  Clear[eta,etaTFM];
   eta[sim_]:=eta[sim]=
     If[readParamNml[sim,"start.in","lmagnetic"],
       readParamNml[sim,"run.in","ETA"],
       "No magnetic"
     ];
+  etaTFM[sim_]:=readParamNml[sim,"run.in","ETATEST"];
+  
+  Clear[kappaTFM];
+  kappaTFM[sim_]:=readParamNml[sim,"run.in","KAPPATEST"];
   
   Clear[PrM];
   PrM[sim_]:=PrM[sim]=nu[sim]/eta[sim];
@@ -138,6 +142,7 @@ getParam[sim_,"ReNkf"]:=urmskf[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReM"]:=urms[sim]/kf[sim]/eta[sim]
 getParam[sim_,"ReM",k2_]:=urms[sim]/k2/eta[sim] (*supply kf by hand*)
 getParam[sim_,"PrM"]:=PrM[sim]
+getParam[sim_,"PrMTFM"]:=nu[sim]/etaTFM[sim]
 
 getParam[sim_,"Ro"]:=If[omega[sim]==0,"No rotation",kf[sim]*urms[sim]/2/omega[sim]]
 getParam[sim_,"Ro",k2_]:=If[omega[sim]==0,"No rotation",k2*urms[sim]/2/omega[sim]]
@@ -172,6 +177,8 @@ getParam[sim_,"qshear"]:=
     If[s!=0&&o==0,"No rotatoin"//Return];
     Rationalize[-s/o]/.Rational[x_,y_]:>ToString[x]<>"/"<>ToString[y]
 ]
+
+getParam[sim_,"ScTFM"]:=nu[sim]/kappaTFM[sim]
 
 (*secondaries*)
 getParam[sim_,"ted"]:=ted[sim]
