@@ -635,7 +635,7 @@ module Energy
       else
         if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
                                 'set impossible')
-        if (.not.allocated(mpoly)) allocate(mpoly); mpoly=impossible
+        if (.not.associated(mpoly)) allocate(mpoly); mpoly=impossible
       endif
 !
 !  Radiative diffusion: initialize flux etc.
