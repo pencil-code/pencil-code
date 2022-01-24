@@ -361,7 +361,7 @@ module Testfield
         if (rhoref==impossible) &
           call warning('initialize_testfield','rhoref in magnetic = impossible')
       else
-        allocate(rhoref); rhoref=impossible
+        if (.not.associated(rhoref)) allocate(rhoref); rhoref=impossible
       endif
 !
       if (rho0test==0.) then
