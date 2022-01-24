@@ -635,7 +635,7 @@ module Energy
       else
         if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
                                 'set impossible')
-        allocate(mpoly); mpoly=impossible
+        if (.not.allocated(mpoly)) allocate(mpoly); mpoly=impossible
       endif
 !
 !  Radiative diffusion: initialize flux etc.
@@ -7222,7 +7222,7 @@ module Energy
       if (.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
            "don't call if you have only one layer")
 !
-      allocate(hcond_prof(nz),dlnhcond_prof(nz))
+      if (.not.allocated(hcond_prof)) allocate(hcond_prof(nz),dlnhcond_prof(nz))
 !
       hcond_prof = 1. + (hcond1-1.)*step(z(n1:n2),z1,-widthss) &
                       + (hcond2-1.)*step(z(n1:n2),z2, widthss)
@@ -7274,7 +7274,7 @@ module Energy
 !
 ! Kappa and its gradient are computed here
 !
-      allocate(hcond_prof(nx),dlnhcond_prof(nx))
+      if (.not.allocated(hcond_prof)) allocate(hcond_prof(nx),dlnhcond_prof(nx))
       hcond_prof = -Lum/(4.*pi*x(l1:l2)**2*dTTdxc)
       dlnhcond_prof = Lum*cv*gamma_m1/(4.*pi*gravx) * dmpoly_dx/hcond_prof
 !                     MR: how can this be the derivative of hcond_prof?
