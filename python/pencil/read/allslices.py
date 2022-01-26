@@ -6,7 +6,7 @@ Contains the classes and methods to read slice files.
 """
 
 import numpy as np
-
+from math import ceil
 
 def slices(*args, **kwargs):
     """
@@ -102,11 +102,12 @@ class SliceSeries(object):
         quiet=True,
         tstart=0,
         tend=None,
+        downsample=1,
     ):
         """
         read(field='', extension='', datadir='data', proc=-1, old_file=False,
              precision='f', iter_list=list(), quiet=True,
-             tstart=0, tend=None)
+             tstart=0, tend=None, downsample=1)
 
         Read Pencil Code slice data.
 
@@ -142,6 +143,9 @@ class SliceSeries(object):
         tend : float
             End time interval from which to sample slices.
 
+        downsample : integer
+            Sample rate to reduce slice array size.
+
         Returns
         -------
         Class containing the fields and slices as attributes.
@@ -149,6 +153,7 @@ class SliceSeries(object):
         Notes
         -----
         Use the attribute keys to get a list of attributes
+        
 
         Examples
         --------
@@ -277,12 +282,14 @@ class SliceSeries(object):
                         nt = len(iter_list)
                         istart = 0
                         print("iter_list, start", iter_list, istart)
-                        vsize = ds["1/data"].shape[0]
-                        hsize = ds["1/data"].shape[1]
+                        if downsample > 1:
+                            downsample = max(1, int(downsample))
+                        vsize = int(ceil(ds["1/data"].shape[0]/float(downsample)))
+                        hsize = int(ceil(ds["1/data"].shape[1]/float(downsample)))
                         slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
                         for it in iter_list:
                             if ds.__contains__(str(it)):
-                                slice_series[istart] = ds[str(it) + "/data"][()]
+                                slice_series[istart] = ds[str(it) + "/data"][::downsample,::downsample]
                             else:
                                 print("no data at {} in ".format(it) + file_name)
                             istart += 1
@@ -480,6 +487,12 @@ class SliceSeries(object):
                     self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
                     slice_series = slice_series.reshape(islice, vsize, hsize)
+                    if downsample > 1:
+                        downsample = int(downsample)
+                        tmp_series = list()
+                        for iislice in range(islice):
+                            tmp_series.append(slice_series[iislice, ::downsample, ::downsample])
+                        slice_series = np.array(tmp_series)
                     setattr(ext_object, field, slice_series)
 
                 setattr(self, extension, ext_object)
