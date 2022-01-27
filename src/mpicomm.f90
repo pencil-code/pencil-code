@@ -149,7 +149,7 @@ module Mpicomm
     character(LEN=labellen) :: name
     integer :: ncpus,tag,root
     integer, dimension(:), allocatable :: recv_req
-    real :: dt_out, t_last_out
+    real :: dt_out, t_last_recvd
     integer, dimension(2) :: peer_rng
     integer, dimension(3) :: procnums
     integer, dimension(3) :: dims
@@ -159,7 +159,7 @@ module Mpicomm
     integer, dimension(:,:), allocatable :: xind_rng
     character(LEN=5) :: unit_system
     real :: unit_length, unit_time, unit_BB, unit_T, &
-            renorm_UU
+            renorm_UU, renorm_t, renorm_L
   endtype foreign_setup
   
   type(foreign_setup) :: frgn_setup
@@ -10033,7 +10033,7 @@ endif
 !
       integer, dimension(3) :: intbuf
       real, dimension(6) :: floatbuf
-
+      real :: renorm_x
       logical :: lok
       character(LEN=128) :: messg
       integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
@@ -10044,7 +10044,7 @@ endif
         frgn_setup%root=ncpus
         frgn_setup%peer_rng=0
         frgn_setup%tag=tag_foreign
-        frgn_setup%t_last_out=t
+        frgn_setup%t_last_recvd=t
 
 !print*, 'iproc, iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD=', iproc, &
 !        iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD
@@ -10076,7 +10076,7 @@ endif
           call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           
           if ( frgn_setup%name=='MagIC' ) then
-          elseif ( frgn_setup%name=='Eulag' ) then
+          elseif ( frgn_setup%name=='EULAG' ) then
 !
 !  For the moment being.
 !
@@ -10132,7 +10132,6 @@ endif
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
 !      
           call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-!print*, 'received extents=', floatbuf, ((xyz0(j),xyz1(j)),j=1,3)
           ind=1
           do j=1,3
             frgn_setup%extents(:,j)=floatbuf(ind:ind+1)
@@ -10141,7 +10140,7 @@ endif
               floatbuf(2)=xyz1(1)
             endif
             if (any(abs(floatbuf(ind:ind+1)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
-              messg=trim(messg)//" foreign "//trim(coornames(j))//" domain extent doesn't match;"
+               print*," initialize_foreign_comm: WARNING: foreign "//trim(coornames(j))//" domain extent doesn't match;"
               !lok=.false. !MR: alleviate to selection
             endif
             ind=ind+2
@@ -10154,12 +10153,11 @@ endif
             messg=trim(messg)//' foreign output step<=0'
             lok=.false.
           endif
-!Missing: renormalization of dt_out
-!print*, 'received dt_out=', frgn_setup%dt_out
 !
 !  Send confirmation flag that setup is acceptable.
 ! 
           call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+
         endif
 
         call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
@@ -10167,13 +10165,11 @@ endif
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
+        call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
 !                                                                              
 !  Broadcast foreign processor numbers and grid size.                                                    
 !                                                                              
         if (lfirst_proc_yz) then                                                 
-          call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_XBEAM)
-          ncpus_foreign=product(frgn_setup%procnums)
-          call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_XBEAM)
           nxgrid_foreign=frgn_setup%dims(1)
           allocate(frgn_setup%xgrid(nxgrid_foreign))
         endif 
@@ -10184,19 +10180,44 @@ endif
 !
           call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
+!Renormalize X-coord to Pencil domain.
+!
+          frgn_setup%xgrid = frgn_setup%xgrid/frgn_setup%xgrid(nxgrid_foreign)*xyz1(1)       
+!
+!Receive normalized time from foreign side
+!
+          call mpirecv_real(frgn_setup%renorm_t,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
+          frgn_setup%renorm_L = frgn_setup%extents(2,3) 
+          frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
+          frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
+!
 !  Send number of x- and y-procs to foreign.
 !
           call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           call mpisend_int(nprocy,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
-!                              
+!       
+!
+        call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
+        ncpus_foreign=product(frgn_setup%procnums)
+        call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)                       
         tag  = tag_foreign+iproc
-        peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
-
+        if (frgn_setup%procnums(1)==1) then
+          peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
+          frgn_setup%peer_rng=peer
+        endif
+!
+!  Allocate array for index ranges w.r.t. frgn_setup%xgrid for each foreign
+!  proc. frgn_setup%xind_rng(-1,:) is overall index range.
+!
+        allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
+!
         if (lfirst_proc_yz) then             ! on processors of first XBEAM
 
           frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
+          call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_YZPLANE)
 !                              
 !  Broadcast frgn_setup%xgrid to all procs with iprocx=0.
 !                              
@@ -10205,32 +10226,20 @@ endif
 !  Determine index range frgn_setup%xind_rng in frgn_setup%xgrid which is needed for individual
 !  processors in x direction.
 !
-!print*, 'iproc,x(l1),x(l2)=', iproc,x(l1),x(l2)
           call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2)
           if (.not.lfirst_proc_x) il1=il1-1
           if (.not.llast_proc_x) il2=il2+1
 !
-!  Allocate array for index ranges w.r.t. frgn_setup%xgrid for each foreign
-!  proc. frgn_setup%xind_rng(-1,:) is overall index range.
-!
-          allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
-
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
-
-!print*, 'iproc,frgn_setup%peer_rng,tag_foreign+iproc,il1,il2=', iproc,frgn_setup%peer_rng,tag_foreign+iproc,il1,il2
-!print*, 'Pencil: iproc, frgn_setup%xind_rng=', iproc, frgn_setup%xind_rng
-!print*, 'Pencil: iproc, xgrid(il1,il2), x(l1,l2)', iproc, frgn_setup%xgrid(il1), frgn_setup%xgrid(il2), x(l1), x(l2)
-
+!
           if (frgn_setup%lnprocx_mismat) then
 !
 !  When processor numbers in x-direction don't match, ask all foreign processors
 !  about their share in frgn_setup%xind_rng. No share: receive [0,0]
 !
             if (frgn_setup%procnums(1)>1) then
-              allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1))
               do px=0,frgn_setup%procnums(1)-1
 
-!print*, 'Pencil: sendrecv to', iproc, ncpus+px,tag_foreign+iproc,tag_foreign+ncpus_foreign+px
                 call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,ncpus+px,tag_foreign+iproc, &
                                      frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD)
                 if (frgn_setup%peer_rng(1)>0) then
@@ -10239,10 +10248,8 @@ endif
                   if (frgn_setup%xind_rng(px,1)>0) frgn_setup%peer_rng(1)=px
                 endif
               enddo
-!print*, 'iproc,frgn_setup%xind_rng', iproc, frgn_setup%xind_rng
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
-              frgn_setup%peer_rng=peer
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
             
@@ -10258,13 +10265,14 @@ endif
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
           endif
-          call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
         endif  ! if (lfirst_proc_yz)
+        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
 
         lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-        allocate(frgn_buffer(lenx,ny,nz,3)) ! Would be full data cube size/nprocx. Tb improved.
-!print*, 'Pencil: lenx =',iproc, lenx
+        allocate(frgn_buffer(lenx,ny,nz,3))   
+        call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_PENCIL)
+        allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
       endif    ! if (lforeign)
 
     endsubroutine initialize_foreign_comm
@@ -10294,27 +10302,35 @@ endif
               lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
               istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
               if (loptest(lnonblock)) then
-                call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,:), &
-                                  (/lenx_loc,frgn_setup%dims(2),frgn_setup%dims(3),nvars/), &
-                                  ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD,frgn_setup%recv_req(px))
-print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
+                peer=frgn_setup%peer_rng(1)
+                do iv=1,3
+                  call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                    (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+                enddo
               else       ! EULAG case
                 peer=frgn_setup%peer_rng(1)
                 do iv=1,3
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
                 enddo
-!print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign+px,lenx_loc, frgn_setup%recv_req(px)
-!call mpiwait(frgn_setup%recv_req(px))
               endif
 
             endif
           enddo
+        endif
 
-          !call mpirecv_nonblock_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,ivar2-ivar1+1/), &
-          !                           frgn_setup%peer_rng(1),tag_foreign,frgn_setup%recv_req,MPI_COMM_WORLD)
+!write(20+iproc) frgn_buffer
+if (.not.loptest(lnonblock))&
+print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
+!print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
-      endif
+
+!print*, 'Pencil: successful', iproc
+!call mpibarrier
+!call MPI_FINALIZE(mpierr)
+!stop
+
 
     endsubroutine get_foreign_snap_initiate
 !***********************************************************************
@@ -10331,73 +10347,61 @@ print*, 'Pencil: iproc,px,tag,lenx_loc, req=',iproc,px,tag_foreign+ncpus_foreign
       real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
       integer :: ivar1, ivar2
       logical, optional :: lnonblock
-
       integer, parameter :: ytag=115
       integer :: istart_y,istart_z,istop_y,istop_z,px,py,pz,partner,ll,nvars
 
-      if (trim(frgn_setup%name)=='MagIC') then
-
-        !if (mod(frgn_setup%dims(2),nygrid)==0 .and. mod(frgn_setup%dims(3),nzgrid)==0) then
-        if (.true.) then  ! assume here that frgn_setup%dims([23])=n[yz]grid
+      !if (mod(frgn_setup%dims(2),nygrid)==0 .and. mod(frgn_setup%dims(3),nzgrid)==0) then
 !
 ! Interpolate/scatter data to array f
-!          
-          if (lfirst_proc_yz) then 
-            if (frgn_setup%lnprocx_mismat) then
-
-            if (loptest(lnonblock)) then
-              do px=0,frgn_setup%procnums(1)-1
-                if (frgn_setup%xind_rng(px,1)>0) then
+!
+print *, 'PENCIL: frn_name, lnonblock', trim(frgn_setup%name),   loptest(lnonblock)
+      if (trim(frgn_setup%name)=='EULAG') then           
+        if (loptest(lnonblock)) then
 print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
-                  call mpiwait(frgn_setup%recv_req(px))
-                endif
+          call mpiwait(frgn_setup%recv_req(px))
+          f(:,:,:,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU
+print *, 'PENCIL - MIN MAX W - FIN',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
+!print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
+        endif     
+      else if (lfirst_proc_yz) then 
+        if (frgn_setup%lnprocx_mismat) then
+          nvars=ivar2-ivar1+1
+
+          do pz=0,nprocz-1
+            istart_z=pz*nz+1; istop_z=istart_z+nz-1
+
+            do py=0,nprocy-1
+
+              if (lprocz_slowest) then
+                partner = py + nprocy*pz
+              else
+                partner = pz + nprocz*py
+              endif
+              istart_y=py*ny+1; istop_y=istart_y+ny-1
+
+              do ll=l1,l2
+                call linear_interpolate_1d(frgn_buffer(:,istart_y:istop_y,istart_z:istop_z,:), &
+                                           frgn_setup%xgrid(frgn_setup%xind_rng(-1,1):frgn_setup%xind_rng(-1,2)), &
+                                           x(ll),interp_buffer(ll,:,:,:),.true.)
               enddo
-            endif
+              interp_buffer=frgn_setup%renorm_UU*interp_buffer
+              call mpisend_real(interp_buffer,(/nx,ny,nz,nvars/),partner,ytag,MPI_COMM_YZPLANE)
 
-            nvars=ivar2-ivar1+1
-
-            do pz=0,nprocz-1
-              istart_z=pz*nz+1; istop_z=istart_z+nz-1
-
-              do py=0,nprocy-1
-
-                if (lprocz_slowest) then
-                  partner = py + nprocy*pz
-                else
-                  partner = pz + nprocz*py
-                endif
-!print*, 'iproc, py,pz,partner=', iproc, py,pz,partner
-                istart_y=py*ny+1; istop_y=istart_y+ny-1
-
-                do ll=l1,l2
-                  call linear_interpolate_1d(frgn_buffer(:,istart_y:istop_y,istart_z:istop_z,:), &
-                                             frgn_setup%xgrid(frgn_setup%xind_rng(-1,1):frgn_setup%xind_rng(-1,2)), &
-                                             x(ll),interp_buffer(ll,:,:,:),.true.)
-                enddo
-                interp_buffer=frgn_setup%renorm_UU*interp_buffer
-                call mpisend_real(interp_buffer,(/nx,ny,nz,nvars/),partner,ytag,MPI_COMM_YZPLANE)
-
-                if (size(f,1)==mx) then     ! f has ghosts
-                  f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=interp_buffer
-                else
-                  f(:,:,:,ivar1:ivar2)=interp_buffer
-                endif
-              enddo
+              if (size(f,1)==mx) then     ! f has ghosts
+                f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=interp_buffer
+              else
+                f(:,:,:,ivar1:ivar2)=interp_buffer
+              endif
             enddo
-          endif
-          else
-            !call mpirecv_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,nvars/),0,ytag,MPI_COMM_YZPLANE)
-          endif
-
-        else    ! if (lfirst_proc_yz)
-! What tb done now?  
-        endif   ! if (.true.)
-
-      endif     ! if (name==MagIC)
+          enddo
+        endif
+          !call mpirecv_real(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2),(/nx,ny,nz,nvars/),0,ytag,MPI_COMM_YZPLANE)
+      endif     ! if (name==EULAG)
 
     endsubroutine get_foreign_snap_finalize
 !***********************************************************************
-    logical function update_foreign_data(t,dt_foreign)
+    logical function update_foreign_data(t,t_foreign)
 !
 ! Determines whether it is time to fetch new data from foreign code.
 ! Returns delivery cadence of foreign code in dt_foreign.
@@ -10405,11 +10409,12 @@ print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
 ! 20-oct-21/MR: coded
 ! 
       double precision :: t
-      real :: dt_foreign
+      real :: t_foreign
 
-      if (t-frgn_setup%t_last_out>=frgn_setup%dt_out) then
-        frgn_setup%t_last_out=frgn_setup%t_last_out+frgn_setup%dt_out
+      if (t-frgn_setup%t_last_recvd>0.) then
+        frgn_setup%t_last_recvd=frgn_setup%t_last_recvd+frgn_setup%dt_out
         update_foreign_data=.true.
+        t_foreign = frgn_setup%t_last_recvd
       else
         update_foreign_data=.false.
       endif

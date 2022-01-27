@@ -359,19 +359,17 @@ module Hydro
 !
         call get_foreign_snap_initiate(f,iux,iuz,frgn_buffer)   !,lnonblock=.true.)
         if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
-        call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3)) 
-        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer)
+        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
         call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)
-!        call get_foreign_snap_initiate(uu_2,1,3,lnonblock=.true.)  ! prepare receiving next snapshot
-
+!        
+! prepare receiving next snapshot
+!       
+        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
 print*, 'Pencil successful', iproc
         call mpibarrier(MPI_COMM_UNIVERSE)
-if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-if (allocated(uu_2)) deallocate(uu_2)
-if (allocated(interp_buffer)) deallocate(interp_buffer)
-call mpifinalize
-stop
+!call mpifinalize
+!stop
       endif
 
       call calc_means_hydro(f)
@@ -2464,20 +2462,20 @@ stop
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: fac
-      real, save :: dt_foreign=0.
-
+      real, save :: t_foreign=0.
+!
       if (kinematic_flow=='from-foreign-snap') then
-
-        if (lfirst.or.dt_foreign==0.) then
-          if (update_foreign_data(t,dt_foreign)) then
-            !!call get_foreign_snap_finalize(uu_2,1,3)
-            !!call get_foreign_snap_initialize(uu_2,1,3)
+        if (lfirst) then
+          if (update_foreign_data(t,t_foreign)) then
+            f(l1:l2,m1:m2,n1:n2,iux:iuz) = uu_2
+            call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
+            call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
+print*,'PENCIL - iproc, t, t_foreign', iproc, t, t_foreign
           endif
         endif
-
-        fac=dt/(dt_foreign-t+dt)
+!
+        fac=dt/(t_foreign-t+dt)
         f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
-
       endif
 !
     endsubroutine hydro_before_boundary
@@ -3430,6 +3428,8 @@ stop
       endif
 
       if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+      if (allocated(uu_2)) deallocate(uu_2)
+      if (allocated(interp_buffer)) deallocate(interp_buffer)
 !
       print*, 'Done.'
 !

@@ -1322,6 +1322,7 @@ module General
       real, dimension (naa) :: aa
       real :: aa1,aa2
 !
+      real, parameter :: eps=1e-6
       intent(in)  :: aa,naa,aa1,aa2
       intent(out) :: ii1,ii2
 !
@@ -1347,7 +1348,7 @@ module General
 !
       ii2=1
       do ii=naa,1,-1
-        if (aa(ii)<=aa2) then
+        if (aa(ii)-aa2<=eps) then
           ii2=ii
           return
         endif

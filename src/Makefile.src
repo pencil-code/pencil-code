@@ -2240,6 +2240,17 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-fdefault-real-8 #(mahti-[^g]|mahti[^-])
 #CFLAGS=-DFUNDERSC=1 -O1 #(mahti-[^g]|mahti[^-])
 ##
+## Parker: UFMG, BH, Brasil
+##
+#FC=mpiifort #(parker)
+#FSTD_95=-std95 #(parker)
+#F90=$(FC) #(parker)
+#CC=mpiicc #(parker)
+#FFLAGS=-O1 #(parker)
+#FFLAGS_DOUBLE=-r8 #(parker)
+#FPPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL#(parker)
+#CFLAGS=-DFUNDERSC=1 -O1 #(parker)
+##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
 #FC=mpifort #(login*|manterm1|kapylap1|rheinhm1)

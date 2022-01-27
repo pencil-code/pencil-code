@@ -14,6 +14,7 @@ set debug = 1
 # Just as a keepsake
 set dollar = '$'
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
+# To work in PARKER(Belo Horizonte/Brazil) you have to comment the 3 lines below
 if ($?PENCIL_HOME) then
     setenv PATH ${PATH}:${PENCIL_HOME}/bin
 endif
@@ -841,6 +842,25 @@ else if (($hn =~ c*.mahti.csc.fi)) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
+
+#--------------------------------------------------
+else if (($hn =~ parker)) then
+  echo "Parker - UFMG, BH, MG,Brazil"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  set mpirun = 'mpiexec'
+  set npops = "-np $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+
 #--------------------------------------------------
 else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
   echo "HLRN-IV - HLRN, Germany"

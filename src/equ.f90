@@ -188,7 +188,7 @@ module Equ
 !
       if (linterstellar) call interstellar_before_boundary(f)
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
-      if (lhydro)        call hydro_before_boundary(f)
+      if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
                          call energy_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
