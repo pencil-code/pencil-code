@@ -55,7 +55,7 @@ module Selfgravity
 !
 !  Diagnostic Indices
 !
-  integer :: idiag_potselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
+  integer :: idiag_potselfm=0, idiag_rpotselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
   integer :: idiag_potselfmx=0, idiag_potselfmy=0, idiag_potselfmz=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
@@ -243,7 +243,7 @@ module Selfgravity
         lpenc_requested(i_rho)=.true.
       endif
 !
-      if (idiag_potselfm/=0 .or. idiag_potself2m/=0.0 .or. &
+      if (idiag_potselfm/=0 .or. idiag_rpotselfm/=0 .or. idiag_potself2m/=0.0 .or. &
           idiag_potselfmx/=0 .or. idiag_potselfmy/=0 .or. idiag_potselfmz/=0) &
           lpenc_diagnos(i_potself)=.true.
 !
@@ -446,6 +446,7 @@ module Selfgravity
       if (ldiagnos) then
         if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
         if (idiag_potself2m/=0) call sum_mn_name(p%potself**2,idiag_potself2m)
+        if (idiag_rpotselfm/=0) call sum_mn_name(p%potself*p%rho,idiag_rpotselfm)
         if (idiag_rugpotselfm/=0) &
             call dot_mn(p%uu,p%gpotself,ugpotself)
             call sum_mn_name(-p%rho*ugpotself,idiag_rugpotselfm)
@@ -490,6 +491,7 @@ module Selfgravity
       endif
 !
 !  2-D averages.
+!  Note: the name fragment "potselfm" should have contained an "r" for rho.
 !
       if (l2davgfirst) then
         if (idiag_potselfmxy/=0) &
@@ -579,7 +581,7 @@ module Selfgravity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_potselfm=0; idiag_potself2m=0; idiag_potselfmxy=0
+        idiag_potselfm=0; idiag_rpotselfm=0; idiag_potself2m=0; idiag_potselfmxy=0
         idiag_potselfmx=0; idiag_potselfmy=0; idiag_potselfmz=0
         idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
@@ -594,22 +596,15 @@ module Selfgravity
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rugpotselfm',idiag_rugpotselfm)
-        call parse_name(iname,cname(iname),cform(iname),'potselfm', &
-            idiag_potselfm)
-        call parse_name(iname,cname(iname),cform(iname),'potself2m', &
-            idiag_potself2m)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfxm', &
-            idiag_gpotselfxm)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfym', &
-            idiag_gpotselfym)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfzm', &
-            idiag_gpotselfzm)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfx2m', &
-            idiag_gpotselfx2m)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfy2m', &
-            idiag_gpotselfy2m)
-        call parse_name(iname,cname(iname),cform(iname),'gpotselfz2m', &
-            idiag_gpotselfz2m)
+        call parse_name(iname,cname(iname),cform(iname),'potselfm', idiag_potselfm)
+        call parse_name(iname,cname(iname),cform(iname),'rpotselfm',idiag_rpotselfm)
+        call parse_name(iname,cname(iname),cform(iname),'potself2m',idiag_potself2m)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfxm',idiag_gpotselfxm)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfym',idiag_gpotselfym)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfzm',idiag_gpotselfzm)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfx2m',idiag_gpotselfx2m)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfy2m',idiag_gpotselfy2m)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfz2m',idiag_gpotselfz2m)
         call parse_name(iname,cname(iname),cform(iname),'gxgym',idiag_gxgym)
         call parse_name(iname,cname(iname),cform(iname),'gxgzm',idiag_gxgzm)
         call parse_name(iname,cname(iname),cform(iname),'gygzm',idiag_gygzm)
