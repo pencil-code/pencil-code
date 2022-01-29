@@ -537,6 +537,7 @@ module Magnetic
   integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_hjrms=0      ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
+  integer :: idiag_vA23rms=0    ! DIAG_DOC: $\left<\Bv^2/\varrho^{4/3}\right>^{1/2}$
   integer :: idiag_vArms=0      ! DIAG_DOC: $\left<\Bv^2/\varrho\right>^{1/2}$
   integer :: idiag_vAmax=0      ! DIAG_DOC: $\max(\Bv^2/\varrho)^{1/2}$
   integer :: idiag_dtb=0        ! DIAG_DOC: $\delta t / [c_{\delta t}\,\delta x
@@ -2803,7 +2804,8 @@ module Magnetic
       if (idiag_d6amz1/=0 .or. idiag_d6amz2 /=0 .or. idiag_d6amz3/=0) lpenc_diagnos(i_del6a)=.true.
       if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
       if (idiag_jbmphi/=0 .or. idiag_jbmxy/=0) lpenc_diagnos2d(i_jb)=.true.
-      if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
+      if (idiag_vArms/=0 .or. idiag_vA23rms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
+      if (idiag_vA23rms/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
       if (idiag_ubm/=0 .or. idiag_ubmz/=0 &
           .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
@@ -5786,6 +5788,7 @@ module Magnetic
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
       call sum_mn_name(p%va2,idiag_vA2m)
+      call sum_mn_name(p%va2*p%rho1**onethird,idiag_vA23rms,lsqrt=.true.)
       call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
       call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
       if (.not.lgpu) then
@@ -9331,7 +9334,7 @@ module Magnetic
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
         idiag_brms=0; idiag_bfrms=0; idiag_bf2m=0; idiag_bf4m=0
         idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
-        idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
+        idiag_vArms=0; idiag_vA23rms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
         idiag_dtFr=0;idiag_dtHr=0;idiag_dtBr=0;
         idiag_bbxmax=0; idiag_bbymax=0; idiag_bbzmax=0
@@ -9547,6 +9550,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
         call parse_name(iname,cname(iname),cform(iname),'divarms',idiag_divarms)
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
+        call parse_name(iname,cname(iname),cform(iname),'vA23rms',idiag_vA23rms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
         call parse_name(iname,cname(iname),cform(iname),'beta1m',idiag_beta1m)
