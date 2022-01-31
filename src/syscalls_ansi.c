@@ -88,6 +88,12 @@ void FTNIZE(file_size_c)
   *bytes = fileStat.st_size;
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller1)
+     (void (**func)(void*), void* par1)
+{
+  (*func)(par1);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller2)
      (void (**func)(void*,void*), void* par1, void* par2)
 {

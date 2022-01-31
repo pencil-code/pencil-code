@@ -570,7 +570,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),1,f)
+        call caller1(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),f)
       enddo
 !
     endsubroutine special_before_boundary
@@ -587,7 +587,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_SPECIAL_AFTER_BOUNDARY),1,f)
+        call caller1(special_sub_handles(i,I_SPECIAL_AFTER_BOUNDARY),f)
       enddo
 !
     endsubroutine special_after_boundary
