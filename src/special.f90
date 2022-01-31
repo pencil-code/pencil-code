@@ -160,7 +160,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_INITIALIZE_SPECIAL),1,f)
+        call caller1(special_sub_handles(i,I_INITIALIZE_SPECIAL),f)
       enddo
 !
     endsubroutine initialize_special
@@ -176,7 +176,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_FINALIZE_SPECIAL),1,f)
+        call caller1(special_sub_handles(i,I_FINALIZE_SPECIAL),f)
       enddo
 !
     endsubroutine finalize_special
@@ -193,7 +193,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_INIT_SPECIAL),1,f)
+        call caller1(special_sub_handles(i,I_INIT_SPECIAL),f)
       enddo
 !
     endsubroutine init_special
@@ -223,7 +223,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_PENCIL_INTERDEP_SPECIAL),1,lpencil_in)
+        call caller1(special_sub_handles(i,I_PENCIL_INTERDEP_SPECIAL),lpencil_in)
       enddo
 !
     endsubroutine pencil_interdep_special
@@ -282,7 +282,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_REGISTER_PARTICLES_SPECIAL),1,npvar)
+        call caller1(special_sub_handles(i,I_REGISTER_PARTICLES_SPECIAL),npvar)
       enddo
 !
     endsubroutine register_particles_special
@@ -294,7 +294,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),1,iostat)
+        call caller1(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),iostat)
       enddo
 !
     endsubroutine read_special_init_pars
@@ -306,7 +306,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_WRITE_SPECIAL_INIT_PARS),1,unit)
+        call caller1(special_sub_handles(i,I_WRITE_SPECIAL_INIT_PARS),unit)
       enddo
 !
     endsubroutine write_special_init_pars
@@ -318,7 +318,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),1,iostat)
+        call caller1(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),iostat)
       enddo
 !
     endsubroutine read_special_run_pars
@@ -330,7 +330,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_WRITE_SPECIAL_RUN_PARS),1,unit)
+        call caller1(special_sub_handles(i,I_WRITE_SPECIAL_RUN_PARS),unit)
       enddo
 !
     endsubroutine write_special_run_pars
