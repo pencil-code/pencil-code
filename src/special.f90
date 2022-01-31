@@ -14,7 +14,7 @@
 
     implicit none
 
-    external caller, caller0, caller2, caller3, caller4, caller5, caller5_str5
+    external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 
