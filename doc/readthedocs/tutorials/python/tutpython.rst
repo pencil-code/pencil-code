@@ -502,7 +502,9 @@ Putting it all together our python routine would look something like this:
 Examples
 ========
 
-Standard plots with any plotting library are not the prettiest ones. The same is true for matplotlib. Here are a few pretty examples of plots where the default style is changed. You can add your commands into a script e.g. ``plot_results.py`` and execute it in IPython with ``execfile('plot_results.py')``.
+Standard plots with any plotting library are not the prettiest ones. The same is true for matplotlib. Here are a few pretty examples of plots where the default style is changed. You can add your commands into a script e.g. ``plot_results.py`` and execute it from your terminal with ``python plot_results.py`` or in IPython with ``exec(open('plot_results.py').read())``.
+
+The sample we use here is ``samples/interlocked-fluxrings``.
 
 Simple plot:
 
@@ -561,6 +563,11 @@ Simple plot:
         for label in axes.yaxis.get_ticklabels():
                 label.set_position((-0.03, 0))
 
+The result is this plot:
+
+.. image:: images/line_plot.png
+        :width: 400
+        :alt: Simple line plot.
 
 Simple 2d plot:
 
@@ -594,7 +601,8 @@ Simple 2d plot:
         axes = plt.subplot(111)
 
         # Make the actual plot.
-        plt.imshow(slices.xy.bb1[0, :, :].T, origin='lower', interpolation='nearest', cmap='hot', extent=[x0, x1, y0, y1])
+        plt.imshow(slices.xy.bb1[0, :, :].T, origin='lower', interpolation='nearest',
+                   extent=[x0, x1, y0, y1])
         plt.xlabel(r'$x$', fontsize=25)
         plt.ylabel(r'$y$', fontsize=25)
 
@@ -616,6 +624,11 @@ Simple 2d plot:
         for label in axes.yaxis.get_ticklabels():
                 label.set_position((-0.03, 0))
 
+The result is this plot:
+
+.. image:: images/imshow_plot.png
+        :width: 400
+        :alt: Simple 2d plot.
 
 IDL to Python guide
 ===================
