@@ -35,10 +35,9 @@ Indentation and Spaces
 
 
         # Aligned with opening delimiter.
-        foo = long_function_name(var_one, var_two, var_three, var_four)
+        foo = long_function_name(var_one, var_two,
+                                 var_three, var_four)
 
-
--  Surround top-level function and class definitions with two blank lines.
 
 -  Wildcard imports ( from import \* ) should be avoided, as they make
    it unclear which names are present in the namespace, confusing both
@@ -50,6 +49,14 @@ Indentation and Spaces
 
       x             = 1
       y             = 2
+      long_variable = 3
+
+   **Yes**:
+
+   .. code:: python
+
+      x = 1
+      y = 2
       long_variable = 3
 
 -  Always surround these binary operators with a single space on either
@@ -65,7 +72,7 @@ Indentation and Spaces
 
       i = i + 1
       submitted += 1
-      x = x\*2 - 1
+      x = x*2 - 1
 
    **No**:
 
@@ -130,7 +137,7 @@ We are using Numpy docstring style, and require the following fields in the docs
 
         Signature
         ---------
-        complex(8,7)
+        complex(real, imag)
 
         Parameters
         ----------
@@ -146,8 +153,8 @@ We are using Numpy docstring style, and require the following fields in the docs
         Examples 
         --------
         Define two complex numbers:
-        >>> a = complex(3,5)
-        >>> b = complex(4,7)
+        >>> a = complex(3, 5)
+        >>> b = complex(4, 7)
         >>> print(a)
         (3+5j)
         >>> a + b
@@ -170,6 +177,13 @@ Run pylint over your code. pylint is a tool for finding bugs and style
 problems in Python source code. It finds problems that are typically
 caught by a compiler for less dynamic languages like C and C++.
 
+black
+~~~~~~
+
+Run black over your code for automatic formatting.
+This makes sure that all the above criteria (apart from the doc string)
+are fullfilled.
+
 Default Function Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -181,14 +195,14 @@ definition.
 .. code:: python
 
    def foo(a, b=None):
-           if b is None:
-               b = []
+       if b is None:
+           b = []
 
 **No**: 
 
 .. code:: python
 
-        def foo(a, b=[]):
+    def foo(a, b=[]):
 
 
 Private Methods
@@ -225,7 +239,19 @@ Others
       
 
 -  Don’t compare boolean values to True or False using == . 
-**Yes**: ``if greeting:`` **No**: ``if greeting == True:``
+
+   **Yes**:
+
+   .. code:: python
+
+      if greeting:
+
+   **No**:
+
+   .. code:: python
+
+      if greeting == True:
+
 -  Check if a variable has a particular type by using ``isinstance``,
    e.g.: ``isinstance(my_variable, list)``.
 
@@ -281,7 +307,7 @@ are not visible by the user.
 
 .. code:: python
 
-        # my_module.py
+   # my_module.py
 
    class MyClass(object):
        """
@@ -493,6 +519,8 @@ Simple plot:
         # Set the size and margins.
         width = 8
         height = 6
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='arial')
         plt.rc("figure.subplot", left=0.2)
         plt.rc("figure.subplot", right=0.95)
         plt.rc("figure.subplot", bottom=0.15)
@@ -501,9 +529,9 @@ Simple plot:
         axes = plt.subplot(111)
 
         # Make the actual plot.
-        plt.semilogy(ts.t, ts.brms/ts.brms[0], linestyle='-', linewidth=2, color='black', label=r'$\langle\bar{B}\rangle/\langle\bar{B}\rangle(0)$')
-        plt.semilogy(ts.t, ts.jrms/ts.jrms[0], linestyle='--', linewidth=2, color='blue', label=r'$\langle\bar{J}\rangle/\langle\bar{J}\rangle(0)$')
-        plt.semilogy(ts.t, ts.jmax/ts.jmax[0], linestyle=':', linewidth=2, color='red', label=r'$J_{\rm max}/J_{\rm max}(0)$')
+        plt.semilogy(ts.t, ts.brms, linestyle='-', linewidth=2, color='black', label=r'$\langle\bar{B}\rangle$')
+        plt.semilogy(ts.t, ts.jrms, linestyle='--', linewidth=2, color='blue', label=r'$\langle\bar{J}\rangle$')
+        plt.semilogy(ts.t, ts.jmax, linestyle=':', linewidth=2, color='red', label=r'$J_{\rm max}$')
 
         plt.xlabel(r'$t$', fontsize=25)
         plt.ylabel(r'$\langle\bar{B}\rangle, \langle\bar{J}\rangle, J_{\rm max}$', fontsize=25)
@@ -543,7 +571,7 @@ Simple 2d plot:
         import pylab as plt
 
         # Read the slices.
-        slices = pc.read.slices(field='bb1', extension='xy')
+        slices = pc.read.slices()
 
         # Read the grid size.
         grid = pc.read.grid()
@@ -556,6 +584,8 @@ Simple 2d plot:
         # Set the size and margins.
         width = 8
         height = 6
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='arial')
         plt.rc("figure.subplot", left=0.15)
         plt.rc("figure.subplot", right=0.95)
         plt.rc("figure.subplot", bottom=0.15)
@@ -564,7 +594,7 @@ Simple 2d plot:
         axes = plt.subplot(111)
 
         # Make the actual plot.
-        plt.imshow(zip(*slices.xy.bb1[0, :, :]), origin='lower', interpolation='nearest', cmap='hot', extent=[x0, x1, y0, y1])
+        plt.imshow(slices.xy.bb1[0, :, :].T, origin='lower', interpolation='nearest', cmap='hot', extent=[x0, x1, y0, y1])
         plt.xlabel(r'$x$', fontsize=25)
         plt.ylabel(r'$y$', fontsize=25)
 
