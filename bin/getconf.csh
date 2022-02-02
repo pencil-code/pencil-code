@@ -1694,7 +1694,7 @@ else if ($hn =~ co[0-9]*) then
   endif
   set mpirun = srun
 #---------------------------------------------------
-else if ($hn =~ ravc[0-9]*) then
+else if ($hn =~ rav*[0-9]*) then
   echo "Raven system at Rechenzentrum Garching"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"

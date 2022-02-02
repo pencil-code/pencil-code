@@ -521,6 +521,11 @@ module InitialCondition
          endif
          print*,'initial_condition: Turbulent heat conductivity at the surface =',chit0, 'm^2/s'
          print*,''
+         if (.not. lequidist(1)) then
+           print*, 'initial_condition: using a nonequidistant grid in x with dx_bot/dx_top =',&
+                    dx1grid(nxgrid)/dx1grid(1)
+           print*, ''
+         endif
       endif
 !
     endsubroutine initial_condition_all
