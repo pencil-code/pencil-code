@@ -88,10 +88,10 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
       real :: bb_mean_x, bb_mean_y, bb_mean_z
       integer :: l, j, ju, proc
-      ! The next 2 variables are used for the uncurling.
       real, dimension (mx,my,mz,mfarray) :: cc  ! This is phi for poisson.f90
       real, dimension (nx,ny,nz,3) :: curl_cc ! This will be equivalent to the vector potential A.
-      real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
+      ! The next 2 variables are used for the uncurling.
+      real, dimension (nx,ny,nz,3) :: jj, tmpJ 
 !
 !  Read the externally created varfile.
 !
