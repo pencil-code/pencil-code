@@ -64,6 +64,7 @@ module Selfgravity
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
   integer :: idiag_rugpotselfm=0 ! DIAG_DOC: $\left<\rho\uv\cdot\nabla\Phi\right>$
+  integer :: idiag_gpotself2m=0  ! DIAG_DOC: $\left<(\nabla\Phi)^2\right>$
 !
 !  Module Variables
 !
@@ -264,6 +265,10 @@ module Selfgravity
         lpenc_requested(i_uu)=.true.
       endif
 !
+      if (idiag_gpotself2m/=0) then
+        lpenc_requested(i_gpotself)=.true.
+      endif
+!
       if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
 !
     endsubroutine pencil_criteria_selfgravity
@@ -420,11 +425,11 @@ module Selfgravity
 !  15-may-06/anders+jeff: coded
 !
       use Diagnostics
-      use Sub, only: dot_mn
+      use Sub, only: dot_mn, dot2_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: ugpotself
+      real, dimension (nx) :: ugpotself, gpotself2
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -450,6 +455,9 @@ module Selfgravity
         if (idiag_rugpotselfm/=0) &
             call dot_mn(p%uu,p%gpotself,ugpotself)
             call sum_mn_name(-p%rho*ugpotself,idiag_rugpotselfm)
+        if (idiag_gpotself2m/=0) &
+            call dot2_mn(p%gpotself,gpotself2)
+            call sum_mn_name(gpotself2,idiag_gpotself2m)
         if (idiag_gpotselfxm/=0) &
             call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
         if (idiag_gpotselfym/=0) &
@@ -589,13 +597,14 @@ module Selfgravity
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
         idiag_qtoomre=0; idiag_qtoomremin=0
         idiag_jeanslength=0; idiag_ljeans2d=0
-        idiag_rugpotselfm=0
+        idiag_rugpotselfm=0; idiag_gpotself2m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rugpotselfm',idiag_rugpotselfm)
+        call parse_name(iname,cname(iname),cform(iname),'gpotself2m',idiag_gpotself2m)
         call parse_name(iname,cname(iname),cform(iname),'potselfm', idiag_potselfm)
         call parse_name(iname,cname(iname),cform(iname),'rpotselfm',idiag_rpotselfm)
         call parse_name(iname,cname(iname),cform(iname),'potself2m',idiag_potself2m)
