@@ -75,7 +75,7 @@ module Ghost_check
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate buffer memory.')
       endif
       if (lroot) then
-        allocate (global(mx*nprocx,my*nprocy,mz*nprocz,mfarray), stat=alloc_err)
+        allocate (global(mx*nprocx,my*nprocy,mz*nprocz,nvar+naux), stat=alloc_err)
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate global memory.')
         allocate (lower(mx,my,mz,mfarray), middle(mx,my,mz,mfarray), upper(mx,my,mz,mfarray), stat=alloc_err)
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate box memory.')
