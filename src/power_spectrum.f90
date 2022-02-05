@@ -2609,6 +2609,8 @@ module power_spectrum
 !  variable specified by `sp', e.g. spectra of cc, rho, etc.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
+!  Make sure corresponding changes are made in cdata, param_io, and
+!  powersnap, which is in snapshot.f90.
 !
     use Fourier, only: fft_xyz_parallel
     use General, only: itoa
@@ -2667,6 +2669,8 @@ module power_spectrum
     else
       a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
     endif
+  elseif (sp=='po') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ipotself)
   elseif (sp=='nd') then
     a_re=f(l1:l2,m1:m2,n1:n2,ind(iapn_index))
   elseif (sp=='np') then

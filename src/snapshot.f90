@@ -695,6 +695,7 @@ module Snapshot
         if (ro_spec)  call powerscl(f,'ro')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
+        if (pot_spec) call powerscl(f,'po')
         if (ud_spec) then
           do n=1,ndustspec
             call power(f,'ud',n)
@@ -816,6 +817,10 @@ module Snapshot
         if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf) call pdf(f,'special',0.,1.)
+!
+!  Do pdf for the magnetic field
+!
+!       if (uuBB_pdf) call pdf(f,'uuBB',-1.,1.)
 !
 !  azimuthally averaged spectra in polar coorinates
 !
