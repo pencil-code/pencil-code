@@ -171,8 +171,9 @@ corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t
   d=pos//Differences//Min;
   pos={pos,pos+d-1}//Transpose;
   spec=Transpose@Mean[Take[spec,#]&/@pos];
+  t=Take[t,#]&/@pos;
   (*form time series*)
-  spec=Transpose[{Range[0,d-1]*(t//Differences//Mean),#}]&/@spec;
+  spec=Transpose[{Range[0,d-1]*Mean@Flatten[Differences/@t],#}]&/@spec;
   PrintTemporary[sim, ", ", file, ": Starting to fit..."];
   (*fitting and return*)
   SetSharedVariable[i];
