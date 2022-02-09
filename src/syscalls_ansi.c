@@ -23,7 +23,7 @@
 #include "headers_c.h"
 
 /* ---------------------------------------------------------------------- */
-void FTNIZE(extract_string_c)(char *extract_cmd, char *result)
+void FTNIZE(extract_string_c)(char *extract_cmd, char *result, const FINT *size)
 {
 //  Extracts a string (e.g., from a file) by extract_cmd.
 //  31-mar-21/MR: coded
@@ -33,7 +33,7 @@ void FTNIZE(extract_string_c)(char *extract_cmd, char *result)
         perror("popen");
         exit(EXIT_FAILURE);
     }
-    char* ret=fgets(result, sizeof(result), pipe);
+    char* ret=fgets(result, *size, pipe);
     pclose(pipe);
 }
 /* ---------------------------------------------------------------------- */

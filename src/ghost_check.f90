@@ -65,17 +65,19 @@ module Ghost_check
       character (len=*), intent(in) :: msg
 !
       real, dimension (:,:,:,:), allocatable :: buffer, global, lower, middle, upper
-      integer :: px, py, pz, lx, ux, ly, uy, lz, uz, alloc_err
+      integer :: px, py, pz, lx, ux, ly, uy, lz, uz, alloc_err, mwx
       logical :: ok
 !
       if (lpencil_check_at_work) return
 !
+      if (lroot) mwx=mx*nprocx    ! to avoid compile-time length calculation in allocation of "global" below
+
       if (lfirst_proc_xy) then
         allocate (buffer(mx*nprocx,my*nprocy,mz,mfarray), stat=alloc_err)
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate buffer memory.')
       endif
       if (lroot) then
-        allocate (global(mx*nprocx,my*nprocy,mz*nprocz,nvar+naux), stat=alloc_err)
+        allocate (global(mwx,my*nprocy,mz*nprocz,mfarray), stat=alloc_err)
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate global memory.')
         allocate (lower(mx,my,mz,mfarray), middle(mx,my,mz,mfarray), upper(mx,my,mz,mfarray), stat=alloc_err)
         if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate box memory.')

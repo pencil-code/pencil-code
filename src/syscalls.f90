@@ -323,9 +323,11 @@ module Syscalls
     character(LEN=*), intent(IN) :: cmd
     character(LEN=*), intent(OUT):: result
 
-    call extract_string_c(trim(cmd)//char(0),result)
+    result(len(result):)=char(0)
 
-    result(index(result,char(0)):) = ''
+    call extract_string_c(trim(cmd)//char(0),result,len(result))
+
+    result(index(result,char(0))-1:) = ''  ! as last char is newline
 
     endsubroutine extract_str
 !***********************************************************************

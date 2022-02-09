@@ -835,6 +835,7 @@ else if (($hn =~ c*.mahti.csc.fi)) then
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
+  #set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -2201,8 +2202,11 @@ else
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
   kill -TERM $$                                 # .. but try exiting in civilized manner
 endif
- 
-echo 'MODULE_[PRE|IN|SUF]FIX=' '"'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+
+if $?MODULE_PREFIX then
+  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+endif
+
 setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 
 # Determine data directory (defaults to `data')

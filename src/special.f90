@@ -95,10 +95,11 @@
 
     use General, only: parser
     use Messages, only: fatal_error
+    use Syscalls, only: extract_str
 
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
 
-    character(LEN=128) :: line
+    character(LEN=128) :: line,parstr
     integer :: i,j
     character(LEN=40), dimension(n_special_modules_max) :: special_modules
     character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
@@ -112,14 +113,13 @@
     if (libhandle==0) &
       call fatal_error('initialize_mult_special','library src/special.so could not be opened')
 
-    call getenv("MODULE_PREFIX", mod_prefix)
-    call getenv("MODULE_INFIX", mod_infix)
-    call getenv("MODULE_SUFFIX", mod_suffix)
+    call extract_str("nm src/special.so|grep lpenc_requested|sed -e's/.* \([^ ][^ ]*\)$/\1/'",line)
 
     do i=1,n_special_modules
       do j=1,n_subroutines
-        sub_handle=dlsym_c(libhandle,trim(mod_prefix)//trim(special_modules(i))// &
-            trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)//char(0))
+        call extract_str("echo "//trim(line)//"|sed -e's/cparam/"//trim(special_modules(i))// &
+                         "/' -e's/lpenc_requested/"//trim(special_subroutines(j))//"/'",parstr)
+        sub_handle=dlsym_c(libhandle,trim(parstr)//char(0))
         if (sub_handle==0) &
           call fatal_error('initialize_mult_special','Error for symbol '// &
           trim(special_subroutines(j))//' in module '//trim(special_modules(i))) 
