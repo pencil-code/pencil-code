@@ -95,6 +95,8 @@ module Forcing
 ! continuous 2d forcing
   integer :: k2d
   logical :: l2dxz,l2dyz
+! anisotropic forcing
+  logical :: laniso_forcing_old=.true.
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -159,7 +161,7 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time
+       lrandom_time, laniso_forcing_old
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -1702,11 +1704,21 @@ module Forcing
 ! here f0 and fd are shorthand for force and forcing_direction,
 ! respectively, and epsilon=force_strength/force.
 !
+! 09-feb-22/hongzhe: possibility of a new implementation. If
+!                    laniso_forcing_old=F then fda is the same in all
+!                    three directions, and fda=sqrt(1+epsilon*mu^2)
+!                    where mu = cos of the angle between kk and fd
+!
       if (force_strength/=0.) then
         call dot(force_direction,force_direction,fd2)
         fd=sqrt(fd2)
-        fda = 1. + (force_strength/force) &
-              *(kk*force_direction/(k*fd))**2 * force_direction/fd 
+        if (laniso_forcing_old) then
+          fda = 1. + (force_strength/force) &
+                *(kk*force_direction/(k*fd))**2 * force_direction/fd
+        else
+          fda = sqrt(1. + (force_strength/force) &
+                *(dot_product(kk,force_direction)/(k*fd))**2)
+        endif
       else
         fda = 1.
       endif
