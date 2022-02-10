@@ -113,12 +113,13 @@
     if (libhandle==0) &
       call fatal_error('initialize_mult_special','library src/special.so could not be opened')
 
-    call extract_str("nm src/special.so|grep lpenc_requested|sed -e's/.* \([^ ][^ ]*\)$/\1/'",line)
+    call extract_str("nm src/special.so|grep calc_pencils_special|grep "//trim(special_modules(1))// &
+                     "|sed -e's/.* \([^ ][^ ]*\)$/\1/'",line)
 
     do i=1,n_special_modules
       do j=1,n_subroutines
-        call extract_str("echo "//trim(line)//"|sed -e's/cparam/"//trim(special_modules(i))// &
-                         "/' -e's/lpenc_requested/"//trim(special_subroutines(j))//"/'",parstr)
+        call extract_str("echo '"//trim(line)//"'|sed -e's/"//trim(special_modules(1))//"/"//trim(special_modules(i))// &
+                         "/' -e's/calc_pencils_special/"//trim(special_subroutines(j))//"/'",parstr)
         sub_handle=dlsym_c(libhandle,trim(parstr)//char(0))
         if (sub_handle==0) &
           call fatal_error('initialize_mult_special','Error for symbol '// &
