@@ -2364,7 +2364,7 @@ stop
         if (lpenc_loc(i_divu)) p%divu=0.
 !
 !  for delta-correlated *flows*, use "lhelical_test=T" in forcing
-!  and kinematic_flow='from_aux' in forcing_run_pars and
+!  and kinematic_flow='from_aux' in hydro_run_pars and
 !  lkinflow_as_aux=T in run_pars.
 !
       case('from_aux')
