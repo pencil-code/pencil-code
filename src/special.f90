@@ -96,7 +96,7 @@
     use General, only: parser
     use Messages, only: fatal_error
     use Syscalls, only: extract_str
-
+    use Cdata, only: lroot
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
 
     character(LEN=128) :: line,parstr
@@ -107,19 +107,37 @@
 
     call getenv("PC_MODULES_LIST", special_modules_list)
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
+!if (lroot) print*, 'special_modules_list=', trim(special_modules_list)//'<<<'
 
+!
+! If in gfortran trouble, comment the following in (for grav. waves + chiral MHD; mutatis
+! mutandis otherwise).
+!   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!    n_special_modules=2
+!    special_modules(1)='gravitational_waves_htxk'
+!    special_modules(2)='chiral_mhd'
+!    mod_prefix='__'; mod_infix='_MOD_'; mod_suffix=''
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
     libhandle=dlopen_c('src/special.so'//char(0),RTLD_NOW)
-
     if (libhandle==0) &
       call fatal_error('initialize_mult_special','library src/special.so could not be opened')
 
     call extract_str("nm src/special.so|grep calc_pencils_special|grep "//trim(special_modules(1))// &
                      "|sed -e's/.* \([^ ][^ ]*\)$/\1/'",line)
-
+!if (lroot) print*, 'line=', trim(line)
     do i=1,n_special_modules
       do j=1,n_subroutines
         call extract_str("echo '"//trim(line)//"'|sed -e's/"//trim(special_modules(1))//"/"//trim(special_modules(i))// &
                          "/' -e's/calc_pencils_special/"//trim(special_subroutines(j))//"/'",parstr)
+!
+! If in gfortran trouble, comment the following in.
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        parstr=trim(mod_prefix)//trim(special_modules(i))//trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         sub_handle=dlsym_c(libhandle,trim(parstr)//char(0))
         if (sub_handle==0) &
           call fatal_error('initialize_mult_special','Error for symbol '// &
