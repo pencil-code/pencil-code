@@ -55,7 +55,7 @@ class pstalk(object):
 			
 	def find_no_of_procs(self,proc,datadir):
 		if (proc==-1):
-			setattr(self,'procdirs',list(filter(lambda s:s.startswith('proc'),os.listdir(datadir))))
+			setattr(self,'procdirs',list(filter(lambda s:s.startswith('proc') and not s.endswith('.dat'),os.listdir(datadir))))
 			setattr(self,'nprocs',len(self.procdirs))
 
 	def get_stalkdim(self,datadir):

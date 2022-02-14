@@ -57,7 +57,7 @@ def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1,
         precision = 'f'
 
     if proc < 0:
-        procdirs = list(filter(lambda s:s.startswith('proc'),
+        procdirs = list(filter(lambda s:s.startswith('proc') and not s.endswith('.dat'),
                                  os.listdir(datadir)))
     else:
         procdirs = ['proc'+str(proc)]

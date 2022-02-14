@@ -42,7 +42,7 @@ class pcpvar(object):
 			for i in places:
 				setattr(self,keys[int(i)-1].replace('(','P').replace(')','P'),int(i)-1)
 			if (proc==-1):
-				procdirs = list(filter(lambda s:s.startswith('proc'),os.listdir(datadir)))
+				procdirs = list(filter(lambda s:s.startswith('proc') and not s.endswith('.dat'),os.listdir(datadir)))
 				nprocs = len(procdirs)
 				if ('proc_bounds.dat' in procdirs):
 				    nprocs -= 1
