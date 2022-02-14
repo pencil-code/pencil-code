@@ -84,7 +84,8 @@ module NeutralVelocity
   integer :: idiag_neutralangmom=0
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
-  integer :: idiag_divunm=0,idiag_dtnun=0
+  integer :: idiag_divunm=0, idiag_pndivunm=0, idiag_dtnun=0
+  integer :: idiag_fricneut=0, idiag_fricions=0
   integer :: idiag_epsKn=0       ! DIAG_DOC: $\left<2\nu_n\varrho_n\Strain_n^2\right>$
 !
   contains
@@ -322,7 +323,7 @@ module NeutralVelocity
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
-      if (idiag_divunm/=0) lpenc_diagnos(i_divun)=.true.
+      if (idiag_divunm/=0 .or. idiag_pndivunm/=0) lpenc_diagnos(i_divun)=.true.
 !
       if (idiag_unpmr/=0 .or. idiag_unrunpmr/=0) then
         lpenc_diagnos(i_phix)=.true.
@@ -400,7 +401,7 @@ module NeutralVelocity
           do i=1,3
             p%snij(:,i,j)=.5*(p%unij(:,i,j)+p%unij(:,j,i))
           enddo
-          p%snij(:,j,j)=p%snij(:,j,j)-(.333333)*p%divun
+          p%snij(:,j,j)=p%snij(:,j,j)-onethird*p%divun
         enddo
       endif
 ! snij2
@@ -444,7 +445,7 @@ module NeutralVelocity
 !
       use Diagnostics
       use Mpicomm, only: stop_it
-      use Sub, only: identify_bcs
+      use Sub, only: identify_bcs, dot_mn
       use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -452,6 +453,7 @@ module NeutralVelocity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: ionization,recombination,cions,cneut,advec_csn2,advec_uun
+      real, dimension (nx) :: udelu_neut, udelu_ions
       real :: c2,s2
       integer :: j,jn,ji
 !
@@ -516,7 +518,8 @@ module NeutralVelocity
         endif
      endif
 !
-! Neutral-ion collision, ionization and recombination
+!  Neutral-ion collision, ionization and recombination
+!  Remember that cneut*p%rho enters below, so another p%rho is factored out.
 !
      ionization=p%zeta*p%rho1
      recombination=p%alpha*p%rho*p%rhon1
@@ -539,6 +542,9 @@ module NeutralVelocity
                cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
 !
 ! add electron pressure to the ions if needed
+! This adds to the already entered contribution from noentropy.f90
+! df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
+! and thus implies altogether a factor of 2, which is correct.
 !
           if (lelectron_pressure) &
                df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+&
@@ -600,6 +606,15 @@ module NeutralVelocity
         call max_mn_name(p%uun(:,3),idiag_unzmax)
         call sum_mn_name(p%un2,idiag_un2m)
         call sum_mn_name(p%divun,idiag_divunm)
+        call sum_mn_name(csn20*p%rhon*p%divun,idiag_pndivunm)
+        if (idiag_fricneut/=0) then
+          call dot_mn(p%uu-p%uun,p%uun,udelu_neut)
+          call sum_mn_name(cneut*p%rho*p%rhon*udelu_neut,idiag_fricneut)
+        endif
+        if (idiag_fricions/=0) then
+          call dot_mn(p%uu-p%uun,p%uu,udelu_ions)
+          call sum_mn_name(-cions*p%rho*p%rhon*udelu_ions,idiag_fricions)
+        endif
         call max_mn_name(p%un2,idiag_unm2)
         call sum_mn_name(p%uun(:,1),idiag_unxm)
         call sum_mn_name(p%uun(:,2),idiag_unym)
@@ -776,7 +791,7 @@ module NeutralVelocity
             if (headtt) print*,'Viscous force (neutral):  mun/rhon*(del2un+graddivun/3)'
             munrhon1=nun*p%rhon1  !(=mun/rhon)
             do i=1,3
-               fvisc(:,i)=fvisc(:,i)+munrhon1*(p%del2un(:,i)+1./3.*p%graddivun(:,i))
+               fvisc(:,i)=fvisc(:,i)+munrhon1*(p%del2un(:,i)+onethird*p%graddivun(:,i))
             enddo
             if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2*p%rhon1
             if (lfirst.and.ldt) diffus_nun=diffus_nun+munrhon1*dxyz_2
@@ -789,9 +804,9 @@ module NeutralVelocity
             if (headtt) &
                  print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
             if (lneutraldensity) then
-               fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+1./3.*p%graddivun)
+               fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+onethird*p%graddivun)
             else
-               fvisc=fvisc+nun*(p%del2un+1./3.*p%graddivun)
+               fvisc=fvisc+nun*(p%del2un+onethird*p%graddivun)
             endif
 !
             if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2
@@ -898,7 +913,8 @@ module NeutralVelocity
         idiag_unx2my=0; idiag_uny2my=0; idiag_unz2my=0
         idiag_unxunymy=0; idiag_unxunzmy=0; idiag_unyunzmy=0
         idiag_neutralangmom=0;
-        idiag_unrunpmr=0; idiag_divunm=0
+        idiag_unrunpmr=0; idiag_divunm=0; idiag_pndivunm=0
+        idiag_fricneut=0; idiag_fricions=0
         idiag_un2mr=0; idiag_unrmr=0; idiag_unpmr=0; idiag_unzmr=0
         idiag_epsKn=0
       endif
@@ -913,6 +929,9 @@ module NeutralVelocity
         call parse_name(iname,cname(iname),cform(iname),'dtcn',idiag_dtcn)
         call parse_name(iname,cname(iname),cform(iname),'dtnun',idiag_dtnun)
         call parse_name(iname,cname(iname),cform(iname),'divunm',idiag_divunm)
+        call parse_name(iname,cname(iname),cform(iname),'pndivunm',idiag_pndivunm)
+        call parse_name(iname,cname(iname),cform(iname),'fricneut',idiag_fricneut)
+        call parse_name(iname,cname(iname),cform(iname),'fricions',idiag_fricions)
         call parse_name(iname,cname(iname),cform(iname),'unrms',idiag_unrms)
         call parse_name(iname,cname(iname),cform(iname),'unmax',idiag_unmax)
         call parse_name(iname,cname(iname),cform(iname),'unxmax',idiag_unxmax)
