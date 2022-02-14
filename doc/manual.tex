@@ -12988,6 +12988,11 @@ double precision, $\varepsilon\approx10^{-15}$.
                & if set \code{T}, only 2D-snapshots are written into VAR
                  files in the case of 2D-runs with $nygrid=1$ or
                  $nzgrid=1$.\\
+  \var{lread_aux} [\code{F}]
+               & This controls whether auxiliary variables are read from snapshots. 
+                 This is only required for configurations in which the auxiliary
+                 variables are actually not calculated at each timestep (e.g. when 
+                 you set \code{kinematic_flow='from-snap'} in \name{hydro_run_pars}).\\
   \var{lread_oldsnap} [\code{F}]
                & if set \code{T}, the old snapshot will be read in before
                  producing (overwriting) initial conditions. For example, if
