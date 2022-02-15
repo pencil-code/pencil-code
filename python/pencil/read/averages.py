@@ -488,11 +488,11 @@ class Averages(object):
         else:
             # Determine the structure of the xy/xz/yz averages.
             if plane == "xy":
-                nw = getattr(read.dim(), "nz")
+                nw = getattr(read.dim(datadir=datadir), "nz")
             if plane == "xz":
-                nw = getattr(read.dim(), "ny")
+                nw = getattr(read.dim(datadir=datadir), "ny")
             if plane == "yz":
-                nw = getattr(read.dim(), "nx")
+                nw = getattr(read.dim(datadir=datadir), "nx")
             file_id = open(os.path.join(datadir, aver_file_name))
             aver_lines = file_id.readlines()
             file_id.close()
