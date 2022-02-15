@@ -271,7 +271,7 @@ module Snapshot
         endif
 !
 !  It is sometimes of interest to output only last part of the data
-!  in the capital var files.
+!  in the capital var files (e.g., VAR1, VAR2, etc).
 !
         if (present(nv1)) then
           nv1_capitalvar=nv1
@@ -528,6 +528,20 @@ module Snapshot
         enddo
         do ivar=8,msnap
           f(:,:,:,ivar)=f_oversize(:,:,:,ivar+14)
+        enddo
+        deallocate(f_oversize)
+!
+!  Read data without any var data
+!
+      elseif (lread_oldsnap_mskipvar) then
+        if (lroot) print*,'read old snapshot file with mskipvar mskipvar,msnap=',mskipvar,msnap
+        allocate(f_oversize(mx,my,mz,msnap+mskipvar))
+        call input_snap(chsnap,f_oversize,msnap+mskipvar,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        do ivar=1,msnap
+          f(:,:,:,ivar)=f_oversize(:,:,:,ivar+mskipvar)
         enddo
         deallocate(f_oversize)
 !

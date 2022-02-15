@@ -171,7 +171,7 @@ module Param_IO
       lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
-      lenforce_maux_check, nv1_capitalvar, &
+      lenforce_maux_check, nv1_capitalvar, mskipvar, lread_oldsnap_mskipvar, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       iproc_pt, iproc_p2, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
