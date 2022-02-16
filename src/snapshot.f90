@@ -532,6 +532,7 @@ module Snapshot
         deallocate(f_oversize)
 !
 !  Read data without any var data
+!  Note: this can also be done with ivar_omit (see io_dist.f90 and register.f90)
 !
       elseif (lread_oldsnap_mskipvar) then
         if (lroot) print*,'read old snapshot file with mskipvar mskipvar,msnap=',mskipvar,msnap
