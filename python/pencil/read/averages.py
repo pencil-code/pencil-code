@@ -212,8 +212,7 @@ class Averages(object):
             file_id = open(os.path.join(os.path.dirname(datadir), in_file_name))
             variables = file_id.readlines()
             file_id.close()
-            for i in range(sum(list(map(self.__equal_newline, variables)))):
-                variables.remove("\n")
+            variables = [v for v in variables if v[0] != '#' and not v.isspace()] #Ignore commented variables and blank lines in the .in file.
             n_vars = len(variables)
 
             if plane == "xy" or plane == "xz" or plane == "yz":
