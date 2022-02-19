@@ -1,0 +1,54 @@
+!                              -*-f90-*-     (for emacs) !
+&run_pars
+  cvsid='$Id$',
+  nt=10, it1=1, isave=5000, itorder=3
+  cdt=0.5 ! 0.4
+  cdtv=0.5 ! 0.4
+  dsnap=0.5235987755982988, dtmin=1.0e-6
+  dvid=0.1
+  lpencil_check=F
+  lpencil_check_small=F
+  slice_position='m'
+  max_walltime = 171600
+  ip=14!6
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='hyper3-mesh'
+  diffrho_hyper3_mesh=20.
+/
+&grav_run_pars
+  lgravz_gas=T
+/
+&shear_run_pars
+  qshear=1.5
+  lshearadvection_as_shift=F
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh'
+  nu_hyper3_mesh=20.
+/
+&particles_run_pars
+  cdtp=0.5 !0.2
+  !epsp_friction_increase=500.0
+/
+&selfgrav_run_pars
+ tstart_selfgrav = 12.566370614359172
+/
+&poisson_run_pars
+/
+&particles_selfgrav_run_pars
+/
+&particles_sink_run_pars
+  rhop_sink_create=90!1130.9733552923256
+  lsink_create_one_per_cell=T
+/
+&particles_dens_run_pars
+/
+&particles_stalker_run_pars
+  lstalk_sink_particles = T
+/
+

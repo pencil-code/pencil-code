@@ -1,0 +1,61 @@
+!                              -*-f90-*-     (for emacs)
+&init_pars
+  cvsid='$Id$',
+  xyz0  =  -0.10,  -0.10,  -0.10
+  Lxyz  =   0.20,   0.20,   0.20
+  lperi =      T,      T,      F
+  !lcopysnapshots_exp=T, 
+  lwrite_ic=T, lwrite_aux=T
+  bcz = 's','s','a','s','s','s','s','s','s'
+  ip=14
+/
+&eos_init_pars
+  gamma=1.0, rho0=1.0, cs0=1.0
+/
+&hydro_init_pars
+  inituu='nothing'
+  Omega=1.0
+/
+&density_init_pars
+  initlnrho='isothermal'
+  beta_glnrho_global=-0.1,0.0,0.0
+  ldensity_nolog=T
+/
+&grav_init_pars
+  gravz_profile='linear', nu_epicycle=1.0
+/
+&shear_init_pars
+  qshear=1.5
+/
+&particles_init_pars
+  initxxp='gaussian-z',initvvp='dragforce_equilibrium'
+  zp0=0.01
+  tausp_species=0.5,0.005
+  eps_dtog=1.!0.03
+  gravz_profile='linear', nu_epicycle=1.0
+  lparticlemesh_tsc=T
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  lmigration_redo=T
+/
+&selfgrav_init_pars
+  rhs_poisson_const=0.1
+  lselfgravity_gas=F, lselfgravity_dust=F
+/
+&poisson_init_pars
+/
+&particles_selfgrav_init_pars
+  lselfgravity_particles=T
+/
+&particles_dens_init_pars
+  initrhopswarm = 'particles-to-gas-ratio'
+  eps_dtog=1.!0.03
+/
+&particles_sink_init_pars
+  sink_birth_radius=1.0
+  lsink_radius_dx_unit=T
+  lsink_communication_all_to_all=T
+/
+&particles_stalker_init_pars
+  dstalk = 0.05
+  lstalk_sink_particles = T
+/
