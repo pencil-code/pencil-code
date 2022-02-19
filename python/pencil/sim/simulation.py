@@ -433,10 +433,10 @@ class __Simulation__(object):
             varno = "VAR" + str(int(varno))
 
         if not exists(src):
-            print("! ERROR: Source data directory does not exits: " + str(src))
+            print("! ERROR: Source data directory does not exist: " + str(src))
             return False
         if not exists(dst):
-            print("! ERROR: Destination data directory does not exits: " + str(dst))
+            print("! ERROR: Destination data directory does not exist: " + str(dst))
             return False
         if not varno in sim_source.get_varlist():
             print(
