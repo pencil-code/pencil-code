@@ -174,9 +174,10 @@ module BorderProfiles
       else
         if (lgravr) then 
           call get_shared_variable('gsum',gsum,caller='initialize_border_profiles')
-          !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
+          !the inverse period is the inverse of 2pi/Omega =>  Omega/2pi = sqrt(GM/2pi) / r**1.5
+          !gsum = GM; the 1/r**1.5 factor will be added in inverse_period
           if (gsum/=0) then
-            fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+            fac_sqrt_gsum1 = sqrt(gsum)/(2*pi)
           else
             call fatal_error("initialize_border_profiles","gsum=0")
           endif
