@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""
+This is a script which partially copies snapshots (i.e. only specified variables) between different simulations. This is useful when you are making new simulations with less/more/different physics.
+
+This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. in the destination simulation. For variables that are not modified, the initial conditions set by pc_start will be preserved.
+
+Currently does not support hdf5 (but should be simple to add).
+
+Kishore Gopalakrishnan (kishore96@gmail.com)
+"""
+
+import argparse
+
+parser = argparse.ArgumentParser(description="Copy only certain variables from one snapshot to another. This is useful in case you want to use a snapshot from one run to start another run which has additional/fewer modules. This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. For variables that are not modified, the initial conditions set by pc_start will be preserved.",
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                 epilog="Example: %(prog)s  --src-var VAR5 --dest-datadir sim2/data --dest-var var.dat --copy-these ux,uy,uz,lnrho sim1/data")
+parser.add_argument('SRC_DATADIR', help="Data directory from which snapshots will be read.", type = str )
+parser.add_argument('--src-var', help="filename of the source snapshot.", default = "var.dat", type = str )
+parser.add_argument('--dest-datadir', help="Data directory into which snapshots will be written.", default = "./data", type = str )
+parser.add_argument('--dest-var', help='filename of the destination snapshot.', default = "var.dat", type = str )
+parser.add_argument('--copy-these', help="Comma-separated list of variables to copy (e.g. ux,uy,uz,ax,ay,az). The order of variables does not matter. Note that for vector variables such as uu, specifying uu will only copy ux; one needs to say 'ux,uy,uz' to copy all three components. If this argument is not specified, all variables that are present in both the source and destination simulations will be copied.", type = str )
+
+args = parser.parse_args()
+
+# BEGIN importing pencil
+#We do this because pencil prints some annoying stuff to stdout when imported.
+#TODO: Neater way to do this?
+import sys, os
+sys.stdout = open(os.devnull, 'w')
+import pencil as pc
+sys.stdout = sys.__stdout__
+# END importing pencil
+
+#Unpack the arguments.
+src_datadir = args.SRC_DATADIR
+dest_datadir = args.dest_datadir
+src_var = args.src_var
+dest_var = args.dest_var
+if args.copy_these is None:
+    keys_to_copy = None #Will be populated later.
+else:
+    keys_to_copy = [ s.strip() for s in args.copy_these.split(',') ]
+
+def pythonify(i):
+    """
+    Given a Pencil index object, subtract one from every index to make it easier to use in Python. This is needed because Python arrays start at zero, while Fortran arrays default to starting from one.
+    """
+    for k in i.__dict__.keys():
+        setattr(i, k, getattr(i, k) - 1)
+    return i
+
+#Get f array and indices from src simulation
+#TODO: Is it important/useful to copy ghost zones as well? Currently we don't do that.
+var = pc.read.var(var_file=src_var, datadir=src_datadir, trimall=True)
+f_old = var.f
+i_src = pc.read.index(datadir=src_datadir)
+i_src = pythonify(i_src)
+
+#Read in the f array of the new sim that was set by pc_start. We do this because we want to keep the initial conditions for variables which are not present in the source snapshot.
+var = pc.read.var(var_file=dest_var, datadir=dest_datadir, trimall=True)
+f_new = var.f
+x_new = var.x
+y_new = var.y
+z_new = var.z
+
+#Get indices for destination sim.
+i_dest = pc.read.index(datadir=dest_datadir)
+i_dest = pythonify(i_dest)
+
+#If the user didn't specify anything, find out which keys to copy.
+if keys_to_copy is None:
+    #If the user hasn't specified anything, the code will copy all variables that exist in both the source and the destination.
+    #There may be some redundant indices like 'uu' (since we already have 'ux' etc.), but no harm in writing them anyway.
+    keys_to_copy = i_src.__dict__.keys()
+
+#Copy the required keys.
+for k in keys_to_copy:
+    if k in i_dest.__dict__:
+        #Copy a particular key only if it exists in the destination sim.
+        f_new[getattr(i_dest, k)] = f_old[getattr(i_src, k)]
+
+#Find out how many processors in new sim (needed for writing snapshot)
+dim = pc.read.dim(datadir=dest_datadir)
+nprocx = dim.nprocx
+nprocy = dim.nprocy
+nprocz = dim.nprocz
+
+#Check if we have shear (needs to be known to write the snapshot)
+param = pc.read.param(datadir=dest_datadir)
+lshear = param.lshear
+
+#Write out f_new into snapshots
+pc.io.write_snapshot(f_new, file_name=dest_var, datadir=dest_datadir, nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, precision='d', nghost=3, x=x_new, y=y_new, z=z_new, lshear=lshear)
+
+#Before exiting, tell the user what we did.
+print("Copied {} from {} to {}.".format(','.join(keys_to_copy), os.path.join(src_datadir, src_var), os.path.join(dest_datadir, dest_var)) )
