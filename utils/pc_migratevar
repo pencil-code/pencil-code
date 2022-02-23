@@ -9,6 +9,7 @@ Currently does not support hdf5 (but should be simple to add).
 Kishore Gopalakrishnan (kishore96@gmail.com)
 """
 
+import os
 import argparse
 
 parser = argparse.ArgumentParser(description="Copy only certain variables from one snapshot to another. This is useful in case you want to use a snapshot from one run to start another run which has additional/fewer modules. This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. For variables that are not modified, the initial conditions set by pc_start will be preserved.",
@@ -25,7 +26,7 @@ args = parser.parse_args()
 # BEGIN importing pencil
 #We do this because pencil prints some annoying stuff to stdout when imported.
 #TODO: Neater way to do this?
-import sys, os
+import sys
 sys.stdout = open(os.devnull, 'w')
 import pencil as pc
 sys.stdout = sys.__stdout__
