@@ -158,7 +158,9 @@ def make_sims_dict(params, quiet=True):
             # Only 'compile' uses bool. Arguments otherwise are string.
             if not type(value) == bool:
                 if not "'" in value:
-                    simkey = simkey + "{}{}".format(
+                    if len(simkey) > 0:
+                        simkey += "_"
+                    simkey += "{}_{}".format(
                         key.split("/")[-1], value.strip(" ")
                     )
         simset[simkey] = param_nested_dict
