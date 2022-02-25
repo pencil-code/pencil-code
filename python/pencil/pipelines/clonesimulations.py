@@ -1,5 +1,6 @@
 from pencil.io import mkdir, change_value_in_file
 import subprocess
+import os
 from os.path import join
 import f90nml
 
