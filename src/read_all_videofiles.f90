@@ -119,8 +119,10 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
             read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
             read(lun_pos,*,end=100) lread_slice_r,ith_min,ith_max
-            ith_min_glob=min(ith_min_glob,ith_min)
-            ith_max_glob=max(ith_max_glob,ith_max)
+            if (ith_min/=0) then
+              ith_min_glob=min(ith_min_glob,ith_min)
+              ith_max_glob=max(ith_max_glob,ith_max)
+            endif
 
   100       close(lun_pos)
 
@@ -609,7 +611,9 @@ program rvid_box
         endif
         if (allocated(yz_t)) deallocate(yz_t)
       endif
-
+!
+! r-slice
+!
       if (lread_slice_r) then
         allocate(r_t(nth_rslice,nph_rslice,it),stat=stat); r_t=0.
         if (stat==0) then
