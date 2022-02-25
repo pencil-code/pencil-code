@@ -65,7 +65,7 @@ def parameter_table(filename, quiet=True):
         data.append(i)
     params = pd.DataFrame(data=data, columns=columns)
     # Create column indicating whether to compile each clone simulation
-    params.insert(6, "compile", False, allow_duplicates=True)
+    params.insert(len(columns), "compile", False, allow_duplicates=True)
     return params
 
 
