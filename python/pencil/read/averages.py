@@ -22,6 +22,7 @@ def aver(*args, **kwargs):
     *plane_list*:
         A list of the 2d/1d planes over which the averages were taken.
         Takes 'xy', 'xz', 'yz', 'y', 'z'.
+        By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir]
 
     *iter_list*
         list of iteration indices for which to sample the slices
