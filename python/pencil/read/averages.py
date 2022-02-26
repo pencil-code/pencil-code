@@ -11,31 +11,42 @@ import sys
 
 def aver(*args, **kwargs):
     """
-     Read Pencil Code average data.
+    Read Pencil Code average data.
 
-     call signature:
+    call signature:
 
-     read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
+    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, datadir="data", proc=-1):
 
-     Keyword arguments:
+    Keyword arguments:
 
-     *plane_list*:
-       A list of the 2d/1d planes over which the averages were taken.
-       Takes 'xy', 'xz', 'yz', 'y', 'z'.
+    *plane_list*:
+        A list of the 2d/1d planes over which the averages were taken.
+        Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
     *iter_list*
-      list of iteration indices for which to sample the slices
+        list of iteration indices for which to sample the slices
+
+    *avfile_list*, *infile_list*
+        list of file names if alternative to standard files used
 
     *var_index*:
-      Index of single variable taken from among the 'y' or 'z' averages.
-      Takes an integer value < len(yaver.in or zaver.in).
+        Index of variable from among within the 'y' or 'z' averages.
+        Takes an integer value < len(yaver.in or zaver.in).
 
-     *datadir*:
-       Directory where the data is stored.
+    *datadir*:
+        Directory where the data is stored.
 
-     *proc*:
-       Processor to be read. If -1 read all and assemble to one array.
-       Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
+    *simdir*:
+        Simulation directory containing the .in files.
+        By default, parent directory of datadir.
+
+    *proc*:
+        Processor to be read. If -1 read all and assemble to one array.
+        Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
+
+    *precision*
+        Float (f), double (d) or half (half).
+
     """
 
     averages_tmp = Averages()
@@ -78,7 +89,7 @@ class Averages(object):
 
         call signature:
 
-        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
+        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, datadir="data", proc=-1):
 
         Keyword arguments:
 
@@ -89,7 +100,7 @@ class Averages(object):
         *iter_list*
           list of iteration indices for which to sample the slices
 
-        *file_list*
+        *avfile_list*, *infile_list*
           list of file names if alternative to standard files used
 
         *var_index*:
