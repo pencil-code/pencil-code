@@ -96,8 +96,8 @@ class Index(object):
             try:
                 val = int(clean.split("=")[1].strip())
             except:
-                val = np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1))) + int(
-                    clean.split("=")[1].strip().split("+")[1]
+                val = ( np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1)))[0] 
+                        + int(clean.split("=")[1].strip().split("+")[1]) 
                 )
 
             if (
