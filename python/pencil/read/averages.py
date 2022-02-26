@@ -34,7 +34,7 @@ def aver(*args, **kwargs):
         Takes an integer value < len(yaver.in or zaver.in).
 
     *datadir*:
-        Directory where the data is stored.
+        Directory where the data is stored. By default, "./data"
 
     *simdir*:
         Simulation directory containing the .in files.
@@ -96,6 +96,7 @@ class Averages(object):
         *plane_list*:
           A list of the 2d/1d planes over which the averages were taken.
           Takes 'xy', 'xz', 'yz', 'y', 'z'.
+          By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir]
 
         *iter_list*
           list of iteration indices for which to sample the slices
