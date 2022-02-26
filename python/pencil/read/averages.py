@@ -15,7 +15,7 @@ def aver(*args, **kwargs):
 
     call signature:
 
-    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, datadir="data", proc=-1):
+    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, proc=-1):
 
     Keyword arguments:
 
@@ -89,7 +89,7 @@ class Averages(object):
 
         call signature:
 
-        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, datadir="data", proc=-1):
+        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, proc=-1):
 
         Keyword arguments:
 
