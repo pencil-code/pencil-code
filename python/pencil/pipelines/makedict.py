@@ -110,7 +110,7 @@ def trim_table(params, quiet=True):
     return params
 
 
-def make_sims_dict(params, quiet=True):
+def make_sims_dict(params, quiet=True, prefix=""):
     """
     Extracting values from pandas table to generate a nested dictionary
     simset which can be used by clone_sims to set up simulation array
@@ -124,6 +124,8 @@ def make_sims_dict(params, quiet=True):
     *params*: Extracts list of parameters from userfile keys.
 
     *quiet*:  Flag to print output.
+    
+    *prefix*: prefix to be added to the names of the generated simulations. Nothing by default.
 
     Returns
     -------
@@ -150,7 +152,7 @@ def make_sims_dict(params, quiet=True):
     # Create nested dictionary of simulation values
     for index, row in params.iterrows():
         param_nested_dict = FlatDict(dict(row), delimiter="/").as_dict()
-        simkey = ""
+        simkey = prefix
         if not quiet:
             print(param_nested_dict)
             print(row.keys)
