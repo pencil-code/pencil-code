@@ -66,6 +66,7 @@ class Averages(object):
         plane_list=None,
         var_index=-1,
         datadir="data",
+        simdir=None,
         proc=-1,
         iter_list=None,
         avfile_list=None,
@@ -98,6 +99,10 @@ class Averages(object):
         *datadir*:
           Directory where the data is stored.
 
+        *simdir*:
+          Simulation directory containing the .in files.
+          By default, parent directory of datadir.
+
         *proc*:
           Processor to be read. If -1 read all and assemble to one array.
           Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
@@ -111,6 +116,9 @@ class Averages(object):
 
         l_h5 = False
 
+        if simdir is None:
+            simdir = os.path.join(datadir, os.path.pardir)
+
         # Initialize the planes list.
         if plane_list:
             if isinstance(plane_list, list):
@@ -120,7 +128,7 @@ class Averages(object):
         else:
             plane_list = []
             for prefix in ["xy", "xz", "yz"]:
-                if os.path.exists(prefix + "aver.in"):
+                if os.path.exists(os.path.join(simdir, prefix + "aver.in")):
                     plane_list.append(prefix)
 
         if var_index >= 0:
@@ -153,44 +161,44 @@ class Averages(object):
             if os.path.exists(os.path.join(datadir, "grid.h5")):
                 l_h5 = True
                 if plane_list.count("xy") > 0:
-                    if os.path.exists("xyaver.in"):
+                    if os.path.exists(os.path.join(simdir, "xyaver.in")):
                         in_file_name_list.append("xyaver.in")
                         aver_file_name_list.append(os.path.join("averages", "xy.h5"))
                 if plane_list.count("xz") > 0:
-                    if os.path.exists("xzaver.in"):
+                    if os.path.exists(os.path.join(simdir, "xzaver.in")):
                         in_file_name_list.append("xzaver.in")
                         aver_file_name_list.append(os.path.join("averages", "xz.h5"))
                 if plane_list.count("yz") > 0:
-                    if os.path.exists("yzaver.in"):
+                    if os.path.exists(os.path.join(simdir, "yzaver.in")):
                         in_file_name_list.append("yzaver.in")
                         aver_file_name_list.append(os.path.join("averages", "yz.h5"))
                 if plane_list.count("y") > 0:
-                    if os.path.exists("yaver.in"):
+                    if os.path.exists(os.path.join(simdir, "yaver.in")):
                         in_file_name_list.append("yaver.in")
                         aver_file_name_list.append(os.path.join("averages", "y.h5"))
                 if plane_list.count("z") > 0:
-                    if os.path.exists("zaver.in"):
+                    if os.path.exists(os.path.join(simdir, "zaver.in")):
                         in_file_name_list.append("zaver.in")
                         aver_file_name_list.append(os.path.join("averages", "z.h5"))
             else:
                 if plane_list.count("xy") > 0:
-                    if os.path.exists("xyaver.in"):
+                    if os.path.exists(os.path.join(simdir, "xyaver.in")):
                         in_file_name_list.append("xyaver.in")
                         aver_file_name_list.append("xyaverages.dat")
                 if plane_list.count("xz") > 0:
-                    if os.path.exists("xzaver.in"):
+                    if os.path.exists(os.path.join(simdir, "xzaver.in")):
                         in_file_name_list.append("xzaver.in")
                         aver_file_name_list.append("xzaverages.dat")
                 if plane_list.count("yz") > 0:
-                    if os.path.exists("yzaver.in"):
+                    if os.path.exists(os.path.join(simdir, "yzaver.in")):
                         in_file_name_list.append("yzaver.in")
                         aver_file_name_list.append("yzaverages.dat")
                 if plane_list.count("y") > 0:
-                    if os.path.exists("yaver.in"):
+                    if os.path.exists(os.path.join(simdir, "yaver.in")):
                         in_file_name_list.append("yaver.in")
                         aver_file_name_list.append("yaverages.dat")
                 if plane_list.count("z") > 0:
-                    if os.path.exists("zaver.in"):
+                    if os.path.exists(os.path.join(simdir, "zaver.in")):
                         in_file_name_list.append("zaver.in")
                         aver_file_name_list.append("zaverages.dat")
             if not in_file_name_list:
@@ -209,7 +217,7 @@ class Averages(object):
             ext_object = Foo()
 
             # Get the averaged quantities.
-            file_id = open(os.path.join(os.path.dirname(datadir), in_file_name))
+            file_id = open(os.path.join(simdir, in_file_name))
             variables = file_id.readlines()
             file_id.close()
             variables = [v for v in variables if v[0] != '#' and not v.isspace()] #Ignore commented variables and blank lines in the .in file.
