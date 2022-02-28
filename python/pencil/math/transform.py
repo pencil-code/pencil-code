@@ -64,8 +64,73 @@ def coordinate_transformation(x, y, z, xyz_from='', xyz_to=''):
             return (r, theta, phi)
 
 
-#def field_transformation():
-#    pass
+def vector_field_transformation(field, x, y, z, xyz_from='', xyz_to=''):
+    """
+    Transform a vector field from one coordinate system to another.
+    
+    call signature:
+
+    vector_field_transformation(field, x, y, z, xyz_from='', xyz_to='')
+
+    Keyword arguments:
+
+    *field*: 4d ndarray
+      Vector field.
+
+    *x, y, z*: 1d ndarray
+      Input coordinates of the 'from' system.
+
+    *xyz_from*: str
+      Origin coordinate system: 'cartesian', 'cylindrical' and 'spherical'.
+
+    *xyz_to*: str
+      Destination coordinate system: 'cartesian', 'cylindrical' and 'spherical'.
+    """
+
+    import numpy as np
+
+    (u, v, w) = coordinate_transformation(x, y, z, xyz_from=xyz_from, xyz_to=xyz_to)
+    u = np.swapaxes(u, 0, 2)
+    v = np.swapaxes(v, 0, 2)
+    w = np.swapaxes(w, 0, 2)
+    
+    if xyz_from == 'cartesian':
+        if xyz_to == 'cylindrical':
+            field_r = np.cos(v)*field[0] + np.sin(v)*field[1]
+            field_phi = -np.cos(v)*field[0] + np.cos(v)*field[1]
+            field_z = field[2]
+            return np.array([field_r, field_phi, field_z])
+        if xyz_to == 'spherical':
+            field_r = np.sin(v)*np.cos(w)*field[0] + np.sin(v)*np.sin(w)*field[1] + \
+                      np.cos(w)*field[2]
+            field_theta = np.cos(v)*np.cos(w)*field[0] + np.cos(v)*np.sin(w)*field[1] - \
+                          np.sin(w)*field[2]
+            field_phi = -np.sin(w)*field[0] + np.cos(w)*field[1]
+            return np.array([field_r, field_theta, field_phi])
+    if xyz_from == 'cylindrical':
+        if xyz_to == 'cartesian':
+            field_x = np.cos(y)*field[0] - np.sin(y)*field[1]
+            field_y = np.cos(y)*field[0] + np.cos(y)*field[1]
+            field_x = field[2]
+            return np.array([field_x, field_y, field_z])
+        if xyz_to == 'spherical':
+            field_r = np.sin(v)*field[0] + np.cos(v)*field[2]
+            field_theta = np.cos(v)*field[0] - np.sin(v)*field[2]
+            field_phi = field[1]
+            return np.array([field_r, field_theta, field_phi])
+    if xyz_from == 'spherical':
+        if xyz_to == 'cartesian':
+            field_x = np.sin(y)*np.cos(z)*field[0] + np.cos(y)*np.cos(z)*field[1] + \
+                      -np.sin(z)*field[2]
+            field_y = np.sin(y)*np.sin(z)*field[0] + np.cos(y)*np.sin(z)*field[1] + \
+                          np.cos(z)*field[2]
+            field_z = np.cos(z)*field[0] - np.sin(z)*field[1]
+            return np.array([field_x, field_y, field_z])
+        if xyz_to == 'cylindrical':
+            field_r = np.sin(y)*field[0] + np.cos(y)*field[1]
+            field_phi = field[2]
+            field_z = np.cos(y)*field[0] - np.sin(y)*field[1]
+            return np.array([field_phi, field_theta, field_z])
 
 
 def pospolar2cart(r, th):
