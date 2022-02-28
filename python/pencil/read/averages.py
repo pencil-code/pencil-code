@@ -556,17 +556,21 @@ class Averages(object):
             raw_data = np.zeros([n_times, n_vars * nw], dtype=precision)
             line_idx = 0
             t_idx = -1
-            for current_line in aver_lines:
-                if line_idx % (entry_length + 1) == 0:
-                    t_idx += 1
-                    t[t_idx] = current_line
-                    raw_idx = 0
-                else:
-                    raw_data[t_idx, raw_idx * 8 : (raw_idx * 8 + 8)] = list(
-                        map(np.float32, current_line.split())
-                    )
-                    raw_idx += 1
-                line_idx += 1
+            try:
+                for current_line in aver_lines:
+                    if line_idx % (entry_length + 1) == 0:
+                        t_idx += 1
+                        t[t_idx] = current_line
+                        raw_idx = 0
+                    else:
+                        raw_data[t_idx, raw_idx * 8 : (raw_idx * 8 + 8)] = list(
+                            map(np.float32, current_line.split())
+                        )
+                        raw_idx += 1
+                    line_idx += 1
+            except ValueError:
+                print("Error: There was a problem reading {}.\nCalculated values: n_vars = {}, nw = {}.\nAre these correct?".format(aver_file_name, n_vars, nw))
+                raise
 
             # Restructure the raw data and add it to the Averages object.
             raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
