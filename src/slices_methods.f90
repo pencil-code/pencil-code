@@ -46,7 +46,7 @@ module Slices_methods
   public :: alloc_slice_buffers
   public :: nullify_slice_pointers
   public :: write_rslice_position
-  public :: alloc_rslice, prep_rslice
+  public :: alloc_rslice, prep_rslice, store_dims_rslice
   public :: exp2d, log2d, abs2d
 
 !  type slices_scal
@@ -754,6 +754,14 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
       enddo
     
     endsubroutine interp_rslice
+!***********************************************************************
+    function store_dims_rslice() result(dims)
+
+      integer, dimension(4) :: dims
+
+      dims=(/nth_rslice,nph_rslice,ith_min,iph_min/)
+
+    endfunction store_dims_rslice
 !***********************************************************************
     subroutine write_rslice_position(unit)
 

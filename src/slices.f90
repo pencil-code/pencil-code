@@ -168,14 +168,14 @@ contains
           else
             sname=trim(sname)//trim(itoa(slices%index))
           endif
-          call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x(ix_loc), ix, slices%yz)
-          call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y(iy_loc), iy, slices%xz)
+          call output_slice(lwrite_slice_yz , tslice, sname, 'yz', x(ix_loc), ix, slices%yz)
+          call output_slice(lwrite_slice_xz , tslice, sname, 'xz', y(iy_loc), iy, slices%xz)
           call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y(iy2_loc), iy2, slices%xz2)
-          call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z(iz_loc), iz, slices%xy)
+          call output_slice(lwrite_slice_xy , tslice, sname, 'xy', z(iz_loc), iz, slices%xy)
           call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z(iz2_loc), iz2, slices%xy2)
           call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z(iz3_loc), iz3, slices%xy3)
           call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z(iz4_loc), iz4, slices%xy4)
-          call output_slice(lwrite_slice_r, tslice, sname, 'r', r_rslice, 0, slices%r)
+          call output_slice(lwrite_slice_r  , tslice, sname, 'r', r_rslice, 0, slices%r)
         else
           if (slices%index/=0) slices%index=0
           inamev=inamev+1
@@ -201,6 +201,7 @@ contains
       use Slices_methods, only: alloc_slice_buffers, alloc_rslice, prep_rslice
       use General, only: itoa
       use IO, only: output_slice_position
+      use Mpicomm, only: set_rslice_communicator
     
       character(LEN=80) :: text, data
 
@@ -211,6 +212,7 @@ contains
       lwrite_slice_xy3=.false.
       lwrite_slice_xy4=.false.
       lwrite_slice_xz2=.false.
+      lwrite_slice_r=.false.
 
       if (slice_position=='p' .or. slice_position=='S') then
 
@@ -396,6 +398,7 @@ contains
           call not_implemented('setup_slices','r-slices for odd nprocx or nprocy')
         else
           call prep_rslice
+          call set_rslice_communicator
         endif
       endif
 
