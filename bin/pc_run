@@ -341,7 +341,12 @@ sub mpi_run_cmd {
     }
     my $extra_opts   = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
-
+#
+# Set environment.
+#
+#    $ENV{'PC_MODULES_LIST'} = `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special[/]//g'`;
+#    print "MODULES:", $ENV{'PC_MODULES_LIST'}, "\n";
+#
     print "", (scalar localtime()), "\n";
 
     if ($mpi) {
