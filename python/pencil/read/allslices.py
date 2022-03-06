@@ -376,10 +376,17 @@ class SliceSeries(object):
                         hsize = dim.ny
                         vsize = dim.nz
                     if extension == "r":
-                        # Read grid size of radial slices
-                        par = read.param()
-                        hsize = par.nth_rslice
-                        vsize = par.nph_rslice
+                        # Read grid size of radial slices by iterating to the last
+                        # line of slice_position.dat. This will break if/when there
+                        # are changes to slice_position.dat!
+                        slicepos_fn = os.path.join(datadir, "slice_position.dat")
+                        slicepos = open(slicepos_fn, 'r')
+                        for line in slicepos:
+                            line = line.strip()
+                        pars = line.split()
+                        hsize = int(pars[1])
+                        vsize = int(pars[2])
+                        slicepos.close()
 
                     try:
                         infile = FortranFile(file_name)
