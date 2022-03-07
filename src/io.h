@@ -12,6 +12,12 @@
   public :: input_slice, output_slice, output_slice_position
   public :: init_write_persist, write_persist, write_persist_id
   public :: init_read_persist, read_persist, read_persist_id, persist_exists
+  public :: read_persist_logical_0D, read_persist_logical_1D, &
+            read_persist_int_0D, read_persist_int_1D, read_persist_real_0D, &
+            read_persist_real_1D, read_persist_torus_rect
+  public :: write_persist_logical_0D, write_persist_logical_1D, &
+            write_persist_int_0D, write_persist_int_1D, write_persist_real_0D, &
+            write_persist_real_1D, write_persist_torus_rect
   public :: wgrid, rgrid
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
