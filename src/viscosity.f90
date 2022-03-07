@@ -50,7 +50,7 @@ module Viscosity
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
-  real, dimension(nx) :: xmask_vis=0
+  real, dimension(nx) :: xmask_vis=0, pnu=0.0
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
   real, dimension(:), pointer :: etat_y, detat_y
@@ -1199,7 +1199,7 @@ module Viscosity
       intent(inout) :: f,p
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,tmp5,pnu,pnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,tmp5,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
@@ -2663,20 +2663,28 @@ module Viscosity
 !  2D-averages.
 !
       if (l2davgfirst) then
-        if (idiag_fviscmxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
-            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
-            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
-        if (idiag_fviscmxy/=0.and.lvisc_sqrtrho_nu_const) &
+        if (idiag_fviscmxy/=0) then
+          if (lvisc_sqrtrho_nu_const) then
             call zsum_mn_name_xy(-2.*sqrt(p%rho)*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
-        if (idiag_fviscsmmxy/=0) call zsum_mn_name_xy(-2.*p%rho*p%nu_smag*( &
-            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
-            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscsmmxy)
-        if (idiag_fviscmxy/=0.and.lvisc_rho_nu_const) &
+          elseif (lvisc_rho_nu_const) then
             call zsum_mn_name_xy(-2.*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+          elseif (lvisc_nu_profy_bound) then
+            call zsum_mn_name_xy(-2.*p%rho*pnu*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+           else
+             call zsum_mn_name_xy(-2.*p%rho*nu*( &
+             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+          endif
+        endif
+        if (idiag_fviscsmmxy/=0) call zsum_mn_name_xy(-2.*p%rho*p%nu_smag*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscsmmxy)
         if (idiag_fviscymxy/=0) then
           if (lyang) then
             fluxv(:,1)=0.
