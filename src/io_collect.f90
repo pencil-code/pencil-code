@@ -191,8 +191,7 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
-      real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
+      real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
       integer :: pz, pa, io_len, alloc_err, z_start, z_end, io_size, na, ne, iz
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -207,12 +206,7 @@ module Io
 !
       if (lroot) then
         allocate (ga(mxgrid,mygrid,mz,ne-na+1), stat=alloc_err)
-        if (lwrite_2d) then
-          allocate (buffer1D(mxgrid), stat=alloc_err)
-        else
-          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
-        endif
-        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
+        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
         if (lwrite_2d) then
@@ -235,20 +229,13 @@ module Io
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
               if (lwrite_2d) then
-                buffer1D = ga(:,m1,iz,pa)
-                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) ga(:,m1,iz,pa)
               else
-                buffer = ga(:,:,iz,pa)
-                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+                write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) ga(:,:,iz,pa)
               endif
             enddo
           enddo
         enddo
-        if (lwrite_2d) then
-          deallocate (ga, buffer1D)
-        else
-          deallocate (ga, buffer)
-        endif
 !
       else
         z_start = n1
@@ -416,8 +403,7 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
-      real, dimension (:,:), allocatable :: buffer
-      real, dimension (:), allocatable :: gx, gy, gz, buffer1D
+      real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
       integer :: pz, pa, z_start, io_len, alloc_err, io_size, iz
       integer(kind=8) :: rec_len
@@ -428,12 +414,7 @@ module Io
 !
       if (lroot) then
         allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
-        if (lwrite_2d) then
-          allocate (buffer1D(mxgrid), stat=alloc_err)
-        else
-          allocate (buffer(mxgrid,mygrid), stat=alloc_err)
-        endif
-        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,buffer', .true.)
+        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
         if (lwrite_2d) then
@@ -458,22 +439,15 @@ module Io
             ! iterate through xy-planes and read each plane separately
             do iz = z_start, mz
               if (lwrite_2d) then
-                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer1D
-                ga(:,m1,iz,pa) = buffer1D
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) ga(:,m1,iz,pa)
               else
-                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
-                ga(:,:,iz,pa) = buffer
+                read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) ga(:,:,iz,pa)
               endif
             enddo
           enddo
           ! distribute data in the xy-plane of the pz-layer
           call localize_xy (a, ga, dest_pz=pz)
         enddo
-        if (lwrite_2d) then
-          deallocate (ga, buffer1D)
-        else
-          deallocate (ga, buffer)
-        endif
 !
       else
         ! receive data from root processor
