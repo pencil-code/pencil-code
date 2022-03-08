@@ -103,7 +103,7 @@ end else begin
       file2='cyl_power'+var2+'.dat'
     endif else begin
       file1='power'+var1+'.dat'
-      file2='power'+var2+'.dat'
+      file2= var2 eq '' ? '' : 'power'+var2+'.dat'
     endelse
 end 
 ;
@@ -283,11 +283,10 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
   ;if keyword_set(cyl) then begin
   ;endif else begin
   ;endelse
-        if keyword_set(cyl) then begin
-       	  spec1(*,*,i-1)=spectrum1
-        endif else begin
+        if keyword_set(cyl) then $
+       	  spec1(*,*,i-1)=spectrum1 $
+        else $
        	  spec1(*,i-1)=spectrum1
-        endelse
 ;
        	;maxy=max(spectrum1(1:*))
        	;miny=min(spectrum1(1:*))
@@ -297,13 +296,14 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
         ;  read second spectrum
         ;
        	if unit_2__open then begin
+          on_ioerror, filend2
 	  readf,unit_2,time
 	  readf,unit_2,spectrum2
-          if keyword_set(cyl) then begin
-            spec2(*,*,i-1)=spectrum2
-          endif else begin
+          if keyword_set(cyl) then $
+            spec2(*,*,i-1)=spectrum2 $
+          else $
             spec2(*,i-1)=spectrum2
-          endelse
+
           ;if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
           ;if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
           if (max(spectrum2) gt maxy) then maxy=max(spectrum2)
@@ -315,18 +315,29 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
             spectrum2=spectrum2/total(spectrum2)
             print,'divide spectrum by total(spectrum2)'
           endif
+          goto, cont2
+filend2:
+          on_ioerror, NULL
+          unit_2__open=0
+          if keyword_set(cyl) then $
+            spec2=spec2(*,*,0:i-1) $
+          else $
+            spec2=spec2(*,0:i-1)
+cont2:
+          continue
        	endif
         ;
         ;  read third spectrum
         ;
        	if unit_3__open then begin
+          on_ioerror, filend3
 	  readf,unit_3,time
 	  readf,unit_3,spectrum3
-          if keyword_set(cyl) then begin
-            spec3(*,*,i-1)=spectrum3
-          endif else begin
+          if keyword_set(cyl) then $
+            spec3(*,*,i-1)=spectrum3 $
+          else $
             spec3(*,i-1)=spectrum3
-          endelse
+
           ;
           ;if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
           ;if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
@@ -339,6 +350,16 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
             spectrum3=spectrum3/total(spectrum3)
             print,'divide spectrum by total(spectrum3)'
           endif
+          goto, cont3
+filend3:
+          on_ioerror, NULL
+          unit_3__open=0
+          if keyword_set(cyl) then $
+            spec3=spec3(*,*,0:i-1) $
+          else $
+            spec3=spec3(*,0:i-1)
+cont3:
+          continue
        	endif
         ;
        	if (last eq 0) then begin
