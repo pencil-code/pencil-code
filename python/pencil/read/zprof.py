@@ -1,8 +1,6 @@
 # ts.py
 #
 # Read vertical profiles written in data/proc*/zprof_varname.dat.
-#
-# Authors: dintrans, S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the classes and methods to read the time series file.
 """
@@ -10,25 +8,23 @@ Contains the classes and methods to read the time series file.
 
 def zprof(*args, **kwargs):
     """
+    zprof(var_name, datadir='data', dim=None, nfield=1)
+
     Read vertical profiles written in data/proc*/zprof_varname.dat.
     Returns a ZProfile object with z and profiles(z).
 
-    call signature:
-
-    zprof(var_name, datadir='data', dim=None, nfield=1):
-
-    Keyword arguments:
-
-    *var_name*:
+    Parameters
+    ----------
+    var_name : string
       Name of the zprof var file.
 
-    *datadir*:
+    datadir : string
       Directory where the data is stored.
 
-    *dim*
+    dim : obj
       Dimension object.
 
-    *nfield*
+    nfield : int
       Number of fields to be read.
     """
 
@@ -56,25 +52,23 @@ class ZProfile(object):
 
     def read(self, var_name, datadir="data", dim=None, nfield=1):
         """
+        read(var_name, datadir='data', dim=None, nfield=1)
+
         Read vertical profiles written in data/proc*/zprof_varname.dat.
         Returns a ZProfile object with z and profiles(z).
 
-        call signature:
-
-        zprof(var_name, datadir='data', dim=None, nfield=1):
-
-        Keyword arguments:
-
-        *var_name*:
+        Parameters
+        ----------
+        var_name : string
           Name of the zprof var file.
 
-        *datadir*:
+        datadir : string
           Directory where the data is stored.
 
-        *dim*
+        dim : obj
           Dimension object.
 
-        *nfield*
+        nfield : int
           Number of fields to be read.
         """
 

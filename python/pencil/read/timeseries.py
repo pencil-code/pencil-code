@@ -2,9 +2,6 @@
 #
 # Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays
-# For supernova data change file_name to 'sn_series.dat'. (Fred Gent)
-#
-# Author: S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the classes and methods to read the time series file.
 """
@@ -12,31 +9,30 @@ Contains the classes and methods to read the time series file.
 
 def ts(*args, **kwargs):
     """
-    Read Pencil Code time series data.
-
-    call signature:
-
     ts(file_name='time_series.dat', datadir='data',
        quiet=False, comment_char='#', sim=None, unique_clean=False)
 
-    Keyword arguments:
+    Read Pencil Code time series data.
 
-    *file_name*:
-      Name of the time series file.
+    Parameters
+    ----------
+    file_name : string
+        Name of the time series file.
+        For supernova data change file_name to 'sn_series.dat'.
 
-    *datadir*:
-      Directory where the data is stored.
+    datadir : string
+        Directory where the data is stored.
 
-    *quiet*
-      Flag for switching off output.
+    quiet : bool
+        Flag for switching off output.
 
-    *comment_char*
-      Comment character in the time series file.
+    comment_char : string
+        Comment character in the time series file.
 
-    *sim*
+    sim : obj
       Simulation object from which to take the datadir.
 
-    *unique_clean*
+    unique_clean : bool
       Set True, np.unique is used to clean up the ts, e.g. remove errors
       at the end of crashed runs.
     """
@@ -73,31 +69,30 @@ class TimeSeries(object):
         unique_clean=False,
     ):
         """
-        Read Pencil Code time series data.
-
-        call signature:
-
         read(file_name='time_series.dat', datadir='data',
              quiet=False, comment_char='#', sim=None, unique_clean=False)
 
-        Keyword arguments:
+        Read Pencil Code time series data.
 
-        *file_name*:
-          Name of the time series file.
+        Parameters
+        ----------
+        file_name : string
+            Name of the time series file.
+            For supernova data change file_name to 'sn_series.dat'.
 
-        *datadir*:
-          Directory where the data is stored.
+        datadir : string
+            Directory where the data is stored.
 
-        *quiet*
-          Flag for switching of output.
+        quiet : bool
+            Flag for switching off output.
 
-        *comment_char*
-          Comment character in the time series file.
+        comment_char : string
+            Comment character in the time series file.
 
-        *sim*
+        sim : obj
           Simulation object from which to take the datadir.
 
-        *unique_clean*
+        unique_clean : bool
           Set True, np.unique is used to clean up the ts, e.g. remove errors
           at the end of crashed runs.
         """

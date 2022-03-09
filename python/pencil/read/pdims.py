@@ -1,6 +1,4 @@
 # pdims.py
-#
-# Author: D. Mitra (dhruba.mitra@gmail.com). based on idl pc_read_pdim.pro.
 """
 Contains the perticle dimension class and its reading routine.
 """
@@ -8,19 +6,21 @@ Contains the perticle dimension class and its reading routine.
 
 def pdim(*args, **kwargs):
     """
+    pdim(pdim(sim=None, datadir='data')
+
     Read the pdim.dat file.
 
-    call signature:
+    Parameters
+    ----------
+    sim : obj
+        Specifies the simulation oject from which to obtain the datadir.
 
-    read(pdim(sim=None, datadir='data')
+    datadir : string
+        Directory where the data is stored.
 
-    Keyword arguments:
-
-    *sim*:
-      Specifies the simulation oject from which to obtain the datadir.
-
-    *datadir*:
-      Directory where the data is stored.
+    Returns
+    -------
+    Object containing the particle dimensions.
     """
 
     pdim_tmp = PDim()
@@ -49,19 +49,21 @@ class PDim(object):
 
     def read(self, sim=None, datadir="data"):
         """
-        Read the pdim.dat file.
-
-        call signature:
-
         read(pdim(sim=None, datadir='data')
 
-        Keyword arguments:
+        Read the pdim.dat file.
 
-        *sim*:
-          Specifies the simulation oject from which to obtain the datadir.
+        Parameters
+        ----------
+        sim : obj
+            Specifies the simulation oject from which to obtain the datadir.
 
-        *datadir*:
-          Directory where the data is stored.
+        datadir : string
+            Directory where the data is stored.
+
+        Returns
+        -------
+        Object containing the particle dimensions.
         """
 
         import os

@@ -6,68 +6,60 @@
 #           asdict and nest_dict also default. Only where parameter is present
 #           in more than one module is it nested. Run parameter values replace
 #           conflicting init values.
-#
-# Authors:
-# J. Oishi (joishi@amnh.org).
-# S. Candelaresi (iomsn1@gmail.com)
-# F. A. Gent (fred.gent.ncl@gmail.com)
 """
 Contains the parameters of the simulation.
 """
 try:
     import f90nml
+
     lnml = True
 except:
     print(
-    "Warning: recommend to add f90nml to library with \
+        "Warning: recommend to add f90nml to library with \
     'pip3 install f90nml' (Python 3) or \
     'pip install f90nml' (Python 2)."
     )
     lnml = False
 
 
-
 def param(*args, **kwargs):
     """
+    param(datadir='data', param1=False, param2=False, quiet=True,
+         conflicts_quiet=False, asdict=True, nest_dict=True, append_units=True)
+
     Read Pencil Code simulation parameters.
     Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
 
-    call signature:
-
-    read(datadir='data', param1=False, param2=False, quiet=True,
-         conflicts_quiet=False, asdict=True, nest_dict=True, append_units=True)
-
-
-    Keyword arguments:
-
-    *datadir*:
+    Parameters
+    ----------
+    datadir : string
       Directory where the data is stored.
 
-    *param1*:
+    param1 : bool
       Selects the set of parameters only from start.
 
-    *param2*:
+    param2 : bool
       Selects the set of parameters only from run.
 
-    *quiet*
+    quiet : bool
       Flag for switching of output.
 
-    *conflicts_quiet*
+    conflicts_quiet : bool
       Flag for switching off printing duplicate labels.
 
-    *asdict*
+    asdict : bool
       Reads parameters as dictionary.
 
-    *nest_dict*
+    nest_dict : bool
       Reads parameters as nested dictionary.
 
-    *append_units*
+    append_units : bool
       Derives dimensional units from standard code units.
 
-    Return:
+    Returns
+    -------
     Instance of the pencil.read.param.Param class.
     All of the selected parameters are imported as class members.
-
     """
 
     param_tmp = Param()
@@ -103,41 +95,44 @@ class Param(object):
         append_units=True,
     ):
         """
+        read(datadir='data', param1=False, param2=False, quiet=True,
+             conflicts_quiet=False, asdict=True, nest_dict=True, append_units=True)
+
         Read Pencil Code simulation parameters.
         Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
 
-        call signature:
-
-        read(datadir='data', param1=False, param2=False, quiet=True,
-             conflicts_quiet=False, asdict=True, nest_dict=True,
-             append_units=True)
-
-        Keyword arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
           Directory where the data is stored.
 
-        *param1*:
+        param1 : bool
           Selects the set of parameters only from start.
 
-        *param2*:
+        param2 : bool
           Selects the set of parameters only from run.
 
-        *quiet*
-          Flag for switching off output.
+        quiet : bool
+          Flag for switching of output.
 
-        *conflicts_quiet*
+        conflicts_quiet : bool
           Flag for switching off printing duplicate labels.
 
-        *asdict*
+        asdict : bool
           Reads parameters as dictionary.
 
-        *nest_dict*
+        nest_dict : bool
           Reads parameters as nested dictionary.
 
-        *append_units*
+        append_units : bool
           Derives dimensional units from standard code units.
+
+        Returns
+        -------
+        Instance of the pencil.read.param.Param class.
+        All of the selected parameters are imported as class members.
         """
+
         import os
         from os.path import join, exists
 
@@ -371,15 +366,20 @@ class Param(object):
         if lnml:
             nmlobj = f90nml.read(file_name)
             for super_name_full in nmlobj.keys():
-                super_name = (super_name_full.rsplit('_pars')[0].rsplit("_init")[0].rsplit("_run")[0])
+                super_name = (
+                    super_name_full.rsplit("_pars")[0]
+                    .rsplit("_init")[0]
+                    .rsplit("_run")[0]
+                )
                 if nest:
                     if not params.__contains__(super_name):
                         params[super_name] = dict()
                         super_name_list.append(super_name)
                 for name in nmlobj[super_name_full].keys():
                     if type(nmlobj[super_name_full][name]) == str:
-                        params[name] = \
-                            nmlobj[super_name_full][name].strip(' ').strip('\n')
+                        params[name] = (
+                            nmlobj[super_name_full][name].strip(" ").strip("\n")
+                        )
                     else:
                         params[name] = nmlobj[super_name_full][name]
                     name_list.append(name)

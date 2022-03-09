@@ -5,9 +5,6 @@
 # var.py, used to read var files.
 # NB: the f array returned is C-ordered: f[nvar, nz, ny, nx]
 #     NOT Fortran as in Pencil (& IDL):  f[nx, ny, nz, nvar]
-#
-# Author:
-# J. Aarnes (jorgenaarnes@gmail.com)
 """
 Contains the read class for the OGVAR file reading,
 some simulation attributes and the data cube.
@@ -19,6 +16,10 @@ from pencil.read.varfile import DataCube
 
 def ogvar(*args, **kwargs):
     """
+    ogvar(var_file='', datadir='data', proc=-1, iogvar=-1,
+          quiet=True, trimall=False,
+          magic=None, sim=None, precision='f')
+
     Read OGVAR files from Pencil Code. If proc < 0, then load all data
     and assemble, otherwise load OGVAR file from specified processor.
 
@@ -30,22 +31,34 @@ def ogvar(*args, **kwargs):
     for one vector field, 8 for ogvar.dat in the case of MHD with entropy.
     but, deltay(1) is only there if lshear is on! need to know parameters.
 
-    call signature:
+    Parameters
+    ----------
+    var_file : string
+        Name of the OGVAR file.
 
-    ogvar(var_file='', datadir='data', proc=-1, iogvar=-1,
-          quiet=True, trimall=False,
-          magic=None, sim=None, precision='f')
+    datadir : string
+        Directory where the data is stored.
 
-    Keyword arguments:
-        var_file:   Name of the OGVAR file.
-        datadir:    Directory where the data is stored.
-        proc:       Processor to be read. If -1 read all and assemble to one array.
-        iogvar:     Index of the OGVAR file, if var_file is not specified.
-        quiet:      Flag for switching off output.
-        trimall:    Trim the data cube to exclude ghost zones.
-        magic:      Values to be computed from the data, e.g. B = curl(A).
-        sim:        Simulation sim object.
-        precision:  Precision of the data. Either float 'f' or double 'd'.
+    proc : int
+        Processor to be read. If -1 read all and assemble to one array.
+
+    iogvar : int
+        Index of the OGVAR file, if var_file is not specified.
+
+    quiet : bool
+        Flag for switching off output.
+
+    trimall : bool
+        Trim the data cube to exclude ghost zones.
+
+    magic : list of string
+        Values to be computed from the data, e.g. B = curl(A).
+
+    sim : obj
+        Simulation sim object.
+
+    precision : string
+        Precision of the data. Either float 'f' or double 'd'.
     """
 
     from pencil.sim import __Simulation__

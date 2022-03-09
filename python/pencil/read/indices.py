@@ -1,10 +1,6 @@
 # indices.py
 #
 # Read the index.pro file.
-#
-# Authors:
-# T. Gastine (tgastine@ast.obs-mip.fr)
-# S. Candelaresi (iomsn1@gmail.com)
 """
 Contains the index information.
 """
@@ -12,22 +8,24 @@ Contains the index information.
 
 def index(*args, **kwargs):
     """
+    index(datadir='data', param=None, dim=None)
+
     Read Pencil Code index data from index.pro.
 
-    call signature:
-
-    read(datadir='data', param=None, dim=None)
-
-    Keyword arguments:
-
-    *datadir*:
+    Parameters
+    ----------
+    datadir : string
       Directory where the data is stored.
 
-    *param*
+    param : obj
       Parameter object.
 
-    *dim*
+    dim : obj
       Dimension object.
+
+    Returns
+    -------
+    Class containing the index information.
     """
 
     index_tmp = Index()
@@ -53,22 +51,24 @@ class Index(object):
 
     def read(self, datadir="data", param=None, dim=None):
         """
+        read(datadir='data', param=None, dim=None)
+
         Read Pencil Code index data from index.pro.
 
-        call signature:
-
-        read(self, datadir='data', param=None, dim=None)
-
-        Keyword arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
           Directory where the data is stored.
 
-        *param*
+        param : obj
           Parameter object.
 
-        *dim*
+        dim : obj
           Dimension object.
+
+        Returns
+        -------
+        Class containing the index information.
         """
 
         import os
@@ -96,9 +96,9 @@ class Index(object):
             try:
                 val = int(clean.split("=")[1].strip())
             except:
-                val = ( np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1)))[0] 
-                        + int(clean.split("=")[1].strip().split("+")[1]) 
-                )
+                val = np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1)))[
+                    0
+                ] + int(clean.split("=")[1].strip().split("+")[1])
 
             if (
                 val != 0

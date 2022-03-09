@@ -18,6 +18,9 @@ import numpy as np
 
 def var(*args, **kwargs):
     """
+    var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
+        trimall=False, magic=None, sim=None, precision='f')
+
     Read VAR files from Pencil Code. If proc < 0, then load all data
     and assemble, otherwise load VAR file from specified processor.
 
@@ -29,43 +32,38 @@ def var(*args, **kwargs):
     for one vector field, 8 for var.dat in the case of MHD with entropy.
     but, deltay(1) is only there if lshear is on! need to know parameters.
 
-    Signature:
-    ----------
-
-    var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-        trimall=False, magic=None, sim=None, precision='f')
 
     Parameters
     ----------
-     *var_file*: str
+     var_file : string
          Name of the VAR file.
          If not specified, use var.dat (which is the latest snapshot of the fields)
 
-     *datadir*: str
+     datadir : string
          Directory where the data is stored.
 
-     *proc*: int
+     proc : int
          Processor to be read. If -1 read all and assemble to one array.
 
-     *ivar*: int
+     ivar : int
        Index of the VAR file, if var_file is not specified.
 
-     *quiet*: bool
+     quiet : bool
          Flag for switching off output.
 
-     *trimall*: bool
+     trimall : bool
          Trim the data cube to exclude ghost zones.
 
-     *magic*: bool
+     magic : bool
          Values to be computed from the data, e.g. B = curl(A).
 
-     *sim*: pencil code simulation object
+     sim : pencil code simulation object
          Contains information about the local simulation.
 
-     *precision*: str
+     precision : string
          Float 'f', double 'd' or half 'half'.
 
-     *lpersist*: bool
+     lpersist : bool
          Read the persistent variables if they exist
 
     Returns
@@ -166,6 +164,9 @@ class DataCube(object):
         dtype=np.float64,
     ):
         """
+        read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
+             trimall=False, magic=None, sim=None, precision='f')
+
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
 
@@ -177,42 +178,38 @@ class DataCube(object):
         for one vector field, 8 for var.dat in the case of MHD with entropy.
         but, deltay(1) is only there if lshear is on! need to know parameters.
 
-        Signature:
-
-        var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-            trimall=False, magic=None, sim=None, precision='f')
 
         Parameters
         ----------
-         *var_file*: str
+         var_file : string
              Name of the VAR file.
              If not specified, use var.dat (which is the latest snapshot of the fields)
 
-         *datadir*: str
+         datadir : string
              Directory where the data is stored.
 
-         *proc*: int
+         proc : int
              Processor to be read. If -1 read all and assemble to one array.
 
-         *ivar*: int
+         ivar : int
            Index of the VAR file, if var_file is not specified.
 
-         *quiet*: bool
+         quiet : bool
              Flag for switching off output.
 
-         *trimall*: bool
+         trimall : bool
              Trim the data cube to exclude ghost zones.
 
-         *magic*: bool
+         magic : bool
              Values to be computed from the data, e.g. B = curl(A).
 
-         *sim*: pencil code simulation object
+         sim : pencil code simulation object
              Contains information about the local simulation.
 
-         *precision*: str
+         precision : string
              Float 'f', double 'd' or half 'half'.
 
-         *lpersist*: bool
+         lpersist : bool
              Read the persistent variables if they exist
 
         Returns
@@ -222,7 +219,7 @@ class DataCube(object):
             All of the computed fields are imported as class members.
 
         Examples
-        -------
+        --------
         Read the latest var.dat file and print the shape of the uu array:
         >>> var = pc.read.var()
         >>> print(var.uu.shape)

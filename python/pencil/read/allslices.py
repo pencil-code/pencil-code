@@ -1,8 +1,6 @@
 # allslices.py
 #
 # Read the slice files.
-#
-# Author: S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the classes and methods to read slice files.
 """
@@ -12,35 +10,43 @@ import numpy as np
 
 def slices(*args, **kwargs):
     """
+    slices(field='', extension='', datadir='data', proc=-1, old_file=False,
+          precision='f', iter_list=list(), quiet=True,
+          tstart=0, tend=None)
+
     Read Pencil Code slice data.
-
-    Signature:
-
-    read(field='', extension='', datadir='data', proc=-1, old_file=False,
-         precision='f', iter_list=list(), quiet=True,
-         tstart=0, tend=None)
 
     Parameters
     ----------
-    *field*: Name of the field(s) to be read (string or string list).
+    field : string or list of strings
+        Name of the field(s) to be read.
 
-    *extension*: Specifies the plane slice(s).
+    extension : string or list of strings
+        Specifies the plane slice(s).
 
-    *datadir*: Directory where the data is stored.
+    datadir : string
+        Directory where the data is stored.
 
-    *proc*: Processor to be read. If -1 read all and assemble to one array.
+    proc : int
+        Processor to be read. If -1 read all and assemble to one array.
 
-    *old_file*: Flag for reading old file format.
+    old_file : bool
+        Flag for reading old file format.
 
-    *precision*: Precision of the data. Either float 'f' or double 'd'.
+    precision : string
+        Precision of the data. Either float 'f' or double 'd'.
 
-    *iter_list*: List of iteration indices for which to sample the slices.
+    iter_list : list
+        Iteration indices for which to sample the slices.
 
-    *quiet*: Flag for switching off output.
+    quiet : bool
+        Flag for switching off output.
 
-    *tstart*: Start time interval from which to sample slices.
+    tstart : float
+        Start time interval from which to sample slices.
 
-    *tend*: End time interval from which to sample slices.
+    tend : float
+        End time interval from which to sample slices.
 
     Returns
     -------
@@ -98,36 +104,63 @@ class SliceSeries(object):
         tend=None,
     ):
         """
-        Read Pencil Code slice data.
-
-        call signature:
-
         read(field='', extension='', datadir='data', proc=-1, old_file=False,
              precision='f', iter_list=list(), quiet=True,
              tstart=0, tend=None)
 
-        Keyword arguments:
+        Read Pencil Code slice data.
 
-        *field*: Name of the field(s) to be read (string or string list).
+        Parameters
+        ----------
+        field : string or list of strings
+            Name of the field(s) to be read.
 
-        *extension*: Specifies the plane slice(s).
+        extension : string or list of strings
+            Specifies the plane slice(s).
 
-        *datadir*: Directory where the data is stored.
+        datadir : string
+            Directory where the data is stored.
 
-        *proc*: Processor to be read. If -1 read all and assemble to one array.
+        proc : int
+            Processor to be read. If -1 read all and assemble to one array.
 
-        *old_file*: Flag for reading old file format.
+        old_file : bool
+            Flag for reading old file format.
 
-        *precision*: Precision of the data. Either float 'f' or double 'd'.
+        precision : string
+            Precision of the data. Either float 'f' or double 'd'.
 
-        *iter_list*: List of iteration indices for which to sample the slices.
+        iter_list : list
+            Iteration indices for which to sample the slices.
 
-        *quiet*: Flag for switching off output.
+        quiet : bool
+            Flag for switching off output.
 
-        *tstart*: Start time interval from which to sample slices.
+        tstart : float
+            Start time interval from which to sample slices.
 
-        *tend*: End time interval from which to sample slices.
+        tend : float
+            End time interval from which to sample slices.
 
+        Returns
+        -------
+        Class containing the fields and slices as attributes.
+
+        Notes
+        -----
+        Use the attribute keys to get a list of attributes
+
+        Examples
+        --------
+        >>> vsl = pc.read.slices()
+        >>> vsl.keys()
+        t
+        xy
+        xy2
+        xz
+        yz
+        position
+        coordinate
         """
 
         import os
@@ -143,7 +176,7 @@ class SliceSeries(object):
             l_h5 = False
         if not isinstance(iter_list, list):
             if not isinstance(iter_list, int):
-                print('iter_list must be an integer or integer list, ignoring')
+                print("iter_list must be an integer or integer list, ignoring")
                 iter_list = list()
             else:
                 iter_list = [iter_list]
@@ -211,9 +244,9 @@ class SliceSeries(object):
                     with h5py.File(file_name, "r") as ds:
                         if not nt:
                             if not tend:
-                                nt = len(ds.keys())-1
+                                nt = len(ds.keys()) - 1
                                 if tstart == 0:
-                                    iter_list = list(np.arange(nt)+1)
+                                    iter_list = list(np.arange(nt) + 1)
                                 else:
                                     it = 1
                                     while it < ds["last"][0]:
@@ -222,11 +255,11 @@ class SliceSeries(object):
                                         it += 1
                                         if not quiet:
                                             print(
-                                        "iter_list: it={}, time={}".format(
-                                            it, ds[str(it + 1) + "/time"][()]
-                                                      )
-                                                 )
-                                    iter_list = list(np.arange(nt-it)+it+1)
+                                                "iter_list: it={}, time={}".format(
+                                                    it, ds[str(it + 1) + "/time"][()]
+                                                )
+                                            )
+                                    iter_list = list(np.arange(nt - it) + it + 1)
                             else:
                                 it = 1
                                 while it < ds["last"][0]:
@@ -236,14 +269,14 @@ class SliceSeries(object):
                                         iter_list.append(it)
                                         if not quiet:
                                             print(
-                                        "iter_list: it={}, time={}".format(
-                                            it, ds[str(it) + "/time"][()]
-                                                      )
-                                                 )
+                                                "iter_list: it={}, time={}".format(
+                                                    it, ds[str(it) + "/time"][()]
+                                                )
+                                            )
                                     it += 1
                         nt = len(iter_list)
                         istart = 0
-                        print('iter_list, start',iter_list, istart)
+                        print("iter_list, start", iter_list, istart)
                         vsize = ds["1/data"].shape[0]
                         hsize = ds["1/data"].shape[1]
                         slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
@@ -399,7 +432,7 @@ class SliceSeries(object):
                     slice_series = list()
 
                     if not quiet:
-                        print("  -> Reading... ",file_name)
+                        print("  -> Reading... ", file_name)
                         sys.stdout.flush()
                     if not nt:
                         iter_list = list()

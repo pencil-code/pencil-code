@@ -1,12 +1,6 @@
 # dims.py
 #
 # Read the dimensions of the simulation.
-#
-# Authors:
-# J. Oishi (joishi@amnh.org)
-# S. Candelaresi (iomsn1@gmail.com)
-#
-# 27-jun-19: F. Gent added hdf5
 """
 Contains the classes and methods to read the simulation dimensions.
 """
@@ -15,21 +9,23 @@ import numpy as np
 
 def dim(*args, **kwargs):
     """
-    Read the dim.dat file.
-
-    call signature:
-
     dim(datadir='data', proc=-1)
 
-    Keyword arguments:
+    Read the dim.dat file.
 
-    *datadir*:
+    Parameters
+    ----------
+    datadir : string
       Directory where the data is stored.
 
-    *proc*
+    proc : int
       Processor to be read. If proc is -1, then read the 'global'
       dimensions. If proc is >=0, then read the dim.dat in the
       corresponding processor directory.
+
+    Returns
+    -------
+    Class containing the domain dimension information.
     """
 
     dim_tmp = Dim()
@@ -75,21 +71,23 @@ class Dim(object):
 
     def read(self, datadir="data", proc=-1, ogrid=False, down=False):
         """
+        dim(datadir='data', proc=-1)
+
         Read the dim.dat file.
 
-        call signature:
-
-        read(self, datadir='data', proc=-1)
-
-        Keyword arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
           Directory where the data is stored.
 
-        *proc*
+        proc : int
           Processor to be read. If proc is -1, then read the 'global'
           dimensions. If proc is >=0, then read the dim.dat in the
           corresponding processor directory.
+
+        Returns
+        -------
+        Class containing the domain dimension information.
         """
 
         import os

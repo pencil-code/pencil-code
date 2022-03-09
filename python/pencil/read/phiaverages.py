@@ -1,9 +1,6 @@
 # phiaverages.py
 #
 # Read phi-average files.
-#
-# Adapted from averages.py by P. Kaepylae (pkaepyl@uni-goettingen.de)
-
 """
 Contains the classes and methods to read phi-averaged files.
 """
@@ -13,20 +10,28 @@ import sys
 
 def phiaver(*args, **kwargs):
     """
+     phiaver(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f")
+
      Read Pencil Code phi-averaged data.
 
-     call signature:
-
-     read(avg_file='1'):
 
      Keyword arguments:
 
-    *iter_list*
-      list of iteration indices for which to sample the slices
+    datadir : string
+        Directory where the data is stored.
 
-    *var_index*:
-      Index of single variable taken from among the 'phi' averages.
-      Takes an integer value < len(phiaver.in).
+    avg_file : int
+        Number of average file to be read.
+
+    var_index : int
+        Index of single variable taken from among the 'phi' averages.
+        Takes an integer value < len(phiaver.in).
+
+    iter_list : list of int
+        Iteration indices for which to sample the slices.
+
+    precision : string
+        Float (f), double (d) or half (half).
     """
 
     averages_tmp = Averages()
@@ -56,23 +61,28 @@ class Averages(object):
         self, datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f"
     ):
         """
-        Read Pencil Code phi-average data.
+         read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f")
 
-        call signature:
+         Read Pencil Code phi-averaged data.
 
-        read(avf_file='1'):
 
-        Keyword arguments:
+         Keyword arguments:
 
-        *iter_list*
-          list of iteration indices for which to sample the slices
+        datadir : string
+            Directory where the data is stored.
 
-        *var_index*:
-          Index of variable from among within the 'y' or 'z' averages.
-          Takes an integer value < len(yaver.in or zaver.in).
+        avg_file : int
+            Number of average file to be read.
 
-        *precision*
-          Float (f), double (d) or half (half).
+        var_index : int
+            Index of single variable taken from among the 'phi' averages.
+            Takes an integer value < len(phiaver.in).
+
+        iter_list : list of int
+            Iteration indices for which to sample the slices.
+
+        precision : string
+            Float (f), double (d) or half (half).
         """
 
         import os

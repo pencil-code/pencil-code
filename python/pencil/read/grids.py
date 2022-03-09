@@ -1,12 +1,6 @@
 # grids.py
 #
 # Read the grid information from grid.dat.
-#
-# Authors:
-# J. Oishi (joishi@amnh.org)
-# S. Candelaresi (iomsn1@gmail.com)
-#
-# 27-jun-19: F. Gent added hdf5
 """
 Contains classes and methods to read the grid data.
 """
@@ -14,29 +8,31 @@ Contains classes and methods to read the grid data.
 
 def grid(*args, **kwargs):
     """
+    grid(datadir='data', proc=-1, quiet=False, trim=False)
+
     Read the grid data from the pencil code simulation.
     If proc < 0, then load all data and assemble.
     Otherwise, load grid from specified processor.
 
-    call signature:
-
-    grid(datadir='data', proc=-1, quiet=False, trim=False)
-
-    Keyword arguments:
-
-    *datadir*:
+    Parameters
+    ----------
+    datadir : string
       Directory where the data is stored.
 
-    *proc*
+    proc : int
       Processor to be read. If proc is -1, then read the 'global'
       grid. If proc is >=0, then read the grid.dat in the
       corresponding processor directory.
 
-    *quiet*
+    quiet : bool
       Flag for switching of output.
 
-    *trim*
+    trim : bool
       Cuts off the ghost points.
+
+    Returns
+    -------
+    Class containing the grid information.
     """
 
     grid_tmp = Grid()
@@ -68,32 +64,31 @@ class Grid(object):
 
     def read(self, datadir="data", proc=-1, quiet=False, precision="f", trim=False):
         """
+        read(datadir='data', proc=-1, quiet=False, trim=False)
+
         Read the grid data from the pencil code simulation.
         If proc < 0, then load all data and assemble.
         Otherwise, load grid from specified processor.
 
-        call signature:
-
-        grid(datadir='data', proc=-1, quiet=False, trim=False)
-
-        Keyword arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
           Directory where the data is stored.
 
-        *proc*
+        proc : int
           Processor to be read. If proc is -1, then read the 'global'
           grid. If proc is >=0, then read the grid.dat in the
           corresponding processor directory.
 
-        *quiet*
+        quiet : bool
           Flag for switching of output.
 
-        *precision*
-          Float (f), double (d) or half (half).
-
-        *trim*
+        trim : bool
           Cuts off the ghost points.
+
+        Returns
+        -------
+        Class containing the grid information.
         """
 
         import numpy as np

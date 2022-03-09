@@ -2,9 +2,6 @@
 #
 # Read the dimensions of the simulationp.
 # This routine is a simple adaptation of dim.py used to read dim files
-#
-# Adapted from dim.py by:
-# J. Aarnes (jorgenaarnes@gmail.com)
 """
 Contains the classes and methods to read the simulation dimensions.
 """
@@ -14,21 +11,23 @@ from pencil.read.dims import Dim
 
 def ogdim(*args, **kwargs):
     """
-    Read the ogdim.dat file.
-
-    call signature:
-
     ogdim(datadir='data', proc=-1)
 
-    Keyword arguments:
+    Read the ogdim.dat file.
 
-    *datadir*:
+    Parameters
+    ----------
+    datadir : string
       Directory where the data is stored.
 
-    *proc*
+    proc : int
       Processor to be read. If proc is -1, then read the 'global'
       dimensions. If proc is >=0, then read the dim.dat in the
       corresponding processor directory.
+
+    Returns
+    -------
+    Class containing the simulation dimensions.
     """
 
     ogdim_tmp = ogDim()

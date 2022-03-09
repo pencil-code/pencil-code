@@ -11,43 +11,50 @@ import sys
 
 def aver(*args, **kwargs):
     """
+    aver(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
+
     Read Pencil Code average data.
 
-    call signature:
-
-    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, proc=-1):
-
-    Keyword arguments:
-
-    *plane_list*:
+    Parameters
+    ----------
+    plane_list : list of string
         A list of the 2d/1d planes over which the averages were taken.
         Takes 'xy', 'xz', 'yz', 'y', 'z'.
-        By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir]
+        By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir].
 
-    *iter_list*
-        list of iteration indices for which to sample the slices
+    iter_list : list of int
+        Iteration indices for which to sample the slices.
 
-    *avfile_list*, *infile_list*
-        list of file names if alternative to standard files used
+    avfile_list , infile_list : list of string
+        File names if alternative to standard files used.
 
-    *var_index*:
+    var_index : int
         Index of variable from among within the 'y' or 'z' averages.
         Takes an integer value < len(yaver.in or zaver.in).
 
-    *datadir*:
-        Directory where the data is stored. By default, "./data"
+    datadir : string
+        Directory where the data is stored. By default, "data"
 
-    *simdir*:
+    simdir : string
         Simulation directory containing the .in files.
         By default, parent directory of datadir.
 
-    *proc*:
+    proc : int
         Processor to be read. If -1 read all and assemble to one array.
         Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
 
-    *precision*
+    precision : string
         Float (f), double (d) or half (half).
 
+    Returns
+    -------
+    Class containing the averages.
+
+    Examples
+    --------
+    >>> aver = pc.read.aver()
+    >>> avr.lnrho.shape
+    (134, 134, 134)
     """
 
     averages_tmp = Averages()
@@ -86,43 +93,50 @@ class Averages(object):
         precision="f",
     ):
         """
+        read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
+
         Read Pencil Code average data.
 
-        call signature:
+        Parameters
+        ----------
+        plane_list : list of string
+            A list of the 2d/1d planes over which the averages were taken.
+            Takes 'xy', 'xz', 'yz', 'y', 'z'.
+            By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir].
 
-        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1, var_index=-1, proc=-1):
+        iter_list : list of int
+            Iteration indices for which to sample the slices.
 
-        Keyword arguments:
+        avfile_list , infile_list : list of string
+            File names if alternative to standard files used.
 
-        *plane_list*:
-          A list of the 2d/1d planes over which the averages were taken.
-          Takes 'xy', 'xz', 'yz', 'y', 'z'.
-          By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir]
+        var_index : int
+            Index of variable from among within the 'y' or 'z' averages.
+            Takes an integer value < len(yaver.in or zaver.in).
 
-        *iter_list*
-          list of iteration indices for which to sample the slices
+        datadir : string
+            Directory where the data is stored. By default, "data"
 
-        *avfile_list*, *infile_list*
-          list of file names if alternative to standard files used
+        simdir : string
+            Simulation directory containing the .in files.
+            By default, parent directory of datadir.
 
-        *var_index*:
-          Index of variable from among within the 'y' or 'z' averages.
-          Takes an integer value < len(yaver.in or zaver.in).
+        proc : int
+            Processor to be read. If -1 read all and assemble to one array.
+            Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
 
-        *datadir*:
-          Directory where the data is stored.
+        precision : string
+            Float (f), double (d) or half (half).
 
-        *simdir*:
-          Simulation directory containing the .in files.
-          By default, parent directory of datadir.
+        Returns
+        -------
+        Class containing the averages.
 
-        *proc*:
-          Processor to be read. If -1 read all and assemble to one array.
-          Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
-
-        *precision*
-          Float (f), double (d) or half (half).
-
+        Examples
+        --------
+        >>> aver = pc.read.aver()
+        >>> avr.lnrho.shape
+        (134, 134, 134)
         """
 
         import os
@@ -166,7 +180,9 @@ class Averages(object):
                     for plane in plane_list:
                         in_file_name_list.append(prefix + "aver.in")
                 else:
-                    print("plane_list and avfile_list must have matching length and order")
+                    print(
+                        "plane_list and avfile_list must have matching length and order"
+                    )
                     sys.stdout.flush()
         else:
             aver_file_name_list = []
@@ -222,7 +238,7 @@ class Averages(object):
         class Foo(object):
             pass
 
-        print(plane_list,in_file_name_list, aver_file_name_list)
+        print(plane_list, in_file_name_list, aver_file_name_list)
         for plane, in_file_name, aver_file_name in zip(
             plane_list, in_file_name_list, aver_file_name_list
         ):
@@ -233,7 +249,9 @@ class Averages(object):
             file_id = open(os.path.join(simdir, in_file_name))
             variables = file_id.readlines()
             file_id.close()
-            variables = [v for v in variables if v[0] != '#' and not v.isspace()] #Ignore commented variables and blank lines in the .in file.
+            variables = [
+                v for v in variables if v[0] != "#" and not v.isspace()
+            ]  # Ignore commented variables and blank lines in the .in file.
             n_vars = len(variables)
 
             if plane == "xy" or plane == "xz" or plane == "yz":
