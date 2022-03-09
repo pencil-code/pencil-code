@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-# Helmholtz.py
-# Written by Fred Gent (fred.gent.ncl@gmail.com)
 """
 Perform a Helmholtz decomposition on a vector field returning a pair of
 orthogonal vectors with zero divergence and zero curl respectively.
@@ -9,7 +5,7 @@ orthogonal vectors with zero divergence and zero curl respectively.
 
 import numpy as np
 from pencil.math import dot, dot2, cross
-from pencil.math.derivatives import div, curl, grad
+from pencil.math.derivatives import div, curl
 
 
 def helmholtz_fft(
@@ -26,49 +22,51 @@ def helmholtz_fft(
     quiet=True,
 ):
     """
+    helmholz_fft(field, grid, params)
+
     Creates the decomposition vector pair for the supplied vector field.
 
-    call signature:
+    Parameters
+    ----------
+    tot_field : ndarray
+        Vector field of dimension [3, mz, my, mx], which is decomposed.
 
-    helmholz_fft(field, grid, params, )
+    grid: obj
+        Grid object with grid spacing dx, dy, dz.
 
-    Keyword arguments:
+    params : obj
+        Simulation Params object with domain dimensions Lx, Ly and Lz.
 
-     *tot_field*:
-       Vector field of dimension [3,mz,my,mx], which is decomposed.
+    nghost : int
+        Number of ghost zones to exclude from the fft.
 
-     *grid*:
-       Grid object with grid spacing dx, dy, dz.
+    lno_mean : float
+        Exclude any mean flow from the decomposition - should drop anyway.
 
-     *params*:
-       Simulation Params object with domain dimensions Lx, Ly and Lz.
+    nonperi_bc : string
+        String if not None with boundary condition label.
+        How to apply the bc needs to be implemented as required.
 
-     *nghost*:
-       Number of ghost zones to exclude from the fft.
+    field_scalar : ndarray
+        Scalar field (density) as debug tool for energy comparison.
 
-     *lno_mean*:
-       Exclude any mean flow from the decomposition - should drop anyway.
+    s : list of int
+        List of three integers if not None for fft dimension.
+        If none the dimension of the field [nz,ny,nx] is used.
 
-     *nonperi_bc:
-       String if not None with boundary condition label.
-       How to apply the bc needs to be implemented as required.
-
-     *field_scalar
-       Scalar field (density) as debug tool for energy comparison.
-
-     *s*:
-      List of three integers if not None for fft dimension.
-      If none the dimension of the field [nz,ny,nx] is used.
-
+    Returns
+    -------
+    ndarray with decomposed field.
     """
+
     if lno_mean:
-        # exclude volume mean flows
+        # Exclude volume mean flows.
         field = np.zeros_like(tot_field)
         for j in range(0, 3):
             field[j] = tot_field[j] - tot_field[j].mean()
     else:
         field = tot_field
-    # use mean speed and grid spacing in normalization of div/curl check
+    # Use mean speed and grid spacing in normalization of div/curl check.
     amp_field_1 = 1.0 / np.sqrt(dot2(field)).mean()
     nz, ny, nx = (
         field[:, nghost:-nghost, nghost:-nghost, nghost:-nghost].shape[-3],
@@ -80,7 +78,7 @@ def helmholtz_fft(
         s = [nz, ny, nx]
     knz, kny, knx = s[0], s[1], s[2]
     nz2, ny2, nx2 = int(knz / 2), int(kny / 2), int(knx / 2)
-    # derive wavenumbers k scaled to dimension of simulation domain
+    # Derive wavenumbers k scaled to dimension of simulation domain.
     kk = np.empty(shape=[3, s[0], s[1], s[2]])
     k0 = np.arange(knx)
     k0[nx2:] = -k0[nx2 - 1 :: -1] - 1
@@ -95,22 +93,22 @@ def helmholtz_fft(
     for j in range(0, k2.size):
         kk[2, j, :, :] = k2[j] * 2 * np.pi / params.lxyz[2]
     knorm = dot2(kk)
-    # apply fast Fourier transform to the vector field
+    # Apply fast Fourier transform to the vector field.
     kfield = np.empty(shape=[3, s[0], s[1], s[2]], dtype=complex)
     for j in range(0, 3):
         kfield[j] = np.fft.fftn(
             field[j, nghost:-nghost, nghost:-nghost, nghost:-nghost], s=s
         )
     if pot:
-        # reverse fft to obtain the scalar potential
+        # Reverse fft to obtain the scalar potential.
         pfield = -1j * dot(kk, kfield)
         pfield[np.where(knorm == 0)] = 0.0
     if rot:
-        # reverse fft to obtain the vector potential
+        # Reverse fft to obtain the vector potential.
         rfield = 1j * cross(kk, kfield)
         for j in range(3):
             rfield[j][np.where(knorm == 0)] = 0.0
-    # avoid division by zero
+    # Avoid division by zero.
     knorm[np.where(knorm == 0)] = 1.0
     if pot:
         pfield /= knorm
@@ -133,7 +131,7 @@ def helmholtz_fft(
             rot_field[j, nghost:-nghost, nghost:-nghost, nghost:-nghost] = np.fft.ifftn(
                 cross(1j * kk, rfield)[j], s=invs
             ).real
-    # apply the periodic boundary conditions for the ghost zones:
+    # Apply the periodic boundary conditions for the ghost zones.
     for j in range(0, 3):
         if pot:
             pot_field[j, :nghost, :, :] = pot_field[j, -2 * nghost : -nghost, :, :]
@@ -149,14 +147,14 @@ def helmholtz_fft(
             rot_field[j, :, -nghost:, :] = rot_field[j, :, nghost : 2 * nghost, :]
             rot_field[j, :, :, :nghost] = rot_field[j, :, :, -2 * nghost : -nghost]
             rot_field[j, :, :, -nghost:] = rot_field[j, :, :, nghost : 2 * nghost]
-    # compare internal energy of original and sum of decomposed vectors
+    # Compare internal energy of original and sum of decomposed vectors.
     if pot:
         pot2 = dot2(pot_field)[nghost:-nghost, nghost:-nghost, nghost:-nghost]
     if rot:
         rot2 = dot2(rot_field)[nghost:-nghost, nghost:-nghost, nghost:-nghost]
     field2 = dot2(field)[nghost:-nghost, nghost:-nghost, nghost:-nghost]
     if len(field_scalar) > 0:
-        # compare kinetic energy of original and sum of decomposed vectors
+        # Compare kinetic energy of original and sum of decomposed vectors.
         field2 *= field_scalar[nghost:-nghost, nghost:-nghost, nghost:-nghost]
         if pot:
             pot2 *= field_scalar[nghost:-nghost, nghost:-nghost, nghost:-nghost]
@@ -183,7 +181,7 @@ def helmholtz_fft(
                     np.mean(field2), np.mean(rot2 + pot2)
                 )
             )
-    # check div and curl approximate/equal zero
+    # Check div and curl approximate/equal zero.
     if pot:
         if not quiet:
             print(
@@ -225,4 +223,5 @@ def helmholtz_fft(
     else:
         print("pot and/or rot must be True, returning ones")
         ret_opt = np.ones_like(tot_field)
+
     return ret_opt

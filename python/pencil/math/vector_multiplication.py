@@ -1,8 +1,6 @@
 # vector_multiplication.py
 #
 # Various vector multiplication routines.
-#
-# Author: S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the methods for the dot products and cross product.
 """
@@ -10,16 +8,14 @@ Contains the methods for the dot products and cross product.
 
 def dot(a, b):
     """
+    dot(a, b)
+
     Take dot product of two pencil-code vectors a and b.
 
-    call signature:
-
-    dot(a, b):
-
-    Keyword arguments:
-
-    *a*, *b*:
-      Pencil-code vectors with shape [3, mz, my, mx].
+    Parameters
+    ----------
+    a, b : ndarrays
+        Pencil-code vectors with shape [3, mz, my, mx].
     """
 
     import numpy as np
@@ -33,16 +29,14 @@ def dot(a, b):
 
 def dot2(a):
     """
+    dot2(a)
+
     Take dot product of a pencil-code vector with itself.
 
-    call signature:
-
-    dot2(a):
-
-    Keyword arguments:
-
-    *a*:
-      Pencil-code vector with shape [3, mz, my, mx].
+    Parameters
+    ----------
+    a : ndarray
+        Pencil-code vector with shape [3, mz, my, mx].
     """
 
     return dot(a, a)
@@ -50,16 +44,14 @@ def dot2(a):
 
 def cross(a, b):
     """
+    cross(a, b)
+
     Take cross of two pencil-code vectors a and b.
 
-    call signature:
-
-    cross(a, b):
-
-    Keyword arguments:
-
-    *a*, *b*:
-      Pencil-code vectors with shape [3, mz, my, mx].
+    Parameters
+    ----------
+    a, b : ndarrays
+        Pencil-code vectors with shape [3, mz, my, mx].
     """
 
     import numpy as np

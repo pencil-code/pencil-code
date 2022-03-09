@@ -1,4 +1,3 @@
-# poisson_solver.py
 """
 This code contains various functions to solve the vector form of the Poisson
 equation in various coordinate systems (Cartesian, cylindrical and spherical)
@@ -8,26 +7,24 @@ using finite differences.
 
 def poisson_vector_cartesian(bx, by, bz, x, y, z, hx, hy, hz, niter=1000):
     """
+    poisson_vector_cartesian(bx, by, bz, x, y, z, hx, hy, hz, niter=1000)
+
     Solve the vector form of the Poisson equation in 3D Cartesian coordinates,
     $\nabla^2 u = h$, using finite differences.
 
-    Signature:
-
-    poisson_vector_cartesian(bx, by, bz, x, y, z, hx, hy, hz, niter=1000)
-
     Parameters
     ----------
-    *bx, by, bz*: ndarray of shape [nz, ny, nx]
+    bx, by, bz : ndarray of shape [nz, ny, nx]
         Boundary conditions on exterior points for each component.
         Keep the inner points 0.
 
-    *x, y, z*: ndarrays of shape [nx], [ny] and [nz]
+    x, y, z : ndarrays of shape [nx], [ny] and [nz]
         Coordinate arrays to calculate grid spacing.
 
-    *hx, hy, hz*: ndarray of shape [nz, ny, nx]
+    hx, hy, hz : ndarray of shape [nz, ny, nx]
         Representing the components of the known function h.
 
-    *niter*:
+    niter : int
         Number of iterations.
 
     Returns
@@ -80,25 +77,23 @@ def poisson_vector_cartesian(bx, by, bz, x, y, z, hx, hy, hz, niter=1000):
 
 def poisson_scalar_cylindrical(bc, r, theta, z, h, niter=200):
     """
-    Solve the scalar form of the Poisson equation in cylindical coordinates using finite differences.
-
-    Signature:
-
     poisson_scalar_cylindrical(bc, r, theta, z, h, niter=200)
+
+    Solve the scalar form of the Poisson equation in cylindical coordinates using finite differences.
 
     Parameters
     ----------
-    *bc*: ndarray of shape [nz, ny, nx]
+    bc : ndarray of shape [nz, ny, nx]
         Boundary conditions on exterior points.
         Keep the inner points 0.
 
-    *r, theta, z*: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, z : ndarrays of shape [nx], [ny] and [nz]
         Coordinate arrays to calculate grid spacing.
 
-    *h*: ndarray of shape [nz, ny, nx]
+    h : ndarray of shape [nz, ny, nx]
         Representing the known function h.
 
-    *niter*:
+    niter : int
         Number of iterations.
 
     Returns
@@ -135,26 +130,24 @@ def poisson_scalar_cylindrical(bc, r, theta, z, h, niter=200):
 
 def poisson_vector_cylindrical(br, btheta, bz, r, theta, z, hr, htheta, hz, niter=1000):
     """
+    poisson_vector_cylindrical(br, btheta, bz, r, theta, z, hr, htheta, hz, niter=1000)
+
     Solve the vector form of the Poisson equation, $\nabla^2 u = h$, in cylindrical
     coordinates using finite diffferences.
 
-    Signature:
-
-    poisson_vector_cylindrical(br, btheta, bz, r, theta, z, hr, htheta, hz, niter=1000)
-
-    Parameters*
+    Parameters:
     ----------
-    *br, btheta, bz*: ndarray of shape [nz, ny, nx]
+    br, btheta, bz : ndarray of shape [nz, ny, nx]
         Boundary conditions on exterior points for each component.
         Keep the inner points 0.
 
-    *r, theta, z*: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, z : ndarrays of shape [nx], [ny] and [nz]
         Coordinate arrays to calculate grid spacing.
 
-    *hr, htheta, hz*: ndarray of shape [nz, ny, nx]
+    hr, htheta, hz : ndarray of shape [nz, ny, nx]
         Representing the components of the known function h.
 
-    *niter*:
+    niter : int
         Number of iterations.
 
     Returns
@@ -216,29 +209,27 @@ def poisson_vector_spherical(
     br, btheta, bphi, r, theta, phi, hr, htheta, hphi, niter=200
 ):
     """
+    poisson_vector_spherical(br, btheta, bphi, r, theta, phi, hr, htheta, hphi, niter=200)
+
     Solve the vector form of the Poisson equation, $\nabla^2 u = h$,
     in spherical coordinates using finite differences.
 
-    Signature:
-
-    poisson_vector_spherical(br, btheta, bphi, r, theta, phi, hr, htheta, hphi, niter=200)
-
-    Parameters*
+    Parameters:
     ----------
-    *br, btheta, bphi*:  ndarray of shape [nz, ny, nx]
+    br, btheta, bphi :  ndarray of shape [nz, ny, nx]
         Boundary conditions on exterior points for each component.
         Keep the inner points 0.
 
-    *r, theta, phi*:  ndarrays of shape [nx], [ny] and [nz]
+    r, theta, phi :  ndarrays of shape [nx], [ny] and [nz]
         Coordinate arrays, where the convention is taken that theta ranges from 0 to pi,
         phi ranges from 0 to 2pi.
         Note that singularities arise in the equation when theta = 0.
         This may produce unintended results.
 
-    *hr, htheta, hphi*: ndarray of shape [nz, ny, nx]
+    hr, htheta, hphi : ndarray of shape [nz, ny, nx]
         Representing the components of the known function h.
 
-    *niter*:
+    niter : int
         Number of iterations.
 
     Returns

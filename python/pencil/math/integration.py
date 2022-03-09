@@ -1,8 +1,6 @@
 # integration.py
 #
 # Contains methods for integrating quantities in different coordinate systems.
-#
-# Authors: S. Candelaresi (iomsn1@gmail.com).
 """
 Contains methods for integrating quantities in different coordinate systems.
 """
@@ -20,35 +18,33 @@ def integrate(
     axis=(0, 1, 2),
 ):
     """
+    integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
+              coordinate_system='cartesian', axis=[0, 1, 2])
+
     Integrate a field along axis 'axis' using the trapezoidal rule.
     Works for Cartesian, cylindrical and spherical coordinates.
     Works with non-uniform grids.
 
-    call signature:
+    Parameters
+    ----------
+    quantity : ndarray
+        Quantity to be integrated over of shape [nz, ny, nx].
 
-    integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
-              coordinate_system='cartesian', axis=[0, 1, 2]):
+    dx, dy, dz : floats
+        Grid spacing in the three dimensions. Not needed when x, y, z
+        are specified.
 
-    Keyword arguments:
+    x, y, z : ndarrays
+        Radial (x), polar (y) and vertical (z) coordinates, 1d arrays.
+        These override dx, dy and dz.
+        Can be non-uniform grids.
 
-    *quantity*:
-      Quantity to be integrated over of shape [nz, ny, nx].
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
 
-    *dx, dy, dz*:
-      Grid spacing in the three dimensions. Not needed when x, y, z
-      are specified.
-
-    *x, y, z*:
-      Radial (x), polar (y) and vertical (z) coordinates, 1d arrays.
-      These override dx, dy and dz.
-      Can be non-uniform grids.
-
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
-
-    *axis*:
-      Axis along which to integrate.
+    axis : list of int
+        Axis along which to integrate.
     """
 
     import numpy as np

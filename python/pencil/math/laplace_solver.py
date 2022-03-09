@@ -1,4 +1,3 @@
-# laplace_solver.py
 """
 This code contains various functions to solve the vector form of the Laplace
 equation in various coordinate systems (Cartesian, cylindrical and spherical)
@@ -11,23 +10,21 @@ in Cartesian, cylidrindical and spherical coordinate systems, since these are us
 
 def laplace_scalar_cartesian(bc, dx, dy, dz, niter=200):
     """
+    laplace_scalar_cartesian(bc, dx, dy, dz, niter=100)
+
     Solve the scalar Laplace equation in Cartesian coordinates in 3 dimensions
     using finite differences.
 
-    Signature:
-
-    laplace_scalar_cartesian(bc, dx, dy, dz, niter=100)
-
     Parameters
     ----------
-     *bc*: ndarray of shape [nz, ny, nx]
+     bc : ndarray of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    *dx, dy, dz*: float
+    dx, dy, dz : floats
         Grid spacing in eaach direction.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns
@@ -56,24 +53,22 @@ def laplace_scalar_cartesian(bc, dx, dy, dz, niter=200):
 
 def laplace_vector_cartesian(bx, by, bz, dx, dy, dz, niter=200):
     """
+    laplace_vector_cartesian(bx, by, bz, dx, dy, dz, niter=1000)
+
     Solve the vector Laplace equation in Cartesian coordinates in 3 dimensions
     using finite differences. This function simply applies the scalar function
     to the three components.
 
-    Signature:
-
-    laplace_vector_cartesian(bx, by, bz, dx, dy, dz, niter=1000)
-
     Parameters
     ----------
-     *bx, by, bz*: ndarrays of shape [nz, ny, nx]
+     bx, by, bz : ndarrays of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    *dx, dy, dz*: float
+    dx, dy, dz : float
         Grid spacing in eaach direction.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns
@@ -94,23 +89,21 @@ def laplace_vector_cartesian(bx, by, bz, dx, dy, dz, niter=200):
 
 def laplace_scalar_cylindrical(bc, r, theta, z, niter=200):
     """
+    laplace_scalar_cylindrical(bc, r, theta, z, niter=1000)
+
     Solve the scalar Laplace equation in cylindical coordinates in 3 dimensions
     using finite differences.
 
-    Signature:
-
-    laplace_scalar_cylindrical(bc, r, theta, z, niter=1000)
-
     Parameters
     ----------
-     *bc*: ndarray of shape [nz, ny, nx]
+     bc : ndarray of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    r, theta, z: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, z : ndarrays of shape [nx], [ny] and [nz]
         1D coordinate arrays of r, theta and z.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns
@@ -146,23 +139,21 @@ def laplace_scalar_cylindrical(bc, r, theta, z, niter=200):
 
 def laplace_vector_cylindrical(br, btheta, bz, r, theta, z, niter=200):
     """
+    laplace_vector_cylindrical(br, btheta, bz, r, theta, z, niter=200)
+
     Solve the vector Laplace equation in cylindrical coordinates in 3 dimensions
     using finite differences.
 
-    Signature:
-
-    laplace_vector_cylindrical(br, btheta, bz, r, theta, z, niter=200)
-
     Parameters
     ----------
-     *br, btheta, bz*: ndarrays of shape [nz, ny, nx]
+     br, btheta, bz : ndarrays of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    r, theta, z: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, z : ndarrays of shape [nx], [ny] and [nz]
         1D coordinate arrays of r, theta and z.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns
@@ -218,27 +209,25 @@ def laplace_vector_cylindrical(br, btheta, bz, r, theta, z, niter=200):
 
 def laplace_scalar_spherical(bc, r, theta, phi, niter=200):
     """
+    laplace_scalar_spherical(bc, r, theta, phi, niter=200)
+
     Solve the scalar Laplace equation in spherical coordinates in 3 dimensions
     using finite differences.
 
-    Signature:
-
-    laplace_scalar_spherical(bc, r, theta, phi, niter=200)
-
     Parameters
     ----------
-     *bc*: ndarray of shape [nz, ny, nx]
+     bc : ndarray of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    r, theta, phi: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, phi : ndarrays of shape [nx], [ny] and [nz]
         1D coordinate arrays of r, theta and phi.
         The convention is taken that theta ranges from 0 to pi and
         phi ranges from 0 to 2pi.
         Note that singularities arise in the equation when theta = 0 and r = 0.
         This may produce unintended results.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns
@@ -290,27 +279,25 @@ def laplace_scalar_spherical(bc, r, theta, phi, niter=200):
 
 def laplace_vector_spherical(br, btheta, bphi, r, theta, phi, niter=200):
     """
+    laplace_vector_spherical(br, btheta, bphi, r, theta, phi, niter=200)
+
     Solve the scalar Laplace equation in spherical coordinates in 3 dimensions
     using finite differences.
 
-    Signature:
-
-    laplace_vector_spherical(br, btheta, bphi, r, theta, phi, niter=200)
-
     Parameters
     ----------
-     *bc, btheta, bphi*: ndarray of shape [nz, ny, nx]
+     bc, btheta, bphi : ndarray of shape [nz, ny, nx]
          Boundary conditions on exterior points.
          Keep the inner points 0.
 
-    r, theta, phi: ndarrays of shape [nx], [ny] and [nz]
+    r, theta, phi : ndarrays of shape [nx], [ny] and [nz]
         1D coordinate arrays of r, theta and phi.
         The convention is taken that theta ranges from 0 to pi and
         phi ranges from 0 to 2pi.
         Note that singularities arise in the equation when theta = 0 and r = 0.
         This may produce unintended results.
 
-    *niter*: int
+    niter : int
         Number of iterations.
 
     Returns

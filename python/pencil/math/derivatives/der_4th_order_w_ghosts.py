@@ -11,11 +11,17 @@
 
 def xder3_4th(f, dx):
     """
-    Compute the 3rd order derivative in x.
-
-    call signature:
-
     xder3_4th(f, dx)
+
+    Compute the 3rd order derivative, 4th order accurate in x.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dx : float
+        Grid-spacing in x.
     """
 
     import numpy as np
@@ -43,11 +49,17 @@ def xder3_4th(f, dx):
 
 def yder3_4th(f, dy):
     """
-    Compute the 3rd order derivative in y.
-
-    call signature:
-
     yder3_4th(f, dy)
+
+    Compute the 3rd order derivative, 4th order accurate in y.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dy : float
+        Grid-spacing in y.
     """
 
     import numpy as np
@@ -75,11 +87,17 @@ def yder3_4th(f, dy):
 
 def zder3_4th(f, dz):
     """
-    Compute the 3rd order derivative in z.
-
-    call signature:
-
     zder3_4th(f, dz)
+
+    Compute the 3rd order derivative, 4th order accurate in z.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dz : float
+        Grid-spacing in z.
     """
 
     import numpy as np

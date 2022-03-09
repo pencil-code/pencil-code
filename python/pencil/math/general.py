@@ -1,9 +1,6 @@
 # general.py
 #
 # Various short mathematical helper functions.
-#
-# Authors: A. Schreiber (aschreib@isaac1.bc.rzg.mpg.de)
-#          S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the definitions various short mathematicl function.
 """
@@ -11,16 +8,14 @@ Contains the definitions various short mathematicl function.
 
 def is_number(num_str):
     """
+    is_number(num_str)
+
     Checks if string s is a number.
 
-    call signature:
-
-    is_number(num_str):
-
-    Keyword arguments:
-
-    *num_str*:
-      String containing the number to be checked.
+    Parameters
+    ----------
+    num_str : string
+        String containing the number to be checked.
     """
 
     try:
@@ -32,16 +27,14 @@ def is_number(num_str):
 
 def is_int(num_str):
     """
+    is_int(num_str)
+
     Checks if string num_str is an int.
 
-    call signature:
-
-    is_int(num_str):
-
-    Keyword arguments:
-
-    *num_str*:
-      String containing the number to be checked.
+    Parameters
+    ----------
+    num_str : string
+        String containing the number to be checked.
     """
 
     try:
@@ -55,16 +48,14 @@ def is_int(num_str):
 
 def is_float(num_str):
     """
+    is_float(num_str)
+
     Checks if string num_str is a float.
 
-    call signature:
-
-    is_float(num_str):
-
-    Keyword arguments:
-
-    *num_str*:
-      String containing the number to be checked.
+    Parameters
+    ----------
+    num_str : string
+        String containing the number to be checked.
     """
 
     try:
@@ -77,15 +68,13 @@ def is_float(num_str):
 
 def is_iterable(i):
     """
+    is_iterable(i)
+
     Checks if i is an iterable.
 
-    call signature:
-
-    is_iterable(i):
-
-    Keyword arguments:
-
-    *i*:
+    Parameters
+    ----------
+    i : obj
       Object to be checked.
     """
 
@@ -99,23 +88,25 @@ def is_iterable(i):
 
 def log_range(a, b, include_ab=False, finer_factor=1):
     """
-    Returns a log-space from a to b.
-        Example: log_range(4, 40) = [4, 5, 6, 7, 8, 9, 10, 20, 30, 40].
+    log_range(a, b, include_ab=False, finer_factor=1)
 
-    call signature:
+    Compute the logarithmic range between a and b.
 
-    log_range(a, b, include_ab=False, finer_factor=1):
+    Parameters
+    ----------
+    a, b : float
+        Start and end values.
 
-    Keyword arguments:
+    include_ab : bool
+        Always include a and b in the interval.
 
-    *a, b*:
-      Start and end values.
+    finer_factor : float
+        Factor by which the range is being refined.
 
-    *include_ab*:
-      Always include a and b in the interval.
-
-    *finer_factor*:
-      Factor by which the range is being refined.
+    Examples
+    --------
+    >>> log_range(4, 40)
+    [4, 5, 6, 7, 8, 9, 10, 20, 30, 40]
     """
 
     import numpy as np
@@ -148,16 +139,14 @@ def log_range(a, b, include_ab=False, finer_factor=1):
 
 def round_next_magnitude(num):
     """
+    round_next_magnitude(num)
+
     Rounds a number up to the next multiple of 10, e.g. 4.56 will be rounded to 10.
 
-    call signature:
-
-    round_next_magnitude(num):
-
-    Keyword arguments:
-
-    *num*:
-      Number to be rounded.
+    Parameters
+    ----------
+    num : float
+        Number to be rounded.
     """
 
     import numpy as np
@@ -167,19 +156,17 @@ def round_next_magnitude(num):
 
 def natural_sort(string_list, reverse=False):
     """
+    natural_sort(string_list, reverse=False)
+
     Sort a list of float numbers in strings in a natural way.
 
-    call signature:
+    Parameters
+    ----------
+    string_list : list of strings
+        Will be converted to float, then sorted.
 
-    natural_sort(string_list, reverse=False):
-
-    Keyword arguments:
-
-    *string_list*:
-      List of strings. Will be converted to float, then sorted.
-
-    *reverse*:
-      If true, list in reverse order.
+    reverse : bool
+        If true, list in reverse order.
     """
 
     import re

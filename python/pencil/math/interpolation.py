@@ -1,8 +1,6 @@
 # interpolation.py
 #
 # Interpolation routines for scalar and vector fields.
-#
-# Written by Simon Candelaresi (iomsn1@gmail.com)
 """
 Interpolation routines for scalar and vector fields.
 """
@@ -10,31 +8,33 @@ Interpolation routines for scalar and vector fields.
 
 def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear"):
     """
+    vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear')
+
     Interpolates the field around position xyz.
 
-    call signature:
+    Parameters
+    ----------
+    xyz : ndarray
+        Position vector around which will be interpolated.
 
-        vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation='trilinear')
+    field : ndarray
+        Vector field to be interpolated with shape [nz, ny, nx].
 
-    Keyword arguments:
+    dxyz : ndarray
+        Array with the three deltas.
 
-    *xyz*:
-      Position vector around which will be interpolated.
+    oxyz : ndarray
+        Array with the position of the origin.
 
-    *field*:
-      Vector field to be interpolated with shape [nz, ny, nx].
+    nxyz : ndarray
+        Number of grid points in each direction.
 
-    *dxyz*:
-      Array with the three deltas.
+    interpolation : string
+        Interpolation method. Can be 'mean' or 'trilinear'.
 
-    *oxyz*:
-      Array with the position of the origin.
-
-    *nxyz*:
-      Number of grid points in each direction.
-
-    *interpolation*:
-      Interpolation method. Can be 'mean' or 'trilinear'.
+    Returns
+    -------
+    ndarray with interpolated vector field.
     """
 
     import numpy as np

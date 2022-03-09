@@ -14,22 +14,24 @@ Compute the divergence, gradient and curl.
 
 def div(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    div(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Take divervenge of pencil code vector array f in various coordinate systems.
 
-    Keyword arguments:
+    Parameters
+    ----------
+    f : ndarray
+        Pencil code vector array f.
 
-    *f*:
-      Pencil code vector array f.
+    dx, dy, dz : floats
+        Grid spacing in the three dimensions.
 
-    *dx, dy, dz*:
-      Grid spacing in the three dimensions.
+    x, y : ndarrays
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
-
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
     import numpy as np
@@ -71,22 +73,24 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
 
 def grad(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    grad(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Take the gradient of a pencil code scalar array f in various coordinate systems.
 
-    Keyword arguments:
+    Parameters
+    ----------
+    f : ndarray
+        Pencil code scalar array f.
 
-    *f*:
-      Pencil code scalar array f.
+    dx, dy, dz : floats
+        Grid spacing in the three dimensions.
 
-    *dx, dy, dz*:
-      Grid spacing in the three dimensions.
+    x, y : ndarrays
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
-
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
     import numpy as np
@@ -131,27 +135,29 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
 
 def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system="cartesian"):
     """
+    curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system="cartesian")
+
     Take the curl of a pencil code vector array f in various coordinate systems.
 
-    Keyword arguments:
+    Parameters
+    ----------
+    f : ndarray
+        Pencil code scalar array f.
 
-    *f*:
-      Pencil code scalar array f.
+    dx, dy, dz : floats
+        Grid spacing in the three dimensions.
 
-    *dx, dy, dz*:
-      Grid spacing in the three dimensions.
+    x, y : ndarray
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
+    run2D : bool
+        Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+        !Only for Cartesian grids at the moment!
 
-    *run2D*:
-      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
-      !Only for Cartesian grids at the moment!
-
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
-      !Does not work for 2d runs yet!
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
+        !Does not work for 2d runs yet!
     """
 
     import numpy as np
@@ -204,18 +210,22 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system="cartesia
 
 def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    curl2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Take the double curl of a pencil code vector array f.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
+    Parameters
+    ----------
+    x, y : ndarrays
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *run2D*:
-      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
-      !Only for Cartesian grids at the moment!
+    run2D : bool
+        Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+        !Only for Cartesian grids at the moment!
 
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
     import numpy as np
@@ -300,18 +310,22 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
 
 def del2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    del2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Calculate del2, the Laplacian of a scalar field f.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
+    Parameters
+    ----------
+    x, y : ndarrays
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *run2D*:
-      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
-      !Only for Cartesian grids at the moment!
+    run2D : bool
+        Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+        !Only for Cartesian grids at the moment!
 
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian', 'cylindrical' and 'spherical'.
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
     import numpy as np
@@ -347,16 +361,20 @@ def del2(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
 
 def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    del2v(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Calculate del2, the Laplacian of a vector field f.
 
-    *x, y*:
+    Parameters
+    ----------
+    x, y : ndarrays
       Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *run2D*:
+    run2D : bool
       Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
       !Only for Cartesian grids at the moment!
 
-    *coordinate_system*:
+    coordinate_system : string
       Coordinate system under which to take the divergence.
       Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
@@ -425,18 +443,22 @@ def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
 
 def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
     """
+    curl3(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian")
+
     Take the triple curl of a pencil code vector array f.
 
-    *x, y*:
-      Radial (x) and polar (y) coordinates, 1d arrays.
+    Parameters
+    ----------
+    x, y : ndarrays
+        Radial (x) and polar (y) coordinates, 1d arrays.
 
-    *run2D*:
-      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
-      !Only for Cartesian grids at the moment!
+    run2D : bool
+        Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+        !Only for Cartesian grids at the moment!
 
-    *coordinate_system*:
-      Coordinate system under which to take the divergence.
-      Takes 'cartesian' and 'cylindrical'.
+    coordinate_system : string
+        Coordinate system under which to take the divergence.
+        Takes 'cartesian' and 'cylindrical'.
     """
 
     import numpy as np
@@ -616,6 +638,7 @@ def gij(f, dx, dy, dz, nder=6):
     Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
     than del2^3) of a scalar f for hyperdiffusion.
     """
+
     import numpy as np
 
     if f.ndim != 4 or f.shape[0] != 3:

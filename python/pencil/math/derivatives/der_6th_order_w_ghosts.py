@@ -2,8 +2,6 @@
 #
 # Calculate 6th order spatial derivatives with ghost zones assumed to be in
 # the arrays.
-#
-# Author: J. Oishi (joishi@amnh.org). based on A. Brandenburg's IDL routines
 """
 6th Order derivatives. Currently only equidistant grids are supported.
 
@@ -15,11 +13,17 @@ FAG: added 5th derivative and filled derivative ghosts (except corners)
 
 def xder_6th(f, dx):
     """
-    Compute the 1st order derivative in x.
-
-    call signature:
-
     xder_6th(f, dx)
+
+    Compute the 1st order derivative, 6th order accurate in x.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dx : float
+        Grid-spacing in x.
     """
 
     import numpy as np
@@ -49,11 +53,17 @@ def xder_6th(f, dx):
 
 def yder_6th(f, dy):
     """
-    Compute the 1st order derivative in y.
-
-    call signature:
-
     yder_6th(f, dy)
+
+    Compute the 1st order derivative, 6th order accurate in y.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dy : float
+        Grid-spacing in y.
     """
 
     import numpy as np
@@ -83,11 +93,17 @@ def yder_6th(f, dy):
 
 def zder_6th(f, dz, run2D=False):
     """
-    Compute the 1st order derivative in z.
+    zder_6th(f, dz)
 
-    call signature:
+    Compute the 1st order derivative, 6th order accurate in z.
 
-    zder_6th(f, dz, run2D=False)
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dz : float
+        Grid-spacing in z.
     """
 
     import numpy as np
@@ -132,11 +148,17 @@ def zder_6th(f, dz, run2D=False):
 
 def xder2_6th(f, dx):
     """
-    Compute the 2nd order derivative in x.
+    xder_6th(f, dx)
 
-    call signature:
+    Compute the 2nd order derivative, 6th order accurate in x.
 
-    xder2_6th(f, dx)
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dx : float
+        Grid-spacing in x.
     """
 
     import numpy as np
@@ -167,11 +189,17 @@ def xder2_6th(f, dx):
 
 def yder2_6th(f, dy):
     """
-    Compute the 2nd order derivative in y.
-
-    call signature:
-
     yder2_6th(f, dy)
+
+    Compute the 2nd order derivative, 6th order accurate in y.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dy : float
+        Grid-spacing in y.
     """
 
     import numpy as np
@@ -202,11 +230,17 @@ def yder2_6th(f, dy):
 
 def zder2_6th(f, dz):
     """
-    Compute the 2nd order derivative in z.
-
-    call signature:
-
     zder2_6th(f, dz)
+
+    Compute the 2nd order derivative, 6th order accurate in z.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dz : float
+        Grid-spacing in z.
     """
 
     import numpy as np
@@ -236,11 +270,17 @@ def zder2_6th(f, dz):
 
 def xder5_6th(f, dx):
     """
-    Compute the 5th order derivative in x.
-
-    call signature:
-
     xder5_6th(f, dx)
+
+    Compute the 5th order derivative, 6th order accurate in x.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dx : float
+        Grid-spacing in x.
     """
 
     import numpy as np
@@ -268,11 +308,17 @@ def xder5_6th(f, dx):
 
 def yder5_6th(f, dy):
     """
-    Compute the 5th order derivative in y.
+    yder5_6th(f, dy)
 
-    call signature:
+    Compute the 5th order derivative, 6th order accurate in y.
 
-    yder5_5th(f, dy)
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dy : float
+        Grid-spacing in y.
     """
 
     import numpy as np
@@ -300,11 +346,17 @@ def yder5_6th(f, dy):
 
 def zder5_6th(f, dz):
     """
-    Compute the 5th order derivative in z.
+    zder5_6th(f, dy)
 
-    call signature:
+    Compute the 5th order derivative, 6th order accurate in z.
 
-    zder5_6th(f, dz)
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dz : float
+        Grid-spacing in z.
     """
 
     import numpy as np
@@ -333,11 +385,17 @@ def zder5_6th(f, dz):
 
 def xder6_6th(f, dx):
     """
-    Compute the 6th order derivative in x.
-
-    call signature:
-
     xder6_6th(f, dx)
+
+    Compute the 6th order derivative, 6th order accurate in x.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dx : float
+        Grid-spacing in x.
     """
 
     import numpy as np
@@ -366,11 +424,17 @@ def xder6_6th(f, dx):
 
 def yder6_6th(f, dy):
     """
-    Compute the 6th order derivative in y.
-
-    call signature:
-
     yder6_6th(f, dy)
+
+    Compute the 6th order derivative, 6th order accurate in y.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dy : float
+        Grid-spacing in y.
     """
 
     import numpy as np
@@ -399,11 +463,17 @@ def yder6_6th(f, dy):
 
 def zder6_6th(f, dz):
     """
-    Compute the 6th order derivative in z.
-
-    call signature:
-
     zder6_6th(f, dz)
+
+    Compute the 6th order derivative, 6th order accurate in z.
+
+    Parameters
+    ----------
+    f : ndarray
+        Array for which to compute the derivative.
+
+    dz : float
+        Grid-spacing in z.
     """
 
     import numpy as np
