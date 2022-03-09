@@ -296,6 +296,7 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
         ;  read second spectrum
         ;
        	if unit_2__open then begin
+
           on_ioerror, filend2
 	  readf,unit_2,time
 	  readf,unit_2,spectrum2
@@ -319,12 +320,14 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
 filend2:
           on_ioerror, NULL
           unit_2__open=0
-          if keyword_set(cyl) then $
-            spec2=spec2(*,*,0:i-1) $
-          else $
-            spec2=spec2(*,0:i-1)
+          if i gt 1 then begin
+            if keyword_set(cyl) then $
+              spec2=spec2(*,*,0:i-2) $
+            else $
+              spec2=spec2(*,0:i-2)
+          endif else $
+            undefine, spec2
 cont2:
-          continue
        	endif
         ;
         ;  read third spectrum
@@ -354,12 +357,14 @@ cont2:
 filend3:
           on_ioerror, NULL
           unit_3__open=0
-          if keyword_set(cyl) then $
-            spec3=spec3(*,*,0:i-1) $
-          else $
-            spec3=spec3(*,0:i-1)
+          if i gt 1 then begin
+            if keyword_set(cyl) then $
+              spec3=spec3(*,*,0:i-2) $
+            else $
+              spec3=spec3(*,0:i-2)
+          endif else $
+            undefine, spec3
 cont3:
-          continue
        	endif
         ;
        	if (last eq 0) then begin
@@ -428,19 +433,19 @@ cont3:
       ;
     endwhile
     if (last eq 1 and iplot eq 1) then begin
-	!p.title='t=' + string(time)
-	!y.range=[miny,maxy]
-	plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
-      	if unit_2__open then begin
-		oplot,k,spectrum2*k^compensate,col=122
-		if (tot eq 1) then begin
-			oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
-		endif
-	endif
-	if (lin ne 0) then begin
-		fac=spectrum1(2)/k(2)^(lin)*1.5
-		oplot,k(2:*),k(2:*)^(lin)*fac,lin=2,col=0
-	endif
+
+      !p.title='t=' + string(time)
+      !y.range=[miny,maxy]
+      plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
+      if is_defined(spec2) then begin
+        oplot,k,spectrum2*k^compensate,col=122
+        if (tot eq 1) then oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
+      endif
+      if (lin ne 0) then begin
+        fac=spectrum1(2)/k(2)^(lin)*1.5
+        oplot,k(2:*),k(2:*)^(lin)*fac,lin=2,col=0
+      endif
+
     endif
 if n_elements(unit_1) eq 1L then begin
   fstat = fstat(unit_1)
