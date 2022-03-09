@@ -7,10 +7,6 @@ try:
     from .clonesimulations import clone_sims
     from .clonesimulations import clone_sims_from_obj
     from .makedict import parameter_table, make_sims_dict
-except:
-    print(
-    "Warning: pipelines require f90nml be added to library with \
-    'pip3 install f90nml' (Python 3) or \
-    'pip install f90nml' (Python 2)."
-    )
+except ModuleNotFoundError as e:
+    print("Warning: Module required for pipelines not found.", e)
 
