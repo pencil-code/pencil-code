@@ -5,20 +5,21 @@ import os
 from os.path import join
 import f90nml
 
+
 def clone_sims(simset, simsdir=None):
     """
+    clone_sims(simset, simsdir=None)
+
     Create a set of simulation directories from a dictionary object, simset,
     which contains the list of parameters to combine across set of clones.
 
-    Signature:
-
-    clone_sims(simset, simsdir=None)
-
     Parameters
     ----------
-    *simset*:  Dictionary of parameters to combine across set of clones.
+    simset : dictionary
+        Parameters to combine across set of clones.
 
-    *simsdir*:  Root directory for collection of clone simulations.
+    simsdir : string
+        Root directory for collection of clone simulations.
 
     Returns
     -------
@@ -37,6 +38,7 @@ def clone_sims(simset, simsdir=None):
     >>> simset = pencil.pipelines.make_sims_dict(params)
     >>> clone_sims(simset,simsdir=simsdir)
     """
+
     # If user provides no clone path
     if not simsdir:
         simsdir = os.getcwd().strip(os.getcwd().split("/")[-1])
@@ -84,32 +86,31 @@ def clone_sims(simset, simsdir=None):
                             filepath=file_path,
                         )
 
+
 def clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=True):
     """
+    clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=True):
+
     Create a set of simulation directories from a dictionary object, simset,
     which contains the list of parameters to combine across set of clones.
-    This differs from the clone_sims function in that it is more configurable, 
+    This differs from the clone_sims function in that it is more configurable,
     and uses the native Python way of copying the sim.
-
-    Signature:
-
-    clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=True):
 
     Parameters
     ----------
-    *simset*:
-        Dictionary of parameters to combine across set of clones.
+    simset : dictionary
+        Parameters to combine across set of clones.
 
-    *simsdir*:
+    simsdir : string
         Root directory for collection of clone simulations.
-    
-    *template_sim*:
-        A pencil simulation object (returned by pc.get_sim). 
+
+    template_sim : obj
+        A pencil simulation object (returned by pc.get_sim).
         If not specified, the simulation in the current directory will be used.
-    
-    *specify_nml*:
-        Whether, for files like run.in, you also specify the namelist in simset. 
-        If so, f90nml will be directly used to write the value. If not, the 
+
+    specify_nml : bool
+        Whether, for files like run.in, you also specify the namelist in simset.
+        If so, f90nml will be directly used to write the value. If not, the
         change_value_in_file function will be used even for these files.
 
     Returns
@@ -130,7 +131,9 @@ def clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=Tru
         template_sim = get_sim()
     if not os.path.isdir(simsdir):
         if os.path.exists(simsdir):
-            raise RuntimeError("simsdir ({}) exists but is not a directory!".format(simsdir))
+            raise RuntimeError(
+                "simsdir ({}) exists but is not a directory!".format(simsdir)
+            )
         else:
             mkdir(simsdir)
     # For each set of simulation parameters create new simulation subdirectory
@@ -142,12 +145,14 @@ def clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=Tru
         for filename in simset[sim]:
             if filename == "compile":
                 if simset[sim]["compile"]:
-                    print("Warning: clone_sims_from_obj: compilation not implemented yet, so not compiling.")
+                    print(
+                        "Warning: clone_sims_from_obj: compilation not implemented yet, so not compiling."
+                    )
                     ## KG: I am not sure if the following works as intended; it just hangs for me.
-                    #new_sim = get_sim(join(simsdir, newdir))
-                    #new_sim.compile()
+                    # new_sim = get_sim(join(simsdir, newdir))
+                    # new_sim.compile()
             elif specify_nml and ("run.in" in filename or "start.in" in filename):
-                #Use f90nml for these files
+                # Use f90nml for these files
                 pars = f90nml.read(filename)
                 newpars = pars.copy()
                 for group in simset[sim][filename]:
