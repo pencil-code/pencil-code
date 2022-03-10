@@ -1,14 +1,29 @@
 def group(simulations, groupby, sort=True, only_started=False, reverse=False):
-    """Group simulation by a quantity. Each Simulation object can only be part of one group.
+    """
+    group(simulations, groupby, sort=True, only_started=False, reverse=False)
 
-    Args:
-      simulations:    put here a Simulations object or a list of simulations [sim1, sim2, ...]
-      groupby:        put here the heyword after which the grouping shall happen
-      sort:           set True to sort returned dictionary naturally
-      only_started:   only group simulations that already has started
+    Group simulation by a quantity. Each Simulation object can only be part of one group.
 
-    Return:
-      a dictionary with keywords are the group entries and values are lists of simulations in that group
+    Parameters
+    ----------
+    simulations : list of sim objects
+        Put here a Simulations object or a list of simulations [sim1, sim2, ...].
+
+    groupby : string
+        Put here the heyword after which the grouping shall happen.
+
+    sort : bool
+        Set True to sort returned dictionary naturally.
+
+    only_started : bool
+        Only group simulations that already has started.
+
+    reverse : bool
+        Flag for reverse grouping.
+
+    Returns
+    -------
+    Dictionary with keywords are the group entries and values are lists of simulations in that group.
     """
 
     from collections import OrderedDict

@@ -1,17 +1,12 @@
-# remesh.py
-#
-# 05-may-20
-# Author: F. Gent (fred.gent.ncl@gmail.com).
-#
-""" Remesh mature simulation snapshot with [nx,ny,nz] dimensions onto new
-    simulation with new grid dimensions and optionally alternate cpu layout
-    copying the base simulation files, existing start output files.
+"""
+Remesh mature simulation snapshot with [nx,ny,nz] dimensions onto new
+simulation with new grid dimensions and optionally alternate cpu layout
+copying the base simulation files, existing start output files.
 
-    uses:
-      local_remesh to apply the interpolation onto a variable array
-      get_dstgrid to derive the new grid layout
-      src2dst_remesh to create the new simulation object and files
-
+uses:
+local_remesh to apply the interpolation onto a variable array
+get_dstgrid to derive the new grid layout
+src2dst_remesh to create the new simulation object and files
 """
 
 from fileinput import input
@@ -26,25 +21,23 @@ from pencil.io import open_h5, group_h5, dataset_h5
 
 def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True):
     """
-    Call signature:
-
     local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True)
 
-    Keyword arguments:
+    Parameters
+    ----------
+    var : ndarray
+        Snapshot scalar numpy array of shape [mz, my, mx].
 
-    *var*:
-      snapshot scalar numpy array of shape [mz,my,mx].
+    xsrc, ysrc, zsrc : ndarrays
+        Grid x, y, z arrays from source simulation.
 
-    *xsrc, ysrc, zsrc:
-      grid x,y,z arrays from source simulation.
+    xdst, ydst, zdst : ndarrays
+      Grid x, y, z arrays for destination simulation.
 
-    *xdst, ydst, zdst*:
-      grid x,y,z arrays for destination simulation.
-
-    *quiet*:
+    quiet : bool
       Flag for switching of output.
-
     """
+
     tmp = var.copy()
     if not quiet:
         print("x", tmp.shape, xsrc.min(), xsrc.max(), xdst.min(), xdst.max())
@@ -82,48 +75,45 @@ def get_dstgrid(
     quiet=True,
 ):
     """
-    Call signature:
-
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
                fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
                lsymmetric=True, quiet=True)
 
-    Keyword arguments:
+    Parameters
+    ----------
+    srch5 : obj
+        hdf5 object from source simulation.
 
-    *srch5*:
-      hdf5 object from source simulation.
+    srcpar : dict
+        Simulation param dictionary object from source simulation.
 
-    *srcpar*:
-      simulation param dictionary object from source simulation.
+    dsth5 : obj
+        hdf5 object for destination simulation data.
 
-    *dsth5*:
-      hdf5 object for destination simulation data.
+    ncpus : int
+        Array of nprocx, nprocy, and nprocz to apply for new simulation.
 
-    *ncpus*:
-      array of nprocx, nprocy, and nprocz to apply for new simulation.
+    multxyz : list
+        Factors by which to multiply old sim dimensions yxz order.
 
-    *multxyz*:
-      factors by which to multiply old sim dimensions yxz order.
+    fracxyz : list
+        Factors by which to divide old sim dimensions yxz order.
 
-    *fracxyz*:
-      factors by which to divide old sim dimensions yxz order.
-
-    *srcghost*:
+    srcghost : int
       Number of ghost zones from the source order of accuracy (mx-nx)/2
 
-    *dstghost*:
-      Number of ghost zones for the destination order of accuracy (mx-nx)/2
+    dstghost : int
+        Number of ghost zones for the destination order of accuracy (mx-nx)/2
 
-    *dtype*:
+    dtype : 'string'
       Precision used in destination simulation. Default double.
 
-    *lsymmetric*:
-      Option to make non-periodic grid symmetric about old sim centre.
-      Otherwise the lower boundary is retained from old sim grid.
+    lsymmetric : bool
+        Option to make non-periodic grid symmetric about old sim centre.
+        Otherwise the lower boundary is retained from old sim grid.
 
-    *quiet*:
-      Flag for switching of output.
-
+    quiet : bool
+        Flag for switching of output.
     """
     # TBA
     # check prime factorization of the result and display for proc options
@@ -249,115 +239,115 @@ def src2dst_remesh(
     comm=None,
 ):
     """
-    Call signature:
-
-    src2dst_remesh(src, dst, h5in='var.h5', h5out='var.h5', multxyz=[2,2,2],
-                   fracxyz=[1,1,1], srcghost=3, dstghost=3,
+    src2dst_remesh(src, dst, h5in='var.h5', h5out='var.h5', multxyz=[2, 2, 2],
+                   fracxyz=[1, 1, 1], srcghost=3, dstghost=3,
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
                    dstprecision=[b'D'], lsymmetric=True, quiet=True,
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
-                   rename_submit_script=False, MBmin=5.0, ncpus=[1,1,1],
-                   start_optionals=False, hostfile=None, submit_new=False)
+                   rename_submit_script=False, MBmin=5.0, ncpus=[1, 1, 1],
+                   start_optionals=False, hostfile=None, submit_new=False,
+                   chunksize=1000.0, lfs=False,  MB=1, count=1, size=1,
+                   rank=0, comm=None)
 
-    Keyword arguments:
+    Parameters
+    ----------
+    src : string
+        Source relative or absolute path to source simulation.
 
-    *src*:
-      string relative or absolute path to source simulation.
+    dst : string
+        Destination relative or absolute path to destination simulation.
 
-    *dst*:
-      string relative or absolute path to destination simulation.
+    h5in : string
+        Source simulation data file to be copied and remeshed.
 
-    *h5in*:
-      source simulation data file to be copied and remeshed.
+    h5out : string
+        Destination simulation file to be written.
 
-    *h5out*:
-      destination simulation file to be written.
+    multxyz : list
+        Factors by which to multiply old sim dimensions yxz order.
 
-    *multxyz*:
-      factors by which to multiply old sim dimensions yxz order.
+    fracxyz : list
+        Factors by which to divide old sim dimensions yxz order.
 
-    *fracxyz*:
-      factors by which to divide old sim dimensions yxz order.
+    srcghost : int
+        Number of ghost zones from the source order of accuracy (mx-nx)/2.
 
-    *srcghost*:
-      Number of ghost zones from the source order of accuracy (mx-nx)/2
+    dstghost : int
+        Number of ghost zones for the destination order of accuracy (mx-nx)/2.
 
-    *dstghost*:
-      Number of ghost zones for the destination order of accuracy (mx-nx)/2
+    srcdatadir : string
+        Path from source simulation directory to data.
 
-    *srcdatadir*:
-      path from source simulation directory to data.
+    dstdatadir :
+        Path from destination simulation directory to data.
 
-    *dstdatadir*:
-      path from destination simulation directory to data.
+    dstprecision : string
+        Floating point precision settings [b'S'] or [b'D'].
 
-    *dstprecision*:
-      floating point precision settings [b'S'] or [b'D'].
+    lsymmetric : bool
+        Option to make non-periodic grid symmetric about old sim centre.
+        Otherwise the lower boundary is retained from old sim grid.
 
-    *lsymmetric*:
-      Option to make non-periodic grid symmetric about old sim centre.
-      Otherwise the lower boundary is retained from old sim grid.
+    quiet : bool
+        Flag for switching of output.
 
-    *quiet*:
-      Flag for switching of output.
+    check_grid : bool
+        Flag to run check on grid and cpu layout before executing remesh.
 
-    *check_grid*:
-      Flag to run check on grid and cpu layout before executing remesh.
+    OVERWRITE : bool
+        Flag to overwrite existing simulation directory and filesin dst.
 
-    *OVERWRITE*:
-      Flag to overwrite existing simulation directory and filesin dst.
+    optionals : bool
+        Copy simulation files with True or specify list of names (string) for
+        additional files from src sim directory.
 
-    *optionals*:
-      Copy simulation files with True or specify list of names (string) for
-      additional files from src sim directory.
+    nmin : int
+        Minimum length along coordinate after splitting by proc.
 
-    *nmin*:
-      Minimum length along coordinate after splitting by proc.
+    rename_submit_script : bool
+        Edit lines in submission files vcopied from src to dst.
+        Not yet operational.
 
-    *rename_submit_script:
-      Edit lines in submission files vcopied from src to dst.
-      Not yet operational.
+    MBmin : float
+        Minimum size in MB of data on a sinlge proc pf ncpus total processes.
 
-    *MBmin*:
-      Minimum size in MB of data on a sinlge proc pf ncpus total processes.
+    ncpus : ndarray
+        Array of nprocx, nprocy, and nprocz to apply for new simulation.
 
-    *ncpus*:
-      array of nprocx, nprocy, and nprocz to apply for new simulation.
+    start_optionals : bool
+        Copy simulation files output by start.x with True or specify list of
+        names (string) for additional files from src sim data directory.
 
-    *start_optionals*
-      Copy simulation files output by start.x with True or specify list of
-      names (string) for additional files from src sim data directory.
+    hostfile : string
+        Specify name of host config file argument in pc_build.
+        Not yet operational.
 
-    *hostfile:
-      Specify name of host config file argument in pc_build.
-      Not yet operational.
+    submit_new : bool
+        Execute changes to submission files, compile and run simulation.
+        Not yet operational.
 
-    *submit_new*:
-      Execute changes to submission files, compile and run simulation.
-      Not yet operational.
-
-    *chunksize*:
+    chunksize : float
       Size in megabytes of snapshot variable before chunked remesh is used.
 
-    *lfs*:
+    lfs : bool
       Flag to set the striping for large file sizes to imporve IO efficiency.
 
-    *MB*:
+    MB : float
       Size of data to write contiguously before moving to new OST on lustre.
 
-    *count*:
-      Number of OSTs across which the data will be shared for IO operations.
+    count : int
+        Number of OSTs across which the data will be shared for IO operations.
 
-    *comm*:
-      MPI library calls
+    size : int
+        Number of MPI processes
 
-    *rank*:
-      Integer ID of processor
+    rank : int
+        ID of processor
 
-    *size*:
-      Number of MPI processes
-
+    comm :
+        MPI library calls
     """
+
     import h5py
     import os
     from os.path import join, abspath

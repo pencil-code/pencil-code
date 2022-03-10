@@ -1,11 +1,17 @@
 def get(path=".", quiet=False):
     """
+    get(path=".", quiet=False)
+
     Return simulation object from 'path, if already existing, or creates new
     simulation object from path, if its as simulation.
 
-    Args:
-        path:   base directory where to look for simulation from.
-        quiet:  Switches out the output of the function. Default: False.
+    Parameters
+    ----------
+    path : string
+        Base directory where to look for simulation from.
+
+    quiet : bool
+        Switches out the output of the function. Default: False.
     """
 
     from os.path import isdir, join, exists, basename
@@ -44,16 +50,26 @@ def get(path=".", quiet=False):
 
 def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
     """
+    get_sims(path_root=".", depth=0, unhide_all=True, quiet=False)
+
     Returns all found simulations as object list from all subdirs, not
     following symbolic links.
 
-    Args:
-        path_root:  base directory where to look for simulation from.
-        depth       depth of searching for simulations, default is 1,
-                    i.e. only one level deeper directories will be scanned.
-        unhide_all  unhides all simulation found if True, if False (default)
-                    hidden sim will stay hidden.
-        quiet:      Switches out the output of the function. Default: False.
+    Parameters
+    ----------
+    path_root : string
+        Base directory where to look for simulation from.
+
+    depth : int
+        depth of searching for simulations, default is 1,
+        i.e. only one level deeper directories will be scanned.
+
+    unhide_all : bool
+        Unhides all simulation found if True, if False (default)
+        hidden sim will stay hidden.
+
+    quiet : bool
+        Switches out the output of the function. Default: False.
     """
     from os.path import join, basename
     import numpy as np

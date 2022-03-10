@@ -2,14 +2,23 @@ def sort(simulations, sortby, only_started=False, reverse=False):
     """Sort simulations by a quantity.
     Based on group.py
 
-    Args:
-      simulations:    put here a Simulations object or a list of simulations [sim1, sim2, ...]
-      sortby:         put here the heyword after which the sorting shall happen
-      only_started:   only sort simulations that already has started
-      reverse:        reverse order
+    Parameters
+    ----------
+    simulations : list
+        Put here a Simulations object or a list of simulations [sim1, sim2, ...].
 
-    Return:
-      a list with simulation objects in their sorted order
+    sortby : string
+        Put here the heyword after which the sorting shall happen.
+
+    only_started : bool
+        Only sort simulations that already has started.
+
+    reverse : bool
+        Reverse order.
+
+    Returns
+    -------
+    List with simulation objects in their sorted order.
     """
 
     from pencil.sim import group

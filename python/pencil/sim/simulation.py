@@ -1,11 +1,3 @@
-#
-# simulation.py
-#
-# Create simulation object to operate on.
-#
-# Authors:
-# A. Schreiber (aschreiber@mpia.de)
-#
 """
 Contains the simulation class which can be used to directly create, access and
 manipulate simulations.
@@ -18,34 +10,45 @@ from os.path import join, exists, split, islink, realpath, abspath, basename
 
 def simulation(*args, **kwargs):
     """
+    simulation(*args, **kwargs)
+
     Generate simulation object from parameters.
     Simulation objects are containers for simulations. pencil can work with
     several of them at once if stored in a simulations object.
 
-    Args for Constructor:
-        path:   path to simulation, default = '.'
-        hidden: set True to set hidden flag, default is False
-        quiet:  suppress irrelevant output, default is False
-        hard:   force update, default is False
+    Parameters
+    ----------
+    path : string
+        Path to simulation, default = '.'.
 
-    Properties:
-        self.name:             name of
-        self.path:             path to simulation
-        self.datadir:          path to simulation data-dir (./data/)
-        self.pc_dir:           path to simulation pc-dir (./pc/)
-        self.pc_datadir:       path to simulation pendir in datadir (data/pc/)
-        self.components:       list of files which are necessary components of
-                               the simulation
-        self.optionals:        list of files which are optional components of
-                               the simulation
-        self.start_components: list of files provided at the simulation start
-        self.start_optionals:  list of optional files after the simulation start
-        self.hidden:           Default is False, if True this simulation will
+    hidden : bool
+        Set True to set hidden flag, default is False.
+
+    quiet : bool
+        Suppress irrelevant output, default is False.
+
+    hard : bool
+        Force update, default is False
+
+    Properties
+    ----------
+    self.name:             name of
+    self.path:             path to simulation
+    self.datadir:          path to simulation data-dir (./data/)
+    self.pc_dir:           path to simulation pc-dir (./pc/)
+    self.pc_datadir:       path to simulation pendir in datadir (data/pc/)
+    self.components:       list of files which are necessary components of
+                           the simulation
+    self.optionals:        list of files which are optional components of
+                           the simulation
+    self.start_components: list of files provided at the simulation start
+    self.start_optionals:  list of optional files after the simulation start
+    self.hidden:           Default is False, if True this simulation will
                                be ignored by pencil
-        self.param:            list of param file
-        self.grid:             grid object
-        self.dim:              dim object
-        self.tmp_dict:         temporal dictionary of stuff, will not be saved
+    self.param:            list of param file
+    self.grid:             grid object
+    self.dim:              dim object
+    self.tmp_dict:         temporal dictionary of stuff, will not be saved
     """
 
     return __Simulation__(*args, **kwargs)
@@ -129,23 +132,36 @@ class __Simulation__(object):
             Submit scripts will be identified by submit* plus appearenace of old
             simulation name inside, latter will be renamed!
 
-        Args:
-            path_root:      Path to new sim.-folder(sim.-name). This folder will
-                            be created if not existing! Relative paths are
-                            thought to be relative to the python current workdir
-            name:     Name of new simulation, will be used as folder name.
-                      Rename will also happen in submit script if found.
-                      Simulation folders is not allowed to preexist!!
-            optionals:      Add list of further files to be copied. Wildcasts
-                            allowed according to glob module!
-                            Set True to use self.optionals.
-            start optionals:    Add list of further files to be copied.
-                                Wildcasts allowed according to glob module!
-                                Set True to use self.optionals.
-            quiet:              Set True to suppress output.
-            rename_submit_script:    Set False if no renames shall be performed
-                                     in submit* files
-            OVERWRITE:          Set True to overwrite no matter what happens!
+        Parameters
+        ----------
+        path_root : string
+            Path to new sim.-folder(sim.-name). This folder will
+            be created if not existing! Relative paths are
+            thought to be relative to the python current workdir
+
+        name : string
+            Name of new simulation, will be used as folder name.
+            Rename will also happen in submit script if found.
+            Simulation folders is not allowed to preexist!
+
+        optionals : bool
+            Add list of further files to be copied. Wildcasts
+            allowed according to glob module!
+            Set True to use self.optionals.
+
+        start optionals :
+            Add list of further files to be copied.
+            Wildcasts allowed according to glob module!
+            Set True to use self.optionals.
+
+        quiet : bool
+            Set True to suppress output.
+
+        rename_submit_script : bool
+            Set False if no renames shall be performed in submit* files
+
+        OVERWRITE : bool
+            Set True to overwrite no matter what happens!
         """
         from glob import glob
         from numpy import size
@@ -347,7 +363,6 @@ class __Simulation__(object):
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
-        files_to_be_copied = []
         for f in self.start_components + start_optionals:
             f_path = abspath(join(self.datadir, f))
             copy_to = abspath(join(path_newsim_data, f))
@@ -404,14 +419,17 @@ class __Simulation__(object):
         It uses VAR-file number >varno< as new VAR0 and var.dat.
         Does copy PVAR as well if available.
 
-        Args:
-            sim_source:  simulation from where to copy all the files
-            varno:       var-file number # from which to copy (VAR#)
+        Parameters
+        ----------
+        sim_source : string
+            Simulation from where to copy all the files.
+
+        varno : int
+            var-file number # from which to copy (VAR#).
         """
 
         from os import listdir
         from os.path import exists, join, isdir
-        import glob
         from pencil.math import is_int
         from pencil.io import mkdir
 
@@ -655,11 +673,18 @@ class __Simulation__(object):
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
 
-        Args:
-            cleanall:     before calling pc_build, pc_build --cleanall is called
-            verbose:      activate for verbosity
-            fast:         set True for fast compilation
+        Parameters
+        ----------
+        cleanall : bool
+            Before calling pc_build, pc_build --cleanall is called.
+
+        verbose : bool
+            Activate for verbosity.
+
+        fast : bool
+            Set True for fast compilation.
         """
+
         from pencil import io
         from os.path import join
 
@@ -692,15 +717,20 @@ class __Simulation__(object):
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
 
-        Args:
-            - command:     command to be executed, can be a list of commands
-            - verbose:     lastN = show last N lines of output afterwards
-                           False = no output
-                           True = all output
+        Parameters
+        ----------
+        command : string
+            Command to be executed, can be a list of commands.
+
+        verbose : bool
+            lastN = show last N lines of output afterwards
+             False = no output
+             True = all output
         """
+
         import subprocess
         from pencil import io
-        from os.path import join, realpath
+        from os.path import join
 
         timestamp = io.timestamp()
         io.mkdir(self.pc_dir)
