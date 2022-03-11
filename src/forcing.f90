@@ -1049,6 +1049,7 @@ module Forcing
         case ('2drandom_xy');     call forcing_2drandom_xy(f)
         case ('2drxy_simple');    call forcing_2drandom_xy_simple(f)
         case ('ABC');             call forcing_ABC(f)
+        case ('MHD_mode');        call forcing_mhd_mode(f)
         case ('blobs');           call forcing_blobs(f)
         case ('blobHS_random');   call forcing_blobHS_random(f)
         case ('chandra_kendall','cktest'); call forcing_chandra_kendall(f)
@@ -3325,6 +3326,41 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
       if (ip<=9) print*,'forcing_ABC: forcing OK'
 !
     endsubroutine forcing_ABC
+!***********************************************************************
+    subroutine forcing_mhd_mode(f)
+!
+!  Added ABC forcing function
+!
+!  17-jul-06/axel: coded
+!
+      use Diagnostics
+      use DensityMethods, only: getrho
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real :: irufm,fsum_tmp,fsum
+      real, dimension (nx) :: ruf,rho
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
+      real, dimension (mx), save :: sinx,cosx
+      real, dimension (my), save :: siny,cosy
+      real, dimension (mz), save :: sinz,cosz
+      logical, save :: lfirst_call=.true.
+      integer :: j,jf
+      real :: fact
+!
+      fact=force*sqrt(dt)
+      do n=n1,n2
+        do m=m1,m2
+          f(:,m,n,iuy)=f(:,m,n,iuy)+fact*sin(k1_ff*x)
+          f(:,m,n,iAy)=f(:,m,n,iAy)+fact*sin(k1_ff*x)
+        enddo
+      enddo
+      !
+      if (ip<=9) print*,'forcing_mhd: forcing OK'
+!
+    endsubroutine forcing_mhd_mode
 !***********************************************************************
     subroutine forcing_nocos(f)
 !
