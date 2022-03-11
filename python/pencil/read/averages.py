@@ -144,7 +144,7 @@ class Averages(object):
         l_h5 = False
 
         if simdir is None:
-            simdir = os.path.join(datadir, os.path.pardir)
+            simdir = '.'
 
         # Initialize the planes list.
         if plane_list:
