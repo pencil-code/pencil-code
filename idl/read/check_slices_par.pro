@@ -1,4 +1,4 @@
-function check_slices_par, field, stride, readdir, switches, nth_rslice=nth_rslice
+function check_slices_par, field, stride, readdir, switches, nth_rslice=nth_rslice, nph_rslice=nph_rslice 
 ;
 ; Checks whether <field> is in video.in. 
 ; Reads slice switches from <readdir>/slice_position.dat into structure <switches>.
@@ -30,7 +30,8 @@ if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
 ;AB: Matthias, please check; without the "or ..." it would not work for us.
 ;
 if (not (any (field_base eq fields) or any (field eq fields))) then begin
-  print, 'Field "'+strtrim(field_base,2)+'" is not listed in "video.in"!'
+  print, 'Field "'+(field_base eq '' ? strtrim(field,2) : strtrim(field_base,2)) $
+                  +'" is not listed in "video.in"!'
   return, 0
 endif
 ;
@@ -51,12 +52,14 @@ for iread=0,1 do begin
   readf, lun_1, cdum & switches.xzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
   readf, lun_1, cdum & switches.xz2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
   readf, lun_1, cdum & switches.yzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
-  readf, lun_1, cdum, nth, format='(a2,i12)' & switches.rread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+  readf, lun_1, cdum, nth, nph, format='(a2,i12,i12)' 
+  switches.rread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
 cont:
   close, 1
   free_lun, lun_1
   on_ioerror,  NULL
   if (arg_present(nth_rslice)) then nth_rslice=nth 
+  if (arg_present(nph_rslice)) then nph_rslice=nth 
   return, 1
 
 noposition:
