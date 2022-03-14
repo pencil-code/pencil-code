@@ -41,13 +41,16 @@ module Shock
   logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
   logical :: lforce_periodic_shockviscosity=.false.
+  logical :: lshock_modulation_z=.false.
   real :: div_threshold=0., div_scaling=1.
+  real :: z_shock=0., width_shock=.1
   real, dimension (3,3,3) :: smooth_factor
 !
   namelist /shock_run_pars/ &
       lshock_first, lshock_max5, div_threshold, div_scaling, &
       lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
-      lshock_max3_interp, lforce_periodic_shockviscosity
+      lshock_max3_interp, lforce_periodic_shockviscosity, &
+      lshock_modulation_z, z_shock, width_shock
 !
   integer :: idiag_shockmax=0   ! DIAG_DOC: Max shock number
 !
@@ -381,6 +384,7 @@ module Shock
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp
+      real, dimension (mz) :: modulation_z
       real, dimension (mx) :: penc,penc_perp
       real, dimension (mx,3) :: bb_hat
       integer :: jj,kk
@@ -703,6 +707,14 @@ module Shock
           if (ldivu_perp) then
             f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
           endif
+!
+!  allow for overall profile to turn off shock viscosity below z_shock with width_shock
+!
+        if (lshock_modulation_z) then
+          modulation_z=.5*(1.+erfunc((z-z_shock)/width_shock))
+          f(:,:,:,ishock)=f(:,:,:,ishock)*spread(spread(modulation_z,1,mx),2,my)
+        endif
+!
         endif
       endif
 !
