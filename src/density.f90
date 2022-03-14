@@ -1153,6 +1153,11 @@ module Density
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampllnrho(j),f,ilnrho,rnoise_int,rnoise_ext)
 !
+!  1/cosh^2 profile
+!
+        case ('cosh21-z')
+          f(:,:,:,ilnrho)=spread(spread(max(lnrho_const,alog(1./cosh(kz_lnrho(j)*z/sqrt2)**2)),1,mx),2,my)
+!
 !  use code to plot EoS
 !
         case ('lnrho_vs_lnT')
