@@ -120,8 +120,10 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ; HDF5 format is available - check validity of input object.
 ;
-    if is_valid(object,'DIM',filename) then return
-
+    if is_valid(object,'DIM',filename) then begin
+      if arg_present(precision_new) then precision_new=object.precision
+      return
+    endif
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
     mxgrid = h5_read ('settings/mx', file=filename)
     mygrid = h5_read ('settings/my')
@@ -138,8 +140,11 @@ COMPILE_OPT IDL2, HIDDEN
     nprocx = h5_read ('settings/nprocx')
     nprocy = h5_read ('settings/nprocy')
     nprocz = h5_read ('settings/nprocz')
+
     precision_new = h5_read ('settings/precision', /close)
     pc_set_precision, precision=precision_new
+    if arg_present(precision_new) then precision_new=object.precision
+
     if ( is_defined(proc) ) then begin
       ipx = proc mod nprocx
       ipy = (proc / nprocx) mod nprocy
@@ -174,7 +179,10 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Check validity of input object.
 ;
-    if is_valid(object,'DIM',filename) then return
+    if is_valid(object,'DIM',filename) then begin
+      if arg_present(precision_new) then precision_new=object.precision
+      return
+    endif
 ;
 ;  Check for existence and read the data.
 ;
@@ -192,9 +200,12 @@ COMPILE_OPT IDL2, HIDDEN
       readf, file, mx, my, mz, mvar, maux
       mglobal = 0
     end
+
     precision_new = ''
     readf, file, precision_new
     pc_set_precision, precision=precision_new
+    if arg_present(precision_new) then precision_new=precision_new
+
     readf, file, nghostx, nghosty, nghostz
     if (size(proc, /type) ne 0) then begin
       readf, file, ipx, ipy, ipz
