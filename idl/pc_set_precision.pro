@@ -15,21 +15,16 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Working directory was not changed.
 ;
-            if arg_present(new) then new=precision
-            return
+            if is_defined(dim) then begin
+              if (precision eq strupcase(dim.precision)) then return
+            endif
           endif else begin
 ;
-;  Working directory was changed: invalidate precision and dim object.
+;  Working directory was changed: invalidate dim object.
 ;
-            undefine, precision
             undefine, dim
           endelse
-        endif else begin
-;
-;  Very first call of pc_set_precision during a session.
-;
-          undefine, dim
-        endelse
+        endif
 
         setenv, 'IDL_LAST_WORKDIR='+wdir
 
@@ -37,14 +32,17 @@ COMPILE_OPT IDL2, HIDDEN
 	; [PABourdin, 07-Oct-2015]
 	; Remove the following block after all scripts have been shifted to new config finder:
 
-	if (not is_defined(new)) then begin
-		pc_read_dim, obj=dim, datadir=datadir, /quiet
-		new = strupcase (dim.precision)
-	end
+        if is_defined(new) then begin
+          precision=strupcase(strtrim(new,2))
+          if precision ne 'D' and precision ne 'S' then begin
+            print, 'pc_set_precision: Error - new precision '+strtrim(new,2)+' is neither "S" nor "D"!!!'
+            stop
+          endif
+        endif else begin
+	  if not is_defined(dim) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+          precision = strupcase(strmid(strtrim(dim.precision, 2), 0, 1))
+        endelse
 
-	if (not is_defined(new)) then message, "ERROR: precision is a mandatory parameter"
-
-	precision = strupcase (strmid (strtrim (new, 2), 0, 1))
 	if (precision eq 'D') then begin
 		; double precision
 		zero = 0.d0
@@ -61,5 +59,4 @@ COMPILE_OPT IDL2, HIDDEN
 		data_bytes = 4
 		type_idl = 4
 	end
-        if arg_present(new) then new=precision
 end
