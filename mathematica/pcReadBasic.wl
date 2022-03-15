@@ -122,9 +122,10 @@ readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value
     StringReplace[value,{"E+"->"*^+","E-"->"*^-"}],StringLength[param]+1
   ];
   Switch[value,
+    str_/;StringStartsQ[str,DigitCharacter],ToExpression[value],
     "T",  True,
     "F",  False,
-    _,    ToExpression[value]
+    _,    value
   ]
 ]
 
