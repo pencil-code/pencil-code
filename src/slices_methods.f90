@@ -400,7 +400,11 @@ private
       if (lwrite_slice_xy3) slices%xy3=func(slices%xy3)
       if (lwrite_slice_xy4) slices%xy4=func(slices%xy4)
       if (lwrite_slice_xz2) slices%xz2=func(slices%xz2)
-      if (lwrite_slice_r  ) slices%r  =func(slices%r)
+      if (lwrite_slice_r  ) &
+!
+! If rank has point, process.
+!
+        where(rslice_adjec_corn_inds(:,:,1)/=0) slices%r=func(slices%r)
 
     endsubroutine process_slices_func
 !***********************************************************************

@@ -305,7 +305,7 @@ module Messages
 !
     endsubroutine error
 !***********************************************************************
-    subroutine warning(location,message,ip)
+    subroutine warning(location,message,ipr)
 !
 !  Print out colored warning.
 !
@@ -316,15 +316,12 @@ module Messages
 
       character (len=*), optional :: location
       character (len=*)           :: message
-      integer, optional :: ip
-!
-      integer :: ipl
+      integer, optional :: ipr
 !
       if (present(location)) scaller=location
-      ipl=ioptest(ip,0)
 
       if (.not.llife_support) then
-        if ((iproc_world == ipl) .and. (message /= '')) then
+        if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING: "
           call terminal_defaultcolor()
@@ -336,19 +333,19 @@ module Messages
 !
       endif
 !
-      if (ALWAYS_FALSE) print*, ip
-!
     endsubroutine warning
 !***********************************************************************
-    subroutine information(location,message,level)
+    subroutine information(location,message,level,ipr)
 !
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
 !
+      use General, only: ioptest
+
       character (len=*), optional :: location
       character (len=*)           :: message
-      integer,           optional :: level
+      integer,           optional :: level,ipr
 
       integer :: level_ = iinformation_ip
 !
@@ -356,7 +353,9 @@ module Messages
 
       if (present(level)) level_=level
 !
-      if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)
+      if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
+        if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)
+      endif
 !
     endsubroutine information
 !***********************************************************************
