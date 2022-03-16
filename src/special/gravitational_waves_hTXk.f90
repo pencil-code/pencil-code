@@ -424,6 +424,9 @@ module Special
         case ('rescale')
           f(:,:,:,ihhT:ihhXim)=rescale_GW*f(:,:,:,ihhT:ihhXim)
           f(:,:,:,iggT:iggXim)=rescale_GW*f(:,:,:,iggT:iggXim)
+        case ('zero')
+          f(:,:,:,ihhT:ihhXim)=0.
+          f(:,:,:,iggT:iggXim)=0.
         case default
         endselect
       endif
