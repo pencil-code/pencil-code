@@ -3333,22 +3333,10 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
 !  17-jul-06/axel: coded
 !
-      use Diagnostics
-      use DensityMethods, only: getrho
-      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: irufm,fsum_tmp,fsum
-      real, dimension (nx) :: ruf,rho
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
-      real, dimension (mx), save :: sinx,cosx
-      real, dimension (my), save :: siny,cosy
-      real, dimension (mz), save :: sinz,cosz
-      logical, save :: lfirst_call=.true.
-      integer :: j,jf
       real :: fact
+      integer :: m,n
 !
       fact=force*sqrt(dt)
       do n=n1,n2
