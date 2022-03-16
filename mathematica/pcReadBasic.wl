@@ -123,6 +123,8 @@ readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value
   ];
   Switch[value,
     str_/;StringStartsQ[str,DigitCharacter],ToExpression[value],
+    str_/;StringStartsQ[str,"+"],ToExpression[value],
+    str_/;StringStartsQ[str,"-"],ToExpression[value],
     "T",  True,
     "F",  False,
     _,    value
