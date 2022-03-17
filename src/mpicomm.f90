@@ -10033,7 +10033,6 @@ endif
 !
       integer, dimension(3) :: intbuf
       real, dimension(6) :: floatbuf
-      real :: renorm_x
       logical :: lok
       character(LEN=128) :: messg
       integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
@@ -10163,8 +10162,6 @@ endif
         call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
         if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
-        call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
-        call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
 !                                                                              
 !  Broadcast foreign processor numbers and grid size.                                                    
@@ -10198,6 +10195,10 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
           call mpisend_int(nprocy,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
+        call mpibcast_real(frgn_setup%renorm_L,comm=MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%renorm_t,comm=MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
+        call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
 !       
 !
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
@@ -10277,7 +10278,7 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 
     endsubroutine initialize_foreign_comm
 !***********************************************************************
-    subroutine get_foreign_snap_initiate(f,ivar1,ivar2,frgn_buffer,lnonblock)
+    subroutine get_foreign_snap_initiate(ivar1,ivar2,frgn_buffer,lnonblock)
 !
 ! Initializes fetching of data snapshot from foreign code.
 ! Non-blocking mode not yet operational.
@@ -10286,11 +10287,15 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 !
       use General, only: loptest
 
-      real, dimension(:,:,:,:) :: f,frgn_buffer
+      real, dimension(:,:,:,:) :: frgn_buffer
       integer :: ivar1, ivar2
       logical, optional :: lnonblock
-
+      double precision :: t2, t1
+      double precision, save :: t0 = 0.0
+      integer, save :: tcount = 0
       integer :: nvars,istart,lenx_loc,ncpus_foreign,px,iv,peer
+        if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
+        if (lroot) t1 = MPI_WTIME()
 
         if (frgn_setup%lnprocx_mismat) then
 
@@ -10318,10 +10323,18 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
             endif
           enddo
         endif
-
+if (lroot) then
+  t2 = MPI_WTIME()
+  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
+  tcount = tcount + 1
+endif
 !write(20+iproc) frgn_buffer
-if (.not.loptest(lnonblock))&
-print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!if (.not.loptest(lnonblock))then
+!  print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!else
+!  print*, 'PENCIL INIT NON-BLOCK'
+!endif
+print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
@@ -10354,13 +10367,21 @@ print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(
 !
 ! Interpolate/scatter data to array f
 !
-print *, 'PENCIL: frn_name, lnonblock', trim(frgn_setup%name),   loptest(lnonblock)
       if (trim(frgn_setup%name)=='EULAG') then           
         if (loptest(lnonblock)) then
-print*, 'Pencil-wait:', iproc,px,frgn_setup%recv_req(px)
           call mpiwait(frgn_setup%recv_req(px))
-          f(:,:,:,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU
-print *, 'PENCIL - MIN MAX W - FIN',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+          if(size(f,1)==mx) then
+            f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU
+print *,'PENCIL MINMAX W 1',iproc, minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
+          else
+            f(:,:,:,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU            
+print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+          endif
+!if(size(f,1)==mx) then
+!  print *, 'PENCIL - MIN MAX W - FIN',iproc, minval(f(:,:,:,1)), maxval(f(:,:,:,1))
+!else
+!  print *, 'PENCIL - MIN MAX UU2 - FIN',iproc, minval(f(:,:,:,1)), maxval(f(:,:,:,1))
+!endif
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
         endif     

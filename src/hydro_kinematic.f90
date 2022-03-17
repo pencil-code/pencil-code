@@ -357,17 +357,18 @@ module Hydro
 !
 !  Initially, take two snapshots.
 !
-        call get_foreign_snap_initiate(f,iux,iuz,frgn_buffer)   !,lnonblock=.true.)
+        call get_foreign_snap_initiate(iux,iuz,frgn_buffer,lnonblock=.true.)
         if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3)) 
-        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
-        call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)
+        call get_foreign_snap_finalize(f,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
+        call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
+        call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
 !        
 ! prepare receiving next snapshot
 !       
-        call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
+        call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
 print*, 'Pencil successful', iproc
-        call mpibarrier(MPI_COMM_UNIVERSE)
+!        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
       endif
@@ -2466,16 +2467,21 @@ print*, 'Pencil successful', iproc
 !
       if (kinematic_flow=='from-foreign-snap') then
         if (lfirst) then
+if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
           if (update_foreign_data(t,t_foreign)) then
             f(l1:l2,m1:m2,n1:n2,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
-            call get_foreign_snap_initiate(uu_2,1,3,frgn_buffer,lnonblock=.true.)
-print*,'PENCIL - iproc, t, t_foreign', iproc, t, t_foreign
+            call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
           endif
         endif
 !
-        fac=dt/(t_foreign-t+dt)
+        if (dt==0.) then
+          fac = 0.
+        else
+          fac=dt/(t_foreign-t+dt)
+        endif
         f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
+if (lroot) print*, 'PENCIL walltime fac', fac, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
       endif
 !
     endsubroutine hydro_before_boundary
@@ -2503,8 +2509,13 @@ print*,'PENCIL - iproc, t, t_foreign', iproc, t, t_foreign
 !
       if (kinflow/='') then
         if (lfirst.and.ldt) then
-          advec_uu=sum(abs(p%uu)*dline_1,2)
+          if (lkinflow_as_aux) then
+            advec_uu=sum(abs(f(l1:l2,m,n,iux:iuz))*dline_1,2)
+          else
+            advec_uu=sum(abs(p%uu)*dline_1,2)
+          endif
           maxadvec=maxadvec+advec_uu
+if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
       endif
