@@ -4190,7 +4190,7 @@ module Energy
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
-      real, dimension(nx) :: lnrho_init,ss_init
+      real, dimension(nx) :: lnrho_init,ss_init,rho_init
       real :: cp1
 !
       select case (borderss)
@@ -4216,16 +4216,21 @@ module Energy
 !         
 !  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature. 
 !
-        call set_border_initcond(f,ilnrho,lnrho_init)
         call set_border_initcond(f,iss,ss_init)
         call get_cp1(cp1)
+        if (ldensity_nolog) then
+          call set_border_initcond(f,irho,rho_init)
+          lnrho_init = log(rho_init)
+        else
+          call set_border_initcond(f,ilnrho,lnrho_init)
+        endif
         !cs2_init = cs20*exp(gamma*cp1*ss_init+gamma_m1*(lnrho_init-lnrho0))
         !f_target = 1./(gamma*cp1)*(log(cs2_init/cs20)-gamma_m1*(p%lnrho-lnrho0))
 !
 !  The two lines above reduce to the one below        
 !        
         f_target = ss_init - gamma_m1/(gamma*cp1)*(p%lnrho-lnrho_init)
-        
+!
       case ('nothing')
         if (lroot.and.ip<=5) &
             print*, "set_border_entropy: borderss='nothing'"
