@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcPlot`","pcReadBasic`","pcRead2D`"]
+BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`"]
 
 
 (* ::Chapter:: *)
@@ -17,6 +17,18 @@ BeginPackage["pcPlot`","pcReadBasic`","pcRead2D`"]
 
 pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
+pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up window."
+
+spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
+Input:
+  sim: String. Directory of the simulation.
+  plane: String. \"xy\" or \"yz\" or \"xz\", specifying which plane is averaged over.
+  var: String. Must be present in \"xyaver.in\" etc.
+  plotStyle: Optional. Can be several Rule objects. Will overwrite the default plot styles.
+Output:
+  A space-time diagram with 1/3 aspect ratio, and time coordinates in code units. The space cooridnates
+are normalized to (-1,1). Also print out the MinMax values of the data for the possibility of making
+legends by hand."
 
 showSlice::usage="showSlice[data,var,{sp,loc},plotStyle:] plots a slice.
 Input:
@@ -73,6 +85,32 @@ pcPlotStyle[]:={
   ];
 }
 
+pcPopup[plot_]:=CreateDocument[plot,
+  "CellInsertionPointCell"->Cell,ShowCellBracket->False,
+  WindowElements->{},WindowFrame->"Generic",WindowSize->All,
+  WindowTitle->None,WindowToolbars->{}
+]
+
+
+(* ::Section:: *)
+(*Butterfly diagram*)
+
+
+spaceTimeDiag[sim_,sl_,var_,plotStyle___Rule]:=Module[{t,f,nt,nx,gf},
+  PrintTemporary["Reading data..."];
+  {t,f}=readAves[sim,sl,var];
+  {nt,nx}=Dimensions[f];
+
+  gf=f[[1;;-1;;Ceiling[nt/nx/3],;;]]//Transpose;
+  Print["The MinMax of data is ",gf//Flatten//MinMax];
+
+  PrintTemporary["Making plots..."];
+  ListDensityPlot[gf,plotStyle,
+    DataRange->{t[[{1,-1}]],{-1,1}},
+    AspectRatio->1/3,InterpolationOrder->0
+  ]
+]
+
 
 (* ::Section:: *)
 (*Plot a slice from a readVARN[sim,iVAR] data*)
@@ -126,7 +164,8 @@ End[]
 
 
 Protect[
-  pcLabelStyle,pcPlotStyle,
+  pcLabelStyle,pcPlotStyle,pcPopup,
+  spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector
 ]
