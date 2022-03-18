@@ -63,7 +63,7 @@ source $PENCIL_HOME/sourceme.csh
   You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
   Please contact them with your ideas.
 * The [Pencil Code User Meeting][meetings] will be held every year.
-  The 2021 meeting was organized from Switzerland by Jennifer Schober online: [Pencil Code User Meeting 2021](https://www.epfl.ch/labs/lastro/meetings/pcum2021/).
+  The 2022 meeting will be organized from India by Piyali Chatterjee online: [Pencil Code User Meeting 2022](https://www.iiap.res.in/pcum2022/).
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
