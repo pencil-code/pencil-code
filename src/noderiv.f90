@@ -109,6 +109,16 @@ module Deriv
 !
     endsubroutine der_pencil
 !***********************************************************************
+  subroutine distr_der(arr,idir,der,order)
+!
+!  Dummy routine
+!
+    real, dimension(:,:) :: arr, der
+    integer :: idir
+    integer, optional :: order
+!
+  endsubroutine distr_der
+!***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
 !
 !  Dummy routine
