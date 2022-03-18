@@ -10300,7 +10300,6 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 
         if (frgn_setup%lnprocx_mismat) then
 
-          nvars=ivar2-ivar1+1
           ncpus_foreign=product(frgn_setup%procnums)
           do px=0,frgn_setup%procnums(1)-1
             if (frgn_setup%xind_rng(px,1)>0) then
