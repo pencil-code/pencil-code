@@ -357,16 +357,16 @@ module Hydro
 !
 !  Initially, take two snapshots.
 !
-        call get_foreign_snap_initiate(iux,iuz,frgn_buffer,lnonblock=.true.)
+        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
         if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
         if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3)) 
         call get_foreign_snap_finalize(f,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
-        call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
+        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
         call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
 !        
 ! prepare receiving next snapshot
 !       
-        call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
+        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
 print*, 'Pencil successful', iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
@@ -461,16 +461,10 @@ print*, 'Pencil successful', iproc
 !AB: i_ugu is not normally required
 !--   lpenc_requested(i_ugu)=.true.
 !
-!DM: The following line with kinflow can be later removed and the variable
-!DM: kinematic_flow replaced by kinflow.
-!
-      kinflow=kinematic_flow
-      if (kinflow/='') then
-        lpenc_requested(i_uu)=.true.
-        if (kinflow=='eddy') then
-          lpenc_requested(i_rcyl_mn)=.true.
-          lpenc_requested(i_rcyl_mn1)=.true.
-        endif
+      lpenc_requested(i_uu)=.true.
+      if (kinematic_flow=='eddy') then
+        lpenc_requested(i_rcyl_mn)=.true.
+        lpenc_requested(i_rcyl_mn1)=.true.
       endif
 !
 !  Diagnostic pencils.
@@ -2467,11 +2461,11 @@ print*, 'Pencil successful', iproc
 !
       if (kinematic_flow=='from-foreign-snap') then
         if (lfirst) then
-if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
+!if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
           if (update_foreign_data(t,t_foreign)) then
             f(l1:l2,m1:m2,n1:n2,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
-            call get_foreign_snap_initiate(1,3,frgn_buffer,lnonblock=.true.)
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
           endif
         endif
 !
@@ -2481,7 +2475,7 @@ if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
           fac=dt/(t_foreign-t+dt)
         endif
         f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
-if (lroot) print*, 'PENCIL walltime fac', fac, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
+!if (lroot) print*, 'PENCIL walltime fac', fac, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
       endif
 !
     endsubroutine hydro_before_boundary
@@ -2505,9 +2499,9 @@ if (lroot) print*, 'PENCIL walltime fac', fac, maxval(abs(f(l1:l2,m1:m2,n1:n2,iu
       intent(in)  :: df,p
       intent(out) :: f
 !
-!  uu/dx for timestep (if kinflow is set)
+!  uu/dx for timestep (if kinematic_flow is set)
 !
-      if (kinflow/='') then
+      if (kinematic_flow/='none') then
         if (lfirst.and.ldt) then
           if (lkinflow_as_aux) then
             advec_uu=sum(abs(f(l1:l2,m,n,iux:iuz))*dline_1,2)

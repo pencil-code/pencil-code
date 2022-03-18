@@ -2910,13 +2910,16 @@ module Mpicomm
 
     endsubroutine initialize_foreign_comm
 !***********************************************************************
-    subroutine get_foreign_snap_initiate(f,ivar1,ivar2,frgn_buffer,lnonblock)
+    subroutine get_foreign_snap_initiate(nvars,frgn_buffer,lnonblock)
 !
 ! 20-oct-21/MR: coded
 !
-      real, dimension(:,:,:,:) :: f,frgn_buffer
-      integer :: ivar1, ivar2
+      real, dimension(:,:,:,:) :: frgn_buffer
+      integer :: nvars
       logical, optional :: lnonblock
+
+      call keep_compiler_quiet(nvars)
+      call keep_compiler_quiet(frgn_buffer)
 
     endsubroutine get_foreign_snap_initiate
 !***********************************************************************
@@ -2927,6 +2930,9 @@ module Mpicomm
       real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
       integer :: ivar1, ivar2
       logical, optional :: lnonblock
+
+      call keep_compiler_quiet(ivar1,ivar2)
+      call keep_compiler_quiet(f,frgn_buffer,interp_buffer)
 
     endsubroutine get_foreign_snap_finalize
 !***********************************************************************
