@@ -437,6 +437,8 @@ module Magnetic
   integer :: idiag_jbrms=0      ! DIAG_DOC: $\left<(\jv\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
+  integer :: idiag_a2b2m=0      ! DIAG_DOC: $\left<\Av^2\cdot\Bv^2\right>$
+  integer :: idiag_j2b2m=0      ! DIAG_DOC: $\left<\jv^2\cdot\Bv^2\right>$
   integer :: idiag_hjbm=0       ! DIAG_DOC:
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>$ (temp)
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>$ (north)
@@ -2761,7 +2763,8 @@ module Magnetic
       if (idiag_beta1mxy/=0) lpenc_diagnos2d(i_beta1)=.true.
 !
       if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0 &
-      ) lpenc_diagnos(i_a2)=.true.
+          .or. idiag_a2b2m/=0 &
+          ) lpenc_diagnos(i_a2)=.true.
       if (idiag_divarms /= 0) lpenc_diagnos(i_diva) = .true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
           .or. idiag_abmz/=0 .or. idiag_abrms/=0 &
@@ -2790,7 +2793,8 @@ module Magnetic
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
-          idiag_ajm/=0 .or. idiag_j2mz/=0 .or. idiag_epsMmz/=0) &
+          idiag_ajm/=0 .or. idiag_j2mz/=0 .or. idiag_epsMmz/=0 .or. &
+          idiag_j2b2m/=0) &
           lpenc_diagnos(i_j2)=.true.
 !
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
@@ -2874,7 +2878,8 @@ module Magnetic
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. idiag_b2sphm/=0 .or. &
-          idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0) &
+          idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0 .or. &
+          idiag_a2b2m/=0 .or. idiag_j2b2m/=0) &
           lpenc_diagnos(i_b2)=.true.
       if (idiag_b2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
       if (idiag_bfrms/=0 .or.idiag_bf2m/=0 .or.  idiag_bf4m/=0 .or. &
@@ -5640,6 +5645,8 @@ module Magnetic
       if (idiag_aybym2/=0) &
           call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
+      if (idiag_a2b2m/=0) call sum_mn_name(p%a2*p%b2,idiag_a2b2m)
+      if (idiag_j2b2m/=0) call sum_mn_name(p%j2*p%b2,idiag_j2b2m)
       if (idiag_abumx/=0) call sum_mn_name(p%uu(:,1)*p%ab,idiag_abumx)
       if (idiag_abumy/=0) call sum_mn_name(p%uu(:,2)*p%ab,idiag_abumy)
       if (idiag_abumz/=0) call sum_mn_name(p%uu(:,3)*p%ab,idiag_abumz)
@@ -9307,6 +9314,7 @@ module Magnetic
         idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0; idiag_b6m=0; idiag_b12m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
+        idiag_a2b2m=0; idiag_j2b2m=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
@@ -9455,6 +9463,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
         call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'a2b2m',idiag_a2b2m)
+        call parse_name(iname,cname(iname),cform(iname),'j2b2m',idiag_j2b2m)
         call parse_name(iname,cname(iname),cform(iname),'abmn',idiag_abmn)
         call parse_name(iname,cname(iname),cform(iname),'abms',idiag_abms)
         call parse_name(iname,cname(iname),cform(iname),'abrms',idiag_abrms)
