@@ -10278,7 +10278,7 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 
     endsubroutine initialize_foreign_comm
 !***********************************************************************
-    subroutine get_foreign_snap_initiate(ivar1,ivar2,frgn_buffer,lnonblock)
+    subroutine get_foreign_snap_initiate(nvars,frgn_buffer,lnonblock)
 !
 ! Initializes fetching of data snapshot from foreign code.
 ! Non-blocking mode not yet operational.
@@ -10288,12 +10288,13 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
       use General, only: loptest
 
       real, dimension(:,:,:,:) :: frgn_buffer
-      integer :: ivar1, ivar2
+      integer :: nvars
       logical, optional :: lnonblock
       double precision :: t2, t1
       double precision, save :: t0 = 0.0
       integer, save :: tcount = 0
-      integer :: nvars,istart,lenx_loc,ncpus_foreign,px,iv,peer
+      integer :: istart,lenx_loc,ncpus_foreign,px,iv,peer
+
         if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
         if (lroot) t1 = MPI_WTIME()
 
