@@ -1,6 +1,3 @@
-# field_skeleton.py
-#
-# Written by Simon Candelaresi (iomsn1@gmail.com)
 """
 Classes for determining the structure of the field's skeleton, i.e. null points,
 separatrix layers and separators using the trilinear method by
@@ -28,18 +25,16 @@ class NullPoint(object):
 
     def find_nullpoints(self, var, field):
         """
+        find_nullpoints(var, field)
+
         Find the null points to the field 'field' with information from 'var'.
 
-        call signature:
-
-            find_nullpoints(var, field)
-
-        Arguments:
-
-        *var*:
+        Parameters
+        ----------
+        var : obj
             The var object from the read.var routine.
 
-        *field*:
+        field : string
             The vector field name.
         """
 
@@ -520,21 +515,19 @@ class NullPoint(object):
 
     def write_vtk(self, datadir="data", file_name="nulls.vtk", binary=False):
         """
+        write_vtk(datadir='data', file_name='nulls.vtk', binary=False)
+
         Write the null point into a vtk file.
 
-        call signature:
-
-            write_vtk(datadir='data', file_name='nulls.vtk', binary=False)
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Target data directory.
 
-        *file_name*:
+        file_name : string
             Target file name.
 
-        *binary*:
+        binary : bool
             Write file in binary or ASCII format.
         """
 
@@ -602,18 +595,16 @@ class NullPoint(object):
 
     def read_vtk(self, datadir="data", file_name="nulls.vtk"):
         """
+        read_vtk(datadir='data', file_name='nulls.vtk')
+
         Read the null point from a vtk file.
 
-        call signature:
-
-            read_vtk(datadir='data', file_name='nulls.vtk')
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Origin data directory.
 
-        *file_name*:
+        file_name : string
             Origin file name.
         """
 
@@ -792,31 +783,29 @@ class Separatrix(object):
         self, var, field, null_point, delta=0.1, iter_max=100, ring_density=8
     ):
         """
+        find_separatrices(var, field, null_point, delta=0.1,
+                          iter_max=100, ring_density=8)
+
         Find the separatrices to the field 'field' with information from 'var'.
 
-        call signature:
-
-            find_separatrices(var, field, null_point, delta=0.1,
-                              iter_max=100, ring_density=8)
-
-        Arguments:
-
-        *var*:
+        Parameters
+        ----------
+        var : obj
             The var object from the read_var routine.
 
-        *field*:
+        field : string
             The vector field.
 
-        *null_point*:
+        null_point : obj
             NullPoint object containing the magnetic null points.
 
-        *delta*:
+        delta : float
             Step length for the field line tracing.
 
-        *iter_max*:
+        iter_max : int
             Maximum iteration steps for the fiel line tracing.
 
-        *ring_density*:
+        ring_density : float
             Density of the tracer rings.
         """
 
@@ -946,21 +935,19 @@ class Separatrix(object):
 
     def write_vtk(self, datadir="data", file_name="separatrices.vtk", binary=False):
         """
+        write_vtk(datadir='data', file_name='separatrices.vtk', binary=False)
+
         Write the separatrices into a vtk file.
 
-        call signature:
-
-            write_vtk(datadir='data', file_name='separatrices.vtk', binary=False)
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Target data directory.
 
-        *file_name*:
+        file_name : string
             Target file name.
 
-        *binary*:
+        binary : bool
             Write file in binary or ASCII format.
         """
 
@@ -999,18 +986,16 @@ class Separatrix(object):
 
     def read_vtk(self, datadir="data", file_name="separatrices.vtk"):
         """
+        read_vtk(datadir='data', file_name='separatrices.vtk')
+
         Read the separatrices from a vtk file.
 
-        call signature:
-
-            read_vtk(datadir='data', file_name='separatrices.vtk')
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Origin data directory.
 
-        *file_name*:
+        file_name : string
             Origin file name.
         """
 
@@ -1114,27 +1099,26 @@ class Spine(object):
 
     def find_spines(self, var, field, null_point, delta=0.1, iter_max=100):
         """
+        find_spines(var, field, null_point, delta=0.1, iter_max=100)
+
         Find the spines to the field 'field' with information from 'var'.
 
-        call signature:
 
-            find_spines(var, field, null_point, delta=0.1, iter_max=100)
-
-        Arguments:
-
-        *var*:
+        Parameters
+        ----------
+        var : obj
             The var object from the read_var routine.
 
-        *field*:
+        field : string
             The vector field.
 
-        *null_point*:
+        null_point : obj
             NullPoint object containing the magnetic null points.
 
-        *delta*:
+        delta : float
             Step length for the field line tracing.
 
-        *iter_max*:
+        iter_max : int
             Maximum iteration steps for the fiel line tracing.
         """
 
@@ -1183,21 +1167,19 @@ class Spine(object):
 
     def write_vtk(self, datadir="data", file_name="spines.vtk", binary=False):
         """
+        write_vtk(datadir='data', file_name='spines.vtk', binary=False)
+
         Write the spines into a vtk file.
 
-        call signature:
-
-            write_vtk(datadir='data', file_name='spines.vtk', binary=False)
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Target data directory.
 
-        *file_name*:
+        file_name : string
             Target file name.
 
-        *binary*:
+        binary : bool
             Write file in binary or ASCII format.
         """
 
@@ -1242,18 +1224,16 @@ class Spine(object):
 
     def read_vtk(self, datadir="data", file_name="spines.vtk"):
         """
+        read_vtk(datadir='data', file_name='spines.vtk')
+
         Read the spines from a vtk file.
 
-        call signature:
-
-            read_vtk(datadir='data', file_name='spines.vtk')
-
-        Arguments:
-
-        *datadir*:
+        Parameters
+        ----------
+        datadir : string
             Target data directory.
 
-        *file_name*:
+        file_name : string
             Target file name.
         """
 
