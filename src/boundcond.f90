@@ -4332,6 +4332,11 @@ module Boundcond
 !  (useful for vertical hydrostatic equilibrium in discs)
 !
 !  30-jul-13/wlad: copied from z
+!  18-mar-22/wlad+debanjan: differentiated between log quantities
+!                           (lnrho and ss) and linear quantities (rho)     
+!
+!  TODO: generalize for all log and all linear quantities
+!        or else, just code a separate van3rd_log subroutine      
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -4340,23 +4345,49 @@ module Boundcond
       real, dimension (size(f,1),size(f,3)) :: cpoly0,cpoly1,cpoly2
       integer :: i
 !
+      if (.not.((j==irho).or.(j==ilnrho).or.(j==iss))) &
+           call fatal_error("bc_van3rd_y",&
+           "boundary coded only for density and entropy")
+!
       select case (topbot)
 !
       case ('bot')
-        cpoly0(:,:)=alog(f(:,m1,:,j))
-        cpoly1(:,:)=-(3*alog(f(:,m1,:,j))-4*alog(f(:,m1+1,:,j))+alog(f(:,m1+2,:,j)))/(2*dy)
-        cpoly2(:,:)=-(-alog(f(:,m1,:,j))+2*alog(f(:,m1+1,:,j))-alog(f(:,m1+2,:,j))) /(2*dy**2)
-        do i=1,nghost
-          f(:,m1-i,:,j) = exp(cpoly0(:,:) - cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
-        enddo
+        if (j==irho) then
+          cpoly0(:,:)=alog(f(:,m1,:,j))
+          cpoly1(:,:)=-(3*alog(f(:,m1,:,j))-4*alog(f(:,m1+1,:,j))+alog(f(:,m1+2,:,j)))/(2*dy)
+          cpoly2(:,:)=-(-alog(f(:,m1,:,j))+2*alog(f(:,m1+1,:,j))-alog(f(:,m1+2,:,j))) /(2*dy**2)
+          do i=1,nghost
+            f(:,m1-i,:,j) = exp(cpoly0(:,:) - cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
+          enddo
+        elseif (j==ilnrho .or. j==iss) then
+          cpoly0(:,:)=f(:,m1,:,j)
+          cpoly1(:,:)=-(3*f(:,m1,:,j)-4*f(:,m1+1,:,j)+f(:,m1+2,:,j))/(2*dy)
+          cpoly2(:,:)=-(-f(:,m1,:,j)+2*f(:,m1+1,:,j)-f(:,m1+2,:,j)) /(2*dy**2)
+          do i=1,nghost
+            f(:,m1-i,:,j) = cpoly0(:,:) - cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2
+          enddo
+        else
+          call fatal_error("bc_van3rd_y","The world is flat and we never got here")
+        endif
 !
       case ('top')
-        cpoly0(:,:)=alog(f(:,m2,:,j))
-        cpoly1(:,:)=-(-3*alog(f(:,m2,:,j))+4*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy)
-        cpoly2(:,:)=-(-alog(f(:,m2,:,j))+2*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy**2)
-        do i=1,nghost
-          f(:,m2+i,:,j) = exp(cpoly0(:,:) + cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
-        enddo
+        if (j==irho) then
+          cpoly0(:,:)=alog(f(:,m2,:,j))
+          cpoly1(:,:)=-(-3*alog(f(:,m2,:,j))+4*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy)
+          cpoly2(:,:)=-(-alog(f(:,m2,:,j))+2*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy**2)
+          do i=1,nghost
+            f(:,m2+i,:,j) = exp(cpoly0(:,:) + cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
+          enddo
+        elseif (j==ilnrho .or. j==iss) then
+          cpoly0(:,:)=f(:,m2,:,j)
+          cpoly1(:,:)=-(-3*f(:,m2,:,j)+4*f(:,m2-1,:,j)-f(:,m2-2,:,j))/(2*dy)
+          cpoly2(:,:)=-(-f(:,m2,:,j)+2*f(:,m2-1,:,j)-f(:,m2-2,:,j))/(2*dy**2)
+          do i=1,nghost
+            f(:,m2+i,:,j) = cpoly0(:,:) + cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2
+          enddo
+        else
+          call fatal_error("bc_van3rd_y","The world is flat and we never got here")
+        endif
 !
       endselect
 !
