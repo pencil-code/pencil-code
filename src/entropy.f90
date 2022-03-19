@@ -2908,11 +2908,7 @@ module Energy
 !  extra pencils for variable cooling time
 !
         if (ltau_cool_variable) then
-          if (lcartesian_coords.or.lcylindrical_coords) then
-            lpenc_requested(i_rcyl_mn1)=.true.
-          elseif (lspherical_coords) then
-            lpenc_requested(i_r_mn1)=.true.
-          endif
+          lpenc_requested(i_rcyl_mn1)=.true.
         endif
 !
 !  for photoelectric dust heating in debris disks
@@ -6029,11 +6025,7 @@ module Energy
       logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
 !
-      if (lcartesian_coords.or.lcylindrical_coords) then
-        rr1=p%rcyl_mn1
-      elseif (lspherical_coords) then
-        rr1=p%r_mn1
-      endif
+      rr1=p%rcyl_mn1
       !period=2*pi/omega
       !period_inv=.5*pi_1*rr1**1.5
       OO=rr1**1.5
