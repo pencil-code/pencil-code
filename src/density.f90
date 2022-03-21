@@ -2600,14 +2600,6 @@ module Density
         endif
       endif
 !
-!  Add diffusion term to continuity equation
-!
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
-      endif
-!
 !  Interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_density(f,df,p)
@@ -2733,6 +2725,14 @@ module Density
         endif
         if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+      endif
+!
+!  Add diffusion term to continuity equation
+!
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
+      else
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
       endif
 !
 !  Multiply diffusion coefficient by Nyquist scale.
