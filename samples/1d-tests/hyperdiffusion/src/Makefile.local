@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM      = nompicomm
+
+HYDRO        =   hydro
+DENSITY      =   density
+ENTROPY      = noentropy
+MAGNETIC     = nomagnetic
+
+# Use double precision
+REAL_PRECISION = double

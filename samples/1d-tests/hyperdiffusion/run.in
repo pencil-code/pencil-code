@@ -1,0 +1,26 @@
+!
+!  Initialisation parameters for dust particles moving in a random 
+!  velocity field.
+!
+&run_pars
+  cvsid='$Id$',
+  tmax=10.
+  nt=2
+  it1=1
+  cdt=0.4
+  cdtv=0.4
+  cdtv3=0.01
+  itorder=1
+  lpencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars	
+/
+&density_run_pars
+  idiff='hyper3-mesh','hyper3'
+  diffrho_hyper3_mesh=5.0,
+  diffrho_hyper3=1e-6
+/
+&viscosity_run_pars
+/
