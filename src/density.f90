@@ -2014,7 +2014,6 @@ module Density
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
-      if (ldiff_hyper3_mesh.and.(.not.ldensity_nolog)) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
         if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
@@ -2676,8 +2675,8 @@ module Density
 !
       if (ldiff_hyper3_mesh) then
         do j=1,3
-          call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
-          if (.not.ldensity_nolog) tmp=tmp*p%rho1
+          ! for rho this is d6rho, for lnrho this is d6lnrho
+           call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
           if (ldynamical_diffusion) then
             fdiff = fdiff + diffrho_hyper3_mesh * tmp * dline_1(:,j)
           else
