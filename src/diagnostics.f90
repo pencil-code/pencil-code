@@ -649,7 +649,7 @@ module Diagnostics
 !  26-aug-13/MR:   moved calculation of dVol_rel1 to initialize_diagnostics
 !                  added optional parameter lcomplex for use with imaginary part
 !
-      use General, only: loptest
+      use General, only: loptest, itoa, safe_character_assign
 !
       integer,                 intent(in)   :: nlname
       real, dimension(nlname), intent(inout):: vname
@@ -659,6 +659,9 @@ module Diagnostics
       real :: vol
       integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
       logical :: lweight_comm, lalways
+      integer, parameter :: lun=1
+      character (len=fnlen) :: datadir='data',path=''
+      character (len=fnlen) :: fform='(1p30e12.4)'
 !
 !  Go through all print names, and sort into communicators
 !  corresponding to their type.
@@ -696,6 +699,15 @@ module Diagnostics
       nsum_count=isum_count
 
       if (nmax_count==0 .and. nsum_count==0) return
+!
+!  Allow for the possibility of writing fsum_tmp/nw for each processor separately.
+!
+      if (lwrite_fsum) then
+        call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+        open (lun,file=trim(path)//'/fsum.dat',status='unknown',position='append')
+        write (lun,fform) t, fsum_tmp/nw
+        close(lun)
+      endif
 !
 !  Communicate over all processors.
 !
