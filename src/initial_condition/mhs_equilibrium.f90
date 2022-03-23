@@ -755,15 +755,9 @@ module InitialCondition
 !
       do m=m1,m2
         do n=n1,n2
-!
-          if (ldensity_nolog) then 
-            call grad(f,irho,grho)
-            do j=1,3
-              glnrho(:,j)=grho(:,j)/f(l1:l2,m,n,irho)
-            enddo
-          else
-            call grad(f,ilnrho,glnrho)
-          endif
+          !the initial condition is always in log density,
+          !even when using ldensity_nolog
+          call grad(f,ilnrho,glnrho)
           cs2=f(l1:l2,m,n,ics2) 
           glnTT(:,1:2)=f(l1:l2,m,n,iglnTT:iglnTT+1)
 !
