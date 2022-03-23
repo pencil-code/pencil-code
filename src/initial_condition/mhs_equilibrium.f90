@@ -199,6 +199,9 @@ module InitialCondition
       integer :: ics2
       integer, pointer :: iglobal_cs2
 !
+      if (ldensity_linearstart) call fatal_error("initial_condition_lnrho",&
+           "Switch off ldensity_linearstart. This routine assumes lnrho in initial condition")
+!
       p=-density_power_law 
       q=-temperature_power_law
 !
