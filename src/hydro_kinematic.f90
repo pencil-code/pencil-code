@@ -176,6 +176,8 @@ module Hydro
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,caller='register_hydro')
 !
+      kinflow=kinematic_flow
+
     endsubroutine register_hydro
 !***********************************************************************
     subroutine initialize_hydro(f)
@@ -868,7 +870,7 @@ print*, 'Pencil successful', iproc
       case ('Roberts-IV')
         if (headtt) print*,'Roberts-IV flow; eps_kinflow=',eps_kinflow
         if (eps_kinflow==0.) &
-          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow = "Roberts IV", '//&
                                       'eps_kinflow=0')
         fac=sqrt(2./eps_kinflow)*ampl_kinflow
         fac2=sqrt(eps_kinflow)*ampl_kinflow
@@ -890,7 +892,7 @@ print*, 'Pencil successful', iproc
       case ('Roberts-IVc')
         if (headtt) print*,'Roberts-IVc flow; eps_kinflow=',eps_kinflow
         if (eps_kinflow==0.) &
-          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow = "Roberts IV", '//&
                                       'eps_kinflow=0')
         fac=ampl_kinflow
         fac2=eps_kinflow*ampl_kinflow
@@ -931,7 +933,7 @@ print*, 'Pencil successful', iproc
       case ('Roberts-IV-rot')
         if (headtt) print*,'rotated Roberts-IV flow; eps_kinflow=',eps_kinflow
         if (eps_kinflow==0.) &
-          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow = "Roberts IV", '//&
                                       'eps_kinflow=0')
         fac=sqrt(2./eps_kinflow)*ampl_kinflow
         fac2=sqrt(eps_kinflow)*ampl_kinflow
@@ -2114,7 +2116,7 @@ print*, 'Pencil successful', iproc
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call inevitably_fatal_error('hydro_kinematic', 'kinflow = "radial wind" - '//&
+          call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow = "radial wind" - '//&
                                       'no such wind profile')
         endselect
 !
@@ -2235,7 +2237,7 @@ print*, 'Pencil successful', iproc
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call inevitably_fatal_error('hydro_kinematic', 'kinflow="radial_wind-circ" - '//&
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow="radial_wind-circ" - '//&
                                       'no such wind profile')
         endselect
         rone=xyz0(1)
@@ -2281,7 +2283,7 @@ print*, 'Pencil successful', iproc
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call inevitably_fatal_error('hydro_kinematic', 'kinflow="radial-shear+rwind+rcirc" - '//&
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow="radial-shear+rwind+rcirc" - '//&
                                       'no such wind profile')
         endselect
         rone=xyz0(1)
@@ -2351,7 +2353,7 @@ print*, 'Pencil successful', iproc
 ! no kinematic flow.
 !
       case ('none')
-        if (headtt) print*,'kinflow = none'
+        if (headtt) print*,'kinematic_flow = none'
         if (lpenc_loc(i_uu)) p%uu=0.
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -2371,7 +2373,7 @@ print*, 'Pencil successful', iproc
           p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
         lupdate_aux=.false.
       case default
-        call inevitably_fatal_error('hydro_kinematic', 'kinflow not found')
+        call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
       end select
 !
 !  kinflows end here.
@@ -2503,13 +2505,9 @@ print*, 'Pencil successful', iproc
 !
       if (kinematic_flow/='none') then
         if (lfirst.and.ldt) then
-          if (lkinflow_as_aux) then
-            advec_uu=sum(abs(f(l1:l2,m,n,iux:iuz))*dline_1,2)
-          else
-            advec_uu=sum(abs(p%uu)*dline_1,2)
-          endif
+          advec_uu=sum(abs(p%uu)*dline_1,2)
           maxadvec=maxadvec+advec_uu
-if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
+!if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
       endif
@@ -3422,10 +3420,10 @@ if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
 !  8-sep-2009/dhruba: coded
 !
       if (ldebug) print*, 'Deallocating some nohydro variables ...'
-      if (kinflow=='ck') then
+      if (kinematic_flow=='ck') then
         deallocate(Zl,dZldr)
         deallocate(Pl,dPldtheta)
-      elseif (kinflow=='KS') then
+      elseif (kinematic_flow=='KS') then
         deallocate(KS_k)
         deallocate(KS_A)
         deallocate(KS_B)
