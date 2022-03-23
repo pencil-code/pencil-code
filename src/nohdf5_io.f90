@@ -708,7 +708,7 @@ module HDF5_IO
             write (lun_output,*) trim(varname)//trim(itoa(pos))//'z='//trim(itoa(ivar+(pos-1)*vector+2))
           enddo
         elseif ((vector > 0) .and. (array < 0)) then
-          write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(-array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))            
+          write (lun_output,*) trim(varname)//'=indgen('//trim(itoa(-array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         elseif (array /= 0) then    ! i.e. vector<0
           ! backwards compatibility: ind => indgen(array)+ivar
           write (lun_output,*) trim (varname)//'=indgen('//trim(itoa(abs(array)))//')+'//trim (itoa (ivar))

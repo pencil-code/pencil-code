@@ -2891,7 +2891,6 @@ module power_spectrum
 !
 !  Spectra in x-direction
 !
-!NS: added
    if (.not.lintegrate_z) then
     !print*,'NISHANT inz=',inz
     do ikx=1,nk; do iy=1,ny
@@ -2989,8 +2988,6 @@ module power_spectrum
       else
         write(1,power_format) spectrumx_sum/(nygrid*nzgrid)
       endif
-!
-
 !
       close(1)
     endif

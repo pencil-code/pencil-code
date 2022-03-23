@@ -554,7 +554,7 @@ module Io
       real, intent(out) :: value
 !
       if (lswitched_to_out) then
-       read_persist_real_0D = read_persist_real_0D_out(label, value)
+        read_persist_real_0D = read_persist_real_0D_out(label, value)
       else
         read_persist_real_0D = read_persist_real_0D_in(label, value)
       endif

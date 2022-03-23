@@ -4348,9 +4348,9 @@ module Sub
 !***********************************************************************
     function ylm_other(theta,phi,ell,emm,der) result (sph_har)
 !
-!  Spherical harmonic
+!  Spherical harmonic wrapper for general use with theta and phi arguments.
 !
-!   6-oct-20/MR: envelope for ylm_core for general use.
+!   6-oct-20/MR: derived from ylm
 !
       real :: sph_har
       real :: theta,phi
@@ -4363,9 +4363,9 @@ module Sub
 !***********************************************************************
     function ylm(ell,emm,der) result (sph_har)
 !
-!  Spherical harmonic
+!  Spherical harmonic wrapper for use in mn-loop.
 !
-!   6-oct-20/MR: envelope for ylm_core for use in mn-loop.
+!   6-oct-20/MR: derived from ylm
 !
       real :: sph_har
       integer :: ell,emm
@@ -4377,7 +4377,7 @@ module Sub
 !***********************************************************************
     recursive function ylm_core(cost,sint,cosp,sinp,ell,emm,der) result (sph_har)
 !
-!  Spherical harmonic
+!  Spherical harmonic: do the real thing.
 !
 !   24-nov-14/dhruba: copied from step
 !   15-jun-17/MR: corrected  derivative
@@ -4390,7 +4390,7 @@ module Sub
       integer :: aemm
       real :: cos2p
 !
-! the one over pi, cosines and sines below may be pre-calculated
+! the one over pi below may be pre-calculated
 !
       aemm=iabs(emm)
 
@@ -4441,10 +4441,9 @@ module Sub
 
       if (present(der)) then
         der = ell*cost*sph_har/sint
-        if (emm<ell) then
+        if (emm<ell) &
           der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
                 ylm_core(cost,sint,cosp,sinp,ell-1,emm)/sint
-        endif
       endif
 !
     endfunction ylm_core

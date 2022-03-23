@@ -761,9 +761,9 @@ if (abs(wsum-1.)>1e-5) print*, iproc,ith,iph,wsum
 !***********************************************************************
     function store_dims_rslice() result(dims)
 
-      integer, dimension(4) :: dims
+      integer, dimension(6) :: dims
 
-      dims=(/nth_rslice,nph_rslice,ith_min,iph_min/)
+      dims=(/nth_rslice,nph_rslice,ith_min,ith_max,iph_min,iph_max/)
 
     endfunction store_dims_rslice
 !***********************************************************************

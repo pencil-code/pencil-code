@@ -119,7 +119,8 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xz2, ind_y2
             read(lun_pos,'(l5,i5)') lread_slice_yz, ind_x1
             read(lun_pos,*,end=100) lread_slice_r,ith_min,ith_max
-            if (ith_min/=0) then
+
+            if (lread_slice_r) then
               ith_min_glob=min(ith_min_glob,ith_min)
               ith_max_glob=max(ith_max_glob,ith_max)
             endif
@@ -195,7 +196,7 @@ program rvid_box
       endif
       nth_rslice=ith_max_glob-ith_min_glob+1
 
-      write(lun_pos,*) lread_slice_r, nth_rslice, nph_rslice
+      write(lun_pos,*) lread_slice_r, max(nth_rslice,-1), nph_rslice
       close(lun_pos)
 !
 !  Need to reset
@@ -368,7 +369,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -411,7 +412,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -454,7 +455,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -497,7 +498,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -540,7 +541,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -583,7 +584,7 @@ program rvid_box
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
                 write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
@@ -632,7 +633,7 @@ program rvid_box
             call safe_character_assign(fullname,trim(path)//trim(file))
             inquire(FILE=trim(fullname),EXIST=exists)
             if (.not.exists) then
-              write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+              write (*,*) 'WARNING: FILE ',trim(fullname),' DOES NOT EXIST'
               write (*,*) 'Maybe slice was added to video.in after simulation.'
             else
               if (allocated(r_loc)) deallocate(r_loc)

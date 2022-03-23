@@ -103,6 +103,16 @@ module Forcing
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
+    subroutine calc_diagnostics_forcing(p)
+!
+!  dummy routine
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_forcing
+!***********************************************************************
     subroutine forcing_continuous(df,p)
 !
 !  dummy routine
