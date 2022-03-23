@@ -81,6 +81,7 @@ module Viscosity
   logical :: lvisc_shock_simple=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
+  logical :: lvisc_hyper3_simplified_tdep=.false.
   logical :: lvisc_hyper3_polar=.false.
   logical :: lvisc_hyper3_mesh=.false.
   logical :: lvisc_hyper3_mesh_residual=.false.
@@ -315,6 +316,7 @@ module Viscosity
       lvisc_shock_simple=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
+      lvisc_hyper3_simplified_tdep=.false.
       lvisc_hyper3_polar=.false.
       lvisc_hyper3_mesh=.false.
       lvisc_hyper3_mesh_residual=.false.
@@ -428,6 +430,9 @@ module Viscosity
         case ('hyper3-simplified','hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
+        case ('hyper3-simplified-tdep')
+          if (lroot) print*,'viscous force: nu*del6v'
+          lvisc_hyper3_simplified_tdep=.true.
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
           if (lroot) print*,'viscous force: nu_hyper3/pi^4 *(Deltav)^6/Deltaq^2'
           lvisc_hyper3_polar=.true.
@@ -986,7 +991,8 @@ module Viscosity
           lvisc_nut_from_magnetic .or. lvisc_nu_cspeed .or. lvisc_mu_cspeed) &
           lpenc_requested(i_del2u)=.true.
       if (.not. limplicit_viscosity .and. lvisc_simplified) lpenc_requested(i_del2u)=.true.
-      if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
+      if (lvisc_hyper3_simplified .or. lvisc_hyper3_simplified_tdep .or. &
+          lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm ) &
           lpenc_requested(i_del6u)=.true.
       if (lvisc_hyper3_rho_nu_const_symm) then
@@ -1419,7 +1425,7 @@ module Viscosity
 !  lresi_nu_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then nu_tdep /= nu for t < nu_tdep_t0.
 !
-      if (lvisc_nu_tdep) then
+      if (lvisc_nu_tdep .or. lvisc_hyper3_simplified_tdep) then
         if (lvisc_nu_tdep_t0_norm) then
           nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
         else
@@ -1761,6 +1767,19 @@ module Viscosity
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+      endif
+!
+!  viscous force with t-dependent nu: nu*del6v (not momentum-conserving)
+!
+      if (lvisc_hyper3_simplified_tdep) then
+        p%fvisc=p%fvisc+nu_tdep*p%del6u
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
+                         'is not implemented for lvisc_hyper3_simplified')
+          endif
+        endif
+        if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_tdep
       endif
 !
 ! General way of coding an anisotropic hyperviscosity.

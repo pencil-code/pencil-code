@@ -188,6 +188,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_hyper3_tdep=.false.
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_csmesh=.false.
@@ -1328,6 +1329,7 @@ module Magnetic
       lresi_eta_aniso=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
+      lresi_hyper3_tdep=.false.
       lresi_hyper3_polar=.false.
       lresi_hyper3_mesh=.false.
       lresi_hyper3_csmesh=.false.
@@ -1384,6 +1386,9 @@ module Magnetic
         case ('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
+        case ('hyper3-tdep')
+          if (lroot) print*, 'resistivity: hyper3 (time-dependent)'
+          lresi_hyper3_tdep=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*, 'resistivity: hyper3 curvilinear'
           lresi_hyper3_polar=.true.
@@ -2599,7 +2604,7 @@ module Magnetic
       endif
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
-      if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
+      if (lresi_hyper3 .or. lresi_hyper3_tdep) lpenc_requested(i_del6a)=.true.
       if (lresi_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
 !
 !  Note that for the cylindrical case, according to lpencil_check,
@@ -4437,6 +4442,14 @@ module Magnetic
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
         if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
+      endif
+!
+!  Unlike for usual hyper3, where the coefficient is eta_hyper3,
+!  it is here, in the t-dependent case, just eta.
+!
+      if (lresi_hyper3_tdep) then
+        fres=fres+eta_tdep*p%del6a
+        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_tdep
       endif
 !
       if (lresi_hyper3_polar) then
@@ -6674,7 +6687,7 @@ module Magnetic
 !  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
-      if (lresi_eta_tdep) then
+      if (lresi_eta_tdep .or. lresi_hyper3_tdep) then
         if (lresi_eta_tdep_t0_norm) then
           eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
         else
