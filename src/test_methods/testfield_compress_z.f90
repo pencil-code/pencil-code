@@ -39,6 +39,7 @@ module Testfield
 !
   real, target, dimension(:,:,:), allocatable :: bb11_xy, bb11_xy2, bb11_xy3, bb11_xy4
   real, target, dimension(:,:,:), allocatable :: bb11_xz, bb11_xz2, bb11_yz
+  real, target, dimension(:,:,:,:,:,:), allocatable :: bb11_r
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -335,6 +336,7 @@ module Testfield
       use Cdata
       use FArrayManager
       use SharedVariables, only: get_shared_variable
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield
@@ -561,16 +563,8 @@ module Testfield
       lremove_F0 = lremove_F0 .and. lhydro
       lremove_Q0 = lremove_Q0 .and. ldensity
 !
-      if (ivid_bb11/=0) then
-        !call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
-        if (lwrite_slice_xy .and..not.allocated(bb11_xy) ) allocate(bb11_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(bb11_xz) ) allocate(bb11_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(bb11_yz) ) allocate(bb11_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(bb11_xy2)) allocate(bb11_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(bb11_xy3)) allocate(bb11_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(bb11_xy4)) allocate(bb11_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(bb11_xz2)) allocate(bb11_xz2(nx,nz,3))
-      endif
+      if (ivid_bb11/=0) &
+        call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_r)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -1537,7 +1531,7 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !
       if (lvideo.and.lfirst.and.ivid_bb11/=0) &
-        call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
+        call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_r)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -1560,7 +1554,7 @@ module Testfield
 !  Magnetic field
 !
         case ('bb11')
-          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
+          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_r)
 
       endselect
 !

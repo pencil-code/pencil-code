@@ -45,6 +45,7 @@ module Hydro
 !
   real, target, dimension (:,:,:), allocatable :: oo_xy,oo_xy2,oo_xy3,oo_xy4
   real, target, dimension (:,:,:), allocatable :: oo_xz, oo_yz, oo_xz2
+  real, target, dimension (:,:,:,:,:,:), allocatable :: oo_r
   real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy
   real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
@@ -52,11 +53,11 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
+  real, target, dimension (:,:,:,:,:), allocatable :: divu_r,u2_r,o2_r,mach_r
 
   real, dimension (mz,3) :: uumz
-  real, dimension (mx,3) :: uumx=0.0
-  real, dimension (:,:,:), allocatable :: uumxy
-  real, dimension (mx,mz,3) :: uumxz=0.0
+  real, dimension (nx,3) :: uumx
+  real, dimension (:,:,:), allocatable :: uumxy,uumxz
 !
 !  phi-averaged arrays for orbital advection
 !
@@ -685,7 +686,7 @@ module Hydro
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
-      !use Slices_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -741,65 +742,22 @@ module Hydro
       lcalc_uumeanxy=lremove_uumeanxy .or. lcalc_uumeanxy .or. ltestfield_xy
 !
       if (lcalc_uumeanxy) then
-        myl=my
         if (lyinyang) then
           call fatal_error('initialize_hydro','Calculation of z average not implmented for Yin-Yang')
           !call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(uumxy(mx,myl,3))
-        uumxy=0.0
       endif
 !
-      if (ivid_oo/=0) then
-        !call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
-        if (lwrite_slice_xy .and..not.allocated(oo_xy) ) allocate(oo_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(oo_xz) ) allocate(oo_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(oo_yz) ) allocate(oo_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(oo_xy2)) allocate(oo_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(oo_xy3)) allocate(oo_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(oo_xy4)) allocate(oo_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(oo_xz2)) allocate(oo_xz2(nx,nz,3))
-      endif
-      if (ivid_o2/=0) then
-        !call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(o2_xy) ) allocate(o2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(o2_xz) ) allocate(o2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(o2_yz) ) allocate(o2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(o2_xy2)) allocate(o2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(o2_xy3)) allocate(o2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(o2_xy4)) allocate(o2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(o2_xz2)) allocate(o2_xz2(nx,nz))
-      endif
-      if (ivid_u2/=0) then
-        !call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(u2_xy) ) allocate(u2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(u2_xz) ) allocate(u2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(u2_yz) ) allocate(u2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(u2_xy2)) allocate(u2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(u2_xy3)) allocate(u2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(u2_xy4)) allocate(u2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(u2_xz2)) allocate(u2_xz2(nx,nz))
-      endif
-      if (ivid_divu/=0) then
-        !call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
-        if (lwrite_slice_xy .and..not.allocated(divu_xy) ) allocate(divu_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(divu_xz) ) allocate(divu_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(divu_yz) ) allocate(divu_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(divu_xy2)) allocate(divu_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(divu_xy3)) allocate(divu_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(divu_xy4)) allocate(divu_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(divu_xz2)) allocate(divu_xz2(nx,nz))
-      endif
-      if (ivid_Ma2 /=0) then
-        !call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
-        if (lwrite_slice_xy .and..not.allocated(mach_xy) ) allocate(mach_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(mach_xz) ) allocate(mach_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(mach_yz) ) allocate(mach_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(mach_xy2)) allocate(mach_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(mach_xy3)) allocate(mach_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(mach_xy4)) allocate(mach_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(mach_xz2)) allocate(mach_xz2(nx,nz))
-      endif
+      if (ivid_oo/=0) &
+        call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
+      if (ivid_o2/=0) &
+        call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
+      if (ivid_u2/=0) &
+        call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
+      if (ivid_divu/=0) &
+        call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+      if (ivid_Ma2 /=0) &
+        call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
 !
 !  give warning if orms is not set in prints.in
 !
@@ -1788,14 +1746,14 @@ module Hydro
 !  This must be done outside the diagnostics loop (accessed at different times).
 !
       if (lvideo.and.lfirst) then
-        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
-        if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
+        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+        if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
 
-        if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
-        if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+        if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
+        if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
         if (othresh_per_orms/=0) call calc_othresh
-        if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
+        if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
       endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -3227,27 +3185,27 @@ module Hydro
 !  Divergence of velocity.
 !
         case ('divu')
-          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
 !
 !  Velocity squared.
 !
         case ('u2')
-          call assign_slices_scal(slices,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
+          call assign_slices_scal(slices,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
 !
 !  Vorticity.
 !
         case ('oo')
-          call assign_slices_vec(slices,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
+          call assign_slices_vec(slices,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
 !
 !  Vorticity squared.
 !
         case ('o2')
-          call assign_slices_scal(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+          call assign_slices_scal(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
 !
 !  Mach number squared.
 !
         case ('mach')
-          call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
+          call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
 !
       endselect
 !
