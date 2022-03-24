@@ -131,6 +131,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, njump, 1
   default, movingaverage,0
   default, sepminus, 1
+  default, double, 0
 ;
 ; Load HDF5 timeseries if requested or available.
 ;
