@@ -281,7 +281,8 @@ class SliceSeries(object):
                                     it += 1
                         nt = len(iter_list)
                         istart = 0
-                        print("iter_list, start", iter_list, istart)
+                        if not quiet:
+                            print("iter_list, start", iter_list, istart)
                         if downsample > 1:
                             downsample = max(1, int(downsample))
                         vsize = int(ceil(ds["1/data"].shape[0]/float(downsample)))
