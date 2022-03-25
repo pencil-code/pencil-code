@@ -1260,7 +1260,7 @@ module Testfield
 !  Magnetic field
 !
         case ('bb11')
-          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,b11_r)
+          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_r)
 
       endselect
 !
