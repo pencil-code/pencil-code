@@ -17,11 +17,11 @@ Iouri Belokopytov,    iourib/kth.se,                 ,                     +46 8
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
 Philippe Bourdin,     pc/bourdin.ch,                 PABourdin,            +43 316 380 5258,  +43 720 513 493,          angiebecker.ch, University of Graz
-Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	         axelbrandenburg, Nordita
+Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        axelbrandenburg, Nordita
 Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,                            iomsn1,      University of Glasgow
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529,     +47 9845 2367,            mppiyali,    University of Oslo
-Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, NORDITA
+Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, Institute of Space Science, Barcelona
 Boris Dintrans,       boris.dintrans/gmail.com,	     boris.dintrans,       +33 4 67141400,                    ,         bdintrans,   CNRS/CINES
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
@@ -39,7 +39,7 @@ Maarit Käpylä,        kapyla/mps.mpg.de,             ,                     +49
 Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Leibniz-Institut für Astrophysik Potsdam, Aalto University
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            NORDITA
-Wladimir Lyra,        wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  Cal State University Northridge
+Wladimir Lyra,        wlyra/wladimir.lyra/gmail.com, wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
 Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America 
 Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
 Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            NORDITA
@@ -60,7 +60,7 @@ Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 70
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
-Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          ,              NTNU, Silesian University of Technology
+Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          ,            NTNU, Silesian University of Technology
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
