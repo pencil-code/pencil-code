@@ -123,23 +123,24 @@ module Special
   real :: test_sphere_radius = 0.
   real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
+  real :: fact_potself = 1.
   real, dimension(nx) :: cx_gpe
   real, dimension(my) :: cy_gpe
   real, dimension(mz) :: cz_gpe
   character(len=50) :: initgpe = 'constant'
 !
 ! input parameters
-  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl, &
+  namelist /special_init_pars/ initgpe, vortex_spacing, ampl, &
     nvortices, vortex_quantization, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
     V0_gpe, n_gpe, eps_gpe, radius_gpe, &
     test_sphere_radius
 !
 ! run parameters
-  namelist /gpe_run_pars/ &
+  namelist /special_run_pars/ &
     diff_boundary, limag_time, frame_Ux, test_sphere_radius, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
-    V0_gpe, n_gpe, eps_gpe
+    V0_gpe, n_gpe, eps_gpe, fact_potself
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -297,9 +298,8 @@ module Special
       vl4 = line_param( -20.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
       vr1 = ring_param(-20.0, 0.0, 15.0, -1.0)
 !
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
+!  choice of initial conditions
+!
       select case (initgpe)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('constant', '0');
@@ -443,7 +443,7 @@ module Special
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) &
+      if (headtt.and.ldebug) &
         print*,'dspecial_dt: SOLVE dpsi_dt (Gross-Pitaevskii Equation)'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
@@ -472,12 +472,12 @@ module Special
                    (1.0+tanh(z(n)-c)*tanh(z(n)+c)))
       elseif (gamma_gpe /=0. ) then
         diss = gamma_gpe
+      else
+        diss = 0.
       endif
 !
 !  calculate del2(psi)
 !
-!    call der(f, ipsi_real, dpsi)
-    !call deriv_z(in_var, dz)
       call del2(f,ipsi_real,del2real)
       call del2(f,ipsi_imag,del2imag)
 !
@@ -488,6 +488,12 @@ module Special
       pot_gpe=V0_gpe*(x(l1:l2)**2+y(m)**2)
 !
       pot_tot=pot_gpe+g_gpe*psi2-mu_gpe
+!
+!  add potential from self-gravity
+!
+      if (lselfgravity) then
+        pot_tot=pot_gpe+fact_potself*f(l1:l2,m,n,ipotself)
+      endif
 !
 !    if (ltest_sphere) boundaries = sphere_sharp(0.,0.,0.)
 !
@@ -576,7 +582,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gpe_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -584,7 +590,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gpe_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -594,7 +600,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=gpe_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -602,7 +608,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=gpe_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1058,11 +1064,11 @@ module Special
       if (ltest_sphere) then
         do i=1,nboundary_pnts
           if (boundary_pnts(i)%pnt_type /= iboundary_point_ZERO) then
-              call gpe_interpolate_quadratic_spline(f, &
-                                 ipsi_real, ipsi_imag, &
-                                 boundary_pnts(i)%xxp, &
-                                 boundary_pnts(i)%bdry_value, &
-                                 boundary_pnts(i)%inear)
+!-            call gpe_interpolate_quadratic_spline(f, &
+!-                               ipsi_real, ipsi_imag, &
+!-                               boundary_pnts(i)%xxp, &
+!-                               boundary_pnts(i)%bdry_value, &
+!-                               boundary_pnts(i)%inear)
           endif
         enddo
         do i=1,nboundary_pnts
