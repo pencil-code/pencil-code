@@ -337,6 +337,7 @@ module Selfgravity
 !  15-may-06/anders+jeff: coded
 !
       use Particles_main, only: particles_calc_selfpotential
+      use FArrayManager
       use Poisson
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -344,6 +345,7 @@ module Selfgravity
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
       integer :: k
+      integer :: ipsi_real, ipsi_imag
 !
       if (t>=tstart_selfgrav) then
 !
@@ -399,6 +401,18 @@ module Selfgravity
 !
         if (lparticles) call particles_calc_selfpotential(f,rhs_poisson, &
             lselfgravity_gas.or.lselfgravity_dust)
+!
+!  Contribution from nonlinear Schroedinger equation
+!
+        if (lspecial) then
+          ipsi_real=farray_index_by_name('psi_real')
+          ipsi_imag=farray_index_by_name('psi_imag')
+          if (ipsi_real>0 .and. ipsi_imag>0) then
+            rhs_poisson=rhs_poisson &
+              +f(l1:l2,m1:m2,n1:n2,ipsi_real)**2 &
+              +f(l1:l2,m1:m2,n1:n2,ipsi_imag)**2
+          endif
+        endif
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
