@@ -4525,4 +4525,96 @@ endsubroutine pdf
   !
   endsubroutine power_cor
 !***********************************************************************
+   subroutine quadratic_invariants(f,sp)
+!
+!  28-mar-22/hongzhe: an attempt to compute Saffman invariants
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
+  integer :: kxx,kyy,kzz
+  real :: k2,rr,k
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
+  real, dimension(nx) :: bbi
+  real, dimension(nk-1) :: invrt,invrt_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=*) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize
+  !
+  h_re=0.
+  h_im=0.
+  invrt=0.
+  invrt_sum=0.
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    if (sp=='saffman_mag') then
+      if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      do n=n1,n2; do m=m1,m2
+        call curli(f,iaa,bbi,ivec)
+        im=m-nghost
+        in=n-nghost
+        b_re(:,im,in)=bbi  !  magnetic field
+      enddo; enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
+      h_re=h_re+a_re*b_re  !  magnetic helicity density
+      h_im=0.
+    else
+      call fatal_error('quadratic_invariants','no invariant defined for '//sp)
+    endif
+    !
+  enddo !(from loop over ivec)
+  !
+  call fft_xyz_parallel(h_re,h_im)
+  h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
+  !
+  do ikr=1,nk-1
+    rr = ikr*dx  !  rr=dx,2dx,...,Lx/2-dx
+    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+      kxx = kx(ikx+ipx*nx)       !  the true kx
+      kyy = ky(iky+ipy*ny)       !  the true ky
+      kzz = kz(ikz+ipz*nz)       !  the true kz
+      k2 = kxx**2+kyy**2+kzz**2  !  knorm^2
+      k = sqrt(k2)               !  knorm
+      !
+      if (k==0.) then
+        invrt(ikr) = invrt(ikr) + 2/3*(rr**3) * h_re(ikx,iky,ikz)
+      else
+        invrt(ikr) = invrt(ikr) + 2/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
+            * h_re(ikx,iky,ikz)
+      endif
+    enddo; enddo; enddo
+  enddo
+  !
+  call mpireduce_sum(invrt,invrt_sum,nk-1)
+  !
+  if (lroot) then
+    open(1,file=trim(datadir)//'/invrt_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) invrt_sum
+    close(1)
+  endif
+  !
+  endsubroutine quadratic_invariants
+!***********************************************************************
 endmodule power_spectrum

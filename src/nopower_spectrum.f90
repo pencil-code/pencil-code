@@ -240,4 +240,14 @@ module power_spectrum
 !
   endsubroutine power_cor
 !***********************************************************************
+  subroutine quadratic_invariants(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine quadratic_invariants
+!***********************************************************************
 endmodule power_spectrum
