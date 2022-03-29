@@ -1412,6 +1412,17 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(nova)
 #FFLAGS_DOUBLE=-r8 #(nova)
 ##
+##
+## Piyali on Fugaku (ifc 7.1)
+##
+#FC=mpifrtpx #(fn01sv06)
+#FFLAGS=-O2 -mcmodel=large -Nalloc_assign #(fn01sv06)
+#FFLAGS_DOUBLE=  -CcdRR8 #(fn01sv06)
+##CFLAGS_DOUBLE=  -CcdRR8 #(fn01sv06)
+#CC=mpifccpx #(fn01sv06)
+#CFLAGS=-O2 -DFUNDERSC=1 -mcmodel=large #(fn01sv06)
+#LD_MPI= #(fn01sv06)
+#####
 #####Sahel on CRAY ####################
 #FC=ftn #(elogin*)
 #F90=$(FC) #(elogin*)

@@ -88,20 +88,23 @@ module Special
   real, save :: posx,posz,Iring
   integer :: nwid=1,nwid2=1,nlf=4,cool_RTV_cutoff=2,cool_type=5
   logical :: lset_boundary_emf=.false.,lupin=.false.,&
-             lslope_limited_special=.false.,lset_sponge_lnTT=.false.
+             lslope_limited_special=.false.,lset_sponge_lnTT=.false.,&
+             lactivate_reservoir=.false.
   real, dimension (mx) :: x12p,dx12p
   real, dimension (my) :: y12p
   real, dimension (mz) :: z12p
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0, &
           lnTT_min=-max_real, lnTT_min_tau=1.0,lnTT_max=-max_real,lnTT_max_tau=1.0
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
+  real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
            lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
            lnTT_max,lnTT_max_tau, &
            cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
-           lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width
+           lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width,&
+           lactivate_reservoir,cs0p,C_heatflux,tau_res
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -720,6 +723,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
+      real, dimension(my,mz):: rhob
       real, dimension(nx) :: dfy,dfz
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
@@ -935,6 +939,15 @@ module Special
                   f(l1-ig,m,n,iax:iaz)=f(l1-ig,m,n,iax:iaz)+uxb(1:3)*dt_
                 else
                   uu=0.0
+                endif
+! Start putting base density equation here dlnrho/dt=(1-p0*gamma/cs0p^2 rho)
+! p0=-C*qx for qx<0
+! p0=0 for qx>0
+!
+                 if (lactivate_reservoir .and. (f(l1-ig,m,n,iqx) .lt. 0.0)) then
+                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
+                   f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)+ &
+                   (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                 endif
               enddo
 !
