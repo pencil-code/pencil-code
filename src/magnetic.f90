@@ -3222,7 +3222,7 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real :: fact
-      integer :: l,n,j,ml,nl
+      integer :: l,j,ml,nl
       real, dimension(:,:,:), allocatable :: buffer
       real, dimension(nx,3) :: aamx,bb,jj
       real, dimension(ny,3) :: aamy
