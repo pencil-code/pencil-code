@@ -155,7 +155,8 @@ module Magnetic
   real :: taareset=0.0, daareset=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
-  real :: eta_jump=0.0, eta_jump2=0.0, damp=0., two_step_factor=1.
+  real :: eta_jump=0.0, eta_jump0=0.0, eta_jump1=0.0, eta_jump2=0.0
+  real :: damp=0., two_step_factor=1.
   real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: znoise_int=impossible,znoise_ext=impossible
@@ -264,10 +265,10 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
+      lax_ext_global,lay_ext_global,laz_ext_global, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
-      r_inner, r_outer, lpower_profile_file
+      r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2
 !
 ! Run parameters
 !
@@ -402,7 +403,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky
+      lbraginsky, eta_jump0, eta_jump1
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -9056,7 +9057,7 @@ module Magnetic
 !
       use Sub, only: step, der_step
 !
-      real, dimension(nx) :: eta_r,tmp1,tmp2
+      real, dimension(nx) :: eta_r,tmp1,tmp2,prof0,prof1,derprof0,derprof1
       real, dimension(nx,3) :: geta_r
       type (pencil_case) :: p
       character (len=labellen), intent(in) :: rdep_profile
@@ -9089,12 +9090,12 @@ module Magnetic
 !
         case ('two_step','two-step')
 !
-!  Allow for the each step to have its width. If they are
-!  not specified, then eta_xwidth takes precedence.
+!  Allow for the each step to have separate width. If eta_rwidth
+!  is non-zero, it takes precedence.
 !
            if (eta_rwidth .ne. 0.) then
-             eta_rwidth0 =eta_rwidth
-             eta_rwidth1 =eta_rwidth
+             eta_rwidth0 = eta_rwidth
+             eta_rwidth1 = eta_rwidth
            endif
 !
 !  Default to spread gradient over ~5 grid cells,
@@ -9112,9 +9113,44 @@ module Magnetic
            geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
            geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
            geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
+!
+!  Two-step function with different step sizes
+!
+        case ('two_step2','two-step2')
+!
+!  Allow for the each step to have separate width and height.
+!  Here eta_jump0 and eta_jump1 are ratios with respect to eta.
+!
+!  If eta_rwidth is non-zero, it takes precedence.
+!
+           if (eta_rwidth .ne. 0.) then
+             eta_rwidth0 = eta_rwidth
+             eta_rwidth1 = eta_rwidth
+           endif
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+           if (eta_rwidth0 == 0.) eta_rwidth0 = 5.*dx
+           if (eta_rwidth1 == 0.) eta_rwidth1 = 5.*dx
+!
+!  Compute eta-profile
+!
+           prof1    = step(p%r_mn,eta_r1,eta_rwidth1)
+           prof0    = step(p%r_mn,eta_r0,eta_rwidth0) - prof1
+           derprof1 = der_step(p%r_mn,eta_r1,eta_rwidth1)
+           derprof0 = der_step(p%r_mn,eta_r0,eta_rwidth0) - derprof1
+!
+           eta_r = eta + (eta*(eta_jump0-1.))*prof0    + (eta*(eta_jump1-1.))*prof1
+!
+!  ... and its gradient.
+!
+           tmp1  = eta + (eta*(eta_jump0-1.))*derprof0 + (eta*(eta_jump1-1.))*derprof1
+           geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
+           geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
+           geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
       endselect
 !
-!  debug output (currently only on root processor)
+!  Debug output (currently only on root processor)
 !
       if (lroot.and.ldebug) then
         print*
