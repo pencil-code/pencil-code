@@ -10,4 +10,5 @@ Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 References:
   in preparation
-Code version of reference.out
+Code version of reference.out:
+e82b389ae976dc6eb0186227e2d9a7a346e7d92d

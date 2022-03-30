@@ -65,6 +65,7 @@ sedimentation                       Chao-Chin Yang <ccyang/unlv[dot]edu>
 shear-buoyancy                      Axel Brandenburg <brandenb/nordita[dot]org>
 sink-particles                      Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 sink-particles                      Chao-Chin Yang <ccyang/unlv[dot]edu>
+small-scale-dynamo_slope-limited-diffusion Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
 sound-spherical-bufferzone          succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 sound-spherical-noequi              succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 spherical-convection-corona         Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
