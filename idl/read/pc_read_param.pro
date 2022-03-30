@@ -107,6 +107,7 @@ COMPILE_OPT IDL2,HIDDEN
   obj = {param_file: filename}
   for pos = 1, num_lines-1 do begin
     line = result[pos]
+    if stregex(line,'par *= *{',/boolean) then continue
     EOL = stregex (line, ',? *\$ *$')
     if (EOL gt 0) then begin
 ;
@@ -153,8 +154,8 @@ COMPILE_OPT IDL2,HIDDEN
       if not ok then code = 'struct = {'+strmid (line, 0, EOL)+'}'
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
       obj = create_struct (obj, struct)
-    end
-  end
+    endif
+  endfor
   object = create_struct(name='PC_PARAM:'+strtrim(filename)+':'+(precision eq 'S' or single ? 'S' : 'D'), obj)
 ;
 ; If requested print a summary
