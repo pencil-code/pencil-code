@@ -3255,15 +3255,15 @@ module Magnetic
 
           fact=1./nxzgrid
           do j=1,3
-            do m=m1,m2
-              aamy(m-nghost,j)=fact*sum(f(l1:l2,m,n1:n2,iax+j-1))
+            do ml=m1,m2
+              aamy(ml-nghost,j)=fact*sum(f(l1:l2,ml,n1:n2,iax+j-1))
             enddo
           enddo
           call finalize_aver(nprocxz,13,aamy)
 !
           do j=1,3
-            do m=m1,m2
-              f(l1:l2,m,n1:n2,iax+j-1) = f(l1:l2,m,n1:n2,iax+j-1)-aamy(m-nghost,j)
+            do ml=m1,m2
+              f(l1:l2,ml,n1:n2,iax+j-1) = f(l1:l2,ml,n1:n2,iax+j-1)-aamy(ml-nghost,j)
             enddo
           enddo
 
@@ -3274,16 +3274,16 @@ module Magnetic
 !
         fact=1./nxygrid
         do j=1,3
-          do n=n1,n2
-            aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
+          do nl=n1,n2
+            aamz(nl,j)=fact*sum(f(l1:l2,m1:m2,nl,iax+j-1))
           enddo
         enddo
         call finalize_aver(nprocxy,12,aamz)
 !
         if (lrmv.and.lremove_meanaz) then
           do j=1,3
-            do n=n1,n2
-              f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
+            do nl=n1,n2
+              f(l1:l2,m1:m2,nl,iax+j-1) = f(l1:l2,m1:m2,nl,iax+j-1)-aamz(nl,j)
             enddo
           enddo
         endif
@@ -3310,8 +3310,8 @@ module Magnetic
             aamxz=fact*sum(f(l1:l2,m1:m2,n1:n2,iaa+j-1),2)  ! requires equidistant grid
             call finalize_aver(nprocy,2,aamxz)
 !
-            do m=m1,m2
-              f(l1:l2,m,n1:n2,iaa+j-1) = f(l1:l2,m,n1:n2,iaa+j-1)-aamxz
+            do ml=m1,m2
+              f(l1:l2,ml,n1:n2,iaa+j-1) = f(l1:l2,ml,n1:n2,iaa+j-1)-aamxz
             enddo
 
           enddo
@@ -3345,8 +3345,8 @@ module Magnetic
 
             call finalize_aver(nprocz,3,aamxy)
 !
-            do n=n1,n2
-              f(l1:l2,m1:m2,n,iaa+j-1) = f(l1:l2,m1:m2,n,iaa+j-1)-tau_remove_meanaxy*aamxy
+            do nl=n1,n2
+              f(l1:l2,m1:m2,nl,iaa+j-1) = f(l1:l2,m1:m2,nl,iaa+j-1)-tau_remove_meanaxy*aamxy
             enddo
           enddo
 
