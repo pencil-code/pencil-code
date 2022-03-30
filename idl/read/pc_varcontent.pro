@@ -254,6 +254,7 @@ indices_aux = [ $
   { name:'ihhT_realspace', label:'ihhT_realspace', dims:1 }, $
   { name:'ihhX_realspace', label:'ihhX_realspace', dims:1 }, $
   { name:'isld_char', label:'SLD characteristic speed', dims:1 }, $
+  { name:'ialfven', label:'Alfven speed', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
   { name:'ieee', label:'eee function', dims:1 }, $
   { name:'ibss', label:'bss function', dims:1 }, $
