@@ -1,0 +1,38 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Run parameters for small scale dynamos
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.3 2020/02/20 12:35:53 joern Exp $',
+  nt=20, it1=1, isave=2000, itorder=3
+  cdt=0.99
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+  w_sldchar_hyd=1.0
+/
+&density_run_pars
+  lupw_lnrho=T
+  lconserve_total_mass=T
+  total_mass=248.050213
+  idiff='density-slope-limited'
+  h_sld_dens=1.0
+  nlf_sld_dens=3.0
+  lmassdiff_fix=T
+/
+&forcing_run_pars
+  iforce='helical', force=.01, relhel=0.
+/
+&magnetic_run_pars
+  iresistivity='eta-slope-limited'
+  h_sld_magn=1.0
+  nlf_sld_magn=3.0
+  w_sldchar_mag=1.0
+/
+&viscosity_run_pars
+  ivisc='nu-slope-limited'
+  h_sld_visc=1.0
+  nlf_sld_visc=3.0
+/

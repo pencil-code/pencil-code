@@ -5,132 +5,163 @@
 #
 
 
-ChargedParticle_in_MHDturb          Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
-CollidingParticles                  Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
-MHD-ABCforcing                      Axel Brandenburg <brandenb/nordita[dot]dk>
-MRI-turbulence_hyper                Anders Johansen <anders/astro.lu.se>
-MRI-turbulence_hyper_strict         Anders Johansen <anders/astro.lu.se>
 backwards-compatible                Axel Brandenburg <brandenb/nordita[dot]dk>
 baroclinic                          Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+cartesian-convection-kramers        Petri Käpylä <pkaepyl/uni-goettingen[dot]de>
+cartesian-convection-kramers        Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+ChargedParticle_in_MHDturb          Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
 chiral-diffusion                    Axel Brandenburg <brandenb/nordita[dot]dk>
-conv-slab-noequi                    Sven Bingert <mail/bingert[dot]com>
-corona                              Sven Bingert <mail/bingert[dot]com>
+CollidingParticles                  Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+conv-slab-noequi                    Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+conv-slab-noequi                    Sven Bingert <sven[dot]bingert/gwdg[dot]de>
+coronae_heatflux_boris              Sven Bingert <sven[dot]bingert/gwdg[dot]de>
+coronae_heatflux_boris              Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+coronae_heatflux_boris              Matthias Rheinhardt <mreinhardt/nordita[dot]org>
 corona                              Philippe Bourdin <pc/bourdin[dot]ch>
 corona                              Matthias Rheinhardt <mreinhardt/nordita[dot]org>
+corona                              Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+corona                              Sven Bingert <sven[dot]bingert/gwdg[dot]de>
 cosmicray                           Andrew Snodin <Andrew.Snodin/gmail[dot]com>
 cylindrical-globaldisk-dzone        Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 damped_alfven_waves                 Chao-Chin Yang <ccyang/unlv[dot]edu>
 debris-photoelectric-fluid          Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-dust-vortex                         Anders Johansen <anders/astro.lu.se>
 dust_turb_globaldisk                Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-forced-boundary                     Sven Bingert <mail/bingert[dot]com>
+dust-vortex                         Anders Johansen <anders/astro.lu.se>
+forced-boundary                     Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+forced-boundary                     Sven Bingert <sven[dot]bingert/gwdg[dot]de>
 geodynamo                           Graeme Sarson <G.R.Sarson/newcastle[dot]ac[dot]uk>
-helical-MHDturb                     Axel Brandenburg <brandenb/nordita[dot]dk>
+helical-MHDturb                     Axel Brandenburg <brandenb/nordita[dot]org>
 hexagon                             succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 implicit_resistivity                Chao-Chin Yang <ccyang/unlv[dot]edu>
 incompress_conv_peri                Axel Brandenburg <brandenb/nordita[dot]org>
 incompress_turb                     Axel Brandenburg <brandenb/nordita[dot]org>
-interstellar                        Axel Brandenburg <brandenb/nordita[dot]org>
-interstellar                        Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 interstellar_old                    Axel Brandenburg <brandenb/nordita[dot]org>
 interstellar_old                    Fred A. Gent <fred.gent.ncl/gmail[dot]com>
+interstellar                        Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 kin-dynamo                          Axel Brandenburg <brandenb/nordita[dot]dk>
 massively-parallel-compilation      Anders Johansen <anders/astro.lu.se>
 mdwarf                              succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+meanfield_special_e_tensor_GCD      Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+meanfield_special_e_tensor_GCD      Matthias Rheinhardt <mreinhardt/nordita[dot]org>
+meanfield_special_e_tensor          Simo Tuomisto <simo.tuomisto/aalto[dot]fi>
+meanfield_special_e_tensor          Joern Warnecke <joern.warnecke/gmail[dot]com>
+meanfield_special_e_tensor          Matthias Rheinhardt <matthias.rheinhardt/aalto[dot]fi>
 meissner                            succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+MHD-ABCforcing                      Axel Brandenburg <brandenb/nordita[dot]dk>
 most-modules                        Axel Brandenburg <brandenb/nordita[dot]org>
 most-modules                        Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
 most-modules                        Matthias Rheinhardt <mreinhardt/nordita[dot]org>
 most-modules                        Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+MRI-turbulence_hyper                Anders Johansen <anders/astro.lu.se>
+MRI-turbulence_hyper_strict         Anders Johansen <anders/astro.lu.se>
 no-modules                          succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+ParticlesCaustics                   Dhrubaditya Mitra <dhruba/gmail[dot]com>
+ParticlesLyapunov                   succeeds since 2016 Nov 9 # One of [succeeds|failing since <date>|obsolete| ...]
+Pencil-MagIC                        Matthias Rheinhardt <matthias[dot]rheinhardt[at]aalto[dot]fi>
 random_uu_particles                 Anders Johansen <anders/astro.lu.se>
-sedimentation                       Anders Johansen <anders/astro.lu.se>
+sedimentation                       Anders Johansen <anders/astro[dot]lu[dot]se>
 sedimentation                       Matthias Rheinhardt <mreinhardt/nordita[dot]org>
 sedimentation                       Chao-Chin Yang <ccyang/unlv[dot]edu>
 shear-buoyancy                      Axel Brandenburg <brandenb/nordita[dot]org>
+sink-particles                      Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+sink-particles                      Chao-Chin Yang <ccyang/unlv[dot]edu>
 sound-spherical-bufferzone          succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 sound-spherical-noequi              succeeds # One of [succeeds|failing since <date>|obsolete| ...]
-spherical-convection                Petri Käpylä <petri.kapyla/helsinki[dot]fi>
+spherical-convection-corona         Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+spherical-convection-kramers        Petri Käpylä <pkaepyl/uni-goettingen[dot]de>
+spherical-convection-kramers        Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+spherical-convection                Petri Käpylä <pkaepyl/uni-goettingen[dot]de>
+spherical-convection                Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
 spherical-gdisk-planet-thermo       Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 spherical-globaldisk-mhd            Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 spherical-globaldisk                Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 spherical-tests                     Frederick Gent <fred.gent.ncl@gmail.com>
 star-in-a-box_MHS                   Vincent Duez <vduez@astro.uni-bonn.de>
-testfield                           Axel Brandenburg <brandenb/nordita[dot]dk>
 testfield_nonlin_z                  Axel Brandenburg <brandenb/nordita[dot]org>
+testfield                           Axel Brandenburg <brandenb/nordita[dot]dk>
 testfield_xz                        Axel Brandenburg <brandenb/nordita[dot]org>
 testfield_z                         Axel Brandenburg <brandenb/nordita[dot]dk>
 tokamak                             Axel Brandenburg <brandenb/nordita[dot]org>
 turbulent_flame                     Nils Erland L. Haugen <nils.e.haugen/gmail[dot]com>
+0d-tests/chemistry_aped             Axel Brandenburg <brandenb/nordita[dot]dk>
 0d-tests/chemistry_H2_ignition_rkf  Nils Erland L. Haugen <nils.e.haugen/gmail[dot]com>
 0d-tests/chemistry_H2_ignition_rkf  Natalia Babkovskaia <nbabkovskaia/gmail[dot]com>
-0d-tests/chemistry_aped             Axel Brandenburg <brandenb/nordita[dot]dk>
 0d-tests/coag_kernel_cst            Anders Johansen <anders/astro.lu.se>
 0d-tests/coag_kernel_lin            Anders Johansen <anders/astro.lu.se>
 0d-tests/coagulation-fragmentation  Anders Johansen <anders@astro.lu.se>
-0d-tests/heating_ionize             Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
-0d-tests/heating_ionize             Axel Brandenburg <brandenb/nordita[dot]dk>
 0d-tests/heating_ionize_planck      Axel Brandenburg <brandenb/nordita[dot]org>
+0d-tests/heating_ionize             Axel Brandenburg <brandenb/nordita[dot]org>
 0d-tests/heating_noionize           Axel Brandenburg <brandenb/nordita[dot]org>
 0d-tests/reactive_particles         Jonas Krueger <jonas.kruger/ntnu[dot]no>
 0d-tests/solar_system               Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 0d-tests/solar_system               Wladimir Lyra <wladimir.lyra@gmail.com>
-1d-tests/H2_flamespeed              Natalia Babkovskaia <nbabkovskaia/gmail[dot]com>
 1d-tests/alphadisk                  Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 1d-tests/ambipolar_diffusion        Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 1d-tests/anelastic_decay            Axel Brandenburg <brandenb/nordita[dot]dk>
+1d-tests/H2_flamespeed              Natalia Babkovskaia <nbabkovskaia/gmail[dot]com>
 1d-tests/hallmri                    Cecilia Bejarano <cbejarano/iafe[dot]uba[dot]ar>
-1d-tests/implicit_diffusion         Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
+1d-tests/implicit_diffusion         Boris Dintrans <boris.dintrans/gmail[dot]com>
 1d-tests/jeans-drag-dustpar-x       Anders Johansen <anders/astro[dot]lu[dot]se>
 1d-tests/jeans-x                    Anders Johansen <anders/astro[dot]lu[dot]se>
 1d-tests/jeans-x                    Jeff Oishi <jsoishi/gmail[dot]com>
+1d-tests/photo_stratification       Axel Brandenburg <brandenb/nordita[dot]org>
 1d-tests/reversed_field_pinch       Axel Brandenburg <brandenb/nordita[dot]org>
 1d-tests/sedimentation-noneq-blocks Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 1d-tests/sod_10                     Axel Brandenburg <brandenb/nordita[dot]dk>
-1d-tests/sod_10_WENO                Anders Johansen <anders@astro.lu.se>
 1d-tests/sod_10s                    Axel Brandenburg <brandenb/nordita[dot]dk>
+1d-tests/sod_10_WENO                Anders Johansen <anders@astro.lu.se>
+1d-tests/solar-atmosphere           Axel Brandenburg <brandenb/nordita[dot]org>
 1d-tests/solar-atmosphere-temperature Tobias Heinemann <Tobias.Heinemann/gmail[dot]com>
-1d-tests/solar-atmosphere           Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
 1d-tests/telegraph_eqn_alpha2       Axel Brandenburg <brandenb/nordita[dot]org>
 1d-tests/toomre-x                   Anders Johansen <anders/astro[dot]lu[dot]se>
 1d-tests/toomre-x                   Jeff Oishi <jsoishi/gmail[dot]com>
 2d-tests/2d_methane_flame           Julien Savre <juliensavre/gmail[dot]com>
 2d-tests/A3+chi11+Ra1e5             Axel Brandenburg <brandenb/nordita[dot]org>
-2d-tests/GMSW1976                   succeeds # One of [succeeds|failing since <date>|obsolete| ...]
-2d-tests/Kelvin-Helmholtz-disc      Anders Johansen <anders/astro.lu.se>
-2d-tests/Kelvin-Helmholtz           Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-2d-tests/Rayleigh-Taylor            Michiel Lambrechts  <michiel/astro.lu.se>
-2d-tests/Rayleigh-Taylor            x/Aug/2012 
-2d-tests/StokesConvectionMultigrid  Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/baroclinic                 Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/battery_term               Axel Brandenburg <brandenb/nordita[dot]org>
-2d-tests/boussinesq_convection      Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
-2d-tests/bubble                     Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
+2d-tests/boussinesq_convection      Boris Dintrans <boris.dintrans/gmail[dot]com>
+2d-tests/bubble                     Boris Dintrans <boris.dintrans/gmail[dot]com>
 2d-tests/cellular-flame             Nils Erland L. Haugen <nils.e.haugen/gmail[dot]com>
 2d-tests/chemistry_GrayScott        Axel Brandenburg <brandenb/nordita[dot]org>
-2d-tests/conv-slab-MLT              Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
+2d-tests/chiral_dynamo              Jennifer Schober <schober[dot]jen/gmail[dot]com>
+2d-tests/conv-slab-MLT              Boris Dintrans <boris.dintrans/gmail[dot]com>
 2d-tests/cylinder_deposition        Haugen Nils E <Nils.E.Haugen/gmail[dot]com>
+2d-tests/cylinder_ogrid_thermo_chem Haugen Nils E <Nils.E.Haugen/gmail[dot]com>
+2d-tests/cylinder_ogrid_thermo_chem Karchniwy Ewa <ewa.karchniwy/ntnu[dot]no>
 2d-tests/cylindrical_gdisk          Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/debris-photoeletric-streaming Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/field-loop-fargo           Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/globaldisc                 Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+2d-tests/GMSW1976                   succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+2d-tests/highmassplanet             Alex Richert <alexrichert@gmail.com>
+2d-tests/jupiter-atmosphere-cyclogenesis Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+2d-tests/jupiter-atmosphere-cyclogenesis Ali Hyder <alihyder727/gmail[dot]com>
+2d-tests/Kelvin-Helmholtz-disc      Anders Johansen <anders/astro.lu.se>
+2d-tests/Kelvin-Helmholtz           Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/meanfield_NEMPI            Axel Brandenburg <brandenb/nordita[dot]org>
-2d-tests/selfgrav-shearwave-dust-par Anders Johansen <anders/astro.lu.se>
+2d-tests/planet-disk-fargo          Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+2d-tests/Rayleigh-Taylor            Michiel Lambrechts  <michiel/astro.lu.se>
+2d-tests/Rayleigh-Taylor            x/Aug/2012 
 2d-tests/selfgravdisk-deadzone-dust Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+2d-tests/selfgravdisk-logspirals    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/selfgravdisk-planet-dust   Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/selfgravitating-shearwave  Anders Johansen <anders/astro.lu.se>
 2d-tests/selfgravitating-shearwave  Matthias Rheinhardt <mreinhardt/nordita[dot]org>
 2d-tests/selfgravitating-shearwave  Chao-Chin Yang <ccyang/unlv[dot]edu>
-2d-tests/shearwave-dust-par         Anders Johansen <anders/astro.lu.se>
+2d-tests/selfgrav-shearwave-dust-par Anders Johansen <anders/astro.lu.se>
+2d-tests/shearwave-dust-par         Anders Johansen <anders/astro[dot]lu[dot]se>
 2d-tests/shearwave-dust-par         Chao-Chin Yang <ccyang/unlv[dot]edu>
+2d-tests/SolarAtmosMag+Boris_Corr+Heatflux Piyali Chatterjee <mail/piyali.chatterjee AT iiap / res / in>
 2d-tests/spherical_viscous_ring     Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-2d-tests/streaming_instability      Chao-Chin Yang <ccyang/unlv[dot]edu>
+2d-tests/StokesConvectionMultigrid  Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+2d-tests/torque_migration_noniso    Betsy Hernandez <betsyhern/gmail[dot]com>
 2d-tests/turbulent_potential        Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-polymer/GravityDrivenChannel        Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+2d-tests/WhiteDwarfDisk             Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 polymer/forced_3dturbulence         Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+polymer/GravityDrivenChannel        Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
 sedimentation/blocks                Anders Johansen <anders/astro.lu.se>
-spherical-tests/hor_dipole          Frederick Gent <fred.gent.ncl@gmail.com>
 spherical-tests/hor_dipole_hydro    Frederick Gent <fred.gent.ncl@gmail.com>
+spherical-tests/hor_dipole          Frederick Gent <fred.gent.ncl@gmail.com>
 spherical-tests/ver_dipole          Frederick Gent <fred.gent.ncl@gmail.com>
 supernova-driven-turbulence/1Dhd_init_equidistant Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 supernova-driven-turbulence/1Dhd_init_non-equidistant Fred A. Gent <fred.gent.ncl/gmail[dot]com>
@@ -139,5 +170,7 @@ supernova-driven-turbulence/3Dhd_non-equidistant Fred A. Gent <fred.gent.ncl/gma
 supernova-driven-turbulence/ferriere-hs-magnetic Frederick Gent <fred.gent.ncl/gmail[dot]com>
 supernova-driven-turbulence/interstellar Axel Brandenburg <brandenb/nordita[dot]org>
 supernova-driven-turbulence/interstellar Fred A. Gent <fred.gent.ncl/gmail[dot]com>
+supernova-driven-turbulence/lyapunov_HDtest Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 supernova-driven-turbulence/sedov   Frederick Gent <F.A.Gent/ncl[dot]ac[dot]uk>
 supernova-driven-turbulence/snowplough Frederick Gent <fred.gent.ncl/gmail[dot]com>
+supernova-driven-turbulence/unstratified_MHD_SNe Frederick Gent <fred.gent.ncl/gmail[dot]com>

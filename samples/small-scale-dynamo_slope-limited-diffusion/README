@@ -1,0 +1,13 @@
+Directory:
+    ${PENCIL_HOME}/samples/small-scale-dynamo_slope-limited-diffusion
+SVN Id:
+    $Id$
+Maintainer:
+    Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
+Added:
+    30.03.2022
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+References:
+  in preparation
+Code version of reference.out

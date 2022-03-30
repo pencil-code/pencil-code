@@ -1,0 +1,22 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+FILE_IO   =   file_io_f2003
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  =   magnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+TESTFIELD = notestfield
+
+GRAVITY   = nogravity
+FORCING   =   forcing
+SHEAR     = noshear
+
+REAL_PRECISION = double

@@ -1,0 +1,17 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.3 2020/02/20 12:35:53 joern Exp $'
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-12
+/
