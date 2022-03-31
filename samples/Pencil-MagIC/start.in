@@ -11,4 +11,5 @@
   bcy='a','s','a',' a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a',  'a','s','a'
 /
 &testfield_init_pars
+  luxb_as_aux=T
 /

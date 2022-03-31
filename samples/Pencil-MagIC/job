@@ -1,15 +1,22 @@
 #!/bin/bash -l
 
 #SBATCH --accoun=ituomine
-##SBATCH -N 1
-#SBATCH -n 2
+#SBATCH -N 1
+#SBATCH -n 8
 #SBATCH -p test
 #SBATCH -t 00:03:00
-##SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=8
 
 source src/.moduleinfo
 
 rm -f LOCK
-./start.csh
-touch data/jobid.dat
-./run.csh #src/magic.exe
+./start.csh 
+#-n 2 src/magic_emul.x
+#touch data/jobid.dat
+#./run.csh #src/magic.exe
+#module load gcc openmpi/4.0.3
+
+./run.csh -n 4 src/eulag_emul.x
+#srun -n 2 --multi-prog emul.conf
+#srun -n 1 src/pencil_emul.x : -n 1 src/magic_emul.x
+#mpirun -n 2 src/magic_emul.x 

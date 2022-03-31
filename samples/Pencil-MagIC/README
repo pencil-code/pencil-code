@@ -15,3 +15,4 @@ Comments:
     here the anelastic MHD code MagIC (https://github.com/magic-sph/magic). 
     Communication provides the velocity field from MagIC for use in 
     hydro_kinematic, in case kinematic_flow=='from-foreign-snap'. 
+    Pencil needs to be compiled with FPPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL.

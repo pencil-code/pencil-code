@@ -11,6 +11,8 @@
   lpencil_check=T
   !nghost_read_fewer=0, luse_oldgrid=T
   lkinflow_as_aux=T
+  lwrite_aux=T
+  !tag_foreign=1734
 /
 &hydro_run_pars
   kinematic_flow='from-foreign-snap'
