@@ -5,7 +5,7 @@
 
 MPICOMM   =   mpicomm
 GLOBAL    = noglobal
-FILE_IO   =   file_io_f2003
+#FILE_IO   =   file_io_f2003
 
 HYDRO     =   hydro
 DENSITY   =   density
