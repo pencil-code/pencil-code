@@ -109,10 +109,12 @@ module Special
   logical :: lonly_mag=.false.
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
-  logical :: reinitialize_GW=.false., lboost=.false.
+  logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
+  real :: horndeski_alpM=0., horndeski_alpT=0.
+  real :: scale_factor
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -143,7 +145,7 @@ module Special
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
-    lturnoff, tturnoff, &
+    lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -631,7 +633,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: scale_factor, stress_prefactor2, sign_switch=0, fac_stress_comp
+      real :: stress_prefactor2, sign_switch=0, fac_stress_comp
       type (pencil_case) :: p
 !
       integer :: ij
@@ -1237,6 +1239,11 @@ module Special
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       real :: eTT, eTX, eXT, eXX
+      real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
+      complex :: coefA, coefB
+      complex :: hcomplex_new, gcomplex_new
+      complex :: discrim, det1, lam1, lam2, explam1t, explam2t
+      complex :: cosoth, cosotg, sinoth, sinotg
       intent(inout) :: f
       character (len=2) :: label
       logical :: lsign_om2
@@ -1472,6 +1479,13 @@ module Special
         endselect
       endif
 !
+!  Horndeski preparations
+!
+      if (lhorndeski) then
+        horndeski_alpM_eff=horndeski_alpM/scale_factor
+        horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+      endif
+!
 !  Set ST=SX=0 and reset all spectra.
 !
       S_T_re=0. ; S_T_im=0.
@@ -1527,8 +1541,13 @@ module Special
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
               else
-                if (delkt/=0.) then
-                  om=sqrt(ksqr+delkt**2)
+                if (delkt/=0. .or. lhorndeski) then
+                  if (lhorndeski) then
+                    om2=(1.+horndeski_alpT)*ksqr+delkt**2-horndeski_alpM_eff2
+                    om=sqrt(complex(om2,0.))
+                  else
+                    om=sqrt(ksqr+delkt**2)
+                  endif
                 else
                   om=sqrt(ksqr)
                 endif
@@ -1648,7 +1667,6 @@ module Special
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
             if (om/=0.) then
-
               om1=1./om
               om12=om1**2
 !
@@ -1656,46 +1674,97 @@ module Special
 !  rotation matrix, whose third element is negative (sinot_minus), but
 !  if om^2 is negative, we have cosh and sinh, always with a plus sign.
 !
-              if (lsign_om2) then
-                cosot=cos(om*dt)
-                sinot=sin(om*dt)
-                sinot_minus=-sinot
+              if (lhorndeski) then
+                discrim2=horndeski_alpM_eff**2-4.*om2
+                if (discrim2==0.) discrim2=tini
+                discrim=sqrt(cmplx(discrim2,0.))
+                lam1=.5*(-horndeski_alpM_eff+discrim)
+                lam2=.5*(-horndeski_alpM_eff-discrim)
+!
+!  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
+!
+                explam1t=exp(lam1*dt)
+                explam2t=exp(lam2*dt)
+                det1=1./discrim
+                cosoth=det1*(lam1*explam2t-lam2*explam1t)
+                cosotg=det1*(lam1*explam1t-lam2*explam2t)
+                sinoth=-det1*(     explam2t-     explam1t)*om
+                sinotg=+det1*(     explam2t-     explam1t)/om*lam1*lam2
               else
-                cosot=cosh(om*dt)
-                sinot=sinh(om*dt)
-                sinot_minus=+sinot
+                if (lsign_om2) then
+                  cosot=cos(om*dt)
+                  sinot=sin(om*dt)
+                  sinot_minus=-sinot
+                else
+                  cosot=cosh(om*dt)
+                  sinot=sinh(om*dt)
+                  sinot_minus=+sinot
+                endif
               endif
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-              coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
-              coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
-              coefBre=ggTre*om1
-              coefBim=ggTim*om1
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
+              if (lhorndeski) then
+                coefA=complex(hhTre-om12*S_T_re(ikx,iky,ikz),hhTim-om12*S_T_im(ikx,iky,ikz))
+                coefB=complex(ggTre*om1                     ,ggTim*om1)
+!
+!  Solve wave equation for hT and gT from one timestep to the next.
+!
+                hcomplex_new=cosoth*coefA+sinoth*coefB
+                gcomplex_new=sinotg*coefA+cosotg*coefB
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )= real(hcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=aimag(hcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )= real(gcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
+              else
+                coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
+                coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
+                coefBre=ggTre*om1
+                coefBim=ggTim*om1
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
+              endif
 !
 !  Debug output
 !
               if (ldebug_print) then
                 if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
-                  print*,'AXEL0: ',coefAre,coefBre,hhTre,ggTre
+                  if (lhorndeski) then
+                    print*,'AXEL0 (horndeski): ',om1, coefA,coefB,hhTre,ggTre
+                    print*,'AXEL1 (horndeski): ',cosoth, cosotg, sinoth, sinotg
+                  else
+                    print*,'AXEL0: ',om1, coefAre,coefBre,hhTre,ggTre
+                    print*,'AXEL1: ',cosot, sinot
+                  endif
                 endif
               endif
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-              coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
-              coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
-              coefBre=ggXre*om1
-              coefBim=ggXim*om1
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om+coefAre*om*sinot_minus
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om+coefAim*om*sinot_minus
-
+              if (lhorndeski) then
+                coefA=complex(hhXre-om12*S_X_re(ikx,iky,ikz),hhXim-om12*S_X_im(ikx,iky,ikz))
+                coefB=complex(ggXre*om1,ggXim*om1)
+!
+!  Solve wave equation for hX and gX from one timestep to the next.
+!
+                hcomplex_new=cosoth*coefA+sinoth*coefB
+                gcomplex_new=sinotg*coefA+cosotg*coefB
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )= real(hcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=aimag(hcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )= real(gcomplex_new)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=aimag(gcomplex_new)
+              else
+                coefAre=(hhXre-om12*S_X_re(ikx,iky,ikz))
+                coefAim=(hhXim-om12*S_X_im(ikx,iky,ikz))
+                coefBre=ggXre*om1
+                coefBim=ggXim*om1
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikx,iky,ikz)
+                f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om+coefAre*om*sinot_minus
+                f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om+coefAim*om*sinot_minus
+              endif
             else
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
