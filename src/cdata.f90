@@ -251,7 +251,7 @@ module Cdata
 !
 !  Derived units
 !
-  double precision :: sigmaSB_set=1., c_light_set=1.
+  double precision :: sigmaSB_set=1., c_light_set=1., cp_set=1.
   double precision :: k_B_set=1., m_u_set=1.
 !
 !  Rotation and shear parameters.

@@ -40,7 +40,7 @@ module EquationOfState
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
-  real :: cs0=1.0, cs20=1.0, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
+  real :: cs0=1.0, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -48,7 +48,7 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2bot=impossible, cs2top=impossible
-  real :: fac_cs=1.0
+  real :: fac_cs=1.0, cs20_tdep_rate=1.0
   real, pointer :: mpoly
   real :: sigmaSBt=1.0
   integer :: imass=1
@@ -58,6 +58,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
+  logical :: lcs_tdep=.false.
 !
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
@@ -79,14 +80,16 @@ module EquationOfState
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
-      fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad
+      fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad, &
+      lcs_tdep, cs20_tdep_rate
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp,           &
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       pres_corr, sigmaSBt, &
-      lanelastic_lin, lcs_as_aux, lcs_as_comaux
+      lanelastic_lin, lcs_as_aux, lcs_as_comaux, &
+      lcs_tdep, cs20_tdep_rate
 !
 !  Module variables
 !
@@ -158,6 +161,12 @@ module EquationOfState
         Rgas_unit_sys=k_B_cgs/m_u_cgs
       elseif (unit_system=='SI') then
         Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
+      elseif (unit_system=='set') then
+        if (gamma_m1==0.0) then
+          Rgas_unit_sys=mu*cp_set
+        else
+          Rgas_unit_sys=mu*gamma_m1*gamma1*cp_set
+        endif
       endif
 !
       if (unit_temperature==impossible) then
@@ -172,7 +181,7 @@ module EquationOfState
           endif
           unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         else
-          if (cp==impossible) cp=1.0
+          if (cp==impossible) cp=cp_set
           if (gamma_m1==0.0) then
             Rgas=mu*cp
           else
@@ -198,6 +207,9 @@ module EquationOfState
           else
             cp_reference=Rgas/(mu*gamma_m1*gamma1)
           endif
+!
+!  Check against reference.
+!
           if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'Rgas,mu=', Rgas, mu
             if (lroot) print*,'units_eos: consistency: cp=', cp, &
@@ -500,7 +512,7 @@ module EquationOfState
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
-!  02-04-06/tony: coded
+!  02-apr-06/tony: coded
 !
       if (lcs_as_aux.or.lcs_as_comaux) lpenc_requested(i_cs2)=.true.
 !
@@ -944,7 +956,7 @@ module EquationOfState
           call fatal_error('calc_pencils_eos', &
               'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
         elseif (leos_isothermal) then
-          if (lpenc_loc(i_cs2)) p%cs2=cs20
+          if (lpenc_loc(i_cs2)) p%cs2=cs20t
           if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
           if (lpenc_loc(i_glnTT)) p%glnTT=0.0
           if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
@@ -1127,6 +1139,14 @@ module EquationOfState
     real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
     call keep_compiler_quiet(f)
+!
+!  Allow here for the possibility of a time-dependent sound speed
+!
+      if (lcs_tdep) then
+        cs20t=cs20*exp(-cs20_tdep_rate*t)
+      else
+        cs20t=cs20
+      endif
 !
     endsubroutine ioncalc
 !***********************************************************************
