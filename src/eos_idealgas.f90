@@ -956,7 +956,14 @@ module EquationOfState
           call fatal_error('calc_pencils_eos', &
               'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
         elseif (leos_isothermal) then
-          if (lpenc_loc(i_cs2)) p%cs2=cs20t
+!
+!  Allow here for the possibility of a time-dependent sound speed
+!
+          if (lcs_tdep) then
+            if (lpenc_loc(i_cs2)) p%cs2=cs20*exp(-cs20_tdep_rate*t)
+          else
+            if (lpenc_loc(i_cs2)) p%cs2=cs20
+          endif
           if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
           if (lpenc_loc(i_glnTT)) p%glnTT=0.0
           if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
@@ -1139,14 +1146,6 @@ module EquationOfState
     real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
     call keep_compiler_quiet(f)
-!
-!  Allow here for the possibility of a time-dependent sound speed
-!
-      if (lcs_tdep) then
-        cs20t=cs20*exp(-cs20_tdep_rate*t)
-      else
-        cs20t=cs20
-      endif
 !
     endsubroutine ioncalc
 !***********************************************************************
