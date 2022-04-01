@@ -21,8 +21,8 @@
 \section{Density unit}
 
 In convection, we used to measure $\rho$ in units of $\rho_0=\bra{\rho}$
-and $T$ in units of $[u]^2/\cp$, but in the presence of radiation,
-we also have $\sigmaSB$, and thus
+and $T$ in units of $[T]=[u]^2/\cp$, but in the presence of radiation,
+we also have $\sigmaSB$ as a governing parameter, and thus
 \begin{equation}
 \sigmaSB \left([u]^2/\cp\right)^4=[\rho][u]^3,
 \end{equation}
@@ -33,7 +33,7 @@ i.e.,
 Choosing $[u]=1\km\s^{-1}$, and with
 $\cp=3.46\times10^8$ (cgs) and
 $\sigmaSB=5.67\times10^{-5}$ (cgs), we have
-$[rho]=3.9\times10^{-14}\g\cm^{-3}$.
+$[\rho]=3.9\times10^{-14}\g\cm^{-3}$.
 
 \section{$\sigmaSB$ as a free parameter}
 
@@ -47,29 +47,44 @@ Using now $[\rho]=4\times10^{-4}\g\cm^{-3}$ (BB14), we find
 \end{equation}
 which is $1.02\times10^{10}$ times larger than the actual value.
 
+Note that this artificial change of $\sigmaSB^{\rm art}$ is
+not connected with opacity changes!
+
 \section{KH time scale}
 
 \begin{equation}
 \tau_{\rm KH}={E\over L}
-={[\rho] \cp T R^3\over\sigmaSB^{\rm art} T^4 R^2}
-={[\rho] \cp R\over\sigmaSB^{\rm art} T^3}.
+={[\rho] \cp T R^3\over\sigmaSB T^4 R^2}
+={[\rho] \cp R\over\sigmaSB T^3}.
 \end{equation}
-If we replace $T$ by $gR/\cp$ we have
+Using the fact that $(\dd T/\dd r)_{\rm adiab}=g/\cp$,
+we replace $T$ by $gR/\cp$ and have
 \begin{equation}
 \tau_{\rm KH}
-={[\rho] \cp R\over\sigmaSB^{\rm art} (gR/\cp)^3}
-={[\rho] \cp^4 \over\sigmaSB^{\rm art} g^3 R^2}.
+={[\rho] \cp R\over\sigmaSB (gR/\cp)^3}
+={[\rho] \cp^4 \over\sigmaSB g^3 R^2}.
 \end{equation}
 Replace $R=[u]^2/g$, then
 \begin{equation}
 \tau_{\rm KH}
-={[\rho] \cp^4 \over\sigmaSB^{\rm art} g [u]^4}.
+={[\rho] \cp^4 \over\sigmaSB g [u]^4}.
 \end{equation}
 Using $g=274\times100\cm\s^{-2}$, we have
 $\tau_{\rm KH}=1200\yr$.
-Decreasing $\tau_{\rm KH}$ can be achieved by making
+Decreasing $\tau_{\rm KH}$ can be achieved by making $\sigmaSB$
 larger than it is in reality, i.e., the same trend as
 found above.
+
+The value of $\tau_{\rm KH}=1200\yr$ is representative of the
+surface layers of the sun.
+Making $[u]$ smaller would increase $\tau_{\rm KH}$ even further,
+as expected.
+
+\section{Simulations with non-dimensional units}
+
+If we continue working with $[\rho]=1$, etc, we should set
+$\sigmaSB^{\rm art}$ as input parameter.
+
 
 %\begin{figure}[h!]\begin{center}
 %\includegraphics[width=\columnwidth]{X}
