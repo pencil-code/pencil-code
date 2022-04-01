@@ -1,0 +1,100 @@
+%$Id: notes.tex,v 1.101 2022/03/06 06:17:42 brandenb Exp $
+%\documentclass{article}
+\documentclass[twocolumn]{article}
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
+\usepackage{graphicx,natbib,bm,url,color}
+\graphicspath{{./fig/}{./png/}}
+\thispagestyle{empty}
+\input apj
+\input gafd_journ
+\def\red{\textcolor{red}}
+\def\blue{\textcolor{blue}}
+\title{}
+\author{}
+\date{\today,~ $ $Revision: 1.101 $ $}
+\begin{document}
+%\maketitle
+
+\section{Density unit}
+
+In convection, we used to measure $\rho$ in units of $\rho_0=\bra{\rho}$
+and $T$ in units of $[u]^2/\cp$, but in the presence of radiation,
+we also have $\sigmaSB$, and thus
+\begin{equation}
+\sigmaSB \left([u]^2/\cp\right)^4=[\rho][u]^3,
+\end{equation}
+i.e.,
+\begin{equation}
+[\rho]=\sigmaSB [u]^5/\cp^4.
+\end{equation}
+Choosing $[u]=1\km\s^{-1}$, and with
+$\cp=3.46\times10^8$ (cgs) and
+$\sigmaSB=5.67\times10^{-5}$ (cgs), we have
+$[rho]=3.9\times10^{-14}\g\cm^{-3}$.
+
+\section{$\sigmaSB$ as a free parameter}
+
+Fixing instead $[\rho]$, we have,
+\begin{equation}
+\sigmaSB^{\rm art}=\cp^4\,[\rho]/[u]^5.
+\end{equation}
+Using now $[\rho]=4\times10^{-4}\g\cm^{-3}$ (BB14), we find
+\begin{equation}
+\sigmaSB^{\rm art}=5.76\times10^5 \,\mbox{(cgs)}.
+\end{equation}
+which is $1.02\times10^{10}$ times larger than the actual value.
+
+\section{KH time scale}
+
+\begin{equation}
+\tau_{\rm KH}={E\over L}
+={[\rho] \cp T R^3\over\sigmaSB^{\rm art} T^4 R^2}
+={[\rho] \cp R\over\sigmaSB^{\rm art} T^3}.
+\end{equation}
+If we replace $T$ by $gR/\cp$ we have
+\begin{equation}
+\tau_{\rm KH}
+={[\rho] \cp R\over\sigmaSB^{\rm art} (gR/\cp)^3}
+={[\rho] \cp^4 \over\sigmaSB^{\rm art} g^3 R^2}.
+\end{equation}
+Replace $R=[u]^2/g$, then
+\begin{equation}
+\tau_{\rm KH}
+={[\rho] \cp^4 \over\sigmaSB^{\rm art} g [u]^4}.
+\end{equation}
+Using $g=274\times100\cm\s^{-2}$, we have
+$\tau_{\rm KH}=1200\yr$.
+Decreasing $\tau_{\rm KH}$ can be achieved by making
+larger than it is in reality, i.e., the same trend as
+found above.
+
+%\begin{figure}[h!]\begin{center}
+%\includegraphics[width=\columnwidth]{X}
+%\end{center}\caption[]{
+%\url{X}
+%}\label{X}\end{figure}
+
+%\begin{table}[htb]\caption{
+%}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+%$R$ & $T$ & $\kf$ & $\omf$ & $\EEGW$ & $\hrms$ & $k_{\rm peak}$ \\
+%\hline
+%\label{Ttimescale}\end{tabular}}\end{table}
+
+%r e f
+\begin{thebibliography}{}
+
+\bibitem[Barekat \& Brandenburg(2014)]{BB14}
+Barekat, A., \& Brandenburg, A.\yanaN{2014}{571}{A68}
+{Near-polytropic stellar simulations with a radiative surface}
+(BB14)
+
+\end{thebibliography}
+
+%\vfill\bigskip\noindent\tiny\begin{verbatim}
+%$Header: /var/cvs/brandenb/tex/etc/notes.tex,v 1.101 2022/03/06 06:17:42 brandenb Exp $
+%\end{verbatim}
+
+\end{document}
