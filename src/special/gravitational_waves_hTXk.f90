@@ -1544,7 +1544,7 @@ module Special
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
                     om2=(1.+horndeski_alpT)*ksqr+delkt**2-horndeski_alpM_eff2
-                    om=sqrt(complex(om2,0.))
+                    om=sqrt(cmplx(om2,0.))
                   else
                     om=sqrt(ksqr+delkt**2)
                   endif
@@ -1705,8 +1705,8 @@ module Special
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
               if (lhorndeski) then
-                coefA=complex(hhTre-om12*S_T_re(ikx,iky,ikz),hhTim-om12*S_T_im(ikx,iky,ikz))
-                coefB=complex(ggTre*om1                     ,ggTim*om1)
+                coefA=cmplx(hhTre-om12*S_T_re(ikx,iky,ikz),hhTim-om12*S_T_im(ikx,iky,ikz))
+                coefB=cmplx(ggTre*om1                     ,ggTim*om1)
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
@@ -1744,8 +1744,8 @@ module Special
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
               if (lhorndeski) then
-                coefA=complex(hhXre-om12*S_X_re(ikx,iky,ikz),hhXim-om12*S_X_im(ikx,iky,ikz))
-                coefB=complex(ggXre*om1,ggXim*om1)
+                coefA=cmplx(hhXre-om12*S_X_re(ikx,iky,ikz),hhXim-om12*S_X_im(ikx,iky,ikz))
+                coefB=cmplx(ggXre*om1,ggXim*om1)
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
