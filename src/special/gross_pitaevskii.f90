@@ -122,7 +122,7 @@ module Special
   real :: test_sphere_radius = 0.
   real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
-  real :: fact_potself = 1.
+  real :: del2prefactor=1., fact_potself = 1.
   real, dimension(ninit) :: ampl_gpe=0., width_gpe=0.
   real, dimension(ninit) :: xpos_gpe=0., ypos_gpe=0., zpos_gpe=0.
   real, dimension(nx) :: cx_gpe
@@ -142,7 +142,7 @@ module Special
   namelist /special_run_pars/ &
     diff_boundary, limag_time, frame_Ux, test_sphere_radius, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
-    V0_gpe, n_gpe, eps_gpe, fact_potself
+    V0_gpe, n_gpe, eps_gpe, del2prefactor, fact_potself
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -443,7 +443,7 @@ module Special
       real, dimension (nx) :: del2real, del2imag, gpreal2, gpimag2
       real, dimension (nx) :: drealdx, dimagdx
       real, dimension (nx) :: boundaries
-      real :: a, b, c, del2prefactor=1.
+      real :: a, b, c
       type (pencil_case) :: p
 !
 !
