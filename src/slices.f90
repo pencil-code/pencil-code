@@ -380,6 +380,8 @@ contains
       call position(iz3,ipz,nz,iz3_loc,lwrite_slice_xy3)
       call position(iz4,ipz,nz,iz4_loc,lwrite_slice_xy4)
 !
+!  Slices for star-in-box runs.
+!
       lwrite_slice_r = (r_rslice>0.) .and. (nth_rslice>0) .and. (nph_rslice>0)
       if (lwrite_slice_r) then
         if (coord_system/='cartesian') then
