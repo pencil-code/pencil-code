@@ -118,19 +118,21 @@ module Special
   logical :: limag_time = .false.
   real :: diff_boundary = 0.000
   real :: vortex_spacing = 12.000
-  real :: ampl = 0.000
   real :: frame_Ux = 0.
   real :: test_sphere_radius = 0.
   real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
   real :: fact_potself = 1.
+  real, dimension(ninit) :: ampl_gpe=0., width_gpe=0.
+  real, dimension(ninit) :: xpos_gpe=0., ypos_gpe=0., zpos_gpe=0.
   real, dimension(nx) :: cx_gpe
   real, dimension(my) :: cy_gpe
   real, dimension(mz) :: cz_gpe
-  character(len=50) :: initgpe = 'constant'
+  character (len=labellen), dimension(ninit) :: initgpe='nothing'
 !
 ! input parameters
-  namelist /special_init_pars/ initgpe, vortex_spacing, ampl, &
+  namelist /special_init_pars/ initgpe, vortex_spacing, ampl_gpe, &
+    width_gpe, xpos_gpe, ypos_gpe, zpos_gpe, &
     nvortices, vortex_quantization, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
     V0_gpe, n_gpe, eps_gpe, radius_gpe, &
@@ -276,7 +278,7 @@ module Special
       integer, parameter :: mvortices=100
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (4*mvortices) :: tmp
-      integer :: ivortices, jvortices
+      integer :: j, ivortices, jvortices
 !
       intent(inout) :: f
 !
@@ -292,81 +294,88 @@ module Special
       type (ring_param) :: vr1
      ! type (line_param) :: vl1
 
-      vl1 = line_param( 0.0, vortex_spacing*0.5,ampl,33.0, 1.0)
-      vl3 = line_param( 0.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
-      vl2 = line_param( -20.0, vortex_spacing*0.5,ampl,33.0, 1.0)
-      vl4 = line_param( -20.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
+      vl1 = line_param( 0.0, vortex_spacing*0.5,ampl_gpe(1),33.0, 1.0)
+      vl3 = line_param( 0.0,-vortex_spacing*0.5,-ampl_gpe(1),33.0,-1.0)
+      vl2 = line_param( -20.0, vortex_spacing*0.5,ampl_gpe(1),33.0, 1.0)
+      vl4 = line_param( -20.0,-vortex_spacing*0.5,-ampl_gpe(1),33.0,-1.0)
       vr1 = ring_param(-20.0, 0.0, 15.0, -1.0)
 !
 !  choice of initial conditions
 !
-      select case (initgpe)
-        case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('constant', '0');
-          !f(:,:,:,ipsi_real) = 1./sqrt(2.)
-          !f(:,:,:,ipsi_imag) = 1./sqrt(2.)
-          f(:,:,:,ipsi_real) = 1.
-          f(:,:,:,ipsi_imag) = 0.
-        case ('potential');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real) = 1.- &
-              V0_gpe*exp(-(x(l1:l2)**2+y(m)**2)/radius_gpe**2)/g_gpe
-            f(l1:l2,m,n,ipsi_imag) = 0.
-          enddo; enddo
-        case ('vortex-line');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_line(vl0)
-          enddo; enddo
-        case ('vortex-pair');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real:ipsi_imag) = complex_mult(vortex_line(vl1), &
-                                               vortex_line(vl3))
-          enddo; enddo
-        case ('vortices');
-          if (nvortices>mvortices) call fatal_error("gross_pitaevskii","init_special")
-          call random_number_wrapper(tmp)
-          tmp=(tmp-.5)*10.
-          jvortices=0
-          do ivortices=1,nvortices
-            vl1 = line_param(tmp(jvortices+1),tmp(jvortices+2),+ampl,33.0, 1.0)
-            !vl2 = line_param(tmp(jvortices+3),tmp(jvortices+4),-ampl,33.0,-1.0)
+      do j=1,ninit
+        select case (initgpe(j))
+          case ('nothing'); if (lroot) print*,'init_special: nothing'
+          case ('gaussianpos'); call gaussianpos(ampl_gpe(j),f,ipsi_real, &
+            width_gpe(j),xpos_gpe(j),ypos_gpe(j),zpos_gpe(j))
+          case ('constant', '0');
+            !f(:,:,:,ipsi_real) = 1./sqrt(2.)
+            !f(:,:,:,ipsi_imag) = 1./sqrt(2.)
+            f(:,:,:,ipsi_real) = f(:,:,:,ipsi_real) + 1.
+            f(:,:,:,ipsi_imag) = f(:,:,:,ipsi_imag) + 0.
+          case ('potential');
             do n=n1,n2; do m=m1,m2
-              f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
-              complex_mult (f(l1:l2,m,n,ipsi_real:ipsi_imag), &
-                !complex_mult(vortex_line(vl1),vortex_line(vl2)))
-                vortex_line(vl1))
+              f(l1:l2,m,n,ipsi_real) = f(l1:l2,m,n,ipsi_real) + 1.- &
+                V0_gpe*exp(-(x(l1:l2)**2+y(m)**2)/radius_gpe**2)/g_gpe
+              f(l1:l2,m,n,ipsi_imag) = f(l1:l2,m,n,ipsi_imag) + 0.
             enddo; enddo
-          enddo
-        case ('sphere');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real) = imaged_sphere(0.,0.,0.,1)
-            !f(l1:l2,m,n,ipsi_real) = sphere(0.,0.,0.)
-            f(l1:l2,m,n,ipsi_imag) = 0.
-          enddo; enddo
-        case ('add-vortex-ring');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
-              f(l1:l2,m,n,ipsi_real:ipsi_imag) &
-               * vortex_ring(vr1)
-          enddo; enddo
-        case ('add-vortex-pair');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
-              f(l1:l2,m,n,ipsi_real:ipsi_imag) &
-               * vortex_line(vl2) * vortex_line(vl4)
-          enddo; enddo
-        case ('vortex-ring');
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_ring(vr1)
-          enddo; enddo
-        case ('gaussian-noise'); call gaunoise(ampl,f,ipsi_imag,ipsi_imag)
-        case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'init_special: No such value for initgpe: ', trim(initgpe)
+          case ('vortex-line');
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) = f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+                + vortex_line(vl0)
+            enddo; enddo
+          case ('vortex-pair');
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) = f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+                + complex_mult(vortex_line(vl1),vortex_line(vl3))
+            enddo; enddo
+          case ('vortices');
+            if (nvortices>mvortices) call fatal_error("gross_pitaevskii","init_special")
+            call random_number_wrapper(tmp)
+            tmp=(tmp-.5)*10.
+            jvortices=0
+            do ivortices=1,nvortices
+              vl1 = line_param(tmp(jvortices+1),tmp(jvortices+2),+ampl_gpe(1),33.0, 1.0)
+              !vl2 = line_param(tmp(jvortices+3),tmp(jvortices+4),-ampl_gpe(1),33.0,-1.0)
+              do n=n1,n2; do m=m1,m2
+                f(l1:l2,m,n,ipsi_real:ipsi_imag) = f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+                  + complex_mult (f(l1:l2,m,n,ipsi_real:ipsi_imag),vortex_line(vl1))
+                  !complex_mult(vortex_line(vl1),vortex_line(vl2)))
+              enddo; enddo
+            enddo
+          case ('sphere');
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ipsi_real) = f(l1:l2,m,n,ipsi_real) + imaged_sphere(0.,0.,0.,1)
+              !f(l1:l2,m,n,ipsi_real) = sphere(0.,0.,0.)
+              f(l1:l2,m,n,ipsi_imag) = f(l1:l2,m,n,ipsi_imag) + 0.
+            enddo; enddo
+!
+!  The followings are multiplications and need to be implemented differently
+!
+!         case ('add-vortex-ring');
+!           do n=n1,n2; do m=m1,m2
+!             f(l1:l2,m,n,ipsi_real:ipsi_imag) = f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+!                * vortex_ring(vr1)
+!           enddo; enddo
+!         case ('add-vortex-pair');
+!           do n=n1,n2; do m=m1,m2
+!             f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
+!               f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+!                * vortex_line(vl2) * vortex_line(vl4)
+!           enddo; enddo
+          case ('vortex-ring');
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) = f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+                + vortex_ring(vr1)
+            enddo; enddo
+          case ('gaussian-noise'); call gaunoise(ampl_gpe(j),f,ipsi_imag,ipsi_imag)
+          case default
+            !
+            !  Catch unknown values
+            !
+            if (lroot) print*,'init_special: No such value for initgpe: ', trim(initgpe(j))
           call stop_it("")
-      endselect
+        endselect
+      enddo
 !
     endsubroutine init_special
 !***********************************************************************
@@ -517,6 +526,12 @@ module Special
         endif
       else
 !
+!  Following Hui (2021, ARAA 59, 247)
+!  i dpsi/dt = - hbar/(2m) del2(psi) + m V psi, where V is the potential.
+!  dpsi/dt = i hbar/(2m) del2(psi'+i*psi") - i m V (psi'+i*psi")
+!  dpsi'/dt = -hbar/(2m) del2(psi") + m V psi", and
+!  dpsi"/dt = +hbar/(2m) del2(psi') - m V psi'.
+!  In the following, del2prefactor = hbar/(2m), so no 1/2 factor.
 !  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
 !  (but use hbar=m=1)
 !
