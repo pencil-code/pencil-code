@@ -4111,7 +4111,7 @@ endsubroutine pdf
     do ikz=1,nz
       k3=nint(kz(ikz+ipz*nz))
       if (k3>=0 .and. k3<=nk-1) then
-       do iky=1,ny
+        do iky=1,ny
           do ikx=1,nx
             spectrum(k3+1)=spectrum(k3+1) &
              +2*b_re(ikx,iky,ikz)**2 &
