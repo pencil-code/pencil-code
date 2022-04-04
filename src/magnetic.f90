@@ -155,8 +155,7 @@ module Magnetic
   real :: taareset=0.0, daareset=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
-  real :: eta_jump=0.0, eta_jump0=0.0, eta_jump1=0.0, eta_jump2=0.0
-  real :: damp=0., two_step_factor=1.
+  real :: eta_jump=0.0, eta_jump2=0.0, damp=0., two_step_factor=1.
   real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: znoise_int=impossible,znoise_ext=impossible
@@ -173,7 +172,7 @@ module Magnetic
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real
   real :: r_inner=0.,r_outer=0.
   integer, target :: va2power_jxb = 5
-  integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
+  integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
   logical, pointer :: lrelativistic_eos
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
@@ -241,6 +240,7 @@ module Magnetic
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true.
   logical :: lbraginsky=.false.
+  logical :: lcoulomb=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -265,10 +265,10 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      lax_ext_global,lay_ext_global,laz_ext_global, &
+      lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
-      r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2
+      r_inner, r_outer, lpower_profile_file, lcoulomb
 !
 ! Run parameters
 !
@@ -403,7 +403,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1
+      lbraginsky, lcoulomb
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -429,6 +429,7 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\nabla\Lambda\cdot\Bv\right>$
   integer :: idiag_abumx=0      ! DIAG_DOC: $\left<u_x\Av\cdot\Bv\right>$
   integer :: idiag_abumy=0      ! DIAG_DOC: $\left<u_y\Av\cdot\Bv\right>$
   integer :: idiag_abumz=0      ! DIAG_DOC: $\left<u_z\Av\cdot\Bv\right>$
@@ -1047,6 +1048,11 @@ module Magnetic
       if (ljjt_as_aux) then
         call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
         ltime_integrals=.true.
+      endif
+!
+      if (lcoulomb) then
+        call register_report_aux('Lam', iLam,communicated=.true.)
+        call register_report_aux('diva', idiva,communicated=.true.)
       endif
 !
       if (lua_as_aux ) call register_report_aux('ua',iua,communicated=.true.)
@@ -2341,6 +2347,10 @@ module Magnetic
 !
       if (linitial_condition) call initial_condition_aa(f)
 !
+!  Set diva=0 when lcoulomb=T
+!
+      if (idiva/=0.) f(:,:,:,idiva)=0.
+!
 !  In 2-D with nz=1, setting Ax=Ay=0 makes sense, but shouldn't
 !  be compulsory, so allow for this possibility in 2-D.
 !
@@ -2574,6 +2584,10 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+!
+!  for Coulomb gauge
+!
+      if(lcoulomb) lpenc_requested(i_diva)=.true.
 !
 !  Pencils requested for diamagnetism
 !
@@ -3218,16 +3232,18 @@ module Magnetic
       use EquationOfState, only: rho0
       use Yinyang_mpi, only: zsum_yy
       use Mpicomm, only: mpiallreduce_sum
+      use Poisson
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real :: fact
-      integer :: l,j,ml,nl
+      integer :: l,n,j,ml,nl
       real, dimension(:,:,:), allocatable :: buffer
+      real, dimension(:,:,:), allocatable :: rhs_poisson
       real, dimension(nx,3) :: aamx,bb,jj
       real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
-      real, dimension(nx) :: rho1, b2, tmp, tmp2
+      real, dimension(nx) :: rho1, b2, tmp, tmp2, diva
       real, dimension(3) :: b_ext
 !
 !  Compute mean field (xy verage) for each component. Do not include the ghost zones.
@@ -3255,15 +3271,15 @@ module Magnetic
 
           fact=1./nxzgrid
           do j=1,3
-            do ml=m1,m2
-              aamy(ml-nghost,j)=fact*sum(f(l1:l2,ml,n1:n2,iax+j-1))
+            do m=m1,m2
+              aamy(m-nghost,j)=fact*sum(f(l1:l2,m,n1:n2,iax+j-1))
             enddo
           enddo
           call finalize_aver(nprocxz,13,aamy)
 !
           do j=1,3
-            do ml=m1,m2
-              f(l1:l2,ml,n1:n2,iax+j-1) = f(l1:l2,ml,n1:n2,iax+j-1)-aamy(ml-nghost,j)
+            do m=m1,m2
+              f(l1:l2,m,n1:n2,iax+j-1) = f(l1:l2,m,n1:n2,iax+j-1)-aamy(m-nghost,j)
             enddo
           enddo
 
@@ -3274,16 +3290,16 @@ module Magnetic
 !
         fact=1./nxygrid
         do j=1,3
-          do nl=n1,n2
-            aamz(nl,j)=fact*sum(f(l1:l2,m1:m2,nl,iax+j-1))
+          do n=n1,n2
+            aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
           enddo
         enddo
         call finalize_aver(nprocxy,12,aamz)
 !
         if (lrmv.and.lremove_meanaz) then
           do j=1,3
-            do nl=n1,n2
-              f(l1:l2,m1:m2,nl,iax+j-1) = f(l1:l2,m1:m2,nl,iax+j-1)-aamz(nl,j)
+            do n=n1,n2
+              f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
             enddo
           enddo
         endif
@@ -3310,8 +3326,8 @@ module Magnetic
             aamxz=fact*sum(f(l1:l2,m1:m2,n1:n2,iaa+j-1),2)  ! requires equidistant grid
             call finalize_aver(nprocy,2,aamxz)
 !
-            do ml=m1,m2
-              f(l1:l2,ml,n1:n2,iaa+j-1) = f(l1:l2,ml,n1:n2,iaa+j-1)-aamxz
+            do m=m1,m2
+              f(l1:l2,m,n1:n2,iaa+j-1) = f(l1:l2,m,n1:n2,iaa+j-1)-aamxz
             enddo
 
           enddo
@@ -3345,8 +3361,8 @@ module Magnetic
 
             call finalize_aver(nprocz,3,aamxy)
 !
-            do nl=n1,n2
-              f(l1:l2,m1:m2,nl,iaa+j-1) = f(l1:l2,m1:m2,nl,iaa+j-1)-tau_remove_meanaxy*aamxy
+            do n=n1,n2
+              f(l1:l2,m1:m2,n,iaa+j-1) = f(l1:l2,m1:m2,n,iaa+j-1)-tau_remove_meanaxy*aamxy
             enddo
           enddo
 
@@ -3422,6 +3438,17 @@ module Magnetic
           endif
         enddo mn_loop
       endif getbb
+!
+!  Possibility of calculating the magnetic helicity correction for the Coulomb gauge:
+!
+          if (lcoulomb) then
+            if (lfirst) then
+              if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
+              rhs_poisson=f(l1:l2,m1:m2,n1:n2,idiva)
+              call inverse_laplacian(rhs_poisson)
+              f(l1:l2,m1:m2,n1:n2,iLam)=rhs_poisson
+            endif
+          endif
 !
 !  put u.a into auxiliary array
 !
@@ -3525,6 +3552,7 @@ module Magnetic
         else
           call div_other(f(:,:,:,iax:iaz),p%diva)
         endif
+        if (lcoulomb) f(l1:l2,m,n,idiva)=p%diva
       endif
 ! aps
       if (lpenc_loc(i_aps)) p%aps=f(l1:l2,m,n,iaz)*p%rcyl_mn
@@ -5550,14 +5578,14 @@ module Magnetic
 !
       use Diagnostics
       use Sub, only: dot, dot2, multvs, cross_mn, multmv_transp, dot2_mn, &
-        cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans
+        cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans, grad
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
-      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv
+      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
-      real, dimension (nx) :: jxb_dotB0,uxb_dotB0
+      real, dimension (nx) :: jxb_dotB0,uxb_dotB0, gLamb
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: aj, tmp, tmp1, fres2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
@@ -5659,6 +5687,11 @@ module Magnetic
       if (idiag_aybym2/=0) &
           call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
+      if (idiag_gLambm/=0) then
+        call grad(f,iLam,gLam)
+        call dot(gLam,p%bb,gLamb)
+        call sum_mn_name(gLamb,idiag_gLambm)
+      endif
       if (idiag_a2b2m/=0) call sum_mn_name(p%a2*p%b2,idiag_a2b2m)
       if (idiag_j2b2m/=0) call sum_mn_name(p%j2*p%b2,idiag_j2b2m)
       if (idiag_abumx/=0) call sum_mn_name(p%uu(:,1)*p%ab,idiag_abumx)
@@ -6642,7 +6675,7 @@ module Magnetic
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn
-
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: tmp
 !
@@ -9057,7 +9090,7 @@ module Magnetic
 !
       use Sub, only: step, der_step
 !
-      real, dimension(nx) :: eta_r,tmp1,tmp2,prof0,prof1,derprof0,derprof1
+      real, dimension(nx) :: eta_r,tmp1,tmp2
       real, dimension(nx,3) :: geta_r
       type (pencil_case) :: p
       character (len=labellen), intent(in) :: rdep_profile
@@ -9090,12 +9123,12 @@ module Magnetic
 !
         case ('two_step','two-step')
 !
-!  Allow for the each step to have separate width. If eta_rwidth
-!  is non-zero, it takes precedence.
+!  Allow for the each step to have its width. If they are
+!  not specified, then eta_xwidth takes precedence.
 !
            if (eta_rwidth .ne. 0.) then
-             eta_rwidth0 = eta_rwidth
-             eta_rwidth1 = eta_rwidth
+             eta_rwidth0 =eta_rwidth
+             eta_rwidth1 =eta_rwidth
            endif
 !
 !  Default to spread gradient over ~5 grid cells,
@@ -9113,44 +9146,9 @@ module Magnetic
            geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
            geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
            geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
-!
-!  Two-step function with different step sizes
-!
-        case ('two_step2','two-step2')
-!
-!  Allow for the each step to have separate width and height.
-!  Here eta_jump0 and eta_jump1 are ratios with respect to eta.
-!
-!  If eta_rwidth is non-zero, it takes precedence.
-!
-           if (eta_rwidth .ne. 0.) then
-             eta_rwidth0 = eta_rwidth
-             eta_rwidth1 = eta_rwidth
-           endif
-!
-!  Default to spread gradient over ~5 grid cells,
-!
-           if (eta_rwidth0 == 0.) eta_rwidth0 = 5.*dx
-           if (eta_rwidth1 == 0.) eta_rwidth1 = 5.*dx
-!
-!  Compute eta-profile
-!
-           prof1    = step(p%r_mn,eta_r1,eta_rwidth1)
-           prof0    = step(p%r_mn,eta_r0,eta_rwidth0) - prof1
-           derprof1 = der_step(p%r_mn,eta_r1,eta_rwidth1)
-           derprof0 = der_step(p%r_mn,eta_r0,eta_rwidth0) - derprof1
-!
-           eta_r = eta + (eta*(eta_jump0-1.))*prof0    + (eta*(eta_jump1-1.))*prof1
-!
-!  ... and its gradient.
-!
-           tmp1  = eta + (eta*(eta_jump0-1.))*derprof0 + (eta*(eta_jump1-1.))*derprof1
-           geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
-           geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
-           geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
       endselect
 !
-!  Debug output (currently only on root processor)
+!  debug output (currently only on root processor)
 !
       if (lroot.and.ldebug) then
         print*
@@ -9363,7 +9361,7 @@ module Magnetic
         idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0; idiag_b6m=0; idiag_b12m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
-        idiag_a2b2m=0; idiag_j2b2m=0
+        idiag_gLambm=0; idiag_a2b2m=0; idiag_j2b2m=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
@@ -9512,6 +9510,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
         call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'a2b2m',idiag_a2b2m)
         call parse_name(iname,cname(iname),cform(iname),'j2b2m',idiag_j2b2m)
         call parse_name(iname,cname(iname),cform(iname),'abmn',idiag_abmn)
