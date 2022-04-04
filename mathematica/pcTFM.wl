@@ -26,8 +26,18 @@ Input:
 Output:
   A ListPlot showing time series in black and selected data in red";
 
-TFMResult::usage="TFMResult[sim,tsat,vars,{shift,length}] gives a time series of the 
+TFMResultRaw::usage="TFMResultRaw[sim,tsat,vars,{shift,length}] gives a time series of the 
 calculated transport coefficient.
+Input:
+  sim: String. Directory of the run
+  tsat: only data after tsat is extracted
+  vars: Can be one String, or a List of Strings.
+  {shift,length}: two Integers that specify the needed range
+Output:
+  A time series of calculated transport coefficients";
+  
+TFMResult::usage="TFMResult[sim,tsat,vars,{shift,length}] gives a time series of the 
+calculated transport coefficient. Compared to TFMResultRaw, neighboring points are binned.
 Input:
   sim: String. Directory of the run
   tsat: only data after tsat is extracted
@@ -70,7 +80,8 @@ Begin["`Private`"]
 
 getDINIT[sim_,var_]:=With[{sp=StringTake[var,3]},Which[
   MemberQ[{"alp","eta","b11","b12","b21","b22"},sp],"DAAINIT",
-  MemberQ[{"gam","kap","c1r","c2r"},sp],"DCCINIT"
+  MemberQ[{"gam","kap","c1r","c2r"},sp],"DCCINIT",
+  True,"DAAINIT"
   ]//readParamNml[sim,"run.in",#]&
 ]
 
@@ -98,6 +109,9 @@ TFMfindRange[sim_,tsat_,var_,{shift_,length_},plotOption___]:=Module[{t,f,dinit}
   ]
 ]
 
+TFMResultRaw[sim_,tsat_,var_String,{shift_,length_}]:=
+  TFMextractTS[readTS[sim,"t"],readTS[sim,var],getDINIT[sim,var],{shift,length},tsat]//Flatten[#,1]&
+
 TFMResult[sim_,tsat_,var_String,{shift_,length_}]:=Map[
   pcAround,
   TFMextractTS[readTS[sim,"t"],readTS[sim,var],getDINIT[sim,var],{shift,length},tsat]
@@ -113,13 +127,14 @@ TFMResultMean[sim_,tsat_,vars_List,{shift_,length_}]:=Map[
   Map[Last,TFMResult[sim,tsat,vars,{shift,length}],{2}]
 ]
 
-TFMResultCmplx[sim_,tsat_,var_String,{shift_,length_}]:=Module[{t,x,dt,om},
-  {t,x}=TFMResult[sim,tsat,var,{shift,length}]//Transpose;
-  dt=t//Differences//Mean;
+TFMResultCmplx[sim_,tsat_,var_String,{shift_,length_}]:=Module[{t,x,om,fact},
   om=readParamNml[sim,"run.in","OM_TESTFIELD"];
-  Through[
-    {Re,Im}[dt*(Exp[I*om*t] . x)/(t[[-1]]-t[[1]])]
-  ]
+  {t,x}=pcDivide[#,3]&/@(TFMResultRaw[sim,tsat,var,{shift,length}]//Transpose);
+  fact=If[om==0,1,2];
+  MapThread[
+    fact*Through[{Re,Im}[(pcDifferences[#1]*Exp[I*om*#1]) . #2/(#1[[-1]]-#1[[1]])]]&,
+    {t,x}
+  ]//pcAround
 ]
 
 
@@ -131,7 +146,8 @@ End[]
 
 
 Protect[
-  TFMfindRange,TFMResult,TFMResultMean,TFMResultCmplx
+  TFMfindRange,TFMResultRaw,
+  TFMResult,TFMResultMean,TFMResultCmplx
 ]
 
 
