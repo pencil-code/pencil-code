@@ -927,7 +927,7 @@ module Hydro
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
-      use Slices_methods, only: alloc_rslice   !alloc_slice_buffers
+      use Slices_methods, only: alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1384,83 +1384,14 @@ module Hydro
 
       endselect
 !
-      if (ivid_oo/=0) then
-        !call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
-        if (lwrite_slice_xy .and..not.allocated(oo_xy) ) allocate(oo_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(oo_xz) ) allocate(oo_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(oo_yz) ) allocate(oo_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(oo_xy2)) allocate(oo_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(oo_xy3)) allocate(oo_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(oo_xy4)) allocate(oo_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(oo_xz2)) allocate(oo_xz2(nx,nz,3))
-        if (lwrite_slice_r  .and..not.allocated(oo_r  )) call alloc_rslice(oo_r,3)
-      endif
-      if (ivid_o2/=0) then
-        !call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(o2_xy) ) allocate(o2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(o2_xz) ) allocate(o2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(o2_yz) ) allocate(o2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(o2_xy2)) allocate(o2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(o2_xy3)) allocate(o2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(o2_xy4)) allocate(o2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(o2_xz2)) allocate(o2_xz2(nx,nz))
-        if (lwrite_slice_r  .and..not.allocated(o2_r  )) call alloc_rslice(o2_r)
-      endif
-      if (ivid_ou/=0) then
-        !call alloc_slice_buffers(ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2)
-        if (lwrite_slice_xy .and..not.allocated(ou_xy) ) allocate(ou_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(ou_xz) ) allocate(ou_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(ou_yz) ) allocate(ou_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(ou_xy2)) allocate(ou_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(ou_xy3)) allocate(ou_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(ou_xy4)) allocate(ou_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(ou_xz2)) allocate(ou_xz2(nx,nz))
-        if (lwrite_slice_r  .and..not.allocated(ou_r  )) call alloc_rslice(ou_r)
-      endif
-      if (ivid_u2/=0) then
-        !call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
-        if (lwrite_slice_xy .and..not.allocated(u2_xy) ) allocate(u2_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(u2_xz) ) allocate(u2_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(u2_yz) ) allocate(u2_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(u2_xy2)) allocate(u2_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(u2_xy3)) allocate(u2_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(u2_xy4)) allocate(u2_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(u2_xz2)) allocate(u2_xz2(nx,nz))
-        if (lwrite_slice_r  .and..not.allocated(u2_r  )) call alloc_rslice(u2_r)
-      endif
-      if (ivid_divu/=0) then
-        !call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
-        if (lwrite_slice_xy .and..not.allocated(divu_xy) ) allocate(divu_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(divu_xz) ) allocate(divu_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(divu_yz) ) allocate(divu_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(divu_xy2)) allocate(divu_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(divu_xy3)) allocate(divu_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(divu_xy4)) allocate(divu_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(divu_xz2)) allocate(divu_xz2(nx,nz))
-        if (lwrite_slice_r  .and..not.allocated(divu_r  )) call alloc_rslice(divu_r)
-      endif
-      if (ivid_Ma2 /=0) then
-        !call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
-        if (lwrite_slice_xy .and..not.allocated(mach_xy) ) allocate(mach_xy (nx,ny))
-        if (lwrite_slice_xz .and..not.allocated(mach_xz) ) allocate(mach_xz (nx,nz))
-        if (lwrite_slice_yz .and..not.allocated(mach_yz) ) allocate(mach_yz (ny,nz))
-        if (lwrite_slice_xy2.and..not.allocated(mach_xy2)) allocate(mach_xy2(nx,ny))
-        if (lwrite_slice_xy3.and..not.allocated(mach_xy3)) allocate(mach_xy3(nx,ny))
-        if (lwrite_slice_xy4.and..not.allocated(mach_xy4)) allocate(mach_xy4(nx,ny))
-        if (lwrite_slice_xz2.and..not.allocated(mach_xz2)) allocate(mach_xz2(nx,nz))
-        if (lwrite_slice_r  .and..not.allocated(mach_r  )) call alloc_rslice(mach_r)
-      endif
-      if (ivid_uu_sph/=0) then
-        !call alloc_slice_buffers(uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2)
-        if (lwrite_slice_xy .and..not.allocated(uu_sph_xy) ) allocate(uu_sph_xy (nx,ny,3))
-        if (lwrite_slice_xz .and..not.allocated(uu_sph_xz) ) allocate(uu_sph_xz (nx,nz,3))
-        if (lwrite_slice_yz .and..not.allocated(uu_sph_yz) ) allocate(uu_sph_yz (ny,nz,3))
-        if (lwrite_slice_xy2.and..not.allocated(uu_sph_xy2)) allocate(uu_sph_xy2(nx,ny,3))
-        if (lwrite_slice_xy3.and..not.allocated(uu_sph_xy3)) allocate(uu_sph_xy3(nx,ny,3))
-        if (lwrite_slice_xy4.and..not.allocated(uu_sph_xy4)) allocate(uu_sph_xy4(nx,ny,3))
-        if (lwrite_slice_xz2.and..not.allocated(uu_sph_xz2)) allocate(uu_sph_xz2(nx,nz,3))
-        if (lwrite_slice_r  .and..not.allocated(uu_sph_r  )) call alloc_rslice(uu_sph_r,3)
-      endif
+      if (ivid_oo/=0) call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
+      if (ivid_o2/=0) call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
+      if (ivid_ou/=0) call alloc_slice_buffers(ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2,ou_r)
+      if (ivid_u2/=0) call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
+      if (ivid_divu/=0) call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+      if (ivid_Ma2/=0) call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+      if (ivid_uu_sph/=0) &
+        call alloc_slice_buffers(uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
 !
 !  give warning if orms is not set in prints.in
 !

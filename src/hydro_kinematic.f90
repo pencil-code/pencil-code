@@ -196,6 +196,7 @@ module Hydro
       use Boundcond, only: update_ghosts
       use General
       use Mpicomm
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: exp_kinflow1, sph, sph_har_der
@@ -341,16 +342,7 @@ module Hydro
       endif
 !
       if (ivid_uu/=0) then
-        if (.not.lkinflow_as_aux) then
-          !call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
-          if (lwrite_slice_xy .and..not.allocated(uu_xy) ) allocate(uu_xy(nx,ny,3))
-          if (lwrite_slice_xz .and..not.allocated(uu_xz) ) allocate(uu_xz(nx,nz,3))
-          if (lwrite_slice_yz .and..not.allocated(uu_yz) ) allocate(uu_yz(ny,nz,3))
-          if (lwrite_slice_xy2.and..not.allocated(uu_xy2)) allocate(uu_xy2(nx,ny,3))
-          if (lwrite_slice_xy3.and..not.allocated(uu_xy3)) allocate(uu_xy3(nx,ny,3))
-          if (lwrite_slice_xy4.and..not.allocated(uu_xy4)) allocate(uu_xy4(nx,ny,3))
-          if (lwrite_slice_xz2.and..not.allocated(uu_xz2)) allocate(uu_xz2(nx,nz,3))
-        endif
+        if (.not.lkinflow_as_aux) call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
       endif
 
       if (lforeign.and.kinematic_flow=='from-foreign-snap') then
@@ -2507,7 +2499,6 @@ print*, 'Pencil successful', iproc
         if (lfirst.and.ldt) then
           advec_uu=sum(abs(p%uu)*dline_1,2)
           maxadvec=maxadvec+advec_uu
-!if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
       endif
