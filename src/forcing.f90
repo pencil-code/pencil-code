@@ -117,6 +117,9 @@ module Forcing
   real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0, Omega_vortex=0.
   real :: cs0eff=impossible
   type(torus_rect), save :: torus
+  ! GP_TC13 forcing
+  real :: tcor_GP=1.,kmin_GP=1.,kmax_GP=2.,beta_GP=1.3333
+  integer :: nk_GP=2
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -125,6 +128,8 @@ module Forcing
   real, dimension (mx,n_forcing_cont_max) :: sinx,cosx,sinxt,cosxt,embedx
   real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
+  real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
+  real, dimension (100,n_forcing_cont_max) :: t_GP=-1.
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -161,7 +166,7 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time, laniso_forcing_old
+       lrandom_time, laniso_forcing_old, tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -5070,6 +5075,55 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_counter_centrifugal
 !***********************************************************************
+    subroutine init_GP_TC13(i)
+!
+!   4-apr-22/hongzhe: The Galloway-Proctor forcing used in Tobias &
+! Cattaneo (2013). See also Appendix A of Pongkitiwanichakul+2016.
+!
+      use General, only: random_number_wrapper
+!
+      integer,  intent(in) :: i
+!
+      integer :: ii
+      real :: k,knorm,omega,tcor,R_GP,xi,eta
+!
+      sinxt(:,i)=0.
+      cosxt(:,i)=0.
+      sinyt(:,i)=0.
+      cosyt(:,i)=0.
+!
+      if (nk_GP>100) call fatal_error('init_GP_TC13','large nk_GP not implemented')
+      do ii=1,nk_GP
+        k = kmin_GP + (ii-1) * (kmax_GP-kmin_GP)/(nk_GP-1)
+        knorm = k/kmin_GP
+        omega = omega_fcont(i)*( knorm**(2-beta_GP) )
+        tcor = tcor_GP*( knorm**(beta_GP-2) )
+        !
+        !  Refresh random parameters
+        !
+        call random_number_wrapper(R_GP,CHANNEL=channel_force)
+        if ( it==1 .or. R_GP<=( (t-t_GP(ii,i))/tcor ) ) then
+          t_GP(ii,i) = t
+          call random_number_wrapper(xi_GP(ii,i), CHANNEL=channel_force)
+          call random_number_wrapper(eta_GP(ii,i),CHANNEL=channel_force)
+        endif
+        xi = pi*( xi_GP(ii,i)-0.5)
+        eta= pi*( eta_GP(ii,i)-0.5)
+        !
+        !  Compute needed functions
+        !
+        sinxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
+            sin( k * ( x-xi  + cos(omega*t) ) )
+        cosxt(:,i) = cosxt(:,i) + k*( knorm**(-beta_GP) ) * &
+            cos( k * ( x-xi  + cos(omega*t) ) )
+        sinyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
+            sin( k * ( y-eta + sin(omega*t) ) )
+        cosyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
+            cos( k * ( y-eta + sin(omega*t) ) )
+      enddo
+!
+    endsubroutine init_GP_TC13
+!***********************************************************************
     subroutine forcing_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray),intent(OUT) :: f
@@ -5101,6 +5155,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
           cosxt(:,i)=cos(kf_fcont(i)*x+ecost)
           sinyt(:,i)=sin(kf_fcont(i)*y+esint)
           cosyt(:,i)=cos(kf_fcont(i)*y+esint)
+        elseif (iforcing_cont(i)=='GP_TC13') then
+          call init_GP_TC13(i)
         elseif (iforcing_cont(i)=='ABCtdep') then
           ecoxt=eps_fcont(i)*cos( omega_fcont(i)*t)
           ecoyt=eps_fcont(i)*cos(omegay_fcont(i)*t)
@@ -5687,6 +5743,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*(sin(kf_fcont(i)*z(n)+esint)+cos(kf_fcont(i)*y(m)+ecost))
           force(:,2)=fact* cos(kf_fcont(i)*z(n)+esint)
           force(:,3)=fact* sin(kf_fcont(i)*y(m)+ecost)
+!
+!  Galloway-Proctor (GP) forcing in Tobias & Cattaneo (2013)
+!
+        case ('GP_TC13')
+          fact=ampl_ff(i)
+          force(:,1) = -fact*sinyt(m,i)
+          force(:,2) = +fact*cosxt(l1:l2,i)
+          force(:,3) = +fact*( sinxt(l1:l2,i)+cosyt(m,i) )
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
