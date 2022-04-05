@@ -24,6 +24,12 @@ Input:
 Example:
   getParam[dir,\"ReN\"] returns the Reynolds number.";
 
+LuNspec::usage="LuNspec[sim] computes time-dependent Lundquist numbers from power_mag.dat.
+Input:
+  sim: String. Directory of the simulation folder
+Output:
+  A time series of the Lundquist number."
+
 paramMatrix::usage="paramMatrix[sim,{file1,var1},{file2,var2},...] gives in the 
 MatrixForm values of {var1,var2,...} that can be retrived by readParamNml."
 
@@ -212,6 +218,19 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 
 
 (* ::Section:: *)
+(*Dimensionless parameters from spectra files*)
+
+
+LuNspec[sim_]:=Module[{t,spec,Eb,k,l},
+  If[!FileExistsQ[sim<>"/data/power_mag.dat"],Return["power_mag.dat not found"]];
+  {t,spec}=read1D[sim,"power_mag.dat"];
+  Eb=2Total/@spec;
+  l=1/Eb*Total/@(1/Range[Length[spec[[1]]]-1]*Rest[#]&/@spec);
+  {t,Sqrt[Eb]*l/readParamNml[sim,"run.in","ETA"]}//Transpose
+]
+
+
+(* ::Section:: *)
 (*Handy functions*)
 
 
@@ -233,6 +252,7 @@ End[]
 
 Protect[
   pcReload,getParam,
+  LuNspec,
   paramMatrix,infoMatrix
 ]
 
