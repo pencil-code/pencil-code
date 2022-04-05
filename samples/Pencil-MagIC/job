@@ -16,6 +16,7 @@ rm -f LOCK
 #./run.csh #src/magic.exe
 #module load gcc openmpi/4.0.3
 
+# before this, need to do by hand in src: mpif90 -o eulag_emul.x eulag_emul.f90 
 ./run.csh -n 4 src/eulag_emul.x
 #srun -n 2 --multi-prog emul.conf
 #srun -n 1 src/pencil_emul.x : -n 1 src/magic_emul.x

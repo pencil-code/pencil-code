@@ -16,3 +16,6 @@ Comments:
     Communication provides the velocity field from MagIC for use in 
     hydro_kinematic, in case kinematic_flow=='from-foreign-snap'. 
     Pencil needs to be compiled with FPPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL.
+
+# before doing ./run.csh -n 4 src/eulag_emul.x
+# need to do by hand in src: mpif90 -o eulag_emul.x eulag_emul.f90 
