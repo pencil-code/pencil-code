@@ -5226,8 +5226,11 @@ module Initcond
             do iky=1,ny
               do ikx=1,nx
                 lgk=alog10(sqrt(k2(ikx,iky,ikz)))
-                ik=(lgk-lgk0)/dlgk+1
-                if (ik<=1.or.ik>nk) call fatal_error('power_randomphase_hel','ik<=1.or.ik>nk')
+                ik=nint((lgk-lgk0)/dlgk)+1
+                if (ik<1.or.ik>nk) then
+                  print*,'ikz,iky,ikx,lgk,ik,nk=',ikz,iky,ikx,lgk,ik,nk
+                  call fatal_error('power_randomphase_hel','ik<1.or.ik>nk')
+                endif
                 lgk1=lgkk(ik)
                 lgk2=lgkk(ik+1)
                 lgf1=lgff(ik)
