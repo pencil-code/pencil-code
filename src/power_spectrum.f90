@@ -4540,7 +4540,7 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
   real, dimension(nx) :: bbi
-  real, dimension(nk-1) :: invrt,invrt_sum
+  real, dimension(nk) :: invrt,invrt_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -4588,8 +4588,8 @@ endsubroutine pdf
   call fft_xyz_parallel(h_re,h_im)
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
   !
-  do ikr=1,nk-1
-    rr = ikr*dx  !  rr=dx,2dx,...,Lx/2-dx
+  do ikr=1,nk
+    rr = (ikr-1)*dx  !  rr=0,dx,...,Lx/2-dx
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       kxx = kx(ikx+ipx*nx)       !  the true kx
       kyy = ky(iky+ipy*ny)       !  the true ky
@@ -4606,10 +4606,10 @@ endsubroutine pdf
     enddo; enddo; enddo
   enddo
   !
-  call mpireduce_sum(invrt,invrt_sum,nk-1)
+  call mpireduce_sum(invrt,invrt_sum,nk)
   !
   if (lroot) then
-    open(1,file=trim(datadir)//'/invrt_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) invrt_sum
     close(1)
