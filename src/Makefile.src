@@ -2789,7 +2789,11 @@ ifneq ($(IO),io_wrapper)
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC)); \
 	fi
 endif
+ifeq ($(IO),io_mpi2)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OBJ) -c $(IO_SRC)
+else
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
+endif
 #
 ifneq ($(IO_IN),)
 $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
