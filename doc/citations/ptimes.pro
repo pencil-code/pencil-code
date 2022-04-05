@@ -27,7 +27,7 @@ nm=mean(n(good))
 cm=mean(c(good))
 om=mean(o(good))
 ;
-xr=[2002.8,2021.7]
+xr=[2002.8,2022.7]
 plot,y,n,ps=10,yr=[0,64],xr=xr
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55
@@ -41,7 +41,7 @@ print,'total(n)=',fix(total(n))
 print,'total(c)=',fix(total(c))
 print,'total(o)=',fix(total(o)),' ',nint(100*total(o)/total(n)),'%'
 ;
-siz=1.8
+siz=1.7
 xyouts,2003.4,58,'w/o Brandenburg',col=55,siz=siz*.9
 xyouts,2003.4,52,'comp & ref papers',col=122,siz=siz*.8
 ;
