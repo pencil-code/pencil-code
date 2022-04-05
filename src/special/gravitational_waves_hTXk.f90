@@ -1232,7 +1232,7 @@ module Special
       real, dimension (3) :: e1, e2, kvec
       real, dimension (3) :: e1_boost, e2_boost
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
-      real :: fact, delkt
+      real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: gamma_boost, k1_boost, k1sqr_boost, ksqr_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
@@ -1240,7 +1240,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      complex :: coefA, coefB
+      complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosoth, cosotg, sinoth, sinotg
@@ -1278,6 +1278,12 @@ module Special
         allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
         if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkim')
       endif
+!
+!  Compute om2_min, below which no GWs are computed.
+!  Choose 1e-4 arbitrarily.
+!
+      kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
+      om2_min=(1e-4*kmin)**2
 !
 !  set delta_ij
 !
@@ -1544,7 +1550,8 @@ module Special
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
                     om2=(1.+horndeski_alpT)*ksqr+delkt**2-horndeski_alpM_eff2
-                    om=sqrt(cmplx(om2,0.))
+                    om_cmplx=sqrt(cmplx(om2,0.))
+                    om=impossible
                   else
                     om=sqrt(ksqr+delkt**2)
                   endif
@@ -1666,9 +1673,8 @@ module Special
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
 !
-            if (om/=0.) then
-              om1=1./om
-              om12=om1**2
+            if (om2>om2_min) then
+              om12=1./om2
 !
 !  check whether om^2 is positive. If om^2 is positive, we have the standard
 !  rotation matrix, whose third element is negative (sinot_minus), but
@@ -1688,8 +1694,8 @@ module Special
                 det1=1./discrim
                 cosoth=det1*(lam1*explam2t-lam2*explam1t)
                 cosotg=det1*(lam1*explam1t-lam2*explam2t)
-                sinoth=-det1*(     explam2t-     explam1t)*om
-                sinotg=+det1*(     explam2t-     explam1t)/om*lam1*lam2
+                sinoth=-det1*(     explam2t-     explam1t)*om_cmplx
+                sinotg=+det1*(     explam2t-     explam1t)/om_cmplx*lam1*lam2
               else
                 if (lsign_om2) then
                   cosot=cos(om*dt)
@@ -1706,7 +1712,7 @@ module Special
 !
               if (lhorndeski) then
                 coefA=cmplx(hhTre-om12*S_T_re(ikx,iky,ikz),hhTim-om12*S_T_im(ikx,iky,ikz))
-                coefB=cmplx(ggTre*om1                     ,ggTim*om1)
+                coefB=cmplx(ggTre                         ,ggTim    )/om_cmplx
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
@@ -1717,6 +1723,7 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )= real(gcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
               else
+                om1=1./om
                 coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
                 coefAim=(hhTim-om12*S_T_im(ikx,iky,ikz))
                 coefBre=ggTre*om1
@@ -1745,7 +1752,7 @@ module Special
 !
               if (lhorndeski) then
                 coefA=cmplx(hhXre-om12*S_X_re(ikx,iky,ikz),hhXim-om12*S_X_im(ikx,iky,ikz))
-                coefB=cmplx(ggXre*om1,ggXim*om1)
+                coefB=cmplx(ggXre                         ,ggXim    )/om_cmplx
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
