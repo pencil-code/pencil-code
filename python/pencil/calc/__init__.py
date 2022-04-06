@@ -12,6 +12,7 @@ from .draglift import *
 from .tensors import *
 from .Reynolds import *
 from .shocktube import sod
+from .Gaussian_averages import kernel_smooth, gauss_3Dsmooth 
 
 try:
     from .aver2h5 import *
