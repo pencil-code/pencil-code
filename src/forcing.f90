@@ -129,7 +129,6 @@ module Forcing
   real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
   real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
-  real, dimension (100,n_forcing_cont_max) :: t_GP=-1.
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -5094,18 +5093,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (nk_GP>100) call fatal_error('init_GP_TC13','large nk_GP not implemented')
       do ii=1,nk_GP
-        k = kmin_GP + (ii-1) * (kmax_GP-kmin_GP)/(nk_GP-1)
+        if (nk_GP==1) then
+          k = kmin_GP
+        else
+          k = kmin_GP + (ii-1) * (kmax_GP-kmin_GP)/(nk_GP-1)
+        endif
         knorm = k/kmin_GP
         omega = omega_fcont(i)*( knorm**(2-beta_GP) )
         tcor = tcor_GP*( knorm**(beta_GP-2) )
         !
         !  Refresh random parameters
         !
-        call random_number_wrapper(R_GP,CHANNEL=channel_force)
-        if ( it==1 .or. R_GP<=( (t-t_GP(ii,i))/tcor ) ) then
-          t_GP(ii,i) = t
-          call random_number_wrapper(xi_GP(ii,i), CHANNEL=channel_force)
-          call random_number_wrapper(eta_GP(ii,i),CHANNEL=channel_force)
+        if (lfirst) then
+          call random_number_wrapper(R_GP,CHANNEL=channel_force)
+          if ( it==1 .or. R_GP<=(dt/tcor) ) then
+            call random_number_wrapper(xi_GP(ii,i), CHANNEL=channel_force)
+            call random_number_wrapper(eta_GP(ii,i),CHANNEL=channel_force)
+          endif
         endif
         xi = pi*( xi_GP(ii,i)-0.5)
         eta= pi*( eta_GP(ii,i)-0.5)
