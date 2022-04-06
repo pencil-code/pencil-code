@@ -1,10 +1,4 @@
 # fort2h5.py
-#
-# Read existing Fortran unformatted simulation data and write as hdf5.
-#
-#
-# Author: F. Gent (fred.gent.ncl@gmail.com).
-#
 """
 Contains the functions to read old Fortran binary simulation data and
 write snapshots in hdf5 (data/allprocs/VAR*.h5 files), video slices to
@@ -12,7 +6,7 @@ data/slices/uu1_xy.h5, etc. and averages to data/averages/xy.h5, etc
 """
 
 import time
-
+from pencil.math import natural_sort
 
 def var2h5(
     newdir,
@@ -174,9 +168,6 @@ def var2h5(
                             npf = nproc_per_fname
                             iprocs = np.array(np.array_split(np.arange(nprocs), npf)).T
                     procs = iprocs[np.mod(int((rank * nnames) / size), npf)]
-            # if 'VARd1' in allfile_names:
-            #    file_names = np.array_split(allfile_names, size)
-            #    varfile_names = file_names[size-rank-1]
             else:
                 if np.mod(nprocs, size) > 0:
                     procs = np.arange(nprocs + size - np.mod(nprocs, size))
@@ -339,13 +330,9 @@ def var2h5(
                 )
             if lremove_old_snapshots:
                 os.chdir(olddir)
-                cmd = "rm -f " + join(fromdatadir, "proc*", file_name)
-                process = sub.Popen(cmd.split(), stdout=sub.PIPE)
-                output, error = process.communicate()
-                print(cmd, output, error)
-                # os.system(cmd)
+                cmd = "rm -f "+join(olddir, fromdatadir, "proc*", file_name)
+                os.system(cmd)
             del var
-            print("fred: rank {} end vars".format(rank))
 
 
 def slices2h5(
@@ -531,12 +518,11 @@ def slices2h5(
         )
         if lremove_old_slices:
             os.chdir(olddir)
-            cmd = "rm -f " + join(fromdatadir, "proc*", "slice_*")
+            cmd = "rm -f " + join(olddir, fromdatadir, "proc*", "slice_*")
             process = sub.Popen(cmd.split(), stdout=sub.PIPE)
             output, error = process.communicate()
             print(cmd, output, error)
             # os.system(cmd)
-    print("fred: rank {} end slices".format(rank))
     del vslice
 
 
@@ -726,7 +712,7 @@ def aver2h5(
                 del av
             if lremove_old_averages:
                 os.chdir(olddir)
-                cmd = "rm -f " + join(fromdatadir, "*averages.dat")
+                cmd = "rm -f " + join(olddir, fromdatadir, "*averages.dat")
                 process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                 output, error = process.communicate()
                 print(cmd, output, error)
@@ -756,13 +742,12 @@ def aver2h5(
         if l_mpi:
             comm.Barrier()
         os.chdir(olddir)
-        cmd = "rm -f " + join(fromdatadir, "*averages.dat")
+        cmd = "rm -f " + join(olddir, fromdatadir, "*averages.dat")
         if rank == 0:
             process = sub.Popen(cmd.split(), stdout=sub.PIPE)
             output, error = process.communicate()
             print(cmd, output, error)
             # os.system(cmd)
-    print("fred: rank {} end vars".format(rank))
 
 
 def sim2h5(
@@ -973,15 +958,15 @@ def sim2h5(
         if varfile_names == None:
             os.chdir(fromdatadir + "/proc0")
             lVARd = False
-            varfiled_names = glob.glob("VARd*")
+            varfiled_names = natural_sort(glob.glob("VARd*"))
             if len(varfiled_names) > 0:
-                varfile_names = glob.glob("VAR*")
+                varfile_names = natural_sort(glob.glob("VAR*"))
                 for iv in range(len(varfile_names) - 1, -1, -1):
                     if "VARd" in varfile_names[iv]:
                         varfile_names.remove(varfile_names[iv])
                 lVARd = True
             else:
-                varfile_names = glob.glob("VAR*")
+                varfile_names = natural_sort(glob.glob("VAR*"))
             os.chdir(olddir)
         else:
             lVARd = False
@@ -1130,7 +1115,6 @@ def sim2h5(
         print("precision is ", precision)
         sys.stdout.flush()
     if laver2D:
-        print("fred: rank {} laver2D".format(rank))
         aver2h5(
             newdir,
             olddir,
@@ -1179,7 +1163,6 @@ def sim2h5(
         )
     # copy downsampled snapshots if present
     if lvars and lVARd:
-        print("fred: rank {} lVARd".format(rank))
         var2h5(
             newdir,
             olddir,
@@ -1208,7 +1191,6 @@ def sim2h5(
             size=size,
         )
     if lvars:
-        print("fred: rank {} lvars".format(rank))
         var2h5(
             newdir,
             olddir,
@@ -1239,21 +1221,18 @@ def sim2h5(
         )
     # copy old video slices to new h5 sim
     if lvids:
-        print("fred: rank {} lvids".format(rank))
         if lremove_deprecated_vids:
             for ext in ["bb.", "uu.", "ux.", "uy.", "uz.", "bx.", "by.", "bz."]:
-                cmd = "rm -f " + join(fromdatadir, "proc*", "slice_" + ext + "*")
+                cmd = "rm -f " + join(olddir, fromdatadir, "proc*", "slice_" + ext + "*")
                 if rank == 0:
                     process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                     output, error = process.communicate()
                     print(cmd, output, error)
-                    # os.system(cmd)
                 cmd = "rm -f " + join(fromdatadir, "slice_" + ext + "*")
                 if rank == 0:
                     process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                     output, error = process.communicate()
                     print(cmd, output, error)
-                    # os.system(cmd)
         if comm:
             comm.Barrier()
         cmd = "src/read_all_videofiles.x"
@@ -1261,10 +1240,8 @@ def sim2h5(
             process = sub.Popen(cmd.split(), stdout=sub.PIPE)
             output, error = process.communicate()
             print(cmd, output, error)
-            # os.system(cmd)
         if comm:
             comm.Barrier()
-        print("fred: rank {} slice".format(rank))
         slices2h5(
             newdir,
             olddir,
@@ -1284,7 +1261,6 @@ def sim2h5(
         )
     # copy old averages data to new h5 sim
     if laver:
-        print("fred: rank {} aver 1D".format(rank))
         aver2h5(
             newdir,
             olddir,
@@ -1325,7 +1301,6 @@ def sim2h5(
             process = sub.Popen(cmd.split(), stdout=sub.PIPE)
             output, error = process.communicate()
             print(cmd, output, error)
-            # os.system(cmd)
         items = [
             "def_var.pro",
             "index.pro",
@@ -1355,6 +1330,5 @@ def sim2h5(
                     process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                     output, error = process.communicate()
                     print(cmd, output, error)
-                    # os.system(cmd)
     print("Simulation Fortran to h5 completed on rank {}.".format(rank))
     sys.stdout.flush()
