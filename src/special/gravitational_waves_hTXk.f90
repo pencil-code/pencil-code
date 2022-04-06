@@ -1553,10 +1553,12 @@ module Special
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
                   else
-                    om=sqrt(ksqr+delkt**2)
+                    om2=ksqr+delkt**2
+                    om=sqrt(om2)
                   endif
                 else
-                  om=sqrt(ksqr)
+                  om2=ksqr
+                  om=sqrt(om2)
                 endif
                 lsign_om2=.true.
               endif
