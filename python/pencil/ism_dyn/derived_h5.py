@@ -1,35 +1,28 @@
 # derived_h5.py
-#
-# 05-may-20
-# Author: F. Gent (fred.gent.ncl@gmail.com).
-#
 """ Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
  
     uses:
-      compute 'data' arrays of size [nz,ny,nx] as required
-      store 'time' of snapshot
-      compute 'masks' for example by temperature phase
-      compute summary statistics 'stats' 
-      compute 'structure' functions as required
+      compute "data" arrays of size [nz,ny,nx] as required
+      store "time" of snapshot
 """
 import numpy as np
-from scipy.interpolate import interp1d
-from pencil.math import dot, dot2, natural_sort, helmholtz_fft, cpu_optimal
-from pencil.math.derivatives import curl, div, curl2, grad
+from pencil.math import dot, dot2, helmholtz_fft, cpu_optimal
+from pencil.math.derivatives import curl, curl2
 from pencil.calc import fluid_reynolds, magnetic_reynolds
-from pencil.io import open_h5, group_h5, dataset_h5
-from fileinput import input
-from sys import stdout
-import subprocess as sub
+from pencil.io import group_h5, dataset_h5
 from pencil import read
+from scipy.ndimage import gaussian_filter as gf
 import os
 
 
 def is_vector(key):
     """Check if the variable denoted by the label key is a vector."""
     vec = False
-    for tag in ("aa", "uu", "bb", "jj", "upot", "urot", "vort"):
+    for tag in ("aa", "uu", "bb", "jj", "upot", "urot", "vort", "uxb", 
+                "meanuu", "meanbb", "meanjj", "meanvort",  
+                "etadel2a", "curluxb", "curletadel2a", "advec_force",
+                "fvisc", "grav", "gradp", "shear", "coriolis", "lorentz" ):
         if key in tag:
             vec = True
     return vec
@@ -269,11 +262,6 @@ def derive_data(
                             Reynolds_shock=Reynolds_shock,
                             lmix=lmix,
                         )
-                        # print('var shape {}'.format(var.shape))
-                        # if not quiet:
-                        #    print('writing '+key+
-                        #                   ' shape {} chunk {}'.format(
-                        #                         var.shape, [iz,iy,ix]))
                         if is_vector(key):
                             dst["data"][key][
                                 :, n1out:n2out, m1out:m2out, l1out:l2out
@@ -492,7 +480,6 @@ def calc_derived_data(
                 ]
             )
             var = helmholtz_fft(uu, gd, par, rot=True, pot=False)
-            # print('helmholtz shape {}'.format(var.shape))
             return var
 
     # ======================================================================
@@ -645,6 +632,31 @@ def calc_derived_data(
                 bb = bfield(src, dst, "bb", par, gd, l1, l2, m1, m2, n1, n2, nghost)
             var = dot(aa, bb)
             return var
+        
+    #==========================================================================
+    def urand(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+        if key == "u2rand":
+            sigma = 0.02
+            if "sigma" in par.keys:
+                sigma = par.sigma
+            n1shift,n2shift,m1shift,m2shift,l1shift,l2shift=der_limits(
+                                                     n1,n2,m1,m2,l1,l2,nghost)
+            uu = np.array([
+                              src["ux"][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift],
+                              src["uy"][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift],
+                              src["uz"][n1shift:n2shift,m1shift:m2shift,l1shift:l2shift]
+                              ])
+            umean = uu.copy()
+            urand = uu.copy()
+            dx = min(gd.dx,gd.dy,gd.dz)
+            sigma_dx = sigma/dx
+            print("sigma_dx {:.2f} sigma {}".format(sigma_dx,sigma))
+            for j in range(3):
+                umean[j] = gf(uu[j], sigma_dx, mode="reflect")
+                urand[j] = uu[j] - umean[j]
+            var = dot2(urand)
+            n1r,m1r,l1r = under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost)
+            return var[n1r:n2-n1+n1r,m1r:m2-m1+m1r,l1r:l2-l1+l1r]
 
     # ==========================================================================
     def calc_derived_item(key):
@@ -664,14 +676,10 @@ def calc_derived_data(
             "Ma": Mach_Av(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
             "Rm": Rm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
             "Pm": Pm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
+            "u2rand": urand(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
         }
         func = case.get(key, lambda: "No function for " + key)
         return func
         # ======================================================================
 
     return calc_derived_item(key)
-
-
-#    print('end at {} after {} seconds'.format(
-#                                     time.ctime(end_time),end_time-start_time))
-# remains to copy other files and edit param files
