@@ -954,6 +954,8 @@ module Special
 !
 !  computes hyper diffusion for non equidistant grid
 !  using the IGNOREDX keyword.
+!  This includes an optional density floor;
+!  should be moved to density.f90 at some point.
 !
 !  17-feb-10/bing: coded
 !
