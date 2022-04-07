@@ -30,7 +30,10 @@ in this file and save it. In general the path will be ``$PENCIL_HOME/mathematica
 Mathematica will not search in subdirectories, so make sure the package in right in the folder.
 
 After updating ``init.m``, restart the Mathematica kernel (``Evaluation`` -> ``Quit Kernel``).
-To use the package, call ``Needs["pc`"]`` in a notebook or a script.
+To use the package, call ``Needs["pc`"]`` and then ``pcInitialize[]`` in a notebook or a script.
+
+Each time you have updated the data, remember to do ``pcInitialize[]`` or ``pcReload[]`` again.
+These two functions remove some persistent variables defined.
 
 2. Alternatively, if you don't want to modify ``init.m``, you may also call
 
