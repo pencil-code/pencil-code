@@ -5111,8 +5111,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
             call random_number_wrapper(eta_GP(ii,i),CHANNEL=channel_force)
           endif
         endif
-        xi = pi*( xi_GP(ii,i)-0.5)
-        eta= pi*( eta_GP(ii,i)-0.5)
+        xi = 2*pi*( xi_GP(ii,i)-0.5)
+        eta= 2*pi*( eta_GP(ii,i)-0.5)
         !
         !  Compute needed functions
         !
