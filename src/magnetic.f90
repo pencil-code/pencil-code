@@ -3442,6 +3442,8 @@ module Magnetic
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge:
 !
           if (lcoulomb) then
+            if (.not.lpoisson) call fatal_error('magnetic_before_boundary',&
+              'Coulomb gauge needs the Poisson module')
             if (lfirst) then
               if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
               rhs_poisson=f(l1:l2,m1:m2,n1:n2,idiva)
