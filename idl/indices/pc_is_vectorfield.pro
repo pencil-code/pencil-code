@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-function pc_is_vectorfield, variable, $
+function pc_is_vectorfield, varsize, $
     subscripts=subscripts, dim=dim, $
     TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
@@ -11,8 +11,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;         0 otherwise
 ;
   if not keyword_set(yinyang) then yinyang=0 & yinyang=logical_true(yinyang)
-
-  varsize=size(variable)
 ;
   if (n_elements(dim) ne 1) then pc_read_dim, obj=dim, _EXTRA=e
 ;

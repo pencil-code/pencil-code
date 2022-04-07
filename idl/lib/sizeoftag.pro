@@ -16,10 +16,10 @@
    if inds[0] ge 0 then begin
      substr=stregex(res[inds[0]],'^.*Array(.+) *$',/SUBEXPR,/EXTRACT)
      if substr[1] eq '' then $
-       return, 1 $
+       return, [0,1] $
      else begin
        ret=execute('sz='+substr[1])
-       return, sz
+       return, [(size(sz))[n_elements(size(sz))-1],sz,long(product(sz))]
      endelse
    endif else $
      return, -1  

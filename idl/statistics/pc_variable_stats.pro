@@ -4,7 +4,7 @@
 ;;  Summarize data
 ;;  omit ghost zones in the analysis
 ;;
-pro pc_variable_stats,variable, varname=varname, dim=dim, $
+pro pc_variable_stats,variable, struct=struct, tag=tag, varname=varname, dim=dim, $
     MINIMUM=MINIMUM_, MAXIMUM=MAXIMUM_, MEAN=MEAN_, RMS=RMS_, $
     TRIM=TRIM, NOHEADER=NOHEADER, NOVECTORS=NOVECTORS, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
@@ -17,6 +17,8 @@ yinyang = logical_true(yinyang)
 ;
 xyz = ['x', 'y', 'z']
 ;
+;;;statvar = (n_params() eq 1 ? "variable" : "struct."+strtrim(tag))
+
 stat_headings=[ $
                '  name            ',$
                '   ',             $
@@ -79,13 +81,20 @@ if (varname eq 'X')  or (varname eq 'Y')  or (varname eq 'Z') or $
        (varname eq 'YGHOSTS') or (varname eq 'ZGHOSTS') or (varname eq 'FVAL') then return
   endif
 ;
-varsize=size(variable)
+if n_params() eq 1 then $
+  varsize=size(variable) $
+else $
+  if keyword_set(struct) and keyword_set(tag) then $
+    varsize=sizeoftag(struct,tag) $
+  else begin
+    print, 'pc_variable_stats: Error - no variable given!!!' & stop
+  endelse
 ;
 fmt='('+arraytostring(stat_formats[where(requested_stats)],LIST=',',/NOLEAD)+')'
 ;if ( pc_is_scalarfield(variable, dim=dim, $
 ;    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
 
-if ( pc_is_vectorfield(variable, dim=dim, $
+if ( pc_is_vectorfield(varsize, dim=dim, $
    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) eq 1) then begin
 ;
 ;  The array is a vector field...
@@ -94,7 +103,7 @@ if ( pc_is_vectorfield(variable, dim=dim, $
     subscripts[varsize[0]-1-yinyang]=string(j)
     stats[0]="' '+strmid(strlowcase(varname)+'_'+xyz[j]+'          ',0,10)"
 ;
-    if (execute("statvar=variable[" + $
+    if (execute("statvar="+(n_params() eq 1 ? "variable" : "struct."+strtrim(tag))+"[" + $
         arraytostring(subscripts,/NOLEADER)+"]",1) ne 1) then $
         message, 'Error printing stats for ' + varname 
 ;
@@ -108,7 +117,7 @@ endif else begin
 ;
   stats[0]="' '+strmid(strlowcase(varname)+'          ',0,10)"
 ;
-  if (execute("statvar=variable[" + $
+  if (execute("statvar="+(n_params() eq 1 ? "variable" : "struct."+strtrim(tag))+"[" + $
       arraytostring(subscripts,/NOLEADER)+"]",1) ne 1) then $
       message, 'Subscripting array  ' + varname
 ;
