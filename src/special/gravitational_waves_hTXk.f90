@@ -1718,12 +1718,17 @@ module Special
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-                hcomplex_new=cosoth*coefA+sinoth*coefB
+                hcomplex_new=cosoth*coefA+sinoth*coefB+om12*cmplx(S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz))
                 gcomplex_new=sinotg*coefA+cosotg*coefB
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )= real(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=aimag(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )= real(gcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
+!if (om2==4. .and. abs(k3)==2.) then
+!  print*,'AXEL1: t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)=',t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)
+!  print*,'AXEL2: coefA,coefB=',coefA,coefB
+!  print*,'AXEL3: hcomplex_new,gcomplex_new=',hcomplex_new,gcomplex_new
+!endif
               else
                 om1=1./om
                 coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
@@ -1734,6 +1739,14 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
+!if (om2==4. .and. abs(k3)==2.) then
+!  print*,'AXEL1: t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)=',t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)
+!  print*,'AXEL2: coefAre,coefAim,coefBre,coefBim=',coefAre,coefAim,coefBre,coefBim
+!  print*,'AXEL3: hcomplex_new,gcomplex_new=',coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz), &
+!coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz), &
+!coefBre*cosot*om+coefAre*om*sinot_minus, &
+!coefBim*cosot*om+coefAim*om*sinot_minus
+!endif
               endif
 !
 !  Debug output
@@ -1758,7 +1771,7 @@ module Special
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-                hcomplex_new=cosoth*coefA+sinoth*coefB
+                hcomplex_new=cosoth*coefA+sinoth*coefB+om12*cmplx(S_X_re(ikx,iky,ikz),S_X_im(ikx,iky,ikz))
                 gcomplex_new=sinotg*coefA+cosotg*coefB
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )= real(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=aimag(hcomplex_new)
