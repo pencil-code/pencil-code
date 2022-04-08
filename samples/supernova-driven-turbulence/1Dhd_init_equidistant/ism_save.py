@@ -1,4 +1,4 @@
-import pencilnew as pcn
+import pencil as pcn
 import numpy as np
 
 varfile = 'var.dat' # or specific snaphot as required 'VAR?'
