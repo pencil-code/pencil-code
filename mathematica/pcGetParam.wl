@@ -72,7 +72,7 @@ pcReload[]:=Module[{},
   kf[sim_]:=kf[sim]=
     If[readParamNml[sim,"start.in","lforcing"] && readParamNml[sim,"run.in","FORCE"]!=0.,
       If[Length[#[[1]]]==1,#[[2,1]],#[[1,2]]]&@Import[FileNameJoin[{sim,"k.dat"}]],
-      If[MemberQ[readParamNml[sim,"run.in","IFORCING_CONT"],"'GP_TC13'"],
+      If[MemberQ[readParamNml[sim,"run.in","IFORCING_CONT"],x_/;StringStartsQ[x,"'GP_TC13"]],
         readParamNml[sim,"run.in","KMIN_GP"],
         "No forcing"
       ]
