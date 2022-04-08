@@ -5074,7 +5074,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_counter_centrifugal
 !***********************************************************************
-    subroutine init_GP_TC13(i)
+    subroutine calc_GP_TC13(i,sp)
 !
 !   4-apr-22/hongzhe: The Galloway-Proctor forcing used in Tobias &
 ! Cattaneo (2013). See also Appendix A of Pongkitiwanichakul+2016.
@@ -5082,6 +5082,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use General, only: random_number_wrapper
 !
       integer,  intent(in) :: i
+      character (len=*), intent(in) :: sp
 !
       integer :: ii
       real :: k,knorm,omega,tcor,R_GP,xi,eta
@@ -5090,8 +5091,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
       cosxt(:,i)=0.
       sinyt(:,i)=0.
       cosyt(:,i)=0.
+      sinzt(:,i)=0.
+      coszt(:,i)=0.
 !
-      if (nk_GP>100) call fatal_error('init_GP_TC13','large nk_GP not implemented')
+      if (nk_GP>100) call fatal_error('calc_GP_TC13','large nk_GP not implemented')
       do ii=1,nk_GP
         if (nk_GP==1) then
           k = kmin_GP
@@ -5116,17 +5119,31 @@ call fatal_error('hel_vec','radial profile should be quenched')
         !
         !  Compute needed functions
         !
-        sinxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
-            sin( k * ( x-xi  + cos(omega*t) ) )
-        cosxt(:,i) = cosxt(:,i) + k*( knorm**(-beta_GP) ) * &
-            cos( k * ( x-xi  + cos(omega*t) ) )
-        sinyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
-            sin( k * ( y-eta + sin(omega*t) ) )
-        cosyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
-            cos( k * ( y-eta + sin(omega*t) ) )
+        select case (sp)
+        case('xyz')
+          sinxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
+              sin( k * ( x-xi  + cos(omega*t) ) )
+          cosxt(:,i) = cosxt(:,i) + k*( knorm**(-beta_GP) ) * &
+              cos( k * ( x-xi  + cos(omega*t) ) )
+          sinyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
+              sin( k * ( y-eta + sin(omega*t) ) )
+          cosyt(:,i) = sinyt(:,i) + k*( knorm**(-beta_GP) ) * &
+              cos( k * ( y-eta + sin(omega*t) ) )
+        case('yzx')
+          sinzt(:,i) = sinzt(:,i) + k*( knorm**(-beta_GP) ) * &
+              sin( k * ( z-xi  + cos(omega*t) ) )
+          coszt(:,i) = coszt(:,i) + k*( knorm**(-beta_GP) ) * &
+              cos( k * ( z-xi  + cos(omega*t) ) )
+          sinxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
+              sin( k * ( x-eta + sin(omega*t) ) )
+          cosxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
+              cos( k * ( x-eta + sin(omega*t) ) )
+        case default
+          call fatal_error('calc_GP_TC13','no valid iforcing_cont specified')
+        endselect
       enddo
 !
-    endsubroutine init_GP_TC13
+    endsubroutine calc_GP_TC13
 !***********************************************************************
     subroutine forcing_after_boundary(f)
 !
@@ -5160,7 +5177,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
           sinyt(:,i)=sin(kf_fcont(i)*y+esint)
           cosyt(:,i)=cos(kf_fcont(i)*y+esint)
         elseif (iforcing_cont(i)=='GP_TC13') then
-          call init_GP_TC13(i)
+          call calc_GP_TC13(i,'xyz')
+        elseif (iforcing_cont(i)=='GP_TC13_yzx') then
+          call calc_GP_TC13(i,'yzx')
         elseif (iforcing_cont(i)=='ABCtdep') then
           ecoxt=eps_fcont(i)*cos( omega_fcont(i)*t)
           ecoyt=eps_fcont(i)*cos(omegay_fcont(i)*t)
@@ -5755,6 +5774,16 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1) = -fact*sinyt(m,i)
           force(:,2) = -fact*cosxt(l1:l2,i)
           force(:,3) = +fact*( sinxt(l1:l2,i)+cosyt(m,i) )
+!
+!  Same as GP_TC13 with a rotation of axes y->z->x->y.
+!  i.e., the new z axis is the old y axis, etc.
+!  This is for the convenience of testfield_z.
+!
+        case ('GP_TC13_yzx')
+          fact=ampl_ff(i)
+          force(:,1) = -fact*coszt(n,i)
+          force(:,2) = +fact*( sinzt(n,i)+cosxt(l1:l2,i) )
+          force(:,3) = -fact*sinxt(l1:l2,i)
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
