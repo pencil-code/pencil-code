@@ -5753,7 +5753,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case ('GP_TC13')
           fact=ampl_ff(i)
           force(:,1) = -fact*sinyt(m,i)
-          force(:,2) = +fact*cosxt(l1:l2,i)
+          force(:,2) = -fact*cosxt(l1:l2,i)
           force(:,3) = +fact*( sinxt(l1:l2,i)+cosyt(m,i) )
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
