@@ -1,0 +1,16 @@
+#!/bin/sh
+#SBATCH --accoun=ituomine
+#SBATCH --time=10
+#SBATCH -p test
+#SBATCH -N1
+#SBATCH -n 4
+##SBATCH --cpus-per-task=1
+
+source src/.moduleinfo
+
+./start.csh
+touch data/jobid.dat
+rm -f LOCK
+./run.csh
+
+
