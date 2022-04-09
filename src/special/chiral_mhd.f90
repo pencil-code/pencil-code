@@ -104,7 +104,7 @@ module Special
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
    real :: kgaussian_muS=0.,kpeak_muS=0.
    real :: radius_mu5=0., sigma_mu5=0., rescale_mu5=1.
-   real :: diffmu5_, diffmu5_tdep_t0=1., diffmu5_tdep_toffset=1., diffmu5_tdep_exponent=0.
+   real :: diffmu5_=0., diffmu5_tdep_t0=1., diffmu5_tdep_toffset=1., diffmu5_tdep_exponent=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
