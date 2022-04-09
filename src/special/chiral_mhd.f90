@@ -104,6 +104,7 @@ module Special
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
    real :: kgaussian_muS=0.,kpeak_muS=0.
    real :: radius_mu5=0., sigma_mu5=0., rescale_mu5=1.
+   real :: diffmu5_, diffmu5_tdep_t0=1., diffmu5_tdep_toffset=1., diffmu5_tdep_exponent=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
@@ -120,7 +121,7 @@ module Special
    logical :: ldiffmuS_hyper3_simplified=.false.
    logical :: lremove_mean_mu5=.false., lremove_mean_muS=.false.
    logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
-   logical :: ldt_chiral_mhd=.true.
+   logical :: ldt_chiral_mhd=.true., ldiffmu5_tdep=.false.
    logical :: reinitialize_mu5=.false.
 !
   character (len=labellen) :: initspecial='nothing'
@@ -145,7 +146,9 @@ module Special
       diffmu5_hyper3, diffmuS_hyper3, &
       ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term, &
-      reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5
+      reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
+      ldiffmu5_tdep, diffmu5_tdep_toffset, &
+      diffmu5_tdep_t0, diffmu5_tdep_exponent
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -172,9 +175,9 @@ module Special
   integer :: idiag_mu5bjrms=0  ! DIAG_DOC: $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$
   integer :: idiag_oogmu5rms=0  
   integer :: idiag_oogmuSrms=0  
-  integer :: idiag_dt_lambda5=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
+  integer :: idiag_dt_lambda5=0! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
   integer :: idiag_dt_D5=0     ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
-  integer :: idiag_dt_gammaf5=0  ! DIAG_DOC: $1/\Gamma_\mathrm{f}$   
+  integer :: idiag_dt_gammaf5=0! DIAG_DOC: $1/\Gamma_\mathrm{f}$   
   integer :: idiag_dt_CMW=0    ! DIAG_DOC: $\delta x/((C_\mu C_5)^{1/2} \mathrm{max}(|\Bv|))$ 
   integer :: idiag_dt_Dmu=0    ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
   integer :: idiag_dt_vmu=0    ! DIAG_DOC: $\delta x /(\eta \mathrm{max}(|\mu_5 |))$ 
@@ -183,6 +186,7 @@ module Special
   integer :: idiag_mu5b2m=0    ! DIAG_DOC: $\left<\mu_5B^2\right>$
   integer :: idiag_mu5jbm=0    ! DIAG_DOC: $\left<\mu_5\Jv\cdot\Bv\right>$
   integer :: idiag_jxm = 0     ! DIAG_DOC: $\langle J_x\rangle$
+  integer :: idiag_Dmu5_tdep=0 ! DIAG_DOC: $D(t)$
 !
   contains
 !***********************************************************************
@@ -224,7 +228,6 @@ module Special
 !  set gammaf5_input to input value (which was gammaf5)
 !
       gammaf5_input=gammaf5
-!print*,'AXEL, gammaf5_input=',gammaf5
 !
 !  Reinitialize GW field using a small selection of perturbations
 !  that were mostly also available as initial conditions.
@@ -479,7 +482,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2, unity=1.
       real, dimension (nx,3) :: mu5bb, muSmu5oo
 !
 !  Identify module and boundary conditions.
@@ -496,6 +499,8 @@ module Special
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
           +lambda5*EB-gammaf5*p%mu5
 !
+!  Different diffusion operators.
+!
       if (ldiffmu5_hyper2_simplified) then
          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
             -diffmu5_hyper2*p%del4mu5
@@ -503,13 +508,15 @@ module Special
          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
             +diffmu5_hyper3*p%del6mu5
       else
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-            +diffmu5*p%del2mu5 
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_*p%del2mu5 
       endif
 ! 
       if (lmu5adv) then
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
       endif
+!
+!  Set lmu5divu_term=T to obey total chirality conservation in the compressible case.
+!  This is not the default and was only used since Brandenburg (2021, ApJ 911, 110).
 !
       if (lmu5divu_term) then
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
@@ -664,6 +671,7 @@ module Special
         if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
         if (idiag_mu5jbm/=0) call sum_mn_name(p%mu5*p%jb,idiag_mu5jbm)
+        if (idiag_Dmu5_tdep/=0) call max_mn_name(unity*diffmu5_,idiag_Dmu5_tdep)
 !
 !AB: shouldn't this pencil be requested in pencil_criteria_special?
         if (idiag_jxm /= 0) then
@@ -741,7 +749,7 @@ module Special
         idiag_dt_chiral=0; idiag_dt_vmu=0;
         idiag_dt_lambda5=0; idiag_dt_D5=0;
         idiag_dt_gammaf5=0; idiag_dt_CMW=0; idiag_dt_Dmu=0;
-        idiag_jxm=0; idiag_oogmuSrms=0; idiag_oogmu5rms=0
+        idiag_jxm=0; idiag_Dmu5_tdep=0; idiag_oogmuSrms=0; idiag_oogmu5rms=0
       endif
 !
       do iname=1,nname
@@ -778,7 +786,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
         call parse_name(iname,cname(iname),cform(iname),'mu5jbm',idiag_mu5jbm)
-        call parse_name(iname,cname(iname), cform(iname),'jxm', idiag_jxm)
+        call parse_name(iname,cname(iname),cform(iname),'jxm', idiag_jxm)
+        call parse_name(iname,cname(iname),cform(iname),'Dmu5_tdep',idiag_Dmu5_tdep)
       enddo
 !
     endsubroutine rprint_special
@@ -840,6 +849,16 @@ module Special
         case default
           call fatal_error("daa_dt: No such value for gammaf5_tdep:",trim(gammaf5_tdep))
       endselect
+!
+!  The option ldiffmu5_tdep=T allows for a time-dependent diffusivity.
+!  This implementation is equivalent to that in viscosity and magnetic if
+!  lresi_nu_tdep_t0_norm=T and lresi_eta_tdep=T (which is not the default).
+!
+      if (ldiffmu5_tdep) then
+        diffmu5_=diffmu5*max(real(t-diffmu5_tdep_toffset)/diffmu5_tdep_t0,1.)**diffmu5_tdep_exponent
+      else
+        diffmu5_=diffmu5
+      endif
 !
     endsubroutine special_before_boundary
 !***********************************************************************
