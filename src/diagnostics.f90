@@ -966,7 +966,8 @@ module Diagnostics
             fsumxy=0.
           endif
         else
-          if (lfirst_proc_z) allocate(fsumxy(nnamexy,nx,ny))
+          !if (lfirst_proc_z) allocate(fsumxy(nnamexy,nx,ny))
+          allocate(fsumxy(nnamexy,nx,ny))
         endif
 
         call reduce_zsum(fnamexy,fsumxy)
