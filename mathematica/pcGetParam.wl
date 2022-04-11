@@ -24,11 +24,12 @@ Input:
 Example:
   getParam[dir,\"ReN\"] returns the Reynolds number.";
 
-LuNspec::usage="LuNspec[sim] computes time-independent Lundquist numbers from power_mag.dat.
-The definition B*l^(n-1)/eta, where:
+LuNspec::usage="LuNspec[sim] computes time-dependent Lundquist numbers from power_mag.dat.
+The definition B*l^(n-1)/eta(t), where:
 B is the rms magnetic energy exlucding the k=0 mode;
 The length scale l is the energy-weighted value of 1/k;
 n is the power in the diffusion operator del^n (normal diffusion n=2).
+eta(t) is the time-dependent resistivity.
 Input:
   sim: String. Directory of the simulation folder
 Output:
@@ -229,7 +230,7 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 (*Dimensionless parameters from spectra files*)
 
 
-LuNspec[sim_]:=Module[{t,spec,Eb,k,l,n,eta},
+LuNspec[sim_]:=Module[{t,spec,Eb,k,l,n,eta,lnorm,toffset,t0,exp},
   (*error messages*)
   LuNspec::nofile="power_mag.dat not found from `1`.";
   LuNspec::nores="Unfamiliar iresistivity for `1`.";
@@ -252,6 +253,13 @@ LuNspec[sim_]:=Module[{t,spec,Eb,k,l,n,eta},
     "'hyper3-tdep'",{readParamNml[sim,"run.in","ETA"],       6},
     _,               Message[LuNspec::nores,sim];Return[$Failed]
   ];
+  
+  lnorm=readParamNml[sim,"run.in","LRESI_ETA_TDEP_T0_NORM"];
+  toffset=readParamNml[sim,"run.in","ETA_TDEP_TOFFSET"];
+  t0=readParamNml[sim,"run.in","ETA_TDEP_T0"];
+  exp=readParamNml[sim,"run.in","ETA_TDEP_EXPONENT"];
+  eta=eta*If[lnorm,Max[(t-toffset)/t0,1]^exp,Max[#-toffset,t0]^exp&/@t];
+  
   
   {t,Sqrt[Eb]*l^(n-1)/eta}//Transpose
 ]
