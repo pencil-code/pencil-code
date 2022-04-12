@@ -153,7 +153,7 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,{pre_,mx_,my_,mz_},lshear_]:=
 
 
 readVARNRaw[sim_,iVAR_]:=With[{
-  nproc=nProc[sim],
+  nproc=Times@@nProc[sim],
   nVar=Length@varName[sim],
   allvars=Join[varName[sim]//Keys,{"t","gridx","gridy","gridz","dx","dy","dz","deltay","x","y","z"}],
   lshear=readParamNml[sim,"start.in","lshear"]

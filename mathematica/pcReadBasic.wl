@@ -24,9 +24,10 @@ Input:
 Output:
   A value, or String flags like T, F, NaN, or others";
   
-readDim::usage="readDim[sim] reads dimension-related parameters.
+readDim::usage="readDim[sim,n] reads dimension-related parameters.
 Input:
   sim: String. Directory of the simulation folder
+  n: Integer. Optional. If absent then read the global file; otherwise read procn/dim.dat.
 Output:
   An Association object with available arguments
     {mx,my,mz,precision,gh1,gh2,gh3,nx,ny,nz}.";
@@ -37,7 +38,7 @@ Input:
 Output:
   ";
 
-nProc::usage="nProc[sim] returns the total number of processors."
+nProc::usage="nProc[sim] returns a list of number of processors in xyz directions."
 procBounds::usage="procBounds[sim] returns proc bounds."
 
 nSnap::usage="nSnap[sim,iproc:0] returns to number of VARN files in the ith processor."
@@ -54,8 +55,9 @@ Begin["`Private`"]
 (*Read basic information*)
 
 
-readDim[sim_]:=Module[{mx,my,mz,c,precision,gh1,gh2,gh3,nx,ny,nz},
-  {{mx,my,mz,c[1],c[2],c[3]},{precision},{gh1,gh2,gh3},c[4]}=Import@StringJoin[sim,"/data/dim.dat"];
+readDim[sim_,n_Integer:-1]:=Module[{file,mx,my,mz,c,precision,gh1,gh2,gh3,nx,ny,nz},
+  file=StringJoin[sim,"/data",If[n==-1,"","/proc"<>ToString@n],"/dim.dat"];
+  {{mx,my,mz,c[1],c[2],c[3]},{precision},{gh1,gh2,gh3},c[4]}=Import[file];
   precision=Switch[precision,"S","Real32","D","Real64"];
   {nx,ny,nz}=MapThread[(#1-2#2)&,{{mx,my,mz},{gh1,gh2,gh3}}];
   
@@ -65,7 +67,7 @@ readDim[sim_]:=Module[{mx,my,mz,c,precision,gh1,gh2,gh3,nx,ny,nz},
   ]//Association
 ]
 
-nProc[sim_]:=Length@FileNames[sim<>"/data/proc*"]-1
+nProc[sim_]:=Import[sim<>"/data/dim.dat"]//Last//Most
 
 procBounds[sim_]:=Module[{pre,preByte,file,nx,ny,nz,bx,by,bz},
   pre=readDim[sim]["precision"];
