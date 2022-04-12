@@ -25,7 +25,11 @@ BeginPackage["pc`","pcUtils`",
 
 
 pcInitialize::usage="pcInitialize[] is equivalent to (pcReload[];pcPlotStyle[]).";
-pcParallelize::usage="pcParallelize[] sets up the package for multi kernels.";
+pcParallelize::usage="pcParallelize[n] sets up the package for multiple kernels.
+Input:
+  n: Integer. Optional. Launches n subkernels. If not provided then launches all
+     configured subkernels.
+";
 
 pcFunctions::usage="pcFunctions[] returns a list of all available functions in this package."
 
@@ -41,15 +45,19 @@ Begin["`Private`"]
 (*One-click initialization*)
 
 
-pcInitialize[]:=(pcReload[];pcPlotStyle[];)
-pcParallelize[]:=(
-  LaunchKernels[]//Quiet;
+pcDirectory=$InputFileName//DirectoryName;
+pcInitialize[]:=Module[{},
+  pcReload[];pcPlotStyle[];
+]
+pcParallelize[n_|PatternSequence[]]:=With[{dir=pcDirectory},
+  CloseKernels[];
+  LaunchKernels[n]//Quiet;
   ParallelEvaluate[
-    AppendTo[$Path, "/Users/hzhou/Work/pencilCode/pencil-code/mathematica"];
+    AppendTo[$Path,dir];
     Needs["pc`"];
     pcInitialize[]
   ];
-)
+]
 
 
 (* ::Section:: *)

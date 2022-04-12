@@ -10,9 +10,7 @@ Here you can find some tutorials on using Mathematica for post-processing.
 Loading the package
 ===================
 
-There are two ways of telling Mathematica where the package is:
-
-1. Modifying ``init.m`` so that the path to the package is automatically added to the ``$Path`` variable in Mathematica.
+We need to modify ``init.m`` so that the path to the package is automatically added to the ``$Path`` variable in Mathematica.
 First, type
 
 .. code::
@@ -32,33 +30,15 @@ Mathematica will not search in subdirectories, so make sure the package in right
 After updating ``init.m``, restart the Mathematica kernel (``Evaluation`` -> ``Quit Kernel``).
 To use the package, call ``Needs["pc`"]`` and then ``pcInitialize[]`` in a notebook or a script.
 
-Each time you have updated the data, remember to do ``pcInitialize[]`` or ``pcReload[]`` again.
+To use the package on subkernels, call ``pcParallelize[n]``.
+This will launch ``n`` subkernels and load the package on each of them.
+Then you can do things like ``ParallelTable[readTS[...],...]``.
+Only loading the package on the master kernel is not enough.
+See the discussions `here <https://mathematica.stackexchange.com/questions/11595/package-found-with-needs-but-not-with-parallelneeds>`_, and the 'Possible issues' section `here <https://reference.wolfram.com/language/ref/ParallelNeeds.html>`_.
+
+
+Each time you have updated the data, remember to do ``pcInitialize[]`` and ``pcParallelize[n]`` again.
 These two functions remove some persistent variables defined.
-
-2. Alternatively, if you don't want to modify ``init.m``, you may also call
-
-.. code::
-
- Needs["pc`","path/to/this/package"]
-
-each time.
-
-.. admonition:: Note:
-
-        To run the package on subkernels you may need to do something like:
-
-        .. code::
-
-          LaunchKernels[];
-          AppendTo[$Path, "your/pencil/home/mathematica"]//ParallelEvaluate;
-          Needs["pc`"]
-          ParallelNeeds["pc`"]
-
-        Then you can do things like ``ParallelTable[readTS[...],...]``.
-        Note that both ``Needs`` on the master kernel and ``ParallelNeeds`` on subkernels are needed.
-        See also the discussions `here <https://mathematica.stackexchange.com/questions/11595/package-found-with-needs-but-not-with-parallelneeds>`_, and the 'Possible issues' section
-        `here <https://reference.wolfram.com/language/ref/ParallelNeeds.html>`_.
-
 
 
 Pencil Code Commands in General
