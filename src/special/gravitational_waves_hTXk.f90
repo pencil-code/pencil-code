@@ -110,6 +110,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
+  logical :: lnophase_in_stress=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
@@ -146,7 +147,8 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
-    lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
+    lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
+    lnophase_in_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1660,6 +1662,15 @@ module Special
               S_X_im(ikx,iky,ikz)=S_X_im(ikx,iky,ikz)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
+!
+!  Possibility to remove phases
+!
+            if (lnophase_in_stress) then
+              S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
+              S_T_im(ikx,iky,ikz)=0.
+              S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
+              S_X_im(ikx,iky,ikz)=0.
+            endif
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
