@@ -157,6 +157,11 @@ program run
 !
   call initialize_hdf5
 !
+!  Check whether quad precision is supported
+!
+  if (rkind16<0) &
+    call warning('run','quad precision not supported, switch to double')    
+!
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
 !  If downsampling, calculate local start indices and number of data in
