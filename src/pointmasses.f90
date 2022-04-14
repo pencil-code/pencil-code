@@ -1212,11 +1212,10 @@ module PointMasses
           if (lfirst.and.ldt.and.ldt_pointmasses) then
             if (.not.lcallpointmass) then
               v_ij = sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
-              a_ij = sqrt(sum(dfp_pt(ivpx_cart:ivpz_cart)**2))
             else
               v_ij = sqrt(sum((fq(k,ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
-              a_ij = sqrt(sum(dfq(k,ivxq:ivzq)**2) + sum(dfq_cart(k,:)**2))
             endif
+            a_ij = sqrt(sum(Omega2_pm*evr_cart**2))
             r_ij  = sqrt(r2_ij)
             dt1_nbody = max(v_ij/r_ij,sqrt(a_ij/r_ij))
             dt1_max(l1-nghost) = max(dt1_max(l1-nghost),dt1_nbody/cdtq)
@@ -1267,6 +1266,7 @@ module PointMasses
       integer :: ks
       real, dimension (nx,ny,nz,3) :: acceleration
       real, dimension (3) :: accg,torque
+      real :: a_ij,r_ij
 !
       call get_acceleration(acceleration)
 !
@@ -1277,6 +1277,13 @@ module PointMasses
                dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
 !
           if (ldiagnos) call calc_torque(ks,accg)
+!
+          if (lfirst.and.ldt.and.ldt_pointmasses) then
+            a_ij = sqrt(sum(accg**2))
+            r_ij  = r_ref
+            dt1_max(l1-nghost) = max(dt1_max(l1-nghost),sqrt(a_ij/r_ij)/cdtq)
+          endif
+!
         endif
       enddo
 !
