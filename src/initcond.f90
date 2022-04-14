@@ -1020,7 +1020,7 @@ module Initcond
 !
     endsubroutine gaussian3d
 !***********************************************************************
-    subroutine gaussianpos(ampl,f,i,radius,posx,posy,posz)
+    subroutine gaussianpos(ampl,f,i,radius,posx,posy,posz,prefac,slope)
 !
 !  gaussian 3-D bump centered in specific position
 !
@@ -1029,11 +1029,37 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,radius,posx, posy, posz, radius21
+      real :: ampl,radius,posx, posy, posz, radius21, alp
+      real, dimension (nx) :: phase_factor
+      real, optional :: slope
+      character(len=*), optional :: prefac
+!
+!  compute slope
+!
+      if (present(slope)) then
+        alp=slope
+      else
+        alp=-1.
+      endif
+!
+!  compute phase_factor
 !
       radius21=1./radius**2
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*exp(-((x(l1:l2)-posx)**2+(y(m)-posy)**2+(z(n)-posz)**2)*radius21)
+        if (present(prefac)) then
+          select case (prefac)
+          case ('cosx'); phase_factor=+cos(alp*x(l1:l2))
+          case ('sinx'); phase_factor=-sin(alp*x(l1:l2))
+          case default; phase_factor=1.
+          endselect
+        else
+          phase_factor=1.
+        endif
+!
+!  add Gaussian blob to f(l1:l2,m,n,i) with phase_factor
+!
+        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*phase_factor &
+            *exp(-((x(l1:l2)-posx)**2+(y(m)-posy)**2+(z(n)-posz)**2)*radius21)
 !        do l=l1,l2
 !          print*,"c(",x(l),",",y(m),",",z(n),")=", f(l,m,n,i)
 !        enddo
@@ -1049,7 +1075,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
 !  wavenumber k
@@ -1100,7 +1126,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
 !  wavenumber k
@@ -1151,7 +1177,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
 !  wavenumber k
@@ -1202,7 +1228,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
 !  wavenumber k
@@ -1472,7 +1498,7 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
+      real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
 !
 !  This routine should be removed by 2020
@@ -1643,7 +1669,7 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz,zprof
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
+      real, optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
       real :: ampl,k,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
@@ -1833,8 +1859,8 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
-      logical,optional :: sym
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
+      logical, optional :: sym
+      real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,kp,km,ph
 !
 !  possibility of shifting the Bihelical wave by phase ph
@@ -1972,7 +1998,7 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
+      real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
       complex :: omg,omgsqr
 !
@@ -2296,7 +2322,7 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: envelope_x
-      real,optional :: kx,ky,kz,width
+      real, optional :: kx,ky,kz,width
       real :: ampl, k=1., fac
 !
 !  wavenumber k
@@ -2351,7 +2377,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.,fac
 !
 !  wavenumber k
@@ -2448,7 +2474,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz,power
+      real, optional :: kx,ky,kz,power
       real :: ampl,k=1.,fac,width,pow=1.
 !
 !  wavenumber k
@@ -2502,7 +2528,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
+      real, optional :: kx,ky,kz
       real :: ampl,k=1.,fac
 !
 !  wavenumber k
@@ -3751,7 +3777,7 @@ module Initcond
       real, dimension (mx) :: tmp,modulate
       real :: ampl,radius,epsilon_nonaxi,kx,qtube
       real :: center1_y,center1_z,rhorad
-      real,optional :: scale_y
+      real, optional :: scale_y
 !
         kx=2*pi/Lx
         if (lroot) then
@@ -4157,7 +4183,7 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
-      real,optional :: kx
+      real, optional :: kx
       real :: k
 !
       if (present(kx)) then
@@ -4586,7 +4612,7 @@ module Initcond
 !
       real, dimension (nx) :: tmp
 !
-      real,optional :: kx,ky,kz,kxx,kyy,kzz
+      real, optional :: kx,ky,kz,kxx,kyy,kzz
 !
       if (lroot) print*, 'triquad: ivar = ', ivar
 !

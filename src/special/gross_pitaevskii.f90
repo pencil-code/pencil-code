@@ -122,7 +122,7 @@ module Special
   real :: test_sphere_radius = 0.
   real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
-  real :: del2prefactor=1., fact_potself = 1.
+  real :: del2prefactor=1., fact_potself=1., xslope_gpe=0.
   real, dimension(ninit) :: ampl_gpe=0., width_gpe=0.
   real, dimension(ninit) :: xpos_gpe=0., ypos_gpe=0., zpos_gpe=0.
   real, dimension(nx) :: cx_gpe
@@ -135,7 +135,7 @@ module Special
     width_gpe, xpos_gpe, ypos_gpe, zpos_gpe, &
     nvortices, vortex_quantization, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
-    V0_gpe, n_gpe, eps_gpe, radius_gpe, &
+    V0_gpe, n_gpe, eps_gpe, radius_gpe, xslope_gpe, &
     test_sphere_radius
 !
 ! run parameters
@@ -300,13 +300,21 @@ module Special
       vl4 = line_param( -20.0,-vortex_spacing*0.5,-ampl_gpe(1),33.0,-1.0)
       vr1 = ring_param(-20.0, 0.0, 15.0, -1.0)
 !
+!  initialize to zero
+!
+      f(:,:,:,ipsi_real)=0.
+      f(:,:,:,ipsi_imag)=0.
+!
 !  choice of initial conditions
 !
       do j=1,ninit
         select case (initgpe(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
-          case ('gaussianpos'); call gaussianpos(ampl_gpe(j),f,ipsi_real, &
-            width_gpe(j),xpos_gpe(j),ypos_gpe(j),zpos_gpe(j))
+          case ('gaussianpos')
+            call gaussianpos(ampl_gpe(j),f,ipsi_real,width_gpe(j), &
+              xpos_gpe(j),ypos_gpe(j),zpos_gpe(j),prefac='cosx',slope=xslope_gpe)
+            call gaussianpos(ampl_gpe(j),f,ipsi_imag,width_gpe(j), &
+              xpos_gpe(j),ypos_gpe(j),zpos_gpe(j),prefac='sinx',slope=xslope_gpe)
           case ('constant', '0');
             !f(:,:,:,ipsi_real) = 1./sqrt(2.)
             !f(:,:,:,ipsi_imag) = 1./sqrt(2.)

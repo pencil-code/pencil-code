@@ -110,12 +110,12 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
-  logical :: lnophase_in_stress=.false.
+  logical :: lnophase_in_stress=.false., llinphase_in_stress=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
-  real :: scale_factor
+  real :: scale_factor, slope_linphase_in_stress
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -148,7 +148,7 @@ module Special
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
-    lnophase_in_stress
+    lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1666,10 +1666,21 @@ module Special
 !  Possibility to remove phases
 !
             if (lnophase_in_stress) then
-              S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
+              if (ksqr==0.) then
+                S_T_re(ikx,iky,ikz)=0.
+                S_X_re(ikx,iky,ikz)=0.
+              else
+                S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
+                S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
+              endif
               S_T_im(ikx,iky,ikz)=0.
-              S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
               S_X_im(ikx,iky,ikz)=0.
+              if (llinphase_in_stress) then
+                S_T_re(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)*cos(slope_linphase_in_stress*t)
+                S_T_im(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)*sin(slope_linphase_in_stress*t)
+                S_X_re(ikx,iky,ikz)=S_X_re(ikx,iky,ikz)*cos(slope_linphase_in_stress*t)
+                S_X_im(ikx,iky,ikz)=S_X_re(ikx,iky,ikz)*sin(slope_linphase_in_stress*t)
+              endif
             endif
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.

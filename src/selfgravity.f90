@@ -359,6 +359,8 @@ module Selfgravity
           else
             rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
+        else
+          rhs_poisson = 0.
         endif
 !
 !  Contribution from dust.
