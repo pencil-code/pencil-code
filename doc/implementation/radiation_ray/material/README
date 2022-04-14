@@ -1,0 +1,35 @@
+The file r5638_r5674.diff gives the differences between revisions of May 17 and 23 of 2006.
+
+------------------------------------------------------------------------
+r5674 | axel.brandenburg | 2006-05-23 01:22:57 +0200 (Tue, 23 May 2006) | 3 lines
+
+added kappa_es
+
+
+------------------------------------------------------------------------
+r5650 | tobias.heinemann | 2006-05-19 19:03:30 +0200 (Fri, 19 May 2006) | 6 lines
+
+Merged radiation_ray and radiation_ray_periodic, the latter being obsolete now
+and soon to be removed I hope.
+
+Please do make harsh complaints if I don't document this module properly in the near future.
+
+
+------------------------------------------------------------------------
+r5649 | tobias.heinemann | 2006-05-19 15:05:23 +0200 (Fri, 19 May 2006) | 3 lines
+
+Added lradflux to radiation_init_pars
+
+
+------------------------------------------------------------------------
+r5648 | tobias.heinemann | 2006-05-19 13:56:17 +0200 (Fri, 19 May 2006) | 3 lines
+
+Changed weights such that sum(wights)=4*pi. Axel: Please check whether we calculate the radiative flux correctly now.
+
+
+------------------------------------------------------------------------
+r5638 | tobias.heinemann | 2006-05-17 19:13:16 +0200 (Wed, 17 May 2006) | 3 lines
+
+Added radiative flux to radiation_ray_periodic. Also renamed lradpressure_calc to lradflux.
+
+
