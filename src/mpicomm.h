@@ -69,6 +69,9 @@
   public :: radboundary_zx_recv, radboundary_zx_send
   public :: radboundary_yz_sendrecv, radboundary_zx_sendrecv
   public :: radboundary_yz_periodic_ray, radboundary_zx_periodic_ray
+  ! Felipe: added two lines below
+!  public :: radboundary_yz_recv
+!  public :: radboundary_yz_send
 
 ! Foreign application routines.
   public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data

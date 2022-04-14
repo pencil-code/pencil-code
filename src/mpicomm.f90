@@ -163,6 +163,8 @@ module Mpicomm
   endtype foreign_setup
   
   type(foreign_setup) :: frgn_setup
+  ! Felipe: Added below
+  public :: radboundary_yz_send
 !
   contains
 !
@@ -2465,6 +2467,37 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                     MPI_COMM_GRID,irecv_xy,mpierr)
 !
     endsubroutine radboundary_xy_recv
+! Felipe: Added below
+!***********************************************************************
+    subroutine radboundary_yz_recv(lrad,idir,Qrecv_yz)
+!
+!  receive intensities from neighboring processor in z
+!
+!  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
+!  14-apr-22/felipe: adapted from radboundary_xy_recv
+!
+      integer :: lrad,idir
+      real, dimension(my,mz) :: Qrecv_yz
+      integer :: isource
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_yz
+!
+!  Identifier
+!
+      if (lroot.and.ip<5) print*,'radboundary_yz_recv: ENTER'
+!
+!  source
+!
+      if (lrad>0) isource=xlneigh
+      if (lrad<0) isource=xuneigh
+!
+!  actual MPI call
+!
+      call MPI_RECV(Qrecv_yz,my*mz,MPI_REAL,isource,Qtag_yz+idir, &
+                    MPI_COMM_GRID,irecv_yz,mpierr)
+!
+    endsubroutine radboundary_yz_recv
+! Felipe: Added above
 !***********************************************************************
     subroutine radboundary_zx_send(mrad,idir,Qsend_zx)
 !
@@ -2522,6 +2555,38 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
+! Felipe: added below
+!***********************************************************************
+    subroutine radboundary_yz_send(lrad,idir,Qsend_yz)
+!
+!  send intensities to neighboring processor in x
+!
+!  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
+!   2-jun-15/MR: corrected parameters of MPI_SEND (blocking!)
+!  14-apr-22/felipe: adapted from radboundary_xy_send
+!
+      integer, intent(in) :: lrad,idir
+      real, dimension(my,mz) :: Qsend_yz
+      integer :: idest
+!
+!  Identifier
+!
+      if (lroot.and.ip<5) print*,'radboundary_yz_send: ENTER'
+!
+!  destination
+!
+      if (lrad>0) idest=xuneigh
+      if (lrad<0) idest=xlneigh
+!
+!  actual MPI call
+!
+      call MPI_SEND(Qsend_yz,my*mz,MPI_REAL,idest,Qtag_yz+idir, &
+                    MPI_COMM_GRID,mpierr)
+!
+    endsubroutine radboundary_yz_send
+!***********************************************************************
+! Felipe: added above
     subroutine radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
 !
 !  receive intensities from isource and send intensities to idest

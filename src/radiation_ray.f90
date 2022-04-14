@@ -947,6 +947,8 @@ module Radiation
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
+      ! Felipe: Added line below
+!      use Mpicomm, only: radboundary_yz_send
 !
       real, dimension (my,mz) :: emtau_yz=0, Qrad_yz=0
       real, dimension (mx,mz) :: emtau_zx=0, Qrad_zx=0
@@ -1103,7 +1105,18 @@ module Radiation
 !
         call radboundary_xy_send(nrad,idir,Qsend_xy)
       endif
+
+ ! Felipe4: doing the same but for the x direction
+      if (lrad/=0.and.ipx/=ipxstop) then
+        forall (m=mm1:mm2,n=nn1:nn2)
+          emtau_yz(m,n) = exp(-tau(m,n,llstop))
+          Qrad_yz(m,n) = Qrad(m,n,llstop)
+          Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
+        endforall
 !
+!        call radboundary_yz_send(lrad,idir,Qsend_yz)
+      endif
+
     endsubroutine Qcommunicate
 !***********************************************************************
     subroutine Qperiodic
@@ -1305,7 +1318,12 @@ module Radiation
 !
 !  No incoming intensity.
 !
-      if (bc_ray_z=='0') then
+! Felipe3: Shouldn't all of what's below check for bc_ray_x instead of bc_ray_z ???
+!      if (bc_ray_z=='0') then
+!        Qrad0_yz=-Srad(llstart-lrad,:,:)
+!      endif
+
+      if (bc_ray_x=='0') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)
       endif
 !
