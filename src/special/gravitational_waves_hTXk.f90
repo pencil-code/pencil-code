@@ -110,6 +110,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
+  logical :: lnophase_in_stress=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
@@ -146,7 +147,8 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
-    lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact
+    lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
+    lnophase_in_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1661,6 +1663,15 @@ module Special
             enddo
             enddo
 !
+!  Possibility to remove phases
+!
+            if (lnophase_in_stress) then
+              S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
+              S_T_im(ikx,iky,ikz)=0.
+              S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
+              S_X_im(ikx,iky,ikz)=0.
+            endif
+!
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
             hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
@@ -1718,17 +1729,12 @@ module Special
 !
 !  Solve wave equation for hT and gT from one timestep to the next.
 !
-                hcomplex_new=cosoth*coefA+sinoth*coefB+om12*cmplx(S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz))
-                gcomplex_new=sinotg*coefA+cosotg*coefB
+                hcomplex_new= cosoth*coefA+sinoth*coefB+om12*cmplx(S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz))
+                gcomplex_new=(sinotg*coefA+cosotg*coefB)*om_cmplx
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )= real(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=aimag(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )= real(gcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
-!if (om2==4. .and. abs(k3)==2.) then
-!  print*,'AXEL1: t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)=',t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)
-!  print*,'AXEL2: coefA,coefB=',coefA,coefB
-!  print*,'AXEL3: hcomplex_new,gcomplex_new=',hcomplex_new,gcomplex_new
-!endif
               else
                 om1=1./om
                 coefAre=(hhTre-om12*S_T_re(ikx,iky,ikz))
@@ -1739,14 +1745,6 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
-!if (om2==4. .and. abs(k3)==2.) then
-!  print*,'AXEL1: t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)=',t,k3,S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz)
-!  print*,'AXEL2: coefAre,coefAim,coefBre,coefBim=',coefAre,coefAim,coefBre,coefBim
-!  print*,'AXEL3: hcomplex_new,gcomplex_new=',coefAre*cosot+coefBre*sinot+om12*S_T_re(ikx,iky,ikz), &
-!coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz), &
-!coefBre*cosot*om+coefAre*om*sinot_minus, &
-!coefBim*cosot*om+coefAim*om*sinot_minus
-!endif
               endif
 !
 !  Debug output
@@ -1771,8 +1769,8 @@ module Special
 !
 !  Solve wave equation for hX and gX from one timestep to the next.
 !
-                hcomplex_new=cosoth*coefA+sinoth*coefB+om12*cmplx(S_X_re(ikx,iky,ikz),S_X_im(ikx,iky,ikz))
-                gcomplex_new=sinotg*coefA+cosotg*coefB
+                hcomplex_new= cosoth*coefA+sinoth*coefB+om12*cmplx(S_X_re(ikx,iky,ikz),S_X_im(ikx,iky,ikz))
+                gcomplex_new=(sinotg*coefA+cosotg*coefB)*om_cmplx
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )= real(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=aimag(hcomplex_new)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )= real(gcomplex_new)

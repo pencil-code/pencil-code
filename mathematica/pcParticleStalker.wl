@@ -96,7 +96,7 @@ readStalkerProc[sim_,proc_]:=With[
 
 
 readStalker[sim_]:=With[
-  {nproc=nProc[sim],
+  {nproc=Times@@nProc[sim],
   nsnap=nStalkerSnap[sim],
   nsp=nStalker[sim],
   header=Thread[#->Range[Length@#]]&@stalkerHead[sim]//Association},

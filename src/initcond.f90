@@ -5209,7 +5209,7 @@ module Initcond
         if (loptest(lpower_profile_file)) then
           open(9,file='power_profile.dat',status='old')
           read(9,*) nk,lgk0,dlgk
-          if (lroot.and.ip<14) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
+          if (lroot) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
           if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
           allocate(kk(nk),power_factor(nk),lgkk(nk),lgff(nk))
           do ik=1,nk
@@ -5226,9 +5226,9 @@ module Initcond
             do iky=1,ny
               do ikx=1,nx
                 lgk=alog10(sqrt(k2(ikx,iky,ikz)))
-                ik=nint((lgk-lgk0)/dlgk)+1
+                ik=int((lgk-lgk0)/dlgk)+1
                 if (ik<1.or.ik>nk) then
-                  print*,'ikz,iky,ikx,lgk,ik,nk=',ikz,iky,ikx,lgk,ik,nk
+                  print*,'ikz,iky,ikx,lgk,ik,nk=',ikz,iky,ikx,lgk,ik,k2(ikx,iky,ikz)
                   call fatal_error('power_randomphase_hel','ik<1.or.ik>nk')
                 endif
                 lgk1=lgkk(ik)
@@ -5237,6 +5237,7 @@ module Initcond
                 lgf2=lgff(ik+1)
                 lgf=lgf1+(lgk-lgk1)*(lgf2-lgf1)/(lgk2-lgk1)
                 r(ikx,iky,ikz)=r(ikx,iky,ikz)*10**lgf
+                if (ip<14) print*,'iproc,lgk1,lgk,lgk2=',iproc,lgk1,lgk,lgk2
               enddo
             enddo
           enddo

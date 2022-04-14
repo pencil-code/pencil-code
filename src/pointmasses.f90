@@ -932,20 +932,21 @@ module PointMasses
       real, dimension(nqpar) :: hill_radius_square
       logical :: ldiagnostic_only
 !
-      if (lroot) then
-        call calc_hill_radius(hill_radius_square)
-!        
-        call dxxq_dt_pointmasses
-        call dvvq_dt_pointmasses(hill_radius_square)
-!
-      endif
-!
 !  Add gas selfgravity if present
 !
       if (lselfgravity) then
         ldiagnostic_only=ldiagnos.and.idiag_torque(isecondary)/=0
         if (llive_secondary.or.ldiagnostic_only) &
              call selfgravity_gas_on_pointmass
+      endif
+!
+!  Add gravity. Both dvvq_dt_pointmasses and dvvp_dt_dustparticles call
+!  gravity_pointmasses, which call the Courant condition.
+!
+      if (lroot) then
+        call calc_hill_radius(hill_radius_square)
+        call dxxq_dt_pointmasses
+        call dvvq_dt_pointmasses(hill_radius_square)
       endif
 !
       if (lparticles) then
@@ -1104,7 +1105,8 @@ module PointMasses
       integer, intent(in) :: k
       real, dimension (nqpar) :: hill_radius_square
 !
-      real :: rr2, r2_ij, rs2, v_ij, rsmooth2, Omega2_pm, rhill1, invr3_ij
+      real :: rr2, r2_ij, rs2, rsmooth2, Omega2_pm, rhill1, invr3_ij
+      real :: dt1_nbody, r_ij, v_ij, a_ij
       integer :: ks
 !
       real, dimension (3) :: evr_cart,evr,positions
@@ -1208,14 +1210,15 @@ module PointMasses
 !  one time-step and additionally we use the free-fall time-scale.
 !
           if (lfirst.and.ldt.and.ldt_pointmasses) then
-            if (.not.lcallpointmass) then     
-              v_ij=sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
-              dt1_max(l1-nghost)= &
-                   max(dt1_max(l1-nghost),v_ij/sqrt(r2_ij)/cdtq)
+            if (.not.lcallpointmass) then
+              v_ij = sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
+            else
+              v_ij = sqrt(sum((fq(k,ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
             endif
-            dt1_max(l1-nghost)= &
-                 max(dt1_max(l1-nghost), &
-                 sqrt(Omega2_pm)/cdtq)
+            a_ij = sqrt(sum(Omega2_pm*evr_cart**2))
+            r_ij  = sqrt(r2_ij)
+            dt1_nbody = max(v_ij/r_ij,sqrt(a_ij/r_ij))
+            dt1_max(l1-nghost) = max(dt1_max(l1-nghost),dt1_nbody/cdtq)
           endif
 !
         endif !if (ipar(k)/=ks)
@@ -1263,6 +1266,7 @@ module PointMasses
       integer :: ks
       real, dimension (nx,ny,nz,3) :: acceleration
       real, dimension (3) :: accg,torque
+      real :: a_ij,r_ij
 !
       call get_acceleration(acceleration)
 !
@@ -1273,6 +1277,13 @@ module PointMasses
                dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
 !
           if (ldiagnos) call calc_torque(ks,accg)
+!
+          if (lfirst.and.ldt.and.ldt_pointmasses) then
+            a_ij = sqrt(sum(accg**2))
+            r_ij  = r_ref
+            dt1_max(l1-nghost) = max(dt1_max(l1-nghost),sqrt(a_ij/r_ij)/cdtq)
+          endif
+!
         endif
       enddo
 !

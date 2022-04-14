@@ -2615,7 +2615,7 @@ integer,            intent(in) :: ell, emm
 real, intent(in) :: costh
 
 integer :: i,il
-real(KIND=rkind16) :: fact, oldfact, pll, pmm, pmmp1, omx2
+real(KIND=max(rkind8,rkind16)) :: fact, oldfact, pll, pmm, pmmp1, omx2
 !
 ! Check parameters
 !
