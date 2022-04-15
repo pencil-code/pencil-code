@@ -110,7 +110,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
-  logical :: lnophase_in_stress=.false., llinphase_in_stress=.false.
+  logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
@@ -121,7 +121,7 @@ module Special
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
-  real :: nonlinear_source_fact=0.
+  real :: nonlinear_source_fact=0., k_in_stress=1.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -148,7 +148,8 @@ module Special
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
-    lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress
+    lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
+    lconstmod_in_stress, k_in_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1663,15 +1664,22 @@ module Special
             enddo
             enddo
 !
-!  Possibility to remove phases
+!  Possibility to remove phases (lnophase_in_stress=T).
+!  As potential extensions, can also assume the phase to increase linearly in
+!  time (llinphase_in_stress=T), or that the modulus is const (lconstmod_in_stress)
 !
             if (lnophase_in_stress) then
-              if (ksqr==0.) then
-                S_T_re(ikx,iky,ikz)=0.
-                S_X_re(ikx,iky,ikz)=0.
+              if (lconstmod_in_stress) then
+                S_T_re(ikx,iky,ikz)=exp(-ksqr/k_in_stress**2)
+                S_X_re(ikx,iky,ikz)=exp(-ksqr/k_in_stress**2)
               else
-                S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
-                S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
+                if (ksqr==0.) then
+                  S_T_re(ikx,iky,ikz)=0.
+                  S_X_re(ikx,iky,ikz)=0.
+                else
+                  S_T_re(ikx,iky,ikz)=sqrt(S_T_re(ikx,iky,ikz)**2+S_T_im(ikx,iky,ikz)**2)
+                  S_X_re(ikx,iky,ikz)=sqrt(S_X_re(ikx,iky,ikz)**2+S_X_im(ikx,iky,ikz)**2)
+                endif
               endif
               S_T_im(ikx,iky,ikz)=0.
               S_X_im(ikx,iky,ikz)=0.
