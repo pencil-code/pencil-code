@@ -36,6 +36,7 @@
 !
   public :: lresi_dep
   public :: lcovariant_magnetic
+  public :: lcoulomb, iLam
 
   interface calc_pencils_magnetic
     module procedure calc_pencils_magnetic_pencpar

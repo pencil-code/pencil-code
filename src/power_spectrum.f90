@@ -4532,6 +4532,7 @@ endsubroutine pdf
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Magnetic, only: lcoulomb, iLam
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
@@ -4539,7 +4540,9 @@ endsubroutine pdf
   real :: k2,rr,k
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
+  real, dimension(nx,ny,nz) :: gLam
   real, dimension(nx) :: bbi
+  real, dimension(nx,3) :: gLam_tmp
   real, dimension(nk) :: invrt,invrt_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -4577,6 +4580,23 @@ endsubroutine pdf
         b_re(:,im,in)=bbi  !  magnetic field
       enddo; enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
+      h_re=h_re+a_re*b_re  !  magnetic helicity density
+      h_im=0.
+    elseif (sp=='saffman_mag_c') then
+      if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      if (.not. lcoulomb) call fatal_error('quadratic_invariants','need lcoulomb=T')
+      do n=n1,n2; do m=m1,m2
+        im=m-nghost
+        in=n-nghost
+        !
+        call curli(f,iaa,bbi,ivec)
+        b_re(:,im,in)=bbi  !  magnetic field
+        !
+        call grad(f,iLam,gLam_tmp)
+        gLam(:,im,in)=gLam_tmp(:,ivec)  !  grad Lambda
+      enddo; enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
+      a_re=a_re-gLam  !  vector potential in Coulomb gauge
       h_re=h_re+a_re*b_re  !  magnetic helicity density
       h_im=0.
     else
