@@ -948,7 +948,7 @@ module Radiation
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
       ! Felipe: Added line below
-!      use Mpicomm, only: radboundary_yz_send
+      use Mpicomm, only: radboundary_yz_send
 !
       real, dimension (my,mz) :: emtau_yz=0, Qrad_yz=0
       real, dimension (mx,mz) :: emtau_zx=0, Qrad_zx=0
@@ -971,11 +971,13 @@ module Radiation
 !
       if (nrad/=0) then
 !
+print*,'AXEL1: ipzstart=',ipzstart
         if (ipz==ipzstart) then
           call radboundary_xy_set(Qrecv_xy)
         else
           call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         endif
+print*,'AXEL1l: ipz,Qrecv_xy=',ipz,Qrecv_xy
 !
 !  Copy the above heating rates to the xy-target arrays which are then set.
 !
@@ -991,6 +993,7 @@ module Radiation
       if (lrad/=0) then
         if (bc_ray_x/='p') then
           call radboundary_yz_set(Qrecv_yz)
+print*,'AXEL1l: ipx,Qrecv_yz=',ipx,Qrecv_yz
 !
           Qbc_yz(mm1:mm2,nn1:nn2)%val = Qrecv_yz(mm1:mm2,nn1:nn2)
           Qbc_yz(mm1:mm2,nn1:nn2)%set = .true.
@@ -998,6 +1001,7 @@ module Radiation
           all_yz=.true.
         else
           Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_xy(llstart-lrad,mm1:mm2)
+!STRANGE
           Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
 !
           emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
@@ -1029,6 +1033,9 @@ module Radiation
 !  Communicate along the y-direction until all upstream heating rates at
 !  the yz- and zx-boundaries are determined.
 !
+print*,'AXEL1a: ipx,lrad,all_yz=',ipx,lrad,all_yz
+!print*,'AXEL1a: ipz,lrad,all_xy=',ipz,lrad,all_xy
+! AXEL1a: ipx,lrad,all_yz=           1          -1 T
       if ((lrad/=0.and..not.all_yz).or.(mrad/=0.and..not.all_zx)) then; do
 !
 !  x-direction.
@@ -1037,9 +1044,12 @@ module Radiation
           forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
           endforall
+print*,'AXEL2l: ipx,Qsend_yz=',ipx,Qsend_yz
 !
           if (nprocx>1) then
+print*,'AXEL3l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
             call radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
+print*,'AXEL4l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
           else
             Qrecv_yz=Qsend_yz
           endif
@@ -1114,7 +1124,7 @@ module Radiation
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
         endforall
 !
-!        call radboundary_yz_send(lrad,idir,Qsend_yz)
+        call radboundary_yz_send(lrad,idir,Qsend_yz)
       endif
 
     endsubroutine Qcommunicate
@@ -1485,6 +1495,7 @@ module Radiation
         Qrad0_xy=-Srad(:,:,nnstart-nrad)+ &
             Frad_boundary_ref/(2*weightn(idir))+Irad_refl_xy
       endif
+print*,'AXEL2: ipx,Qrad0_xy=',ipx,Qrad0_xy
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
