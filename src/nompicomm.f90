@@ -223,7 +223,6 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-! Felipe: Added bellow
     subroutine radboundary_yz_recv(lrad,idir,Qrecv_yz)
 !
       integer :: lrad,idir
@@ -232,6 +231,15 @@ module Mpicomm
       if (ALWAYS_FALSE) print*,lrad,idir,Qrecv_yz(1,1)
 !
     endsubroutine radboundary_yz_recv
+!***********************************************************************
+    subroutine radboundary_yz_send(lrad,idir,Qsend_yz)
+!
+      integer :: lrad,idir
+      real, dimension(my,mz) :: Qsend_yz
+!
+      if (ALWAYS_FALSE) print*,lrad,idir,Qsend_yz(1,1)
+!
+    endsubroutine radboundary_yz_send
 !***********************************************************************
     subroutine radboundary_zx_send(mrad,idir,Qsend_zx)
 !
