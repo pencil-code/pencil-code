@@ -944,10 +944,12 @@ module Radiation
 !
 !  30-jul-05/tobi: coded
 !   3-oct-20/axel: initializing Qrecv, Qrad, and Qsend to zero
+!  15-apr-22/felipe: fixed the communication on the x and y directions
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
       use Mpicomm, only: radboundary_yz_send, radboundary_yz_recv
+      use Mpicomm, only: radboundary_zx_send, radboundary_zx_recv
 !
       real, dimension (my,mz) :: emtau_yz=0, Qrad_yz=0
       real, dimension (mx,mz) :: emtau_zx=0, Qrad_zx=0
@@ -1003,31 +1005,40 @@ module Radiation
           Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
         endif
 !
-!  Copy the above heating rates to the xy-target arrays which are then set.
+!  Copy the above heating rates to the yz-target arrays which are then set.
 !
         Qbc_yz(mm1:mm2,nn1:nn2)%val = Qrecv_yz(mm1:mm2,nn1:nn2)
         Qbc_yz(mm1:mm2,nn1:nn2)%set = .true.
 !
-          all_yz=.true.
+        all_yz=.true.
       else
         all_yz=.true.
       endif
-!
+      
+! 
       if (mrad/=0) then
-        if (bc_ray_y/='p') then
-          call radboundary_zx_set(Qrecv_zx)
+        if (ipy==ipystart) then
+          if (bc_ray_y/='p') then
+            call radboundary_zx_set(Qrecv_zx)
+          else
+            call radboundary_zx_recv(mrad,idir,Qrecv_zx)
+          endif
+!            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
+!            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
 !
-          Qbc_zx(ll1:ll2,nn1:nn2)%val = Qrecv_zx(ll1:ll2,nn1:nn2)
-          Qbc_zx(ll1:ll2,nn1:nn2)%set = .true.
-!
-          all_zx=.true.
         else
-          Qbc_zx(ll1:ll2,nnstart-nrad)%val = Qrecv_xy(ll1:ll2,mmstart-mrad)
-          Qbc_zx(ll1:ll2,nnstart-nrad)%set = .true.
-!
+          call radboundary_zx_recv(mrad,idir,Qrecv_zx)
           emtau_zx(ll1:ll2,nn1:nn2) = exp(-tau(ll1:ll2,mmstop,nn1:nn2))
-           Qrad_zx(ll1:ll2,nn1:nn2) =     Qrad(ll1:ll2,mmstop,nn1:nn2)
+          Qrad_zx(ll1:ll2,nn1:nn2) =     Qrad(ll1:ll2,mmstop,nn1:nn2)
         endif
+!
+!  Copy the above heating rates to the zx-target arrays which are then set.
+!
+        Qbc_zx(ll1:ll2,nn1:nn2)%val = Qrecv_zx(ll1:ll2,nn1:nn2)
+        Qbc_zx(ll1:ll2,nn1:nn2)%set = .true.
+
+        all_zx=.true.
+
       else
         all_zx=.true.
       endif
@@ -1129,7 +1140,7 @@ module Radiation
           Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
         endforall
 !
-        call radboundary_yz_send(lrad,idir,Qsend_yz)
+        call radboundary_zx_send(mrad,idir,Qsend_zx)
       endif
 
     endsubroutine Qcommunicate
@@ -1333,42 +1344,37 @@ module Radiation
 !
 !  No incoming intensity.
 !
-! Felipe3: Shouldn't all of what's below check for bc_ray_x instead of bc_ray_z ???
-!      if (bc_ray_z=='0') then
-!        Qrad0_yz=-Srad(llstart-lrad,:,:)
-!      endif
-
       if (bc_ray_x=='0') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)
       endif
 !
 !  Set intensity equal to unity (as a numerical experiment for now).
 !
-      if (bc_ray_z=='1') then
+      if (bc_ray_x=='1') then
         Qrad0_yz=1.0-Srad(llstart-lrad,:,:)
       endif
 !
 !  Set intensity equal to source function.
 !
-      if (bc_ray_z=='S') then
+      if (bc_ray_x=='S') then
         Qrad0_yz=0
       endif
 !
 !  Set intensity equal to S-F.
 !
-      if (bc_ray_z=='S-F') then
+      if (bc_ray_x=='S-F') then
         Qrad0_yz=-Frad_boundary_ref/(2*weightn(idir))
       endif
 !
 !  Set intensity equal to S+F.
 !
-      if (bc_ray_z=='S+F') then
+      if (bc_ray_x=='S+F') then
         Qrad0_yz=+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
 !  Set intensity equal to a pre-defined incoming intensity.
 !
-      if (bc_ray_z=='F') then
+      if (bc_ray_x=='F') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
@@ -1385,37 +1391,37 @@ module Radiation
 !
 !  No incoming intensity.
 !
-      if (bc_ray_z=='0') then
+      if (bc_ray_y=='0') then
         Qrad0_zx=-Srad(:,mmstart-mrad,:)
       endif
 !
 !  Set intensity equal to unity (as a numerical experiment for now).
 !
-      if (bc_ray_z=='1') then
+      if (bc_ray_y=='1') then
         Qrad0_zx=1.0-Srad(:,mmstart-mrad,:)
       endif
 !
 !  Set intensity equal to source function.
 !
-      if (bc_ray_z=='S') then
+      if (bc_ray_y=='S') then
         Qrad0_zx=0
       endif
 !
 !  Set intensity equal to S-F.
 !
-      if (bc_ray_z=='S-F') then
+      if (bc_ray_y=='S-F') then
         Qrad0_zx=-Frad_boundary_ref/(2*weightn(idir))
       endif
 !
 !  Set intensity equal to S+F.
 !
-      if (bc_ray_z=='S+F') then
+      if (bc_ray_y=='S+F') then
         Qrad0_zx=+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
 !  Set intensity equal to a pre-defined incoming intensity.
 !
-      if (bc_ray_z=='F') then
+      if (bc_ray_y=='F') then
         Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
