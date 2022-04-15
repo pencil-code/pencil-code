@@ -57,10 +57,11 @@ module Magnetic
   logical :: lresis_zdep = .false.
   logical :: lresis_shock = .false.
   logical :: lresis_hyper3_mesh = .false.
-  logical :: lohmic_heat = .true.
+  logical :: lohmic_heat = .true., lcoulomb=.false.
   real :: eta = 0.0
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
+  integer :: iLam=0
 !
   namelist /magnetic_run_pars/ &
     b_ext, b0_ext, t_bext, t0_bext, &
