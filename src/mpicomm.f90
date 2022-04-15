@@ -164,7 +164,7 @@ module Mpicomm
   
   type(foreign_setup) :: frgn_setup
   ! Felipe: Added below
-  public :: radboundary_yz_send
+!  public :: radboundary_yz_send
 !
   contains
 !

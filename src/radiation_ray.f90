@@ -947,8 +947,7 @@ module Radiation
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
-      ! Felipe: Added line below
-      use Mpicomm, only: radboundary_yz_send
+      use Mpicomm, only: radboundary_yz_send, radboundary_yz_recv
 !
       real, dimension (my,mz) :: emtau_yz=0, Qrad_yz=0
       real, dimension (mx,mz) :: emtau_zx=0, Qrad_zx=0
@@ -971,13 +970,11 @@ module Radiation
 !
       if (nrad/=0) then
 !
-print*,'AXEL1: ipzstart=',ipzstart
         if (ipz==ipzstart) then
           call radboundary_xy_set(Qrecv_xy)
         else
           call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         endif
-print*,'AXEL1l: ipz,Qrecv_xy=',ipz,Qrecv_xy
 !
 !  Copy the above heating rates to the xy-target arrays which are then set.
 !
@@ -991,22 +988,27 @@ print*,'AXEL1l: ipz,Qrecv_xy=',ipz,Qrecv_xy
 !  downstream boundaries.
 !
       if (lrad/=0) then
-        if (bc_ray_x/='p') then
-          call radboundary_yz_set(Qrecv_yz)
-print*,'AXEL1l: ipx,Qrecv_yz=',ipx,Qrecv_yz
+        if (ipx==ipxstart) then
+          if (bc_ray_x/='p') then
+            call radboundary_yz_set(Qrecv_yz)
+          else
+            call radboundary_yz_recv(lrad,idir,Qrecv_yz)
+          endif
+!            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
+!            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
 !
-          Qbc_yz(mm1:mm2,nn1:nn2)%val = Qrecv_yz(mm1:mm2,nn1:nn2)
-          Qbc_yz(mm1:mm2,nn1:nn2)%set = .true.
+        else
+          call radboundary_yz_recv(lrad,idir,Qrecv_yz)
+          emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
+          Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
+        endif
+!
+!  Copy the above heating rates to the xy-target arrays which are then set.
+!
+        Qbc_yz(mm1:mm2,nn1:nn2)%val = Qrecv_yz(mm1:mm2,nn1:nn2)
+        Qbc_yz(mm1:mm2,nn1:nn2)%set = .true.
 !
           all_yz=.true.
-        else
-          Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_xy(llstart-lrad,mm1:mm2)
-!STRANGE
-          Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
-!
-          emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
-           Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
-        endif
       else
         all_yz=.true.
       endif
@@ -1033,9 +1035,6 @@ print*,'AXEL1l: ipx,Qrecv_yz=',ipx,Qrecv_yz
 !  Communicate along the y-direction until all upstream heating rates at
 !  the yz- and zx-boundaries are determined.
 !
-print*,'AXEL1a: ipx,lrad,all_yz=',ipx,lrad,all_yz
-!print*,'AXEL1a: ipz,lrad,all_xy=',ipz,lrad,all_xy
-! AXEL1a: ipx,lrad,all_yz=           1          -1 T
       if ((lrad/=0.and..not.all_yz).or.(mrad/=0.and..not.all_zx)) then; do
 !
 !  x-direction.
@@ -1044,12 +1043,9 @@ print*,'AXEL1a: ipx,lrad,all_yz=',ipx,lrad,all_yz
           forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
           endforall
-print*,'AXEL2l: ipx,Qsend_yz=',ipx,Qsend_yz
 !
           if (nprocx>1) then
-print*,'AXEL3l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
             call radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
-print*,'AXEL4l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
           else
             Qrecv_yz=Qsend_yz
           endif
@@ -1116,12 +1112,21 @@ print*,'AXEL4l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
         call radboundary_xy_send(nrad,idir,Qsend_xy)
       endif
 
- ! Felipe4: doing the same but for the x direction
       if (lrad/=0.and.ipx/=ipxstop) then
         forall (m=mm1:mm2,n=nn1:nn2)
-          emtau_yz(m,n) = exp(-tau(m,n,llstop))
-          Qrad_yz(m,n) = Qrad(m,n,llstop)
+          emtau_yz(m,n) = exp(-tau(llstop,m,n))
+          Qrad_yz(m,n) = Qrad(llstop,m,n)
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
+        endforall
+!
+        call radboundary_yz_send(lrad,idir,Qsend_yz)
+      endif
+
+      if (mrad/=0.and.ipy/=ipystop) then
+        forall (l=ll1:ll2,n=nn1:nn2)
+          emtau_zx(l,n) = exp(-tau(l,mmstop,n))
+          Qrad_zx(l,n) = Qrad(l,mmstop,n)
+          Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
         endforall
 !
         call radboundary_yz_send(lrad,idir,Qsend_yz)
@@ -1495,7 +1500,6 @@ print*,'AXEL4l: ipx,Qsend_yz(m,n),Qrecv_yz=',ipx,Qsend_yz(m,n),Qrecv_yz
         Qrad0_xy=-Srad(:,:,nnstart-nrad)+ &
             Frad_boundary_ref/(2*weightn(idir))+Irad_refl_xy
       endif
-print*,'AXEL2: ipx,Qrad0_xy=',ipx,Qrad0_xy
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
