@@ -161,10 +161,8 @@ module Mpicomm
     real :: unit_length, unit_time, unit_BB, unit_T, &
             renorm_UU, renorm_t, renorm_L
   endtype foreign_setup
-  
+! 
   type(foreign_setup) :: frgn_setup
-  ! Felipe: Added below
-!  public :: radboundary_yz_send
 !
   contains
 !
