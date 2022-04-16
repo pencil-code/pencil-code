@@ -81,6 +81,7 @@ module Viscosity
   logical :: lvisc_shock_simple=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
+  logical :: lvisc_hyper2_simplified_tdep=.false.
   logical :: lvisc_hyper3_simplified_tdep=.false.
   logical :: lvisc_hyper3_polar=.false.
   logical :: lvisc_hyper3_mesh=.false.
@@ -316,6 +317,7 @@ module Viscosity
       lvisc_shock_simple=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
+      lvisc_hyper2_simplified_tdep=.false.
       lvisc_hyper3_simplified_tdep=.false.
       lvisc_hyper3_polar=.false.
       lvisc_hyper3_mesh=.false.
@@ -425,11 +427,14 @@ module Viscosity
           lvisc_shock_simple = .true.
           if (.not. lshock) call stop_it('initialize_viscosity: a SHOCK module is required. ')
         case ('hyper2-simplified','hyper2_simplified', 'hyper4')
-          if (lroot) print*,'viscous force: nu_hyper*del4v'
+          if (lroot) print*,'viscous force: -nu_hyper*del4v'
           lvisc_hyper2_simplified=.true.
         case ('hyper3-simplified','hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
+        case ('hyper2-simplified-tdep')
+          if (lroot) print*,'viscous force: -nu*del4v'
+          lvisc_hyper2_simplified_tdep=.true.
         case ('hyper3-simplified-tdep')
           if (lroot) print*,'viscous force: nu*del6v'
           lvisc_hyper3_simplified_tdep=.true.
@@ -1003,7 +1008,7 @@ module Viscosity
         endif
       endif
       if (lvisc_hyper3_rho_nu_const_bulk) lpenc_requested(i_del6u_bulk)=.true.
-      if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
+      if (lvisc_hyper2_simplified .or. lvisc_hyper2_simplified_tdep) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
           lvisc_sqrtrho_nu_const .or. &
           lvisc_hyper3_rho_nu_const .or. lvisc_nu_cspeed .or.&
@@ -1770,6 +1775,17 @@ module Viscosity
       endif
 !
 !  viscous force with t-dependent nu: nu*del6v (not momentum-conserving)
+!
+      if (lvisc_hyper2_simplified_tdep) then
+        p%fvisc=p%fvisc-nu_tdep*p%del4u
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
+                         'is not implemented for lvisc_hyper2_simplified')
+          endif
+        endif
+        if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_tdep
+      endif
 !
       if (lvisc_hyper3_simplified_tdep) then
         p%fvisc=p%fvisc+nu_tdep*p%del6u

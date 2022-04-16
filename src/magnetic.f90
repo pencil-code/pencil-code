@@ -189,6 +189,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_hyper2_tdep=.false.
   logical :: lresi_hyper3_tdep=.false.
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_mesh=.false.
@@ -1338,6 +1339,7 @@ module Magnetic
       lresi_eta_aniso=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
+      lresi_hyper2_tdep=.false.
       lresi_hyper3_tdep=.false.
       lresi_hyper3_polar=.false.
       lresi_hyper3_mesh=.false.
@@ -1395,6 +1397,9 @@ module Magnetic
         case ('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
+        case ('hyper2-tdep')
+          if (lroot) print*, 'resistivity: hyper2 (time-dependent)'
+          lresi_hyper2_tdep=.true.
         case ('hyper3-tdep')
           if (lroot) print*, 'resistivity: hyper3 (time-dependent)'
           lresi_hyper3_tdep=.true.
@@ -2351,7 +2356,7 @@ module Magnetic
 !
 !  Set diva=0 when lcoulomb=T
 !
-      if (idiva/=0.) f(:,:,:,idiva)=0.
+      if (idiva/=0) f(:,:,:,idiva)=0.
 !
 !  In 2-D with nz=1, setting Ax=Ay=0 makes sense, but shouldn't
 !  be compulsory, so allow for this possibility in 2-D.
@@ -2589,7 +2594,7 @@ module Magnetic
 !
 !  for Coulomb gauge
 !
-      if(lcoulomb) lpenc_requested(i_diva)=.true.
+      if (lcoulomb) lpenc_requested(i_diva)=.true.
 !
 !  Pencils requested for diamagnetism
 !
@@ -2620,7 +2625,7 @@ module Magnetic
          lpenc_requested(i_nu_smag)=.true.
       endif
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
-      if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
+      if (lresi_hyper2 .or. lresi_hyper2_tdep) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3 .or. lresi_hyper3_tdep) lpenc_requested(i_del6a)=.true.
       if (lresi_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
 !
@@ -3441,7 +3446,9 @@ module Magnetic
         enddo mn_loop
       endif getbb
 !
-!  Possibility of calculating the magnetic helicity correction for the Coulomb gauge:
+!  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
+!  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
+!  <A.B>_C = <A.B>_W - gLambm.
 !
           if (lcoulomb) then
             if (.not.lpoisson) call fatal_error('magnetic_before_boundary',&
@@ -4467,6 +4474,9 @@ module Magnetic
         etatotal=etatotal+eta_y(m)
       endif
 !
+!  Note that one has to use eta_hyper2 < 0 to have diffusion.
+!  I would have defined the sign the other way around (AB).
+!
       if (lresi_hyper2) then
         fres=fres+eta_hyper2*p%del4a
         if (lfirst.and.ldt) diffus_eta2=diffus_eta2+eta_hyper2
@@ -4477,8 +4487,14 @@ module Magnetic
         if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
-!  Unlike for usual hyper3, where the coefficient is eta_hyper3,
-!  it is here, in the t-dependent case, just eta.
+!  Unlike for usual hyper2 and hyper3, where the coefficient is
+!  eta_hyper2 and eta_hyper3, respectively, it is here, in the
+!  t-dependent case, just eta. Note the minus sign for del4a.
+!
+      if (lresi_hyper2_tdep) then
+        fres=fres-eta_tdep*p%del4a
+        if (lfirst.and.ldt) diffus_eta2=diffus_eta2+eta_tdep
+      endif
 !
       if (lresi_hyper3_tdep) then
         fres=fres+eta_tdep*p%del6a
@@ -6725,7 +6741,7 @@ module Magnetic
 !  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
-      if (lresi_eta_tdep .or. lresi_hyper3_tdep) then
+      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         if (lresi_eta_tdep_t0_norm) then
           eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
         else
