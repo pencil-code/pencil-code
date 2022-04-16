@@ -51,6 +51,7 @@
 %%   polymer.f90
 %%   radial_dist_func.f90
 %%   reaction_0D.f90
+%%   rel_1d.f90
 %%   selfgravity.f90
 %%   shear.f90
 %%   shock.f90
@@ -107,6 +108,8 @@
                     dt'\right>$ \\
   \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
   \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
   \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
@@ -214,13 +217,18 @@
                     \quad(time step relative to
                     advective time step;
                     see \S~\ref{time-step}) \\
-  \var{oum}       & $\left<\boldsymbol{\omega}
-                    \cdot\uv\right>$ \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
   \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
   \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
   \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
@@ -279,6 +287,9 @@
   \var{rhomzmask} & $\left<\varrho\right>$ for
                     the density_zaver_range \\
   \var{rho2m}     & $\left<\varrho^2\right>$ \\
+  \var{rho4m}     & $\left<\varrho^4\right>$ \\
+  \var{rho6m}     & $\left<\varrho^6\right>$ \\
+  \var{rho12m}    & $\left<\varrho^{12}\right>$ \\
   \var{rhof2m}    & $\left<\varrho'^2\right>$ \\
   \var{drho2m}    & $<(\varrho-\varrho_0)^2>$ \\
   \var{drhom}     & $<\varrho-\varrho_0>$ \\
@@ -380,10 +391,13 @@
   \var{b2m}       & $\left<\Bv^2\right>$ \\
   \var{EEM}       & $\left<\Bv^2\right>/2$ \\
   \var{b4m}       & $\left<\Bv^4\right>$ \\
+  \var{b6m}       & $\left<\Bv^6\right>$ \\
+  \var{b12m}      & $\left<\Bv^12\right>$ \\
   \var{bm2}       & $\max(\Bv^2)$ \\
   \var{j2m}       & $\left<\jv^2\right>$ \\
   \var{jm2}       & $\max(\jv^2)$ \\
   \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{gLambm}    & $\left<\nabla\Lambda\cdot\Bv\right>$ \\
   \var{abumx}     & $\left<u_x\Av\cdot\Bv\right>$ \\
   \var{abumy}     & $\left<u_y\Av\cdot\Bv\right>$ \\
   \var{abumz}     & $\left<u_z\Av\cdot\Bv\right>$ \\
@@ -394,6 +408,8 @@
   \var{jbrms}     & $\left<(\jv\cdot\Bv)^2\right>^{1/2}$ \\
   \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
+  \var{a2b2m}     & $\left<\Av^2\cdot\Bv^2\right>$ \\
+  \var{j2b2m}     & $\left<\jv^2\cdot\Bv^2\right>$ \\
   \var{jbmh}      & $\left<\Jv\cdot\Bv\right>$ (temp) \\
   \var{jbmn}      & $\left<\Jv\cdot\Bv\right>$ (north) \\
   \var{jbms}      & $\left<\Jv\cdot\Bv\right>$ (south) \\
@@ -488,6 +504,7 @@
   \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
   \var{hjrms}     & $\left<\jv^2\right>^{1/2}$ \\
   \var{jmax}      & $\max(|\jv|)$ \\
+  \var{vA23rms}   & $\left<\Bv^2/\varrho^{4/3}\right>^{1/2}$ \\
   \var{vArms}     & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
   \var{vAmax}     & $\max(\Bv^2/\varrho)^{1/2}$ \\
   \var{dtb}       & $\delta t / [c_{\delta t}\,\delta x
@@ -616,6 +633,11 @@
   \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
   \var{jdel2am}   & $\left<\Jv\cdot\nabla^2\Av)\right>$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv)\right>$ \\
+  \var{WL2D}      & $\left<J_i u_j A_{i,j} \right>$ \\
+  \var{WL3D}      & $-\left<J_i u_j A_{j,i} \right>$ \\
+  \var{WL3D2}     & $\left<J_i A_j u_{j,i} \right>$ \\
+  \var{ubgbpm}    & $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$ \\
+  \var{ugb22m}    & $\left<\uv\cdot\nabla\Bv^2/2)\right>$ \\
   \var{jxbrmax}   & $\max(|\Jv\times\Bv/\rho|)$ \\
   \var{jxbr2m}    & $\left<(\Jv\times\Bv/\rho)^2\right>$ \\
   \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
@@ -700,7 +722,11 @@
   \multicolumn{2}{c}{Module \file{backreact_infl.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
-  \var{dphim}     & $\left<d\phi\right>$ \\
+  \var{phi2m}     & $\left<\phi^2\right>$ \\
+  \var{phirms}    & $\left<\phi^2\right>^{1/2}$ \\
+  \var{dphim}     & $\left<\phi'\right>$ \\
+  \var{dphi2m}    & $\left<(\phi')^2\right>$ \\
+  \var{dphirms}   & $\left<(\phi')^2\right>^{1/2}$ \\
   \var{Hubblem}   & $\left<{\cal H}\right>$ \\
   \var{lnam}      & $\left<\ln a\right>$ \\
 \midrule
@@ -770,6 +796,8 @@
   \var{muSmax}    & $\max\mu$ \\
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu51m}     & $\left<|\mu_5|\right>$ \\
+  \var{mu53m}     & $\left<\mu_5^3\right>$ \\
+  \var{mu54m}     & $\left<\mu_5^4\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{mu5min}    & $\min\mu_5$ \\
   \var{mu5max}    & $\max\mu_5$ \\
@@ -795,6 +823,7 @@
   \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
   \var{mu5jbm}    & $\left<\mu_5\Jv\cdot\Bv\right>$ \\
   \var{jxm}       & $\langle J_x\rangle$ \\
+  \var{Dmu5_tdep} & $D(t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -830,6 +859,7 @@
 \midrule
   \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
   \var{emax}      & $\max(|\Ev|)$ \\
+  \var{a0rms}     & $\left<A_0^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
@@ -1611,9 +1641,15 @@
   \var{L4}        & $L_4$ \\
   \var{L5}        & $L_5$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{rel_1d.f90}} \\
+\midrule
+  \var{betm}      & $\left<\beta\right>$ \\
+  \var{betmax}    & $\beta_{\max}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{selfgravity.f90}} \\
 \midrule
   \var{rugpotselfm} & $\left<\rho\uv\cdot\nabla\Phi\right>$ \\
+  \var{gpotself2m} & $\left<(\nabla\Phi)^2\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
@@ -1892,7 +1928,9 @@
   \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
   \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
   \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{E0mrms}    & $\left<\left<{\cal E}_{0}\right>^2\right>^{1/2}$ \\
+  \var{E0mrms}    & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{E0xrms}    & $\left<{\cal E}_{0,x}^2\right>^{1/2}$ \\
+  \var{E0yrms}    & $\left<{\cal E}_{0,y}^2\right>^{1/2}$ \\
   \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
   \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
   \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
@@ -1916,6 +1954,14 @@
   \var{E122z}     & ${\cal E}_1^{22}$ \\
   \var{E222z}     & ${\cal E}_2^{22}$ \\
   \var{E322z}     & ${\cal E}_3^{22}$ \\
+  \var{alp11z}    & $\alpha_{11}(z,t)$ \\
+  \var{alp21z}    & $\alpha_{21}(z,t)$ \\
+  \var{alp12z}    & $\alpha_{12}(z,t)$ \\
+  \var{alp22z}    & $\alpha_{22}(z,t)$ \\
+  \var{eta11z}    & $\eta_{11}(z,t)$ \\
+  \var{eta21z}    & $\eta_{21}(z,t)$ \\
+  \var{eta12z}    & $\eta_{12}(z,t)$ \\
+  \var{eta22z}    & $\eta_{22}(z,t)$ \\
   \var{E10z}      & ${\cal E}_1^{0}$ \\
   \var{E20z}      & ${\cal E}_2^{0}$ \\
   \var{E30z}      & ${\cal E}_3^{0}$ \\
@@ -2582,6 +2628,7 @@
                     \fv_{\rm visc}\right>$ \\
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{epsKint}   & $\int(2\nu\varrho\Strain^2)\,dV$ \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to
