@@ -1,5 +1,5 @@
 kms=1e5
-u=kms
+u=30.*kms
 sigmaSB=5.67d-5	;(erg/cm2/s/K4)
 Rgas=8.31434d7  ;erg/mol/K
 mu=.6
