@@ -2156,7 +2156,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-r8 #(beskow*)
 ##FFLAGS_DOUBLE=-s default64 #(beskow*)
 ##
-##  Dardel (Axel, Cray compiler)
+##  Dardel (Axel, aocc compiler)
 ##
 ##ALLOW_ARG_MISMATCH = -fallow-argument-mismatch #(uan02*)
 #FC=ftn #(uan02*)
@@ -2167,8 +2167,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##NS: to allow for long lines in source codes (max col no def was 132)
 ##FFLAGS=-O3 -ffree-line-length-0 -large #(uan02*)
 #FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
-#FFLAGS=-O3 -mcmodel=large #(uan02*)
-##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan02*)
 #FFLAGS=-O2 -mcmodel=large #(uan02*)
 #FFLAGS=-O3 -ffree-line-length-0 -mcmodel=large #(uan02*)
 #FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
@@ -2195,6 +2193,26 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O0 #(uan02*)
 #FFLAGS=-O2 #(uan02*)
 #FFLAGS=-O2 -fallow-argument-mismatch #(uan02*)
+##NS: use following for debugging the code
+##FFLAGS=-O3 -fcheck=all #(uan02*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
+##
+##  Dardel (Axel, gFortran compiler)
+##
+#FC=ftn #(uan02*)
+#F90=$(FC) #(uan02*)
+#CC=cc #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan02*)
+##NS: added compiler option -ffree-line-length-0
+##NS: to allow for long lines in source codes (max col no def was 132)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(uan02*)
+#FFLAGS=-O3 -ffree-line-length-0 #(uan02*)
+#FFLAGS=-O3 -mcmodel=large #(uan02*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan02*)
+#FFLAGS=-O1 -fallow-argument-mismatch #(uan02*)
+#FFLAGS=-O0 #(uan02*)
+#FFLAGS=-O2 #(uan02*)
+#FFLAGS=-O2 -fallow-argument-mismatch -mcmodel=large #(uan02*)
 ##NS: use following for debugging the code
 ##FFLAGS=-O3 -fcheck=all #(uan02*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
