@@ -1339,7 +1339,6 @@ module General
       ii1=naa
       do ii=1,naa
         if (aa(ii)>=aa1) then
-print*, 'PENCIL lenxgen1', ii, aa(ii), aa1
           ii1=ii
           exit
         endif
@@ -1350,7 +1349,6 @@ print*, 'PENCIL lenxgen1', ii, aa(ii), aa1
       ii2=1
       do ii=naa,1,-1
         if (aa(ii)-aa2<=eps) then
-print*, 'PENCIL lenxgen2', ii, aa(ii), aa2
           ii2=ii
           return
         endif
