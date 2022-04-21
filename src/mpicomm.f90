@@ -10295,8 +10295,8 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
           if (.not.llast_proc_x) il2=il2+1
 !
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
-print *, 'PENCIL lenx', iproc,il1, il2, l1,l2!, x(l1), x(l2)
-print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
+!print *, 'PENCIL lenx', iproc,il1, il2, l1,l2!, x(l1), x(l2)
+!print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
 !
           if (frgn_setup%lnprocx_mismat) then
 !
@@ -10382,7 +10382,7 @@ print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
                 do iv=1,nvars
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
-print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+!print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
                 enddo
               endif
 
@@ -10442,13 +10442,13 @@ print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
         if (size(f,1)==mx) then
           if(size(frgn_buffer,1).gt.nx) lf1 = 2
           f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
-print *,'PENCIL MINMAX W 1',iproc, size(frgn_buffer(lf1:,:,:,:)),size(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)),minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
+!print *,'PENCIL MINMAX W 1',iproc, size(frgn_buffer(lf1:,:,:,:)),size(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)),minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
 !print *,'PENCIL MINMAX W 1',iproc, minval(frgn_buffer), maxval(frgn_buffer)
 
         else
           if(size(frgn_buffer,1).gt.size(f,1)) lf1 = 2
           f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
-print *,'PENCIL MINMAX W 2',iproc,size(frgn_buffer(lf1:,:,:,:)), size(f),minval(f(:,:,:,ivar1:ivar2)), maxval(f(:,:,:,ivar1:ivar2))
+!print *,'PENCIL MINMAX W 2',iproc,size(frgn_buffer(lf1:,:,:,:)), size(f),minval(f(:,:,:,ivar1:ivar2)), maxval(f(:,:,:,ivar1:ivar2))
 !print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
         endif
 !if(size(f,1)==mx) then
