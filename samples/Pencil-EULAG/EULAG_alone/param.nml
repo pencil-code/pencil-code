@@ -1,0 +1,244 @@
+c     +++param.nml+++
+c     grid size and basic physical option parameters
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+C  **** WARNING: if using multiprocessing, there exist constraint
+C  ****          on values of m,n. See note below on "msg.inc" file
+C  ****          and values of nprocx and nprocy.
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+      parameter (lagr=0,ieul=1-lagr)  ! Lagrangian/Eulerian model
+      parameter (n=32,m=32,l=32)! grid dimensions, stable layer SCZ
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     lxyz - define meaning of dx00, dy00, dz00
+c---> lxyz=0 physical grid increments, need to specify values of dx,dy,dx
+c---> lxyz=1 physical domain lengths,  need to specify values of dx,dy,dx
+c---> lxyz=2 normalized grid increments, do not need values of dx,dy,dx
+c -------------------------------------------------------------------------
+c ---  Cartesian (all units in meters and seconds)
+c ---  Spherical (all units in meters and seconds)
+c ---  dx00, dy00, dz00 - domain grid increments/dimensions
+c ---  dt00 - time step increment in seconds
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+      parameter (dx00=1.)
+      parameter (dy00=1.)
+c     parameter (dz00=3945826.7716)  !r_max = 0.95, l=64
+      parameter (dz00=8700187.5)  !r_max = 1.0, l=32
+c     parameter (dz00=16572472.411199998)  !r_max = 0.95, l=16
+      parameter (dt00=5000.)
+      parameter (lxyz=0)
+
+ccoccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c ---     nt: number of timesteps
+c ---    nth: max NT for histories
+c ---  noutp: print diagnostic output/graphics plot after every "noutp" step
+c ---  nplot: store abbreviated tape every "nplot" step (iowritesh) -- fort.11
+c --- nstore: store full dataset after every "nstore" step -- fort.9
+c---> nslice: store data for the graphics postprocessing
+c--->nbridge: send data to foreign code every "nbridge" step
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     parameter (nt=5*14400,noutp=360,nplot=1440,nstore=1440,nslice=0) !10 s.d.
+c     parameter (nt=20*14400,noutp=360,nplot=1440,nstore=1440,nslice=0) !10 s.d.
+      parameter (nt=1440000,noutp=360,nplot=5000,nstore=1440000,
+     .nbridge=1,nslice=0) !1000 s.d.
+c     parameter (nt=5760000,noutp=360,nplot=7200,nstore=28800,
+c    .nslice=0) !4000 s.d.
+c     parameter (nt=2501,noutp=25,nplot=100,nstore=2502,nbridge=1,
+c    .nslice=0) !4000 s.d.
+c     parameter (nt=2880,noutp=7,nplot=72,nstore=72, !100 Sd dt=0.5h 
+c     parameter (nt=100,noutp=10,nplot=10,nstore=100,
+c    .nslice=0) !4000 s.d
+c     parameter (nt=1000,noutp=100,nplot=100,nstore=100,nslice=0)
+      parameter (nth=nt+1)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c---> nslice: store 2D slice data (binary or Netcdf) for the postprocessing
+c---> nxaver: save 2D data averaged in the zonal direction
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (nxaver=7200)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c ---  iwrite: 1 make history tape on unit 9 (fort.9)
+c --- iwrite0: 0 do not save/1 save the initial data on restart
+c ---    irst: 1 restart run from history tape (fort.10)
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+!      parameter (iwrite=1,iwrite0=0,irst=1)
+      parameter (iwrite=1,iwrite0=0)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c              CREATE RESTART/GRAPHICS/ANALYSIS PARAMETERS
+c ---    nfil: number of output files generated in the tape (if iwrite=1)
+c ---   nfilm: parameter used to exclude initial "0" time step (if iwrite0=1)
+c ---  dt_fil: timestep used in the tape run
+c --- nt_fil0: time step number for the first output:
+c              1) =0 initial (diagnostic) time step (if iwrite0=1)
+c              2) =nt_film0 all outputs from prognostic time steps (iwrite0=0)
+c ---nt_film0: time step increments for consecutive outputs
+c              nt_film0=nstore (value of "nstore" from the tape run)
+c --- nfstart: first record in tape file to read
+c              1) ANALIZ=0,irst=0 for initialization (fort.10)
+c              2) ANALIZ>0        for analysis       (fort.10 or fort.12)
+c ---  nanlfl: switch between output tapes
+c              1) =0 short tape fort.12 for graphisc only
+c              2) =1 full tape fort.10 for graphics and diagnostic
+c ---    ndia: flag for diagnostics during analyasis (only if nanlfl=1)
+c ---    nplo: frequency of the plots, analyse every nplo'th record
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+      parameter (nfil =2,             nfilm =nfil -1)
+c     parameter (nfilo=151,             nfilom=nfilo-1)
+      parameter (nfilo=301,             nfilom=nfilo-1)
+c     parameter (nfilo=601,             nfilom=nfilo-1)
+      parameter (dt_fil =1800,nt_fil0 =0,nt_film0  =2880)
+      parameter (dt_filo=1800,nt_filo0=0,nt_filom0 =2880)
+
+      parameter (nfstart=1)
+      parameter ( nanlfl=1)
+      parameter (   idia=1 *nanlfl)
+      parameter (   nplo=1)
+
+ccoccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Monge-Ampere equation
+c ---  iouter : number of newton krylov outer iterations
+c ---  innel  : number of elliptic solver iterations
+c ---  iprecc : preconditionner
+c ---  ivar   : Richardson / Min res. precon.
+c ---  inpr   : number of iterations in precon.
+c ---  lrdl   : GCRMA(k)
+c ---  ioutp  : print satistics
+c ---  iowr   : print to tape (fort.15)
+C...Newton-Krylov solver
+      parameter (itsmx=1,
+     .           iouter=20,
+     .           innel=30,
+     .           lrdl=2,
+     .           ioutp=1,
+     .           iprecc=0,
+     .           idouble=1,
+     .           ivar=2,
+     .           iowr=0,
+     .           ispectra=1)
+C...Richardson solver
+      parameter(itricha=100)
+C...Precondtionners
+      parameter(inpr=1,ioutpr=0) !output
+C...ADI
+      parameter(iadi=5,adtf=1.)
+C...Richardson
+      parameter(iri=1,ipj=0,betap=.25)
+C...Domain Decomposition
+      parameter(idom=0)
+C...Domain Decomposition
+      parameter(mabeg=0)
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (nspec=n/2,
+     .iospc=18,ioell1=10,ioell2=10,iohis=30)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c boundaries
+c ---     icyx,icyy,icyz: boundaries are open (=0) or periodic (=1)
+c ---                     in x,y,z coordinates
+c ---        irelx,irely: do not apply (=0) or apply damping (=1)
+c ---                     along x,y boundaries
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (icyx=1)
+      parameter (icyy=0)
+      parameter (icyz=0)
+      parameter (irelx=0,irely=0)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Dry/Moist model parameters
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (moist=0)                         ! Dry/Moist model
+      parameter (ice=0)                  ! warm rain =0/ simple ice =1
+      parameter (iceab=0)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Viscous/Inviscid model parameters
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (ivs0=1)                          ! Viscous/Inviscid model
+      parameter (irid0=0)                         ! Viscous/Inviscid model
+      parameter (itke0=0,itke=ivs0*itke0)         ! Smagorinsky/TKE SGS model
+      parameter (nthv=nth,nthv2=2*nthv,nthv4=4*nthv,nthvio=iohis*nthv)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Chemistry on-off
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (ichm=1,nspc=2)              ! chemical spices
+      parameter (nthch=nspc*nthv)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Basic physical/numerical parameters
+c
+c ---   implgw = 1 advect theta perturbation (default)
+c ---            0 advect full theta
+c ---  isphere = 0 reference coordinates are Cartesian
+c ---             (need to specify dx,dy,dz in blanelas)
+c ---            1 reference coordinates are spherical
+c ---              (need to specify only dz in blanelas)
+c ---   icorio = 0 no coriolis accelerations
+c ---            1 incorporate coriolis accelerations
+c ---              (need to set icorio even if isphere=1)
+c ---  icylind =0  reference coordinates are Cartesian
+c ---              reference coordinates are cylindrical
+c ---   ientro = 1 use entropy as thermodyn. var. (default)
+c ---            0 use theta
+c
+c ---   istab = 1 run with stable layer below SCZ (default)
+c ---           0 run SCZ without stable layer below
+c
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (implgw=1,isphere=1,icylind=0,icorio=1)
+      parameter (intz=1-implgw)
+      parameter (pflip=-1)
+      parameter (ientro=0,istab=1)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c spectral preconditioner
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter(ispcpr=0)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c immersed boundary
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter(imrsb=0)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c icw ontrols lateral open boundaries:
+c icw=0 "overspecified" enforces component w=0 at the open boundaries;
+c        icw=0 makes sense only with absorbers ON
+c icw=1 "correct" does not invoke components other than normal;
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (icw=1)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c ---  time of time integration
+c--> itraj0=0 adams-bashf., itraj0=1 runge-kutta
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter(itraj=0)                          ! Ad-Bs/Rg-Kt advecting flow
+
+      parameter (nms=(n-1)*moist+1,mms=(m-1)*moist+1,lms=(l-1)*moist+1)
+      parameter (nic=(n-1)*iceab+1,mic=(m-1)*iceab+1,lic=(l-1)*iceab+1)
+      parameter (nkv=(n-1)*ivs0+1 ,mkv=(m-1)*ivs0+1 ,lkv=(l-1)*ivs0+1)
+      parameter (nke=(n-1)*itke+1 ,mke=(m-1)*itke+1 ,lke=(l-1)*itke+1)
+      parameter (nch=(n-1)*ichm+1 ,mch=(m-1)*ichm+1 ,lch=(l-1)*ichm+1)
+      parameter (nts=(n-1)*itraj+1,mts=(m-1)*itraj+1,lts=(l-1)*itraj+1)
+      parameter (nib=(n-1)*imrsb+1,mib=(m-1)*imrsb+1,lib=(l-1)*imrsb+1)
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c --- Magnetohydrodynamic module
+c---> mhd=1    : activate MHD
+c---> ibbc=1   : time-varying boundary conditions (subroutine bbeset)
+c---> ibbu=0   : zero magnetic field at upper surface
+c---> ibbu=1   : radial magnetic field at upper surface
+c---> ibbl=0   : zero magnetic field at lower surface
+c---> ibbl=1   : radial magnetic field at lower surface
+c---> idvcln=1 : divergence cleaning on/off
+c---> idisb=1  : magnetic dissip
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      parameter (mhd=0,ibbu=1,ibbl=0)
+      parameter (nmhd=(n-1)*mhd+1,mmhd=(m-1)*mhd+1,lmhd=(l-1)*mhd+1)
+

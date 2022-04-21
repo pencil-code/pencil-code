@@ -1,0 +1,351 @@
+27a28
+> # --->                                                                  <--- #
+394c395
+< setenv JOBNAME SDB_tine_test #4000 sol days. alphai=20s.d.,iabb=0
+---
+> setenv JOBNAME SSM_EuPen_coup #4000 sol days. alphai=20s.d.,iabb=0
+854,855c855
+<       parameter (n=64,m=64,l=64)! grid dimensions, stable layer SCZ
+< c     parameter (n=32,m=32,l=32)! grid dimensions, stable layer SCZ
+---
+>       parameter (n=128,m=64,l=256)! grid dimensions, stable layer SCZ
+871,875c871,872
+< c     parameter (dz00=3945826.7716)  !r_max = 0.95, l=64
+<       parameter (dz00=4419142.857142857)  !r_max = 1.0, l=64
+< c     parameter (dz00=8700187.5)  !r_max = 1.0, l=32
+< c     parameter (dz00=16572472.411199998)  !r_max = 0.95, l=16
+<       parameter (dt00=5000.)
+---
+>       parameter (dz00=994285.71425)  !l=256, r = 0.964 r_sun
+>       parameter (dt00=800.)
+891,896c888,890
+< c     parameter (nt=5760000,noutp=360,nplot=7200,nstore=28800,
+< c    .nslice=0) !4000 s.d.
+<       parameter (nt=2501,noutp=25,nplot=100,nstore=1,nbridge=1,
+<      .nslice=0) !4000 s.d.
+< c     parameter (nt=2880,noutp=7,nplot=72,nstore=72, !100 Sd dt=0.5h 
+< c     parameter (nt=100,noutp=10,nplot=10,nstore=100,
+---
+>       parameter (nt=5760000,noutp=200,nplot=200,nstore=28800,
+>      .nslice=0, nbridge=1) !4000 s.d.
+> c     parameter (nt=10,noutp=1,nplot=1,nstore=10,
+905c899
+<       parameter (nxaver=7200)
+---
+>       parameter (nxaver=0)
+1015c1009
+<       parameter (ichm=1,nspc=2)              ! chemical spices
+---
+>       parameter (ichm=0,nspc=2)              ! chemical spices
+1148c1142
+<       parameter (nprocx=2, nprocy=2)  !processor geometry parameters
+---
+> c     parameter (nprocx=2, nprocy=2)  !processor geometry parameters
+1154c1148
+< c     parameter (nprocx=16, nprocy=8)  !processor geometry parameters
+---
+>       parameter (nprocx=16, nprocy=8)  !processor geometry parameters
+1516,1519d1509
+< !GG: ----- for restarting --------------
+<       logical  pulse_exists
+<       integer :: irst=0
+<       integer :: ipulse,ipulse1
+1526a1517,1520
+> !GG: ----- for restarting --------------
+>       logical  pulse_exists
+>       integer :: irst=0
+>       integer :: ipulse,ipulse1
+1866c1860
+<       if (istab.eq.1.and.zcr(k).le.hpsl) then
+---
+>       if (k.le.74) then
+1956,1957d1944
+<       call mybarrier()
+< 
+3812,3815c3790
+< c     tsclh=3600.*24.*30.*40.      !sun
+<       tsclh=3600.*24.*30.*40.      !sun
+< 
+<       tshear=3600.*24*365.*2.      ! 2 yr shear timescale
+---
+>       tsclh=3600.*24.*30.*30.      !sun
+3835c3810
+<       fx(i,j,k)=fx(i,j,k)-2.*(u(i,j,k,0)-u0_char(i,j,k))/tshear !Miesch Forcing
+---
+> c     fx(i,j,k)=fx(i,j,k)-2.*(u(i,j,k,0)-u0_char(i,j,k))/tshear !Miesch Forcing
+4659,4660c4628
+< c     data fcr0,ang,initprs/6.6111e-6,0.,0/     ! Sun   - 22 days
+<       data fcr0,ang,initprs/6.060171e-6,0.,0/   ! Sun   - 24 days
+---
+>       data fcr0,ang,initprs/6.06023e-6,0.,0/    ! sun - 24 days  
+22016c21968
+< c original davies coefficients for nr(x or y)=6
+---
+> c original davies'' coefficients for nr(x or y)=6
+22938c22887
+<        l1 = 19
+---
+>        l1 = 73
+23015c22964
+<        real x,mr, u(n),uprime(n) 
+---
+>        real x,mr,u(n),uprime(n)
+23018,23019c22967,22968
+<        g0 = grav_rafa(x)
+< 
+---
+>        g0 = grav_rafa(x
+> )
+23049c22998
+<        m1 = 1.5001
+---
+>        m1 = 1.49997
+23911c23856
+<        l1 = 19
+---
+>        l1 = 73
+23971c23915
+<        l1 = 19
+---
+>        l1 = 73
+24036c23978
+<        l1 = 19
+---
+>        l1 = 73
+42965a42901
+> C----------------------------------------------------------------------
+42993c42929
+<       if(proc_eu.ne.nprocx*nprocy) then
+---
+>       if(size.ne.nprocx*nprocy) then
+42997c42933
+<         print *,'NPE = ',isize,'nprocx*nprocy=',nprocx*nprocy
+---
+>         print *,'NPE = ',size,'nprocx*nprocy=',nprocx*nprocy
+43931,43933c43867,43869
+<       parameter (ixz=1, msl=1, inzxz=1) ! XZ slices
+<       parameter (iyz=1, nsl=1, inzyz=1) ! YZ slices
+<       parameter (ixy=1, lsl=4, inzxy=1) ! XY slices
+---
+>       parameter (ixz=1, msl=10, inzxz=1) ! XZ slices
+>       parameter (iyz=1, nsl=10, inzyz=1) ! YZ slices
+>       parameter (ixy=1, lsl=10, inzxy=1) ! XY slices
+47095,47210c47023
+<       if(inr.ge.0) 
+<      +   call writeit0tape(temp,fval,ifullarr,inr,n,m)
+<       
+<       return
+<       end
+< 
+< 
+< C++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+<       subroutine bridge_send(dataarr_eu, ind, iblock, rqst)
+< c
+< c   this subroutine should be able to send all data into processor 0 of MPI_COMM_WORLD
+< c
+<       include 'param.nml'
+<       include 'msg.inc'
+< #if (PARALLEL>0) 
+< #include "msg.lnk"
+< #include "msg.lnp"
+< #endif
+<       integer iproc, lengi, ind
+<       integer, dimension(0:nprocx_frn-1)::rqst
+<       real temp
+<       dimension dataarr_eu( 1-ih:np+ih,1-ih:mp+ih,l) 
+<       integer :: iblock
+<       !common/blocktemp/temparray(l,mp,np)
+<       real, dimension(l,mp,np) :: temparray 
+< 
+< c     transfer data to a regular array, EULAG does it all the time
+<       
+<       !print *, 'EULAG - peer_frn', mype, peer_frn
+< 
+<       do iproc=0, nprocx_frn - 1        
+< 
+<         nmlp = np*mp*(xind_rng(iproc,2) - xind_rng(iproc, 1) + 1)  !count for mpi_send
+<         if(iblock >=3) then
+<              call MPI_WAIT(rqst(iproc),status,ierr)
+<              print*, 'EULAG: NON_BLOCKING', mype, iblock,
+<      +          status(MPI_SOURCE),status(MPI_TAG),status(MPI_ERROR) 
+<         endif
+<         do k=xind_rng(iproc,1), xind_rng(iproc, 2)
+<           do j=1, mp
+<             do i=1, np
+<                temparray(k,j,i) = dataarr_eu(i,j,k)
+<             enddo
+<           enddo
+<         enddo
+<         
+< !        print *,'EULAG - rank, peer, tag, leng',
+< !     .                  mype,peer_frn+iproc, mype, nmlp
+<         if(iblock>=2) then
+<           call MPI_ISend(temparray(xind_rng(iproc,1):
+<      +      xind_rng(iproc,2),:,:),
+<      +      nmlp,DC_TYPE,peer_frn+iproc,mype,MPI_COMM_WORLD,
+<      +      rqst(iproc),ierr)
+< !           print*, 'EULAG: NON_BLOCKING', mype, rqst(iproc), iblock
+<         else   
+<           call MPI_Send(temparray(xind_rng(iproc,1):
+<      +      xind_rng(iproc,2),:,:),
+<      +      nmlp,DC_TYPE,peer_frn+iproc,mype,MPI_COMM_WORLD,ierr)
+<         endif
+<       enddo 
+<       
+<       if(ind.eq.1)
+<      .       write(30+mype) temparray  
+<       if(ind.eq.2)
+<      .       write(40+mype) temparray  
+<       if(ind.eq.3)
+<      .       write(50+mype) temparray  
+< 
+< !     print *,'EULAG Finished send'
+<       call mybarrier()
+< 
+<       end
+< 
+< C++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+< 
+<       subroutine bridge_velo_send(u,v,w)   ! Just this 3 for now
+< c
+< c   This subroutine will send the field/other variables to Pencil
+< c
+< 
+< 
+<       include 'param.nml'
+<       include 'msg.inc'
+< #if (PARALLEL>0)
+< #include "msg.lnk"
+< #endif
+<       dimension u(1-ih:np+ih, 1-ih:mp+ih, l),
+<      .          v(1-ih:np+ih, 1-ih:mp+ih, l),
+<      .          w(1-ih:np+ih, 1-ih:mp+ih, l)
+<       integer,save::iblock=0
+<       integer,save,dimension(0:nprocx_frn_max-1,3)::rqst
+<       double precision :: time0,time1, time2
+< 
+< 
+< c Need to be send in the sme order as the receiver 
+<       if (mype.eq.0.and.iblock.eq.0) time0 = MPI_WTIME()
+<       if (mype.eq.0) time1 = MPI_WTIME()
+<       call bridge_send(w,3,iblock,rqst(:nprocx_frn-1,3))
+<       call bridge_send(v,2,iblock,rqst(:nprocx_frn-1,2))
+<       call bridge_send(u,1,iblock,rqst(:nprocx_frn-1,1))
+<       if (mype.eq.0) then
+<         time2 = MPI_WTIME()
+<       endif
+< !      iblock = iblock+1 !Coment to block
+<       print *, 'EULAG MIN MAX W', mype,minval(w(1:np,1:mp,:)),
+<      .                           maxval(w(1:np,1:mp,:))
+<       print *, 'EULAG MIN MAX V', mype,minval(v(1:np,1:mp,:)),
+<      .                           maxval(v(1:np,1:mp,:))
+<       print *, 'EULAG MIN MAX U', mype,minval(u(1:np,1:mp,:)),
+<      .                           maxval(u(1:np,1:mp,:))
+< 
+< 
+<       print*, 'EULAG: successful', mype
+< !      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+< !      call MPI_FINALIZE(ierr)
+< !      stop
+---
+>       call writeit0tape(temp,fval,ifullarr,inr,n,m)
+48965a48780,48781
+> c     print *,'PARALLEL done',mype
+> 
+49022a48841
+> c     print *,'PARALLEL 2',mype
+49149a48969,48970
+> c     print *,'PARALLEL 2 done',mype
+> 
+49564,49565d49378
+< 
+<       print *, 'Parallel == 1'
+49630a49445,49446
+> 
+> c     print *,'PARALLEL',mype
+52407c52223
+<       print *,'UPDATE DONE 1',mype
+---
+>       print *,'UPDATE DONE',mype
+52604c52422
+<       print *,'UPDATE DONE 2',mype
+---
+>       print *,'UPDATE DONE',mype
+52645c52462
+<       print *,'UPDATE 3',mype,n1,m1,l1,ndim,mdim,ihg
+---
+>       print *,'UPDATE',mype,n1,m1,l1,ndim,mdim,ihg
+53430c53247
+<       print *,'UPDATE DONE 3',mype
+---
+>       print *,'UPDATE DONE',mype
+54592,54627d54410
+<       integer function find_proc_frn(ipx, ipy,ipz)
+<       include 'param.nml'
+<       include 'msg.inc'
+< 
+< #if (PARALLEL > 0)
+< #include "msg.lnk"
+< #endif
+<       integer :: nprocxy
+< c
+< c     Returns the rank of a process given its position in (ipx,ipy,ipz).
+< c
+< c     16-sep-15/ccyang: coded.
+< c
+< 
+< c
+<       integer :: ipx, ipy, ipz
+< c
+<       nprocxy = nprocx_frn*nprocy_frn
+< 
+<       find_proc_frn = ipz * nprocxy + ipy * nprocx_frn + ipx
+< c
+<       end
+< 
+<       subroutine find_proc_coord(rank, ipx, ipy)
+<       include 'param.nml'
+<       include 'msg.inc'
+< !      
+<       integer :: rank, ipx, ipy
+< !
+<       ipx = mod(rank, nprocx)
+<       ipy = rank/nprocx
+< !
+<       end
+< !
+< C+++++++++++++++++++++++++
+< 
+63522a63305
+> !     print *,mype,k,ia,ja,md2-ja+1,ia-nd1+1,temp(md2-ja+1,ia-nd1+1,k)
+63523a63307
+> !                temp(ja,ia,k)=datarr(i,j,k)
+63535a63320
+> !           print *,'receive  from:',iproc,nmlp
+63537a63323
+> !           print *,'received',ierr
+63575a63362
+> !     print *,iproc,k,ia,ja,md2-ja+1,ia-nd1+1,temp(md2-ja+1,ia-nd1+1,k)
+63576a63364
+> !                 temp(ja,ia,k)=datarr(i,j,k)
+63885,63887d63675
+<     nn = 2
+<     mm = 1
+<     ll = 2
+63940,63946d63727
+< c  GM:Define some parameters to be used in the bridge segment
+<       parameter (nprocx_frn_max=100)
+<       integer MPI_COMM_EULAG,nprocx_frn,xind_rng,peer_frn,nprocy_frn
+<       integer :: tag_frn = 1734
+< !     integer :: tag_frn = 0
+<       common/mpigm/ MPI_COMM_EULAG,tag_frn,nprocx_frn,nprocy_frn,
+<      .              peer_frn,xind_rng(0:nprocx_frn_max-1, 2)
+73138,73142c72921,72922
+<      echo "${PGF90} -O3 -fpp -g -traceback -r8 src.F "
+<      ${PGF90} -O3 -fpp -g -traceback -r8 src.F -w
+< #     echo "${PGF90} -O3 -fpp -r8 -g -check all  src.F "
+< #     ${PGF90} -O3 -fpp -r8 -g -check uninit src.F -w
+< 
+---
+>      echo "${PGF90} -O3 -fpp -r8 src.F "
+>      ${PGF90} -O3 -fpp -r8 src.F -w

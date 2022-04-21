@@ -1,0 +1,1567 @@
+
+      SUBROUTINE CFFTF (N,C,WSAVE)
+C
+C     SUBROUTINE CFFTF COMPUTES THE FORWARD COMPLEX DISCRETE FOURIER
+C     TRANSFORM (THE FOURIER ANALYSIS). EQUIVALENTLY , CFFTF COMPUTES
+C     THE FOURIER COEFFICIENTS OF A COMPLEX PERIODIC SEQUENCE.
+C     THE TRANSFORM IS DEFINED BELOW AT OUTPUT PARAMETER C.
+C
+C     THE TRANSFORM IS NOT NORMALIZED. TO OBTAIN A NORMALIZED TRANSFORM
+C     THE OUTPUT MUST BE DIVIDED BY N. OTHERWISE A CALL OF CFFTF
+C     FOLLOWED BY A CALL OF CFFTB WILL MULTIPLY THE SEQUENCE BY N.
+C
+C     THE ARRAY WSAVE WHICH IS USED BY SUBROUTINE CFFTF MUST BE
+C     INITIALIZED BY CALLING SUBROUTINE CFFTI(N,WSAVE).
+C
+C     INPUT PARAMETERS
+C
+C
+C     N      THE LENGTH OF THE COMPLEX SEQUENCE C. THE METHOD IS
+C            MORE EFFICIENT WHEN N IS THE PRODUCT OF SMALL PRIMES. N
+C
+C     C      A COMPLEX ARRAY OF LENGTH N WHICH CONTAINS THE SEQUENCE
+C
+C     WSAVE   A REAL WORK ARRAY WHICH MUST BE DIMENSIONED AT LEAST 4N+15
+C             IN THE PROGRAM THAT CALLS CFFTF. THE WSAVE ARRAY MUST BE
+C             INITIALIZED BY CALLING SUBROUTINE CFFTI(N,WSAVE) AND A
+C             DIFFERENT WSAVE ARRAY MUST BE USED FOR EACH DIFFERENT
+C             VALUE OF N. THIS INITIALIZATION DOES NOT HAVE TO BE
+C             REPEATED SO LONG AS N REMAINS UNCHANGED THUS SUBSEQUENT
+C             TRANSFORMS CAN BE OBTAINED FASTER THAN THE FIRST.
+C             THE SAME WSAVE ARRAY CAN BE USED BY CFFTF AND CFFTB.
+C
+C     OUTPUT PARAMETERS
+C
+C     C      FOR J=1,...,N
+C
+C                C(J)=THE SUM FROM K=1,...,N OF
+C
+C                      C(K)*EXP(-I*(J-1)*(K-1)*2*PI/N)
+C
+C                            WHERE I=SQRT(-1)
+C
+C     WSAVE   CONTAINS INITIALIZATION CALCULATIONS WHICH MUST NOT BE
+C             DESTROYED BETWEEN CALLS OF SUBROUTINE CFFTF OR CFFTB
+C
+      DIMENSION       C(*)       ,WSAVE(*)
+C
+      IF (N .EQ. 1) RETURN
+      IW1 = N+N+1
+      IW2 = IW1+N+N
+      CALL CFFTF1 (N,C,WSAVE,WSAVE(IW1),WSAVE(IW2))
+      RETURN
+      END
+C
+      SUBROUTINE CFFTF1 (N,C,CH,WA,IFAC)
+      DIMENSION       CH(*)      ,C(*)       ,WA(*)      ,IFAC(*)
+      NF = IFAC(2)
+      NA = 0
+      L1 = 1
+      IW = 1
+      DO 116 K1=1,NF
+         IP = IFAC(K1+2)
+         L2 = IP*L1
+         IDO = N/L2
+         IDOT = IDO+IDO
+         IDL1 = IDOT*L1
+         IF (IP .NE. 4) GO TO 103
+         IX2 = IW+IDOT
+         IX3 = IX2+IDOT
+         IF (NA .NE. 0) GO TO 101
+         CALL PASSF4 (IDOT,L1,C,CH,WA(IW),WA(IX2),WA(IX3))
+         GO TO 102
+  101    CALL PASSF4 (IDOT,L1,CH,C,WA(IW),WA(IX2),WA(IX3))
+  102    NA = 1-NA
+         GO TO 115
+  103    IF (IP .NE. 2) GO TO 106
+         IF (NA .NE. 0) GO TO 104
+         CALL PASSF2 (IDOT,L1,C,CH,WA(IW))
+         GO TO 105
+  104    CALL PASSF2 (IDOT,L1,CH,C,WA(IW))
+  105    NA = 1-NA
+         GO TO 115
+  106    IF (IP .NE. 3) GO TO 109
+         IX2 = IW+IDOT
+         IF (NA .NE. 0) GO TO 107
+         CALL PASSF3 (IDOT,L1,C,CH,WA(IW),WA(IX2))
+         GO TO 108
+  107    CALL PASSF3 (IDOT,L1,CH,C,WA(IW),WA(IX2))
+  108    NA = 1-NA
+         GO TO 115
+  109    IF (IP .NE. 5) GO TO 112
+         IX2 = IW+IDOT
+         IX3 = IX2+IDOT
+         IX4 = IX3+IDOT
+         IF (NA .NE. 0) GO TO 110
+         CALL PASSF5 (IDOT,L1,C,CH,WA(IW),WA(IX2),WA(IX3),WA(IX4))
+         GO TO 111
+  110    CALL PASSF5 (IDOT,L1,CH,C,WA(IW),WA(IX2),WA(IX3),WA(IX4))
+  111    NA = 1-NA
+         GO TO 115
+  112    IF (NA .NE. 0) GO TO 113
+         CALL PASSF (NAC,IDOT,IP,L1,IDL1,C,C,C,CH,CH,WA(IW))
+         GO TO 114
+  113    CALL PASSF (NAC,IDOT,IP,L1,IDL1,CH,CH,CH,C,C,WA(IW))
+  114    IF (NAC .NE. 0) NA = 1-NA
+  115    L1 = L2
+         IW = IW+(IP-1)*IDOT
+  116 CONTINUE
+      IF (NA .EQ. 0) RETURN
+      N2 = N+N
+      DO 117 I=1,N2
+         C(I) = CH(I)
+  117 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE CFFTI (N,WSAVE)
+C
+C     SUBROUTINE CFFTI INITIALIZES THE ARRAY WSAVE WHICH IS USED IN
+C     BOTH CFFTF AND CFFTB. THE PRIME FACTORIZATION OF N TOGETHER WITH
+C     A TABULATION OF THE TRIGONOMETRIC FUNCTIONS ARE COMPUTED AND
+C     STORED IN WSAVE.
+C
+C     INPUT PARAMETER
+C
+C     N       THE LENGTH OF THE SEQUENCE TO BE TRANSFORMED
+C
+C     OUTPUT PARAMETER
+C
+C     WSAVE   A WORK ARRAY WHICH MUST BE DIMENSIONED AT LEAST 4*N+15
+C             THE SAME WORK ARRAY CAN BE USED FOR BOTH CFFTF AND CFFTB
+C             AS LONG AS N REMAINS UNCHANGED. DIFFERENT WSAVE ARRAYS
+C             ARE REQUIRED FOR DIFFERENT VALUES OF N. THE CONTENTS OF
+C             WSAVE MUST NOT BE CHANGED BETWEEN CALLS OF CFFTF OR CFFTB.
+C
+      DIMENSION       WSAVE(*)
+C
+      IF (N .EQ. 1) RETURN
+      IW1 = N+N+1
+      IW2 = IW1+N+N
+      CALL CFFTI1 (N,WSAVE(IW1),WSAVE(IW2))
+      RETURN
+      END
+C
+      SUBROUTINE CFFTI1 (N,WA,IFAC)
+      DIMENSION       WA(*)      ,IFAC(*)    ,NTRYH(4)
+      DATA NTRYH(1),NTRYH(2),NTRYH(3),NTRYH(4)/3,4,2,5/
+      DATA TWOPI/6.2831853071795864769252867665590D0/
+      NL = N
+      NF = 0
+      J = 0
+  101 J = J+1
+      IF (J-4) 102,102,103
+  102 NTRY = NTRYH(J)
+      GO TO 104
+  103 NTRY = NTRY+2
+  104 NQ = NL/NTRY
+      NR = NL-NTRY*NQ
+      IF (NR) 101,105,101
+  105 NF = NF+1
+      IFAC(NF+2) = NTRY
+      NL = NQ
+      IF (NTRY .NE. 2) GO TO 107
+      IF (NF .EQ. 1) GO TO 107
+      DO 106 I=2,NF
+         IB = NF-I+2
+         IFAC(IB+2) = IFAC(IB+1)
+  106 CONTINUE
+      IFAC(3) = 2
+  107 IF (NL .NE. 1) GO TO 104
+      IFAC(1) = N
+      IFAC(2) = NF
+      ARGH = TWOPI/FLOAT(N)
+      I = 2
+      L1 = 1
+      DO 110 K1=1,NF
+         IP = IFAC(K1+2)
+         LD = 0
+         L2 = L1*IP
+         IDO = N/L2
+         IDOT = IDO+IDO+2
+         IPM = IP-1
+         DO 109 J=1,IPM
+            I1 = I
+            WA(I-1) = 1.
+            WA(I) = 0.
+            LD = LD+L1
+            FI = 0.
+            ARGLD = FLOAT(LD)*ARGH
+            DO 108 II=4,IDOT,2
+               I = I+2
+               FI = FI+1.
+               ARG = FI*ARGLD
+               WA(I-1) = COS(ARG)
+               WA(I) = SIN(ARG)
+  108       CONTINUE
+            IF (IP .LE. 5) GO TO 109
+            WA(I1-1) = WA(I-1)
+            WA(I1) = WA(I)
+  109    CONTINUE
+         L1 = L2
+  110 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSF (NAC,IDO,IP,L1,IDL1,CC,C1,C2,CH,CH2,WA)
+      DIMENSION       CH(IDO,L1,IP)          ,CC(IDO,IP,L1)          ,
+     1                C1(IDO,L1,IP)          ,WA(*)      ,C2(IDL1,IP),
+     2                CH2(IDL1,IP)
+      IDOT = IDO/2
+      NT = IP*IDL1
+      IPP2 = IP+2
+      IPPH = (IP+1)/2
+      IDP = IP*IDO
+C
+      IF (IDO .LT. L1) GO TO 106
+      DO 103 J=2,IPPH
+         JC = IPP2-J
+         DO 102 K=1,L1
+            DO 101 I=1,IDO
+               CH(I,K,J) = CC(I,J,K)+CC(I,JC,K)
+               CH(I,K,JC) = CC(I,J,K)-CC(I,JC,K)
+  101       CONTINUE
+  102    CONTINUE
+  103 CONTINUE
+      DO 105 K=1,L1
+         DO 104 I=1,IDO
+            CH(I,K,1) = CC(I,1,K)
+  104    CONTINUE
+  105 CONTINUE
+      GO TO 112
+  106 DO 109 J=2,IPPH
+         JC = IPP2-J
+         DO 108 I=1,IDO
+            DO 107 K=1,L1
+               CH(I,K,J) = CC(I,J,K)+CC(I,JC,K)
+               CH(I,K,JC) = CC(I,J,K)-CC(I,JC,K)
+  107       CONTINUE
+  108    CONTINUE
+  109 CONTINUE
+      DO 111 I=1,IDO
+         DO 110 K=1,L1
+            CH(I,K,1) = CC(I,1,K)
+  110    CONTINUE
+  111 CONTINUE
+  112 IDL = 2-IDO
+      INC = 0
+      DO 116 L=2,IPPH
+         LC = IPP2-L
+         IDL = IDL+IDO
+         DO 113 IK=1,IDL1
+            C2(IK,L) = CH2(IK,1)+WA(IDL-1)*CH2(IK,2)
+            C2(IK,LC) = -WA(IDL)*CH2(IK,IP)
+  113    CONTINUE
+         IDLJ = IDL
+         INC = INC+IDO
+         DO 115 J=3,IPPH
+            JC = IPP2-J
+            IDLJ = IDLJ+INC
+            IF (IDLJ .GT. IDP) IDLJ = IDLJ-IDP
+            WAR = WA(IDLJ-1)
+            WAI = WA(IDLJ)
+            DO 114 IK=1,IDL1
+               C2(IK,L) = C2(IK,L)+WAR*CH2(IK,J)
+               C2(IK,LC) = C2(IK,LC)-WAI*CH2(IK,JC)
+  114       CONTINUE
+  115    CONTINUE
+  116 CONTINUE
+      DO 118 J=2,IPPH
+         DO 117 IK=1,IDL1
+            CH2(IK,1) = CH2(IK,1)+CH2(IK,J)
+  117    CONTINUE
+  118 CONTINUE
+      DO 120 J=2,IPPH
+         JC = IPP2-J
+         DO 119 IK=2,IDL1,2
+            CH2(IK-1,J) = C2(IK-1,J)-C2(IK,JC)
+            CH2(IK-1,JC) = C2(IK-1,J)+C2(IK,JC)
+            CH2(IK,J) = C2(IK,J)+C2(IK-1,JC)
+            CH2(IK,JC) = C2(IK,J)-C2(IK-1,JC)
+  119    CONTINUE
+  120 CONTINUE
+      NAC = 1
+      IF (IDO .EQ. 2) RETURN
+      NAC = 0
+      DO 121 IK=1,IDL1
+         C2(IK,1) = CH2(IK,1)
+  121 CONTINUE
+      DO 123 J=2,IP
+         DO 122 K=1,L1
+            C1(1,K,J) = CH(1,K,J)
+            C1(2,K,J) = CH(2,K,J)
+  122    CONTINUE
+  123 CONTINUE
+      IF (IDOT .GT. L1) GO TO 127
+      IDIJ = 0
+      DO 126 J=2,IP
+         IDIJ = IDIJ+2
+         DO 125 I=4,IDO,2
+            IDIJ = IDIJ+2
+            DO 124 K=1,L1
+               C1(I-1,K,J) = WA(IDIJ-1)*CH(I-1,K,J)+WA(IDIJ)*CH(I,K,J)
+               C1(I,K,J) = WA(IDIJ-1)*CH(I,K,J)-WA(IDIJ)*CH(I-1,K,J)
+  124       CONTINUE
+  125    CONTINUE
+  126 CONTINUE
+      RETURN
+  127 IDJ = 2-IDO
+      DO 130 J=2,IP
+         IDJ = IDJ+IDO
+         DO 129 K=1,L1
+            IDIJ = IDJ
+            DO 128 I=4,IDO,2
+               IDIJ = IDIJ+2
+               C1(I-1,K,J) = WA(IDIJ-1)*CH(I-1,K,J)+WA(IDIJ)*CH(I,K,J)
+               C1(I,K,J) = WA(IDIJ-1)*CH(I,K,J)-WA(IDIJ)*CH(I-1,K,J)
+  128       CONTINUE
+  129    CONTINUE
+  130 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSF2 (IDO,L1,CC,CH,WA1)
+      DIMENSION       CC(IDO,2,L1)           ,CH(IDO,L1,2)           ,
+     1                WA1(*)
+      IF (IDO .GT. 2) GO TO 102
+      DO 101 K=1,L1
+         CH(1,K,1) = CC(1,1,K)+CC(1,2,K)
+         CH(1,K,2) = CC(1,1,K)-CC(1,2,K)
+         CH(2,K,1) = CC(2,1,K)+CC(2,2,K)
+         CH(2,K,2) = CC(2,1,K)-CC(2,2,K)
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            CH(I-1,K,1) = CC(I-1,1,K)+CC(I-1,2,K)
+            TR2 = CC(I-1,1,K)-CC(I-1,2,K)
+            CH(I,K,1) = CC(I,1,K)+CC(I,2,K)
+            TI2 = CC(I,1,K)-CC(I,2,K)
+            CH(I,K,2) = WA1(I-1)*TI2-WA1(I)*TR2
+            CH(I-1,K,2) = WA1(I-1)*TR2+WA1(I)*TI2
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSF3 (IDO,L1,CC,CH,WA1,WA2)
+      DIMENSION       CC(IDO,3,L1)           ,CH(IDO,L1,3)           ,
+     1                WA1(*)     ,WA2(*)
+      DATA TAUR,TAUI /-.5,-.866025403784439/
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TR2 = CC(1,2,K)+CC(1,3,K)
+         CR2 = CC(1,1,K)+TAUR*TR2
+         CH(1,K,1) = CC(1,1,K)+TR2
+         TI2 = CC(2,2,K)+CC(2,3,K)
+         CI2 = CC(2,1,K)+TAUR*TI2
+         CH(2,K,1) = CC(2,1,K)+TI2
+         CR3 = TAUI*(CC(1,2,K)-CC(1,3,K))
+         CI3 = TAUI*(CC(2,2,K)-CC(2,3,K))
+         CH(1,K,2) = CR2-CI3
+         CH(1,K,3) = CR2+CI3
+         CH(2,K,2) = CI2+CR3
+         CH(2,K,3) = CI2-CR3
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TR2 = CC(I-1,2,K)+CC(I-1,3,K)
+            CR2 = CC(I-1,1,K)+TAUR*TR2
+            CH(I-1,K,1) = CC(I-1,1,K)+TR2
+            TI2 = CC(I,2,K)+CC(I,3,K)
+            CI2 = CC(I,1,K)+TAUR*TI2
+            CH(I,K,1) = CC(I,1,K)+TI2
+            CR3 = TAUI*(CC(I-1,2,K)-CC(I-1,3,K))
+            CI3 = TAUI*(CC(I,2,K)-CC(I,3,K))
+            DR2 = CR2-CI3
+            DR3 = CR2+CI3
+            DI2 = CI2+CR3
+            DI3 = CI2-CR3
+            CH(I,K,2) = WA1(I-1)*DI2-WA1(I)*DR2
+            CH(I-1,K,2) = WA1(I-1)*DR2+WA1(I)*DI2
+            CH(I,K,3) = WA2(I-1)*DI3-WA2(I)*DR3
+            CH(I-1,K,3) = WA2(I-1)*DR3+WA2(I)*DI3
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSF4 (IDO,L1,CC,CH,WA1,WA2,WA3)
+      DIMENSION       CC(IDO,4,L1)           ,CH(IDO,L1,4)           ,
+     1                WA1(*)     ,WA2(*)     ,WA3(*)
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TI1 = CC(2,1,K)-CC(2,3,K)
+         TI2 = CC(2,1,K)+CC(2,3,K)
+         TR4 = CC(2,2,K)-CC(2,4,K)
+         TI3 = CC(2,2,K)+CC(2,4,K)
+         TR1 = CC(1,1,K)-CC(1,3,K)
+         TR2 = CC(1,1,K)+CC(1,3,K)
+         TI4 = CC(1,4,K)-CC(1,2,K)
+         TR3 = CC(1,2,K)+CC(1,4,K)
+         CH(1,K,1) = TR2+TR3
+         CH(1,K,3) = TR2-TR3
+         CH(2,K,1) = TI2+TI3
+         CH(2,K,3) = TI2-TI3
+         CH(1,K,2) = TR1+TR4
+         CH(1,K,4) = TR1-TR4
+         CH(2,K,2) = TI1+TI4
+         CH(2,K,4) = TI1-TI4
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TI1 = CC(I,1,K)-CC(I,3,K)
+            TI2 = CC(I,1,K)+CC(I,3,K)
+            TI3 = CC(I,2,K)+CC(I,4,K)
+            TR4 = CC(I,2,K)-CC(I,4,K)
+            TR1 = CC(I-1,1,K)-CC(I-1,3,K)
+            TR2 = CC(I-1,1,K)+CC(I-1,3,K)
+            TI4 = CC(I-1,4,K)-CC(I-1,2,K)
+            TR3 = CC(I-1,2,K)+CC(I-1,4,K)
+            CH(I-1,K,1) = TR2+TR3
+            CR3 = TR2-TR3
+            CH(I,K,1) = TI2+TI3
+            CI3 = TI2-TI3
+            CR2 = TR1+TR4
+            CR4 = TR1-TR4
+            CI2 = TI1+TI4
+            CI4 = TI1-TI4
+            CH(I-1,K,2) = WA1(I-1)*CR2+WA1(I)*CI2
+            CH(I,K,2) = WA1(I-1)*CI2-WA1(I)*CR2
+            CH(I-1,K,3) = WA2(I-1)*CR3+WA2(I)*CI3
+            CH(I,K,3) = WA2(I-1)*CI3-WA2(I)*CR3
+            CH(I-1,K,4) = WA3(I-1)*CR4+WA3(I)*CI4
+            CH(I,K,4) = WA3(I-1)*CI4-WA3(I)*CR4
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C.
+      SUBROUTINE PASSF5 (IDO,L1,CC,CH,WA1,WA2,WA3,WA4)
+      DIMENSION       CC(IDO,5,L1)           ,CH(IDO,L1,5)           ,
+     1                WA1(*)     ,WA2(*)     ,WA3(*)     ,WA4(*)
+      DATA TR11,TI11,TR12,TI12 /.309016994374947,-.951056516295154,
+     1-.809016994374947,-.587785252292473/
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TI5 = CC(2,2,K)-CC(2,5,K)
+         TI2 = CC(2,2,K)+CC(2,5,K)
+         TI4 = CC(2,3,K)-CC(2,4,K)
+         TI3 = CC(2,3,K)+CC(2,4,K)
+         TR5 = CC(1,2,K)-CC(1,5,K)
+         TR2 = CC(1,2,K)+CC(1,5,K)
+         TR4 = CC(1,3,K)-CC(1,4,K)
+         TR3 = CC(1,3,K)+CC(1,4,K)
+         CH(1,K,1) = CC(1,1,K)+TR2+TR3
+         CH(2,K,1) = CC(2,1,K)+TI2+TI3
+         CR2 = CC(1,1,K)+TR11*TR2+TR12*TR3
+         CI2 = CC(2,1,K)+TR11*TI2+TR12*TI3
+         CR3 = CC(1,1,K)+TR12*TR2+TR11*TR3
+         CI3 = CC(2,1,K)+TR12*TI2+TR11*TI3
+         CR5 = TI11*TR5+TI12*TR4
+         CI5 = TI11*TI5+TI12*TI4
+         CR4 = TI12*TR5-TI11*TR4
+         CI4 = TI12*TI5-TI11*TI4
+         CH(1,K,2) = CR2-CI5
+         CH(1,K,5) = CR2+CI5
+         CH(2,K,2) = CI2+CR5
+         CH(2,K,3) = CI3+CR4
+         CH(1,K,3) = CR3-CI4
+         CH(1,K,4) = CR3+CI4
+         CH(2,K,4) = CI3-CR4
+         CH(2,K,5) = CI2-CR5
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TI5 = CC(I,2,K)-CC(I,5,K)
+            TI2 = CC(I,2,K)+CC(I,5,K)
+            TI4 = CC(I,3,K)-CC(I,4,K)
+            TI3 = CC(I,3,K)+CC(I,4,K)
+            TR5 = CC(I-1,2,K)-CC(I-1,5,K)
+            TR2 = CC(I-1,2,K)+CC(I-1,5,K)
+            TR4 = CC(I-1,3,K)-CC(I-1,4,K)
+            TR3 = CC(I-1,3,K)+CC(I-1,4,K)
+            CH(I-1,K,1) = CC(I-1,1,K)+TR2+TR3
+            CH(I,K,1) = CC(I,1,K)+TI2+TI3
+            CR2 = CC(I-1,1,K)+TR11*TR2+TR12*TR3
+            CI2 = CC(I,1,K)+TR11*TI2+TR12*TI3
+            CR3 = CC(I-1,1,K)+TR12*TR2+TR11*TR3
+            CI3 = CC(I,1,K)+TR12*TI2+TR11*TI3
+            CR5 = TI11*TR5+TI12*TR4
+            CI5 = TI11*TI5+TI12*TI4
+            CR4 = TI12*TR5-TI11*TR4
+            CI4 = TI12*TI5-TI11*TI4
+            DR3 = CR3-CI4
+            DR4 = CR3+CI4
+            DI3 = CI3+CR4
+            DI4 = CI3-CR4
+            DR5 = CR2+CI5
+            DR2 = CR2-CI5
+            DI5 = CI2-CR5
+            DI2 = CI2+CR5
+            CH(I-1,K,2) = WA1(I-1)*DR2+WA1(I)*DI2
+            CH(I,K,2) = WA1(I-1)*DI2-WA1(I)*DR2
+            CH(I-1,K,3) = WA2(I-1)*DR3+WA2(I)*DI3
+            CH(I,K,3) = WA2(I-1)*DI3-WA2(I)*DR3
+            CH(I-1,K,4) = WA3(I-1)*DR4+WA3(I)*DI4
+            CH(I,K,4) = WA3(I-1)*DI4-WA3(I)*DR4
+            CH(I-1,K,5) = WA4(I-1)*DR5+WA4(I)*DI5
+            CH(I,K,5) = WA4(I-1)*DI5-WA4(I)*DR5
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE CFFTB (N,C,WSAVE)
+C
+C     SUBROUTINE CFFTB COMPUTES THE BACKWARD COMPLEX DISCRETE FOURIER
+C     TRANSFORM (THE FOURIER SYNTHESIS). EQUIVALENTLY , CFFTB COMPUTES
+C     A COMPLEX PERIODIC SEQUENCE FROM ITS FOURIER COEFFICIENTS.
+C     THE TRANSFORM IS DEFINED BELOW AT OUTPUT PARAMETER C.
+C
+C     A CALL OF CFFTF FOLLOWED BY A CALL OF CFFTB WILL MULTIPLY THE
+C     SEQUENCE BY N.
+C
+C     THE ARRAY WSAVE WHICH IS USED BY SUBROUTINE CFFTB MUST BE
+C     INITIALIZED BY CALLING SUBROUTINE CFFTI(N,WSAVE).
+C
+C     INPUT PARAMETERS
+C
+C
+C     N      THE LENGTH OF THE COMPLEX SEQUENCE C. THE METHOD IS
+C            MORE EFFICIENT WHEN N IS THE PRODUCT OF SMALL PRIMES.
+C
+C     C      A COMPLEX ARRAY OF LENGTH N WHICH CONTAINS THE SEQUENCE
+C
+C     WSAVE   A REAL WORK ARRAY WHICH MUST BE DIMENSIONED AT LEAST 4N+15
+C             IN THE PROGRAM THAT CALLS CFFTB. THE WSAVE ARRAY MUST BE
+C             INITIALIZED BY CALLING SUBROUTINE CFFTI(N,WSAVE) AND A
+C             DIFFERENT WSAVE ARRAY MUST BE USED FOR EACH DIFFERENT
+C             VALUE OF N. THIS INITIALIZATION DOES NOT HAVE TO BE
+C             REPEATED SO LONG AS N REMAINS UNCHANGED THUS SUBSEQUENT
+C             TRANSFORMS CAN BE OBTAINED FASTER THAN THE FIRST.
+C             THE SAME WSAVE ARRAY CAN BE USED BY CFFTF AND CFFTB.
+C
+C     OUTPUT PARAMETERS
+C
+C     C      FOR J=1,...,N
+C
+C                C(J)=THE SUM FROM K=1,...,N OF
+C
+C                      C(K)*EXP(I*(J-1)*(K-1)*2*PI/N)
+C
+C                            WHERE I=SQRT(-1)
+C
+C     WSAVE   CONTAINS INITIALIZATION CALCULATIONS WHICH MUST NOT BE
+C             DESTROYED BETWEEN CALLS OF SUBROUTINE CFFTF OR CFFTB
+C
+      DIMENSION       C(*)       ,WSAVE(*)
+C
+      IF (N .EQ. 1) RETURN
+      IW1 = N+N+1
+      IW2 = IW1+N+N
+      CALL CFFTB1 (N,C,WSAVE,WSAVE(IW1),WSAVE(IW2))
+      RETURN
+      END
+C
+      SUBROUTINE CFFTB1 (N,C,CH,WA,IFAC)
+      DIMENSION       CH(*)      ,C(*)       ,WA(*)      ,IFAC(*)
+      NF = IFAC(2)
+      NA = 0
+      L1 = 1
+      IW = 1
+      DO 116 K1=1,NF
+         IP = IFAC(K1+2)
+         L2 = IP*L1
+         IDO = N/L2
+         IDOT = IDO+IDO
+         IDL1 = IDOT*L1
+         IF (IP .NE. 4) GO TO 103
+         IX2 = IW+IDOT
+         IX3 = IX2+IDOT
+         IF (NA .NE. 0) GO TO 101
+         CALL PASSB4 (IDOT,L1,C,CH,WA(IW),WA(IX2),WA(IX3))
+         GO TO 102
+  101    CALL PASSB4 (IDOT,L1,CH,C,WA(IW),WA(IX2),WA(IX3))
+  102    NA = 1-NA
+         GO TO 115
+  103    IF (IP .NE. 2) GO TO 106
+         IF (NA .NE. 0) GO TO 104
+         CALL PASSB2 (IDOT,L1,C,CH,WA(IW))
+         GO TO 105
+  104    CALL PASSB2 (IDOT,L1,CH,C,WA(IW))
+  105    NA = 1-NA
+         GO TO 115
+  106    IF (IP .NE. 3) GO TO 109
+         IX2 = IW+IDOT
+         IF (NA .NE. 0) GO TO 107
+         CALL PASSB3 (IDOT,L1,C,CH,WA(IW),WA(IX2))
+         GO TO 108
+  107    CALL PASSB3 (IDOT,L1,CH,C,WA(IW),WA(IX2))
+  108    NA = 1-NA
+         GO TO 115
+  109    IF (IP .NE. 5) GO TO 112
+         IX2 = IW+IDOT
+         IX3 = IX2+IDOT
+         IX4 = IX3+IDOT
+         IF (NA .NE. 0) GO TO 110
+         CALL PASSB5 (IDOT,L1,C,CH,WA(IW),WA(IX2),WA(IX3),WA(IX4))
+         GO TO 111
+  110    CALL PASSB5 (IDOT,L1,CH,C,WA(IW),WA(IX2),WA(IX3),WA(IX4))
+  111    NA = 1-NA
+         GO TO 115
+  112    IF (NA .NE. 0) GO TO 113
+         CALL PASSB (NAC,IDOT,IP,L1,IDL1,C,C,C,CH,CH,WA(IW))
+         GO TO 114
+  113    CALL PASSB (NAC,IDOT,IP,L1,IDL1,CH,CH,CH,C,C,WA(IW))
+  114    IF (NAC .NE. 0) NA = 1-NA
+  115    L1 = L2
+         IW = IW+(IP-1)*IDOT
+  116 CONTINUE
+      IF (NA .EQ. 0) RETURN
+      N2 = N+N
+      DO 117 I=1,N2
+         C(I) = CH(I)
+  117 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSB (NAC,IDO,IP,L1,IDL1,CC,C1,C2,CH,CH2,WA)
+      DIMENSION       CH(IDO,L1,IP)          ,CC(IDO,IP,L1)          ,
+     1                C1(IDO,L1,IP)          ,WA(*)      ,C2(IDL1,IP),
+     2                CH2(IDL1,IP)
+      IDOT = IDO/2
+      NT = IP*IDL1
+      IPP2 = IP+2
+      IPPH = (IP+1)/2
+      IDP = IP*IDO
+C
+      IF (IDO .LT. L1) GO TO 106
+      DO 103 J=2,IPPH
+         JC = IPP2-J
+         DO 102 K=1,L1
+            DO 101 I=1,IDO
+               CH(I,K,J) = CC(I,J,K)+CC(I,JC,K)
+               CH(I,K,JC) = CC(I,J,K)-CC(I,JC,K)
+  101       CONTINUE
+  102    CONTINUE
+  103 CONTINUE
+      DO 105 K=1,L1
+         DO 104 I=1,IDO
+            CH(I,K,1) = CC(I,1,K)
+  104    CONTINUE
+  105 CONTINUE
+      GO TO 112
+  106 DO 109 J=2,IPPH
+         JC = IPP2-J
+         DO 108 I=1,IDO
+            DO 107 K=1,L1
+               CH(I,K,J) = CC(I,J,K)+CC(I,JC,K)
+               CH(I,K,JC) = CC(I,J,K)-CC(I,JC,K)
+  107       CONTINUE
+  108    CONTINUE
+  109 CONTINUE
+      DO 111 I=1,IDO
+         DO 110 K=1,L1
+            CH(I,K,1) = CC(I,1,K)
+  110    CONTINUE
+  111 CONTINUE
+  112 IDL = 2-IDO
+      INC = 0
+      DO 116 L=2,IPPH
+         LC = IPP2-L
+         IDL = IDL+IDO
+         DO 113 IK=1,IDL1
+            C2(IK,L) = CH2(IK,1)+WA(IDL-1)*CH2(IK,2)
+            C2(IK,LC) = WA(IDL)*CH2(IK,IP)
+  113    CONTINUE
+         IDLJ = IDL
+         INC = INC+IDO
+         DO 115 J=3,IPPH
+            JC = IPP2-J
+            IDLJ = IDLJ+INC
+            IF (IDLJ .GT. IDP) IDLJ = IDLJ-IDP
+            WAR = WA(IDLJ-1)
+            WAI = WA(IDLJ)
+            DO 114 IK=1,IDL1
+               C2(IK,L) = C2(IK,L)+WAR*CH2(IK,J)
+               C2(IK,LC) = C2(IK,LC)+WAI*CH2(IK,JC)
+  114       CONTINUE
+  115    CONTINUE
+  116 CONTINUE
+      DO 118 J=2,IPPH
+         DO 117 IK=1,IDL1
+            CH2(IK,1) = CH2(IK,1)+CH2(IK,J)
+  117    CONTINUE
+  118 CONTINUE
+      DO 120 J=2,IPPH
+         JC = IPP2-J
+         DO 119 IK=2,IDL1,2
+            CH2(IK-1,J) = C2(IK-1,J)-C2(IK,JC)
+            CH2(IK-1,JC) = C2(IK-1,J)+C2(IK,JC)
+            CH2(IK,J) = C2(IK,J)+C2(IK-1,JC)
+            CH2(IK,JC) = C2(IK,J)-C2(IK-1,JC)
+  119    CONTINUE
+  120 CONTINUE
+      NAC = 1
+      IF (IDO .EQ. 2) RETURN
+      NAC = 0
+      DO 121 IK=1,IDL1
+         C2(IK,1) = CH2(IK,1)
+  121 CONTINUE
+      DO 123 J=2,IP
+         DO 122 K=1,L1
+            C1(1,K,J) = CH(1,K,J)
+            C1(2,K,J) = CH(2,K,J)
+  122    CONTINUE
+  123 CONTINUE
+      IF (IDOT .GT. L1) GO TO 127
+      IDIJ = 0
+      DO 126 J=2,IP
+         IDIJ = IDIJ+2
+         DO 125 I=4,IDO,2
+            IDIJ = IDIJ+2
+            DO 124 K=1,L1
+               C1(I-1,K,J) = WA(IDIJ-1)*CH(I-1,K,J)-WA(IDIJ)*CH(I,K,J)
+               C1(I,K,J) = WA(IDIJ-1)*CH(I,K,J)+WA(IDIJ)*CH(I-1,K,J)
+  124       CONTINUE
+  125    CONTINUE
+  126 CONTINUE
+      RETURN
+  127 IDJ = 2-IDO
+      DO 130 J=2,IP
+         IDJ = IDJ+IDO
+         DO 129 K=1,L1
+            IDIJ = IDJ
+            DO 128 I=4,IDO,2
+               IDIJ = IDIJ+2
+               C1(I-1,K,J) = WA(IDIJ-1)*CH(I-1,K,J)-WA(IDIJ)*CH(I,K,J)
+               C1(I,K,J) = WA(IDIJ-1)*CH(I,K,J)+WA(IDIJ)*CH(I-1,K,J)
+  128       CONTINUE
+  129    CONTINUE
+  130 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSB2 (IDO,L1,CC,CH,WA1)
+      DIMENSION       CC(IDO,2,L1)           ,CH(IDO,L1,2)           ,
+     1                WA1(1)
+      IF (IDO .GT. 2) GO TO 102
+      DO 101 K=1,L1
+         CH(1,K,1) = CC(1,1,K)+CC(1,2,K)
+         CH(1,K,2) = CC(1,1,K)-CC(1,2,K)
+         CH(2,K,1) = CC(2,1,K)+CC(2,2,K)
+         CH(2,K,2) = CC(2,1,K)-CC(2,2,K)
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            CH(I-1,K,1) = CC(I-1,1,K)+CC(I-1,2,K)
+            TR2 = CC(I-1,1,K)-CC(I-1,2,K)
+            CH(I,K,1) = CC(I,1,K)+CC(I,2,K)
+            TI2 = CC(I,1,K)-CC(I,2,K)
+            CH(I,K,2) = WA1(I-1)*TI2+WA1(I)*TR2
+            CH(I-1,K,2) = WA1(I-1)*TR2-WA1(I)*TI2
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSB3 (IDO,L1,CC,CH,WA1,WA2)
+      DIMENSION       CC(IDO,3,L1)           ,CH(IDO,L1,3)           ,
+     1                WA1(*)     ,WA2(*)
+      DATA TAUR,TAUI /-.5,.866025403784439/
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TR2 = CC(1,2,K)+CC(1,3,K)
+         CR2 = CC(1,1,K)+TAUR*TR2
+         CH(1,K,1) = CC(1,1,K)+TR2
+         TI2 = CC(2,2,K)+CC(2,3,K)
+         CI2 = CC(2,1,K)+TAUR*TI2
+         CH(2,K,1) = CC(2,1,K)+TI2
+         CR3 = TAUI*(CC(1,2,K)-CC(1,3,K))
+         CI3 = TAUI*(CC(2,2,K)-CC(2,3,K))
+         CH(1,K,2) = CR2-CI3
+         CH(1,K,3) = CR2+CI3
+         CH(2,K,2) = CI2+CR3
+         CH(2,K,3) = CI2-CR3
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TR2 = CC(I-1,2,K)+CC(I-1,3,K)
+            CR2 = CC(I-1,1,K)+TAUR*TR2
+            CH(I-1,K,1) = CC(I-1,1,K)+TR2
+            TI2 = CC(I,2,K)+CC(I,3,K)
+            CI2 = CC(I,1,K)+TAUR*TI2
+            CH(I,K,1) = CC(I,1,K)+TI2
+            CR3 = TAUI*(CC(I-1,2,K)-CC(I-1,3,K))
+            CI3 = TAUI*(CC(I,2,K)-CC(I,3,K))
+            DR2 = CR2-CI3
+            DR3 = CR2+CI3
+            DI2 = CI2+CR3
+            DI3 = CI2-CR3
+            CH(I,K,2) = WA1(I-1)*DI2+WA1(I)*DR2
+            CH(I-1,K,2) = WA1(I-1)*DR2-WA1(I)*DI2
+            CH(I,K,3) = WA2(I-1)*DI3+WA2(I)*DR3
+            CH(I-1,K,3) = WA2(I-1)*DR3-WA2(I)*DI3
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSB4 (IDO,L1,CC,CH,WA1,WA2,WA3)
+      DIMENSION       CC(IDO,4,L1)           ,CH(IDO,L1,4)           ,
+     1                WA1(*)     ,WA2(*)     ,WA3(*)
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TI1 = CC(2,1,K)-CC(2,3,K)
+         TI2 = CC(2,1,K)+CC(2,3,K)
+         TR4 = CC(2,4,K)-CC(2,2,K)
+         TI3 = CC(2,2,K)+CC(2,4,K)
+         TR1 = CC(1,1,K)-CC(1,3,K)
+         TR2 = CC(1,1,K)+CC(1,3,K)
+         TI4 = CC(1,2,K)-CC(1,4,K)
+         TR3 = CC(1,2,K)+CC(1,4,K)
+         CH(1,K,1) = TR2+TR3
+         CH(1,K,3) = TR2-TR3
+         CH(2,K,1) = TI2+TI3
+         CH(2,K,3) = TI2-TI3
+         CH(1,K,2) = TR1+TR4
+         CH(1,K,4) = TR1-TR4
+         CH(2,K,2) = TI1+TI4
+         CH(2,K,4) = TI1-TI4
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TI1 = CC(I,1,K)-CC(I,3,K)
+            TI2 = CC(I,1,K)+CC(I,3,K)
+            TI3 = CC(I,2,K)+CC(I,4,K)
+            TR4 = CC(I,4,K)-CC(I,2,K)
+            TR1 = CC(I-1,1,K)-CC(I-1,3,K)
+            TR2 = CC(I-1,1,K)+CC(I-1,3,K)
+            TI4 = CC(I-1,2,K)-CC(I-1,4,K)
+            TR3 = CC(I-1,2,K)+CC(I-1,4,K)
+            CH(I-1,K,1) = TR2+TR3
+            CR3 = TR2-TR3
+            CH(I,K,1) = TI2+TI3
+            CI3 = TI2-TI3
+            CR2 = TR1+TR4
+            CR4 = TR1-TR4
+            CI2 = TI1+TI4
+            CI4 = TI1-TI4
+            CH(I-1,K,2) = WA1(I-1)*CR2-WA1(I)*CI2
+            CH(I,K,2) = WA1(I-1)*CI2+WA1(I)*CR2
+            CH(I-1,K,3) = WA2(I-1)*CR3-WA2(I)*CI3
+            CH(I,K,3) = WA2(I-1)*CI3+WA2(I)*CR3
+            CH(I-1,K,4) = WA3(I-1)*CR4-WA3(I)*CI4
+            CH(I,K,4) = WA3(I-1)*CI4+WA3(I)*CR4
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE PASSB5 (IDO,L1,CC,CH,WA1,WA2,WA3,WA4)
+      DIMENSION       CC(IDO,5,L1)           ,CH(IDO,L1,5)           ,
+     1                WA1(*)     ,WA2(*)     ,WA3(*)     ,WA4(*)
+      DATA TR11,TI11,TR12,TI12 /.309016994374947,.951056516295154,
+     1-.809016994374947,.587785252292473/
+      IF (IDO .NE. 2) GO TO 102
+      DO 101 K=1,L1
+         TI5 = CC(2,2,K)-CC(2,5,K)
+         TI2 = CC(2,2,K)+CC(2,5,K)
+         TI4 = CC(2,3,K)-CC(2,4,K)
+         TI3 = CC(2,3,K)+CC(2,4,K)
+         TR5 = CC(1,2,K)-CC(1,5,K)
+         TR2 = CC(1,2,K)+CC(1,5,K)
+         TR4 = CC(1,3,K)-CC(1,4,K)
+         TR3 = CC(1,3,K)+CC(1,4,K)
+         CH(1,K,1) = CC(1,1,K)+TR2+TR3
+         CH(2,K,1) = CC(2,1,K)+TI2+TI3
+         CR2 = CC(1,1,K)+TR11*TR2+TR12*TR3
+         CI2 = CC(2,1,K)+TR11*TI2+TR12*TI3
+         CR3 = CC(1,1,K)+TR12*TR2+TR11*TR3
+         CI3 = CC(2,1,K)+TR12*TI2+TR11*TI3
+         CR5 = TI11*TR5+TI12*TR4
+         CI5 = TI11*TI5+TI12*TI4
+         CR4 = TI12*TR5-TI11*TR4
+         CI4 = TI12*TI5-TI11*TI4
+         CH(1,K,2) = CR2-CI5
+         CH(1,K,5) = CR2+CI5
+         CH(2,K,2) = CI2+CR5
+         CH(2,K,3) = CI3+CR4
+         CH(1,K,3) = CR3-CI4
+         CH(1,K,4) = CR3+CI4
+         CH(2,K,4) = CI3-CR4
+         CH(2,K,5) = CI2-CR5
+  101 CONTINUE
+      RETURN
+  102 DO 104 K=1,L1
+         DO 103 I=2,IDO,2
+            TI5 = CC(I,2,K)-CC(I,5,K)
+            TI2 = CC(I,2,K)+CC(I,5,K)
+            TI4 = CC(I,3,K)-CC(I,4,K)
+            TI3 = CC(I,3,K)+CC(I,4,K)
+            TR5 = CC(I-1,2,K)-CC(I-1,5,K)
+            TR2 = CC(I-1,2,K)+CC(I-1,5,K)
+            TR4 = CC(I-1,3,K)-CC(I-1,4,K)
+            TR3 = CC(I-1,3,K)+CC(I-1,4,K)
+            CH(I-1,K,1) = CC(I-1,1,K)+TR2+TR3
+            CH(I,K,1) = CC(I,1,K)+TI2+TI3
+            CR2 = CC(I-1,1,K)+TR11*TR2+TR12*TR3
+            CI2 = CC(I,1,K)+TR11*TI2+TR12*TI3
+            CR3 = CC(I-1,1,K)+TR12*TR2+TR11*TR3
+            CI3 = CC(I,1,K)+TR12*TI2+TR11*TI3
+            CR5 = TI11*TR5+TI12*TR4
+            CI5 = TI11*TI5+TI12*TI4
+            CR4 = TI12*TR5-TI11*TR4
+            CI4 = TI12*TI5-TI11*TI4
+            DR3 = CR3-CI4
+            DR4 = CR3+CI4
+            DI3 = CI3+CR4
+            DI4 = CI3-CR4
+            DR5 = CR2+CI5
+            DR2 = CR2-CI5
+            DI5 = CI2-CR5
+            DI2 = CI2+CR5
+            CH(I-1,K,2) = WA1(I-1)*DR2-WA1(I)*DI2
+            CH(I,K,2) = WA1(I-1)*DI2+WA1(I)*DR2
+            CH(I-1,K,3) = WA2(I-1)*DR3-WA2(I)*DI3
+            CH(I,K,3) = WA2(I-1)*DI3+WA2(I)*DR3
+            CH(I-1,K,4) = WA3(I-1)*DR4-WA3(I)*DI4
+            CH(I,K,4) = WA3(I-1)*DI4+WA3(I)*DR4
+            CH(I-1,K,5) = WA4(I-1)*DR5-WA4(I)*DI5
+            CH(I,K,5) = WA4(I-1)*DI5+WA4(I)*DR5
+  103    CONTINUE
+  104 CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE FOURT (DATA,N,NDIM,ISIGN,IFORM,WORK,NWORK,IERR)
+C
+C     COOLEY-TUKEY FAST FOURIER TRANSFORM IN USASI BASIC FORTRAN.
+C     MULTI-DIMENSIONAL TRANSFORM, DIMENSIONS OF ARBITRARY SIZE,
+C     COMPLEX OR REAL DATA.  N POINTS CAN BE TRANSFORMED IN TIME
+C     PROPORTIONAL TO N*LOG(N), WHEREAS OTHER METHODS TAKE N**2 TIME.
+C     FURTHERMORE, LESS ERROR IS BUILT UP.  WRITTEN BY NORMAN BRENNER
+C     OF MIT LINCOLN LABORATORY, JUNE 1968.
+C
+C     DIMENSION DATA(N(1),N(2),...),TRANSFORM(N(1),N(2),...),N(NDIM)
+C     TRANSFORM(K1,K2,...) = SUM(DATA(J1,J2,...)*EXP(ISIGN*2*PI*SQRT(-1)
+C     *((J1-1)*(K1-1)/N(1)+(J2-1)*(K2-1)/N(2)+...))), SUMMED FOR ALL
+C     J1 AND K1 FROM 1 TO N(1), J2 AND K2 FROM 1 TO N(2), ETC. FOR ALL
+C     NDIM SUBSCRIPTS.  NDIM MUST BE POSITIVE AND EACH N(IDIM) MAY BE
+C     ANY INTEGER.  ISIGN IS +1 OR -1.  LET NTOT = N(1)*N(2)...
+C     ...*N(NDIM).  THEN A -1 TRANSFORM FOLLOWED BY A +1 ONE
+C     (OR VICE VERSA) RETURNS NTOT TIMES THE ORIGINAL DATA.
+C     IFORM = 1, 0 OR -1, AS DATA IS COMPLEX, REAL OR THE
+C     FIRST HALF OF A COMPLEX ARRAY.  TRANSFORM VALUES ARE
+C     RETURNED TO ARRAY DATA.  THEY ARE COMPLEX, REAL OR
+C     THE FIRST HALF OF A COMPLEX ARRAY, AS IFORM = 1, -1 OR 0.
+C     THE TRANSFORM OF A REAL ARRAY (IFORM = 0) DIMENSIONED N(1) BY N(2)
+C     BY ... WILL BE RETURNED IN THE SAME ARRAY, NOW CONSIDERED TO
+C     BE COMPLEX OF DIMENSIONS N(1)/2+1 BY N(2) BY ....  NOTE THAT IF
+C     IFORM = 0 OR -1, N(1) MUST BE EVEN, AND ENOUGH ROOM MUST BE
+C     RESERVED.  THE MISSING VALUES MAY BE OBTAINED BY COMPLEX CONJU-
+C     GATION.  THE REVERSE TRANSFORMATION, OF A HALF COMPLEX ARRAY
+C     DIMENSIONED N(1)/2+1 BY N(2) BY ..., IS ACCOMPLISHED SETTING IFORM
+C     TO -1.  IN THE N ARRAY, N(1) MUST BE THE TRUE N(1), NOT N(1)/2+1.
+C     THE TRANSFORM WILL BE REAL AND RETURNED TO THE INPUT ARRAY.
+C     WORK IS A ONE-DIMENSIONAL COMPLEX ARRAY USED FOR WORKING STORAGE.
+C     ITS LENGTH, NWORK, NEED NEVER BE LARGER THAN THE LARGEST N(IDIM)
+C     AND FREQUENTLY MAY BE MUCH SMALLER.  FOURT COMPUTES THE MINIMUM
+C     LENGTH WORKING STORAGE REQUIRED AND CHECKS THAT NWORK IS AT LEAST
+C     AS LONG.  THIS MINIMUM LENGTH IS CCOMPUTED AS SHOWN BELOW.
+C
+C     FOR EXAMPLE--
+C     DIMENSION DATA(1960),WORK(10)
+C     COMPLEX DATA,WORK
+C     CALL FOURT(DATA,1960,1,-1,+1,WORK,10)
+C
+C     THE MULTI-DIMENSIONAL TRANSFORM IS BROKEN DOWN INTO ONE-DIMEN-
+C     SIONAL TRANSFORMS OF LENGTH N(IDIM).  THESE ARE FURTHER BROKEN
+C     DOWN INTO TRANSFORMS OF LENGTH IFACT(IF), WHERE THESE ARE THE
+C     PRIME FACTORS OF N(IDIM).  FOR EXAMPLE, N(1) = 1960, IFACT(IF) =
+C     2, 2, 2, 5, 7 AND 7.  THE RUNNING TIME IS PROPORTIONAL TO NTOT *
+C     SUM(IFACT(IF)), THOUGH FACTORS OF TWO AND THREE WILL RUN ESPE-
+C     CIALLY FAST.  NAIVE TRANSFORM PROGRAMS WILL RUN IN TIME NTOT**2.
+C     ARRAYS WHOSE SIZE NTOT IS PRIME WILL RUN MUCH SLOWER THAN THOSE
+C     WITH COMPOSITE NTOT.  FOR EXAMPLE, NTOT = N(1) = 1951 (A PRIME),
+C     RUNNING TIME WILL BE 1951*1951, WHILE FOR NTOT = 1960, IT WILL
+C     BE 1960*(2+2+2+5+7+7), A SPEEDUP OF EIGHTY TIMES.  NAIVE CALCUL-
+C     ATION WILL RUN BOTH IN THE SLOWER TIME.  IF AN ARRAY IS OF
+C     INCONVENIENT LENGTH, SIMPLY ADD ZEROES TO PAD IT OUT.  THE RESULTS
+C     WILL BE INTERPOLATED ACCORDING TO THE NEW LENGTH (SEE BELOW).
+C
+C     A FOURIER TRANSFORM OF LENGTH IFACT(IF) REQUIRES A WORK ARRAY
+C     OF THAT LENGTH.  THEREFORE, NWORK MUST BE AS BIG AS THE LARGEST
+C     PRIME FACTOR.  FURTHER, WORK IS NEEDED FOR DIGIT REVERSAL--
+C     EACH N(IDIM) (BUT N(1)/2 IF IFORM = 0 OR -1) IS FACTORED SYMMETRI-
+C     CALLY, AND NWORK MUST BE AS BIG AS THE CENTER FACTOR.  (TO FACTOR
+C     SYMMETRICALLY, SEPARATE PAIRS OF IDENTICAL FACTORS TO THE FLANKS,
+C     COMBINING ALL LEFTOVERS IN THE CENTER.)  FOR EXAMPLE, N(1) = 1960
+C     =2*2*2*5*7*7=2*7*10*7*2, SO NWORK MUST AT LEAST MAX(7,10) = 10.
+C
+C     AN UPPER BOUND FOR THE RMS RELATIVE ERROR IS GIVEN BY GENTLEMAN
+C     AND SANDE (3)-- 3 * 2**(-B) * SUM(F**1.5), WHERE 2**(-B) IS THE
+C     SMALLEST BIT IN THE FLOATING POINT FRACTION AND THE SUM IS OVER
+C     THE PRIME FACTORS OF NTOT.
+C
+C     IF THE INPUT DATA ARE A TIME SERIES, WITH INDEX J REPRESENTING
+C     A TIME (J-1)*DELTAT, THEN THE CORRESPONDING INDEX K IN THE
+C     TRANSFORM REPRESENTS THE FREQUENCY (K-1)*2*PI/(N*DELTAT), WHICH
+C     BY PERIODICITY, IS THE SAME AS FREQUENCY -(N-K+1)*2*PI/(N*DELTAT).
+C     THIS IS TRUE FOR N = EACH N(IDIM) INDEPENDENTLY.
+C
+C     REFERENCES--
+C     1.  COOLEY, J.W. AND TUKEY, J.W., AN ALGORITHM FOR THE MACHINE
+C     CALCULATION OF COMPLEX FOURIER SERIES.  MATH. COMP., 19, 90,
+C     (APRIL 1967), 297-301.
+C     2.  RADER, C., ET AL., WHAT IS THE FAST FOURIER TRANSFORM, IEEE
+C     TRANSACTIONS ON AUDIO AND ELECTROACOUSTICS, AU-15, 2 (JUNE 1967).
+C     (SPECIAL ISSUE ON THE FAST FOURIER TRANSFORM AND ITS APPLICATIONS)
+C     3.  GENTLEMAN, W.M. AND SANDE, G., FAST FOURIER TRANSFORMS--
+C     FOR FUN AND PROFIT.  1966 FALL JOINT COMP. CONF., SPARTAN BOOKS,
+C     WASHINGTON, 1966.
+C     4.  GOERTZEL, G., AN ALGORITHM FOR THE EVALUATION OF FINITE
+C     TRIGONOMETRIC SERIES.  AM. MATH. MO., 65, (1958), 34-35.
+C     5.  SINGLETON, R.C., A METHOD FOR COMPUTING THE FAST FOURIER
+C     TRANSFORM WITH AUXILIARY MEMORY AND LIMITED HIGH-SPEED STORAGE.
+C     IN (2).
+      DIMENSION DATA(1), N(1), WORK(1), IFSYM(32), IFCNT(10), IFACT(32)
+      IF (IFORM) 10,10,40
+ 10   IF (N(1)-2*(N(1)/2)) 20,40,20
+C20   WRITE (6,30) IFORM,(N(IDIM),IDIM=1,NDIM)
+ 20   STOP 99
+C30   FORMAT (26H0ERROR IN FOURT.  IFORM = ,I2,23H (REAL OR HALF-COMPLEX
+C     .)23H, BUT N(1) IS NOT EVEN./14H DIMENSIONS = 20I5)
+ 40   NTOT=1
+      DO 50 IDIM=1,NDIM
+ 50   NTOT=NTOT*N(IDIM)
+      NREM=NTOT
+      IF (IFORM) 60,70,70
+ 60   NREM=1
+      NTOT=(NTOT/N(1))*(N(1)/2+1)
+C     LOOP OVER ALL DIMENSIONS.
+ 70   DO 230 JDIM=1,NDIM
+      IF (IFORM) 80,90,90
+ 80   IDIM=NDIM+1-JDIM
+      GO TO 100
+ 90   IDIM=JDIM
+      NREM=NREM/N(IDIM)
+ 100  NCURR=N(IDIM)
+      IF (IDIM-1) 110,110,140
+ 110  IF (IFORM) 120,130,140
+ 120  CALL FIXRL (DATA,N(1),NREM,ISIGN,IFORM)
+      NTOT=(NTOT/(N(1)/2+1))*N(1)
+ 130  NCURR=NCURR/2
+ 140  IF (NCURR-1) 190,190,150
+C     FACTOR N(IDIM), THE LENGTH OF THIS DIMENSION.
+ 150  CALL FACTR (NCURR,IFACT,NFACT)
+      IFMAX=IFACT(NFACT)
+C     ARRANGE THE FACTORS SYMMETRICALLY FOR SIMPLER DIGIT REVERSAL.
+      CALL SMFAC (IFACT,NFACT,ISYM,IFSYM,NFSYM,ICENT,IFCNT,NFCNT)
+      IFMAX=MAX0(IFMAX,ICENT)
+      IF (IFMAX-NWORK) 180,180,160
+C  160 WRITE (6,170) NWORK,IDIM,NCURR,ICENT,(IFACT(IF),IF=1,NFACT)
+  160 STOP 999
+C  170 FORMAT (26H0ERROR IN FOURT.  NWORK = ,I4,20H IS TOO SMALL FOR N(,
+C     .I1,4H) = ,I5,17H, WHOSE CENTER = ,I4,31H, AND WHOSE PRIME FACTORS
+C     .ARE--/(1X,20I5))
+ 180  NPREV=NTOT/(N(IDIM)*NREM)
+C     DIGIT REVERSE ON SYMMETRIC FACTORS, FOR EXAMPLE 2*7*6*7*2.
+      CALL SYMRV (DATA,NPREV,NCURR,NREM,IFSYM,NFSYM)
+C     DIGIT REVERSE THE ASYMMETRIC CENTER, FOR EXAMPLE, ON 6 = 2*3.
+      CALL ASMRV (DATA,NPREV*ISYM,ICENT,ISYM*NREM,IFCNT,NFCNT,WORK)
+C     FOURIER TRANSFORM ON EACH FACTOR, FOR EXAMPLE, ON 2,7,2,3,7 AND 2.
+      CALL COOL (DATA,NPREV,NCURR,NREM,ISIGN,IFACT,WORK)
+ 190  IF (IFORM) 200,210,230
+ 200  NREM=NREM*N(IDIM)
+      GO TO 230
+ 210  IF (IDIM-1) 220,220,230
+ 220  CALL FIXRL (DATA,N(1),NREM,ISIGN,IFORM)
+      NTOT=NTOT/N(1)*(N(1)/2+1)
+ 230  CONTINUE
+      RETURN
+      END
+C
+      SUBROUTINE FACTR (N,IFACT,NFACT)
+C     FACTOR N INTO ITS PRIME FACTORS, NFACT IN NUMBER.  FOR EXAMPLE,
+C     FOR N = 1960, NFACT = 6 AND IFACT(IF) = 2, 2, 2, 5, 7 AND 7.
+      DIMENSION IFACT(1)
+      IF=0
+      NPART=N
+      DO 50 ID=1,N,2
+      IDIV=ID
+      IF (ID-1) 10,10,20
+ 10   IDIV=2
+ 20   IQUOT=NPART/IDIV
+      IF (NPART-IDIV*IQUOT) 40,30,40
+ 30   IF=IF+1
+      IFACT(IF)=IDIV
+      NPART=IQUOT
+      GO TO 20
+ 40   IF (IQUOT-IDIV) 60,60,50
+ 50   CONTINUE
+ 60   IF (NPART-1) 80,80,70
+ 70   IF=IF+1
+      IFACT(IF)=NPART
+ 80   NFACT=IF
+      RETURN
+      END
+C
+      SUBROUTINE SMFAC (IFACT,NFACT,ISYM,IFSYM,NFSYM,ICENT,IFCNT,NFCNT)
+C     REARRANGE THE PRIME FACTORS OF N INTO A SQUARE AND A NON-
+C     SQUARE.  N = ISYM*ICENT*ISYM, WHERE ICENT IS SQUARE-FREE.
+C     ISYM = IFSYM(1)*...*IFSYM(NFSYM), EACH A PRIME FACTOR.
+C     ICENT = IFCNT(1)*...*IFCNT(NFCNT), EACH A PRIME FACTOR.
+C     FOR EXAMPLE, N = 1960 = 14*10*14.  THEN ISYM = 14, ICENT = 10,
+C     NFSYM = 2, NFCNT = 2, NFACT = 6, IFSYM(IFS) = 2, 7, IFCNT(IFC) =
+C     2, 5 AND IFACT(IF) = 2, 7, 2, 5, 7, 2.
+      DIMENSION IFSYM(1), IFCNT(1), IFACT(1)
+      ISYM=1
+      ICENT=1
+      IFS=0
+      IFC=0
+      IF=1
+ 10   IF (IF-NFACT) 20,40,50
+ 20   IF (IFACT(IF)-IFACT(IF+1)) 40,30,40
+ 30   IFS=IFS+1
+      IFSYM(IFS)=IFACT(IF)
+      ISYM=IFACT(IF)*ISYM
+      IF=IF+2
+      GO TO 10
+ 40   IFC=IFC+1
+      IFCNT(IFC)=IFACT(IF)
+      ICENT=IFACT(IF)*ICENT
+      IF=IF+1
+      GO TO 10
+ 50   NFSYM=IFS
+      NFCNT=IFC
+      NFSM2=2*NFSYM
+      NFACT=2*NFSYM+NFCNT
+      IF (NFCNT) 80,80,60
+ 60   NFSM2=NFSM2+1
+      IFSYM(NFSYM+1)=ICENT
+      DO 70 IFC=1,NFCNT
+      IF=NFSYM+IFC
+ 70   IFACT(IF)=IFCNT(IFC)
+ 80   IF (NFSYM) 110,110,90
+ 90   DO 100 IFS=1,NFSYM
+      IFSCJ=NFSM2+1-IFS
+      IFSYM(IFSCJ)=IFSYM(IFS)
+      IFACT(IFS)=IFSYM(IFS)
+      IFCNJ=NFACT+1-IFS
+ 100  IFACT(IFCNJ)=IFSYM(IFS)
+ 110  NFSYM=NFSM2
+      RETURN
+      END
+C
+      SUBROUTINE SYMRV (DATA,NPREV,N,NREM,IFACT,NFACT)
+C     SHUFFLE THE DATA ARRAY BY REVERSING THE DIGITS OF ONE INDEX.
+C     DIMENSION DATA(NPREV,N,NREM)
+C     REPLACE DATA(I1,I2,I3) BY DATA(I1,I2REV,I3) FOR ALL I1 FROM 1 TO
+C     NPREV, I2 FROM 1 TO N AND I3 FROM 1 TO NREM.  I2REV-1 IS THE
+C     INTEGER WHOSE DIGIT REPRESENTATION IN THE MULTI-RADIX NOTATION
+C     OF FACTORS IFACT(IF) IS THE REVERSE OF THE REPRESENTATION OF I2-1.
+C     FOR EXAMPLE, IF ALL IFACT(IF) = 2, I2-1 = 11001, I2REV-1 = 10011.
+C     THE FACTORS MUST BE SYMMETRICALLY ARRANGED, I.E., IFACT(IF) =
+C     IFACT(NFACT+1-IF).
+      DIMENSION DATA(1), IFACT(1)
+      IF (NFACT-1) 80,80,10
+ 10   IP0=2
+      IP1=IP0*NPREV
+      IP4=IP1*N
+      IP5=IP4*NREM
+      I4REV=1
+      DO 70 I4=1,IP4,IP1
+      IF (I4-I4REV) 20,40,40
+ 20   I1MAX=I4+IP1-IP0
+      DO 30 I1=I4,I1MAX,IP0
+      DO 30 I5=I1,IP5,IP4
+      I5REV=I4REV+I5-I4
+      TEMPR=DATA(I5)
+      TEMPI=DATA(I5+1)
+      DATA(I5)=DATA(I5REV)
+      DATA(I5+1)=DATA(I5REV+1)
+      DATA(I5REV)=TEMPR
+ 30   DATA(I5REV+1)=TEMPI
+ 40   IP3=IP4
+      DO 60 IF=1,NFACT
+      IP2=IP3/IFACT(IF)
+      I4REV=I4REV+IP2
+      IF (I4REV-IP3) 70,70,50
+ 50   I4REV=I4REV-IP3
+ 60   IP3=IP2
+ 70   CONTINUE
+ 80   RETURN
+      END
+C
+      SUBROUTINE ASMRV (DATA,NPREV,N,NREM,IFACT,NFACT,WORK)
+C     SHUFFLE THE DATA ARRAY BY REVERSING THE DIGITS OF ONE INDEX.
+C     THE OPERATION IS THE SAME AS IN SYMRV, EXCEPT THAT THE FACTORS
+C     NEED NOT BE SYMMETRICALLY ARRANGED, I.E., GENERALLY IFACT(IF) NOT=
+C     IFACT(NFACT+1-IF).  CONSEQUENTLY, A WORK ARRAY OF LENGTH N IS
+C     NEEDED.
+      DIMENSION DATA(1), WORK(1), IFACT(1)
+      IF (NFACT-1) 60,60,10
+ 10   IP0=2
+      IP1=IP0*NPREV
+      IP4=IP1*N
+      IP5=IP4*NREM
+      DO 50 I1=1,IP1,IP0
+      DO 50 I5=I1,IP5,IP4
+      IWORK=1
+      I4REV=I5
+      I4MAX=I5+IP4-IP1
+      DO 40 I4=I5,I4MAX,IP1
+      WORK(IWORK)=DATA(I4REV)
+      WORK(IWORK+1)=DATA(I4REV+1)
+      IP3=IP4
+      DO 30 IF=1,NFACT
+      IP2=IP3/IFACT(IF)
+      I4REV=I4REV+IP2
+      IF (I4REV-IP3-I5) 40,20,20
+ 20   I4REV=I4REV-IP3
+ 30   IP3=IP2
+ 40   IWORK=IWORK+IP0
+      IWORK=1
+      DO 50 I4=I5,I4MAX,IP1
+      DATA(I4)=WORK(IWORK)
+      DATA(I4+1)=WORK(IWORK+1)
+ 50   IWORK=IWORK+IP0
+ 60   RETURN
+      END
+C
+      SUBROUTINE COOL (DATA,NPREV,N,NREM,ISIGN,IFACT,WORK)
+C     FOURIER TRANSFORM OF LENGTH N.  IN PLACE COOLEY-TUKEY METHOD,
+C     DIGIT-REVERSED TO NORMAL ORDER, SANDE-TUKEY FACTORING (2).
+C     DIMENSION DATA(NPREV,N,NREM)
+C     COMPLEX DATA
+C     DATA(I1,J2,I3) = SUM(DATA(I1,I2,I3)*EXP(ISIGN*2*PI*I*((I2-1)*
+C     (J2-1)/N))), SUMMED OVER I2 = 1 TO N FOR ALL I1 FROM 1 TO NPREV,
+C     J2 FROM 1 TO N AND I3 FROM 1 TO NREM.  THE FACTORS OF N ARE GIVEN
+C     IN ANY ORDER IN ARRAY IFACT.  FACTORS OF TWO ARE DONE IN PAIRS
+C     AS MUCH AS POSSIBLE (FOURIER TRANSFORM OF LENGTH FOUR), FACTORS OF
+C     THREE ARE DONE SEPARATELY, AND ALL FACTORS FIVE OR HIGHER
+C     ARE DONE BY GOERTZEL@S ALGORITHM (4).
+      DIMENSION DATA(1), WORK(1), IFACT(1)
+      TWOPI = 6.2831853071795865 * FLOAT(ISIGN)
+      IP0=2
+      IP1=IP0*NPREV
+      IP4=IP1*N
+      IP5=IP4*NREM
+      IF=0
+      IP2=IP1
+ 10   IF (IP2-IP4) 20,240,240
+ 20   IF=IF+1
+      IFCUR=IFACT(IF)
+      IF (IFCUR-2) 60,30,60
+ 30   IF (4*IP2-IP4) 40,40,60
+ 40   IF (IFACT(IF+1)-2) 60,50,60
+ 50   IF=IF+1
+      IFCUR=4
+ 60   IP3=IP2*IFCUR
+      THETA=TWOPI/FLOAT(IFCUR)
+      SINTH=SIN(THETA/2.)
+      ROOTR=-2.*SINTH*SINTH
+C     COS(THETA)-1, FOR ACCURACY.
+      ROOTI=SIN(THETA)
+      THETA=TWOPI/FLOAT(IP3/IP1)
+      SINTH=SIN(THETA/2.)
+      WSTPR=-2.*SINTH*SINTH
+      WSTPI=SIN(THETA)
+      WR=1.
+      WI=0.
+      DO 230 I2=1,IP2,IP1
+      IF (IFCUR-4) 70,70,210
+ 70   IF ((I2-1)*(IFCUR-2)) 240,90,80
+ 80   W2R=WR*WR-WI*WI
+      W2I=2.*WR*WI
+      W3R=W2R*WR-W2I*WI
+      W3I=W2R*WI+W2I*WR
+ 90   I1MAX=I2+IP1-IP0
+      DO 200 I1=I2,I1MAX,IP0
+      DO 200 I5=I1,IP5,IP3
+      J0=I5
+      J1=J0+IP2
+      J2=J1+IP2
+      J3=J2+IP2
+      IF (I2-1) 140,140,100
+ 100  IF (IFCUR-3) 130,120,110
+C     APPLY THE PHASE SHIFT FACTORS
+ 110  TEMPR=DATA(J3)
+      DATA(J3)=W3R*TEMPR-W3I*DATA(J3+1)
+      DATA(J3+1)=W3R*DATA(J3+1)+W3I*TEMPR
+      TEMPR=DATA(J2)
+      DATA(J2)=WR*TEMPR-WI*DATA(J2+1)
+      DATA(J2+1)=WR*DATA(J2+1)+WI*TEMPR
+      TEMPR=DATA(J1)
+      DATA(J1)=W2R*TEMPR-W2I*DATA(J1+1)
+      DATA(J1+1)=W2R*DATA(J1+1)+W2I*TEMPR
+      GO TO 140
+ 120  TEMPR=DATA(J2)
+      DATA(J2)=W2R*TEMPR-W2I*DATA(J2+1)
+      DATA(J2+1)=W2R*DATA(J2+1)+W2I*TEMPR
+ 130  TEMPR=DATA(J1)
+      DATA(J1)=WR*TEMPR-WI*DATA(J1+1)
+      DATA(J1+1)=WR*DATA(J1+1)+WI*TEMPR
+ 140  IF (IFCUR-3) 150,160,170
+C     DO A FOURIER TRANSFORM OF LENGTH TWO
+ 150  TEMPR=DATA(J1)
+      TEMPI=DATA(J1+1)
+      DATA(J1)=DATA(J0)-TEMPR
+      DATA(J1+1)=DATA(J0+1)-TEMPI
+      DATA(J0)=DATA(J0)+TEMPR
+      DATA(J0+1)=DATA(J0+1)+TEMPI
+      GO TO 200
+C     DO A FOURIER TRANSFORM OF LENGTH THREE
+ 160  SUMR=DATA(J1)+DATA(J2)
+      SUMI=DATA(J1+1)+DATA(J2+1)
+      TEMPR=DATA(J0)-.5*SUMR
+      TEMPI=DATA(J0+1)-.5*SUMI
+      DATA(J0)=DATA(J0)+SUMR
+      DATA(J0+1)=DATA(J0+1)+SUMI
+      DIFR=ROOTI*(DATA(J2+1)-DATA(J1+1))
+      DIFI=ROOTI*(DATA(J1)-DATA(J2))
+      DATA(J1)=TEMPR+DIFR
+      DATA(J1+1)=TEMPI+DIFI
+      DATA(J2)=TEMPR-DIFR
+      DATA(J2+1)=TEMPI-DIFI
+      GO TO 200
+C     DO A FOURIER TRANSFORM OF LENGTH FOUR (FROM BIT REVERSED ORDER)
+ 170  T0R=DATA(J0)+DATA(J1)
+      T0I=DATA(J0+1)+DATA(J1+1)
+      T1R=DATA(J0)-DATA(J1)
+      T1I=DATA(J0+1)-DATA(J1+1)
+      T2R=DATA(J2)+DATA(J3)
+      T2I=DATA(J2+1)+DATA(J3+1)
+      T3R=DATA(J2)-DATA(J3)
+      T3I=DATA(J2+1)-DATA(J3+1)
+      DATA(J0)=T0R+T2R
+      DATA(J0+1)=T0I+T2I
+      DATA(J2)=T0R-T2R
+      DATA(J2+1)=T0I-T2I
+      IF (ISIGN) 180,180,190
+ 180  T3R=-T3R
+      T3I=-T3I
+ 190  DATA(J1)=T1R-T3I
+      DATA(J1+1)=T1I+T3R
+      DATA(J3)=T1R+T3I
+      DATA(J3+1)=T1I-T3R
+ 200  CONTINUE
+      GO TO 220
+C     DO A FOURIER TRANSFORM OF LENGTH FIVE OR MORE
+ 210  CALL GOERT (DATA(I2),NPREV,IP2/IP1,IFCUR,IP5/IP3,WORK,WR,WI,ROOTR,
+     .ROOTI)
+ 220  TEMPR=WR
+      WR=WSTPR*TEMPR-WSTPI*WI+TEMPR
+ 230  WI=WSTPR*WI+WSTPI*TEMPR+WI
+      IP2=IP3
+      GO TO 10
+ 240  RETURN
+      END
+C
+      SUBROUTINE GOERT(DATA,NPREV,IPROD,IFACT,IREM,WORK,WMINR,WMINI,
+     . ROOTR,ROOTI)
+C     PHASE-SHIFTED FOURIER TRANSFORM OF LENGTH IFACT BY THE GOERTZEL
+C     ALGORITHM (4).  IFACT MUST BE ODD AND AT LEAST 5.  FURTHER SPEED
+C     IS GAINED BY COMPUTING TWO TRANSFORM VALUES AT THE SAME TIME.
+C     DIMENSION DATA(NPREV,IPROD,IFACT,IREM)
+C     DATA(I1,1,J3,I5) = SUM(DATA(I1,1,I3,I5) * W**(I3-1)), SUMMED
+C     OVER I3 = 1 TO IFACT FOR ALL I1 FROM 1 TO NPREV, J3 FROM 1 TO
+C     IFACT AND I5 FROM 1 TO IREM.
+C     W = WMIN * EXP(ISIGN*2*PI*I*(J3-1)/IFACT).
+      DIMENSION DATA(1), WORK(1)
+      IP0=2
+      IP1=IP0*NPREV
+      IP2=IP1*IPROD
+      IP3=IP2*IFACT
+      IP5=IP3*IREM
+      IF (WMINI) 10,40,10
+C     APPLY THE PHASE SHIFT FACTORS
+ 10   WR=WMINR
+      WI=WMINI
+      I3MIN=1+IP2
+      DO 30 I3=I3MIN,IP3,IP2
+      I1MAX=I3+IP1-IP0
+      DO 20 I1=I3,I1MAX,IP0
+      DO 20 I5=I1,IP5,IP3
+      TEMPR=DATA(I5)
+      DATA(I5)=WR*TEMPR-WI*DATA(I5+1)
+ 20   DATA(I5+1)=WR*DATA(I5+1)+WI*TEMPR
+      TEMPR=WR
+      WR=WMINR*TEMPR-WMINI*WI
+ 30   WI=WMINR*WI+WMINI*TEMPR
+ 40   DO 90 I1=1,IP1,IP0
+      DO 90 I5=I1,IP5,IP3
+C     STRAIGHT SUMMATION FOR THE FIRST TERM
+      SUMR=0.
+      SUMI=0.
+      I3MAX=I5+IP3-IP2
+      DO 50 I3=I5,I3MAX,IP2
+      SUMR=SUMR+DATA(I3)
+ 50   SUMI=SUMI+DATA(I3+1)
+      WORK(1)=SUMR
+      WORK(2)=SUMI
+      WR=ROOTR+1.
+      WI=ROOTI
+      IWMIN=1+IP0
+      IWMAX=IP0*((IFACT+1)/2)-1
+      DO 80 IWORK=IWMIN,IWMAX,IP0
+      TWOWR=WR+WR
+      I3=I3MAX
+      OLDSR=0.
+      OLDSI=0.
+      SUMR=DATA(I3)
+      SUMI=DATA(I3+1)
+      I3=I3-IP2
+ 60   TEMPR=SUMR
+      TEMPI=SUMI
+      SUMR=TWOWR*SUMR-OLDSR+DATA(I3)
+      SUMI=TWOWR*SUMI-OLDSI+DATA(I3+1)
+      OLDSR=TEMPR
+      OLDSI=TEMPI
+      I3=I3-IP2
+      IF (I3-I5) 70,70,60
+C     IN A FOURIER TRANSFORM THE W CORRESPONDING TO THE POINT AT K
+C     IS THE CONJUGATE OF THAT AT IFACT-K (THAT IS, EXP(TWOPI*I*
+C     K/IFACT) = CONJ(EXP(TWOPI*I*(IFACT-K)/IFACT))).  SINCE THE
+C     MAIN LOOP OF GOERTZELS ALGORITHM IS INDIFFERENT TO THE IMAGINARY
+C     PART OF W, IT NEED BE SUPPLIED ONLY AT THE END.
+ 70   TEMPR=-WI*SUMI
+      TEMPI=WI*SUMR
+      SUMR=WR*SUMR-OLDSR+DATA(I3)
+      SUMI=WR*SUMI-OLDSI+DATA(I3+1)
+      WORK(IWORK)=SUMR+TEMPR
+      WORK(IWORK+1)=SUMI+TEMPI
+      IWCNJ=IP0*(IFACT+1)-IWORK
+      WORK(IWCNJ)=SUMR-TEMPR
+      WORK(IWCNJ+1)=SUMI-TEMPI
+C     SINGLETON@S RECURSION, FOR ACCURACY AND SPEED (5).
+      TEMPR=WR
+      WR=WR*ROOTR-WI*ROOTI+WR
+ 80   WI=TEMPR*ROOTI+WI*ROOTR+WI
+      IWORK=1
+      DO 90 I3=I5,I3MAX,IP2
+      DATA(I3)=WORK(IWORK)
+      DATA(I3+1)=WORK(IWORK+1)
+ 90   IWORK=IWORK+IP0
+      RETURN
+      END
+C
+      SUBROUTINE FIXRL (DATA,N,NREM,ISIGN,IFORM)
+C     FOR IFORM = 0, CONVERT THE TRANSFORM OF A DOUBLED-UP REAL ARRAY,
+C     CONSIDERED COMPLEX, INTO ITS TRUE TRANSFORM.  SUPPLY ONLY THE
+C     FIRST HALF OF THE COMPLEX TRANSFORM, AS THE SECOND HALF HAS
+C     CONJUGATE SYMMETRY.  FOR IFORM = -1, CONVERT THE FIRST HALF
+C     OF THE TRUE TRANSFORM INTO THE TRANSFORM OF A DOUBLED-UP REAL
+C     ARRAY.  N MUST BE EVEN.
+C     USING COMPLEX NOTATION AND SUBSCRIPTS STARTING AT ZERO, THE
+C     TRANSFORMATION IS--
+C     DIMENSION DATA(N,NREM)
+C     ZSTP = EXP(ISIGN*2*PI*I/N)
+C     DO 10 I2=0,NREM-1
+C     DATA(0,I2) = CONJ(DATA(0,I2))*(1+I)
+C     DO 10 I1=1,N/4
+C     Z = (1+(2*IFORM+1)*I*ZSTP**I1)/2
+C     I1CNJ = N/2-I1
+C     DIF = DATA(I1,I2)-CONJ(DATA(I1CNJ,I2))
+C     TEMP = Z*DIF
+C     DATA(I1,I2) = (DATA(I1,I2)-TEMP)*(1-IFORM)
+C 10  DATA(I1CNJ,I2) = (DATA(I1CNJ,I2)+CONJ(TEMP))*(1-IFORM)
+C     IF I1=I1CNJ, THE CALCULATION FOR THAT VALUE COLLAPSES INTO
+C     A SIMPLE CONJUGATION OF DATA(I1,I2).
+      DIMENSION DATA(1)
+      TWOPI = 6.2831853071795865 * FLOAT(ISIGN)
+      IP0=2
+      IP1=IP0*(N/2)
+      IP2=IP1*NREM
+      IF (IFORM) 10,70,70
+C     PACK THE REAL INPUT VALUES (TWO PER COLUMN)
+ 10   J1=IP1+1
+      DATA(2)=DATA(J1)
+      IF (NREM-1) 70,70,20
+ 20   J1=J1+IP0
+      I2MIN=IP1+1
+      DO 60 I2=I2MIN,IP2,IP1
+      DATA(I2)=DATA(J1)
+      J1=J1+IP0
+      IF (N-2) 50,50,30
+ 30   I1MIN=I2+IP0
+      I1MAX=I2+IP1-IP0
+      DO 40 I1=I1MIN,I1MAX,IP0
+      DATA(I1)=DATA(J1)
+      DATA(I1+1)=DATA(J1+1)
+ 40   J1=J1+IP0
+ 50   DATA(I2+1)=DATA(J1)
+ 60   J1=J1+IP0
+ 70   DO 80 I2=1,IP2,IP1
+      TEMPR=DATA(I2)
+      DATA(I2)=DATA(I2)+DATA(I2+1)
+ 80   DATA(I2+1)=TEMPR-DATA(I2+1)
+      IF (N-2) 200,200,90
+ 90   THETA=TWOPI/FLOAT(N)
+      SINTH=SIN(THETA/2.)
+      ZSTPR=-2.*SINTH*SINTH
+      ZSTPI=SIN(THETA)
+      ZR=(1.-ZSTPI)/2.
+      ZI=(1.+ZSTPR)/2.
+      IF (IFORM) 100,110,110
+ 100  ZR=1.-ZR
+      ZI=-ZI
+ 110  I1MIN=IP0+1
+      I1MAX=IP0*(N/4)+1
+      DO 190 I1=I1MIN,I1MAX,IP0
+      DO 180 I2=I1,IP2,IP1
+      I2CNJ=IP0*(N/2+1)-2*I1+I2
+      IF (I2-I2CNJ) 150,120,120
+ 120  IF (ISIGN*(2*IFORM+1)) 130,140,140
+ 130  DATA(I2+1)=-DATA(I2+1)
+ 140  IF (IFORM) 170,180,180
+ 150  DIFR=DATA(I2)-DATA(I2CNJ)
+      DIFI=DATA(I2+1)+DATA(I2CNJ+1)
+      TEMPR=DIFR*ZR-DIFI*ZI
+      TEMPI=DIFR*ZI+DIFI*ZR
+      DATA(I2)=DATA(I2)-TEMPR
+      DATA(I2+1)=DATA(I2+1)-TEMPI
+      DATA(I2CNJ)=DATA(I2CNJ)+TEMPR
+      DATA(I2CNJ+1)=DATA(I2CNJ+1)-TEMPI
+      IF (IFORM) 160,180,180
+ 160  DATA(I2CNJ)=DATA(I2CNJ)+DATA(I2CNJ)
+      DATA(I2CNJ+1)=DATA(I2CNJ+1)+DATA(I2CNJ+1)
+ 170  DATA(I2)=DATA(I2)+DATA(I2)
+      DATA(I2+1)=DATA(I2+1)+DATA(I2+1)
+ 180  CONTINUE
+      TEMPR=ZR-.5
+      ZR=ZSTPR*TEMPR-ZSTPI*ZI+ZR
+ 190  ZI=ZSTPR*ZI+ZSTPI*TEMPR+ZI
+C     RECURSION SAVES TIME, AT A SLIGHT LOSS IN ACCURACY.  IF AVAILABLE,
+C     USE DOUBLE PRECISION TO COMPUTE ZR AND ZI.
+ 200  IF (IFORM) 270,210,210
+C     UNPACK THE REAL TRANSFORM VALUES (TWO PER COLUMN)
+ 210  I2=IP2+1
+      I1=I2
+      J1=IP0*(N/2+1)*NREM+1
+      GO TO 250
+ 220  DATA(J1)=DATA(I1)
+      DATA(J1+1)=DATA(I1+1)
+      I1=I1-IP0
+      J1=J1-IP0
+ 230  IF (I2-I1) 220,240,240
+ 240  DATA(J1)=DATA(I1)
+      DATA(J1+1)=0.
+ 250  I2=I2-IP1
+      J1=J1-IP0
+      DATA(J1)=DATA(I2+1)
+      DATA(J1+1)=0.
+      I1=I1-IP0
+      J1=J1-IP0
+      IF (I2-1) 260,260,230
+ 260  DATA(2)=0.
+ 270  RETURN
+      END

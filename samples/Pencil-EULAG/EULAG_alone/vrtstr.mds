@@ -1,0 +1,6 @@
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+control parameters and fortran statement functions for vertical stretching
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     parameter (istr=0,SD=7000.)
+      parameter (istr=0,SD=20.)
+      common /zstrch/ zstr(l)

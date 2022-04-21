@@ -1,0 +1,6 @@
+#!/bin/csh
+#./start.csh 
+#Restart pencil
+
+./start.csh
+./run.csh '-np 4' ' SDB_tine_test/a.out >ee.txt'

@@ -1,0 +1,967 @@
+
+      subroutine colorpl(zdat,nn,n1,mm,m1,ism,imap,iflg,vps,nl,
+     .                   ipal,ilabl,zmin,zmax,izval,ihlflg,ihcflg)
+c     parameter(nl=9,ilb=2)
+      parameter(ilb=2)
+c     parameter(nbnd=nl+1,nlbl=nl+ilb)
+      parameter(niama=900000,mcs=100000)
+c     parameter(niama=1500000,mcs=200000)
+      dimension zdat(nn,mm),rwrk(3000),iwrk(3000),iama(niama)
+      dimension iasf(13)
+      dimension xcra(mcs),ycra(mcs)
+      dimension iaia(100),igia(100)
+
+c=========================================================================
+c     Program for plotting the colormap of the zdat(nn,mm) field
+c
+c     nn   - first dimension of the array zdat(nn,mm)
+c     mm   - second dimension of the array zdat(nn,mm)
+c     n1   - number of points in the 1st direction to be plotted
+c     m1   - number of points in the 2nd direction to be plotted
+c     nl   - number of contouring levels
+c     nl+1 - number of color bands (=nbnd)
+c     ilb  - flag for the label bar; (=0)  labels alligned with the boxes,
+c            (=1) labels alligned with the partions between the boxes,
+c            (=2) as for (=1) including the ends of the labelbar
+c     ism  - flag for smoothing, =1 yes, =0 no
+c     imap - flag for coordinate transformation (see subroutine cpmpxy)
+c            =0 no mapping Cartesian grid, =3 topo-following mapping
+c            supply common/topog/
+c     iflg - flag for the field
+c     vps  - variable that determines the viewport shape
+c            (=0.) shape will be automatically determined to achieve the
+c                  optimal fit into the viewport window
+c            (<0.) specifies the exact shape, abs(vps)=width/height
+c
+c     The table of colors is supplied in the subroutine DFCLRS
+c     There is currently a maximum of 15 colors, color with the index
+c     1 is used for contours (unless it is changed in the appropriate
+c     place in this program depending on the field plotted), colors
+c     2-(nl+1) are used for color bands. This is also a place where
+c     the background color can be set up.
+c
+c==========================================================================
+
+c list of indices and labels
+       dimension lind(101)
+c      dimension lind(nl+1)
+       character*20 llbs(102)
+c      character*20 llbs(nl+2)
+
+c routine for coloring areas
+      external colram
+
+c GKS aspect source flags
+      data iasf /13*1/
+
+c list of indices for label-bar routine
+       nbnd=nl+1
+       nlbl=nl+ilb
+       do i=1,nbnd
+         lind(i)=i+1
+       end do
+
+c aspect source flags (?)
+      call gsasf(iasf)
+
+c solid fill
+      call gsfais(1)
+
+c set the viewport frame
+      call cpseti('SET',1)
+      call cpsetr('VPL - VIEWPORT LEFT' ,.15)
+      call cpsetr('VPR - VIEWPORT RIGHT',.85)
+      call cpsetr('VPB - VIEWPORT BOTTOM',.20)
+      call cpsetr('VPT - VIEWPORT TOP',.90)
+      if (vps.lt.0.)
+     .call cpsetr('VPS - VIEWPORT SHAPE',vps)
+
+c format numeric labels
+      call cpseti('NSD - NUMBER OF SIGNIFICANT DIGITS',3)
+      call cpseti('NOF - NUMERIC OMISSION FLAGS',5)
+
+c coordinate transformation
+      call cpseti('MAP - MAPPING FLAG',imap)
+
+c smoothing
+      if (ism.eq.1) then
+         call cpseti('PIC - POINT INTERPOLATION FOR CONTOURS',2)
+         call cpsetr('T2D - TENSION ON 2D SPLINES',0.)
+      elseif (ism.eq.-1) then
+         call cpseti('PIC - POINT INTERPOLATION FOR CONTOURS',-10)
+         call cpsetr('T2D - TENSION ON 2D SPLINES',0.)
+      elseif (ism.eq.2) then
+C     print *,'smoothing :',ism
+         call cpseti('PIC - POINT INTERPOLATION FOR CONTOURS',0)
+         call cpsetr('SSL - SMOOTHED SEGMENT LENGHT',0.05) !Be carefule
+         call cpsetr('T2D - TENSION ON 2D SPLINES',0.00000000001)
+      elseif (ism.eq.-2) then
+         call cpseti('PIC - POINT INTERPOLATION FOR CONTOURS',0)
+         call cpsetr('T2D - TENSION ON 2D SPLINES',-0.1)
+      else
+         call cpseti('PIC - POINT INTERPOLATION FOR CONTOURS',0)
+         call cpsetr('T2D - TENSION ON 2D SPLINES',0.)
+      endif
+
+c contour levels
+C CLS - Contour Level Selection - how many contours and which level
+C       selection methos is used (16)
+C       0 - does not pick contour levels at all,
+C           current values NCL, CLV are not changed
+C      -n - generates n contour lines
+C      +n - by default, description p.259
+
+c nl contour levels inside the data (zmin,zmax) interval
+c (nl+1) bands and (nl+1) colors
+      if (izval.eq.0) then
+        ncl=-nl
+        call cpseti('CLS - CONTOUR LEVEL SELECTOR',ncl)
+      else
+c nl contour levels inside the user determined interval
+c (nl+1) bands and (nl+1) colors
+        call cpseti('CLS - CONTOUR LEVEL SELECTOR',0)
+        call cpseti('NCL - NUMBER OF COUNTOUR LEVELS',nl)
+        ciu=(zmax-zmin)/float(nbnd)
+        do i=1,nl
+          clev=zmin + i*ciu
+          call cpseti('PAI - PARAMETER ARRAY INDEX',i)
+          call cpsetr('CLV - COUNTOUR LEVEL VALUES',clev)
+        end do
+        call cpsetr('CIU - CONTOUR INTERVAL USED',ciu)
+      end if
+
+      call setusv('LW',2000)
+
+c intialize area map, contour lines
+      call arinam(iama,niama)
+
+c initialize drawing
+      call cprect(zdat,nn,n1,m1,rwrk,3000,iwrk,3000)
+      call cpclam(zdat,rwrk,iwrk,iama)
+      call setusv('LW',1000)
+
+c get min and max value
+      if (izval.eq.0) then
+        call cpgetr('ZMN',zmin)
+        call cpgetr('ZMX',zmax)
+      end if
+
+c color indices
+      call dfclrs(nl,ipal,zmin,zmax)
+
+c color the map
+      call arscam(iama,xcra,ycra,mcs,iaia,igia,100,colram)
+
+c check for the constant field flag
+      call cpgeti('CFF - CONSTANT FIELD FLAG',icff)
+      if (icff.ne.0) goto 100
+
+c set up the text color
+        call cpseti('ILC - INFORMATION LABEL TEXT',1)
+
+c set up the contour line color
+        if (iflg.eq.11.or.iflg .eq.12) then
+          do i=1,nl
+            call cpseti('PAI - PARAMETER ARRAY INDEX',i)
+            call cpseti('CLC - COUNTOUR LINE COLOR',15)
+          end do
+        else
+          do i=1,nl
+            call cpseti('PAI - PARAMETER ARRAY INDEX',i)
+            call cpseti('CLC - COUNTOUR LINE COLOR',1)
+          end do
+        end if
+
+c set up the contour line pattern
+c dashed lines for negative values, solid lines for positive values
+      do i=1,nl
+        call cpseti('PAI - PARAMETER ARRAY INDEX',i)
+        cval=zmin+real(i)*(zmax-zmin)/float(nbnd)
+        if (cval.lt.0.0) then
+          call cpsetc('CLD - CONTOUR LINE DASH PATTERN',
+     .                       '$$''''$$''''$$''''$$''''')
+        else if (cval.eq.0.0) then
+          call cpsetc('CLD - INVISIBLE CONTOUR LINE PATTERN',
+     .                 '''''''''''''''''''''''''''''''''')
+        else
+          call cpsetc('CLD - CONTOUR LINE SOLID PATTERN',
+     .                       '$$$$$$$$$$$$$$$$')
+        end if
+      end do
+      call cpcldr(zdat,rwrk,iwrk)
+
+c contour line labels
+c LLP -  Line Label Positioning:
+c        0 - no label are drawn
+c     +/-1 - labels are positioned along contour lines by setting up
+c            a dash patern including the label and then drawing the
+c            contour with the Dashed utility (1)
+c        2 - labels are positioned along contour using moderate cost scheme
+c       -2 - like above but smoothing is suspended durig placement
+c        3 - more expensive penantly scheme
+c       -3 - like above but smoothing is suspended durig placement
+c CLU -  Contour Level Use Flags:
+c        0 - no contour line or labels are drawn at this level
+c        1 - a contour line is drawn without label
+c        2 - contour labels are drawn but no line is drawn
+c        3 - both a contour line and labels are drawn
+c LLO -  Line Label Orientation:
+c        0 - all label are written at the angle specified by LLA (0.0)
+c        =/= 0 parallel to the contour line
+c LIS -  Interval between labeled interval contour, if CLS>0 and CIS>0 (5)
+c LLS -  Line Label Size - specifies size (width) of a character in a contour
+c        line label as a fraction of the width of the wiewport multiple by CWM
+c LLB -  Line Label Box - control how contour line labels are boxed (0)
+c        0 - Labels drawn by CPLBDR are not boxed
+c        1 - primer of the box is drawn in the same color as the label
+c            after the label is drawn
+c        2 - box is filled in the color specified by LBC before label is drawn
+c        3 - both 1 and 2
+c LBC - Label Box Color - filing is done by color index specified by LBC
+c       <0 - current fill area color index is used
+c      >=0 - specifies the color index to be used
+c        0 - by default (background color)
+
+      call cpseti('LLP - LINE LABEL POSITIONING',2)
+      call cpseti('LLO - LINE LABEL ORIENTATION',1)
+      LIS0=ilabl
+C     call cpseti('LIS - LABEL INTERVAL SPECIFIER',LIS0)
+C     call cpsetr('CWM - CHARACTER WIDTH MULTIPLER',1.)
+      call cpsetr('LLS - LINE LABEL SIZE',.0125)
+      call cpseti('LBC - LABEL BOX COLOR',0)
+      call cpseti('LLB - LINE LABEL BOX',3)
+
+      do i=1,nl
+        call cpseti('PAI - PARAMETER ARRAY INDEX',i)
+        call cpseti('CLU - CONTOUR LEVEL USE FLAGS',1)
+        if(ilabl.gt.0) then
+        if(i/LIS0*LIS0.eq.i)
+     .        call cpseti('CLU - CONTOUR LEVEL USE FLAGS',3)
+        endif
+      end do
+
+c high/low label parameters
+      if (ihlflg.gt.0) then
+       ccwm=1.
+       if((abs(vps) .lt. 1.).and.(vps.ne.0))  ccwm=abs(vps)
+       cils=0.012/ccwm
+       call cpsetr('HLS - HIGH/LOW LABEL SIZE', cils) !Default HLS=.012
+C      call cpsetr('CWM - CHARACTER WIDTH MULTIPLER',1.)
+
+      if (ihlflg.eq.1) then
+       call cpsetc('HLT - HIGH/LOW LABEL TEXT STRING','$ZDV$')
+      else if(ihlflg.eq.2) then
+       call cpsetc('HLT - HIGH/LOW LABEL TEXT STRING',
+     1              'H($ZDV$)''L($ZDV$)')
+      else if(ihlflg.eq.3) then
+       call cpsetc('HLT - HIGH/LOW LABEL TEXT STRING',
+     1              'H?B?$ZDV$?E?''L?B?$ZDV$?E?')
+c    1              'H:B:$ZDV$:E:''L:B:$ZDV$:E:')
+      else if(ihlflg.eq.4) then
+       call cpsetc('HLT - HIGH/LOW LABEL TEXT STRING','H''L')
+      endif
+
+      else
+       call cpsetr('HLS-HIGH/LOW LABEL SIZE', 0.0)
+      endif
+
+      if ((ihcflg.ge.0).and.(ihcflg.le.4)) then
+c hachuring flags
+c HCF = 0 - hachuring off
+c       1 - all contours hachured
+c       2 - closed contours hachured if interior is downslope,
+c           open contouts all hachured
+c       3 - closed contours hachured if interior is downslope,
+c           open contouts not hachured
+c       4 - closed contours hachured if interior is downslope,
+c           open contouts hachured if interior is downslope
+c      -2,-3,-4 like above but "downslope" change to "upslope"
+c HCS - distance between hachures along contour line, default is 0.1
+c HCL - lenght of hachures as a fraction of width of the viewport, (0.004)
+c       HCL>0 hachures are drawn on the downslope side of the contour
+c       HCL<0 hachures are drawn on the upslope side of the contour
+        call cpseti('HCF - HACHURE FLAF',ihcflg)
+      endif
+
+ 100  continue
+
+c information labels
+      if (izval.eq.1) then
+C $ZMX$ - Maximum value on the data array
+C $ZMN$ - Minimum value on the data array
+C $SFU$  - Current scale factor
+C $CMX$  - Maximum contour level
+C $CMN$  - Minimum contour level
+C $CIU$  - Contour interval used
+       call cpsetc('ILT - INFORMATION LABEL TEXT STRING',
+     .      'MIN: $ZMN$, MAX: $ZMX$, CONTOUR INTERVAL $CIU$')
+      else
+       call cpsetc('ILT - INFORMATION LABEL TEXT STRING',
+     .      'CONTOUR FROM $CMN$ TO $CMX$ BY $CIU$')
+      endif
+       call cpsetr('ILX-INFORMATION LABEL X POSITION',0.5) !0.7
+       call cpsetr('ILY-INFORMATION LABEL Y POSITION',1.05)
+       call cpgetr('ILS-INFORMATION LABEL SIZE',cils)
+       ccwm=1.
+       call cpsetr('CWM-CHARACTER WIDTH MULTIPLER',ccwm)
+C      if((abs(vps) .lt. 1.).and.(vps.ne.0))  ccwm=abs(vps)
+       cils=0.012/ccwm
+       call cpsetr('ILS-INFORMATION LABEL SIZE',cils)
+       call cpseti('ILP-INFORMATION LABEL POSITIONING',0)
+       call cplbdr(zdat,rwrk,iwrk)
+C      call cpsetr('CWM-CHARACTER WIDTH MULTIPLER',1.)
+
+c determine the mapping of values vs. colors for the label bar
+      if (izval.eq.0) then
+        call cpgetr('ZMN',zmin)
+        call cpgetr('ZMX',zmax)
+      end if
+      do i=1,nlbl
+        call cpsetr('ZDV - Z DATA VALUE',
+     .              ZMIN+REAL(I-1)*(ZMAX-ZMIN)/float(nbnd))
+        call cpgetc('ZDV - Z DATA VALUE',LLBS(i))
+      end do
+
+c  label bar
+      call lbseti('CBL - COLOR OF BOX LINES',1)
+c     call lblbar(0,.15,.85,.075,.175,nbnd,1.,.5,LIND,0,
+c    .            LLBS,nlbl,1)
+      call lblbar(0,.15,.85,.005,.055,nbnd,1.,.5,LIND,0,
+     .            LLBS,nlbl,1)
+
+      call bndary
+
+      return
+      end
+
+      subroutine colram(xcra,ycra,ncra,iaia,igia,naia)
+      dimension xcra(*),ycra(*),iaia(*),igia(*)
+      ifll=1
+      do 101 i=1,naia
+         if(iaia(i).lt.0) ifll=0
+ 101  continue
+      if(ifll.ne.0) then
+      ifll=0
+       do 102 i=1,naia
+        if(igia(i).eq.3) ifll=iaia(i)
+ 102  continue
+      if(ifll.gt.0.and.ifll.lt.101) then
+         call gsfaci(ifll+1)
+         call gfa (ncra-1,xcra,ycra)
+      endif
+      endif
+      return
+      end
+
+
+      subroutine dfclrs(nl,ipal,zmin,zmax)
+      dimension rgbv(3,102)
+
+c for index 0 (bacgroud color) and index 1 (text color) check  ncargdef
+
+      if ((ipal.ge.10).and.(ipal.le.15)) then
+         iminus=0
+         iplus=0
+         if (zmax.le.0) then
+           iminus=nl
+         elseif(zmin.ge.0) then
+           iplus=nl
+         else
+           iminus=abs(float(nl)*zmin/(zmax-zmin))+1
+c           iplus=abs(float(nl)*zmax/(zmax-zmin))+1
+            del=(zmax-zmin)/float(nl+1)
+            zmin0=zmin+iminus*del                            ! check value
+            zmax0=zmin0+del                                  ! around zero
+            if((abs(zmin0)).gt.(abs(zmax0))) iminus=iminus+1 ! for -/+ data
+            iplus=nl-iminus
+         endif
+      endif
+
+clear color map
+       do i=2,102
+         rgbv(1,i)=1.0
+         rgbv(2,i)=1.0
+         rgbv(3,i)=1.0
+       enddo
+
+c red into light blue
+       if (ipal.eq.1) then
+       do i=2,nl+2
+         rgbv(1,i)=.65
+         rgbv(2,i)=float(i-2)/float(nl)
+         rgbv(3,i)=float(i-2)/float(nl)
+       enddo
+c     +            .65,  0.,  .0,
+c     +            .65, .05,  .05,
+c     +            .65, .1,   .1,
+c     +            .65, .15,  .15,
+c     +            .65, .2,   .2,
+c     +            .65, .25,  .25,
+c     +            .65, .3,   .3,
+c     +            .65, .35,  .35,
+c     +            .65, .4,   .4,
+c     +            .65, .45,  .45,
+c     +            .65, .5,   .5,
+c     +            .65, .55,  .55,
+c     +            .65, .6,   .6,
+c     +            .65, .65,  .65,
+c     +            .65, .7,   .7,
+c     +            .65, .75,  .75,
+c     +            .65, .8,   .8,
+c     +            .65, .85,  .85,
+c     +            .65, .9,   .9,
+c     +            .65, .95,  .95,
+c     +            .65,   1.,   1./
+       else if (ipal.eq.2) then
+c dark blue into yellow
+       do i=2,nl+2
+         rgbv(1,i)=.15+float(i-2)*((1.-.15)/float(nl))
+         rgbv(2,i)=float(i-2)/float(nl)
+         rgbv(3,i)=float(nl+2-i)/float(nl)
+       enddo
+C     +            .15,  .0,   1.,
+C     +            .25,  .2,  .8,
+C     +            .35,  .3,  .7,
+C     +            .43,  .4,  .6,
+C     +            .50,  .5,  .53,
+C     +            .60,  .6,  .47,
+C     +            .70,  .7,  .40,
+C     +            .80,  .8,  .30,
+C     +            .9 ,  .9,  .20,
+C     +            1. ,  1.,  .00,
+       else if (ipal.eq.3) then
+c gray into white
+       do i=2,nl+2
+         rgbv(1,i)=.3+float(i-2)*((1.-.3)/float(nl))
+         rgbv(2,i)=.3+float(i-2)*((1.-.3)/float(nl))
+         rgbv(3,i)=.3+float(i-2)*((1.-.3)/float(nl))
+       enddo
+c    +            .3,   .3,  .3,
+c    +            .35,  .35, .35,
+c    +            .4,   .4,  .4,
+c    +            .45,  .45, .45,
+c    +            .5,   .5,  .5,
+c    +            .55,  .55, .55,
+c    +            .6,   .6,  .6,
+c    +            .65,  .65, .65,
+c    +            .7,   .7,  .7,
+c    +            .75,  .75, .75,
+c    +            .8,   .8,  .8,
+c    +            .85,  .85, .85,
+c    +            .9,   .9,  .9/
+c    +            .95,  .95, .95,
+c    +            1. ,  1.,   1.,
+c    +            1. ,  1.,   1.,
+c    +            1. ,  1.,   1.,
+c    +            1. ,  1.,   1.,
+c    +            1. ,  1.,   1.,
+c    +            1. ,  1.,   1. /
+       else if (ipal.eq.4) then
+c white into dark gray (linear scale)
+       do i=2,nl+2
+         rgbv(1,i)=.3+float(nl+2-i)*((1.-.3)/float(nl))
+         rgbv(2,i)=.3+float(nl+2-i)*((1.-.3)/float(nl))
+         rgbv(3,i)=.3+float(nl+2-i)*((1.-.3)/float(nl))
+       enddo
+c    +            1.,   1.,   1.,
+c    +            .924, .924, .924,
+c    +            .848, .848, .848,
+c    +            .772, .772, .772,
+c    +            .696, .696, .696,
+c    +            .62,  .62,  .62,
+c    +            .544, .544, .544,
+c    +            .468, .468, .468,
+c    +            .392, .392, .392,
+c    +            .3,   .3,   .3,
+c    +            .3,   .3,   .3,
+c    +            .3,   .3,   .3,
+c    +            .3,   .3,   .3,
+c    +            .3,   .3,   .3/
+       else if (ipal.eq.5) then
+c white into dark gray (quadratic scale)
+       do i=2,nl+2
+         rgbv(1,i)=.1+float(nl+2-i)*((1.-.1)/float(nl))
+         rgbv(2,i)=.1+float(nl+2-i)*((1.-.1)/float(nl))
+         rgbv(3,i)=.1+float(nl+2-i)*((1.-.1)/float(nl))
+       enddo
+C     +             1.,   1.,   1.,
+C     +            .965, .965, .965,
+C     +            .915, .915, .915,
+C     +            .85,  .85,  .85,
+C     +            .77,  .77,  .77,
+C     +            .72,  .72,  .72,
+C     +            .675, .675, .675,
+C     +            .565, .565, .565,
+C     +            .46,  .46,  .46,
+C     +            .38,  .38,  .38,
+C     +            .3,   .3,   .3,
+C     +            .22,  .22,  .22,
+C     +            .17,  .17,  .17,
+C     +            .13,  .13,  .13,
+C     +            .09,  .09,  .09,
+C     +            .04,  .04,  .04,
+C     +            1.,   1.,   1./
+       else if (ipal.eq.6) then
+cc black into yellow, change background color below!!)
+       do i=2,nl+2
+         rgbv(1,i)=.16+float(i-2)*((1.-.16)/float(nl))
+         rgbv(2,i)=.16+float(i-2)*((1.-.16)/float(nl))
+         rgbv(3,i)=.01*exp(float(i-2)/float(nl-3))
+       enddo
+C    +          .16,   .16,   .04,
+C    +          .27,   .27,   .04,
+C    +          .39,   .39,   .04,
+C    +          .51,   .51,   .04,
+C    +          .63,   .63,   .04,
+C    +          .69,   .69,   .06,
+C    +          .75,   .75,   .09,
+C    +          .82,   .82,   .11,
+C    +          .88,   .88,   .14,
+C    +          .94,   .94,   .16,
+       else if (ipal.eq.7) then
+c red into dark blue
+       do i=2,nl+2
+         rgbv(1,i)=1.-float(i-2)/float(nl)
+         rgbv(2,i)=0.
+         rgbv(3,i)=float(i-2)/float(nl)
+       enddo
+c     +            1.0,  0.,  .0,
+c     +            .95,  0.,  .05,
+c     +            .90,  0.,   .1,
+c     +            .85,  0.,  .15,
+c     +            .80,  0.,   .2,
+c     +            .75,  0.,  .25,
+c     +            .70,  0.,   .3,
+c     +            .65,  0.,  .35,
+c     +            .60,  0.,   .4,
+c     +            .55,  0.,  .45,
+c     +            .50,  0.,   .5,
+c     +            .45,  0.,  .55,
+c     +            .40,  0.,   .6,
+c     +            .35,  0.,  .65,
+c     +            .30,  0.,   .7,
+c     +            .25,  0.,  .75,
+c     +            .20,  0.,   .8,
+c     +            .15,  0.,  .85,
+c     +            .10,  0.,   .9,
+c     +            .05,  0.,  .95,
+c     +            0.0,  0.,   1./
+       else if (ipal.eq.8) then
+c dark blue into red
+       do i=2,nl+2
+         rgbv(1,i)=float(i-2)/float(nl)
+         rgbv(2,i)=0.
+         rgbv(3,i)=1.-float(i-2)/float(nl)
+       enddo
+
+       else if (ipal.eq.9) then
+cc white
+       do i=2,nl+2
+         rgbv(1,i)=1.
+         rgbv(2,i)=1.
+         rgbv(3,i)=1.
+       enddo
+
+       else if ((ipal.eq.10).or.(ipal.eq.11).or.(ipal.eq.12)) then
+c10 dark blue (violet)  - minus, red -plus, max colors for min, max value
+c11 seledin (blue sky)  - minus, red -plus, max colors for min, max value
+c12 seledin (blue water)- minus, red -plus, max colors for min, max value
+
+       darks=.8
+       dark=1.-darks
+       do i=2,nl+2
+         rgbv(2,i)=0.
+       enddo
+
+       do i=2,iminus-1+2
+         if(ipal.eq.10) then
+           rgbv(1,i)=float(i-2)/float(iminus)
+           rgbv(2,i)=float(i-2)/float(iminus)
+         else if(ipal.eq.11) then
+           rgbv(1,i)=float(i-2)/float(iminus)
+           rgbv(2,i)=darks+float(i-2)/float(iminus)*dark
+         else if(ipal.eq.12) then
+           rgbv(1,i)=float(i-2)/float(iminus)
+           rgbv(2,i)=1.
+         endif
+       enddo
+       do i=nl-iplus+2,nl+2
+         rgbv(3,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)
+         rgbv(2,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)
+       enddo
+
+       else if ((ipal.eq.13).or.(ipal.eq.14).or.(ipal.eq.15)) then
+c13 dark blue (violet)  - minus, red -plus, equal color scale for values
+c14 seledin (blue sky)  - minus, red -plus, equal color scale for values
+c15 seledin (blue water)- minus, red -plus, equal color scale for values
+
+       darks=.8
+       dark=1.-darks
+       do i=2,nl+2
+         rgbv(2,i)=0.
+       enddo
+
+       if (iminus.gt.iplus) then
+         skip=float(iplus+1)/float(iminus)
+         do i=2,iminus-1+2
+           if(ipal.eq.13) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=dark+float(i-2)/float(iminus)*darks
+           else if(ipal.eq.14) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=darks+float(i-2)/float(iminus)*dark
+           else if(ipal.eq.15) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=1.
+           endif
+         enddo
+         do i=nl+2-iplus,nl+2
+           rgbv(3,i)=1.-float(i-nl+iplus-2+1)/float(iminus)*darks
+           rgbv(2,i)=1.-float(i-nl+iplus-2+1)/float(iminus)*darks
+         enddo
+       elseif (iplus.gt.iminus) then
+         skip=1.-float(iminus)/float(iplus+1)
+         do i=2,iminus-1+2
+           if(ipal.eq.13) then
+            rgbv(1,i)=dark+(float(i-2)/float(iplus+1)+skip)*darks
+            rgbv(2,i)=dark+(float(i-2)/float(iplus+1)+skip)*darks
+           else if(ipal.eq.14) then
+            rgbv(1,i)=dark+(float(i-2)/float(iplus+1)+skip)*darks
+            rgbv(2,i)=darks+(float(i-2)/float(iplus+1)+skip)*dark
+           else if(ipal.eq.15) then
+            rgbv(1,i)=dark+(float(i-2)/float(iplus+1)+skip)*darks
+            rgbv(2,i)=1.
+           endif
+         enddo
+         do i=nl+2-iplus,nl+2
+           rgbv(3,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)*darks
+           rgbv(2,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)*darks
+         enddo
+       else
+         do i=2,iminus-1+2
+           if(ipal.eq.13) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=dark+float(i-2)/float(iminus)*darks
+           else if(ipal.eq.14) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=darks+float(i-2)/float(iminus)*dark
+           else if(ipal.eq.15) then
+            rgbv(1,i)=dark+float(i-2)/float(iminus)*darks
+            rgbv(2,i)=1.
+           endif
+         enddo
+         do i=nl-iplus+2,nl+2
+           rgbv(3,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)*darks
+           rgbv(2,i)=1.-float(i-nl+iplus-2+1)/float(iplus+1)*darks
+         enddo
+       endif
+
+c      if(darks.gt.1.) then
+c        rgbv(1,i)=rgbv(1,i)/darks
+c        rgbv(2,i)=rgbv(2,i)/darks
+c        rgbv(3,i)=rgbv(3,i)/darks
+c      endif
+
+       else if (ipal.eq.16) then
+c light blue into light red
+       do i=2,nl+2
+         rgbv(2,i)=0.
+       enddo
+
+       ihalf=nl/2
+       ihalf2=nl-ihalf
+       do i=2,ihalf-1+2
+         rgbv(1,i)=float(i+ihalf-2)/float(nl)
+         rgbv(2,i)=float(i+ihalf-2)/float(nl)
+       enddo
+       do i=nl-ihalf2+2,nl+2
+         rgbv(3,i)=1.-float(i-nl+ihalf-2+1)/float(nl)
+         rgbv(2,i)=1.-float(i-nl+ihalf-2+1)/float(nl)
+       enddo
+
+       darkness=.85
+       do i=2,nl+2
+         rgbv(1,i)=rgbv(1,i)*darkness
+         rgbv(2,i)=rgbv(2,i)*darkness
+         rgbv(3,i)=rgbv(3,i)*darkness
+       enddo
+
+       else if (ipal.eq.17) then
+
+         rgbv(1,2) =0.800   ! .8  .0  .6
+         rgbv(2,2) =0.000
+         rgbv(3,2) =0.600
+         rgbv(1,3) =0.686   !.686  .0  .6
+         rgbv(2,3) =0.000
+         rgbv(3,3) =0.600
+         rgbv(1,4) =0.571   !.571  .0  .6
+         rgbv(2,4) =0.000
+         rgbv(3,4) =0.600
+         rgbv(1,5) =0.457   !.457  .0  .6
+         rgbv(2,5) =0.000
+         rgbv(3,5) =0.600
+         rgbv(1,6) =0.343   !.343  .0  .6
+         rgbv(2,6) =0.000
+         rgbv(3,6) =0.600
+         rgbv(1,7) =0.229   !.229  .0  .6
+         rgbv(2,7) =0.000
+         rgbv(3,7) =0.600
+
+         rgbv(1,8) =0.000
+         rgbv(2,8) =0.000
+         rgbv(3,8) =0.680
+         rgbv(1,9) =0.000
+         rgbv(2,9) =0.000
+         rgbv(3,9) =0.760
+         rgbv(1,10)=0.000
+         rgbv(2,10)=0.000
+         rgbv(3,10)=0.840
+         rgbv(1,11)=0.000
+         rgbv(2,11)=0.000
+         rgbv(3,11)=0.920
+         rgbv(1,12)=0.000
+         rgbv(2,12)=0.314
+         rgbv(3,12)=1.000
+         rgbv(1,13)=0.000
+         rgbv(2,13)=0.429
+         rgbv(3,13)=1.000
+         rgbv(1,14)=0.000
+         rgbv(2,14)=0.543
+         rgbv(3,14)=1.000
+         rgbv(1,15)=0.000
+         rgbv(2,15)=0.657
+         rgbv(3,15)=1.000
+         rgbv(1,16)=0.000
+         rgbv(2,16)=0.771
+         rgbv(3,16)=1.000
+         rgbv(1,17)=0.000
+         rgbv(2,17)=0.886
+         rgbv(3,17)=1.000
+         rgbv(1,18)=0.000
+         rgbv(2,18)=1.000
+         rgbv(3,18)=1.000
+         rgbv(1,19)=0.000
+         rgbv(2,19)=0.400
+         rgbv(3,19)=0.000
+         rgbv(1,20)=0.000
+         rgbv(2,20)=0.431
+         rgbv(3,20)=0.000
+         rgbv(1,21)=0.000
+         rgbv(2,21)=0.462
+         rgbv(3,21)=0.000
+         rgbv(1,22)=0.000
+         rgbv(2,22)=0.492
+         rgbv(3,22)=0.000
+         rgbv(1,23)=0.000
+         rgbv(2,23)=0.523
+         rgbv(3,23)=0.000
+         rgbv(1,24)=0.000
+         rgbv(2,24)=0.554
+         rgbv(3,24)=0.000
+         rgbv(1,25)=0.000
+         rgbv(2,25)=0.585
+         rgbv(3,25)=0.000
+         rgbv(1,26)=0.000
+         rgbv(2,26)=0.615
+         rgbv(3,26)=0.000
+         rgbv(1,27)=0.000
+         rgbv(2,27)=0.646
+         rgbv(3,27)=0.000
+         rgbv(1,28)=0.000
+         rgbv(2,28)=0.677
+         rgbv(3,28)=0.000
+         rgbv(1,29)=0.000
+         rgbv(2,29)=0.708
+         rgbv(3,29)=0.000
+         rgbv(1,30)=0.000
+         rgbv(2,30)=0.738
+         rgbv(3,30)=0.000
+         rgbv(1,31)=0.000
+         rgbv(2,31)=0.769
+         rgbv(3,31)=0.000
+         rgbv(1,32)=0.000
+         rgbv(2,32)=0.800
+         rgbv(3,32)=0.000
+         rgbv(1,33)=0.800
+         rgbv(2,33)=0.450
+         rgbv(3,33)=0.000
+         rgbv(1,34)=0.800
+         rgbv(2,34)=0.483
+         rgbv(3,34)=0.000
+         rgbv(1,35)=0.800
+         rgbv(2,35)=0.517
+         rgbv(3,35)=0.000
+         rgbv(1,36)=0.800
+         rgbv(2,36)=0.550
+         rgbv(3,36)=0.000
+         rgbv(1,37)=0.800
+         rgbv(2,37)=0.583
+         rgbv(3,37)=0.000
+         rgbv(1,38)=0.800
+         rgbv(2,38)=0.617
+         rgbv(3,38)=0.000
+         rgbv(1,39)=0.800
+         rgbv(2,39)=0.650
+         rgbv(3,39)=0.000
+         rgbv(1,40)=0.800
+         rgbv(2,40)=0.699
+         rgbv(3,40)=0.000
+         rgbv(1,41)=0.832
+         rgbv(2,41)=0.747
+         rgbv(3,41)=0.000
+         rgbv(1,42)=0.863
+         rgbv(2,42)=0.796
+         rgbv(3,42)=0.000
+         rgbv(1,43)=0.895
+         rgbv(2,43)=0.844
+         rgbv(3,43)=0.000
+         rgbv(1,44)=0.927
+         rgbv(2,44)=0.893
+         rgbv(3,44)=0.000
+         rgbv(1,45)=0.958
+         rgbv(2,45)=0.941
+         rgbv(3,45)=0.000
+         rgbv(1,46)=0.990
+         rgbv(2,46)=0.990
+         rgbv(3,46)=0.000
+         rgbv(1,47)=1.000
+         rgbv(2,47)=0.300
+         rgbv(3,47)=0.000
+         rgbv(1,48)=1.000
+         rgbv(2,48)=0.364
+         rgbv(3,48)=0.000
+         rgbv(1,49)=1.000
+         rgbv(2,49)=0.429
+         rgbv(3,49)=0.000
+         rgbv(1,50)=1.000
+         rgbv(2,50)=0.493
+         rgbv(3,50)=0.000
+         rgbv(1,51)=1.000
+         rgbv(2,51)=0.557
+         rgbv(3,51)=0.000
+         rgbv(1,52)=1.000
+         rgbv(2,52)=0.621
+         rgbv(3,52)=0.000
+         rgbv(1,53)=1.000
+         rgbv(2,53)=0.686
+         rgbv(3,53)=0.000
+         rgbv(1,54)=1.000
+         rgbv(2,54)=0.750
+         rgbv(3,54)=0.000
+         rgbv(1,55)=0.600
+         rgbv(2,55)=0.000
+         rgbv(3,55)=0.000
+         rgbv(1,56)=0.667
+         rgbv(2,56)=0.000
+         rgbv(3,56)=0.000
+         rgbv(1,57)=0.733
+         rgbv(2,57)=0.000
+         rgbv(3,57)=0.000
+         rgbv(1,58)=0.800
+         rgbv(2,58)=0.000
+         rgbv(3,58)=0.000
+         rgbv(1,59)=0.867
+         rgbv(2,59)=0.000
+         rgbv(3,59)=0.000
+         rgbv(1,60)=0.933
+         rgbv(2,60)=0.000
+         rgbv(3,60)=0.000
+         rgbv(1,61)=1.000
+         rgbv(2,61)=0.000
+         rgbv(3,61)=0.000
+
+      endif
+
+c     print *,iflg,'Palete:',ipal
+      do 101 i=2,nl+2
+c      print *,'i=',i,' ',rgbv(1,i),' ',rgbv(2,i),' ',rgbv(3,i)
+       call gscr(1,i,rgbv(1,i),rgbv(2,i),rgbv(3,i))
+ 101  continue
+
+      return
+      end
+
+
+      subroutine bndary
+      call plotif (0.,0.,0)
+      call plotif (1.,0.,1)
+      call plotif (1.,1.,1)
+      call plotif (0.,1.,1)
+      call plotif (0.,0.,1)
+      call plotif (0.,0.,2)
+      return
+      end
+
+
+      subroutine cpmpxy(imap,xinp,yinp,xotp,yotp)
+c
+c Transform contours to overlay various mapping transformations:
+c imap= 0 - Cartesian data: no transformation necessary
+c imap= 1 - Lat/Lon transformation
+c imap=-1 - inverse Lat/Lon transformation
+c imap= 2 - Rho/Theta transformation
+c imap=-2 - inverse Rho/Theta transformation
+c imap= 3 - X-identity,  Y-terrain-following transformation
+c
+      common/topog/ ctp(2000),htp(2000),z0,itop
+c
+c Handle the EZMAP case ...
+c
+      if (abs(imap).eq.1) then
+        if (imap.gt.0) then
+          call maptra (yinp,xinp,xotp,yotp)
+        else
+          call maptri (xinp,yinp,yotp,xotp)
+        end if
+c
+c ... the polar coordinate case ...
+c
+      else if (abs(imap).eq.2) then
+        if (imap.gt.0) then
+          xotp=xinp*cos(.017453292519943*yinp)
+          yotp=xinp*sin(.017453292519943*yinp)
+        else
+          xotp=sqrt(xinp*xinp+yinp*yinp)
+          yotp=57.2957795130823*atan2(yinp,xinp)
+        end if
+c
+c ... height transformation in the y direction ...
+c
+      else if(imap.eq.3) then
+
+c The height transformation in x direction is linear
+        xotp = xinp
+c Find next lowest x data point & transform it so that it can be
+c used as an array index
+	call cpgetr('xc1',xc1)
+        x = xinp-int(xc1)
+c Distance between next lowest data point and contour point
+        iix=int(x)
+        difx=x-float(iix)
+c Find next lowest y data point
+        y = yinp
+c Distance between next lowest data point and contour point
+        iy=int(y)
+        dify=y-float(iy)
+c Find next highest X and Y data points,
+c and make sure they are in the domain.
+        ixp1 = min0(jx,iix+1)
+        iyp1 = min0(kx ,iy+1)
+c Linear interpolation between points to give height at contour point
+
+        zr=(1-itop)*yinp + itop*(yinp*( htp(ifix(xinp))
+     1    +(ifix(xinp)-xinp)*(htp(ifix(xinp))-htp(ifix(xinp+1.))))
+     1    +(ctp(ifix(xinp))+(ifix(xinp)-xinp)*(ctp(ifix(xinp))
+     1    -ctp(ifix(xinp+1.))))*(z0-yinp))
+        yotp=zr
+c
+c If imap isn't specified as above, then do an identity transformation.
+c
+      else
+          xotp = xinp
+          yotp = yinp
+      endif
+
+      return
+      end
+

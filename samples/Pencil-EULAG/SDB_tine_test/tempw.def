@@ -1,0 +1,32 @@
+#if (IOWFLAG == 0)
+#if (IOWTAPE == 3) /* force to write to double precision archive */
+      real*8 temp(n,m,l)
+      real*8 fval
+#endif
+#if (IOWTAPE == 2) /* force to write to single precision archive */
+      real*4 temp(n,m,l)
+      real*4 fval
+#endif
+#if (IOWTAPE == 1)
+      dimension temp(n,m,l)
+      real fval
+#endif
+#endif
+
+#if (IOWFLAG == 1)
+#if (IOWTAPE == 3) /* force to write to double precision archive */
+      real*8 temp(npa,mpa,l)
+      real*8 fval
+#endif
+#if (IOWTAPE == 2) /* force to write to single precision archive */
+      real*4 temp(npa,mpa,l)
+      real*4 fval
+#endif
+    nn = 2
+    mm = 1
+    ll = 2
+#if (IOWTAPE == 1)
+      dimension temp(npa,mpa,l)
+      real fval
+#endif
+#endif

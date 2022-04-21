@@ -1,0 +1,11 @@
+#if (PARALLEL == 1)
+#if (SGI_O2K > 0)
+#if (PVM_IO == 1)
+      include '/usr/array/PVM/include/fpvm3.h'
+#endif
+#else
+#if (PVM_IO == 1)
+      include '/opt/ctl/mpt/mpt/include/fpvm3.h'
+#endif
+#endif
+#endif

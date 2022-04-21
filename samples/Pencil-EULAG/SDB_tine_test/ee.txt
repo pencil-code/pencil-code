@@ -1,0 +1,905 @@
+ *** STARTING TIME ***
+ *** date: Fri Jan 28 14:16:28 2022
+  ****************** 
+           COMPUTATIONAL PARAMETERS
+ SPHERE: meridional grid = +/-  84.375 degrees
+           radius = 417594.0 kms
+ n,m,l            =   16   16   16     lagr,ior =    0    2
+ npr_x,npr_y      =    2    2
+ dx,dy,dz,dt      = 0.1640E+09 0.8199E+08 0.1869E+08 0.5000E+04
+ nt,nplot,nstore  =  101   10  102
+ ibcx,ibcy,ibcz   =    1    1    0
+ irlx,irly,irdbc  =    0    0    0
+ iab,iabth,iabqw  =    0    0    0
+ zab,towz         = 0.0000E+00 0.1555E+09
+ towxL,towxR,towy = 0.1000E+11 0.1000E+11 0.8640E+05
+ dxabL,dxabR,dyab        = 0.00 0.00 0.00 deg
+  ****************** 
+           BASIC STATE
+ Const wind profile:
+   U00,V00        = 0.0000E+00 0.0000E+00
+ Const stability profile:
+   N              =  0.0000E+00 lipps =  1
+ Ri0 = infinity
+  ****************** 
+           PHYSICAL PARAMETERS
+ icorio,ivis,itke =    1    1    0
+ moist,ice        =    0    0
+  ****************** 
+           TRANSFORMATION PARAMETERS
+ mountain scales:
+   Lx,Ly,h0       = 0.0000E+00 0.0000E+00 0.0000E+00
+  ****************** 
+                it, time:    0   0.00
+   rhmin,  rhmx: 0.1042E+04 0.4773E+04
+  rhsmin, rhsmx: 0.1674E+03 0.5639E+04
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:  0.0000000000000000E+00  0.0000000000000000E+00
+ thmx, thmn: -0.1032971148179274E+07 -0.1043973636265373E+07  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav:   3   0   0   0
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=        3 dt(sec)=5000.00 time(solar days)=   0.01
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 601 900 601
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=        6 dt(sec)=5000.00 time(solar days)=   0.01
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 750 900 750
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=        9 dt(sec)=5000.00 time(solar days)=   0.02
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 800 900 800
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       12 dt(sec)=5000.00 time(solar days)=   0.02
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 825 900 825
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       15 dt(sec)=5000.00 time(solar days)=   0.03
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 840 900 840
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       18 dt(sec)=5000.00 time(solar days)=   0.03
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 850 900 850
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       21 dt(sec)=5000.00 time(solar days)=   0.04
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 857 900 857
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       24 dt(sec)=5000.00 time(solar days)=   0.05
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 862 900 862
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       27 dt(sec)=5000.00 time(solar days)=   0.05
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 866 900 866
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       30 dt(sec)=5000.00 time(solar days)=   0.06
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 870 900 870
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       33 dt(sec)=5000.00 time(solar days)=   0.06
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 872 900 872
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       36 dt(sec)=5000.00 time(solar days)=   0.07
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 875 900 875
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       39 dt(sec)=5000.00 time(solar days)=   0.08
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 877 900 877
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       42 dt(sec)=5000.00 time(solar days)=   0.08
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 878 900 878
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       45 dt(sec)=5000.00 time(solar days)=   0.09
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 880 900 880
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       48 dt(sec)=5000.00 time(solar days)=   0.09
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 881 900 881
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       51 dt(sec)=5000.00 time(solar days)=   0.10
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 882 900 882
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       54 dt(sec)=5000.00 time(solar days)=   0.10
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 883 900 883
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       57 dt(sec)=5000.00 time(solar days)=   0.11
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 884 900 884
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       60 dt(sec)=5000.00 time(solar days)=   0.12
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 885 900 885
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       63 dt(sec)=5000.00 time(solar days)=   0.12
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 885 900 885
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       66 dt(sec)=5000.00 time(solar days)=   0.13
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 886 900 886
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       69 dt(sec)=5000.00 time(solar days)=   0.13
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 887 900 887
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       72 dt(sec)=5000.00 time(solar days)=   0.14
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 887 900 887
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       75 dt(sec)=5000.00 time(solar days)=   0.14
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 888 900 888
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       78 dt(sec)=5000.00 time(solar days)=   0.15
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 888 900 888
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       81 dt(sec)=5000.00 time(solar days)=   0.16
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 888 900 888
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       84 dt(sec)=5000.00 time(solar days)=   0.16
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 889 900 889
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       87 dt(sec)=5000.00 time(solar days)=   0.17
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 889 900 889
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       90 dt(sec)=5000.00 time(solar days)=   0.17
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 890 900 890
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       93 dt(sec)=5000.00 time(solar days)=   0.18
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 890 900 890
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       96 dt(sec)=5000.00 time(solar days)=   0.19
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 890 900 890
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+
+           it=       99 dt(sec)=5000.00 time(solar days)=   0.19
+ u=                    NaN
+ cour,lipsh,courB:        NaN        NaN 0.0000E+00
+ cour,lipsh:        NaN        NaN
+ umax, umin:                     NaN                     NaN
+ vmax, vmin:                     NaN                     NaN
+ wmax, wmin:                     NaN                     NaN
+ pmax, pmin:                     NaN                     NaN
+ thmx, thmn:                     NaN                     NaN  thsum:                     NaN
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2804059999500000E+09  0.2804059999500000E+09
+ ispc,chmx,chmn,chav: 1        NaN        NaN 0.0000E+00
+ ispc,chmx,chmn,chav: 2        NaN        NaN 0.0000E+00
+ dvmx,dvmn,dvav,dvsd:        NaN        NaN        NaN        NaN
+             eer,eem:        NaN        NaN
+ niter,nitav,miter,mitav: 900 890 900 890
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1        NaN        NaN
+ k,ommx,ommn:   16 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1        NaN        NaN
+ i,ummx,ummn:   16-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1        NaN        NaN
+ j,vmmx,vmmn:   16-0.1000E+16 0.1000E+16
+ Pe #, Item #,  Count type,  # calls,     timer
+    0    1    main               1      15.0000
+    0    2    initial            1       0.0000
+    0    3    timestep        1010       0.0000
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ -------------------------------------------------
+ 
+    0    1    main               1      15.0000
+    0    2    initial            1       0.0000
+    0    3    timestep        1010       0.0000
+    0    4    moistmod           0       0.0000
+    0    5    timetrans          0       0.0000
+    0   30    advec              0       0.0000
+    0   40    dissip             0       0.0000
+ 
+ *** ENDING TIME ***
+ *** date: Fri Jan 28 14:16:43 2022

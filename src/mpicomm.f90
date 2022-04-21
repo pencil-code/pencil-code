@@ -10295,6 +10295,8 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
           if (.not.llast_proc_x) il2=il2+1
 !
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
+print *, 'PENCIL lenx', iproc,il1, il2, l1,l2!, x(l1), x(l2)
+print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
 !
           if (frgn_setup%lnprocx_mismat) then
 !
@@ -10371,33 +10373,36 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
               istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
               if (loptest(lnonblock)) then
                 peer=frgn_setup%peer_rng(1)
-                do iv=1,3
+                do iv=1,nvars
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
                 enddo
               else       ! EULAG case
                 peer=frgn_setup%peer_rng(1)
-                do iv=1,3
+                do iv=1,nvars
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
+print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
                 enddo
               endif
 
             endif
           enddo
         endif
-if (lroot) then
-  t2 = MPI_WTIME()
-  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
-  tcount = tcount + 1
-endif
+!if (lroot) then
+!  t2 = MPI_WTIME()
+!  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
+!  tcount = tcount + 1
+!endif
 !write(20+iproc) frgn_buffer
 !if (.not.loptest(lnonblock))then
 !  print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !else
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
-print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
@@ -10421,25 +10426,31 @@ print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buff
       use General, only: loptest,linear_interpolate_1d
 
       real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
-      integer :: ivar1, ivar2
+      integer :: ivar1, ivar2, lf1
       logical, optional :: lnonblock
       integer, parameter :: ytag=115
       integer :: istart_y,istart_z,istop_y,istop_z,px,py,pz,partner,ll,nvars
 
       !if (mod(frgn_setup%dims(2),nygrid)==0 .and. mod(frgn_setup%dims(3),nzgrid)==0) then
+      lf1 = 1
 !
 ! Interpolate/scatter data to array f
 !
       if (trim(frgn_setup%name)=='EULAG') then           
-        if (loptest(lnonblock)) then
-          call mpiwait(frgn_setup%recv_req(px))
-          if(size(f,1)==mx) then
-            f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU
-print *,'PENCIL MINMAX W 1',iproc, minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
-          else
-            f(:,:,:,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU            
-print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
-          endif
+        if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
+!print *, 'PENCIL UU2EVAL 2 ', iproc, mx, ivar1, ivar2,size(f,1),size(f,2), size(f,3), size(f,4)
+        if (size(f,1)==mx) then
+          if(size(frgn_buffer,1).gt.nx) lf1 = 2
+          f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+print *,'PENCIL MINMAX W 1',iproc, size(frgn_buffer(lf1:,:,:,:)),size(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)),minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
+!print *,'PENCIL MINMAX W 1',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+
+        else
+          if(size(frgn_buffer,1).gt.size(f,1)) lf1 = 2
+          f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
+print *,'PENCIL MINMAX W 2',iproc,size(frgn_buffer(lf1:,:,:,:)), size(f),minval(f(:,:,:,ivar1:ivar2)), maxval(f(:,:,:,ivar1:ivar2))
+!print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+        endif
 !if(size(f,1)==mx) then
 !  print *, 'PENCIL - MIN MAX W - FIN',iproc, minval(f(:,:,:,1)), maxval(f(:,:,:,1))
 !else
@@ -10447,7 +10458,7 @@ print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
 !endif
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
-        endif     
+       
       else if (lfirst_proc_yz) then 
         if (frgn_setup%lnprocx_mismat) then
           nvars=ivar2-ivar1+1

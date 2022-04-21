@@ -1,0 +1,8 @@
+!     parameter(iconv= 0,idiv=1)
+      parameter(iconv=-1,idiv=1,iuvsf=0)
+      parameter(nd1=1,nd2=n) ! nd1=100,nd2=200
+      parameter(md1=1,md2=m) ! md1=80,md2=200
+      parameter(ld1=1,ld2=l) ! ld2=31
+      parameter(nd=(nd2-nd1+1)/idiv)
+      parameter(md=(md2-md1+1)/idiv)
+      parameter(ld=(ld2-ld1+1)/idiv)

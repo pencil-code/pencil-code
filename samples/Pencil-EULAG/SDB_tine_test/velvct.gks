@@ -1,0 +1,1526 @@
+
+      SUBROUTINE VELVCT (U,LU,V,LV,M,N,FLO,HI,NSET,LENGTH)
+C
+      COMMON/VPLT/ IFLV,IVU1,IVU2,IVRT
+C DECLARATIONS -
+C
+      COMMON /VEC1/   ASH        ,EXT        ,ICTRFG     ,ILAB       ,
+     +                IOFFD      ,IOFFM      ,ISX        ,ISY        ,
+     +                RMN        ,RMX        ,SIDE       ,SIZE       ,
+     +                XLT        ,YBT        ,ZMN        ,ZMX
+C
+      COMMON /VEC2/   BIG,IX0,IX1,INCX,IY0,IY1,INCY
+      COMMON/LITARR/ LITARFL
+COLD  DATA LITARFL/1/
+C
+C FORCE THE BLOCK DATA ROUTINE, WHICH SETS DEFAULT VARIABLES, TO LOAD.
+C
+      EXTERNAL        VELDAT
+C
+C ARGUMENT DIMENSIONS.
+C
+      DIMENSION       U(LU,N)    ,V(LV,N)    ,SPV(2)
+        CHARACTER*14    LABEL
+        REAL WIND(4), VIEW(4), IAR(4)
+      COMMON/TOPOG/ CTP(2000),HTP(2000),Z0,ITOP
+C
+C ---------------------------------------------------------------------
+C
+C INTERNAL PARAMETERS OF VELVCT ARE AS FOLLOWS.  THE DEFAULT VALUES OF
+C THESE PARAMETERS ARE DECLARED IN THE BLOCK DATA ROUTINE VELDAT.
+C
+C                        NAME   DEFAULT  FUNCTION
+C                        ----   -------  --------
+C
+C                        BIG   R1MACH(2) CONSTANT USED TO INITIALIZE
+C                                        POSSIBLE SEARCH FOR HI.
+C
+C                        EXT     0.25    THE LENGTHS OF THE SIDES OF THE
+C                                        PLOT ARE PROPORTIONAL TO M AND
+C                                        N WHEN NSET IS LESS THAN OR
+C                                        EQUAL TO ZERO, EXCEPT WHEN
+C                                        MIN(M,N)/MAX(M,N) IS LESS THAN
+C                                        EXT, IN WHICH CASE A SQUARE
+C                                        GRAPH IS PLOTTED.
+C
+C                        ICTRFG    1     FLAG TO CONTROL THE POSITION OF
+C                                        THE ARROW RELATIVE TO  A BASE
+C                                        POINT AT (MX,MY).
+C
+C                                        ZERO - CENTER AT (MX,MY)
+C
+C                                        POSITIVE - TAIL AT (MX,MY)
+C
+C                                        NEGATIVE -  HEAD AT (MX,MY)
+C
+C                        ILAB      0     FLAG TO CONTROL THE DRAWING OF
+C                                        LINE LABELS.
+C
+C                                        ZERO - DO NOT DRAW THE LABELS
+C
+C                                        NON-ZERO - DRAW THE LABELS
+C
+C                        INCX      1     X-COORDINATE STEP SIZE FOR LESS
+C                                        DENSE ARRAYS.
+C
+C                        INCY      1     Y-COORDINATE STEP SIZE.
+C
+C                        IOFFD     0     FLAG TO CONTROL NORMALIZATION
+C                                        OF LABEL NUMBERS.
+C
+C                                        ZERO - INCLUDE A DECIMAL POINT
+C                                        WHEN POSSIBLE
+C
+C                                        NON-ZERO - NORMALIZE ALL LABEL
+C                                        NUMBERS BY ASH
+C
+C                        IOFFM     0     FLAG TO CONTROL PLOTTING OF
+C                                        THE MESSAGE BELOW THE PLOT.
+C
+C                                        ZERO - PLOT THE MESSAGE
+C
+C                                        NON-ZERO - DO NOT PLOT IT
+C
+C                        RMN     160.    ARROW SIZE BELOW WHICH THE
+C                                        HEAD NO LONGER SHRINKS, ON A
+C                                        2**15 X 2**15 GRID.
+C
+C                        RMX    6400.    ARROW SIZE ABOVE WHICH THE
+C                                        HEAD NO LONGER GROWS LARGER,
+C                                        ON A 2**15 X 2**15 GRID.
+C
+C                        SIDE    0.90    LENGTH OF LONGER EDGE OF PLOT.
+C                                        (SEE ALSO EXT.)
+C
+C                        SIZE    256.    WIDTH OF THE CHARACTERS IN
+C                                        VECTOR LABELS, ON A 2**15 X
+C                                        2**15 GRID.
+C
+C                        XLT     0.05    LEFT HAND EDGE OF THE PLOT.
+C                                        (0 IS THE LEFT EDGE OF THE
+C                                        FRAME, 1 THE RIGHT EDGE.)
+C
+C                        YBT     0.05    BOTTOM EDGE OF THE PLOT (0 IS
+C                                        THE BOTTOM OF THE FRAME, 1 THE
+C                                        TOP OF THE FRAME.)
+C
+C ---------------------------------------------------------------------
+C
+C INTERNAL FUNCTIONS WHICH MAY BE MODIFIED FOR DATA TRANSFORMATION -
+C
+C                        SCALE    COMPUTES A SCALE FACTOR USED IN THE
+C                                 DETERMINATION OF THE LENGTH OF THE
+C                                 VECTOR TO BE DRAWN.
+C
+C                        DIST     COMPUTES THE LENGTH OF A VECTOR.
+C
+C                        FX       RETURNS THE X INDEX AS THE
+C                                 X-COORDINATE OF THE VECTOR BASE.
+C
+C                        MXF      RETURNS THE X-COORDINATE OF THE VECTOR
+C                                 HEAD.
+C
+C                        FY       RETURNS THE Y INDEX AS THE
+C                                 Y-COORDINATE OF THE VECTOR BASE.
+C
+C                        MYF      RETURNS THE Y-COORDINATE OF THE VECTOR
+C                                 HEAD.
+C
+C                        VLAB     THE VALUE FOR THE VECTOR LABEL WHEN
+C                                 ILAB IS NON-ZERO.
+C
+      SAVE
+      FX(XX,YY) = XX
+C      FY(XX,YY) = YY
+
+COLD
+C      FY(XX,YY)=YY+ITOP*((CTP(IFIX(XX))+(IFIX(XX)-XX)*(CTP(IFIX(XX))-
+C     1CTP(IFIX(XX+1.))))*(Z0-YY))
+
+      FY(X,Y)=(1-ITOP)*Y + ITOP*(Y*( HTP(IFIX(X))
+     1           +(IFIX(X)-X)*(HTP(IFIX(X))-HTP(IFIX(X+1.))))
+     1+(CTP(IFIX(X))+(IFIX(X)-X)*(CTP(IFIX(X))-CTP(IFIX(X+1.))))*(Z0-Y))
+
+      DIST(XX,YY) = SQRT(XX*XX+YY*YY)
+      MXF(XX,YY,UU,VV,SFXX,SFYY,MXX,MYY) = MXX+IFIX(SFXX*UU)
+      MYF(XX,YY,UU,VV,SFXX,SFYY,MXX,MYY) = MYY+IFIX(SFYY*VV)
+      SCALEX(MM,NN,INCXX,INCYY,HAA,XX1,XX2,YY1,YY2,XX3,XX4,YY3,YY4,
+     1       LENN) = LENN/HAA
+      SCALEY(MM,NN,INCXX,INCYY,HAA,XX1,XX2,YY1,YY2,XX3,XX4,YY3,YY4,
+     1       LENN) = SCALEX(MM,NN,INCXX,INCYY,HAA,XX1,XX2,YY1,YY2,XX3,
+     2                                                 XX4,YY3,YY4,LENN)
+      VLAB(UU,VV,II,JJ) = DIST(UU,VV)
+C
+C ---------------------------------------------------------------------
+C
+C THE FOLLOWING CALL IS FOR GATHERING STATISTICS ON LIBRARY USE AT NCAR.
+C
+C      CALL Q8QST4 ('NSSL','VELVCT','VELVCT','VERSION  6')
+C
+C INITIALIZE AND TRANSFER SOME ARGUMENTS TO LOCAL VARIABLES.
+C
+      LITARFL=1
+      BIG = -1.E-15
+      MX = LU
+      MY = LV
+      NX = M
+      NY = N
+      GL = FLO
+      HA = HI
+      ISP = 0
+      NC = 0
+C
+C COMPUTE CONSTANTS BASED ON THE ADDRESSABILITY OF THE PLOTTER.
+C
+      CALL GETUSV('XF',ISX)
+      CALL GETUSV('YF',ISY)
+      ISX = 2**(15-ISX)
+      ISY = 2**(15-ISY)
+      LEN = LENGTH*ISX
+C
+C SET UP THE SCALING OF THE PLOT.
+C
+        CALL GQCNTN(IERR,IOLDNT)
+        CALL GQNT(IOLDNT,IERR,WIND,VIEW)
+        X1 = VIEW(1)
+        X2 = VIEW(2)
+        Y1 = VIEW(3)
+        Y2 = VIEW(4)
+        X3 = WIND(1)
+        X4 = WIND(2)
+        Y3 = WIND(3)
+        Y4 = WIND(4)
+        CALL GETUSV('LS',IOLLS)
+C
+C     SAVE NORMALIZATION TRANSFORMATION 1
+C
+      CALL GQNT(1,IERR,WIND,VIEW)
+C
+      IF (NSET) 101,102,106
+C
+  101 X3 = 1.
+      X4 = FLOAT(NX)
+      Y3 = 1.
+      Y4 = FLOAT(NY)
+      GO TO 105
+C
+  102 X1 = XLT
+      X2 = XLT+SIDE
+      Y1 = YBT
+      Y2 = YBT+SIDE
+      X3 = 1.
+      Y3 = 1.
+      X4 = FLOAT(NX)
+      Y4 = FLOAT(NY)
+      IF (AMIN1(X4,Y4)/AMAX1(X4,Y4) .LT. EXT) GO TO 105
+C
+      IF (NX-NY) 103,105,104
+  103 X2 = XLT+SIDE*X4/Y4
+      GO TO 105
+  104 Y2 = YBT+SIDE*Y4/X4
+C
+  105 CALL SET(X1,X2,Y1,Y2,X3,X4,Y3,Y4,1)
+      IF (NSET .EQ. 0) CALL PERIM (1,0,1,0)
+C
+C CALCULATE A LENGTH IF NONE PROVIDED.
+C
+  106 IF (LEN .NE. 0) GO TO 107
+      CALL FL2INT(FX(1.,1.),FY(1.,1.),MX,MY)
+      CALL FL2INT(FX(FLOAT(1+INCX),FLOAT(1+INCY)),
+     +            FY(FLOAT(1+INCX),FLOAT(1+INCY)),LX,LY)
+      LEN = SQRT((FLOAT(MX-LX)**2+FLOAT(MY-LY)**2)/2.)
+C
+C SET UP SPECIAL VALUES.
+C
+  107 IF (ISP .EQ. 0) GO TO 108
+      SPV1 = SPV(1)
+      SPV2 = SPV(2)
+      IF (ISP .EQ. 4) SPV2 = SPV(1)
+C
+C FIND THE MAXIMUM VECTOR LENGTH.
+C
+  108 IF (HA .GT. 0.) GO TO 118
+C
+      HA = BIG
+      IF (ISP .EQ. 0) GO TO 115
+C
+      DO 114 J=IY0,NY-IY1,INCY
+         DO 113 I=IX0,NX-IX1,INCX
+            IF (ISP-2) 109,111,110
+  109       IF (U(I,J) .EQ. SPV1) GO TO 113
+            GO TO 112
+  110       IF (U(I,J) .EQ. SPV1) GO TO 113
+  111       IF (V(I,J) .EQ. SPV2) GO TO 113
+  112       HA = AMAX1(HA,DIST(U(I,J),V(I,J)))
+  113    CONTINUE
+  114 CONTINUE
+      GO TO 126
+C
+  115 DO 117 J=IY0,NY-IY1,INCY
+         DO 116 I=IX0,NX-IX1,INCX
+            HA = AMAX1(HA,DIST(U(I,J),V(I,J)))
+  116    CONTINUE
+  117 CONTINUE
+C
+C BRANCH IF NULL VECTOR SIZE.
+C
+C  126 IF (HA .LE. 0.) GO TO 125
+  126 IF (HA .LE. 1.E-15) GO TO 125
+C
+C COMPUTE SCALE FACTORS.
+C
+  118 SFX = SCALEX(M,N,INCX,INCY,HA,X1,X2,Y1,Y2,X3,X4,Y3,Y4,LEN)
+      SFY = SCALEY(M,N,INCX,INCY,HA,X1,X2,Y1,Y2,X3,X4,Y3,Y4,LEN)
+      IOFFDT = IOFFD
+      IF (GL.NE.0.0 .AND. (ABS(GL).LT.0.1 .OR. ABS(GL).GE.1.E5))
+     1    IOFFDT = 1
+      IF (HA.NE.0.0 .AND. (ABS(HA).LT.0.1 .OR. ABS(HA).GE.1.E5))
+     1    IOFFDT = 1
+      ASH = 1.0
+      IF (IOFFDT .NE. 0)
+     1    ASH = 10.**(3-IFIX(ALOG10(AMAX1(ABS(GL),ABS(HA)))-500.)-500)
+      IZFLG = 0
+C
+C COMPUTE ZMN AND ZMX, WHICH ARE USED IN DRWVEC.
+C
+      ZMN = LEN*(GL/HA)
+      ZMX = FLOAT(LEN)+.01
+C
+C DRAW THE VECTORS.
+C
+      DO 123 J=IY0,NY-IY1,INCY
+         DO 122 I=IX0,NX-IX1,INCX
+            UI = U(I,J)
+            VI = V(I,J)
+            IF (ISP-1) 121,119,120
+  119       IF (UI-SPV1) 121,122,121
+  120       IF (VI .EQ. SPV2) GO TO 122
+            IF (ISP .GE. 3) GO TO 119
+  121       X = I
+            Y = J
+            CALL FL2INT(FX(X,Y),FY(X,Y),MX,MY)
+            LX = MAX0(1,MXF(X,Y,UI,VI,SFX,SFY,MX,MY))
+            LY = MAX0(1,MYF(X,Y,UI,VI,SFX,SFY,MX,MY))
+            IZFLG = 1
+            IF (ILAB .NE. 0) CALL ENCD(VLAB(UI,VI,I,J),ASH,LABEL,NC,
+     +                                                           IOFFDT)
+            CALL DRWVEC (MX,MY,LX,LY,LABEL,NC)
+  122    CONTINUE
+  123 CONTINUE
+C
+      IF (IZFLG .EQ. 0) GO TO 125
+C
+      IF (IOFFM .NE. 0) GO TO 200
+      IF(IVRT.EQ.0) THEN
+      write (label,904) ha
+  904 FORMAT(F7.2,5H  M/S)
+      ENDIF
+      IF(IVRT.EQ.1) THEN
+      write (label,9041) ha
+ 9041 FORMAT(E10.3,4H vrt)
+      ENDIF
+C
+C     TURN OFF CLIPPING SO ARROW CAN BE DRAWN
+C
+      CALL GQCLIP(IER,ICLP,IAR)
+      CALL GSCLIP(0)
+      IF(LITARFL.EQ.1) THEN
+#if (COLORPL == 1)
+       CALL DRWVEC (24768,3608,24768+LEN,3608,LABEL,14)
+#else
+       CALL DRWVEC (28768,384,28768+LEN,384,LABEL,14)
+#endif
+      ENDIF
+C     RESTORE CLIPPING
+C
+      CALL GSCLIP(ICLP)
+        IX = 1+(28768+LEN/2)/ISX
+        IY = 1+(608-(5*ISX*MAX0(256/ISX,8))/4)/ISY
+        CALL GQCNTN(IER,ICN)
+        CALL GSELNT(0)
+C        XC = CPUX(IX)
+C        YC = CPUY(IY)
+C      CALL WTSTR (XC,YC,
+C     +                         'MAXIMUM VECTOR',MAX0(256/ISX,8),0,0)
+      CALL GSELNT(ICN)
+C
+C DONE.
+C
+      GOTO 200
+C
+C ZERO-FIELD ACTION.
+C
+  125 IX = 1+16384/ISX
+        IY = 1+16384/ISY
+        CALL GQCNTN(IER,ICN)
+        CALL GSELNT(0)
+        XC = CPUX(IX)
+        YC = CPUY(IY)
+      CALL WTSTR (XC,YC,
+     +                             'ZERO FIELD',MAX0(960/ISX,8),0,0)
+        CALL GSELNT(ICN)
+C
+C RESTORE TRANS 1 AND LOG SCALING AND ORIGINAL TRANS NUMBER
+C
+  200 CONTINUE
+      IF (NSET .LE. 0) THEN
+        CALL SET(VIEW(1),VIEW(2),VIEW(3),VIEW(4),
+     -           WIND(1),WIND(2),WIND(3),WIND(4),IOLLS)
+      ENDIF
+      CALL GSELNT(IOLDNT)
+      RETURN
+      END
+      SUBROUTINE DRWVEC (M1,M2,M3,M4,LABEL,NC)
+C
+C THIS ROUTINE IS CALLED TO DRAW A SINGLE ARROW.  IT HAS ARGUMENTS AS
+C FOLLOWS -
+C
+C     (M1,M2)  -  COORDINATE OF ARROW BASE, ON A 2**15 X 2**15 GRID.
+C     (M3,M4)  -  COORDINATE OF ARROW HEAD, ON A 2**15 X 2**15 GRID.
+C     LABEL    -  CHARACTER LABEL TO BE PUT ABOVE ARROW.
+C     NC       -  NUMBER OF CHARACTERS IN LABEL.
+C
+        SAVE
+C
+C
+      COMMON /VEC1/   ASH        ,EXT        ,ICTRFG     ,ILAB       ,
+     +                IOFFD      ,IOFFM      ,ISX        ,ISY        ,
+     +                RMN        ,RMX        ,SIDE       ,SIZE       ,
+     +                XLT        ,YBT        ,ZMN        ,ZMX
+        CHARACTER*14 LABEL
+C
+C SOME LOCAL PARAMETERS ARE THE FOLLOWING -
+C
+C     CL     -  ARROW HEAD LENGTH SCALE FACTOR - EACH SIDE OF THE ARROW
+C               HEAD IS THIS LONG RELATIVE TO THE LENGTH OF THE ARROW
+C     ST,CT  -  SIN AND COS OF THE ARROW HEAD ANGLE
+C     PI     -  THE CONSTANT PI
+C     TWOPI  -  TWO TIMES PI
+C     OHOPI  -  ONE HALF OF PI
+C     FHOPI  -  FIVE HALVES OF PI
+C
+      DATA    CL / .25 /
+      DATA    ST / .382683432365090 /
+      DATA    CT / .923879532511287 /
+      DATA    PI / 3.14159265358979 /
+      DATA TWOPI / 6.28318530717959 /
+      DATA OHOPI / 1.57079632679489 /
+      DATA FHOPI / 7.85398163397448 /
+C
+      DIST(X,Y) = SQRT(X*X+Y*Y)
+C
+C TRANSFER ARGUMENTS TO LOCAL VARIABLES AND COMPUTE THE VECTOR LENGTH.
+C
+      N1 = M1
+      N2 = M2
+      N3 = M3
+      N4 = M4
+      DX = N3-N1
+      DY = N4-N2
+      R = DIST(DX,DY)
+C
+C SORT OUT POSSIBLE CASES, DEPENDING ON VECTOR LENGTH.
+C
+      IF (R .LE. ZMN) RETURN
+C
+c     IF (R .LE. ZMX) GO TO 101
+      GO TO 101
+C
+C PLOT A POINT FOR VECTORS WHICH ARE TOO LONG.
+C
+c     CALL PLOTIT (N1,N2,0)
+c     CALL PLOTIT (N1,N2,1)
+c     CALL PLOTIT (N1,N2,0)
+c     RETURN
+C
+C ADJUST THE COORDINATES OF THE VECTOR ENDPOINTS AS IMPLIED BY THE
+C CENTERING OPTION.
+C
+  101 IF (ICTRFG) 102,103,104
+C
+  102 N3 = N1
+      N4 = N2
+      N1 = FLOAT(N1)-DX
+      N2 = FLOAT(N2)-DY
+      GO TO 104
+C
+  103 N1 = FLOAT(N1)-.5*DX
+      N2 = FLOAT(N2)-.5*DY
+      N3 = FLOAT(N3)-.5*DX
+      N4 = FLOAT(N4)-.5*DY
+C
+C DETERMINE THE COORDINATES OF THE POINTS USED TO DRAW THE ARROWHEAD.
+C
+  104 C1 = CL
+C
+C SHORT ARROWS HAVE HEADS OF A FIXED MINIMUM SIZE.
+C
+      IF (R .LT. RMN) C1 = RMN*CL/R
+C
+C LONG ARROWS HAVE HEADS OF A FIXED MAXIMUM SIZE.
+C
+      IF (R .GT. RMX) C1 = RMX*CL/R
+C
+C COMPUTE THE COORDINATES OF THE HEAD.
+C
+      N5 = FLOAT(N3)-C1*(CT*DX-ST*DY)
+      N6 = FLOAT(N4)-C1*(CT*DY+ST*DX)
+      N7 = FLOAT(N3)-C1*(CT*DX+ST*DY)
+      N8 = FLOAT(N4)-C1*(CT*DY-ST*DX)
+C
+C PLOT THE ARROW.
+C
+      CALL PLOTIT (N1,N2,0)
+      CALL PLOTIT (N3,N4,1)
+      CALL PLOTIT (N5,N6,0)
+      CALL PLOTIT (N3,N4,1)
+      CALL PLOTIT (N7,N8,1)
+      CALL PLOTIT (0,0,0)
+C
+C IF REQUESTED, PUT THE VECTOR MAGNITUDE ABOVE THE ARROW.
+C
+      IF (NC .EQ. 0) RETURN
+      PHI = ATAN2(DY,DX)
+      IF (AMOD(PHI+FHOPI,TWOPI) .GT. PI) PHI = PHI+PI
+      IX = 1+IFIX(.5*FLOAT(N1+N3)+1.25*
+     +            FLOAT(ISX*MAX0(IFIX(SIZE)/ISX,8))*COS(PHI+OHOPI))/ISX
+      IY = 1+IFIX(.5*FLOAT(N2+N4)+1.25*
+     +            FLOAT(ISX*MAX0(IFIX(SIZE)/ISX,8))*SIN(PHI+OHOPI))/ISY
+        CALL GQCNTN(IER,ICN)
+        CALL GSELNT(0)
+        XC = CPUX(IX)
+        YC = CPUY(IY)
+      CALL WTSTR(XC,YC,
+     +           LABEL,MAX0(IFIX(SIZE)/ISX,8),
+     +                                     IFIX(57.2957795130823*PHI),0)
+        CALL GSELNT(ICN)
+      RETURN
+      END
+      SUBROUTINE VELVEC (U,LU,V,LV,M,N,FLO,HI,NSET)
+C
+C THIS ROUTINE SUPPORTS USERS OF THE OLD VERSION OF THIS PACKAGE.
+C
+      DIMENSION       U(LU,N)    ,V(LV,N)    ,SPV(2)
+C
+        SAVE
+C
+C THE FOLLOWING CALL IS FOR GATHERING STATISTICS ON LIBRARY USE AT NCAR.
+C
+C      CALL Q8QST4 ('CRAYLIB','VELVCT','VELVEC','VERSION  4')
+      CALL VELVCT (U,LU,V,LV,M,N,FLO,HI,NSET,0)
+      RETURN
+      END
+      BLOCK DATA VELDAT
+C
+C THIS 'ROUTINE' DEFINES THE DEFAULT VALUES OF THE VELVCT PARAMETERS.
+C
+        SAVE
+C
+      COMMON /VEC1/   ASH        ,EXT        ,ICTRFG     ,ILAB       ,
+     +                IOFFD      ,IOFFM      ,ISX        ,ISY        ,
+     +                RMN        ,RMX        ,SIDE       ,SIZE       ,
+     +                XLT        ,YBT        ,ZMN        ,ZMX
+C
+      COMMON /VEC2/   BIG,IX0,IX1,INCX,IY0,IY1,INCY
+C
+      DATA     EXT /    0.25 /
+      DATA  ICTRFG /    1    /
+      DATA    ILAB /    0    /
+      DATA   IOFFD /    0    /
+      DATA   IOFFM /    0    /
+      DATA     RMN /  160.00 /
+      DATA     RMX / 6400.00 /
+      DATA    SIDE /    0.90 /
+      DATA    SIZE /  256.00 /
+      DATA     XLT /    0.05 /
+      DATA     YBT /    0.05 /
+      DATA     ZMX /    0.00 /
+      DATA    IX0,IX1,INCX /1,0, 1   /
+      DATA    IY0,IY1,INCY /1,0, 1   /
+C
+C REVISION HISTORY ----------------------------------------------------
+C
+C FEBRUARY, 1979   ADDED REVISION HISTORY
+C                  MODIFIED CODE TO CONFORM TO FORTRAN 66 STANDARD
+C
+C JULY, 1979       FIXED HI VECTOR TRAP AND MESSAGE INDICATING
+C                  MAXIMUM VECTOR PLOTTED.
+C
+C DECEMBER, 1979   CHANGED THE STATISTICS CALL FROM CRAYLIB TO NSSL
+C
+C MARCH, 1981      FIXED SOME FRINGE-CASE ERRORS, CHANGED THE CODE TO
+C                  USE FL2INTT AND PLOTIT INSTEAD OF MXMY, FRSTPT, AND
+C                  VECTOR, AND MADE THE ARROWHEADS NARROWER (45 DEGREES
+C                  APART, RATHER THAN 60 DEGREES APART)
+C
+C FEBRUARY, 1984   PROVIDED A DIMENSION STATEMENT FOR A VARIABLE INTO
+C                  WHICH A TEN-CHARACTER STRING WAS BEING ENCODED.  ON
+C                  THE CRAY, WHEN THE ENCODE WAS DONE, A WORD FOLLOWING
+C                  THE VARIABLE WAS CLOBBERED, BUT THIS APPARENTLY MADE
+C                  NO DIFFERENCE.  ON AT LEAST ONE OTHER MACHINE, THE
+C                  CODE BLEW UP.  (ERROR REPORTED BY GREG WOODS)
+C
+C JULY, 1984       CONVERTED TO FORTRAN77 AND GKS.
+C
+C ---------------------------------------------------------------------
+      END
+      SUBROUTINE STRMLN (U,V,WORK,IMAX,IPTSX,JPTSY,NSET,IER)
+C
+C +-----------------------------------------------------------------+
+C |                                                                 |
+C |                Copyright (C) 1989 by UCAR                       |
+C |        University Corporation for Atmospheric Research          |
+C |                    All Rights Reserved                          |
+C |                                                                 |
+C |                 NCARGRAPHICS  Version 3.00                      |
+C |                                                                 |
+C +-----------------------------------------------------------------+
+C
+C SUBROUTINE STRMLN (U,V,WORK,IMAX,IPTSX,JPTSY,NSET,IER)
+C
+C DIMENSION OF           U(IMAX,JPTSY) , V(IMAX,JPTSY) ,
+C ARGUMENTS              WORK(2*IMAX*JPTSY)
+C
+C PURPOSE                STRMLN draws a streamline representation of
+C                        the flow field. The representation is
+C                        independent of the flow speed.
+C
+C USAGE                  If the following assumptions are met, use
+C
+C                            CALL EZSTRM  (U,V,WORK,IMAX,JMAX)
+C
+C                          Assumptions:
+C                            --The whole array is to be processed.
+C                            --The arrays are dimensioned
+C                              U(IMAX,JMAX) , V(IMAX,JMAX) and
+C                              WORK(2*IMAX*JMAX).
+C                            --Window and viewport are to be chosen
+C                              by STRMLN.
+C                            --PERIM is to be called.
+C
+C                        If these assumptions are not met, use
+C
+C                            CALL STRMLN (U,V,WORK,IMAX,IPTSX,JPTSY,
+C                                         NSET,IER)
+C
+C                        The user must call FRAME in the calling
+C                        routine.
+C
+C                        The user may change various internal
+C                        parameters via common blocks. See below.
+C
+C ARGUMENTS
+C
+C ON INPUT               U, V
+C                          Two dimensional arrays containing the
+C                          velocity fields to be plotted.
+C
+C                          Note:  If the U AND V components
+C                          are, for example, defined in Cartesian
+C                          coordinates and the user wishes to plot them
+C                          on a different projection (i.e., stereo-
+C                          graphic), then the appropriate
+C                          transformation must be made to the U and V
+C                          components via the functions FU and FV
+C                          (located in DRWSTR).
+C
+C                        WORK
+C                          User provided work array.  The dimension
+C                          of this array must be .GE. 2*IMAX*JPTSY.
+C
+C                          Caution:  This routine does not check the
+C                          size of the work array.
+C
+C                        IMAX
+C                          The first dimension of U and V in the
+C                          calling program. (X-direction)
+C
+C                        IPTSX
+C                          The number of points to be plotted in the
+C                          first subscript direction.  (X-direction)
+C
+C                        JPTSY
+C                          The number of points to be plotted in the
+C                          second subscript direction. (Y-direction)
+C
+C                        NSET
+C                          Flag to control scaling
+C                          > 0  STRMLN assumes that the window
+C                               and viewport have been set by the
+C                               user in such a way as to properly
+C                               scale the plotting instructions
+C                               generated by STRMLN. PERIM is not
+C                               called.
+C                          = 0  STRMLN will establish the window and
+C                               viewport to properly scale the
+C                               plotting instructions to the standard
+C                               configuration. PERIM is called to draw
+C                               the border.
+C                          < 0  STRMLN establishes the window
+C                               and viewport so as to place the
+C                               streamlines within the limits
+C                               of the user's window.  PERIM is
+C                               not called.
+C
+C ON OUTPUT              Only the IER argument may be changed. All
+C                        other arguments are unchanged.
+C
+C
+C                        IER
+C                          =  0 when no errors are detected
+C                          = -1 when the routine is called with ICYC
+C                               .NE. 0  and the data are not cyclic
+C                               (ICYC is an internal parameter
+C                               described below); in this case the
+C                               routine will draw the
+C                               streamlines with the non-cyclic
+C                               interpolation formulas.
+C
+C ENTRY POINTS           STRMLN, DRWSTR, EZSTRM, GNEWPT, CHKCYC
+C
+C COMMON BLOCKS          STR01, STR02, STR03, STR04
+C
+C REQUIRED LIBRARY       GRIDAL, GBYTES, and the SPPS
+C ROUTINES
+C
+C REQUIRED GKS LEVEL     0A
+C
+C I/O                    None
+C
+C PRECISION              Single
+C
+C LANGUAGE               FORTRAN 77
+C
+C HISTORY                Written and standardized in November 1973.
+C
+C                        Converted to FORTRAN 77 and GKS in June, 1984.
+C
+C
+C PORTABILITY            FORTRAN 77
+C
+C ALGORITHM              Wind components are normalized to the value
+C                        of DISPL. The least significant two
+C                        bits of the work array are
+C                        utilized as flags for each grid box. Flag 1
+C                        indicates whether any streamline has
+C                        previously passed through this box.  Flag 2
+C                        indicates whether a directional arrow has
+C                        already appeared in a box. Judicious use
+C                        of these flags prevents overcrowding of
+C                        streamlines and directional arrows.
+C                        Experience indicates that a final pleasing
+C                        picture is produced when streamlines are
+C                        initiated in the center of a grid box. The
+C                        streamlines are drawn in one direction then
+C                        in the opposite direction.
+C
+C REFERENCE              The techniques utilized here are described
+C                        in an article by Thomas Whittaker (U. of
+C                        Wisconsin) which appeared in the notes and
+C                        correspondence section of Monthly Weather
+C                        Review, June 1977.
+C
+C TIMING                 Highly variable
+C                          It depends on the complexity of the
+C                          flow field and the parameters:  DISPL,
+C                          DISPC , CSTOP , INITA , INITB , ITERC ,
+C                          and IGFLG. (See below for a discussion
+C                          of these parameters.) If all values
+C                          are default, then a simple linear
+C                          flow field for a 40 x 40 grid will
+C                          take about 0.4 seconds on the CRAY1-A;
+C                          a fairly complex flow field will take about
+C                          1.5 seconds on the CRAY1-A.
+C
+C
+C INTERNAL PARAMETERS
+C
+C                        NAME     DEFAULT            FUNCTION
+C                        ----     -------            --------
+C
+C                        EXT       0.25      Lengths of the sides of the
+C                                            plot are proportional to
+C                                            IPTSX and JPTSY except in
+C                                            the case when MIN(IPTSX,JPT
+C                                            / MAX(IPTSX,JPTSY) .LT. EXT
+C                                            in that case a square
+C                                            graph is plotted.
+C
+C                        SIDE      0.90      Length of longer edge of
+C                                            plot. (See also EXT.)
+C
+C                        XLT       0.05      Left hand edge of the plot.
+C                                            (0.0 = left edge of frame)
+C                                            (1.0 = right edge of frame)
+C
+C                        YBT       0.05      Bottom edge of the plot.
+C                                            (0.0 = bottom ; 1.0 = top)
+C
+C                                            (YBT+SIDE and XLT+SIDE must
+C                                            be .LE. 1. )
+C
+C                        INITA     2         Used to precondition grid
+C                                            boxes to be eligible to
+C                                            start a streamline.
+C                                            For example, a value of 4
+C                                            means that every fourth
+C                                            grid box is eligible ; a
+C                                            value of 2 means that every
+C                                            other grid box is eligible.
+C                                            (see INITB)
+C
+C                        INITB     2         Used to precondition grid
+C                                            boxes to be eligible for
+C                                            direction arrows.
+C                                            If the user changes the
+C                                            default values of INITA
+C                                            and/or INITB, it should
+C                                            be done such that
+C                                            MOD(INITA,INITB) = 0 .
+C                                            For a dense grid try
+C                                            INITA=4 and INITB=2 to
+C                                            reduce the CPU time.
+C
+C                        AROWL     0.33      Length of direction arrow.
+C                                            For example, 0.33 means
+C                                            each directional arrow will
+C                                            take up a third of a grid
+C                                            box.
+C
+C                        ITERP     35        Every 'ITERP' iterations
+C                                            the streamline progress
+C                                            is checked.
+C
+C                        ITERC     -99       The default value of this
+C                                            parameter is such that
+C                                            it has no effect on the
+C                                            code. When set to some
+C                                            positive value, the program
+C                                            will check for streamline
+C                                            crossover every 'ITERC'
+C                                            iterations. (The routine
+C                                            currently does this every
+C                                            time it enters a new grid
+C                                            box.)
+C                                            Caution:  When this
+C                                            parameter is activated,
+C                                            CPU time will increase.
+C
+C                        IGFLG     0         A value of zero means that
+C                                            the sixteen point Bessel
+C                                            Interpolation Formula will
+C                                            be utilized where possible;
+C                                            when near the grid edges,
+C                                            quadratic and bi-linear
+C                                            interpolation  will be
+C                                            used. This mixing of
+C                                            interpolation schemes can
+C                                            sometimes cause slight
+C                                            raggedness near the edges
+C                                            of the plot.  If IGFLG.NE.0
+C                                            then only the bilinear
+C                                            interpolation formula
+C                                            is used; this will generall
+C                                            result in slightly faster
+C                                            plot times but a less
+C                                            pleasing plot.
+C
+C                        IMSG      0         If zero, then no missing
+C                                            U and V components are
+C                                            present.
+C                                            If .NE. 0, STRMLN will
+C                                            utilize the
+C                                            bi-linear interpolation
+C                                            scheme and terminate if
+C                                            any data points are missing
+C
+C                        UVMSG     1.E+36    Value assigned to a missing
+C                                            point.
+C
+C                        ICYC      0         Zero means the data are
+C                                            non-cyclic in the X
+C                                            direction.
+C                                            If .NE 0, the
+C                                            cyclic interpolation
+C                                            formulas will be used.
+C                                            (Note:  Even if the data
+C                                            are cyclic in X, leaving
+C                                            ICYC = 0 will do no harm.)
+C
+C                        DISPL     0.33      The wind speed is
+C                                            normalized to this value.
+C                                            (See the discussion below.)
+C
+C                        DISPC     0.67      The critical displacement.
+C                                            If after 'ITERP' iterations
+C                                            the streamline has not
+C                                            moved this distance, the
+C                                            streamline will be
+C                                            terminated.
+C
+C                        CSTOP     0.50      This parameter controls
+C                                            the spacing between
+C                                            streamlines.  The checking
+C                                            is done when a new grid
+C                                            box is entered.
+C
+C DISCUSSION OF          Assume a value of 0.33 for DISPL.  This
+C DISPL,DISPC            means that it will take three steps to move
+C AND CSTOP              across one grid box if the flow was all in the
+C                        X direction. If the flow is zonal, then a
+C                        larger value of DISPL is in order.
+C                        If the flow is highly turbulent, then
+C                        a smaller value is in order.  The smaller
+C                        DISPL, the more the CPU time.  A value
+C                        of 2 to 4 times DISPL is a reasonable value
+C                        for DISPC.  DISPC should always be greater
+C                        than DISPL. A value of 0.33 for CSTOP would
+C                        mean that a maximum of three stream-
+C                        lines will be drawn per grid box. This max
+C                        will normally only occur in areas of singular
+C                        points.
+C
+C                                            ***************************
+C                                            Any or all of the above
+C                                            parameters may be changed
+C                                            by utilizing common blocks
+C                                            STR02 and/or STR03
+C                                            ***************************
+C
+C                        UXSML               A number which is small
+C                                            compared to the average
+C                                            normalized u component.
+C                                            Set automatically.
+C
+C                        NCHK      750       This parameter is located
+C                                            in DRWSTR. It specifies the
+C                                            length of the circular
+C                                            lists  used for checking
+C                                            for STRMLN crossovers.
+C                                            For most plots this number
+C                                            may be reduced to 500
+C                                            or less and the plots will
+C                                            not be altered.
+C
+C                        ISKIP               Number of bits to be
+C                                            skipped to get to the
+C                                            least two significant bits
+C                                            in a floating point number.
+C                                            The default value is set to
+C                                            I1MACH(5) - 2 . This value
+C                                            may have to be changed
+C                                            depending on the target
+C                                            computer; see subroutine
+C                                            DRWSTR.
+C
+C
+C
+      DIMENSION       U(IMAX,JPTSY)         ,V(IMAX,JPTSY)           ,
+     1                WORK(1)
+      DIMENSION       WNDW(4)               ,VWPRT(4)
+C
+      COMMON /STR01/  IS         ,IEND      ,JS        ,JEND
+     1             ,  IEND1      ,JEND1     ,I         ,J
+     2             ,  X          ,Y         ,DELX      ,DELY
+     3             ,  ICYC1      ,IMSG1     ,IGFL1
+      COMMON /STR02/  EXT , SIDE , XLT , YBT
+CIBM8 common /str03/ arowl,uvmsg,displ,dispc,cstop,
+CIBM81               inita,initb,iterp,iterc,igflg,imsg,icyc
+      COMMON /STR03/  INITA , INITB , AROWL , ITERP , ITERC , IGFLG
+     1             ,  IMSG , UVMSG , ICYC , DISPL , DISPC , CSTOP
+C
+      SAVE
+C
+      EXT       = 0.25
+      SIDE      = 0.90
+      XLT       = 0.05
+      YBT       = 0.05
+C
+C     INITA     = 2
+C     INITB     = 2
+      AROWL     = 0.40
+C      AROWL     = 0.33
+      ITERP     = 35
+      ITERC     = -99
+      IGFLG     = 0
+      ICYC      = 0
+      IMSG      = 0
+      UVMSG     = 1.E+36
+      DISPL     = 0.33
+      DISPC     = 0.67
+c     CSTOP     = 0.50
+C
+C THE FOLLOWING CALL IS FOR MONITORING LIBRARY USE AT NCAR
+C
+C      CALL Q8QST4 ( 'GRAPHX', 'STRMLN', 'STRMLN', 'VERSION 01')
+C
+      IER = 0
+C
+C LOAD THE COMMUNICATION COMMON BLOCK WITH PARAMETERS
+C
+      IS = 1
+      IEND = IPTSX
+      JS = 1
+      JEND = JPTSY
+      IEND1 = IEND-1
+      JEND1 = JEND-1
+      IEND2 = IEND-2
+      JEND2 = JEND-2
+      XNX = FLOAT(IEND-IS+1)
+      XNY = FLOAT(JEND-JS+1)
+      ICYC1 = ICYC
+      IGFL1 = IGFLG
+      IMSG1 = 0
+C
+C IF ICYC .NE. 0 THEN CHECK TO MAKE SURE THE CYCLIC CONDITION EXISTS.
+C
+      IF (ICYC1.NE.0) CALL CHKCYC  (U,V,IMAX,JPTSY,IER)
+C
+C SAVE ORIGINAL  NORMALIZATION TRANSFORMATION NUMBER
+C
+      CALL GQCNTN ( IERR,NTORIG )
+C
+C SET UP SCALING
+C
+      IF (NSET) 10 , 20 , 60
+   10 CALL GETUSV ( 'LS' , ITYPE )
+      CALL GQNT ( NTORIG,IERR,WNDW,VWPRT )
+      CALL GETUSV('LS',IOLLS)
+      X1 = VWPRT(1)
+      X2 = VWPRT(2)
+      Y1 = VWPRT(3)
+      Y2 = VWPRT(4)
+      X3 = IS
+      X4 = IEND
+      Y3 = JS
+      Y4 = JEND
+      GO TO  55
+C
+   20 ITYPE = 1
+      X1 = XLT
+      X2 = (XLT+SIDE)
+      Y1 = YBT
+      Y2 = (YBT+SIDE)
+      X3 = IS
+      X4 = IEND
+      Y3 = JS
+      Y4 = JEND
+      IF (AMIN1(XNX,XNY)/AMAX1(XNX,XNY).LT.EXT) GO TO  50
+      IF (XNX-XNY)  30, 50, 40
+   30 X2 = (SIDE*(XNX/XNY) + XLT)
+      GO TO  50
+   40 Y2 = (SIDE*(XNY/XNX) + YBT)
+   50 CONTINUE
+C
+C CENTER THE PLOT
+C
+      DX = 0.25*( 1. - (X2-X1) )
+      DY = 0.25*( 1. - (Y2-Y1) )
+      X1 = (XLT+DX)
+      X2 = (X2+DX )
+      Y1 = (YBT+DY)
+      Y2 = (Y2+DY )
+C
+   55 CONTINUE
+C
+C SAVE NORMALIZATION TRANSFORMATION 1
+C
+      CALL GQNT ( 1,IERR,WNDW,VWPRT )
+C
+C DEFINE AND SELECT NORMALIZATION TRANS, SET LOG SCALING
+C
+      CALL SET(X1,X2,Y1,Y2,X3,X4,Y3,Y4,ITYPE)
+C
+      IF (NSET.EQ.0) CALL PERIM (1,0,1,0)
+C
+   60 CONTINUE
+C
+C DRAW THE STREAMLINES
+C .   BREAK THE WORK ARRAY INTO TWO PARTS.  SEE DRWSTR FOR FURTHER
+C .   COMMENTS ON THIS.
+C
+      CALL DRWSTR (U,V,WORK(1),WORK(IMAX*JPTSY+1),IMAX,JPTSY)
+C
+C RESET NORMALIATION TRANSFORMATION 1 TO ORIGINAL VALUES
+C
+      IF (NSET .LE. 0) THEN
+        CALL SET(VWPRT(1),VWPRT(2),VWPRT(3),VWPRT(4),
+     -           WNDW(1),WNDW(2),WNDW(3),WNDW(4),IOLLS)
+      ENDIF
+      CALL GSELNT (NTORIG)
+C
+      RETURN
+      END
+      SUBROUTINE DRWSTR  (U,V,UX,VY,IMAX,JPTSY)
+C
+      PARAMETER (NCHK=750)
+C
+C THIS ROUTINE DRAWS THE STREAMLINES.
+C .   THE XCHK AND YCHK ARRAYS SERVE AS A CIRCULAR LIST. THEY
+C .   ARE USED TO PREVENT LINES FROM CROSSING ONE ANOTHER.
+C
+C THE WORK ARRAY HAS BEEN BROKEN UP INTO TWO ARRAYS FOR CLARITY.  THE
+C .   TOP HALF OF WORK (CALLED UX) WILL HAVE THE NORMALIZED (AND
+C .   POSSIBLY TRANSFORMED) U COMPONENTS AND WILL BE USED FOR BOOK
+C .   KEEPING.  THE LOWER HALF OF THE WORK ARRAY (CALLED VY) WILL
+C .   CONTAIN THE NORMALIZED (AND POSSIBLY TRANSFORMED) V COMPONENTS.
+C
+      DIMENSION       U(IMAX,JPTSY)         ,V(IMAX,JPTSY)
+     1             ,  UX(IMAX,JPTSY)        ,VY(IMAX,JPTSY)
+      COMMON /STR01/  IS         ,IEND      ,JS        ,JEND
+     1             ,  IEND1      ,JEND1     ,I         ,J
+     2             ,  X          ,Y         ,DELX      ,DELY
+     3             ,  ICYC1      ,IMSG1     ,IGFL1
+CIBM8 common /str03/ arowl,uvmsg,displ,dispc,cstop,
+CIBM81               inita,initb,iterp,iterc,igflg,imsg,icyc
+      COMMON /STR03/  INITA , INITB , AROWL , ITERP , ITERC , IGFLG
+     1             ,  IMSG , UVMSG , ICYC , DISPL , DISPC , CSTOP
+      COMMON /STR04/  XCHK(NCHK) ,YCHK(NCHK) , UXSML, NUMCHK
+      COMMON/TOPOG/ CTP(2000),HTP(2000),Z0,ITOP
+C
+C
+        SAVE
+C
+C STATEMENT FUNCTIONS FOR SPATIAL AND VELOCITY TRANSFORMATIONS.
+C .   (IF THE USER WISHES OTHER TRANSFORMATIONS  REPLACE THESE STATEMENT
+C .   FUNCTIONS WITH THE APPROPRIATE NEW ONES, OR , IF THE TRANSFORMA-
+C .   TIONS ARE COMPLICATED DELETE THESE STATEMENT FUNCTIONS
+C .   AND ADD EXTERNAL ROUTINES WITH THE SAME NAMES TO DO THE TRANS-
+C .   FORMING.)
+C
+      FX(X,Y) = X
+c     FY(X,Y) = Y
+
+COLD
+C      FY(XX,YY)=YY+ITOP*((CTP(IFIX(XX))+(IFIX(XX)-XX)*(CTP(IFIX(XX))-
+C     1CTP(IFIX(XX+1.))))*(Z0-YY))
+
+      FY(X,Y)=(1-ITOP)*Y + ITOP*(Y*( HTP(IFIX(X))
+     1           +(IFIX(X)-X)*(HTP(IFIX(X))-HTP(IFIX(X+1.))))
+     1+(CTP(IFIX(X))+(IFIX(X)-X)*(CTP(IFIX(X))-CTP(IFIX(X+1.))))*(Z0-Y))
+
+      FU(X,Y) = X
+      FV(X,Y) = Y
+C
+C INITIALIZE
+C
+      ISKIP    = I1MACH(5) - 2
+      ISKIP1   = ISKIP + 1
+      UXSML    = 1.E-30
+C
+C
+      NUMCHK   = NCHK
+      LCHK = 1
+      ICHK = 1
+      XCHK(1) = 0.
+      YCHK(1) = 0.
+      KFLAG = 0
+      IZERO = 0
+      IONE = 1
+      ITWO = 2
+C
+C
+C COMPUTE THE X AND Y NORMALIZED (AND POSSIBLY TRANSFORMED)
+C .   DISPLACEMENT COMPONENTS (UX AND VY).
+C
+      DO  40 J=JS,JEND
+      DO  30 I=IS,IEND
+      UX(I,J) = FU(U(I,J),V(I,J))
+      VY(I,J) = FV(U(I,J),V(I,J))
+      IF (UX(I,J).NE.0. .OR. VY(I,J).NE.0.) THEN
+        CON = DISPL/SQRT(UX(I,J)*UX(I,J) + VY(I,J)*VY(I,J))
+        UX(I,J) = CON*UX(I,J)
+        VY(I,J) = CON*VY(I,J)
+      END IF
+C
+C BOOKKEEPING IS DONE IN THE LEAST SIGNIFICANT BITS OF THE UX ARRAY.
+C .   WHEN UX(I,J) IS EXACTLY ZERO THIS CAN PRESENT SOME PROBLEMS.
+C .   TO GET AROUND THIS PROBLEM, SET IT TO A RELATIVELY SMALL NUMBER.
+C
+      IF(UX(I,J) .EQ. 0.) UX(I,J) = UXSML
+C
+C MASK OUT THE LEAST SIGNIFICANT TWO BITS AS FLAGS FOR EACH GRID BOX
+C .   A GRID BOX IS ANY REGION SURROUNDED BY FOUR GRID POINTS.
+C .   FLAG 1 INDICATES WHETHER ANY STREAMLINE HAS PREVIOUSLY PASSED
+C .          THROUGH THIS BOX.
+C .   FLAG 2 INDICATES WHETHER ANY DIRECTIONAL ARROW HAS ALREADY
+C .          APPEARED IN THIS BOX.
+C .   JUDICIOUS USE OF THESE FLAGS PREVENTS OVERCROWDING OF
+C .   STREAMLINES AND DIRECTIONAL ARROWS.
+C
+      CALL SBYTES( UX(I,J) , IZERO , ISKIP , 2 , 0 , 1 )
+C
+      IF (MOD(I,INITA).NE.0 .OR. MOD(J,INITA).NE.0)
+     1    CALL SBYTES( UX(I,J) , IONE , ISKIP1, 1 , 0 , 1 )
+      IF (MOD(I,INITB).NE.0 .OR. MOD(J,INITB).NE.0)
+     1    CALL SBYTES( UX(I,J) , IONE , ISKIP , 1 , 0 , 1 )
+C
+   30 CONTINUE
+   40 CONTINUE
+C
+   50 CONTINUE
+C
+C START A STREAMLINE. EXPERIENCE HAS SHOWN THAT A PLEASING PICTURE
+C .   WILL BE PRODUCED IF NEW STREAMLINES ARE STARTED ONLY IN GRID
+C .   BOXES THAT PREVIOUSLY HAVE NOT HAD OTHER STREAMLINES PASS THROUGH
+C .   THEM. AS LONG AS A REASONABLY DENSE PATTERN OF AVAILABLE BOXES
+C .   IS INITIALLY PRESCRIBED, THE ORDER OF SCANNING THE GRID PTS. FOR
+C .   AVAILABLE BOXES IS IMMATERIAL
+C
+C FIND AN AVAILABLE BOX FOR STARTING A STREAMLINE
+C
+      IF (KFLAG.NE.0) GO TO  90
+      DO  70 J=JS,JEND1
+      DO  60 I=IS,IEND1
+      CALL GBYTES( UX(I,J) , IUX , ISKIP , 2 , 0 , 1 )
+      IF ( IAND( IUX , IONE ) .EQ. IZERO ) GO TO 80
+   60 CONTINUE
+   70 CONTINUE
+C
+C MUST BE NO AVAILABLE BOXES FOR STARTING A STREAMLINE
+C
+      GO TO 190
+   80 CONTINUE
+C
+C INITILIZE PARAMETERS FOR STARTING A STREAMLINE
+C .   TURN THE BOX OFF FOR STARTING A STREAMLINE
+C .   CHECK TO SEE IF THIS BOX HAS MISSING DATA (IMSG.NE.0). IF SO ,
+C .      FIND A NEW STARTING BOX
+C
+      CALL SBYTES( UX(I,J) , IONE , ISKIP1 , 1 , 0 , 1 )
+      IF ( IMSG.EQ.0) GO TO 85
+      IF (U(I,J).EQ.UVMSG .OR. U(I,J+1).EQ.UVMSG .OR.
+     1    U(I+1,J).EQ.UVMSG .OR. U(I+1,J+1).EQ.UVMSG) GO TO 50
+C
+   85 ISAV = I
+      JSAV = J
+      KFLAG = 1
+      PLMN1 = +1.
+      GO TO 100
+   90 CONTINUE
+C
+C COME TO HERE TO DRAW IN THE OPPOSITE DIRECTION
+C
+      KFLAG = 0
+      PLMN1 = -1.
+      I = ISAV
+      J = JSAV
+  100 CONTINUE
+C
+C INITIATE THE DRAWING SEQUENCE
+C .   START ALL STREAMLINES IN THE CENTER OF A BOX
+C
+      NBOX = 0
+      ITER = 0
+      IF (KFLAG.NE.0) ICHKB = ICHK+1
+      IF (ICHKB.GT.NUMCHK) ICHKB = 1
+      X = FLOAT(I)+0.5
+      Y = FLOAT(J)+0.5
+      XBASE = X
+      YBASE = Y
+      CALL FL2INT (FX(X,Y),FY(X,Y),IFX,IFY)
+      CALL PLOTIT (IFX,IFY,0)
+      CALL GBYTES( UX(I,J) , IUX , ISKIP , 2 , 0 , 1 )
+      IF ( (KFLAG.EQ.0) .OR. (IAND( IUX , ITWO ) .NE. 0 ) ) GO TO 110
+C
+C GRID BOX MUST BE ELIGIBLE FOR A DIRECTIONAL ARROW
+C
+      CALL GNEWPT (UX,VY,IMAX,JPTSY)
+      MFLAG = 1
+      GO TO 160
+C
+  110 CONTINUE
+C
+C PLOT LOOP
+C .   CHECK TO SEE IF THE STREAMLINE HAS ENTERED A NEW GRID BOX
+C
+      IF (I.NE.IFIX(X) .OR. J.NE.IFIX(Y)) GO TO 120
+C
+C MUST BE IN SAME BOX CALCULATE THE DISPLACEMENT COMPONENTS
+C
+      CALL GNEWPT (UX,VY,IMAX,JPTSY)
+C
+C UPDATE THE POSITION AND DRAW THE VECTOR
+C
+      X = X+PLMN1*DELX
+      Y = Y+PLMN1*DELY
+      CALL FL2INT (FX(X,Y),FY(X,Y),IFX,IFY)
+      CALL PLOTIT (IFX,IFY,1)
+      ITER = ITER+1
+C
+C CHECK STREAMLINE PROGRESS EVERY 'ITERP' OR SO ITERATIONS
+C
+      IF (MOD(ITER,ITERP).NE.0) GO TO 115
+      IF (ABS(X-XBASE).LT.DISPC  .AND. ABS(Y-YBASE).LT.DISPC ) GO TO  50
+      XBASE = X
+      YBASE = Y
+      GO TO 110
+  115 CONTINUE
+C
+C SHOULD THE CIRCULAR LISTS BE CHECKED FOR STREAMLINE CROSSOVER
+C
+      IF ( (ITERC.LT.0) .OR. (MOD(ITER,ITERC).NE.0) ) GO TO 110
+C
+C MUST WANT THE CIRCULAR LIST CHECKED
+C
+      GO TO 130
+  120 CONTINUE
+C
+C MUST HAVE ENTERED A NEW GRID BOX  CHECK FOR THE FOLLOWING :
+C .   (1) ARE THE NEW POINTS ON THE GRID
+C .   (2) CHECK FOR MISSING DATA IF MSG DATA FLAG (IMSG) HAS BEEN SET.
+C .   (3) IS THIS BOX ELIGIBLE FOR A DIRECTIONAL ARROW
+C .   (4) LOCATION OF THIS ENTRY VERSUS OTHER STREAMLINE ENTRIES
+C
+      NBOX = NBOX+1
+C
+C CHECK (1)
+C
+      IF (IFIX(X).LT.IS .OR. IFIX(X).GT.IEND1) GO TO  50
+      IF (IFIX(Y).LT.JS .OR. IFIX(Y).GT.JEND1) GO TO  50
+C
+C CHECK (2)
+C
+      IF ( IMSG.EQ.0) GO TO 125
+      II = IFIX(X)
+      JJ = IFIX(Y)
+      IF (U(II,JJ).EQ.UVMSG .OR. U(II,JJ+1).EQ.UVMSG .OR.
+     1    U(II+1,JJ).EQ.UVMSG .OR. U(II+1,JJ+1).EQ.UVMSG) GO TO 50
+  125 CONTINUE
+C
+C CHECK (3)
+C
+      CALL GBYTES( UX(I,J) , IUX , ISKIP , 2 , 0 , 1 )
+      IF ( IAND( IUX , ITWO )  .NE. 0) GO TO 130
+      MFLAG = 2
+      GO TO 160
+  130 CONTINUE
+C
+C CHECK (4)
+C
+      DO 140 LOC=1,LCHK
+      IF (ABS( X-XCHK(LOC) ).GT.CSTOP .OR.
+     1    ABS( Y-YCHK(LOC) ).GT.CSTOP) GO TO 140
+      LFLAG = 1
+      IF (ICHKB.LE.ICHK .AND. LOC.GE.ICHKB .AND. LOC.LE.ICHK) LFLAG = 2
+      IF (ICHKB.GE.ICHK .AND. (LOC.GE.ICHKB .OR. LOC.LE.ICHK)) LFLAG = 2
+      IF (LFLAG.EQ.1) GO TO  50
+  140 CONTINUE
+      LCHK = MIN0(LCHK+1,NUMCHK)
+      ICHK = ICHK+1
+      IF (ICHK.GT.NUMCHK) ICHK = 1
+      XCHK(ICHK) = X
+      YCHK(ICHK) = Y
+      I = IFIX(X)
+      J = IFIX(Y)
+      CALL SBYTES( UX(I,J) , IONE , ISKIP1 , 1 , 0 , 1 )
+      IF (NBOX.LT.5) GO TO 150
+      ICHKB = ICHKB+1
+      IF (ICHKB.GT.NUMCHK) ICHKB = 1
+  150 CONTINUE
+      GO TO 110
+C
+  160 CONTINUE
+C
+C THIS SECTION DRAWS A DIRECTIONAL ARROW BASED ON THE MOST RECENT DIS-
+C .   PLACEMENT COMPONENTS ,DELX AND DELY, RETURNED BY GNEWPT. IN EARLIE
+C .   VERSIONS THIS WAS A SEPARATE SUBROUTINE (CALLED DRWDAR). IN THAT
+C .   CASE ,HOWEVER, FX AND FY WERE DEFINED EXTERNAL SINCE THESE
+C .   FUNCTIONS WERE USED BY BOTH DRWSTR AND DRWDAR. IN ORDER TO
+C .   MAKE ALL DEFAULT TRANSFORMATIONS STATEMENT FUNCTIONS I HAVE
+C .   PUT DRWDAR  HERE AND I WILL USE MFLAG TO RETURN  TO THE CORRECT
+C .   LOCATION IN THE CODE.
+C
+C      IF ( (DELX.EQ.0.) .AND. (DELY.EQ.0.) ) GO TO 50
+      IF((ABS(DELX).LE.1.E-15) .AND. (ABS(DELY).LE.1.E-15)) GO TO 50
+C
+      CALL SBYTES( UX(I,J) ,IONE , ISKIP , 1 ,0 , 1 )
+      D = ATAN2(-DELX,DELY)
+      D30 = D+0.5
+  170 YY = -AROWL*COS(D30)+Y
+      XX = +AROWL*SIN(D30)+X
+      CALL FL2INT (FX(XX,YY),FY(XX,YY),IFXX,IFYY)
+      CALL PLOTIT (IFXX,IFYY,1)
+      CALL FL2INT (FX(X,Y),FY(X,Y),IFX,IFY)
+      CALL PLOTIT (IFX,IFY,0)
+      IF (D30.LT.D) GO TO 180
+      D30 = D-0.5
+      GO TO 170
+  180 IF (MFLAG.EQ.1) GO TO 110
+      IF (MFLAG.EQ.2) GO TO 130
+C
+  190 CONTINUE
+C
+C     FLUSH PLOTIT BUFFER
+C
+      CALL PLOTIT(0,0,0)
+      RETURN
+      END
+      SUBROUTINE GNEWPT (UX,VY,IMAX,JPTSY)
+C
+C INTERPOLATION ROUTINE TO CALCULATE THE DISPLACEMANT COMPONENTS
+C .   THE PHILOSPHY HERE IS TO UTILIZE AS MANY POINTS AS POSSIBLE
+C .   (WITHIN REASON) IN ORDER TO OBTAIN A PLEASING AND ACCURATE PLOT.
+C .   INTERPOLATION SCHEMES DESIRED BY OTHER USERS MAY EASILY BE
+C .   SUBSTITUTED IF DESIRED.
+C
+      DIMENSION       UX(IMAX,JPTSY)        ,VY(IMAX,JPTSY)
+      COMMON /STR01/  IS         ,IEND      ,JS        ,JEND
+     1             ,  IEND1      ,JEND1     ,I         ,J
+     2             ,  X          ,Y         ,DELX      ,DELY
+     3             ,  ICYC1      ,IMSG1     ,IGFL1
+CIBM8 common /str03/ arowl,uvmsg,displ,dispc,cstop,
+CIBM81               inita,initb,iterp,iterc,igflg,imsg,icyc
+      COMMON /STR03/  INITA , INITB , AROWL , ITERP , ITERC , IGFLG
+     1             ,  IMSG , UVMSG , ICYC , DISPL , DISPC , CSTOP
+C
+      SAVE
+C
+C FDLI - DOUBLE LINEAR INTERPOLATION FORMULA
+C FBESL - BESSEL 16 PT INTERPOLATION FORMULA ( MOST USED FORMULA )
+C FQUAD - QUADRATIC INTERPOLATION FORMULA
+C
+      FDLI(Z,Z1,Z2,Z3,DX,DY) = (1.-DX)*((1.-DY)*Z +DY*Z1)
+     1                         +     DX *((1.-DY)*Z2+DY*Z3)
+      FBESL(Z,ZP1,ZP2,ZM1,DZ)=Z+DZ*(ZP1-Z+0.25*(DZ-1.)*((ZP2-ZP1-Z+ZM1)
+     1                        +0.666667*(DZ-0.5)*(ZP2-3.*ZP1+3.*Z-ZM1)))
+      FQUAD(Z,ZP1,ZM1,DZ)=Z+0.5*DZ*(ZP1-ZM1+DZ*(ZP1-2.*Z+ZM1))
+C
+      DX = X-AINT(X)
+      DY = Y-AINT(Y)
+C
+      IF( IMSG.NE.0.OR.IGFLG.NE.0) GO TO 20
+C
+      IM1 = I-1
+      IP2 = I+2
+C
+C DETERMINE WHICH INTERPOLATION FORMULA TO USE DEPENDING ON I,J LOCATION
+C .   THE FIRST CHECK IS FOR I,J IN THE GRID INTERIOR.
+C
+      IF (J.GT.JS .AND. J.LT.JEND1 .AND. I.GT.IS .AND. I.LT.IEND1)
+     1    GO TO 30
+      IF (J.EQ.JEND1 .AND. I.GT.IS .AND. I.LT.IEND1) GO TO  40
+      IF (J.EQ.JS) GO TO 20
+C
+      IF (ICYC1.EQ.1) GO TO 10
+C
+C MUST NOT BE CYCLIC
+C
+      IF (I.EQ.IS) GO TO 20
+      IF (I.EQ.IEND1) GO TO  50
+      GO TO 20
+   10 CONTINUE
+C
+C MUST BE CYCLIC IN THE X DIRECTION
+C
+      IF (I.EQ.IS .AND. J.LT.JEND1) GO TO 12
+      IF (I.EQ.IEND1 .AND. J.LT.JEND1) GO TO 14
+      IF (J.EQ.JEND1 .AND. I.EQ.IS) GO TO 16
+      IF (J.EQ.JEND1 .AND. I.EQ.IEND1) GO TO 18
+      GO TO 20
+   12 IM1 = IEND1
+      GO TO 30
+   14 IP2 = IS+1
+      GO TO 30
+   16 IM1 = IEND1
+      GO TO 40
+   18 IP2 = IS+1
+      GO TO 40
+C
+   20 CONTINUE
+C
+C DOUBLE LINEAR INTERPOLATION FORMULA. THIS SCHEME WORKS AT ALL POINTS
+C .   BUT THE RESULTING STREAMLINES ARE NOT AS PLEASING AS THOSE DRAWN
+C .   BY FBESL OR FQUAD. CURRENTLY THIS IS USED AT THIS IS UTILIZED
+C .   ONLY AT CERTAIN BOUNDARY POINTS OR IF IGFLG IS NOT EQUAL TO ZERO.
+C
+      DELX = FDLI (UX(I,J),UX(I,J+1),UX(I+1,J),UX(I+1,J+1),DX,DY)
+      DELY = FDLI (VY(I,J),VY(I,J+1),VY(I+1,J),VY(I+1,J+1),DX,DY)
+      RETURN
+   30 CONTINUE
+C
+C USE A 16 POINT BESSEL INTERPOLATION SCHEME
+C
+      UJM1 = FBESL (UX(I,J-1),UX(I+1,J-1),UX(IP2,J-1),UX(IM1,J-1),DX)
+      UJ   = FBESL (UX(I,J),UX(I+1,J),UX(IP2,J),UX(IM1,J),DX)
+      UJP1 = FBESL (UX(I,J+1),UX(I+1,J+1),UX(IP2,J+1),UX(IM1,J+1),DX)
+      UJP2 = FBESL (UX(I,J+2),UX(I+1,J+2),UX(IP2,J+2),UX(IM1,J+2),DX)
+      DELX = FBESL (UJ,UJP1,UJP2,UJM1,DY)
+      VJM1 = FBESL (VY(I,J-1),VY(I+1,J-1),VY(IP2,J-1),VY(IM1,J-1),DX)
+      VJ   = FBESL (VY(I,J),VY(I+1,J),VY(IP2,J),VY(IM1,J),DX)
+      VJP1 = FBESL (VY(I,J+1),VY(I+1,J+1),VY(IP2,J+1),VY(IM1,J+1),DX)
+      VJP2 = FBESL (VY(I,J+2),VY(I+1,J+2),VY(IP2,J+2),VY(IM1,J+2),DX)
+      DELY = FBESL (VJ,VJP1,VJP2,VJM1,DY)
+      RETURN
+   40 CONTINUE
+C
+C 12 POINT INTERPOLATION SCHEME APPLICABLE TO ONE ROW FROM TOP BOUNDARY
+C
+      UJM1 = FBESL (UX(I,J-1),UX(I+1,J-1),UX(IP2,J-1),UX(IM1,J-1),DX)
+      UJ   = FBESL (UX(I,J),UX(I+1,J),UX(IP2,J),UX(IM1,J),DX)
+      UJP1 = FBESL (UX(I,J+1),UX(I+1,J+1),UX(IP2,J+1),UX(IM1,J+1),DX)
+      DELX = FQUAD (UJ,UJP1,UJM1,DY)
+      VJM1 = FBESL (VY(I,J-1),VY(I+1,J-1),VY(IP2,J-1),VY(IM1,J-1),DX)
+      VJ   = FBESL (VY(I,J),VY(I+1,J),VY(IP2,J),VY(IM1,J),DX)
+      VJP1 = FBESL (VY(I,J+1),VY(I+1,J+1),VY(IP2,J+1),VY(IM1,J+1),DX)
+      DELY = FQUAD (VJ,VJP1,VJM1,DY)
+      RETURN
+   50 CONTINUE
+C
+C 9 POINT INTERPOLATION SCHEME FOR USE IN THE NON-CYCLIC CASE
+C .   AT I=IEND1 ; JS.LT.J AND J.LE.JEND1
+C
+      UJP1 = FQUAD (UX(I,J+1),UX(I+1,J+1),UX(IM1,J+1),DX)
+      UJ   = FQUAD (UX(I,J),UX(I+1,J),UX(IM1,J),DX)
+      UJM1 = FQUAD (UX(I,J-1),UX(I+1,J-1),UX(IM1,J-1),DX)
+      DELX = FQUAD (UJ,UJP1,UJM1,DY)
+      VJP1 = FQUAD (VY(I,J+1),VY(I+1,J+1),VY(IM1,J+1),DX)
+      VJ   = FQUAD (VY(I,J),VY(I+1,J),VY(IM1,J),DX)
+      VJM1 = FQUAD (VY(I,J-1),VY(I+1,J-1),VY(IM1,J-1),DX)
+      DELY = FQUAD (VJ,VJP1,VJM1,DY)
+      RETURN
+      END
+      SUBROUTINE CHKCYC  (U,V,IMAX,JPTSY,IER)
+C
+C CHECK FOR CYCLIC CONDITION
+C
+      DIMENSION       U(IMAX,JPTSY)          ,V(IMAX,JPTSY)
+      COMMON /STR01/  IS         ,IEND      ,JS        ,JEND
+     1             ,  IEND1      ,JEND1     ,I         ,J
+     2             ,  X          ,Y         ,DELX      ,DELY
+     3             ,  ICYC1      ,IMSG1     ,IGFL1
+C
+        SAVE
+      DO  10 J=JS,JEND
+      IF (U(IS,J).NE.U(IEND,J)) GO TO  20
+      IF (V(IS,J).NE.V(IEND,J)) GO TO  20
+   10 CONTINUE
+C
+C MUST BE CYCLIC
+C
+      RETURN
+   20 CONTINUE
+C
+C MUST NOT BE CYCLIC
+C . CHANGE THE PARAMETER AND SET IER = -1
+C
+      ICYC1 = 0
+      IER = -1
+      RETURN
+C
+C-----------------------------------------------------------------------
+C REVISION HISTORY
+C
+C OCTOBER, 1979     FIRST ADDED TO ULIB
+C
+C OCTOBER, 1980     ADDED BUGS SECTION
+C
+C JUNE, 1984        REMOVED STATEMENT FUNCTIONS ANDF AND ORF,
+C                   CONVERTED TO FORTRAN77 AND GKS.
+C
+C MAY, 1988         CHANGED CODE (IN SUBROUTINE DRWSTR) WHICH PROTECTS
+C                   UX ELEMENTS FROM BECOMING ZERO.  THE ORIGINAL CODE
+C                   CAUSED UNDERFLOW ON IBM MACHINES.  (DJK)
+C-----------------------------------------------------------------------
+C
+      END

@@ -1,0 +1,512 @@
+/storage/Guilherme/pencil-code/samples/Pencil-EULAG
+8 CPUs
+USER = guerrero
+Running under MPI
+Setting nodelist to (parker)
+Parker - UFMG, BH, MG,Brazil
+MODULE_[PRE|IN|SUF]FIX="", "_mp_", "_"
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <2>
+$ncpus          =  <8>
+$npops          =  <-n 8>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-24901>
+$hn             =  <parker>
+$masterhost     =  <>
+$mpirun         =  <mpiexec>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <parker>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <24901>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: b9af7973fc31e840fa17ecf596553e3cb8021956
+ M bin/getconf.csh
+ M src/equ.f90
+ M src/general.f90
+ M src/hydro_kinematic.f90
+ M src/mpicomm.f90
+ M src/timestep.f90
+Wed Apr 20 12:36:53 -03 2022
+mpiexec  -n 8  src/start.x 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) no cvsid is given i
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: testfield_general. v. 19193   (2013-06-27 12:55:46) wdobler
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid=          32          32          32
+ units_general: unit_velocity=   1.00000000000000     
+ units_general: unit_density=   1.00000000000000     
+ units_general: unit_length=   1.00000000000000     
+ units_general: unit_magnetic=   3.54490770181103     
+ initialize_testfield: etatest=  0.000000000000000E+000
+ resistivity: constant eta
+ farray_check_maux: naux, maux =            0           3
+WARNING: 
+ farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual numbe
+ r of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| al
+ so possible that someone unintentionally added *optional*
+	| auxiliaries to MAU
+ X CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to
+  src/cparam.local under their
+	| specific application.
+ 
+ start.x has completed successfully
+ 
+0.4u 1.0s 0:00.56 264.2% 0+0k 0+72528io 0pf+0w
+
+Wed Apr 20 12:36:53 -03 2022
+8 CPUs
+USER = guerrero
+Running under MPI
+Setting nodelist to (parker)
+Parker - UFMG, BH, MG,Brazil
+MODULE_[PRE|IN|SUF]FIX="", "_mp_", "_"
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <2>
+$ncpus          =  <8>
+$npops          =  <-n 8>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-25001>
+$hn             =  <parker>
+$masterhost     =  <>
+$mpirun         =  <mpiexec>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <parker>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <25001>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: b9af7973fc31e840fa17ecf596553e3cb8021956
+ M bin/getconf.csh
+ M src/equ.f90
+ M src/general.f90
+ M src/hydro_kinematic.f90
+ M src/mpicomm.f90
+ M src/timestep.f90
+Wed Apr 20 12:36:53 -03 2022
+mpiexec  -n 8 src/run.x  : -np 4  SDB_tine_test/a.out >ee.txt
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) no cvsid is given i
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: testfield_general. v. 19193   (2013-06-27 12:55:46) wdobler
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ The verbose level is ip=          14  (ldebug= F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          32          32          32
+ Lx, Ly, Lz=  0.400008620689655        2.61799100000000     
+   6.28318530000000     
+       Vbox=   3.17214798446760     
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc, (video files) = 4 4 4                      
+                                                      
+ units_general: unit_velocity=   1.00000000000000     
+ units_general: unit_density=   1.00000000000000     
+ units_general: unit_length=   1.00000000000000     
+ units_general: unit_magnetic=   3.54490770181103     
+  initialize_foreign_comm: WARNING: foreign x domain extent doesn't match;
+  initialize_foreign_comm: WARNING: foreign y domain extent doesn't match;
+ EULAG - tnorm   8700187.50000000        453.910431509796     
+   959.162173750258               32
+ PENCIL - dt, dt/tnorm   5000.00000000000        5.21288280213381     
+ PENCIL lenxgen1           1  0.607586372650145       0.599991379310345     
+ PENCIL lenxgen2          15  0.784805430162983       0.793543937708565     
+ PENCIL lenx           0           1          16           4          19
+ PENCIL lenxgen1          17  0.810122438379103       0.806447441601780     
+ PENCIL lenxgen2          32   1.00000000000000        1.00000000000000     
+ PENCIL lenx           1          16          32           4          19
+ PENCIL lenx2           1  0.806447441601780        1.00000000000000     
+ PENCIL lenx2           0  0.599991379310345       0.793543937708565     
+ *** STARTING TIME ***
+ *** date: Wed Apr 20 12:36:54 2022
+  ****************** 
+           COMPUTATIONAL PARAMETERS
+ SPHERE: meridional grid = +/-  87.188 degrees
+           radius = 417594.0 kms
+ n,m,l            =   32   32   32     lagr,ior =    0    2
+ npr_x,npr_y      =    2    2
+ dx,dy,dz,dt      = 0.8199E+08 0.4100E+08 0.8700E+07 0.5000E+04
+ nt,nplot,nstore  = 2501  100    1
+ ibcx,ibcy,ibcz   =    1    1    0
+ irlx,irly,irdbc  =    0    0    0
+ iab,iabth,iabqw  =    0    0    0
+ zab,towz         = 0.0000E+00 0.1555E+09
+ towxL,towxR,towy = 0.1000E+11 0.1000E+11 0.8640E+05
+ dxabL,dxabR,dyab        = 0.00 0.00 0.00 deg
+  ****************** 
+           BASIC STATE
+ Const wind profile:
+   U00,V00        = 0.0000E+00 0.0000E+00
+ Const stability profile:
+   N              =  0.0000E+00 lipps =  1
+ Ri0 = infinity
+  ****************** 
+           PHYSICAL PARAMETERS
+ icorio,ivis,itke =    1    1    0
+ moist,ice        =    0    0
+  ****************** 
+           TRANSFORMATION PARAMETERS
+ mountain scales:
+   Lx,Ly,h0       = 0.0000E+00 0.0000E+00 0.0000E+00
+  ****************** 
+ PULSES FILE FOUND
+ NUMBER FILES IN TAPE=           5 RESTARTING NOW FROM HISTORY TAPE
+     read tape; itstrt,kf,time,tt:    0    1   0.00 0.0000E+00
+     read tape; itstrt,kf,time,tt:    0    2   2.00 0.5184E+07
+     read tape; itstrt,kf,time,tt:    0    3   2.00 0.5184E+07
+     read tape; itstrt,kf,time,tt:    0    4   4.00 0.1037E+08
+     read tape; itstrt,kf,time,tt:    0    5   6.00 0.1555E+08
+     read tape; itstrt,kf,time,tt:    0    6   8.00 0.2074E+08
+   rhmin,  rhmx: 0.7891E+02 0.6124E+03
+  rhsmin, rhsmx: 0.1049E+02 0.6117E+03
+ cour,lipsh: 0.1800E-03 0.2951E-03
+ umax, umin:  0.1271570175886154E+00 -0.1342668682336807E+00
+ vmax, vmin:  0.8202170580625534E-01 -0.7275253534317017E-01
+ wmax, wmin:  0.1835853755474091E+00 -0.2094838768243790E+00
+ pmax, pmin:  0.3104092750000000E+03 -0.3013335500000000E+03
+ thmx, thmn:  0.2322259989838893E+07  0.2115352873227498E+07  thsum: -0.1000996467768204E+01
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.2697058125000000E+09  0.2697058125000000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.7777E-06-0.5249E-06-0.2385E-08 0.3749E-07
+             eer,eem: 0.0000E+00 0.0000E+00
+ niter,nitav,miter,mitav:   0   0   0   0
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.9450E+00-0.9963E+00
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.2916E-01-0.2981E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ PENCIL MINMAX FRGN           0 -0.255364623165739       0.214902804575510     
+ PENCIL MINMAX FRGN           1 -0.212252813882037       0.204219663674883     
+ PENCIL MINMAX FRGN           2 -0.234567129198980       0.236517337148506     
+ PENCIL MINMAX FRGN           4 -0.240391337079521       0.253615365010429     
+ PENCIL MINMAX FRGN           7 -0.220257255639539       0.229491300584503     
+ PENCIL MINMAX FRGN           5 -0.185658894244278       0.206757812434613     
+ PENCIL MINMAX FRGN           3 -0.168884606572952       0.189921330756927     
+ PENCIL MINMAX FRGN           0 -0.255364623165739       0.214902804575510     
+ PENCIL MINMAX FRGN           2 -0.234567129198980       0.236517337148506     
+ PENCIL MINMAX FRGN           4 -0.240391337079521       0.253615365010429     
+ PENCIL MINMAX FRGN           1 -0.212252813882037       0.204219663674883     
+ PENCIL MINMAX FRGN           3 -0.168884606572952       0.189921330756927     
+ PENCIL MINMAX FRGN           5 -0.185658894244278       0.206757812434613     
+ PENCIL MINMAX FRGN           7 -0.220257255639539       0.229491300584503     
+ PENCIL MINMAX FRGN           0 -0.255364623165739       0.214902804575510     
+ PENCIL MINMAX FRGN           2 -0.234567129198980       0.236517337148506     
+ PENCIL MINMAX FRGN           4 -0.240391337079521       0.253615365010429     
+ PENCIL MINMAX FRGN           1 -0.212252813882037       0.204219663674883     
+ PENCIL MINMAX FRGN           3 -0.168884606572952       0.189921330756927     
+ PENCIL MINMAX FRGN           5 -0.185658894244278       0.206757812434613     
+ PENCIL MINMAX W 1           0       12288       12288  -38.9827896612956     
+   32.8060744066040     
+ PENCIL MINMAX W 1           2       12288       12288  -35.8079398221226     
+   36.1056496041185     
+ PENCIL MINMAX W 1           4       12288       12288  -36.6970366278436     
+   38.7157559512758     
+ PENCIL MINMAX W 1           1       12288       12288  -32.2108320242664     
+   26.3631267162031     
+ PENCIL MINMAX W 1           3       12288       12288  -25.7811478091509     
+   28.9925174337302     
+ EULAG MIN MAX W           0 -0.255364623165739       0.214902804575510     
+ PENCIL MINMAX W 1           5       12288       12288  -28.3418334667917     
+   31.5626973425249     
+ EULAG MIN MAX V           0 -9.135086743089001E-002  0.102484535989457     
+ EULAG MIN MAX U           0 -0.169989862910700       0.154751672872572     
+ EULAG: successful           0
+ PENCIL MINMAX FRGN           6 -0.220257255639539       0.267041799550091     
+ EULAG MIN MAX W           1 -0.240391337079521       0.253615365010429     
+ EULAG MIN MAX V           1 -9.064532068296670E-002  9.709494013388122E-002
+ PENCIL MINMAX FRGN           6 -0.220257255639539       0.267041799550091     
+ EULAG MIN MAX U           1 -0.172346650066059       0.124278459535758     
+ EULAG: successful           1
+ PENCIL MINMAX FRGN           7 -0.220257255639539       0.229491300584503     
+ PENCIL MINMAX FRGN           6 -0.220257255639539       0.267041799550091     
+ PENCIL MINMAX W 1           7       12288       12288  -33.2905219047163     
+   35.0330871554455     
+ PENCIL MINMAX W 1           6       12288       12288  -33.6234602958204     
+   40.7653737372958     
+ EULAG MIN MAX W           3 -0.220257255639539       0.267041799550091     
+ EULAG MIN MAX V           3 -0.106355753093073       0.123615883590505     
+ EULAG MIN MAX U           3 -0.152290749155142       0.135776785998201     
+ EULAG: successful           3
+ EULAG MIN MAX W           2 -0.234567129198980       0.236517337148506     
+ EULAG MIN MAX V           2 -0.100819796270238       9.649716345712406E-002
+ EULAG MIN MAX U           2 -0.152622311603837       0.118817767023789     
+ EULAG: successful           2
+ NUMBER FILES IN TAPE=           6
+ PENCIL MINMAX FRGN           0 -0.301022806224624       0.252438697394059     
+ PENCIL MINMAX FRGN           2 -0.275637022197268       0.276411879429115     
+ PENCIL MINMAX FRGN           4 -0.281299875094750       0.298666416365319     
+ PENCIL MINMAX FRGN           6 -0.259622815917672       0.316584371879249     
+ PENCIL MINMAX FRGN           1 -0.250628066167124       0.239774161410035     
+ PENCIL MINMAX FRGN           3 -0.198641234043739       0.223736378363990     
+ PENCIL MINMAX FRGN           5 -0.219010791470403       0.243122612647319     
+ PENCIL MINMAX FRGN           7 -0.259622815917672       0.269884747575139     
+ PENCIL MINMAX FRGN           0 -0.301022806224624       0.252438697394059     
+ PENCIL MINMAX FRGN           2 -0.275637022197268       0.276411879429115     
+ PENCIL MINMAX FRGN           1 -0.250628066167124       0.239774161410035     
+ PENCIL MINMAX FRGN           4 -0.281299875094750       0.298666416365319     
+ PENCIL MINMAX FRGN           3 -0.198641234043739       0.223736378363990     
+ PENCIL MINMAX FRGN           5 -0.219010791470403       0.243122612647319     
+ PENCIL MINMAX FRGN           7 -0.259622815917672       0.269884747575139     
+ PENCIL MINMAX FRGN           0 -0.301022806224624       0.252438697394059     
+ PENCIL MINMAX FRGN           6 -0.259622815917672       0.316584371879249     
+ PENCIL MINMAX FRGN           3 -0.198641234043739       0.223736378363990     
+ PENCIL MINMAX FRGN           1 -0.250628066167124       0.239774161410035     
+ PENCIL MINMAX FRGN           4 -0.281299875094750       0.298666416365319     
+ PENCIL MINMAX FRGN           7 -0.259622815917672       0.269884747575139     
+ PENCIL MINMAX FRGN           2 -0.275637022197268       0.276411879429115     
+ PENCIL MINMAX FRGN           6 -0.259622815917672       0.316584371879249     
+ PENCIL MINMAX FRGN           5 -0.219010791470403       0.243122612647319     
+ EULAG MIN MAX W           0 -0.301022806224624       0.252438697394059     
+ EULAG MIN MAX W           2 -0.275637022197268       0.276411879429115     
+ EULAG MIN MAX W           3 -0.259622815917672       0.316584371879249     
+ EULAG MIN MAX V           0 -0.112556187311644       0.125001839560473     
+ EULAG MIN MAX V           2 -0.120219259195832       0.114822677845481     
+ EULAG MIN MAX V           3 -0.122993743747456       0.139194391849471     
+ PENCIL MINMAX W 2           3       12288       12288  -30.3236577909285     
+   34.1545671801326     
+ PENCIL MINMAX W 2           4       12288       12288  -42.9419460167363     
+   45.5930423867115     
+ PENCIL MINMAX W 2           7       12288       12288  -39.1498600992727     
+   41.1993651159940     
+ EULAG MIN MAX W           1 -0.281299875094750       0.298666416365319     
+ PENCIL MINMAX W 2           1       12288       12288  -37.9144270648305     
+   30.9178371046322     
+ PENCIL MINMAX W 2           2       12288       12288  -42.0774809211066     
+   42.1957670647086     
+ EULAG MIN MAX U           0 -0.205302160737392       0.182500951822392     
+ EULAG: successful           0
+ EULAG MIN MAX U           2 -0.179993038970833       0.139516392032531     
+ EULAG: successful           2
+ EULAG MIN MAX U           3 -0.179573788714200       0.159681833010668     
+ EULAG: successful           3
+ PENCIL MINMAX W 2           6       12288       12288  -39.6328257952284     
+   48.3283151206589     
+ EULAG MIN MAX V           1 -0.111116267799942       0.114222971325125     
+ EULAG MIN MAX U           1 -0.203775657376202       0.148333353528381     
+ EULAG: successful           1
+ PENCIL MINMAX W 2           5       12288       12288  -33.4331808047798     
+ PENCIL MINMAX W 2           0       12288       12288  -45.9527580321543     
+   37.1139806024888     
+   38.5361312811803     
+ NUMBER FILES IN TAPE=           7
+ PENCIL MINMAX FRGN           0 -0.346428786798435       0.289743448766878     
+ PENCIL MINMAX FRGN           1 -0.288478435720881       0.275322431645541     
+ PENCIL MINMAX FRGN           2 -0.316205388964251       0.314378948238357     
+ PENCIL MINMAX FRGN           3 -0.227923594054938       0.257068467457676     
+ PENCIL MINMAX FRGN           4 -0.322735785457533       0.343228686662121     
+ PENCIL MINMAX FRGN           6 -0.298942174637164       0.361839043976925     
+ PENCIL MINMAX FRGN           7 -0.298942174637164       0.309781010533937     
+ PENCIL MINMAX FRGN           5 -0.251780573382700       0.279418450453277     
+ PENCIL MINMAX FRGN           0 -0.346428786798435       0.289743448766878     
+ PENCIL MINMAX FRGN           2 -0.316205388964251       0.314378948238357     
+ PENCIL MINMAX FRGN           1 -0.288478435720881       0.275322431645541     
+ PENCIL MINMAX FRGN           4 -0.322735785457533       0.343228686662121     
+ PENCIL MINMAX FRGN           7 -0.298942174637164       0.309781010533937     
+ PENCIL MINMAX FRGN           3 -0.227923594054938       0.257068467457676     
+ PENCIL MINMAX FRGN           5 -0.251780573382700       0.279418450453277     
+ PENCIL MINMAX FRGN           2 -0.316205388964251       0.314378948238357     
+ PENCIL MINMAX FRGN           0 -0.346428786798435       0.289743448766878     
+ Pencil successful           0
+ PENCIL MINMAX FRGN           4 -0.322735785457533       0.343228686662121     
+ Pencil successful           4
+ initialize_testfield: etatest=  0.100000000000000     
+ resistivity: constant eta
+ PENCIL MINMAX FRGN           3 -0.227923594054938       0.257068467457676     
+ Pencil successful           3
+ PENCIL MINMAX FRGN           5 -0.251780573382700       0.279418450453277     
+ Pencil successful           5
+ PENCIL MINMAX FRGN           1 -0.288478435720881       0.275322431645541     
+ Pencil successful           1
+ PENCIL MINMAX FRGN           6 -0.298942174637164       0.361839043976925     
+ EULAG MIN MAX W           2 -0.316205388964251       0.314378948238357     
+ PENCIL MINMAX FRGN           6 -0.298942174637164       0.361839043976925     
+ Pencil successful           6
+ PENCIL MINMAX FRGN           7 -0.298942174637164       0.309781010533937     
+ Pencil successful           7
+ EULAG MIN MAX W           1 -0.322735785457533       0.343228686662121     
+ EULAG MIN MAX W           0 -0.346428786798435       0.289743448766878     
+ EULAG MIN MAX V           0 -0.132833094409752       0.148550733411625     
+ EULAG MIN MAX V           1 -0.132799926392669       0.137217256698668     
+ Pencil successful           2
+ EULAG MIN MAX W           3 -0.298942174637164       0.361839043976925     
+ EULAG MIN MAX U           0 -0.238183569502473       0.210714910837652     
+ EULAG: successful           0
+ EULAG MIN MAX V           2 -0.141075682295003       0.138296722198394     
+ EULAG MIN MAX V           3 -0.137605981498076       0.156438621753402     
+ EULAG MIN MAX U           2 -0.207139178079420       0.160692795270515     
+ EULAG: successful           2
+ EULAG MIN MAX U           3 -0.206577958760411       0.184686037584396     
+ EULAG MIN MAX U           1 -0.235205621476619       0.172085936149035     
+ EULAG: successful           1
+ EULAG: successful           3
+ NUMBER FILES IN TAPE=           8
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+ duu_dt: max(advec_uu) =   312.730922248843     
+ duu_dt: diagnostics ...
+ daatest_dt: SOLVE
+Bcs for     Axtest,  x: <     s:a>, y: <       a>,  z: <       p>
+Bcs for     Aytest,  x: <   a:nfr>, y: <       s>,  z: <       p>
+Bcs for     Aztest,  x: <   a:nfr>, y: <       a>,  z: <       p>
+ 
+ --it-----t-------dt-----urms----alp11-----alp21-----alp31-----alp12-----alp22-----alp32-----alp13-----alp23-----alp33-----eta132----eta231----eta312----eta321--
+    0    0.000   0.000   8.316  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00
+ PENCIL MINMAX W 2           4       12288       12288  -49.2673616442889     
+   52.3957137523633     
+ PENCIL MINMAX W 2           7       12288       12288  -44.9251718399488     
+ PENCIL MINMAX FRGN           4 -0.364379504832773       0.387139892665221     
+   47.2897452474077     
+ PENCIL MINMAX FRGN           7 -0.337622770214520       0.349278904402132     
+ PENCIL MINMAX FRGN           4 -0.364379504832773       0.387139892665221     
+ PENCIL MINMAX W 2           1       12288       12288  -43.5814321741133     
+ PENCIL MINMAX W 2           2       12288       12288  -48.2704613307430     
+   47.9916452842457     
+ PENCIL MINMAX W 2           3       12288       12288  -34.7937682821613     
+   39.2428906996648     
+ PENCIL MINMAX W 2           5       12288       12288  -38.4356650944869     
+   42.6547363784048     
+ PENCIL MINMAX W 2           6       12288       12288  -45.6351383770466     
+   55.2366853628034     
+ PENCIL MINMAX W 2           0       12288       12288  -52.8842263308188     
+   44.2309031650277     
+ PENCIL MINMAX FRGN           2 -0.355594367665942       0.349504892744233     
+ PENCIL MINMAX FRGN           5 -0.283460700987099       0.315385434181517     
+ PENCIL MINMAX FRGN           6 -0.337622770214520       0.404328271549203     
+ PENCIL MINMAX FRGN           0 -0.391737148059959       0.327902947032282     
+ PENCIL MINMAX FRGN           3 -0.257196101431225       0.289512072205782     
+ PENCIL MINMAX FRGN           5 -0.283460700987099       0.315385434181517     
+ PENCIL MINMAX FRGN           6 -0.337622770214520       0.404328271549203     
+   35.3873411731863     
+ PENCIL MINMAX FRGN           7 -0.337622770214520       0.349278904402132     
+ PENCIL MINMAX FRGN           0 -0.391737148059959       0.327902947032282     
+ PENCIL MINMAX FRGN           2 -0.355594367665942       0.349504892744233     
+ PENCIL MINMAX FRGN           3 -0.257196101431225       0.289512072205782     
+ PENCIL MINMAX FRGN           1 -0.325321860501056       0.310510759536032     
+ PENCIL MINMAX FRGN           4 -0.364379504832773       0.387139892665221     
+ PENCIL MINMAX FRGN           6 -0.337622770214520       0.404328271549203     
+ PENCIL MINMAX FRGN           1 -0.325321860501056       0.310510759536032     
+ PENCIL MINMAX FRGN           2 -0.355594367665942       0.349504892744233     
+ PENCIL MINMAX FRGN           7 -0.337622770214520       0.349278904402132     
+ PENCIL MINMAX FRGN           5 -0.283460700987099       0.315385434181517     
+ PENCIL MINMAX FRGN           3 -0.257196101431225       0.289512072205782     
+ PENCIL MINMAX FRGN           0 -0.391737148059959       0.327902947032282     
+ PENCIL MINMAX FRGN           1 -0.325321860501056       0.310510759536032     
+ EULAG MIN MAX W           1 -0.364379504832773       0.387139892665221     
+ EULAG MIN MAX W           2 -0.355594367665942       0.349504892744233     
+ EULAG MIN MAX W           3 -0.337622770214520       0.404328271549203     
+ EULAG MIN MAX W           0 -0.391737148059959       0.327902947032282     
+ EULAG MIN MAX V           2 -0.164251919523516       0.163654471421203     
+ EULAG MIN MAX V           3 -0.150175219887395       0.175173007926571     
+ EULAG MIN MAX V           1 -0.155919773670240       0.161695887145769     
+ EULAG MIN MAX V           0 -0.154675017041477       0.172315272823266     
+ EULAG MIN MAX U           3 -0.233375809995192       0.209290836410755     
+ EULAG: successful           3
+ EULAG MIN MAX U           1 -0.265939889219170       0.195500708226982     
+ EULAG: successful           1
+ EULAG MIN MAX U           2 -0.233909513703877       0.182582624702558     
+ EULAG: successful           2
+ EULAG MIN MAX U           0 -0.268357661980504       0.237578719129612     
+ EULAG: successful           0
+ NUMBER FILES IN TAPE=           9
+   50    0.010   0.000   9.884  3.53E+01 -4.02E+01  1.81E+01  1.61E+01 -2.74E+01  9.15E+00 -5.04E+01  6.10E+01 -2.67E+01 -2.70E-01 -1.13E+01  8.28E-02 -2.24E-01
+  100    0.021   0.000   9.893  1.80E+07 -9.32E+06  8.22E+06  8.14E+06 -4.55E+06  3.74E+06 -2.66E+07  1.37E+07 -1.21E+07 -1.41E+05 -5.34E+06  3.81E+04 -8.96E+04
+  150    0.031   0.000   9.902  9.79E+12 -4.53E+12  4.41E+12  4.41E+12 -2.05E+12  1.99E+12 -1.44E+13  6.68E+12 -6.51E+12 -7.66E+10 -2.88E+12  2.07E+10 -4.81E+10
+  200    0.041   0.000   9.911  5.41E+18 -2.48E+18  2.44E+18  2.44E+18 -1.12E+18  1.10E+18 -7.99E+18  3.66E+18 -3.59E+18 -4.23E+16 -1.59E+18  1.14E+16 -2.65E+16
+  250    0.052   0.000   9.920  3.04E+24 -1.39E+24  1.37E+24  1.37E+24 -6.27E+23  6.15E+23 -4.49E+24  2.06E+24 -2.02E+24 -2.38E+22 -8.93E+23  6.41E+21 -1.49E+22
+  300    0.062   0.000   9.929  1.74E+30 -7.94E+29  7.79E+29  7.81E+29 -3.58E+29  3.51E+29 -2.56E+30  1.17E+30 -1.15E+30 -1.36E+28 -5.09E+29  3.65E+27 -8.48E+27
+  350    0.072   0.000   9.938  1.00E+36 -4.60E+35  4.51E+35  4.52E+35 -2.07E+35  2.03E+35 -1.48E+36  6.79E+35 -6.66E+35 -7.85E+33 -2.95E+35  2.12E+33 -4.90E+33
+  400    0.083   0.000   9.947  5.91E+41 -2.71E+41  2.65E+41  2.66E+41 -1.22E+41  1.19E+41 -8.72E+41  3.99E+41 -3.91E+41 -4.62E+39 -1.73E+41  1.24E+39 -2.88E+39
+  450    0.093   0.000   9.956  3.53E+47 -1.61E+47  1.58E+47  1.59E+47 -7.27E+46  7.12E+46 -5.20E+47  2.38E+47 -2.33E+47 -2.76E+45 -1.03E+47  7.41E+44 -1.71E+45
+  500    0.103   0.000   9.965  2.14E+53 -9.78E+52  9.57E+52  9.61E+52 -4.40E+52  4.31E+52 -3.15E+53  1.44E+53 -1.41E+53 -1.67E+51 -6.27E+52  4.49E+50 -1.04E+51
+  550    0.113   0.000   9.974  1.31E+59 -6.01E+58  5.88E+58  5.91E+58 -2.71E+58  2.65E+58 -1.94E+59  8.87E+58 -8.68E+58 -1.03E+57 -3.85E+58  2.76E+56 -6.37E+56
+  600    0.124   0.000   9.982  8.20E+64 -3.75E+64  3.67E+64  3.69E+64 -1.69E+64  1.65E+64 -1.21E+65  5.54E+64 -5.41E+64 -6.40E+62 -2.40E+64  1.72E+62 -3.97E+62
+  650    0.134   0.000   9.991  5.19E+70 -2.38E+70  2.32E+70  2.34E+70 -1.07E+70  1.04E+70 -7.66E+70  3.51E+70 -3.42E+70 -4.05E+68 -1.52E+70  1.09E+68 -2.51E+68
+  700    0.144   0.000  10.000  3.33E+76 -1.53E+76  1.49E+76  1.50E+76 -6.87E+75  6.71E+75 -4.92E+76  2.25E+76 -2.20E+76 -2.60E+74 -9.77E+75  6.99E+73 -1.61E+74
+[mpiexec@parker] Sending Ctrl-C to processes as requested
+[mpiexec@parker] Press Ctrl-C again to force abort
+544.1u 2.5s 0:46.05 1187.1% 0+0k 256+611040io 1pf+0w
+

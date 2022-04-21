@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/Pencil-MagIC
+SVN Id:
+    $Id$
+Maintainer:
+    Matthias Rheinhardt <matthias[dot]rheinhardt[at]aalto[dot]fi>
+Added:
+    5-dec-2019
+Status:
+    not functional, under construction
+Recommended resolution:
+    irrelevant
+Comments:
+    Demonstration of MPI communication between Pencil and a foreign code,
+    here the anelastic MHD code MagIC (https://github.com/magic-sph/magic). 
+    Communication provides the velocity field from MagIC for use in 
+    hydro_kinematic, in case kinematic_flow=='from-foreign-snap'. 

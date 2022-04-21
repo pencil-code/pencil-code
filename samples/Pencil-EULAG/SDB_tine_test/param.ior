@@ -1,0 +1,6 @@
+c     +++param.ior+++
+c---> ior=order of SL remapping accuracy/2;
+c---> only even order schemes are considered
+      parameter (ior=2,iorj=2)
+c---> ihlag is a SL halo size; ihlag .ge. max(C, ior + 1, 3)
+      parameter (ihlag=10)  ! ior=1,2 ihlag=3 ; ior=3 ihlag=4

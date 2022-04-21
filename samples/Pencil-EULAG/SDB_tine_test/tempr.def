@@ -1,0 +1,29 @@
+#if (IORFLAG == 0)
+#if (IORTAPE == 3) /* force to read from double precision archive */
+      real*8 temp(n,m,l)
+      real*8 fval
+#endif
+#if (IORTAPE == 2) /* force to read from single precision archive */
+      real*4 temp(n,m,l)
+      real*4 fval
+#endif
+#if (IORTAPE == 1)
+      dimension temp(n,m,l)
+      real fval
+#endif
+#endif             /* smolar correction */
+
+#if (IORFLAG == 1)
+#if (IORTAPE == 3) /* force to read from double precision archive */
+      real*8 temp(npa,mpa,l)
+      real*8 fval
+#endif
+#if (IORTAPE == 2) /* force to read from single precision archive */
+      real*4 temp(npa,mpa,l)
+      real*4 fval
+#endif
+#if (IORTAPE == 1)
+      dimension temp(npa,mpa,l)
+      real fval
+#endif
+#endif             /* smolar correction */

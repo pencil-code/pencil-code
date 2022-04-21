@@ -1,0 +1,149 @@
+diff --git a/bin/getconf.csh b/bin/getconf.csh
+index 6559eccbd..3b1d6952c 100644
+--- a/bin/getconf.csh
++++ b/bin/getconf.csh
+@@ -15,9 +15,9 @@ set debug = 1
+ set dollar = '$'
+ # Set up PATH for people who don't include $PENCIL_HOME/bin by default
+ # To work in PARKER(Belo Horizonte/Brazil) you have to comment the 3 lines below
+-if ($?PENCIL_HOME) then
+-    setenv PATH ${PATH}:${PENCIL_HOME}/bin
+-endif
++#if ($?PENCIL_HOME) then
++#    setenv PATH ${PATH}:${PENCIL_HOME}/bin
++#endif
+ # Save working directory for other scripts we call
+ setenv PENCIL_WORKDIR `pwd`
+ newdir:
+diff --git a/src/equ.f90 b/src/equ.f90
+index ed887ca3f..9d2422d5f 100644
+--- a/src/equ.f90
++++ b/src/equ.f90
+@@ -1082,7 +1082,6 @@ module Equ
+           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+               (ltestfield_z.and.iuutest>0)) &
+             maxadvec=maxadvec+sqrt(advec2)
+-
+           if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
+             maxadvec=maxadvec+sqrt(advec2_hypermesh)
+ !
+@@ -1139,6 +1138,8 @@ module Equ
+ !  Timestep combination from advection and diffusion (and "source"). 
+ !
+           dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
++if (iproc==4.or.iproc==6) write(80+iproc,*) maxval(abs(dt1_max))
++
+ !
+ !  time step constraint from the coagulation kernel
+ !
+diff --git a/src/hydro_kinematic.f90 b/src/hydro_kinematic.f90
+index a73c703fc..777b56c78 100644
+--- a/src/hydro_kinematic.f90
++++ b/src/hydro_kinematic.f90
+@@ -359,10 +359,14 @@ module Hydro
+ !
+ !  Initially, take two snapshots.
+ !
+-        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
++        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)!!!.true.
+         if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
+-        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3)) 
+-        call get_foreign_snap_finalize(f,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
++        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
++!!!        if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
++print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
++        call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.true.)!!!.true.
++!if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
++print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
+         call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.true.)
+         call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.true.)
+ !        
+@@ -2336,6 +2340,9 @@ print*, 'Pencil successful', iproc
+           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+ ! divu
+           if (lpenc_loc(i_divu)) p%divu=0. ! tb implemented
++!if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
++if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
++
+         else
+           call inevitably_fatal_error('hydro_kinematic', '"from-snap" requires lkinflow_as_aux=T')
+         endif
+@@ -2477,7 +2484,7 @@ print*, 'Pencil successful', iproc
+           fac=dt/(t_foreign-t+dt)
+         endif
+         f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
+-!if (lroot) print*, 'PENCIL walltime fac', fac, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
++print*, 'PENCIL FMAX' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
+       endif
+ !
+     endsubroutine hydro_before_boundary
+@@ -2507,7 +2514,7 @@ print*, 'Pencil successful', iproc
+         if (lfirst.and.ldt) then
+           advec_uu=sum(abs(p%uu)*dline_1,2)
+           maxadvec=maxadvec+advec_uu
+-!if (n==10.and.m==10)print *, 'PENCIL ADVMAX', iproc, maxval(advec_uu)
++if (n==n1.and.m==m1)print *, 'PENCIL ADVMAX', iproc, maxval(abs(maxadvec)), minval(abs(maxadvec))
+           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
+         endif
+       endif
+diff --git a/src/mpicomm.f90 b/src/mpicomm.f90
+index 9641fb985..68989133b 100644
+--- a/src/mpicomm.f90
++++ b/src/mpicomm.f90
+@@ -10308,13 +10308,13 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
+               istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
+               if (loptest(lnonblock)) then
+                 peer=frgn_setup%peer_rng(1)
+-                do iv=1,3
++                do iv=1,nvars
+                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+                 enddo
+               else       ! EULAG case
+                 peer=frgn_setup%peer_rng(1)
+-                do iv=1,3
++                do iv=1,nvars
+                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
+                 enddo
+@@ -10323,11 +10323,11 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
+             endif
+           enddo
+         endif
+-if (lroot) then
+-  t2 = MPI_WTIME()
+-  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
+-  tcount = tcount + 1
+-endif
++!if (lroot) then
++!  t2 = MPI_WTIME()
++!  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
++!  tcount = tcount + 1
++!endif
+ !write(20+iproc) frgn_buffer
+ !if (.not.loptest(lnonblock))then
+ !  print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+@@ -10370,9 +10370,10 @@ print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buff
+       if (trim(frgn_setup%name)=='EULAG') then           
+         if (loptest(lnonblock)) then
+           call mpiwait(frgn_setup%recv_req(px))
++print *, 'PENCIL UU2EVAL 2 ', iproc, mx, ivar1, ivar2,size(f,1),size(f,2), size(f,3), size(f,4)
+           if(size(f,1)==mx) then
+             f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU
+-print *,'PENCIL MINMAX W 1',iproc, minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
++print *,'PENCIL MINMAX W 1',iproc, minval(f(l1:l2,m1:m2,n1:n2,iux:iuz)), maxval(f(l1:l2,m1:m2,n1:n2,iux:iuz))
+           else
+             f(:,:,:,ivar1:ivar2)=frgn_buffer/frgn_setup%renorm_UU            
+ print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
+diff --git a/src/timestep.f90 b/src/timestep.f90
+index 3c77169dd..c51e77382 100644
+--- a/src/timestep.f90
++++ b/src/timestep.f90
+@@ -135,6 +135,7 @@ module Timestep
+ !  Takes minimum over and distributes to all processors.
+ !  With GPUs this is done on the CUDA side.
+ !
++!print *, 'PENCIL ADVMAX', iproc, maxval(abs(dt1_max))
+         if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
+ !
+ !  Calculate dt_beta_ts.

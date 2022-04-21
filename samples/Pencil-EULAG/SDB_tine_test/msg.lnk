@@ -1,0 +1,51 @@
+#if (PARALLEL == 2)
+#if (HP > 0)
+      include '/opt/mpi/include/mpif.h'
+#endif
+#if (CRAYT3D == 1)
+c     include '/opt/ctl/mpt/mpt/include/mpif.h'
+      include '/usr/local/MPI/t3d/include/mpif.h'
+#endif
+#if (CRAYT3E == 1)
+      include '/opt/ctl/mpt/mpt/include/mpif.h'
+#endif
+#if (SGI_O2K > 0 || PLE > 0 || IBM > 0 || CPQ > 0 || LNX >0)
+      include 'mpif.h'
+#endif
+#if (CRAYPVP == 1)
+      include '/opt/ctl/mpt/mpt/include/mpif.h'
+#endif
+      integer status(MPI_STATUS_SIZE),size,rank,ierr
+*     DC_TYPE    : the data type of the data in communication (4 or 8 bytes)
+*     comm_type  : indicate what MPI Comm. routine are used,
+*                  (either collective or point to point).
+*                  parameters used in transpose algorithms
+*     commslice_y: the transpose between phase 1 and phase 2 involves
+*                  all-to-all comm. among npy processors
+*     commslice_x: the transpose between phase 2 and phase 3 involves
+*                  all-to-all comm. among npx processors
+*     DC_TYPE    : the data type of the data in communication (4 or 8 bytes)
+      integer         DC_TYPE
+      common/t23comm/ DC_TYPE
+      integer my_row,my_col,m_south_pole,m_north_pole
+      common/x_slice/ my_row
+      common/y_slice/ my_col
+      common/s_pole/ m_south_pole
+      common/n_pole/ m_north_pole
+      integer stats,statr
+      integer statuss(MPI_STATUS_SIZE)
+c  GM:Define some parameters to be used in the bridge segment
+      parameter (nprocx_frn_max=100)
+      integer MPI_COMM_EULAG,nprocx_frn,xind_rng,peer_frn,nprocy_frn
+      integer :: tag_frn = 1734
+!     integer :: tag_frn = 0
+      common/mpigm/ MPI_COMM_EULAG,tag_frn,nprocx_frn,nprocy_frn,
+     .              peer_frn,xind_rng(0:nprocx_frn_max-1, 2)
+#endif
+#if (PARALLEL == 1)
+#if (SGI_O2K > 0)
+      include '/usr/include/mpp/shmem.fh'
+#else
+      include 'mpp/shmem.fh'
+#endif
+#endif

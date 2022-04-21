@@ -135,6 +135,7 @@ module Timestep
 !  Takes minimum over and distributes to all processors.
 !  With GPUs this is done on the CUDA side.
 !
+!print *, 'PENCIL ADVMAX', iproc, maxval(abs(dt1_max))
         if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
 !
 !  Calculate dt_beta_ts.

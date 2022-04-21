@@ -1,0 +1,531 @@
+/storage/Guilherme/pencil-code/samples/Pencil-EULAG
+8 CPUs
+USER = guerrero
+Running under MPI
+Setting nodelist to (parker)
+Parker - UFMG, BH, MG,Brazil
+MODULE_[PRE|IN|SUF]FIX= "", "_mp_", "_"
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <2>
+$ncpus          =  <8>
+$npops          =  <-n 8>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-13991>
+$hn             =  <parker>
+$masterhost     =  <>
+$mpirun         =  <mpiexec>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <parker>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <13991>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: 2a3dad3d4a73feb11c7b5873b7bfc612b7443800
+ M bin/getconf.csh
+ M src/hydro_kinematic.f90
+ M src/mpicomm.f90
+Mon Mar  7 09:37:11 -03 2022
+mpiexec  -n 8  src/start.x 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) no cvsid is given i
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: testfield_general. v. 19193   (2013-06-27 12:55:46) wdobler
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid=          32          32          32
+ units_general: unit_velocity=   1.00000000000000     
+ units_general: unit_density=   1.00000000000000     
+ units_general: unit_length=   1.00000000000000     
+ units_general: unit_magnetic=   3.54490770181103     
+ initialize_testfield: etatest=  0.000000000000000E+000
+ resistivity: constant eta
+ farray_check_maux: naux, maux =            0           3
+WARNING: 
+ farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual numbe
+ r of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| al
+ so possible that someone unintentionally added *optional*
+	| auxiliaries to MAU
+ X CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to
+  src/cparam.local under their
+	| specific application.
+ 
+ start.x has completed successfully
+ 
+0.4u 0.8s 0:00.54 237.0% 0+0k 0+72528io 0pf+0w
+
+Mon Mar  7 09:37:12 -03 2022
+8 CPUs
+USER = guerrero
+Running under MPI
+Setting nodelist to (parker)
+Parker - UFMG, BH, MG,Brazil
+MODULE_[PRE|IN|SUF]FIX= "", "_mp_", "_"
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <2>
+$ncpus          =  <8>
+$npops          =  <-n 8>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-14091>
+$hn             =  <parker>
+$masterhost     =  <>
+$mpirun         =  <mpiexec>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <parker>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <14091>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: 2a3dad3d4a73feb11c7b5873b7bfc612b7443800
+ M bin/getconf.csh
+ M src/hydro_kinematic.f90
+ M src/mpicomm.f90
+Mon Mar  7 09:37:12 -03 2022
+mpiexec  -n 8 src/run.x  : -np 4  SDB_tine_test/a.out   >ee.txt
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) no cvsid is given i
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: testfield_general. v. 19193   (2013-06-27 12:55:46) wdobler
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ The verbose level is ip=          14  (ldebug= F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          32          32          32
+ Lx, Ly, Lz=  0.401727793700000        2.61799100000000     
+   6.28318530000000     
+       Vbox=   3.17963861003336     
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc, (video files) = 4 4 4                      
+                                                      
+ units_general: unit_velocity=   1.00000000000000     
+ units_general: unit_density=   1.00000000000000     
+ units_general: unit_length=   1.00000000000000     
+ units_general: unit_magnetic=   3.54490770181103     
+  initialize_foreign_comm: WARNING: foreign x domain extent doesn't match;
+  initialize_foreign_comm: WARNING: foreign y domain extent doesn't match;
+ PENCIL walltime[min]tot           0  3.397401693897943E-007
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           2  0.000000000000000E+000  4.857345532668097E-139
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           4  0.000000000000000E+000  4.857345532668097E-139
+ Pencil-wait:           4  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           6  0.000000000000000E+000  4.857345532668097E-139
+ Pencil-wait:           6  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ Pencil-wait:           2  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           1  0.000000000000000E+000  0.000000000000000E+000
+ PENCIL MINMAX W           3  0.000000000000000E+000  0.000000000000000E+000
+ PENCIL MINMAX W           5  0.000000000000000E+000  0.000000000000000E+000
+ PENCIL MINMAX W           7  0.000000000000000E+000  0.000000000000000E+000
+ Pencil-wait:           7  7.336416836275681E-003
+ Pencil-wait:           1  7.336416836275681E-003
+ Pencil-wait:           3  7.336416836275681E-003
+ Pencil-wait:           5  7.336416836275681E-003
+ PENCIL MINMAX W           0  1.745155967456622E-310  1.957037562105564E+025
+ Pencil-wait:           0  7.336416836275681E-003
+ *** STARTING TIME ***
+ *** date: Mon Mar  7 09:37:12 2022
+  ****************** 
+           COMPUTATIONAL PARAMETERS
+ SPHERE: meridional grid = +/-  87.188 degrees
+           radius = 417594.0 kms
+ n,m,l            =   32   32   32     lagr,ior =    0    2
+ npr_x,npr_y      =    2    2
+ dx,dy,dz,dt      = 0.8199E+08 0.4100E+08 0.3946E+07 0.5000E+04
+ nt,nplot,nstore  = 2501  100 2502
+ ibcx,ibcy,ibcz   =    1    1    0
+ irlx,irly,irdbc  =    0    0    0
+ iab,iabth,iabqw  =    0    0    0
+ zab,towz         = 0.0000E+00 0.1555E+09
+ towxL,towxR,towy = 0.1000E+11 0.1000E+11 0.8640E+05
+ dxabL,dxabR,dyab        = 0.00 0.00 0.00 deg
+  ****************** 
+           BASIC STATE
+ Const wind profile:
+   U00,V00        = 0.0000E+00 0.0000E+00
+ Const stability profile:
+   N              =  0.0000E+00 lipps =  1
+ Ri0 = infinity
+  ****************** 
+           PHYSICAL PARAMETERS
+ icorio,ivis,itke =    1    1    0
+ moist,ice        =    0    0
+  ****************** 
+           TRANSFORMATION PARAMETERS
+ mountain scales:
+   Lx,Ly,h0       = 0.0000E+00 0.0000E+00 0.0000E+00
+  ****************** 
+                it, time:    0   0.00
+   rhmin,  rhmx: 0.1173E+03 0.4034E+03
+  rhsmin, rhsmx: 0.9623E+01 0.4030E+03
+ cour,lipsh: 0.0000E+00 0.0000E+00
+ umax, umin:  0.0000000000000000E+00  0.0000000000000000E+00
+ vmax, vmin:  0.0000000000000000E+00  0.0000000000000000E+00
+ wmax, wmin:  0.0000000000000000E+00  0.0000000000000000E+00
+ pmax, pmin:  0.0000000000000000E+00  0.0000000000000000E+00
+ thmx, thmn:  0.2330034997498042E+07  0.2041178505449094E+07  thsum: -0.1000000000003049E+01
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+             eer,eem: 0.0000E+00 0.0000E+00
+ niter,nitav,miter,mitav:   3   0   0   0
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.0000E+00 0.0000E+00
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.0000E+00 0.0000E+00
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ PENCIL walltime[min]tot           1  8.924286566131439E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           0 -2.115389638296261E-004  3.415353622211342E-004
+ Pencil-wait:           0  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           2 -2.239536288658580E-004  2.674365346950675E-004
+ Pencil-wait:           2  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           4 -2.923094699398607E-004  3.383686594496145E-004
+ Pencil-wait:           4  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           1 -5.789384140345936E-002  4.293236714923054E-002
+ Pencil-wait:           1  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           5 -5.603665015170132E-002  6.910192346792794E-002
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           7 -5.998080504350477E-002  5.709288129373849E-002
+ Pencil-wait:           7  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ Pencil-wait:           5  7.336416836275681E-003
+ PENCIL MINMAX W           3 -5.541874037080247E-002  5.952971813623068E-002
+ Pencil-wait:           3  7.336416836275681E-003
+ EULAG walltime[min]tot           0  1.148415030911565E-005
+ EULAG MIN MAX W           0 -5.789384140345936E-002  4.293236714923054E-002
+ EULAG: successful           0
+
+           it=       25 dt(sec)=5000.00 time(solar days)=   0.05
+ u=-0.8563878139953347E-05
+ cour,lipsh,courB: 0.1317E-03 0.2255E-03 0.0000E+00
+ PENCIL MINMAX W           6 -2.645282796641580E-004  3.352691226175272E-004
+ Pencil-wait:           6  7.336416836275681E-003
+ EULAG MIN MAX W           1 -5.603665015170132E-002  6.910192346792794E-002
+ EULAG: successful           1
+ EULAG MIN MAX W           3 -5.998080504350477E-002  5.709288129373849E-002
+ EULAG: successful           3
+ EULAG MIN MAX W           2 -5.541874037080247E-002  5.952971813623068E-002
+ EULAG: successful           2
+ cour,lipsh: 0.1301E-03 0.2436E-03
+ umax, umin:  0.2908924018758383E+00 -0.2551758868120518E+00
+ vmax, vmin:  0.3199965794176677E-01 -0.3757158321227164E-01
+ wmax, wmin:  0.4293236714923054E-01 -0.5789384140345936E-01
+ pmax, pmin:  0.3027373570068127E+03 -0.8428471602297905E+02
+ thmx, thmn:  0.2330034997500183E+07  0.2041178505454847E+07  thsum: -0.1000015019495633E+01
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.4736E-07-0.1010E-06-0.1434E-08 0.9148E-08
+             eer,eem: 0.5162E+00 0.4642E+00
+ niter,nitav,miter,mitav:   3   3   3   3
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.3480E+00-0.9335E+00
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.2475E-01-0.2049E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ PENCIL walltime[min]tot           2  1.656652706975971E-002
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           0 -1.993526308559626E-004  2.608075750628248E-004
+ Pencil successful           0
+ initialize_testfield: etatest=  1.000000000000000E-002
+ resistivity: constant eta
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           4 -1.468410258905905E-004  2.526917021803065E-004
+ Pencil successful           4
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           6 -1.716145436694232E-004  2.884617155361302E-004
+ Pencil successful           6
+ PENCIL INIT NON-BLOCK
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           3 -3.391298336876904E-002  3.185825769256132E-002
+ Pencil successful           3
+ PENCIL INIT NON-BLOCK
+ EULAG walltime[min]tot           1  7.651577307357608E-003
+ EULAG MIN MAX W           0 -3.790094574002090E-002  3.020135888524800E-002
+ EULAG: successful           0
+
+           it=       50 dt(sec)=5000.00 time(solar days)=   0.10
+ u=-0.5760339914861640E-03
+ cour,lipsh,courB: 0.1519E-03 0.2681E-03 0.0000E+00
+ EULAG MIN MAX W           2 -3.391298336876904E-002  3.185825769256132E-002
+ EULAG: successful           2
+ PENCIL MINMAX W           1 -3.790094574002090E-002  3.020135888524800E-002
+ Pencil successful           1
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           7 -4.588997319085448E-002  3.102527023706187E-002
+ Pencil successful           7
+ EULAG MIN MAX W           1 -3.298535114419428E-002  3.609919172235914E-002
+ EULAG: successful           1
+ EULAG MIN MAX W           3 -4.588997319085448E-002  3.102527023706187E-002
+ EULAG: successful           3
+ PENCIL MINMAX W           5 -3.298535114419428E-002  3.609919172235914E-002
+ Pencil successful           5
+ PENCIL MINMAX W           2 -1.645420906064889E-004  2.702726665468746E-004
+ Pencil successful           2
+ cour,lipsh: 0.1523E-03 0.2666E-03
+ umax, umin:  0.5914887191772670E+00 -0.5035762779104963E+00
+ vmax, vmin:  0.7736284608386108E-01 -0.7866462034678781E-01
+ wmax, wmin:  0.3020135888524800E-01 -0.3790094574002090E-01
+ pmax, pmin:  0.6383193671324382E+03 -0.1551906041672281E+03
+ thmx, thmn:  0.2330034997501626E+07  0.2041178505460829E+07  thsum: -0.9999727877292327E+00
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.3959E-07-0.9080E-07-0.1540E-08 0.9681E-08
+             eer,eem: 0.5353E+00 0.4372E+00
+ niter,nitav,miter,mitav:   3   3   3   3
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.4493E+00-0.1679E+01
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.5984E-01-0.5175E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+ duu_dt: max(advec_uu) =  0.000000000000000E+000
+ duu_dt: diagnostics ...
+ daatest_dt: SOLVE
+Bcs for     Axtest,  x: <     s:a>, y: <       a>,  z: <       p>
+Bcs for     Aytest,  x: <   a:nfr>, y: <       s>,  z: <       p>
+Bcs for     Aztest,  x: <   a:nfr>, y: <       a>,  z: <       p>
+ 
+ --it-----t-------dt-----alp11-----alp21-----alp31-----alp12-----alp22-----alp32-----alp13-----alp23-----alp33-----eta132----eta231----eta312----eta321--
+    0    0.000   0.004  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00
+ Pencil-wait:           1  7.336416836275681E-003
+ Pencil-wait:           3  7.336416836275681E-003
+ Pencil-wait:           5  7.336416836275681E-003
+ Pencil-wait:           7  7.336416836275681E-003
+ Pencil-wait:           0  7.336416836275681E-003
+ Pencil-wait:           2  7.336416836275681E-003
+ Pencil-wait:           4  7.336416836275681E-003
+ Pencil-wait:           6  7.336416836275681E-003
+ PENCIL INIT NON-BLOCK
+ PENCIL walltime[min]tot           3  2.510930932718717E-002
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           0 -1.826314801988501E-004  2.145205041879651E-004
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           3 -5.651310804614929E-002  3.465431506765507E-002
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           4 -1.622509230161087E-004  1.694259082723730E-004
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           5 -4.622239037408090E-002  3.105004880988258E-002
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           6 -1.854055242949241E-004  1.557173285917163E-004
+ EULAG MIN MAX W           2 -5.651310804614929E-002  3.465431506765507E-002
+ EULAG: successful           2
+ PENCIL INIT NON-BLOCK
+ PENCIL MINMAX W           1 -4.445848624848654E-002  4.306303799921195E-002
+ PENCIL INIT NON-BLOCK
+ EULAG walltime[min]tot           2  1.619478786451509E-002
+ PENCIL MINMAX W           7 -5.365193914394182E-002  3.529109893871308E-002
+ EULAG MIN MAX W           0 -4.445848624848654E-002  4.306303799921195E-002
+ EULAG: successful           0
+
+ EULAG MIN MAX W           1 -4.622239037408090E-002  3.105004880988258E-002
+ EULAG: successful           1
+           it=       75 dt(sec)=5000.00 time(solar days)=   0.14
+ u= 0.8536091500304253E-04
+ EULAG MIN MAX W           3 -5.365193914394182E-002  3.529109893871308E-002
+ EULAG: successful           3
+ cour,lipsh,courB: 0.1846E-03 0.3604E-03 0.0000E+00
+ PENCIL MINMAX W           2 -1.432153601066697E-004  1.711558478671087E-004
+ cour,lipsh: 0.1828E-03 0.3869E-03
+ umax, umin:  0.8898007384044057E+00 -0.7230433608231122E+00
+ vmax, vmin:  0.9509506555428848E-01 -0.1270502908315013E+00
+ wmax, wmin:  0.4306303799921195E-01 -0.4445848624848654E-01
+ pmax, pmin:  0.9667032719848833E+03 -0.2181485419815510E+03
+ thmx, thmn:  0.2330034997501567E+07  0.2041178505466802E+07  thsum: -0.1000043799239446E+01
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.2407E-07-0.8347E-07-0.1378E-08 0.8584E-08
+             eer,eem: 0.5701E+00 0.5704E+00
+ niter,nitav,miter,mitav:   3   3   3   3
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.6779E+00-0.2152E+01
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.7355E-01-0.6941E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ EULAG MIN MAX W           1 -6.453702998447140E-002  4.031419411597482E-002
+ EULAG MIN MAX W           2 -5.388243564613369E-002  4.304589705490548E-002
+ EULAG: successful           2
+ EULAG MIN MAX W           3 -5.139000814872983E-002  5.054746329667623E-002
+ EULAG: successful           3
+ EULAG: successful           1
+ EULAG walltime[min]tot           3  3.328209790003409E-002
+ EULAG MIN MAX W           0 -4.139224987512241E-002  4.519771274429926E-002
+ EULAG: successful           0
+
+           it=      100 dt(sec)=5000.00 time(solar days)=   0.19
+ u=-0.3100505323995627E-03
+ cour,lipsh,courB: 0.2319E-03 0.4628E-03 0.0000E+00
+ cour,lipsh: 0.2321E-03 0.5021E-03
+ umax, umin:  0.1189403744807599E+01 -0.9409414940603620E+00
+ vmax, vmin:  0.1065693992156093E+00 -0.1702456293798504E+00
+ wmax, wmin:  0.4519771274429926E-01 -0.4139224987512241E-01
+ pmax, pmin:  0.1295774084590844E+04 -0.2808999467986894E+03
+ thmx, thmn:  0.2330034997501548E+07  0.2041178505472767E+07  thsum: -0.9999918906016625E+00
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.2631E-07-0.8130E-07-0.1314E-08 0.8091E-08
+             eer,eem: 0.6472E+00 0.5815E+00
+ niter,nitav,miter,mitav:   3   3   3   3
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.9078E+00-0.2995E+01
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.5992E-01-0.5428E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+ EULAG walltime[min]tot           4  5.046675033469607E-002
+ EULAG MIN MAX W           1 -4.615410090858496E-002  3.282642630967858E-002
+ EULAG: successful           1
+ EULAG MIN MAX W           3 -6.402158924536505E-002  3.890253276714435E-002
+ EULAG: successful           3
+ EULAG MIN MAX W           2 -4.855469085267312E-002  4.148868561468168E-002
+ EULAG: successful           2
+ EULAG MIN MAX W           0 -4.595937891877611E-002  3.889038425378223E-002
+ EULAG: successful           0
+
+           it=      125 dt(sec)=5000.00 time(solar days)=   0.24
+ u=-0.3043464694606735E-04
+ cour,lipsh,courB: 0.2638E-03 0.6175E-03 0.0000E+00
+ cour,lipsh: 0.2638E-03 0.6787E-03
+ umax, umin:  0.1488256202357871E+01 -0.1150092095087814E+01
+ vmax, vmin:  0.1424863943165118E+00 -0.2199315928386441E+00
+ wmax, wmin:  0.3889038425378223E-01 -0.4595937891877611E-01
+ pmax, pmin:  0.1617693997635914E+04 -0.3485743722825635E+03
+ thmx, thmn:  0.2330034997501526E+07  0.2041178505478725E+07  thsum: -0.1000019466015865E+01
+ zsmx, zsmn:  0.0000000000000000E+00  0.0000000000000000E+00
+ zhmx, zhmn:  0.1223206299196000E+09  0.1223206299196000E+09
+ ispc,chmx,chmn,chav: 1 0.0000E+00 0.0000E+00 0.0000E+00
+ ispc,chmx,chmn,chav: 2 0.0000E+00 0.0000E+00 0.0000E+00
+ dvmx,dvmn,dvav,dvsd: 0.2445E-07-0.8587E-07-0.1355E-08 0.8420E-08
+             eer,eem: 0.5735E+00 0.6344E+00
+ niter,nitav,miter,mitav:   3   3   3   3
+ primx, primn, priav, prisd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+  kmmx,  kmmn,  kmav,  kmsd: 0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
+ k,ommx,ommn:    1 0.0000E+00 0.0000E+00
+ k,ommx,ommn:   32 0.0000E+00 0.0000E+00
+ i,ummx,ummn:    1 0.1138E+01-0.3544E+01
+ i,ummx,ummn:   32-0.1000E+16 0.1000E+16
+ j,vmmx,vmmn:    1 0.3225E-01-0.2821E-01
+ j,vmmx,vmmn:   32-0.1000E+16 0.1000E+16
+  500    0.914   0.002  1.17E+01  1.25E+01 -1.76E-01  5.98E-02 -9.73E-03 -4.37E-04  2.47E-05 -4.61E-05  5.16E-07 -7.36E-04  3.00E-06  3.27E-01  1.83E-06
+ 1000    1.820   0.002  5.29E+00  9.07E+00 -1.06E-01  6.26E-02 -1.02E-02 -5.70E-04 -1.09E-04 -7.09E-05  3.97E-07 -8.81E-04  8.11E-07  2.16E-01  3.16E-06
+ 1500    2.720   0.002  3.77E+00  7.54E+00 -7.09E-02  6.22E-02 -9.80E-03 -6.43E-04 -2.05E-04 -8.34E-05  2.53E-07 -9.27E-04 -1.35E-06  1.65E-01  4.04E-06
+ 2000    3.614   0.002  3.18E+00  6.66E+00 -4.85E-02  6.13E-02 -9.25E-03 -6.89E-04 -2.71E-04 -8.95E-05  1.38E-07 -9.32E-04 -2.96E-06  1.34E-01  4.94E-06
+ 2500    4.503   0.002  2.88E+00  6.10E+00 -3.22E-02  6.05E-02 -8.79E-03 -7.20E-04 -3.15E-04 -9.19E-05  4.52E-08 -9.17E-04 -4.08E-06  1.12E-01  5.88E-06
+ 3000    5.387   0.002  2.68E+00  5.74E+00 -1.98E-02  5.97E-02 -8.46E-03 -7.41E-04 -3.44E-04 -9.19E-05 -3.26E-08 -8.91E-04 -4.84E-06  9.50E-02  6.81E-06
+ 3500    6.265   0.002  2.54E+00  5.51E+00 -1.02E-02  5.89E-02 -8.28E-03 -7.56E-04 -3.62E-04 -9.05E-05 -1.01E-07 -8.61E-04 -5.35E-06  8.23E-02  7.70E-06
+[mpiexec@parker] Sending Ctrl-C to processes as requested
+[mpiexec@parker] Press Ctrl-C again to force abort
+2984.4u 4.5s 4:10.10 1195.1% 0+0k 256+269040io 0pf+0w
+

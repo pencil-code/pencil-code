@@ -1082,7 +1082,6 @@ module Equ
           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
               (ltestfield_z.and.iuutest>0)) &
             maxadvec=maxadvec+sqrt(advec2)
-
           if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
             maxadvec=maxadvec+sqrt(advec2_hypermesh)
 !
@@ -1139,6 +1138,8 @@ module Equ
 !  Timestep combination from advection and diffusion (and "source"). 
 !
           dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
+if (iproc==4.or.iproc==6) write(80+iproc,*) maxval(abs(dt1_max))
+
 !
 !  time step constraint from the coagulation kernel
 !
