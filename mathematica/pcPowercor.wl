@@ -21,7 +21,8 @@ Input:
 Output:
   List. {{t1,C1},{t2,C2},...}."
 
-autoCor::usage="autoCor[ts] computes auto-correlation of ts.
+autoCor::usage="autoCor[ts] computes auto-correlation of ts. Normalization is such that
+autoCor[ts][[1,-1]]==Total[ts[[;;,-1]]^2]/Sqrt[Length[ts]].
 Input:
   ts: List. Time series; can be, for example, either readTS[sim,\"t\",\"urms\"]
        or readTS[sim,\"t\",\"urms\"]//Transpose. Need not start from t=0.
