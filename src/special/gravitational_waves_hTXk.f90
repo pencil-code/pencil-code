@@ -85,15 +85,16 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  character (len=labellen) :: initGW='nothing', inithij='nothing', initgij='nothing'
+  character (len=labellen) :: initGW='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress', idelkt='jump'
-  real :: amplhij=0., amplgij=0., dummy=0.
+  real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
+  real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.true.
@@ -110,6 +111,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
+  logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
@@ -126,7 +128,8 @@ module Special
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    inithij, initgij, amplhij, amplgij, lStress_as_aux, lgamma_factor, &
+    initGW, amplGW, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
+    lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag, &
@@ -463,24 +466,25 @@ module Special
 !
 !  initial condition for hij
 !
-      select case (inithij)
+      select case (initGW)
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
           f(:,:,:,ihhT:ihhXim)=0.
-        case default
-          call fatal_error("init_special: No such value for inithij:" &
-              ,trim(inithij))
-      endselect
-!
-!  initial condition for gij
-!
-      select case (initgij)
-        case ('nothing')
-          if (lroot) print*,'init_special: nothing'
           f(:,:,:,iggT:iggXim)=0.
+        case ('kx1')
+          f(:,:,:,ihhT:ihhXim)=0.
+          f(:,:,:,iggT:iggXim)=0.
+          f(l1+1,m1,n1,ihhT)=amplGW
+          f(l2-0,m1,n1,ihhT)=amplGW
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
+            cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
+            lskip_projection_GW, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true.)
         case default
-          call fatal_error("init_special: No such value for initgij:" &
-              ,trim(initgij))
+          call fatal_error("init_special: No such value for initGW:" &
+              ,trim(initGW))
       endselect
 !
       if (lStress_as_aux) then
