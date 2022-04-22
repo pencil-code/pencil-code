@@ -37,12 +37,12 @@ module Special
     init_qq, AA0, DD0, LL0
 !
   ! run parameters
-  real :: kp=.0, km=.0, kC=.9, kX=.1
+  real :: kp=.0, km=.0, kC=.9, kX=.1, kR=.0
   real :: fidelity=1., betaD=.0, betaL=.0, react_diff=0.
   real :: fidelity_factor1, fidelity_factor2
   real, dimension (nx) :: Ntot
   namelist /special_run_pars/ &
-    kp, km, kC, kX, fidelity, betaD, betaL, react_diff
+    kp, km, kC, kX, kR, fidelity, betaD, betaL, react_diff
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -215,11 +215,12 @@ module Special
       use Mpicomm
       use Sub
 !
+      character(len=50) :: form='(i10,3i5)'
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rrr
-      real, dimension (nx) ::     d1, d2, d3, d4, d5, d6, d7
-      real, dimension (nx) :: r0, r1, r2, r3, r4, r5, r6, r7
+      real, dimension (nx) ::     d1, d2, d3, d4, d5, d6, d7, d8, d9
+      real, dimension (nx) :: r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
       real, dimension (nx) :: qA, qD, qL
       real, dimension (nx) :: dqA, dqD, dqL
       real, dimension (nx) :: ee, ee1, ee10, ee50, ee90, ee99
@@ -252,15 +253,19 @@ module Special
       d5=kC*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot
       d6=kC*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot
       d7=kX
+      d8=kR*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot
+      d9=kR*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot
 !
       r0=0.
-      r1=r0+d1
-      r2=r1+d2
-      r3=r2+d3
-      r4=r3+d4
-      r5=r4+d5
-      r6=r5+d6
+      r1=r0+d1  !(Spontaneous creation of D: A -> D)
+      r2=r1+d2  !(Spontaneous creation of L: A -> L)
+      r3=r2+d3  !(Spontaneous destruction of D: D -> A)
+      r4=r3+d4  !(Spontaneous destruction of L: L -> A)
+      r5=r4+d5  !(Catalytic reaction A+D -> 2D)
+      r6=r5+d6  !(Catalytic reaction A+L -> 2L)
       r7=r6+d7  !(Enantiomeric cross inhibition)
+      r8=r7+d8  !(Return reaction 2D -> A+D)
+      r9=r8+d9  !(Return reaction 2L -> A+L)
 !
 !  Produce random numbers
 !
@@ -274,6 +279,7 @@ module Special
 !
 !  Spontaneous formation of chiral molecule *or*
 !  autocatalysis of D. 
+!  Rates d1 and d5
 !
       where (( (rrr >= r0 .and. rrr < r1) .or. &
                (rrr >= r4 .and. rrr < r5) ) .and. qA /= 0)
@@ -284,6 +290,7 @@ module Special
 !
 !  Spontaneous formation of chiral molecule *or*
 !  autocatalysis of L. 
+!  Rates d2 and d6
 !
       where (( (rrr >= r1 .and. rrr < r2) .or. &
                (rrr >= r5 .and. rrr < r6) ) .and. qA /= 0)
@@ -293,16 +300,20 @@ module Special
       endwhere
 !
 !  Spontaneous racemizatio of D.
+!  Rates d3 and d8
 !
-      where ((rrr >= r2 .and. rrr < r3) .and. qD > 0)
+      where (( (rrr >= r2 .and. rrr < r3) .or. &
+               (rrr >= r7 .and. rrr < r8) ) .and. qD > 0)
         dqA= 1
         dqD=-1
         dqL= 0
       endwhere
 !
 !  Spontaneous racemizatio of L.
+!  Rates d4 and d9
 !
-      where ((rrr >= r3 .and. rrr < r4) .and. qL > 0)
+      where (( (rrr >= r3 .and. rrr < r4) .or. &
+               (rrr >= r8 .and. rrr < r9) ) .and. qL > 0)
         dqA= 1
         dqD= 0
         dqL=-1
@@ -315,6 +326,10 @@ module Special
         dqD=-1
         dqL=-1
       endwhere
+!
+!  write reaction
+!
+      write (61,form) nint(t), nint(dqA), nint(dqD), nint(dqL)
 !
 !  Spatial diffusion.
 !
