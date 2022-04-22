@@ -4536,14 +4536,15 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
-  integer :: kxx,kyy,kzz
+  integer :: kxx,kyy,kzz,kint
   real :: k2,rr,k
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
   real, dimension(nx,ny,nz) :: gLam
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam_tmp
-  real, dimension(nk) :: invrt,invrt_sum
+  real, dimension(nk) :: correl,correl_sum
+  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -4565,8 +4566,10 @@ endsubroutine pdf
   !
   h_re=0.
   h_im=0.
-  invrt=0.
-  invrt_sum=0.
+  correl=0.
+  correl_sum=0.
+  spectrum=0.
+  spectrum_sum=0.
   !
   !  loop over all the components
   !
@@ -4616,22 +4619,34 @@ endsubroutine pdf
       kzz = kz(ikz+ipz*nz)       !  the true kz
       k2 = kxx**2+kyy**2+kzz**2  !  knorm^2
       k = sqrt(k2)               !  knorm
-      !
+      kint = nint(k)             !  nint(knorm)
+      !  power spectrum of helicity only computed once, at ikr=1
+      if (ikr==1) then
+        if ( kint>=0 .and. kint<=(nk-1) ) then
+          spectrum(kint+1) = spectrum(kint+1) + h_re(ikx,iky,ikz)
+        endif
+      endif
+      !  int_0^rr dr <h(x)h(x+r)>
       if (k==0.) then
-        invrt(ikr) = invrt(ikr) + 2/3*(rr**3) * h_re(ikx,iky,ikz)
+        correl(ikr) = correl(ikr) + 2/3*(rr**3) * h_re(ikx,iky,ikz)
       else
-        invrt(ikr) = invrt(ikr) + 2/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
+        correl(ikr) = correl(ikr) + 2/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
             * h_re(ikx,iky,ikz)
       endif
     enddo; enddo; enddo
   enddo
   !
-  call mpireduce_sum(invrt,invrt_sum,nk)
+  call mpireduce_sum(correl,correl_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
   !
   if (lroot) then
+    open(1,file=trim(datadir)//'/correl_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) correl_sum
+    close(1)
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
-    write(1,*) invrt_sum
+    write(1,*) spectrum_sum
     close(1)
   endif
   !
