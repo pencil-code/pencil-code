@@ -41,8 +41,10 @@ module Special
   real :: fidelity=1., betaD=.0, betaL=.0, react_diff=0.
   real :: fidelity_factor1, fidelity_factor2
   real, dimension (nx) :: Ntot
+  logical :: lautocat_correct=.false., ldebug_react=.false.
   namelist /special_run_pars/ &
-    kp, km, kC, kX, kR, fidelity, betaD, betaL, react_diff
+    kp, km, kC, kX, kR, fidelity, betaD, betaL, react_diff, &
+    lautocat_correct, ldebug_react
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -224,7 +226,7 @@ module Special
       real, dimension (nx) :: qA, qD, qL
       real, dimension (nx) :: dqA, dqD, dqL
       real, dimension (nx) :: ee, ee1, ee10, ee50, ee90, ee99
-      real, dimension (nx) :: del2j
+      real, dimension (nx) :: autocat_correct, del2j
       type (pencil_case) :: p
       integer :: j
 !
@@ -244,17 +246,25 @@ module Special
       qD=f(l1:l2,m,n,2)
       qL=f(l1:l2,m,n,3)
 !
+!  possibility of adding autocatalytic correction factor
+!
+      if (lautocat_correct) then
+        autocat_correct=qA/(qD+qL)
+      else
+        autocat_correct=qA/(qD+qL)
+      endif
+!
 !  Determine boundary points
 !
       d1=kp*.5
       d2=kp*.5
       d3=km*.5
       d4=km*.5
-      d5=kC*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot
-      d6=kC*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot
+      d5=kC*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot*autocat_correct
+      d6=kC*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot*autocat_correct
       d7=kX
-      d8=kR*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot
-      d9=kR*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot
+      d8=kR*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot*autocat_correct
+      d9=kR*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot*autocat_correct
 !
       r0=0.
       r1=r0+d1  !(Spontaneous creation of D: A -> D)
@@ -329,7 +339,7 @@ module Special
 !
 !  write reaction
 !
-      write (61,form) nint(t), nint(dqA), nint(dqD), nint(dqL)
+      if (ldebug_react) write (61,form) nint(t), nint(dqA), nint(dqD), nint(dqL)
 !
 !  Spatial diffusion.
 !
