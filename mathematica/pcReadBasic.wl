@@ -55,16 +55,17 @@ Begin["`Private`"]
 (*Read basic information*)
 
 
-readDim[sim_,n_Integer:-1]:=Module[{file,mx,my,mz,c,precision,gh1,gh2,gh3,nx,ny,nz},
+readDim[sim_,n_Integer:-1]:=Module[{file,data,precision,nxyz,names},
   file=StringJoin[sim,"/data",If[n==-1,"","/proc"<>ToString@n],"/dim.dat"];
-  {{mx,my,mz,c[1],c[2],c[3]},{precision},{gh1,gh2,gh3},c[4]}=Import[file];
-  precision=Switch[precision,"S","Real32","D","Real64"];
-  {nx,ny,nz}=MapThread[(#1-2#2)&,{{mx,my,mz},{gh1,gh2,gh3}}];
+  data=Import[file];
+  precision=Switch[data[[2,1]],"S","Real32","D","Real64"];
+  nxyz=MapThread[(#1-2#2)&,{data[[1,1;;3]],data[[3]]}];
   
-  Thread[
-    {"mx","my","mz","precision","gh1","gh2","gh3","nx","ny","nz"}->
-    {mx,my,mz,precision,gh1,gh2,gh3,nx,ny,nz}
-  ]//Association
+  names=Join[{"mx","my","mz","mvar","maux","mglobal","precision","gh1","gh2","gh3"},
+    If[n==-1,{"nprocx","nprocy","nprocz","Iprocz_slowest"},{"ipx","ipy","ipz"}],
+    {"nx","ny","nz"}];
+  
+  AssociationThread[names->Flatten@List[data[[1]],precision,data[[3;;-1]],nxyz]]
 ]
 
 nProc[sim_]:=Import[sim<>"/data/dim.dat"]//Last//Most
