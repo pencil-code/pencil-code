@@ -4533,6 +4533,7 @@ endsubroutine pdf
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use Magnetic, only: lcoulomb, iLam
+    use Cdata, only: pi
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
@@ -4628,9 +4629,9 @@ endsubroutine pdf
       endif
       !  int_0^rr dr <h(x)h(x+r)>
       if (k==0.) then
-        correl(ikr) = correl(ikr) + 2/3*(rr**3) * h_re(ikx,iky,ikz)
+        correl(ikr) = correl(ikr) + 8*pi/3*(rr**3) * h_re(ikx,iky,ikz)
       else
-        correl(ikr) = correl(ikr) + 2/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
+        correl(ikr) = correl(ikr) + 8*pi/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
             * h_re(ikx,iky,ikz)
       endif
     enddo; enddo; enddo
