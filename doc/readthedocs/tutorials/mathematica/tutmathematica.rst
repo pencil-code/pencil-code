@@ -199,8 +199,22 @@ Here is an example to make a video:
 One can also visualize variables in a 3D box.
 For more information see the comments of ``makeBox`` and ``makeBoxes``.
 
+Running on supercomputers
+================================
 
+First, make sure Mathematica is available on the machine.
+You can check this by saying ``which wolfram`` in the terminal.
+If it is not installed, contact your administrator to see if it can be loaded.
 
+Once you have loaded the Mathematica module, try ``wolfram`` in the terminal.
+It should bring you to the text-based interface of Mathematica.
+You can then follow the steps in the previous sections to set up the package.
+
+There is a sample script in the directory ``$PENCIL_HOME/mathematica/sample_script.wls``.
+Modify its first line according to where your ``wolfram`` is.
+Remember to include the ``-script`` option.
+
+To run a script, use ``wolframscript your_script.wls``.
 
 
 
