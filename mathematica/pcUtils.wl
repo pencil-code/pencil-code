@@ -56,19 +56,26 @@ pcDifferences[l_]:=Module[{dl},
   {dl[[1]]/2,Mean/@(Partition[dl,2,1]),dl[[-1]]/2}//Flatten
 ]
 
-pcFit[data_,sp_,fact_:1]:=Module[{model,a,x,sol,minmax},
+pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[{model,llog,a,x,sol,minmax},
+  llog=False;
   model=Switch[sp,
-    "PowerLaw",a[1]*x^a[2],
+    "PowerLaw",llog=True;a[1]+a[2]*x,
     "PowerLaw+C",a[1]+a[2]*x^a[3],
     "Linear",a[1]+a[2]*x,
     "Exp",a[1]*Exp[a[2]*x],
     "Exp+C",a[1]+a[2]*Exp[a[3]*x],
     _,sp/.{"x"->x,"a"->a}
   ];
-  sol=FindFit[data,model,a/@Range[10],x];
-  Print["Fit result: ",model/.x->"x"/.sol];
-  minmax=data[[;;,1]]//MinMax;
-  Table[{x,fact*model/.sol},{x,Subdivide[Sequence@@minmax,32]}]
+  If[llog,
+    sol=FindFit[Log@data,model,a/@Range[10],x];
+    model=Exp[model/.x->Log[x]/.sol],
+    (*else*)
+    sol=FindFit[Log@data,model,a/@Range[10],x];
+    model=model/.sol
+  ];
+  Print["Fit result: ",model/.x->"x"];
+  minmax=MinMax[data[[;;,1]]]*fact[[1;;2]];
+  Table[{x,fact[[3]]*model},{x,Subdivide[Sequence@@minmax,32]}]
 ]
 
 
