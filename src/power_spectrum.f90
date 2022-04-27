@@ -4536,7 +4536,7 @@ endsubroutine pdf
     use Cdata, only: pi
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
+  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr,nv,nsum,nsub
   integer :: kxx,kyy,kzz,kint
   real :: k2,rr,k
   real, dimension (mx,my,mz,mfarray) :: f
@@ -4546,6 +4546,8 @@ endsubroutine pdf
   real, dimension(nx,3) :: gLam_tmp
   real, dimension(nk) :: correl,correl_sum
   real, dimension(nk) :: spectrum,spectrum_sum
+  real, allocatable, dimension(:,:,:) :: hv,hv_sum
+  real, allocatable, dimension(:) :: Iv
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -4571,6 +4573,11 @@ endsubroutine pdf
   correl_sum=0.
   spectrum=0.
   spectrum_sum=0.
+  if (lroot) then
+    nv=1+nint(log(1.*nxgrid)/log(2.))
+    allocate(Iv(nv))
+    Iv=0.
+  endif
   !
   !  loop over all the components
   !
@@ -4608,6 +4615,30 @@ endsubroutine pdf
     endif
     !
   enddo !(from loop over ivec)
+  !
+  !  the fsum method
+  !
+  do ikr=1,nv
+    nsum=2**(ikr-1)  !  sum over nsum grid points along each direction
+    nsub=nxgrid/nsum  !  number of subvolumes alrong each direction
+    allocate( hv(nsub,nsub,nsub) )
+    allocate( hv_sum(nsub,nsub,nsub) )
+    hv=0.
+    hv_sum=0.
+    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+      kxx = ikx+ipx*nx-1
+      kyy = iky+ipy*ny-1
+      kzz = ikz+ipz*nz-1
+      hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum)= &
+          hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum)+ &
+          h_re(ikx,iky,ikz)*dx*dy*dz
+    enddo; enddo; enddo
+    call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
+    if (lroot) Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
+    deallocate(hv,hv_sum)
+  enddo
+  !
+  !  the spectral method
   !
   call fft_xyz_parallel(h_re,h_im)
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
@@ -4649,6 +4680,12 @@ endsubroutine pdf
     write(1,*) t
     write(1,*) spectrum_sum
     close(1)
+    open(1,file=trim(datadir)//'/Iv_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) Iv
+    close(1)
+    !
+    deallocate(Iv)
   endif
   !
   endsubroutine quadratic_invariants
