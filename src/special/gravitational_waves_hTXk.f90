@@ -483,6 +483,11 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true.)
+          call power_randomphase_hel(amplGW,initpower_GW+2.,initpower2_GW+2., &
+            cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
+            lskip_projection_GW, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true.)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
