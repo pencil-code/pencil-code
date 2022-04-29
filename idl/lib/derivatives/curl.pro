@@ -4,6 +4,10 @@
 ;;  Calculate the curl of a 3-D vector field
 ;;
 function curlx,f
+  curlx_pro, f, crlx
+  return, crlx
+end
+pro curlx_pro,f,curlx
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -21,10 +25,13 @@ function curlx,f
     for n = n1, n2 do curlx[l1:l2,m1:m2,n] += f[l1:l2,m1:m2,n,2]*corr
   endif
 ;
-  return, curlx
 end
 ;;
 function curly,f
+  curly_pro, f, crly
+  return, crly
+end
+pro curly_pro,f,curly
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -38,11 +45,13 @@ function curly,f
     for n = n1, n2 do curly[l1:l2,m1:m2,n] -= f[l1:l2,m1:m2,n,2]*corr
   end
 ;
-  return, curly
-;
 end
 ;;
 function curlz,f
+  curlz_pro, f, crlz
+  return, crlz
+end
+pro curlz_pro,f,curlz
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -56,7 +65,6 @@ function curlz,f
     for n = n1, n2 do curlz[l1:l2,m1:m2,n] += f[l1:l2,m1:m2,n,1]*corr
   end
 ;
-  return, curlz
 end
 ;;
 function curl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
@@ -69,9 +77,12 @@ function curl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if ((size(f))[0] lt 4) then message, "curl is only implemented for 4D arrays."
   w = make_array(size=size(f))
 ;
-  w[*,*,*,0]=curlx(f)
-  w[*,*,*,1]=curly(f)
-  w[*,*,*,2]=curlz(f)
+  curlx_pro, f, crlx
+  w[*,*,*,0]=crlx
+  curly_pro, f, crlx
+  w[*,*,*,1]=crlx
+  curlz_pro, f, crlx
+  w[*,*,*,2]=crlx & undefine, crlx
 ;
 ;  Set ghost zones.
 ;
