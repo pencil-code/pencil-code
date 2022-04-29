@@ -5269,7 +5269,7 @@ module Initcond
           enddo
         endif
 !
-!  scale with r
+!  scale with r: allow for special case with scalars here
 !
         if (i2==i1) then
           u_re(:,:,:,1)=r*u_re(:,:,:,1)

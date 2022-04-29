@@ -464,16 +464,17 @@ module Special
 !
       intent(inout) :: f
 !
-!  initial condition for hij
+!  initialize everything to zero
+!
+      f(:,:,:,ihhT:ihhXim)=0.
+      f(:,:,:,iggT:iggXim)=0.
+!
+!  different initial condition for hT,X and gT,X
 !
       select case (initGW)
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
-          f(:,:,:,ihhT:ihhXim)=0.
-          f(:,:,:,iggT:iggXim)=0.
         case ('kx1')
-          f(:,:,:,ihhT:ihhXim)=0.
-          f(:,:,:,iggT:iggXim)=0.
           f(l1+1,m1,n1,ihhT)=amplGW
           f(l2-0,m1,n1,ihhT)=amplGW
         case ('power_randomphase_hel')
