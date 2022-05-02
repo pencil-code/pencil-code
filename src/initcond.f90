@@ -5052,7 +5052,7 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
-      k1hel, k2hel,lremain_in_fourier,lpower_profile_file)
+      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -5081,9 +5081,9 @@ module Initcond
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
       logical :: lskip_projection
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
-      real, intent(in), optional :: k1hel, k2hel
+      real, intent(in), optional :: k1hel, k2hel, qexp
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
-      real, dimension (:,:,:), allocatable :: k2, r
+      real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5113,6 +5113,13 @@ module Initcond
       if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for k2')
       allocate(r(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for r')
+!
+      if (present(qexp)) then
+        if (qexp/=0.) then
+          allocate(r2(nx,ny,nz),stat=stat)
+          if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for r2')
+        endif
+      endif
 !
       if (i2==i1) then
         allocate(u_re(nx,ny,nz,1),stat=stat)
@@ -5185,11 +5192,39 @@ module Initcond
 !
 !  generate flat spectrum with random phase (between -pi and pi)
 !
-        do i=1,i2-i1+1
-          call random_number_wrapper(r)
-          u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-          u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-        enddo !i
+        if (present(qexp)) then
+          if (qexp==0.) then
+            do i=1,i2-i1+1
+              call random_number_wrapper(r)
+              u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+              u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+            enddo !i
+          elseif (qexp==1.) then
+            do i=1,i2-i1+1
+              call random_number_wrapper(r)
+              call random_number_wrapper(r2)
+              u_re(:,:,:,i)=-ampl*alog(r)*tanh(100.*(r2-.5))
+              call random_number_wrapper(r)
+              call random_number_wrapper(r2)
+              u_im(:,:,:,i)=-ampl*alog(r)*tanh(100.*(r2-.5))
+            enddo !i
+          else
+            do i=1,i2-i1+1
+              call random_number_wrapper(r)
+              call random_number_wrapper(r2)
+              u_re(:,:,:,i)=-ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
+              call random_number_wrapper(r)
+              call random_number_wrapper(r2)
+              u_im(:,:,:,i)=-ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
+            enddo !i
+          endif
+        else
+          do i=1,i2-i1+1
+            call random_number_wrapper(r)
+            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+          enddo !i
+        endif
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
