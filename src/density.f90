@@ -330,11 +330,10 @@ module Density
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lrelativistic', &
-            lrelativistic, caller='register_density')
-   !AB: not sure this is needed
-   !  else
-   !    lrelativistic=.false.
+        call get_shared_variable('lrelativistic', lrelativistic)
+      else
+        allocate(lrelativistic)
+        lrelativistic=.false.
       endif
 !
     endsubroutine register_density
@@ -2328,8 +2327,7 @@ module Density
         if (notanumber(p%glnrho)) then
           print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
           !print*, 'it,m,n=', it,m,n
-          print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
-          !print*, f(4,4,1:6,ilnrho)
+          !write(iproc+10,*) "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
           call fatal_error_local('calc_pencils_density','NaNs in p%glnrho')
         endif
         if (lpenc_loc(i_grho)) then
