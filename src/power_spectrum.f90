@@ -4536,7 +4536,8 @@ endsubroutine pdf
     use Cdata, only: pi
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr,nv,nsum,nsub
+  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
+  integer :: nv,nvmin,nsum,nsub
   integer :: kxx,kyy,kzz,kint
   real :: k2,rr,k
   real, dimension (mx,my,mz,mfarray) :: f
@@ -4575,6 +4576,7 @@ endsubroutine pdf
   spectrum_sum=0.
   if (lroot) then
     nv=1+nint(log(1.*nxgrid)/log(2.))
+    nvmin=max(1,1+nint(log(nxgrid/1024.)/log(2.)))
     allocate(Iv(nv))
     Iv=0.
   endif
@@ -4618,7 +4620,7 @@ endsubroutine pdf
   !
   !  the fsum method
   !
-  do ikr=1,nv
+  do ikr=nvmin,nv
     nsum=2**(ikr-1)  !  sum over nsum grid points along each direction
     nsub=nxgrid/nsum  !  number of subvolumes alrong each direction
     allocate( hv(nsub,nsub,nsub) )
