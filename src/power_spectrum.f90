@@ -4574,9 +4574,9 @@ endsubroutine pdf
   correl_sum=0.
   spectrum=0.
   spectrum_sum=0.
+  nv=1+nint(log(1.*nxgrid)/log(2.))
+  nvmin=max(1,1+nint(log(nxgrid/256.)/log(2.)))
   if (lroot) then
-    nv=1+nint(log(1.*nxgrid)/log(2.))
-    nvmin=max(1,1+nint(log(nxgrid/1024.)/log(2.)))
     allocate(Iv(nv))
     Iv=0.
   endif
