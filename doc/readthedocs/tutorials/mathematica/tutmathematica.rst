@@ -157,15 +157,15 @@ A quick way to make a density plot from ``data`` is
 
 .. code ::
 
-  showSlice[data, "uu1", {"z", 8}]
+  showSlice[data, "uu1", {"z", 0.2}]
 
-Here ``{"z",8}`` instructs to plot the 8th slice in the ``z`` direction.
+Here ``{"z",0.2}`` instructs to plot the ``xy`` slice closest to ``z=0.2``.
 
 For vector fields one can also use
 
 .. code ::
 
-  showSliceVector[data, "uu", {"z", 8}]
+  showSliceVector[data, "uu", {"z", 0.2}]
 
 Notice the second argument is just ``"uu"`` with no index.
 The function then makes a density plot of the out-of-plane component of (here ``"uu3"``),
