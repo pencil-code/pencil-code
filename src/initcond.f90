@@ -5190,7 +5190,7 @@ module Initcond
         endif
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
-!  generate flat spectrum with random phase (between -pi and pi)
+!  Generate flat spectrum with random phase (between -pi and pi) for qexp=0.
 !
         if (present(qexp)) then
           if (qexp==0.) then
@@ -5199,23 +5199,22 @@ module Initcond
               u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
               u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
             enddo !i
-          elseif (qexp==1.) then
-            do i=1,i2-i1+1
-              call random_number_wrapper(r)
-              call random_number_wrapper(r2)
-              u_re(:,:,:,i)=-ampl*alog(r)*tanh(100.*(r2-.5))
-              call random_number_wrapper(r)
-              call random_number_wrapper(r2)
-              u_im(:,:,:,i)=-ampl*alog(r)*tanh(100.*(r2-.5))
-            enddo !i
           else
+!
+!  Random nongaussian amplitudes for other values of q with exponential
+!  distribution (for q=1) and super-exponential (for q>1) first in real
+!  space, and then transform into spectral space.
+!
             do i=1,i2-i1+1
               call random_number_wrapper(r)
               call random_number_wrapper(r2)
-              u_re(:,:,:,i)=-ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
-              call random_number_wrapper(r)
-              call random_number_wrapper(r2)
-              u_im(:,:,:,i)=-ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
+              if (qexp==1.) then
+                u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(r2-.5))
+              else
+                u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
+              endif
+              u_im(:,:,:,i)=0.
+              call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
             enddo !i
           endif
         else
