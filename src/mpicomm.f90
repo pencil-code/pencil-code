@@ -189,6 +189,7 @@ module Mpicomm
 !
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
+!if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD 
 !
 ! If mpirun/mpiexec calls also other applications than Pencil:
 ! Get rank within the set of applications, iapp.
@@ -204,7 +205,7 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
-!if (lroot) print*, 'Pencil: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD
+!if (lroot) print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
@@ -223,7 +224,7 @@ module Mpicomm
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
 
-      MPI_COMM_GRID=MPI_COMM_PENCIL
+      call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID,mpierr)
       iproc_world=iproc
 !
 !  Check consistency in processor layout.
@@ -335,7 +336,7 @@ module Mpicomm
       if (lyinyang) then
         call MPI_COMM_SPLIT(MPI_COMM_PENCIL, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
       else
-        MPI_COMM_GRID=MPI_COMM_PENCIL
+        !call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID, mpierr)
       endif
 !
 !  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
@@ -10115,8 +10116,9 @@ endif
 !
 !  Receive length of name of foreign code.
 !
+print*, "Pencil = ",frgn_setup%root
           call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-!print*, 'received foreign name_len=', name_len
+!print*, 'Received foreign name_len=', name_len
           if (name_len<=0) then
             call stop_it('initialize_foreign_comm: length of foreign name <=0 or >')
           elseif (name_len>labellen) then
@@ -10131,7 +10133,7 @@ endif
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call stop_it('initialize_foreign_comm: communication with foreign code "'// &
                          trim(frgn_setup%name)//'" not supported')
-!print*, 'received foreign name: ', name_len, trim(frgn_setup%name)
+!print*, 'Received foreign name: ', name_len, trim(frgn_setup%name)
 !
 !  Receive processor numbers of foreign code.
 !      
@@ -10247,7 +10249,7 @@ endif
 !Receive normalized time from foreign side
 !
           call mpirecv_real(frgn_setup%renorm_t,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
+!print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
           frgn_setup%renorm_L = frgn_setup%extents(2,3) 
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
@@ -10278,10 +10280,11 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
 !
-        if (lfirst_proc_yz) then             ! on processors of first XBEAM
-
+        if (lfirst_proc_yz) &             ! on processors of first XBEAM
           frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
-          call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_YZPLANE)
+        
+        call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_YZPLANE)
+        if (lfirst_proc_yz) then             ! on processors of first XBEAM
 !                              
 !  Broadcast frgn_setup%xgrid to all procs with iprocx=0.
 !                              
@@ -10318,7 +10321,6 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
-            
           else
             if (frgn_setup%procnums(1)>1) then
 !                                                                                                
@@ -10332,10 +10334,12 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
             endif
           endif
         endif  ! if (lfirst_proc_yz)
-        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
+
+        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)  !ORIGINAL
 
         lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
+!print*, "Pencil lenx", iproc, lenx
         allocate(frgn_buffer(lenx,ny,nz,3))   
         call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_PENCIL)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
@@ -10396,15 +10400,15 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 !endif
 !write(20+iproc) frgn_buffer
 !if (.not.loptest(lnonblock))then
-!  print *, 'PENCIL - MIN MAX W, INIT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+print *, 'PENCIL - MIN MAX WT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !else
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
 !print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer), maxval(frgn_buffer)
 
-!print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
-!print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
+print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
+print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
 
 !print*, 'Pencil: successful', iproc
@@ -10438,26 +10442,14 @@ print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%r
 !
       if (trim(frgn_setup%name)=='EULAG') then           
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
-!print *, 'PENCIL UU2EVAL 2 ', iproc, mx, ivar1, ivar2,size(f,1),size(f,2), size(f,3), size(f,4)
         if (size(f,1)==mx) then
           if(size(frgn_buffer,1).gt.nx) lf1 = 2
           f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
-!print *,'PENCIL MINMAX W 1',iproc, size(frgn_buffer(lf1:,:,:,:)),size(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)),minval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)), maxval(f(l1:l2,m1:m2,n1:n2,ivar1:ivar2))
-!print *,'PENCIL MINMAX W 1',iproc, minval(frgn_buffer), maxval(frgn_buffer)
 
         else
           if(size(frgn_buffer,1).gt.size(f,1)) lf1 = 2
           f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
-!print *,'PENCIL MINMAX W 2',iproc,size(frgn_buffer(lf1:,:,:,:)), size(f),minval(f(:,:,:,ivar1:ivar2)), maxval(f(:,:,:,ivar1:ivar2))
-!print *,'PENCIL MINMAX W 2',iproc, minval(frgn_buffer), maxval(frgn_buffer)
         endif
-!if(size(f,1)==mx) then
-!  print *, 'PENCIL - MIN MAX W - FIN',iproc, minval(f(:,:,:,1)), maxval(f(:,:,:,1))
-!else
-!  print *, 'PENCIL - MIN MAX UU2 - FIN',iproc, minval(f(:,:,:,1)), maxval(f(:,:,:,1))
-!endif
-!print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
-!print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
        
       else if (lfirst_proc_yz) then 
         if (frgn_setup%lnprocx_mismat) then

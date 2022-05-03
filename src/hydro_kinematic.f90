@@ -345,31 +345,33 @@ module Hydro
         if (.not.lkinflow_as_aux) call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
       endif
 
-      if (lforeign.and.kinematic_flow=='from-foreign-snap') then
-
-        call initialize_foreign_comm(frgn_buffer) 
+      if (kinematic_flow=='from-foreign-snap') then
+        if (lforeign) then
+          call initialize_foreign_comm(frgn_buffer) 
 !
 !  Initially, take two snapshots.
 !
-        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
-        if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
-        if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
+          if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
+          if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
-        call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
+          call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
-        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
-        call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+          call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
 !        
 ! prepare receiving next snapshot
 !       
-        call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
 print*, 'Pencil successful', iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
+        else
+          call fatal_error("initialize_hydro", "No foreign code available")
+        endif
       endif
-
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
