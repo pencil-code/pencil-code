@@ -26,17 +26,21 @@ thrown away."
 pcDifferences::usage="pcDifferences[l] returns
 {(l2-l1)/2, (l2-l1)/2+(l4-l3)/2, ..., (l[n]-l[n-1])/2}."
 
-pcFit::usage="pcFit[data,sp,fact:1] fits the data with some model specified by
-sp, prints out the result, and returns a the fitted curve.
+pcFit::usage="pcFit[data,sp,fact:{1,1,1},\"lEcho\"->False] fits the data with 
+some model specified by sp, prints out the result, and returns a the fitted curve.
 Inputs:
   data: A List of the form {{x1,y1},{x2,y2},...,{xn,yn}.
   sp: Either a String that matches the implemented models, or simply an expression
       using \"x\" as the variable and \"a\"[i] as parameters.
       Example: \"a\"[1]+Log[\"a\"[2],\"x\"]^(\"a\"[3]).
       For the moment allows for up to 10 paramters.
-  fact: The fitted curve is scaled by a factor of fact.
+  fact: Optional. A List of length 3. The fitted curve is rescaled: The x coordinates of the
+        first and last points are rescaled by a factor of fact[[1]] and fact[[2]],
+        respectively, and the whole curve is rescaled by fact[[3]].
+Options:
+  \"lEcho\": If True, then returns the original data rather than the fitted curve.
 Outputs:
-  A List of the form {{a1,b1},{a2,b2},...,{a32,b32}}, where a1=x1 and a32=xn."
+  Prints out the fitted parameters, and returns a List."
 
 
 Begin["`Private`"]
@@ -56,7 +60,8 @@ pcDifferences[l_]:=Module[{dl},
   {dl[[1]]/2,Mean/@(Partition[dl,2,1]),dl[[-1]]/2}//Flatten
 ]
 
-pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[{model,llog,a,x,sol,minmax},
+Options[pcFit]={"lEcho"->False};
+pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,minmax},
   llog=False;
   model=Switch[sp,
     "PowerLaw",llog=True;a[1]+a[2]*x,
@@ -74,6 +79,7 @@ pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[{model,llog,a,x,sol,minmax},
     model=model/.sol
   ];
   Print["Fit result: ",model/.x->"x"];
+  If[OptionValue["lEcho"],data//Return];
   minmax=MinMax[data[[;;,1]]]*fact[[1;;2]];
   Table[{x,fact[[3]]*model},{x,Subdivide[Sequence@@minmax,32]}]
 ]
