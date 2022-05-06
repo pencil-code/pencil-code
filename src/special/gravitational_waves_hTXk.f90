@@ -124,6 +124,7 @@ module Special
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
+  integer :: itorder_GW=1
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -152,7 +153,7 @@ module Special
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lconstmod_in_stress, k_in_stress
+    lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1253,6 +1254,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
+      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
@@ -1774,6 +1776,23 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
+!
+!  Additional contribution from time derivative with respect to time,
+!  proportional to dS_T_re, dS_T_im, dS_X_re, and dS_X_im, which are propto difference.
+!
+                if (itorder_GW==2) then
+                  dS_T_re=S_T_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )
+                  dS_T_im=S_T_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                    +dS_T_re*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                    +dS_T_im*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                    +dS_T_re*om12*(1.-cosot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                    +dS_T_im*om12*(1.-cosot)
+                endif
+!
               endif
 !
 !  Debug output
@@ -1813,6 +1832,23 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om+coefAim*om*sinot_minus
+!
+!  Additional contribution from time derivative with respect to time,
+!  proportional to dS_T_re, dS_T_im, dS_X_re, and dS_X_im, which are propto difference.
+!
+                if (itorder_GW==2) then
+                  dS_X_re=S_X_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )
+                  dS_X_im=S_X_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                    +dS_X_re*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                    +dS_X_im*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                    +dS_X_re*om12*(1.-cosot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                    +dS_X_im*om12*(1.-cosot)
+                endif
+!
               endif
             else
 !
