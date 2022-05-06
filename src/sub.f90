@@ -3669,7 +3669,11 @@ module Sub
           elseif (dtout > 0.0) then settout
             !  make sure the tout is a good time
             t0 = t
-            tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+            if (t0 == 0.0) then
+              tout = 0.0
+            else
+              tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+            endif
           else settout
             call warning("read_snaptime", "Writing snapshot every time step. ")
             tout = 0.0
