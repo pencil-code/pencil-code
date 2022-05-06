@@ -3055,8 +3055,8 @@ ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
 #
 MAIN_EXECUTABLES=start.x run.x
-HELPER_EXECUTABLES= \
-	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
+HELPER_EXECS_MIN=combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+HELPER_EXECUTABLES=$(HELPER_EXECS_MIN) \
 	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_collect_pvar.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
 ALL_EXECUTABLES=$(MAIN_EXECUTABLES) $(HELPER_EXECUTABLES)
 EXECUTABLES=$(MAIN_EXECUTABLES)
@@ -3108,7 +3108,7 @@ endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 #
-FASTEXECS=code combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+FASTEXECS=code $(HELPER_EXECS_MIN)
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -3121,6 +3121,15 @@ ifneq ($(MODULE_CMD),)
 	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
                                -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
+#
+helper_min:
+	@echo "$(MAKE) $(MAKEOPTS) $(HELPER_EXECS_MIN)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
+	   ($(MAKE) $(MAKEOPTS) $(HELPER_EXECS_MIN) \
+	   || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	  $(MAKE) $(MAKEOPTS) $(HELPER_EXECS_MIN) ; \
+	fi
 #
 debug:
 	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
