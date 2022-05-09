@@ -3624,7 +3624,7 @@ module Sub
 !
     endsubroutine rdim
 !***********************************************************************
-    subroutine read_snaptime(file,tout,nout,dtout,t)
+    subroutine read_snaptime(file,tout,nout,dtout,t_temp)
 !
 !  Read in output time for next snapshot (or similar) from control file.
 !
@@ -3639,7 +3639,7 @@ module Sub
       real, intent(out) :: tout
       integer, intent(out) :: nout
       real, intent(in) :: dtout
-      double precision, intent(in) :: t
+      double precision, intent(in) :: t_temp
 !
       integer, parameter :: lun = 31
       logical :: exist
@@ -3668,13 +3668,12 @@ module Sub
             tout = abs(dtout)+toutoff
           elseif (dtout > 0.0) then settout
             !  make sure the tout is a good time
-            t0 = t
+            t0 = t_temp
             tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
-            !if (t0 == 0.0) then
-            !  tout = 0.0
-            !else
-            !  tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
-            !endif
+            if (t0 == 0.0) then
+              if (file==trim(trim(datadir)//'/t2davg.dat') .or.  &
+                  file==trim(trim(datadir)//'/t1davg.dat')) tout = 0.0
+            endif
           else settout
             call warning("read_snaptime", "Writing snapshot every time step. ")
             tout = 0.0
