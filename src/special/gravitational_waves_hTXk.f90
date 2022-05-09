@@ -597,7 +597,7 @@ module Special
 !  Remove trace.
 !
           if (i==j) then
-            if (lonly_mag) then  
+            if (lonly_mag) then
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
             else
               if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
@@ -969,7 +969,7 @@ module Special
             endif
 !
 !  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
-!  for the Fortran index ik. Note, however, that 
+!  for the Fortran index ik. Note, however, that
 !
 !  set k vector
 !
@@ -1147,8 +1147,8 @@ module Special
               enddo
               enddo
             endif
-            
-          endif   
+
+          endif
         enddo
       enddo
     enddo
@@ -1175,11 +1175,11 @@ module Special
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
-      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
-      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
-      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0.
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case ('StT'); spectrum=real(spectra%complex_Str_T)
                     spectrum_hel=aimag(spectra%complex_Str_T)
@@ -1216,11 +1216,11 @@ module Special
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
-      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
-      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
-      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0.
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
@@ -1251,7 +1251,7 @@ module Special
       real :: gamma_boost, k1_boost, k1sqr_boost, ksqr_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: cosot, sinot, sinot_minus, om12, om, om1, om2
+      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
@@ -1394,10 +1394,10 @@ module Special
               hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
 !
 ! compute Hijk for nonlinear GW memory effect (still in Fourier space)
-!             
-              do i=1,3 
-              do j=1,6 
-                Hijkim(ikx,iky,ikz,i,j)=+kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre) 
+!
+              do i=1,3
+              do j=1,6
+                Hijkim(ikx,iky,ikz,i,j)=+kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre)
                 Hijkre(ikx,iky,ikz,i,j)=-kvec(i)*(e_T(j)*hhTim+e_X(j)*hhXim)
               enddo
               enddo
@@ -1781,16 +1781,21 @@ module Special
 !  proportional to dS_T_re, dS_T_im, dS_X_re, and dS_X_im, which are propto difference.
 !
                 if (itorder_GW==2) then
+                  if (dt==0.) then
+                    dt1=0.
+                  else
+                    dt1=1./dt
+                  endif
                   dS_T_re=S_T_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )
                   dS_T_im=S_T_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)
                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                    +dS_T_re*om12*(dt-om1*sinot)
+                    +dS_T_re*om12*(1.-om1*dt1*sinot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
-                    +dS_T_im*om12*(dt-om1*sinot)
+                    +dS_T_im*om12*(1.-om1*dt1*sinot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                    +dS_T_re*om12*(1.-cosot)
+                    +dS_T_re*om12*dt1*(1.-cosot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                    +dS_T_im*om12*(1.-cosot)
+                    +dS_T_im*om12*dt1*(1.-cosot)
                 endif
 !
               endif
