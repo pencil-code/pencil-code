@@ -131,7 +131,7 @@ spaceTimeDiag[sim_,sl_,var_,plotStyle___Rule]:=Module[{t,f,nt,nx,gf},
 showSlice[data_,var_String,{sp_String,loc_?NumericQ},plotStyle___Rule]:=
   Module[{f,x1,x2,x3,pos,plotData},
     f=data[var];
-      {x1,x2,x3}=data/@Switch[sp,
+    {x1,x2,x3}=data/@Switch[sp,
         "x",{"y","z","x"},"y",{"x","z","y"},"z",{"x","y","z"}
       ];
     pos=Nearest[x3->"Index",loc];

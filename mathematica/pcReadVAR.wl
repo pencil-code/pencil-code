@@ -16,7 +16,7 @@ BeginPackage["pcReadVAR`","pcReadBasic`","pcDerivative`"]
 
 
 readVARN::usage="readVARN[sim,iVAR,addons,\"ltrim\"->True] reads the iVARth VARN file
-from all processors.
+from all processors. Works for io_dist. For io_hdf5, simply use Import[\".../VAR1.h5\"].
 Input:
   sim: String. Directory of the run
   iVAR: Integer. Index of the VARN file, starting from 0
@@ -32,10 +32,6 @@ Output:
 
 tSnap::usage="tSnap[sim,iproc:0] returns time of VARN files in the ith processor."
 
-readVARNRaw;
-readVARNProc;
-dimProc;
-
 
 Begin["`Private`"]
 
@@ -48,24 +44,12 @@ Begin["`Private`"]
 (*Parameter files for a single processor*)
 
 
-dimProc[sim_,iproc_]:=Module[{mx,my,mz,c,precision,gh1,gh2,gh3,nx,ny,nz},
-  {{mx,my,mz,c[1],c[2],c[3]},{precision},{gh1,gh2,gh3},c[4]}=Import@StringJoin[sim,"/data/proc",ToString@iproc,"/dim.dat"];
-  precision=Switch[precision,"S","Real32","D","Real64"];
-  {nx,ny,nz}=MapThread[(#1-2#2)&,{{mx,my,mz},{gh1,gh2,gh3}}];
-
-  Thread[
-    {"mx","my","mz","precision","gh1","gh2","gh3","nx","ny","nz"}->
-    {mx,my,mz,precision,gh1,gh2,gh3,nx,ny,nz}
-  ]//Association
-]
-
-
 gridProc[sim_,iproc_]:=Module[
   {file,mx,my,mz,precision,t,gridx,gridy,gridz,
   dx,dy,dz,Lx,Ly,Lz,dx1,dy1,dz1,dxt,dyt,dzt},
   gridProc::unfinished="Something left unread from `1`.";
   file=StringJoin[sim,"/data/proc",ToString@iproc,"/grid.dat"];
-  {mx,my,mz,precision}=dimProc[sim,iproc]/@{"mx","my","mz","precision"};
+  {mx,my,mz,precision}=readDim[sim,iproc]/@{"mx","my","mz","precision"};
   
   Close[file]//Quiet;
   BinaryRead[file,"Real32"];
@@ -116,11 +100,15 @@ tSnap[sim_,iproc_:0]:=
 (*Read a single VARN (on a processor) file*)
 
 
-readVARNProc[sim_,iproc_,iVAR_,nVar_,{pre_,mx_,my_,mz_},lshear_]:=
+Options[readVARNProc]={"lnoghost"->True};
+readVARNProc[sim_,iproc_,iVAR_,nVar_,lshear_,OptionsPattern[]]:=
   Module[{file,var,typeLength,tmp,
+    pre,mx,my,mz,gh1,gh2,gh3,ipx,ipy,ipz,
     farray,t,gridx,gridy,gridz,dx,dy,dz,deltay,
-    x,y,z},
-        
+    x,y,z,trim,posx,posy,posz,nproc},
+    
+    {pre,mx,my,mz,gh1,gh2,gh3,ipx,ipy,ipz}=readDim[sim,iproc]/@{"precision","mx","my","mz","gh1","gh2","gh3","ipx","ipy","ipz"};
+    nproc=nProc[sim];
     file=StringJoin[sim,"/data/proc",ToString@iproc,"/VAR",ToString@iVAR];
     Close[file]//Quiet;    
     var=BinaryReadList[OpenRead[file,BinaryFormat->True],Flatten@{
@@ -138,9 +126,38 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,{pre_,mx_,my_,mz_},lshear_]:=
     farray=Partition[farray,mx*my*mz];
     If[!lshear,deltay=0];
     
+    (*remove inner ghost zones*)
+    If[OptionValue["lnoghost"]!=True, trim[x_]:=x,
+      posx=Which[
+        ipx==0,1;;mx-gh1,
+        ipx==nProc[sim][[1]]-1,gh1+1;;-1,
+        True,gh1+1;;mx-gh1
+      ];
+      posy=Which[
+        ipy==0,1;;my-gh2,
+        ipy==nProc[sim][[2]]-1,gh2+1;;-1,
+        True,gh2+1;;my-gh2
+      ];
+      posz=Which[
+        ipz==0,1;;mz-gh3,
+        ipz==nProc[sim][[3]]-1,gh3+1;;-1,
+        True,gh3+1;;mz-gh3
+      ];
+      If[nproc[[1]]==1,posx=All];
+      If[nproc[[2]]==1,posy=All];
+      If[nproc[[3]]==1,posz=All];
+      
+      (*trim*)
+      gridx=gridx[[posx]];
+      gridy=gridy[[posy]];
+      gridz=gridz[[posz]];
+      trim[x_]:=ArrayReshape[x,{mz,my,mx}][[posz,posy,posx]]//Flatten
+    ];
+    
+    (*the index is still f[[mz,my,mz]] here*)
     {z,y,x}=Transpose@Flatten[Outer[List,gridz,gridy,gridx],2];
     Join[
-      Thread[Keys[varName[sim]]->farray[[varName[sim]//Values]]],
+      Thread[Keys[varName[sim]]->trim/@(farray[[varName[sim]//Values]])],
       Thread[{"t","dx","dy","dz","deltay"}->Flatten@{t,dx,dy,dz,deltay}],
       Thread[{"gridx","gridy","gridz"}->{gridx,gridy,gridz}],
       Thread[{"x","y","z"}->{x,y,z}]
@@ -152,7 +169,8 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,{pre_,mx_,my_,mz_},lshear_]:=
 (*Combine a VARN file in all processors*)
 
 
-readVARNRaw[sim_,iVAR_]:=With[{
+Options[readVARNRaw]={"lnoghost"->True};
+readVARNRaw[sim_,iVAR_,OptionsPattern[]]:=With[{
   nproc=Times@@nProc[sim],
   nVar=Length@varName[sim],
   allvars=Join[varName[sim]//Keys,{"t","gridx","gridy","gridz","dx","dy","dz","deltay","x","y","z"}],
@@ -160,7 +178,7 @@ readVARNRaw[sim_,iVAR_]:=With[{
   },
   Module[{data},
     data=Monitor[Table[
-        iproc->readVARNProc[sim,iproc,iVAR,nVar,dimProc[sim,iproc]/@{"precision","mx","my","mz"},lshear],
+        iproc->readVARNProc[sim,iproc,iVAR,nVar,lshear,"lnoghost"->OptionValue["lnoghost"]],
         {iproc,0,nproc-1}
       ]//Association,
       StringJoin["Reading chunk ",ToString@iproc,"/",ToString@nproc]
@@ -169,13 +187,13 @@ readVARNRaw[sim_,iVAR_]:=With[{
   Table[var->Flatten[data[#][var]&/@Range[0,nproc-1]],{var,allvars}]//Association
 ]]
 
-Options[readVARN]={"ltrim"->False}
+Options[readVARN]={"ltrim"->False};
 readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
   vars=varName[sim]//Keys,
-  raw=readVARNRaw[sim,iVAR],
+  raw=readVARNRaw[sim,iVAR,"lnoghost"->True],
   ltrim=OptionValue["ltrim"]
   },
-  Module[{grid,values,merge,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
+  Module[{grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
     readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
     PrintTemporary["Combining files..."];
     
@@ -183,9 +201,8 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
     values=raw/@vars;
     oo=bb=jj={{},{},{}};
     
-    merge[{l__List}]/;Length[{l}]>=2:=Flatten[MaximalBy[#,Abs,1]&/@Transpose[{l}],1];
-    merge[{l_List}]/;Length[{l}]==1:=l;
-    tmp=Transpose[merge/@GatherBy[{grid,Sequence@@values}//Transpose//Union,First]];
+    (*Sort by grid. Now indexing is f[[mx,my,mz]] for everything*)
+    tmp={grid,Sequence@@values}//Transpose//SortBy[#,First]&//Transpose;
     grid=tmp//First//Transpose;
     values=tmp//Rest;
     {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
