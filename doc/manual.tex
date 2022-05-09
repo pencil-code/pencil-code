@@ -11313,6 +11313,17 @@ If $\alpha$ is large, this may affect the time step, but for
 $\alpha=1/60$, the stability requirement for the hyperdiffusive term
 should always be weaker than the advective Courant criterion.
 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\columnwidth]{pspec_comp}
+  \caption{
+  Comparison of centered (solid lines) and upwinding (dashed lines)
+  advection in a $512^3$ isothermal turbulence simulation forced with
+  $f_0=0.02$, $k_{\rm f}=1.5$, $\nu=10^{-4}$.
+  }
+  \label{Fig-pspec_comp}
+\end{figure}
+
 \subsection{The bidiagonal scheme for cross-derivatives}
 \index{Bidiagonal scheme}
 \label{Bidiagonal}
