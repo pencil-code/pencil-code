@@ -206,6 +206,7 @@ module Density
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
   integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
+  integer :: idiag_dtd3=0        ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
@@ -263,6 +264,7 @@ module Density
 !
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
+  real, dimension(nx) :: diffus_diffrho3
 !$omp THREADPRIVATE(diffus_diffrho)
 
   contains
@@ -2409,7 +2411,7 @@ module Density
       real, dimension (nx) :: fdiff  !GPU := df(l1:l2,m,n,irho|ilnrho)
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: density_rhs,diffus_diffrho3,advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs,advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
 !
@@ -2911,6 +2913,7 @@ module Density
         call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (.not.lgpu) then
           if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+          if (idiag_dtd3/=0) call max_mn_name(diffus_diffrho3/cdtv3,idiag_dtd3,l_dt=.true.)
         endif
         if (idiag_grhomax/=0) then
           call dot2(p%grho,tmp); tmp=sqrt(tmp)
@@ -3440,7 +3443,7 @@ module Density
         idiag_rhof2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0; idiag_lnrhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
-        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
+        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0; idiag_dtd3=0
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
@@ -3478,6 +3481,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'ugrhom',idiag_ugrhom)
         call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+        call parse_name(iname,cname(iname),cform(iname),'dtd3',idiag_dtd3)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
         call parse_name(iname,cname(iname),cform(iname),'inertiaxx',idiag_inertiaxx)
