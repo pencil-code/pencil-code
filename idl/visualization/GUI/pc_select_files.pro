@@ -504,18 +504,26 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	num_files = n_elements (files)
 	stepping = stepping < (num_files - skipping)
 	for pos = 0, num_files - 1 do begin
-		files[pos] = strmid (files[pos], strpos (procdir, "/", /REVERSE_SEARCH) + 1)
+		cut = strpos (procdir, "/", /REVERSE_SEARCH)
+		if (strmid (files[pos], cut, 1) eq "/") then cut += 1
+		files[pos] = strmid (files[pos], cut)
 	end
-	sorted = [ "" ]
+	sorted = files
+	sorted[*] = ""
+	target = 0
 	for len = min (strlen (files)), max (strlen (files)) do begin
-		indices = where (strlen (files) eq len)
-		if (n_elements (indices) eq 1) then if (indices eq -1) then continue
-		sub = files[indices]
-		reorder = sort (sub)
-		sorted = [ sorted, sub[reorder] ]
+		indices = where (strlen (files) eq len, num_match)
+		if (num_match ge 1) then begin
+			sub = files[indices]
+			reorder = sort (sub)
+			for pos = 0, num_match-1 do begin
+				sorted[target] = sub[reorder[pos]]
+				target += 1
+			end
+		end
 	end
-	files = sorted[1:*]
-	sorted = 1
+	files = sorted
+	sorted = ""
 
 	; Get file size
 	if (file_test (procdir+varfile)) then somefile = varfile else somefile = files[0]
