@@ -183,8 +183,14 @@ mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
 
 if (!defined $config_files) {
-    if (defined $ENV{'PENCIL_CONFIG_FILES'}) {
-        $config_files = $ENV{'PENCIL_CONFIG_FILES'};
+    if (-e "src/.config_files" && !(-z "src/.config_files")) {
+        open(CFH, '<', "src/.config_files");
+        $config_files = <CFH>;
+        close(CFH);
+    } else {
+        if (defined $ENV{'PENCIL_CONFIG_FILES'}) {
+            $config_files = $ENV{'PENCIL_CONFIG_FILES'};
+        }
     }
 }
 
@@ -199,10 +205,15 @@ if (defined $config_files) {
         $config_file = Pencil::ConfigFinder::find_config_file();
     }
     die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    $config_files=$config_file;
     push @config_files, $config_file;
     print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
 }
 die "No configuration file found\n" unless @config_files;
+
+open(CFH, '>', "src/.config_files") or die $!;
+print CFH $config_files;
+close(CFH);
 
 if ($debug_config) {
     if (($opts{'f'} || $opts{'config-files'}) && @config_files) {

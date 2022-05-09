@@ -178,7 +178,13 @@ if [ $same_source ]; then
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
   else
-    (cd $olddir; pc_build -t helper_min >& /dev/null; cd $targetdir/src)
+    cd $olddir;
+    if [ -e src/.config_files ]; then 
+      pc_build -t helper_min >& /dev/null;
+    else
+      make helper_min >& /dev/null;
+    fi
+    cd $targetdir/src 
     if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
     if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi
   fi
