@@ -180,7 +180,7 @@ if [ $same_source ]; then
   else
     cd $olddir;
     if [ -e src/.config_files ]; then 
-      pc_build -t helper_min >& /dev/null;
+      pc_build -l -q -s -t helper_min >& /dev/null;
     else
       make helper_min >& /dev/null;
     fi
