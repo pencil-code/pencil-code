@@ -187,8 +187,8 @@ mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
 
 if (!defined $config_files) {
-    if ($last_config && -e "src/.config_files" && !(-z "src/.config_files")) {
-        open(CFH, '<', "src/.config_files");
+    if ($last_config && -e "src/.config-files" && !(-z "src/.config-files")) {
+        open(CFH, '<', "src/.config-files");
         $config_files = <CFH>;
         close(CFH);
     } else {
@@ -219,7 +219,7 @@ if (defined $config_files) {
 }
 die "No configuration file found\n" unless @config_files;
 
-open(CFH, '>', "src/.config_files") or die $!;
+open(CFH, '>', "src/.config-files") or die $!;
 print CFH $config_files;
 close(CFH);
 

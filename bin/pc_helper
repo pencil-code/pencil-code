@@ -24,7 +24,7 @@ endif
 
 echo "Building" $0:t.x "(if necessary)"
 #echo ENVIRONMENT: $PENCIL_CONFIG_FILES
-if (-e .config_files) then
+if (-e .config-files) then
   pc_build -l -q -s -t $0:t > /dev/null
 else
   make $0:t > /dev/null
