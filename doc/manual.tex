@@ -1130,7 +1130,7 @@ If you have made useful changes, please contact one of the (currently) 10
 who can give you push or check-in permission.
 Be sure to have sufficient comments in the code and please follow our
 standard coding conventions explained in Section~\ref{ProgrammingStyle}.
-There is also a script to check and fix the most common stylebreaks, 
+There is also a script to check and fix the most common style breaks, 
 pc\_codingstyle.
 \index{Style}
 
@@ -11313,16 +11313,38 @@ If $\alpha$ is large, this may affect the time step, but for
 $\alpha=1/60$, the stability requirement for the hyperdiffusive term
 should always be weaker than the advective Courant criterion.
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\columnwidth]{pspec_comp}
-  \caption{
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=.8\columnwidth]{pw}
+\end{center}\caption[]{
+  Advection with centered (left) and upwinding (right)
+  schemes with diffusivity $\kappa=10^{-4}$,
+  $n_x=128$ mesh points,
+  and an advection velocity of unity.
+}\label{pw}\end{figure}
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=.7\columnwidth]{pspec_comp}
+\end{center}\caption[]{
   Comparison of centered (solid lines) and upwinding (dashed lines)
   advection in a $512^3$ isothermal turbulence simulation forced with
-  $f_0=0.02$, $k_{\rm f}=1.5$, $\nu=10^{-4}$.
-  }
-  \label{Fig-pspec_comp}
-\end{figure}
+  $f_0=0.02$.
+  The computational domain is $L^3$ with $L=2\pi$ and the forcing
+  wavenumber is $k_{\rm f}=1.5$.
+  The viscosity is $\nu=10^{-4}$.
+}\label{pspec}\end{figure}
+
+A standard adection experiment is shown in Fig.~\ref{pw}
+for $n_x=128$ mesh points over a $2\pi$ domain with
+advection velocity $U_x=1$ and diffusivity $\kappa=10^{-4}$,
+so $\kappa/U_x\delta x=0.002$.
+We see that upwinding causes additional wiggles.
+
+In Fig.~\ref{pspec}, we comparing turbulence simulations with $512^3$
+%In Fig.~\ref{pw}, we comparing turbulence simulations with $512^3$
+mesh points using $\nu=10^{-4}$ and a forcing amplitude $f_0=0.02$
+and a forcing wavenumber of 1.5
+The resulting Mach number is then 0.13 and the Reynolds number
+is $u_{\rm rms}/\nu k_{\rm f}=900$.
 
 \subsection{The bidiagonal scheme for cross-derivatives}
 \index{Bidiagonal scheme}
