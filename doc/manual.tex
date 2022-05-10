@@ -431,7 +431,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   \includegraphics%
     [width=.99\textwidth,keepaspectratio]%
     {GitHub_ci}
-  \caption{GitHub check-in pattern since 2002; see
+  \caption{GitHub check-in pattern since 2002; see\\
   \url{https://github.com/pencil-code/pencil-code/graphs/contributors}
   }
   \label{GitHub}
@@ -513,7 +513,7 @@ An up to date list of Pencil Code contributors can be found at
 
 \vfill
 
-Copyright \copyright{} 2001--2021 Wolfgang Dobler \& Axel Brandenburg
+Copyright \copyright{} 2001--2022 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -765,6 +765,10 @@ Lyra, W. \& Kuchner, W. \ynat{2013}{499}{184}{187}
 % -- mutual drag force --
 Yang, C.-C., \& Johansen, A.\yapjs{2016}{224}{39}
 {Integration of Particle-Gas Systems with Stiff Mutual Drag Interaction}
+
+% -- gravitational waves --
+Roper Pol, A., Brandenburg, A. Kahniashvili, T., Kosowsky, A., \& Mandal, S.\ygafd{2020}{114}{130}
+{161}{The timestep constraint in solving the gravitational wave equations sourced by hydromagnetic turbulence}
 
 \end{list}
 This list is not always up-to-date.
@@ -8909,6 +8913,47 @@ meshes, the required RAM is still below 100 MB.
 %    256     512    1152    2304
 %    256    1152    4608   18432
 %    7.3    13.0    37.2   74.32
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/ptriolith-strong.ps figs/
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pdardel_strong}
+  \caption{Strong scaling on Dardel.
+The dotted and dashed lines corresponds to
+$1.02\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$ and
+$0.70\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$, respectively.
+}\label{ptriolith-strong}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+In Stockholm there is now a new machine called Dardel.
+Strong scaling tests have been performed for five mesh sizes;
+see \Fig{pdardel-strong}.
+The time per time step and mesh point is given for
+different processor numbers and layouts.
+Generally, as J\"orn Warnecke pointed out earlier,
+it is advantageous to minimize the
+processor surface area, and to keep the number
+of processors in the $x$ direction small.
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pdardel_strong}
+\end{center}\caption[]{
+Strong scaling on Dardel.
+The dotted and dashed lines corresponds to
+$1.02\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$ and
+$0.70\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$, respectively.
+}\label{pdardel-strong}\end{figure}
+
+Performancewise, Cray with O2 optimization is equivalent to gnu with O3.
+While gnu-O3 is able to handle memory or whatever compiler problems much
+better, it is otherwise not better than Cray-O2, and often some 10--20\%
+slows, but this is within the measurement accuracy.
+More details can be found on
+\url{https://github.com/pencil-code/pencil-code/tree/master/doc/timings}.
 
 \subsection{Lindgren}
 
