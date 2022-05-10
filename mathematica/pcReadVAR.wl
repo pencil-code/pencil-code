@@ -230,8 +230,6 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
     Join[
       Thread[{"t","dx","dy","dz","deltay"}->
         First/@(raw/@{"t","dx","dy","dz","deltay"})],
-      Thread[{"lx","ly","lz"}->
-        readDim[sim]/@If[ltrim,{"nx","ny","nz"},{"mx","my","mz"}]],
       Thread[{"x","y","z"}->grid],
       Thread[vars->values],
       (*long name to avoid shadowing the written auxiliaries*)
