@@ -152,6 +152,7 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
+[ -f src/.config-files ] && cp src/.config-files $targetdir/src
 #
 #  if same_source, then link all *.x files from the original directory.
 #  (We don't want to use a link to the entire src directory, because

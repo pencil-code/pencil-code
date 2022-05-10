@@ -259,6 +259,12 @@ module Particles_main
       if (rp_int==-impossible .and. r_int>epsi) rp_int=r_int
       if (rp_ext==-impossible)                  rp_ext=r_ext
 !
+!  Disable impossible spectra.
+!
+      if (inp==0) np_spec=.false.
+      if (iapn==0) np_ap_spec=.false.
+      if (irhop==0) rhop_spec=.false.
+
     endsubroutine particles_initialize_modules
 !***********************************************************************
     subroutine particles_init(f)
