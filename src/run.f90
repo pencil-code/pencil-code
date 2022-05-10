@@ -467,6 +467,15 @@ program run
 !
   call update_ghosts(f)
 !
+!  Allow here for the possibility to have spectral output
+!  from the first time. This works for all variables, except
+!  for the GW stress, but the GW signal itself is at the
+!  correct time; see the comment in the GW module.
+!
+  if (lspec_start .and. t==tstart) then
+    lspec=.true.
+  endif
+!
 !  Save spectrum snapshot.
 !
   if (dspec/=impossible) call powersnap(f)
@@ -794,6 +803,19 @@ program run
         if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
     endif
+!
+!  Allow here for the possibility to have spectral output
+!  *after* the first time. As explained in the comment to
+!  the GW module, the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+  if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) then
+    lspec=.true.
+  endif
 !
 !  Save spectrum snapshot.
 !

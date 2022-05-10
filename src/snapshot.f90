@@ -630,7 +630,6 @@ module Snapshot
       use Power_spectrum
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
-!AXEL use Sub, only: update_snaptime, read_snaptime, curli
       use Sub, only: update_snaptime, curli
       use General, only: itoa
 !
@@ -638,11 +637,7 @@ module Snapshot
       logical, optional :: lwrite_only
 !
       real, dimension (:,:,:), allocatable :: b_vec
-!AXEL character (len=fnlen) :: file
       logical :: llwrite_only=.false.,ldo_all
-!AXEL integer, save :: nspec
-!AXEL logical, save :: lfirst_call=.true.
-!AXEL real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2

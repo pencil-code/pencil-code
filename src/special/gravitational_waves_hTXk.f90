@@ -571,54 +571,71 @@ module Special
       integer :: i, j, ij
       real :: fact
 !
+!  The following is only needed during the first of 3 substeps.
+!  So the gravitational waves (and the necessary stress) are
+!  calculated only in the beginning, because then the pencils
+!  p%uu and p%bb, needed for the stress, are available.
+!  This means that the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+      if (lfirst) then
+!
 !  Construct stress tensor; notice opposite signs for u and b.
 !
-      if (lgamma_factor) then
-        prefactor=fourthird_factor/(1.-p%u2)
-      else
-        prefactor=fourthird_factor
-      endif
+        if (lgamma_factor) then
+          prefactor=fourthird_factor/(1.-p%u2)
+        else
+          prefactor=fourthird_factor
+        endif
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
-      p%stress_ij=0.0
-      if (lstress) then
-        do j=1,3
-        do i=1,j
-          ij=ij_table(i,j)
-          if (lonly_mag) then
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-          else
-            if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-            if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-          endif
+        p%stress_ij=0.0
+        if (lstress) then
+          do j=1,3
+          do i=1,j
+            ij=ij_table(i,j)
+            if (lonly_mag) then
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+            else
+              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+              if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+            endif
 !
 !  Remove trace.
 !
-          if (i==j) then
-            if (lonly_mag) then
-              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-            else
-              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
-              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-              if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+            if (i==j) then
+              if (lonly_mag) then
+                if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+              else
+                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
+                if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+                if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+              endif
             endif
-          endif
-        enddo
-        enddo
+          enddo
+          enddo
 !
 !  Possibility of gradually ramping up the stress on time scale tstress_ramp.
 !  Here, (t-tstart)/tstress_ramp increases linearly starting with tstart,
 !  which is always our initial time, until t-tstart=tstress_ramp.
 !  To turn off the stress at t=tturnoff, ..
 !
-        if (lstress_ramp) then
-          fact=min(real(t-tstart)/tstress_ramp, 1.)
-          p%stress_ij(:,:)=p%stress_ij(:,:)*fact
-        elseif (lturnoff) then
-          if (t>tturnoff) p%stress_ij(:,:)=0.
+          if (lstress_ramp) then
+            fact=min(real(t-tstart)/tstress_ramp, 1.)
+            p%stress_ij(:,:)=p%stress_ij(:,:)*fact
+          elseif (lturnoff) then
+            if (t>tturnoff) p%stress_ij(:,:)=0.
+          endif
         endif
+!
+!  endif of lfirst query
+!
       endif
 !
     endsubroutine calc_pencils_special

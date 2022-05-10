@@ -188,7 +188,7 @@ module Cdata
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
-  logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
+  logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false.
   real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
