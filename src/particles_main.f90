@@ -262,7 +262,7 @@ module Particles_main
 !  Disable impossible spectra.
 !
       if (inp==0) np_spec=.false.
-      if (iapn==0) np_ap_spec=.false.
+      if (any(iapn==0)) np_ap_spec=.false.
       if (irhop==0) rhop_spec=.false.
 
     endsubroutine particles_initialize_modules
