@@ -425,15 +425,16 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+% ---------------------------------------------------------------------- %
 \begin{figure}[htb]
   \centering
   \includegraphics%
     [width=.99\textwidth,keepaspectratio]%
-    {github-timetrace}
-  \caption{Check-in frequency on the github page as a function of time; see
+    {GitHub_ci}
+  \caption{GitHub check-in pattern since 2002; see
   \url{https://github.com/pencil-code/pencil-code/graphs/contributors}
   }
-  \label{github-timetrace}
+  \label{GitHub}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
@@ -6046,6 +6047,18 @@ which are used to compute the GW energy via
 \end{equation}
 where angle brackets denote volume averages.
 
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pdel}
+\end{center}\caption[]{
+  Scalings of the relative error in the magnetic field,
+  $(\delta B)_{\rm rms}/B_{\rm rms}$, and the gravitational
+  strain $(\delta h)_{\rm rms}/h_{\rm rms}$ for GWs generated
+  by the chiral magnetic effect, which leads to an exponentially
+  increasing magnetic field.
+  Low resolution ($32^3$) versions of the Runs~B4, B7, and B10
+  of \cite{BHKRS21}.
+}\label{pdel}\end{figure}
+
 Analogously to kinetic and magnetic energy and helicity spectra, it is
 convenient to compute the GW energy and polarization spectra integrated
 over concentric shells of surface $\int_{4\pi}k^2\dd\Omega_{\kv}$ in $\kv$
@@ -6071,6 +6084,21 @@ We also define spectra for the metric tensor perturbation,
 \end{eqnarray}
 which are normalized such that $\int_0^\infty\Sh(k)\,\dd k=\hrms^2$ is the
 mean squared metric tensor perturbation.
+
+By assuming the GW source to be constant between two time steps, one
+arrives at an accuracy of the GW solution that scales linearly with the
+time step, $\delta t$, while the magnetic field, related to the magnetic
+stress, scales cubically with $\delta t$.
+Since $\tilde{T}_{+/\times}$ are being stored in the $f$-array, it is
+easy to extract for each wavevector the increment of the stress,
+$\delta\tilde{T}_{+/\times}$, and to use it in an improved update
+of the GW field through
+\begin{eqnarray}
+\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\sin\omega\delta t/\omega\delta t\right)\\
+\dot\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\cos\omega\delta t\right)/\omega^2\delta t
+\end{eqnarray}
+This now results in a quadratic scaling of the error of the GW field;
+see Fig.~\ref{pdel}.
 
 % ====================================================================== %
 
@@ -8689,7 +8717,7 @@ Theoretical peak performance 2.43 pflops.
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
 well-defined sample problems.
 The \name{svn} \index{svn} check-in patterns are displayed graphically
-in Fig~\ref{cvsstat}.
+in Figs.~\ref{cvsstat} and \ref{GitHub}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
@@ -14503,6 +14531,10 @@ branch. \\
 \bibitem{BK17} Brandenburg, A., \& Kahniashvili, T.
   \emph{Phys. Rev. Lett.} \textbf{118}, 055102 (2017)
   ``Classes of hydrodynamic and magnetohydrodynamic turbulent decay''
+
+\bibitem{BHKRS21} Brandenburg, A., He, Y., Kahniashvili, T., Rheinhardt, M., \& Schober, J.
+  \emph{Astrophys. J.} \textbf{911}, 110 (2021)
+  ``Gravitational waves from the chiral magnetic effect''
 
 \bibitem{BS02} Brandenburg, A., \& Sarson, G. R.,
   \emph{Phys. Rev. Lett.} \textbf{88}, 055003 (2002)
