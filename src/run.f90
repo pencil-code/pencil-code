@@ -92,7 +92,7 @@ program run
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Syscalls,        only: is_nan,memusage
+  use Syscalls,        only: is_nan, memusage
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
@@ -107,7 +107,7 @@ program run
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
   integer :: icount, mvar_in, isave_shift=0
-  integer :: it_last_diagnostic, it_this_diagnostic, memory
+  integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
@@ -942,9 +942,17 @@ program run
       endif
     endif
   endif
-  call mpireduce_sum_int(memusage(),memory)
+
+  memuse=memusage()
+  call mpireduce_max_int(memuse,memcpu)
+  call mpireduce_sum_int(memuse,memory)
   if (lroot) then
-    print'(1x,a,f9.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+    print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+    if (memory>1e6) then
+      print'(1x,a,f9.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+    else
+      print'(1x,a,f9.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+    endif
     print*
   endif
 !

@@ -154,6 +154,8 @@ module Energy
         endif
       endif
 !
+      TT_spec=.false.; ss_spec=.false.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy

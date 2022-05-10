@@ -38,6 +38,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      nd_spec=.false.
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_dustdensity

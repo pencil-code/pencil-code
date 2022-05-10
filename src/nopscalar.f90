@@ -53,6 +53,8 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      cc_spec=.false.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_pscalar

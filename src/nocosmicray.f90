@@ -48,6 +48,7 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      cr_spec=.false.
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicray
