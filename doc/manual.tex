@@ -2103,12 +2103,15 @@ Use the \cmd{pc_build} command to compile the code:
   \prompt{unix> } pc_build                               # use default compiler suite
   \prompt{unix> } pc_build -f Intel_MPI                  # specify a compiler suite
   \prompt{unix> } pc_build -f os/GNU_Linux,mpi/open-mpi  # explicitly specify config files
+  \prompt{unix> } pc_build -l                            # use same config files as in last call of pc_build
   \prompt{unix> } pc_build VAR=something                 # set variables for the makefile
   \prompt{unix> } pc_build --cleanall                    # remove generated files
 \end{alltt}
 The third example circumvents the whole host ID mechanism by explicitly
 instructing \cmd{pc_build} which configuration files to use.
-The fourth example shows how to define extra variables
+In the fourth example, pc_build will apply the same configuration files as in its last invocation.
+They are stored in \file{src/.config-files}, which is automatically written, but can also be manually modified.
+The fifth example shows how to define extra variables
 (\code{VAR=something}) for the execution of the \cmd{Makefile}.
 
 See \cmd{pc_build --help} for a complete list of options.
