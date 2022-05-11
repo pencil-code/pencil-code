@@ -6104,7 +6104,8 @@ of the GW field through
 \tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\sin\omega\delta t/\omega\delta t\right)\\
 \dot\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\cos\omega\delta t\right)/\omega^2\delta t
 \end{eqnarray}
-This now results in a quadratic scaling of the error of the GW field;
+This more accurate solver is invoked by setting \cmd{itorder_GW=2},
+which now results in a quadratic scaling of the error of the GW field;
 see Fig.~\ref{pdel}.
 
 % ====================================================================== %
@@ -11407,6 +11408,8 @@ should always be weaker than the advective Courant criterion.
   The computational domain is $L^3$ with $L=2\pi$ and the forcing
   wavenumber is $k_{\rm f}=1.5$.
   The viscosity is $\nu=10^{-4}$.
+  The dotted line gives a run without regular diffusion, but
+  with slope-limited diffusion (SLD) instead.
 }\label{pspec}\end{figure}
 
 A standard adection experiment is shown in Fig.~\ref{pw}
@@ -11415,12 +11418,15 @@ advection velocity $U_x=1$ and diffusivity $\kappa=10^{-4}$,
 so $\kappa/U_x\delta x=0.002$.
 We see that upwinding causes additional wiggles.
 
-In Fig.~\ref{pspec}, we comparing turbulence simulations with $512^3$
-%In Fig.~\ref{pw}, we comparing turbulence simulations with $512^3$
+\index{SLD}
+\index{slope-limited diffusion}
+In Fig.~\ref{pspec}, we compare turbulence simulations with $512^3$
 mesh points using $\nu=10^{-4}$ and a forcing amplitude $f_0=0.02$
 and a forcing wavenumber of 1.5
 The resulting Mach number is then 0.13 and the Reynolds number
 is $u_{\rm rms}/\nu k_{\rm f}=900$.
+We also show a comparison with a run without regular diffusion, but
+with slope-limited diffusion (SLD) instead.
 
 \subsection{The bidiagonal scheme for cross-derivatives}
 \index{Bidiagonal scheme}
