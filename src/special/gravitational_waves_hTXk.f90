@@ -401,23 +401,31 @@ module Special
 !     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
 !         'cs0 should probably not be unity')
 !
-      if (.not.allocated(Tpq_re)) allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_re')
+      if (.not.allocated(Tpq_re)) then
+        allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_re')
+      endif
 !
-      if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
+      if (.not.allocated(Tpq_im)) then
+        allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_im')
+      endif
 !
 !  Allocate memory for nonlinear source
 !
       if (lnonlinear_source) then
-        if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
+        if (.not.allocated(nonlinear_Tpq_re)) then
+          allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
+          if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_re')
+        endif
 !
 !  Need imaginary part only if lnonlinear_Tpq_trans=T
 !
         if (lnonlinear_Tpq_trans) then
-          if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
-          if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+          if (.not.allocated(nonlinear_Tpq_im)) then
+            allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
+            if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_im')
+          endif
         endif
       endif
 !
