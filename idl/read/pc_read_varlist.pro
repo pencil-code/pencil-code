@@ -49,7 +49,7 @@ function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allpr
   for i = 0, nvar-1 do begin
     entry = ''
     readf, lun, entry
-    var_list[i] = entry
+    var_list[i] = (stregex(entry,'([A-Z]+[0-9]+).*$',/SUBEXPR,/EXTRACT))[1]
   end
   close, lun
   free_lun, lun

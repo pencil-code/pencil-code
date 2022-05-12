@@ -34,6 +34,7 @@ pro pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, 
   print, 'Reading ', datadir, '/', varfile, '...'
   pc_read_param, obj=par, datadir=datadir, /quiet
   pc_read_var, obj=f, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall, /quiet
+  if varfile eq '' then return
 
 ; Convert and write the VTK file.
   if varfile eq 'var.dat' then vtkfile = 'var.vtk' else vtkfile = strtrim(varfile) + '.vtk'

@@ -158,6 +158,10 @@ COMPILE_OPT IDL2,HIDDEN
 ; Identify youngest of snapshot files.
 ;
   varfile=identify_varfile(filename=varfile_,path=varpath,nohdf5=nohdf5,datadir=datadir,proc=proc)
+  if varfile eq '' then begin
+    varfile_=''
+    return
+  endif
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     hdf5_varfile = 1
