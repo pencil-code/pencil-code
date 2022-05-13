@@ -15,20 +15,31 @@ BeginPackage["pcReadVAR`","pcReadBasic`","pcDerivative`"]
 (*Usage messages*)
 
 
-readVARN::usage="readVARN[sim,iVAR,addons,\"ltrim\"->True] reads the iVARth VARN file
+readVARN::usage="readVARN[sim,iVAR,addOn,\"ltrim\"->False,\"lOnly\"->False] reads the iVARth VARN file
 from all processors. Works for io_dist. For io_hdf5, simply use Import[\".../VAR1.h5\"].
 Input:
   sim: String. Directory of the run
   iVAR: Integer. Index of the VARN file, starting from 0
-  addons: List. Optional. Specifies magical variables need to be computed; e.g., {\"oo\",\"bb\"}.
-          Magical variables in the result are assigned with long names, e.g., \"ooo1\" and \"bbb1\"
-            to avoid shadowing the written auxiliaries.
+  addOn: List. Optional. Specifies magical variables need to be computed; e.g., {\"oo\",\"bb\"}.
+         Magical variables in the result are assigned with long names, e.g., \"ooo1\" and \"bbb1\"
+         to avoid shadowing the written auxiliaries.
   \"ltrim\": Option. Default value ->False.
              If ->True then trim ghost zones.
              If ->\"More\" then trim again nghost number of cells at the boundaries; i.e., 2*nghost cells are
-               removed at each boundary
+               removed at each boundary.
+  \"lOnly\": Option. Default value ->Flase.
+             If ->True, then will only read those variables in addOn.
 Output:
-  An Association. Use readVARN[sim,iVAR]//Keys to extract its keys"
+  An Association. Use readVARN[sim,iVAR]//Keys to extract its keys
+Examples:
+  readVARN[sim,0] reads all variables in VAR0, and does not trim any ghost zones on the boundary.
+  readVARN[sim,0,{\"bb\"},\"ltrim\"->True] not only read all variables, but also computes the three components
+    of the magnetic field. Furthermore, ghost zones are trimmed.
+  readVARN[sim,0,{\"bb\"},\"ltrim\"->\"More\",\"lOnly\"->True] will only return the three components of the
+    magnetic field. Further more, 2*ghost zones are trimmed on the boundary. For the moment it is not possible
+    to read only one component of the magnetic field. Similarly for oo and jj.
+  readVARN[sim,0,{\"uu1\"},\"lOnly\"->True] will only read the uu1 component.
+  readVAR[sim,0,{\"uu1\"},\"lOnly\"->False] is the same as readVAR[sim,0]."
 
 tSnap::usage="tSnap[sim,iproc:0] returns time of VARN files in the ith processor."
 
@@ -97,12 +108,12 @@ tSnap[sim_,iproc_:0]:=
 
 
 (* ::Section:: *)
-(*Read a single VARN (on a processor) file*)
+(*Read all variables in a single VARN (on a processor) file*)
 
 
 Options[readVARNProc]={"lnoghost"->True};
-readVARNProc[sim_,iproc_,iVAR_,nVar_,lshear_,OptionsPattern[]]:=
-  Module[{file,var,typeLength,tmp,
+readVARNProc[sim_String,iproc_Integer,iVAR_Integer,nVar_Integer,lVar_List:{},lshear_,OptionsPattern[]]:=
+  Module[{file,stream,var,typeLength,tmp,varPos,
     pre,mx,my,mz,gh1,gh2,gh3,ipx,ipy,ipz,
     farray,t,gridx,gridy,gridz,dx,dy,dz,deltay,
     x,y,z,trim,posx,posy,posz,nproc},
@@ -110,18 +121,29 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,lshear_,OptionsPattern[]]:=
     {pre,mx,my,mz,gh1,gh2,gh3,ipx,ipy,ipz}=readDim[sim,iproc]/@{"precision","mx","my","mz","gh1","gh2","gh3","ipx","ipy","ipz"};
     nproc=nProc[sim];
     file=StringJoin[sim,"/data/proc",ToString@iproc,"/VAR",ToString@iVAR];
-    Close[file]//Quiet;    
-    var=BinaryReadList[OpenRead[file,BinaryFormat->True],Flatten@{
-      "Integer32",ConstantArray[pre,mx*my*mz*nVar],"Integer32",
-      (*assuming lshear=T; if not, deltay will be reset to 0 later*)
-      "Integer32",ConstantArray[pre,1+mx+my+mz+3+1],"Integer32"
-      },1,ByteOrdering->-1]//Flatten;
-    (*warning: Something left unread, but we proceed*)
-    Close[file];
-    
-    typeLength={1,mx*my*mz*nVar,1,1,1,mx,my,mz,1,1,1,1,1};
-    {tmp,farray,tmp,tmp,t,gridx,gridy,gridz,dx,dy,dz,deltay,tmp}=Map[Take[var,#]&,
-      MapThread[{#1-#2+1,#1}&,{typeLength//Accumulate,typeLength}]
+    Close[file]//Quiet;
+    stream=OpenRead[file,BinaryFormat->True];
+    If[lVar=={},
+      (*read all variables*)
+      var=BinaryReadList[stream,Flatten@{
+        "Integer32",ConstantArray[pre,mx*my*mz*nVar],"Integer32",
+        "Integer32",ConstantArray[pre,1+mx+my+mz+3+1],"Integer32"
+        },1,ByteOrdering->-1]//Flatten;
+      Close[file];
+      typeLength={1,mx*my*mz*nVar,1,1,1,mx,my,mz,1,1,1,1,1};
+      {tmp,farray,tmp,tmp,t,gridx,gridy,gridz,dx,dy,dz,deltay,tmp}=
+        Map[Take[var,#]&,MapThread[{#1-#2+1,#1}&,{typeLength//Accumulate,typeLength}]],
+      (*else, only read required ones*)
+      varPos=Map[4+ToExpression[StringTake[pre,-2]]/8*mx*my*mz*(#-1)&,lVar];
+      var=Flatten@{
+        (SetStreamPosition[stream,#];BinaryRead[stream,ConstantArray[pre,mx*my*mz]])&/@varPos,
+        SetStreamPosition[stream,4+ToExpression[StringTake[pre,-2]]/8*mx*my*mz*nVar+4+4];
+        BinaryRead[stream,ConstantArray[pre,1+mx+my+mz+3+1]]
+      };
+      Close[file];
+      typeLength={mx*my*mz*Length@lVar,1,mx,my,mz,1,1,1,1};
+      {farray,t,gridx,gridy,gridz,dx,dy,dz,deltay}=
+        Map[Take[var,#]&,MapThread[{#1-#2+1,#1}&,{typeLength//Accumulate,typeLength}]]
     ];
     farray=Partition[farray,mx*my*mz];
     If[!lshear,deltay=0];
@@ -157,7 +179,7 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,lshear_,OptionsPattern[]]:=
     (*the index is still f[[mz,my,mz]] here*)
     {z,y,x}=Transpose@Flatten[Outer[List,gridz,gridy,gridx],2];
     Join[
-      Thread[Keys[varName[sim]]->trim/@(farray[[varName[sim]//Values]])],
+      Thread[Keys[varName[sim]][[If[lVar=={},All,lVar]]]->trim/@farray],
       Thread[{"t","dx","dy","dz","deltay"}->Flatten@{t,dx,dy,dz,deltay}],
       Thread[{"gridx","gridy","gridz"}->{gridx,gridy,gridz}],
       Thread[{"x","y","z"}->{x,y,z}]
@@ -170,74 +192,83 @@ readVARNProc[sim_,iproc_,iVAR_,nVar_,lshear_,OptionsPattern[]]:=
 
 
 Options[readVARNRaw]={"lnoghost"->True};
-readVARNRaw[sim_,iVAR_,OptionsPattern[]]:=With[{
-  nproc=Times@@nProc[sim],
-  nVar=Length@varName[sim],
-  allvars=Join[varName[sim]//Keys,{"t","gridx","gridy","gridz","dx","dy","dz","deltay","x","y","z"}],
-  lshear=readParamNml[sim,"start.in","lshear"]
-  },
-  Module[{data},
-    data=Monitor[Table[
-        iproc->readVARNProc[sim,iproc,iVAR,nVar,lshear,"lnoghost"->OptionValue["lnoghost"]],
-        {iproc,0,nproc-1}
-      ]//Association,
-      StringJoin["Reading chunk ",ToString@iproc,"/",ToString@nproc]
-    ];
+readVARNRaw[sim_,iVAR_,lVar_List:{},OptionsPattern[]]:=Module[{
+  nproc=Times@@nProc[sim],nVar=Length@varName[sim],lshear=readParamNml[sim,"start.in","lshear"],
+  data,allvars},
+  
+  allvars=Join[
+    Part[varName[sim]//Keys,If[lVar=={},All,lVar]],
+    {"t","gridx","gridy","gridz","dx","dy","dz","deltay","x","y","z"}];
+  data=Monitor[Table[
+    iproc->readVARNProc[sim,iproc,iVAR,nVar,lVar,lshear,"lnoghost"->OptionValue["lnoghost"]],
+    {iproc,0,nproc-1}]//Association,
+    StringJoin["Reading chunk ",ToString@iproc,"/",ToString@nproc]
+  ];
 
   Table[var->Flatten[data[#][var]&/@Range[0,nproc-1]],{var,allvars}]//Association
-]]
+]
 
-Options[readVARN]={"ltrim"->False};
-readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=With[{
-  vars=varName[sim]//Keys,
-  raw=readVARNRaw[sim,iVAR,"lnoghost"->True],
-  ltrim=OptionValue["ltrim"]
-  },
-  Module[{grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
-    readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
-    PrintTemporary["Combining files..."];
+Options[readVARN]={"ltrim"->False,"lOnly"->False};
+readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
+  ltrim=OptionValue["ltrim"],lonly=OptionValue["lOnly"],
+  lVar,vars=varName[sim]//Keys,varPos,raw,
+  grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
+  readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
+  
+  (*If lOnly==True, we read only variables in addOn*)
+  If[lonly,
+    (*find non-magic variables*)
+    lVar=DeleteCases[addOn,_?(StringMatchQ[{"oo*","bb*","jj*"}])];
+    (*add necessary variables to lVar*)
+    If[MemberQ[addOn,"oo"],lVar={lVar,"uu1","uu2","uu3"}];
+    If[MemberQ[addOn,"bb"],lVar={lVar,"aa1","aa2","aa3"}];
+    If[MemberQ[addOn,"jj"],lVar={lVar,"aa1","aa2","aa3"}];
+    lVar=Sort@Flatten[Position[vars,#]&/@Union[lVar//Flatten]];
+    raw=readVARNRaw[sim,iVAR,lVar,"lnoghost"->True],
     
-    grid=Transpose[raw/@{"x","y","z"}];
-    values=raw/@vars;
-    oo=bb=jj={{},{},{}};
-    
-    (*Sort by grid. Now indexing is f[[mx,my,mz]] for everything*)
-    tmp={grid,Sequence@@values}//Transpose//SortBy[#,First]&//Transpose;
-    grid=tmp//First//Transpose;
-    values=tmp//Rest;
-    {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
-
-    If[addOn!={},{dx,dy,dz}=Flatten[Union/@raw/@{"dx","dy","dz"}]];
-    If[MemberQ[addOn,"oo"],
-      oo=curl[values[[varName[sim]/@{"uu1","uu2","uu3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]
-    ];
-    If[MemberQ[addOn,"bb"],
-      bb=curl[values[[varName[sim]/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]
-    ];
-    If[MemberQ[addOn,"jj"],
-      jj=curl2[values[[varName[sim]/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]
-    ];
-    
-    trim[{}]={};
-    trim[f_]:=Switch[ltrim,
-      False,f,
-      True,  ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
-      "More",ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
-    ];
-    If[ltrim==False,Message[readVARN::ghvalues]];
-    {grid,values,oo,bb,jj}=Map[trim,{grid,values,oo,bb,jj},{2}];
-      
-    Join[
-      Thread[{"t","dx","dy","dz","deltay"}->
-        First/@(raw/@{"t","dx","dy","dz","deltay"})],
-      Thread[{"x","y","z"}->grid],
-      Thread[vars->values],
-      (*long name to avoid shadowing the written auxiliaries*)
-      Thread[{"ooo1","ooo2","ooo3"}->oo],
-      Thread[{"bbb1","bbb2","bbb3"}->bb],
-      Thread[{"jjj1","jjj2","jjj3"}->jj]
-    ]//Association
-]]
+    (*else, we read all*)
+    lVar=All;raw=readVARNRaw[sim,iVAR,"lnoghost"->True]
+  ];
+  vars=vars[[lVar]];
+  varPos=AssociationThread[vars->Range[Length@vars]];
+  
+  PrintTemporary["Combining files..."];
+  grid=Transpose[raw/@{"x","y","z"}];
+  values=raw/@vars;
+  oo=bb=jj={{},{},{}};
+  
+  (*Sort by grid. Now indexing is f[[mx,my,mz]] for everything*)
+  tmp={grid,Sequence@@values}//Transpose//SortBy[#,First]&//Transpose;
+  grid=tmp//First//Transpose;
+  values=tmp//Rest;
+  {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
+  
+  If[addOn!={},{dx,dy,dz}=Flatten[Union/@raw/@{"dx","dy","dz"}]];
+  If[MemberQ[addOn,"oo"],oo=curl[values[[varPos/@{"uu1","uu2","uu3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]];
+  If[MemberQ[addOn,"bb"],bb=curl[values[[varPos/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]];
+  If[MemberQ[addOn,"jj"],jj=curl2[values[[varPos/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]];
+  
+  (*trim ghost zones*)
+  trim[{}]={};
+  trim[f_]:=Switch[ltrim,
+    False,f,
+    True,  ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
+    "More",ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
+  ];
+  If[ltrim==False,Message[readVARN::ghvalues]];
+  {grid,values,oo,bb,jj}=Map[trim,{grid,values,oo,bb,jj},{2}];
+  
+  tmp=Join[
+    Thread[{"t","dx","dy","dz","deltay"}->First/@(raw/@{"t","dx","dy","dz","deltay"})],
+    Thread[{"x","y","z"}->grid],
+    Thread[vars->values]
+  ]//Association;
+  (*long name to avoid shadowing the written auxiliaries*)
+  If[oo!={{},{},{}},tmp=Join[tmp,AssociationThread[{"ooo1","ooo2","ooo3"}->oo]]];
+  If[bb!={{},{},{}},tmp=Join[tmp,AssociationThread[{"bbb1","bbb2","bbb3"}->bb]]];
+  If[jj!={{},{},{}},tmp=Join[tmp,AssociationThread[{"jjj1","jjj2","jjj3"}->jj]]];
+  tmp
+]
 
 
 (* ::Chapter:: *)
