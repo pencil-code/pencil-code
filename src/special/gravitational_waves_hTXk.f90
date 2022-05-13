@@ -90,7 +90,7 @@ module Special
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
-  character (len=labellen) :: aux_stress='stress', idelkt='jump'
+  character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
   real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
@@ -117,6 +117,7 @@ module Special
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
+  real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
@@ -151,6 +152,7 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
+    ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lconstmod_in_stress, k_in_stress, itorder_GW
@@ -1279,6 +1281,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
+      real :: horndeski_alpT_eff
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
@@ -1526,10 +1529,22 @@ module Special
       endif
 !
 !  Horndeski preparations
+!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff
 !
       if (lhorndeski) then
         horndeski_alpM_eff=horndeski_alpM/scale_factor
         horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+        select case (ihorndeski_time)
+          case ('const')
+            horndeski_alpT_eff=horndeski_alpT
+          case ('tanh')
+            horndeski_alpT_eff=horndeski_alpT*(tanh(1.+(scale_factor/scale_factor0)**horndeski_alpT_exp)-1.)
+          case ('exp')
+            horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
+          case default
+            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
+                ,trim(idelkt))
+        endselect
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1589,7 +1604,7 @@ module Special
               else
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
-                    om2=(1.+horndeski_alpT)*ksqr+delkt**2-horndeski_alpM_eff2
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
                   else
