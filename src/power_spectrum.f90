@@ -66,10 +66,10 @@ module power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
-      !
-      !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
-      !
-      if(lread_gauss_quadrature) then
+!
+!  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
+!
+      if (lread_gauss_quadrature) then
         inquire(FILE="gauss_legendre_quadrature.dat", EXIST=lglq_dot_dat_exists)
         if (lglq_dot_dat_exists) then
           open(9,file='gauss_legendre_quadrature.dat',status='old')
@@ -77,8 +77,8 @@ module power_spectrum
           if (n_glq<=legendre_lmax) call inevitably_fatal_error( &
               'initialize_power_spectrum', &
               'either smaller lmax or larger gauss_legendre_quadrature.dat required')
-          allocate( legendre_zeros(n_glq,n_glq) )
-          allocate( glq_weight(n_glq,n_glq) )
+          if (.not.allocated(legendre_zeros)) allocate( legendre_zeros(n_glq,n_glq) )
+          if (.not.allocated(glq_weight)) allocate( glq_weight(n_glq,n_glq) )
           do ikr=1,n_glq; do ikmu=1,n_glq
             read(9,*) legendre_zeros(ikr,ikmu)
             read(9,*) glq_weight(ikr,ikmu)
@@ -90,6 +90,13 @@ module power_spectrum
         endif
       endif
 !
+      if (ispecialvar==0) then
+        sp_spec=.false., ssp_spec=.false., sssp_spec=.false., hav_spec=.false.
+      endif
+      if (ispecialvar2==0) then
+        mu_spec=.false.
+      endif
+
     endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
@@ -1975,7 +1982,7 @@ module power_spectrum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
- real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz

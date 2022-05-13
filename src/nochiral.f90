@@ -52,6 +52,8 @@ module Chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      EP_spec=.false.
+!
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !

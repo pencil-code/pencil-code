@@ -70,7 +70,7 @@ module Magnetic
       mag_spec=.false.; j_spec=.false.; jb_spec=.false.; ja_spec=.false.
       uxj_spec=.false.; mag_phispec=.false.; uxj_phispec=.false.
       bxy_spec=.false.; jxbxy_spec=.false.
-      ab_spec=.false.; azbz_spec=.false.
+      ab_spec=.false.; azbz_spec=.false.; Tra_spec=.false.
       ub_spec=.false.; Lor_spec=.false.; EMF_spec=.false.
       ab_phispec=.false.; ab_kzspec=.false.; har_spec=.false.
       bb2_spec=.false.; jj2_spec=.false.; ele_spec=.false.
