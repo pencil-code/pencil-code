@@ -91,7 +91,7 @@ module power_spectrum
       endif
 !
       if (ispecialvar==0) then
-        sp_spec=.false., ssp_spec=.false., sssp_spec=.false., hav_spec=.false.
+        sp_spec=.false.; ssp_spec=.false.; sssp_spec=.false.; hav_spec=.false.
       endif
       if (ispecialvar2==0) then
         mu_spec=.false.
