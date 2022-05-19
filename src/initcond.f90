@@ -5396,7 +5396,7 @@ module Initcond
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
-          if (present(k2hel) .and. present(k2hel)) then
+          if (present(k1hel) .and. present(k2hel)) then
             if (k1hel>0. .and. k2hel<max_real) then
               where (k2<k1hel**2 .or. k2>k2hel**2)
                 r = 0.
