@@ -231,7 +231,7 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 
 
 Options[LuNspec]={"l1/n"->False};
-LuNspec[sim_,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
+LuNspec[sim_,i_Integer:1,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
   (*error messages*)
   LuNspec::nofile="power_mag.dat not found from `1`.";
   LuNspec::nores="Unfamiliar iresistivity for `1`: `2`";
@@ -244,7 +244,7 @@ LuNspec[sim_,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t
   Eb=2Total/@spec;
   l=(Total[1/Range[spec//First//Length]*#]&/@spec)/Eb;
   
-  {eta,n}=Switch[ires=readParamNml[sim,"run.in","IRESISTIVITY"]//First,
+  {eta,n}=Switch[ires=readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
     "'eta-const'",  {readParamNml[sim,"run.in","ETA"],       2},
     "'eta-tdep'",   {readParamNml[sim,"run.in","ETA"],       2},
     "'hyper2'",     {readParamNml[sim,"run.in","ETA_HYPER2"],4},
