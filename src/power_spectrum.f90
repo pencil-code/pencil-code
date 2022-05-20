@@ -4544,15 +4544,16 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
-  integer :: nv,nvmin,nsum,nsub
+  integer :: nv,nvmin,nsum,nsub,icor
   integer :: kxx,kyy,kzz,kint
-  real :: k2,rr,k
+  real :: k2,rr,k,j0,j0x,j0y,j0z,j1
+  real, dimension(4) :: w
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
   real, dimension(nx,ny,nz) :: gLam
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam_tmp
-  real, dimension(nk) :: correl,correl_sum
+  real, dimension(4,nk) :: correl,correl_sum
   real, dimension(nk) :: spectrum,spectrum_sum
   real, allocatable, dimension(:,:,:) :: hv,hv_sum
   real, allocatable, dimension(:) :: Iv
@@ -4653,7 +4654,7 @@ endsubroutine pdf
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
   !
   do ikr=1,nk
-    rr = (ikr-1)*dx  !  rr=0,dx,...,Lx/2-dx
+    rr = ikr*dx  !  rr=dx,2dx,...,Lx/2
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       kxx = kx(ikx+ipx*nx)       !  the true kx
       kyy = ky(iky+ipy*ny)       !  the true ky
@@ -4667,29 +4668,47 @@ endsubroutine pdf
           spectrum(kint+1) = spectrum(kint+1) + h_re(ikx,iky,ikz)
         endif
       endif
-      !  int_0^rr dr <h(x)h(x+r)>
-      if (k==0.) then
-        correl(ikr) = correl(ikr) + 8*pi/3*(rr**3) * h_re(ikx,iky,ikz)
-      else
-        correl(ikr) = correl(ikr) + 8*pi/(k**3)*( sin(k*rr)-k*rr*cos(k*rr) ) &
-            * h_re(ikx,iky,ikz)
-      endif
+      !  int d^3k <w(k) h^*(k) h(k) >
+      if (kxx==0.) then; j0x=1.;  else; j0x=sin(kxx*rr)/(kxx*rr); endif
+      if (kyy==0.) then; j0y=1.;  else; j0y=sin(kyy*rr)/(kyy*rr); endif
+      if (kzz==0.) then; j0z=1.;  else; j0z=sin(kzz*rr)/(kzz*rr); endif
+      if (k2==0.)  then; j1=1./3; else; j1=(sin(k*rr)-k*rr*cos(k*rr))/(k*rr)**3; endif
+      j0=j0x*j0y*j0z;
+      w(1) = 8*rr**3*(j0**2)      !  box counting, cubic
+      w(2) = 48*pi*rr**3*(j1**2)  !  box counting, spheric
+      w(3) = 8*rr**3*j0           !  spectral, cubic
+      w(4) = 8*pi*rr**3*j1        !  spectral, spheric
+      do icor=1,4
+        correl(icor,ikr) = correl(icor,ikr) + w(icor) * h_re(ikx,iky,ikz)
+      enddo
     enddo; enddo; enddo
   enddo
   !
-  call mpireduce_sum(correl,correl_sum,nk)
+  call mpireduce_sum(correl,correl_sum,(/4,nk/))
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   !
   if (lroot) then
-    open(1,file=trim(datadir)//'/correl_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/Iv_bcc_'//trim(sp)//'.dat',position='append')
     write(1,*) t
-    write(1,*) correl_sum
+    write(1,*) correl_sum(1,:)
+    close(1)
+    open(1,file=trim(datadir)//'/Iv_bcs_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) correl_sum(2,:)
+    close(1)
+    open(1,file=trim(datadir)//'/Iv_spc_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) correl_sum(3,:)
+    close(1)
+    open(1,file=trim(datadir)//'/Iv_sps_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) correl_sum(4,:)
     close(1)
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) spectrum_sum
     close(1)
-    open(1,file=trim(datadir)//'/Iv_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/Iv_bc_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) Iv
     close(1)
