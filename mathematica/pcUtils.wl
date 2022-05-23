@@ -42,6 +42,27 @@ Options:
 Outputs:
   Prints out the fitted parameters, and returns a List."
 
+pcNumberToTex::usage="pcNumberToTex[x,n:1] first converts a number x into scientific form
+with n-digit precision, and then converts it into a Tex-form string.
+Example:
+  pcNumberToTex[0.12345,2]=\"$1.2\\times 10^{-1}$\"."
+
+pcWriteTexTable::usage="pcWriteTexTable[file,head,content] writes into file a Tex-form table.
+Input:
+  file: If already exists, will overwrite it.
+  head: A List of Strings. Must be in Tex-form.
+  content: A nested List. Must be in Tex-form.
+Output:
+  The output file reads something like this:
+\begin{tabular}{cc}
+\hline
+% head1 & head2\\
+\hline
+% tb11 & tb12 \\
+% tb21 & tb22 \\
+\hline
+\end{tabular}"
+
 
 Begin["`Private`"]
 
@@ -85,6 +106,43 @@ pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,
 ]
 
 
+(* ::Section:: *)
+(*Output to Tex*)
+
+
+pcNumberToTex[x_,n_:1]:=StringJoin[
+  "$",
+  x//ScientificForm[#,n]&//ToString[#,TeXForm]&//StringReplace[#,".\\"->"\\"]&,
+  "$"
+]
+
+pcWriteTexTable[file_,head_,content_]:=Module[{},
+  Print["Overwriting ",file];
+  If[FileExistsQ[file],DeleteFile[file]];
+  CreateFile[file];
+  
+  (*start table*)
+  WriteString[file,"\\begin{tabular}{"];
+  WriteString[file,StringJoin[ConstantArray["c",Length[head]]]];
+  WriteString[file,"}\n\\hline\n"];
+  
+  (*headings line*)
+  WriteString[file,StringRiffle[head," & "]];
+  WriteString[file,"\\\\\n\\hline\n"];
+  
+  (*content*)
+  Do[
+    WriteString[file,StringRiffle[ToString/@str," & "]];
+    WriteString[file,"\\\\\n"],
+    {str,content}];
+  WriteString[file,"\\hline\n"];
+  
+  (*finish*)
+  WriteString[file,"\\end{tabular}"];
+  FilePrint[file]
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -93,7 +151,8 @@ End[]
 
 
 Protect[
-  pcAround,pcDivide,pcDifferences,pcFit
+  pcAround,pcDivide,pcDifferences,pcFit,
+  pcNumberToTex,pcWriteTexTable
 ]
 
 
