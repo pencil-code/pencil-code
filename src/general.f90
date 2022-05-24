@@ -21,7 +21,7 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index, find_index_range_hill, pos_in_array
-  public :: find_proc
+  public :: find_proc, find_proc_general
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
@@ -208,6 +208,28 @@ module General
 !
     endfunction find_proc
 !***********************************************************************
+    pure integer function find_proc_general(Ax, By, Cz, nprocx, nprocy, nprocz, lprocz_slowest)
+!
+!  Returns the rank of a process given its position in (ipx,ipy,ipz).
+!
+!  16-sep-15/ccyang: coded.
+!
+      logical, intent(in) :: lprocz_slowest
+!
+      integer, intent(in) :: Ax, By, Cz, nprocx, nprocy, nprocz 
+      integer :: nprocxy, nprocxz
+!
+      if (lprocz_slowest) then
+        nprocxy = nprocx*nprocy
+        find_proc_general = Ax * nprocxy + By * nprocx + Cz
+!      else
+!        nprocxz = nprocx*nprocz
+!        find_proc_ = ipy * nprocxz + ipz * nprocx + ipx
+      endif
+!
+    endfunction find_proc_general
+!***********************************************************************
+
     subroutine setup_mm_nn
 !
 !  Produce index-array for the sequence of points to be worked through:

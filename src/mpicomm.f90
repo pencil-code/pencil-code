@@ -154,7 +154,7 @@ module Mpicomm
     integer, dimension(3) :: procnums
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
-    logical :: lnprocx_mismat
+    logical, dimension(3) :: lnproc_mismat
     real, dimension(:), allocatable :: xgrid
     integer, dimension(:,:), allocatable :: xind_rng
     character(LEN=5) :: unit_system
@@ -10089,7 +10089,7 @@ endif
 !
 ! 20-oct-21/MR: coded
 !
-      use General, only: itoa, find_index_range
+      use General, only: itoa, find_index_range, find_proc_general
 
       real, dimension(:,:,:,:), allocatable :: frgn_buffer
 !
@@ -10100,7 +10100,7 @@ endif
       logical :: lok
       character(LEN=128) :: messg
       integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
-                 il1,il2,lenx,px,tag,peer
+                 il1,il2,lenx,px,tag,peer, multix, multiy, multiz
 
       if (lforeign) then
 
@@ -10116,7 +10116,7 @@ endif
 !
 !  Receive length of name of foreign code.
 !
-print*, "Pencil = ",frgn_setup%root
+!print*, "Pencil = ",frgn_setup%root
           call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'Received foreign name_len=', name_len
           if (name_len<=0) then
@@ -10144,8 +10144,10 @@ print*, "Pencil = ",frgn_setup%root
 !
 !  For the moment being.
 !
-            if (any(intbuf(2:3)/=(/nprocy,nprocz/))) then 
-              messg="EULAG y or z proc numbers don't match;"
+!            if (any(intbuf(2:3)/=(/nprocy,nprocz/))) then 
+            if (any(intbuf(3)/=(/nprocz/))) then 
+              messg="EULAG z proc numbers don't match;"
+!              messg="EULAG y or z proc numbers don't match;"
               lok=.false.
             endif
           elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
@@ -10158,6 +10160,12 @@ print*, "Pencil = ",frgn_setup%root
           !          ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
 
           frgn_setup%procnums=intbuf
+!
+!	Calculate the multiplicity of processors
+!
+          multix = nprocx/frgn_setup%procnums(1)
+          multiy = nprocy/frgn_setup%procnums(2)
+          multiz = nprocz/frgn_setup%procnums(3)
 !
 !  Receive gridpoint numbers of foreign code.
 !      
@@ -10271,8 +10279,14 @@ print*, "Pencil = ",frgn_setup%root
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)                       
         tag  = tag_foreign+iproc
         if (frgn_setup%procnums(1)==1) then
-          peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
-          frgn_setup%peer_rng=peer
+!!!          peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
+!
+!	Here we check the peers using PENCIL. EVERYTHING HERE MUST BE PENCIL LIKE.
+!	IPZ, IPY, IPX are EULAG values(?)
+!
+          frgn_setup%peer_rng = find_proc_general(ipz/multiz,ipy/multiy, ipx/multix, frgn_setup%procnums(1), frgn_setup%procnums(2), frgn_setup%procnums(3),.true.)
+!print*,'PENCIL - ipy, ipz', iproc, ipy, ipz, peer, ncpus
+
         endif
 !
 !  Allocate array for index ranges w.r.t. frgn_setup%xgrid for each foreign
@@ -10280,10 +10294,25 @@ print*, "Pencil = ",frgn_setup%root
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
 !
+!  Check mismatching existence in processors setup
+!
         if (lfirst_proc_yz) &             ! on processors of first XBEAM
-          frgn_setup%lnprocx_mismat = frgn_setup%procnums(1)/=nprocx
-        
-        call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_YZPLANE)
+          frgn_setup%lnproc_mismat(1) = frgn_setup%procnums(1)/=nprocx
+!        
+        call mpibcast_logical(frgn_setup%lnproc_mismat(1),comm=MPI_COMM_YZPLANE)
+!
+        if (lfirst_proc_xz) then             ! on processors of first YBEAM
+          frgn_setup%lnproc_mismat(2) = frgn_setup%procnums(2)/=nprocy
+        endif
+!
+        call mpibcast_logical(frgn_setup%lnproc_mismat(2),comm=MPI_COMM_XZPLANE)
+!
+        if (lfirst_proc_xy) then             ! on processors of first ZBEAM
+          frgn_setup%lnproc_mismat(3) = frgn_setup%procnums(3)/=nprocz
+        endif
+!
+        call mpibcast_logical(frgn_setup%lnproc_mismat(3),comm=MPI_COMM_XYPLANE)
+!
         if (lfirst_proc_yz) then             ! on processors of first XBEAM
 !                              
 !  Broadcast frgn_setup%xgrid to all procs with iprocx=0.
@@ -10301,7 +10330,7 @@ print*, "Pencil = ",frgn_setup%root
 !print *, 'PENCIL lenx', iproc,il1, il2, l1,l2!, x(l1), x(l2)
 !print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
 !
-          if (frgn_setup%lnprocx_mismat) then
+          if (frgn_setup%lnproc_mismat(1)) then
 !
 !  When processor numbers in x-direction don't match, ask all foreign processors
 !  about their share in frgn_setup%xind_rng. No share: receive [0,0]
@@ -10341,7 +10370,7 @@ print*, "Pencil = ",frgn_setup%root
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
 !print*, "Pencil lenx", iproc, lenx
         allocate(frgn_buffer(lenx,ny,nz,3))   
-        call mpibcast_logical(frgn_setup%lnprocx_mismat,comm=MPI_COMM_PENCIL)
+        call mpibcast_logical(frgn_setup%lnproc_mismat(1),comm=MPI_COMM_PENCIL)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
       endif    ! if (lforeign)
 
@@ -10366,13 +10395,11 @@ print*, "Pencil = ",frgn_setup%root
 
         if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
         if (lroot) t1 = MPI_WTIME()
-
-        if (frgn_setup%lnprocx_mismat) then
+        if (frgn_setup%lnproc_mismat(1)) then
 
           ncpus_foreign=product(frgn_setup%procnums)
           do px=0,frgn_setup%procnums(1)-1
             if (frgn_setup%xind_rng(px,1)>0) then
-
               lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
               istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
               if (loptest(lnonblock)) then
@@ -10383,13 +10410,16 @@ print*, "Pencil = ",frgn_setup%root
                 enddo
               else       ! EULAG case
                 peer=frgn_setup%peer_rng(1)
+!print*, 'PENCIL - rank, peer, tag', iproc, peer, peer-ncpus
                 do iv=1,nvars
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
+!                  if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
+!                  if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
+!                  if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
 !print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
                 enddo
               endif
-
             endif
           enddo
         endif
@@ -10398,16 +10428,13 @@ print*, "Pencil = ",frgn_setup%root
 !  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
 !  tcount = tcount + 1
 !endif
-!write(20+iproc) frgn_buffer
+!write(200+iproc) frgn_buffer
 !if (.not.loptest(lnonblock))then
-print *, 'PENCIL - MIN MAX WT',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !else
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
-!print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
-!print *,'PENCIL MINMAX W3',iproc, minval(frgn_buffer), maxval(frgn_buffer)
-
-print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
+!print *, 'PENCIL - MIN MAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
 
@@ -10452,7 +10479,7 @@ print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_b
         endif
        
       else if (lfirst_proc_yz) then 
-        if (frgn_setup%lnprocx_mismat) then
+        if (frgn_setup%lnproc_mismat(1)) then
           nvars=ivar2-ivar1+1
 
           do pz=0,nprocz-1
