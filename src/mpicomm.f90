@@ -333,11 +333,8 @@ module Mpicomm
         lyang=iproc>=ncpus             ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
       endif
 
-      if (lyinyang) then
+      if (lyinyang) &
         call MPI_COMM_SPLIT(MPI_COMM_PENCIL, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
-      else
-        !call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID, mpierr)
-      endif
 !
 !  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
 !
@@ -10114,11 +10111,13 @@ endif
         if (lroot) then
           lok=.true.; messg=''
 !
+!  Send communication tag to foreign code.
+!
+          call mpisend_int(tag_foreign,frgn_setup%root,0,MPI_COMM_WORLD)
+!
 !  Receive length of name of foreign code.
 !
-!print*, "Pencil = ",frgn_setup%root
           call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-!print*, 'Received foreign name_len=', name_len
           if (name_len<=0) then
             call stop_it('initialize_foreign_comm: length of foreign name <=0 or >')
           elseif (name_len>labellen) then
@@ -10217,6 +10216,7 @@ endif
             endif
             ind=ind+2
           enddo
+!print*, 'PENCIL: foreign dims=', floatbuf
 !
 !  Receive output timestep of foreign code.
 !      
@@ -10233,6 +10233,7 @@ endif
         endif
 
         call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
+
         if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
@@ -10249,12 +10250,13 @@ endif
 !  Receive vector of foreign global r-grid points.
 !
           call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+!print*, 'PENCIL: foreign xgrid=', frgn_setup%xgrid
 !
-!Renormalize X-coord to Pencil domain.
+!  Renormalize X-coord to Pencil domain.
 !
           frgn_setup%xgrid = frgn_setup%xgrid/frgn_setup%xgrid(nxgrid_foreign)*xyz1(1)       
 !
-!Receive normalized time from foreign side
+!  Receive normalized time from foreign side
 !
           call mpirecv_real(frgn_setup%renorm_t,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
@@ -10273,18 +10275,19 @@ endif
         call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
 !       
-!
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         ncpus_foreign=product(frgn_setup%procnums)
+        !!!frgn_setup%lnprocx_mismat(1) = frgn_setup%procnums(1)/=nprocx
+
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)                       
         tag  = tag_foreign+iproc
         if (frgn_setup%procnums(1)==1) then
-!!!          peer = ipy*frgn_setup%procnums(1)*frgn_setup%procnums(2) + ipz*frgn_setup%procnums(1)+ncpus
 !
 !	Here we check the peers using PENCIL. EVERYTHING HERE MUST BE PENCIL LIKE.
 !	IPZ, IPY, IPX are EULAG values(?)
 !
-          frgn_setup%peer_rng = find_proc_general(ipz/multiz,ipy/multiy, ipx/multix, frgn_setup%procnums(1), frgn_setup%procnums(2), frgn_setup%procnums(3),.true.)
+          frgn_setup%peer_rng = find_proc_general(ipz/multiz,ipy/multiy, ipx/multix, &
+                                frgn_setup%procnums(1), frgn_setup%procnums(2), frgn_setup%procnums(3),.true.)
 !print*,'PENCIL - ipy, ipz', iproc, ipy, ipz, peer, ncpus
 
         endif
@@ -10327,8 +10330,7 @@ endif
           if (.not.llast_proc_x) il2=il2+1
 !
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
-!print *, 'PENCIL lenx', iproc,il1, il2, l1,l2!, x(l1), x(l2)
-!print *, 'PENCIL lenx2',iproc , x(l1), x(l2)
+!print*, 'PENCIL: xindrng=', iproc, frgn_setup%xind_rng(-1,:)
 !
           if (frgn_setup%lnproc_mismat(1)) then
 !
@@ -10348,7 +10350,8 @@ endif
               enddo
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
-              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
+!print*, 'PENCIL: iproc, peer, tag=', iproc, peer, tag_foreign+iproc
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,tag_foreign+iproc,MPI_COMM_WORLD,mpierr)
             endif
           else
             if (frgn_setup%procnums(1)>1) then
@@ -10362,17 +10365,23 @@ endif
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
             endif
           endif
-        endif  ! if (lfirst_proc_yz)
+        endif  ! lfirst_proc_yz
 
-        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)  !ORIGINAL
+        call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
+        lenx=min(nx,frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1)
+print*, "Pencil lenx", iproc, lenx
 
-        lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-!print*, "Pencil lenx", iproc, lenx
-        allocate(frgn_buffer(lenx,ny,nz,3))   
+        allocate(frgn_buffer(lenx,ny,nz,3))
+        if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
         call mpibcast_logical(frgn_setup%lnproc_mismat(1),comm=MPI_COMM_PENCIL)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
+
       endif    ! if (lforeign)
+!print*, 'PENCIL initialize_foreign_comm: successful', iproc
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+!      call MPI_FINALIZE(mpierr)
+!stop
 
     endsubroutine initialize_foreign_comm
 !***********************************************************************
@@ -10394,7 +10403,6 @@ endif
       integer :: istart,lenx_loc,ncpus_foreign,px,iv,peer
 
         if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
-        if (lroot) t1 = MPI_WTIME()
         if (frgn_setup%lnproc_mismat(1)) then
 
           ncpus_foreign=product(frgn_setup%procnums)
@@ -10408,9 +10416,9 @@ endif
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
                 enddo
-              else       ! EULAG case
+              else       ! blocking case
                 peer=frgn_setup%peer_rng(1)
-!print*, 'PENCIL - rank, peer, tag', iproc, peer, peer-ncpus
+!print*, 'PENCIL recv: iproc,peer,tag=', iproc,peer,peer-ncpus
                 do iv=1,nvars
                   call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                     (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
@@ -10433,16 +10441,15 @@ endif
 !else
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
+print*, 'PENCIL get_foreign_snap_initiate: successful', iproc
 !print *, 'PENCIL - MIN MAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
-
-!print*, 'Pencil: successful', iproc
-!call mpibarrier
+print*, 'Pencil: successful', iproc
+!call mpibarrier(MPI_COMM_WORLD)
 !call MPI_FINALIZE(mpierr)
 !stop
-
 
     endsubroutine get_foreign_snap_initiate
 !***********************************************************************

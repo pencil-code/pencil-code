@@ -208,23 +208,19 @@ module General
 !
     endfunction find_proc
 !***********************************************************************
-    pure integer function find_proc_general(Ax, By, Cz, nprocx, nprocy, nprocz, lprocz_slowest)
+    pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest)
 !
 !  Returns the rank of a process given its position in (ipx,ipy,ipz).
 !
-!  16-sep-15/ccyang: coded.
+!  23-may-22/monteiro: coded.
 !
+      integer, intent(in) :: ipx, ipy, ipz, nprocx, nprocy, nprocz 
       logical, intent(in) :: lprocz_slowest
 !
-      integer, intent(in) :: Ax, By, Cz, nprocx, nprocy, nprocz 
-      integer :: nprocxy, nprocxz
-!
       if (lprocz_slowest) then
-        nprocxy = nprocx*nprocy
-        find_proc_general = Ax * nprocxy + By * nprocx + Cz
-!      else
-!        nprocxz = nprocx*nprocz
-!        find_proc_ = ipy * nprocxz + ipz * nprocx + ipx
+        find_proc_general = ipx * nprocx*nprocy + ipy * nprocx + ipz
+      else
+        find_proc_general = ipy * nprocx*nprocz + ipz * nprocx + ipx
       endif
 !
     endfunction find_proc_general
