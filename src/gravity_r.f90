@@ -40,6 +40,7 @@ module Gravity
 !
   ! coefficients for potential
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
+  real, dimension (16,ninit) :: cpot2=0.
   real, dimension(ninit) :: g01=0.,rpot=0.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
@@ -214,6 +215,18 @@ module Gravity
             if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
             cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 !
+!  Experimental flattened potential for M5 star. Similar to M5-dwarf but
+!  includes 6th and 12th powers of r to obtain pot~const for r \gtrsim 1.2.
+!  Here a 15th order polynomial fit is used to construct the potential.
+!
+          case ('M5-flat')        ! M5 flat
+            if (lroot) print*, 'initialize_gravity: M5 flat gravity potential'
+            cpot2(:,j) = (/ 2.33932201e+00, 1.65736990e-01, -9.66534918e+00, 9.93311842e+01, &
+                           -7.84474588e+02, 3.80654218e+03, -1.20467561e+04, 2.60329111e+04, &
+                           -3.94606849e+04, 4.25603487e+04, -3.27771332e+04, 1.78753221e+04, &
+                           -6.73781490e+03, 1.66874150e+03, -2.44250835e+02, 1.60061840e+01 /)
+            lpade=.false.
+!
           case ('M2-sgiant')       ! M super giant
             if (lroot) print*, 'initialize_gravity: M super giant gravity potential'
             cpot(:,j) = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
@@ -331,6 +344,12 @@ module Gravity
                   !of Freeman 1970. Reference: Persic et al 1996
                   g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
                        ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
+                elseif (ipotential(j) == 'M5-flat') then
+                  !experimental flattened potential for M5 star
+                   g_r = poly( (/   cpot2(2,j),  2*cpot2(3,j),  3*cpot2(4,j),  4*cpot2(5,j),  &
+                                  5*cpot2(6,j),  6*cpot2(7,j),  7*cpot2(8,j),  8*cpot2(9,j),  &
+                                  9*cpot2(10,j),10*cpot2(11,j),11*cpot2(12,j),12*cpot2(13,j), &
+                                 13*cpot2(14,j),14*cpot2(15,j),15*cpot2(16,j) /), rr_mn)
                 else
 !
 !  smoothed 1/r potential in a spherical shell
@@ -716,7 +735,12 @@ module Gravity
 !
         case ('no-smooth','newton','newtonian')
           pot = pot -g0/rr
-!
+        case ('M5-flat')
+           pot = pot - poly( (/ cpot2(1,j),  cpot2(2,j),  cpot2(3,j),  cpot2(4,j),  &
+                                cpot2(5,j),  cpot2(6,j),  cpot2(7,j),  cpot2(8,j),  &
+                                cpot2(9,j),  cpot2(10,j), cpot2(11,j), cpot2(12,j), &
+                                cpot2(13,j), cpot2(14,j), cpot2(15,j), cpot2(16,j) /), rr)
+          if (present(pot0)) pot0 = pot0 - cpot2(1,j)
         case default
           pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rr) &
                / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rr)
@@ -777,6 +801,12 @@ module Gravity
         case ('no-smooth','newton','newtonian')
           pot=pot-g0/rmn
 !
+        case ('M5-flat')
+           pot = pot - poly( (/ cpot2(1,j),  cpot2(2,j),  cpot2(3,j),  cpot2(4,j),  &
+                                cpot2(5,j),  cpot2(6,j),  cpot2(7,j),  cpot2(8,j),  &
+                                cpot2(9,j),  cpot2(10,j), cpot2(11,j), cpot2(12,j), &
+                                cpot2(13,j), cpot2(14,j), cpot2(15,j), cpot2(16,j) /), rad)
+          if (present(pot0)) pot0 = pot0 - cpot2(1,j)
         case default
           pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
                / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
@@ -844,6 +874,12 @@ module Gravity
                / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
           if (present(pot0)) pot0=pot0-cpot(1,j)
 !
+        case ('M5-flat')
+           pot = pot - poly( (/ cpot2(1,j),  cpot2(2,j),  cpot2(3,j),  cpot2(4,j),  &
+                                cpot2(5,j),  cpot2(6,j),  cpot2(7,j),  cpot2(8,j),  &
+                                cpot2(9,j),  cpot2(10,j), cpot2(11,j), cpot2(12,j), &
+                                cpot2(13,j), cpot2(14,j), cpot2(15,j), cpot2(16,j) /), rad)
+          if (present(pot0)) pot0 = pot0 - cpot2(1,j)
         endselect
       enddo
 !

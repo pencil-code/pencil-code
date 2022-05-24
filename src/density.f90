@@ -105,6 +105,7 @@ module Density
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
   logical :: ldiff_hyper3_mesh=.false.,ldiff_hyper3_strict=.false.
+  logical :: ldiff_hyper3lnrho_strict=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
@@ -206,6 +207,7 @@ module Density
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
   integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
+  integer :: idiag_dtd3=0        ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
@@ -263,6 +265,7 @@ module Density
 !
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
+  real, dimension(nx) :: diffus_diffrho3
 !$omp THREADPRIVATE(diffus_diffrho)
 
   contains
@@ -573,6 +576,7 @@ module Density
       ldiff_hyper3_aniso=.false.
       ldiff_hyper3_polar=.false.
       ldiff_hyper3_strict=.false.
+      ldiff_hyper3lnrho_strict=.false.
       ldiff_hyper3_mesh=.false.
       ldensity_slope_limited=.false.
 !
@@ -608,6 +612,9 @@ module Density
         case ('hyper3-strict','hyper3_strict')
           if (lroot) print*,'diffusion: Dhyper*del2(del2(del2(rho)))'
           ldiff_hyper3_strict=.true.
+        case ('hyper3-lnrho-strict','hyper3_lnrho_strict')
+          if (lroot) print*,'diffusion: Dhyper*del2(del2(del2(lnrho)))'
+          ldiff_hyper3lnrho_strict=.true.
         case ('hyper3_mesh','hyper3-mesh')
           if (lroot) print*,'diffusion: mesh hyperdiffusion'
           ldiff_hyper3_mesh=.true.
@@ -640,8 +647,8 @@ module Density
         if (ldiff_cspeed.and..not.(lentropy.or.ltemperature)) &
             call warning('initialize_density', &
             'Diffusion with cspeed can only be used with lenergy!', 0)
-        if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict) &
-            .and. diffrho_hyper3==0.0) &
+        if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict .or. &
+              ldiff_hyper3lnrho_strict) .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
             'Diffusion coefficient diffrho_hyper3 is zero!')
         if ( (ldiff_hyper3_aniso) .and.  &
@@ -2012,7 +2019,7 @@ module Density
       if ((ldiff_hyper3.or.ldiff_hyper3_strict).and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
-      if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
+      if (ldiff_hyper3lnrho .or. ldiff_hyper3lnrho_strict) lpenc_requested(i_del6lnrho)=.true.
 !
       if (lmass_source) then
         if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
@@ -2266,8 +2273,15 @@ module Density
         endif
       endif
 ! del6lnrho
-      if (lpenc_loc(i_del6lnrho)) call fatal_error('calc_pencils_density', &
-          'del6lnrho not available for linear mass density')
+      if (lpenc_loc(i_del6lnrho)) then
+        if (ldiff_hyper3lnrho) then
+          call fatal_error('calc_pencils_density', &
+               'del6lnrho not available for linear mass density') 
+        elseif (ldiff_hyper3lnrho_strict) then 
+          call fatal_error('calc_pencils_density', &
+               'del6lnrho_strict not available for linear mass density')
+        endif
+      endif
 ! hlnrho
       if (lpenc_loc(i_hlnrho)) call fatal_error('calc_pencils_density', &
           'hlnrho not available for linear mass density')
@@ -2304,7 +2318,7 @@ module Density
 !
       use WENO_transport
       use General, only: notanumber
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,del6_strict,multmv,g2ij,dot_mn,h_dot_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2358,7 +2372,14 @@ module Density
       if (lpenc_loc(i_del6rho)) call fatal_error('calc_pencils_density', &
           'del6rho not available for logarithmic mass density')
 ! del6lnrho
-      if (lpenc_loc(i_del6lnrho)) call del6(f,ilnrho,p%del6lnrho)
+      if (lpenc_loc(i_del6lnrho)) then
+        if (ldiff_hyper3lnrho) then
+          call del6(f,ilnrho,p%del6lnrho)
+        elseif (ldiff_hyper3lnrho_strict) then
+          call del6_strict(f,ilnrho,p%del6lnrho)
+        endif
+      endif
+
 ! hlnrho
       if (lpenc_loc(i_hlnrho))  call g2ij(f,ilnrho,p%hlnrho)
 ! sglnrho
@@ -2409,7 +2430,7 @@ module Density
       real, dimension (nx) :: fdiff  !GPU := df(l1:l2,m,n,irho|ilnrho)
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: density_rhs,diffus_diffrho3,advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs,advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
 !
@@ -2635,8 +2656,6 @@ module Density
         else
           if (ldiffusion_nolog) then
             fdiff = fdiff + diffrho_hyper3*p%rho1*p%del6rho
-          else
-            call fatal_error('dlnrho_dt','hyper diffusion not implemented for lnrho')
           endif
         endif
         if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
@@ -2716,13 +2735,17 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
       endif
 !
-      if (ldiff_hyper3lnrho) then
+      if (ldiff_hyper3lnrho .or. ldiff_hyper3lnrho_strict) then
         if (.not. ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6lnrho
         endif
         if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
-        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+        if (headtt .and. ldiff_hyper3lnrho ) print*, &
+           'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+        if (headtt .and. ldiff_hyper3lnrho_strict ) print*, &
+           'dlnrho_dt: diffrho_hyper3_strict=', diffrho_hyper3
       endif
+
 !
 !  Add diffusion term to continuity equation
 !
@@ -2911,6 +2934,7 @@ module Density
         call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (.not.lgpu) then
           if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+          if (idiag_dtd3/=0) call max_mn_name(diffus_diffrho3/cdtv3,idiag_dtd3,l_dt=.true.)
         endif
         if (idiag_grhomax/=0) then
           call dot2(p%grho,tmp); tmp=sqrt(tmp)
@@ -3440,7 +3464,7 @@ module Density
         idiag_rhof2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0; idiag_lnrhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
-        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
+        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0; idiag_dtd3=0
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
@@ -3478,6 +3502,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'ugrhom',idiag_ugrhom)
         call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+        call parse_name(iname,cname(iname),cform(iname),'dtd3',idiag_dtd3)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
         call parse_name(iname,cname(iname),cform(iname),'inertiaxx',idiag_inertiaxx)

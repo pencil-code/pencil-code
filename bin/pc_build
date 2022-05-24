@@ -43,6 +43,8 @@
 #                   read, then exit
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #       --fast      Shortcut for the option FFLAGS+='-O0'.
+#   -l, --last-config 
+#                   Build with the same config files as before.
 #   -p, --previous-flags
 #                   Build with the same flags as the previous time.
 #   -q, --quiet     Be quiet.
@@ -127,6 +129,7 @@ GetOptions(\%opts,
                -D   --debug-config
                     --notify
                     --fast
+               -l   --last-config
                -p   --previous-flags
                -q   --quiet
                -s   --serial
@@ -152,6 +155,7 @@ my $show_system_host_id = ($opts{'i'}                     || '');
 my $show_host_ids = ($opts{'I'}                           || '');
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
+my $last_config  = ($opts{'l'} || $opts{'last-config'}    || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 my $serial       = ($opts{'s'} || $opts{'serial'}         || '');
@@ -183,8 +187,18 @@ mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
 
 if (!defined $config_files) {
-    if (defined $ENV{'PENCIL_CONFIG_FILES'}) {
-        $config_files = $ENV{'PENCIL_CONFIG_FILES'};
+    if ($last_config && -e "src/.config-files" && !(-z "src/.config-files")) {
+        open(CFH, '<', "src/.config-files");
+        $config_files = <CFH>;
+        close(CFH);
+    } else {
+        if (defined $ENV{'PENCIL_CONFIG_FILES'}) {
+            $config_files = $ENV{'PENCIL_CONFIG_FILES'};
+        }
+    }
+    if (defined $config_files) {
+       $config_files =~ s/^\s+|\s+$//g;
+       print STDERR "Use config file <$config_files>\n" unless ($quiet);
     }
 }
 
@@ -199,10 +213,15 @@ if (defined $config_files) {
         $config_file = Pencil::ConfigFinder::find_config_file();
     }
     die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    $config_files=$config_file;
     push @config_files, $config_file;
     print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
 }
 die "No configuration file found\n" unless @config_files;
+
+open(CFH, '>', "src/.config-files") or die $!;
+print CFH $config_files;
+close(CFH);
 
 if ($debug_config) {
     if (($opts{'f'} || $opts{'config-files'}) && @config_files) {

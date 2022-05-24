@@ -92,7 +92,7 @@ program run
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Syscalls,        only: is_nan
+  use Syscalls,        only: is_nan, memusage
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
@@ -107,7 +107,7 @@ program run
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
   integer :: icount, mvar_in, isave_shift=0
-  integer :: it_last_diagnostic, it_this_diagnostic
+  integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
@@ -467,6 +467,15 @@ program run
 !
   call update_ghosts(f)
 !
+!  Allow here for the possibility to have spectral output
+!  from the first time. This works for all variables, except
+!  for the GW stress, but the GW signal itself is at the
+!  correct time; see the comment in the GW module.
+!
+  if (lspec_start .and. t==tstart) then
+    lspec=.true.
+  endif
+!
 !  Save spectrum snapshot.
 !
   if (dspec/=impossible) call powersnap(f)
@@ -795,6 +804,19 @@ program run
       endif
     endif
 !
+!  Allow here for the possibility to have spectral output
+!  *after* the first time. As explained in the comment to
+!  the GW module, the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+  if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) then
+    lspec=.true.
+  endif
+!
 !  Save spectrum snapshot.
 !
     if (dspec/=impossible) call powersnap(f)
@@ -918,6 +940,18 @@ program run
             ' Wall clock time/timestep/meshpoint [microsec] =', &
             wall_clock_time/icount/nw/ncpus/1.0e-6
       endif
+    endif
+  endif
+
+  memuse=memusage()
+  call mpireduce_max_int(memuse,memcpu)
+  call mpireduce_sum_int(memuse,memory)
+  if (lroot) then
+    print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+    if (memory>1e6) then
+      print'(1x,a,f9.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+    else
+      print'(1x,a,f9.3)', 'Maximum used memory [MBytes] = ', memory/1024.
     endif
     print*
   endif

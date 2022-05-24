@@ -67,16 +67,16 @@ module Energy
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
 !
-      if (ldensity) then
-        call get_shared_variable('lrelativistic_eos', &
-            lrelativistic_eos, caller='register_energy')
-      endif
+      if (ldensity) &
+        call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lrelativistic', &
-            lrelativistic, caller='register_energy')
+        call get_shared_variable('lrelativistic', lrelativistic)
+      else
+        allocate(lrelativistic)
+        lrelativistic=.false.
       endif
 !
 !  Identify version number.
@@ -154,6 +154,8 @@ module Energy
         endif
       endif
 !
+      TT_spec=.false.; ss_spec=.false.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy

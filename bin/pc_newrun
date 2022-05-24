@@ -54,10 +54,8 @@ else
     newdir=$1
   fi
 fi
-
 #
-#  save current working directory and make new run directory
-#  and go there.
+#  save current working directory and make new run directory and go there.
 #
 parentdir=`pwd`
 echo "Parent directory: " $parentdir
@@ -154,8 +152,7 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
-#
-
+[ -f src/.config-files ] && cp src/.config-files $targetdir/src
 #
 #  if same_source, then link all *.x files from the original directory.
 #  (We don't want to use a link to the entire src directory, because
@@ -166,7 +163,6 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 if [ $same_source ]; then
   cd $targetdir/src
   pwd
-
   if [ -h $olddir/src/run.x ]; then
     lnk=`readlink $olddir/src/combine_videofiles.x`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
@@ -183,6 +179,13 @@ if [ $same_source ]; then
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
   else
+    cd $olddir;
+    if [ -e src/.config-files ]; then 
+      pc_build -l -q -s -t helper_min >& /dev/null;
+    else
+      make helper_min >& /dev/null;
+    fi
+    cd $targetdir/src 
     if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
     if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi
   fi

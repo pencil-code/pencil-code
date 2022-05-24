@@ -230,28 +230,27 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 (*Dimensionless parameters from spectra files*)
 
 
-LuNspec[sim_]:=Module[{t,spec,Eb,k,l,n,eta,lnorm,toffset,t0,exp},
+Options[LuNspec]={"l1/n"->False};
+LuNspec[sim_,i_Integer:1,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
   (*error messages*)
   LuNspec::nofile="power_mag.dat not found from `1`.";
-  LuNspec::nores="Unfamiliar iresistivity for `1`.";
+  LuNspec::nores="Unfamiliar iresistivity for `1`: `2`";
   
   (**)
-  If[!FileExistsQ[sim<>"/data/power_mag.dat"],
-    Message[LuNspec::nofile,sim];Return[$Failed]
-  ];
+  If[!FileExistsQ[sim<>"/data/power_mag.dat"],Message[LuNspec::nofile,sim];Return[$Failed]];
   {t,spec}=read1D[sim,"power_mag.dat"];
   If[t[[1]]==0.,{t,spec}=Rest/@{t,spec}];
   spec=Rest/@spec;
   Eb=2Total/@spec;
   l=(Total[1/Range[spec//First//Length]*#]&/@spec)/Eb;
   
-  {eta,n}=Switch[readParamNml[sim,"run.in","IRESISTIVITY"]//First,
+  {eta,n}=Switch[ires=readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
     "'eta-const'",  {readParamNml[sim,"run.in","ETA"],       2},
     "'eta-tdep'",   {readParamNml[sim,"run.in","ETA"],       2},
     "'hyper2'",     {readParamNml[sim,"run.in","ETA_HYPER2"],4},
     "'hyper3'",     {readParamNml[sim,"run.in","ETA_HYPER3"],6},
     "'hyper3-tdep'",{readParamNml[sim,"run.in","ETA"],       6},
-    _,               Message[LuNspec::nores,sim];Return[$Failed]
+    _,               Message[LuNspec::nores,sim,ires];Return[$Failed]
   ];
   
   lnorm=readParamNml[sim,"run.in","LRESI_ETA_TDEP_T0_NORM"];
@@ -260,8 +259,10 @@ LuNspec[sim_]:=Module[{t,spec,Eb,k,l,n,eta,lnorm,toffset,t0,exp},
   exp=readParamNml[sim,"run.in","ETA_TDEP_EXPONENT"];
   eta=eta*If[lnorm,Max[(t-toffset)/t0,1]^exp,Max[#-toffset,t0]^exp&/@t];
   
-  
-  {t,Sqrt[Eb]*l^(n-1)/eta}//Transpose
+  If[OptionValue["l1/n"],
+    {t,(Sqrt[Eb]*l^(n-1)/eta)^(1/n)}//Transpose,
+    {t,Sqrt[Eb]*l^(n-1)/eta}//Transpose
+  ]
 ]
 
 

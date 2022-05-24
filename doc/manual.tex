@@ -425,15 +425,16 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+% ---------------------------------------------------------------------- %
 \begin{figure}[htb]
   \centering
   \includegraphics%
     [width=.99\textwidth,keepaspectratio]%
-    {github-timetrace}
-  \caption{Check-in frequency on the github page as a function of time; see
+    {GitHub_ci}
+  \caption{GitHub check-in pattern since 2002; see\\
   \url{https://github.com/pencil-code/pencil-code/graphs/contributors}
   }
-  \label{github-timetrace}
+  \label{GitHub}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
@@ -512,7 +513,7 @@ An up to date list of Pencil Code contributors can be found at
 
 \vfill
 
-Copyright \copyright{} 2001--2021 Wolfgang Dobler \& Axel Brandenburg
+Copyright \copyright{} 2001--2022 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -764,6 +765,10 @@ Lyra, W. \& Kuchner, W. \ynat{2013}{499}{184}{187}
 % -- mutual drag force --
 Yang, C.-C., \& Johansen, A.\yapjs{2016}{224}{39}
 {Integration of Particle-Gas Systems with Stiff Mutual Drag Interaction}
+
+% -- gravitational waves --
+Roper Pol, A., Brandenburg, A. Kahniashvili, T., Kosowsky, A., \& Mandal, S.\ygafd{2020}{114}{130}
+{161}{The timestep constraint in solving the gravitational wave equations sourced by hydromagnetic turbulence}
 
 \end{list}
 This list is not always up-to-date.
@@ -1130,7 +1135,7 @@ If you have made useful changes, please contact one of the (currently) 10
 who can give you push or check-in permission.
 Be sure to have sufficient comments in the code and please follow our
 standard coding conventions explained in Section~\ref{ProgrammingStyle}.
-There is also a script to check and fix the most common stylebreaks, 
+There is also a script to check and fix the most common style breaks, 
 pc\_codingstyle.
 \index{Style}
 
@@ -2098,12 +2103,15 @@ Use the \cmd{pc_build} command to compile the code:
   \prompt{unix> } pc_build                               # use default compiler suite
   \prompt{unix> } pc_build -f Intel_MPI                  # specify a compiler suite
   \prompt{unix> } pc_build -f os/GNU_Linux,mpi/open-mpi  # explicitly specify config files
+  \prompt{unix> } pc_build -l                            # use same config files as in last call of pc_build
   \prompt{unix> } pc_build VAR=something                 # set variables for the makefile
   \prompt{unix> } pc_build --cleanall                    # remove generated files
 \end{alltt}
 The third example circumvents the whole host ID mechanism by explicitly
 instructing \cmd{pc_build} which configuration files to use.
-The fourth example shows how to define extra variables
+In the fourth example, pc_build will apply the same configuration files as in its last invocation.
+They are stored in \file{src/.config-files}, which is automatically written, but can also be manually modified.
+The fifth example shows how to define extra variables
 (\code{VAR=something}) for the execution of the \cmd{Makefile}.
 
 See \cmd{pc_build --help} for a complete list of options.
@@ -6046,6 +6054,18 @@ which are used to compute the GW energy via
 \end{equation}
 where angle brackets denote volume averages.
 
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pdel}
+\end{center}\caption[]{
+  Scalings of the relative error in the magnetic field,
+  $(\delta B)_{\rm rms}/B_{\rm rms}$, and the gravitational
+  strain $(\delta h)_{\rm rms}/h_{\rm rms}$ for GWs generated
+  by the chiral magnetic effect, which leads to an exponentially
+  increasing magnetic field.
+  Low resolution ($32^3$) versions of the Runs~B4, B7, and B10
+  of \cite{BHKRS21}.
+}\label{pdel}\end{figure}
+
 Analogously to kinetic and magnetic energy and helicity spectra, it is
 convenient to compute the GW energy and polarization spectra integrated
 over concentric shells of surface $\int_{4\pi}k^2\dd\Omega_{\kv}$ in $\kv$
@@ -6071,6 +6091,22 @@ We also define spectra for the metric tensor perturbation,
 \end{eqnarray}
 which are normalized such that $\int_0^\infty\Sh(k)\,\dd k=\hrms^2$ is the
 mean squared metric tensor perturbation.
+
+By assuming the GW source to be constant between two time steps, one
+arrives at an accuracy of the GW solution that scales linearly with the
+time step, $\delta t$, while the magnetic field, related to the magnetic
+stress, scales cubically with $\delta t$.
+Since $\tilde{T}_{+/\times}$ are being stored in the $f$-array, it is
+easy to extract for each wavevector the increment of the stress,
+$\delta\tilde{T}_{+/\times}$, and to use it in an improved update
+of the GW field through
+\begin{eqnarray}
+\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\sin\omega\delta t/\omega\delta t\right)\\
+\dot\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\cos\omega\delta t\right)/\omega^2\delta t
+\end{eqnarray}
+This more accurate solver is invoked by setting \cmd{itorder_GW=2},
+which now results in a quadratic scaling of the error of the GW field;
+see Fig.~\ref{pdel}.
 
 % ====================================================================== %
 
@@ -8689,7 +8725,7 @@ Theoretical peak performance 2.43 pflops.
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
 well-defined sample problems.
 The \name{svn} \index{svn} check-in patterns are displayed graphically
-in Fig~\ref{cvsstat}.
+in Figs.~\ref{cvsstat} and \ref{GitHub}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
@@ -8881,6 +8917,47 @@ meshes, the required RAM is still below 100 MB.
 %    256     512    1152    2304
 %    256    1152    4608   18432
 %    7.3    13.0    37.2   74.32
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/ptriolith-strong.ps figs/
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pdardel_strong}
+  \caption{Strong scaling on Dardel.
+The dotted and dashed lines corresponds to
+$1.02\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$ and
+$0.70\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$, respectively.
+}\label{ptriolith-strong}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+In Stockholm there is now a new machine called Dardel.
+Strong scaling tests have been performed for five mesh sizes;
+see \Fig{pdardel-strong}.
+The time per time step and mesh point is given for
+different processor numbers and layouts.
+Generally, as J\"orn Warnecke pointed out earlier,
+it is advantageous to minimize the
+processor surface area, and to keep the number
+of processors in the $x$ direction small.
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pdardel_strong}
+\end{center}\caption[]{
+Strong scaling on Dardel.
+The dotted and dashed lines corresponds to
+$1.02\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$ and
+$0.70\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$, respectively.
+}\label{pdardel-strong}\end{figure}
+
+Performancewise, Cray with O2 optimization is equivalent to gnu with O3.
+While gnu-O3 is able to handle memory or whatever compiler problems much
+better, it is otherwise not better than Cray-O2, and often some 10--20\%
+slows, but this is within the measurement accuracy.
+More details can be found on
+\url{https://github.com/pencil-code/pencil-code/tree/master/doc/timings}.
 
 \subsection{Lindgren}
 
@@ -11313,6 +11390,44 @@ If $\alpha$ is large, this may affect the time step, but for
 $\alpha=1/60$, the stability requirement for the hyperdiffusive term
 should always be weaker than the advective Courant criterion.
 
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=.8\columnwidth]{pw}
+\end{center}\caption[]{
+  Advection with centered (left) and upwinding (right)
+  schemes with diffusivity $\kappa=10^{-4}$,
+  $n_x=128$ mesh points,
+  and an advection velocity of unity.
+}\label{pw}\end{figure}
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=.7\columnwidth]{pspec_comp}
+\end{center}\caption[]{
+  Comparison of centered (solid lines) and upwinding (dashed lines)
+  advection in a $512^3$ isothermal turbulence simulation forced with
+  $f_0=0.02$.
+  The computational domain is $L^3$ with $L=2\pi$ and the forcing
+  wavenumber is $k_{\rm f}=1.5$.
+  The viscosity is $\nu=10^{-4}$.
+  The dotted line gives a run without regular diffusion, but
+  with slope-limited diffusion (SLD) instead.
+}\label{pspec}\end{figure}
+
+A standard adection experiment is shown in Fig.~\ref{pw}
+for $n_x=128$ mesh points over a $2\pi$ domain with
+advection velocity $U_x=1$ and diffusivity $\kappa=10^{-4}$,
+so $\kappa/U_x\delta x=0.002$.
+We see that upwinding causes additional wiggles.
+
+\index{SLD}
+\index{slope-limited diffusion}
+In Fig.~\ref{pspec}, we compare turbulence simulations with $512^3$
+mesh points using $\nu=10^{-4}$ and a forcing amplitude $f_0=0.02$
+and a forcing wavenumber of 1.5
+The resulting Mach number is then 0.13 and the Reynolds number
+is $u_{\rm rms}/\nu k_{\rm f}=900$.
+We also show a comparison with a run without regular diffusion, but
+with slope-limited diffusion (SLD) instead.
+
 \subsection{The bidiagonal scheme for cross-derivatives}
 \index{Bidiagonal scheme}
 \label{Bidiagonal}
@@ -13485,7 +13600,7 @@ these configuration files, before you apply them in an active simulation run.
                & update current snapshot \file{var.dat} every \var{isave}
                  time steps. \\
   \var{itorder} [$3$]
-               & order of time step (1 for Euler; 2 for 3nd-order, 3 for
+               & order of time step (1 for Euler; 2 for 2nd-order, 3 for
                  3rd-order Runge--Kutta). \\
   \var{dsnap} [$100.$]
                & save permanent snapshot every \var{dsnap} time units to
@@ -14470,6 +14585,10 @@ branch. \\
 \bibitem{BK17} Brandenburg, A., \& Kahniashvili, T.
   \emph{Phys. Rev. Lett.} \textbf{118}, 055102 (2017)
   ``Classes of hydrodynamic and magnetohydrodynamic turbulent decay''
+
+\bibitem{BHKRS21} Brandenburg, A., He, Y., Kahniashvili, T., Rheinhardt, M., \& Schober, J.
+  \emph{Astrophys. J.} \textbf{911}, 110 (2021)
+  ``Gravitational waves from the chiral magnetic effect''
 
 \bibitem{BS02} Brandenburg, A., \& Sarson, G. R.,
   \emph{Phys. Rev. Lett.} \textbf{88}, 055003 (2002)

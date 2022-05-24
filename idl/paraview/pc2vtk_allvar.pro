@@ -38,7 +38,9 @@ pro pc2vtk_allvar, datadir=datadir, variables=variables, bbtoo=bbtoo, ootoo=ooto
 ; Process each snapshot.
   for i = 0, nvar - 1 do begin
     if n_elements(variables) eq 0 then undefine, vars else vars = variables
-    pc2vtk, datadir=datadir, varfile=varlist[i], variables=vars, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
+    varfile=varlist[i]
+    pc2vtk, datadir=datadir, varfile=varfile, variables=vars, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
+    if varfile eq '' then return
   endfor
 
 end

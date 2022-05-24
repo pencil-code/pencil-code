@@ -230,9 +230,12 @@ module InitialCondition
 !   rho = min(p-s); rho_len = vec_len(rho)
 
 ! B_0, c_0 are magnetic field (i.e. tangent) and curvature at closest pt on spine respectively
-      do l=l1,l2
-        do m=m1,m2
-          do n=n1,n2
+!      do l=l1,l2
+!        do m=m1,m2
+!          do n=n1,n2
+      do l=1,mx
+        do m=1,my
+          do n=1,mz
             ! p = (x,y,z)
             ! p is the physical position of the grid point
             p(1:3) = (/ x(l), y(m), z(n) /)

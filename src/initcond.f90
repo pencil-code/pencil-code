@@ -5054,7 +5054,9 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp)
 !
-!  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
+!  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
+!  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2, 
+!  and l=2*ncutoff.
 !  The relative helicity is relhel.
 !
 !  initpower=0 -> k^2  (if used for vector potential)

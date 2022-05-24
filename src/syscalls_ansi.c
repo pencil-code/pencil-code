@@ -359,3 +359,13 @@ void FTNIZE(sizeof_real_c)
     *dest=src;
   }
 /* ---------------------------------------------------------------------- */
+  FINT FTNIZE(mem_usage_c)()
+  {
+    #include <sys/resource.h>
+
+    struct rusage usage;
+    int res=getrusage(RUSAGE_SELF,&usage);
+
+    return usage.ru_maxrss;
+  }
+/* ---------------------------------------------------------------------- */

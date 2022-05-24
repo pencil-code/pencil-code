@@ -66,6 +66,8 @@ module Density
       call select_eos_variable('lnrho',-1)
       call initialize_density_methods
 !
+      ro_spec=.false.; lr_spec=.false.; r2u_spec=.false.; r3u_spec=.false.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_density

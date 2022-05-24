@@ -130,6 +130,13 @@ module Hydro
         endif
       endif
 !
+      vel_spec=.false.; oo_spec=.false.; vel_phispec=.false.
+      uxy_spec=.false.; ou_spec=.false.; uzs_spec=.false.
+      ou_phispec=.false.; ou_kzspec=.false.; ouout_polar=.false.
+      uut_spec=.false.; uut_polar=.false.; ouout_spec=.false.
+      out_spec=.false.; uot_spec=.false.
+      ub_spec=.false.; uxj_spec=.false.; EMF_spec=.false.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_hydro

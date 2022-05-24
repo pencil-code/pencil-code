@@ -1694,7 +1694,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  The interpolated gas velocity is either precalculated, and stored in
 !  interp_uu, or it must be calculated here.
 !
-          call interpolate_linear(f,iEEx,iEEz,fp(k,ixp:izp), EEp,ineargrid(k,:),0,ipar(k))
+          call interpolate_linear(f,iex,iez,fp(k,ixp:izp), eep,ineargrid(k,:),0,ipar(k))
           call interpolate_linear(f,ibx,ibz,fp(k,ixp:izp), bbp,ineargrid(k,:),0,ipar(k))
 !
 !  Calculate and add acceleration on charged particles.
@@ -2189,9 +2189,9 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
       if (iEE .ne. 0) then
-        call set_periodic_boundcond_on_aux(f,iEEx)
-        call set_periodic_boundcond_on_aux(f,iEEy)
-        call set_periodic_boundcond_on_aux(f,iEEz)
+        call set_periodic_boundcond_on_aux(f,iex)
+        call set_periodic_boundcond_on_aux(f,iey)
+        call set_periodic_boundcond_on_aux(f,iez)
       else
         call fatal_error('periodic_boundcond_on_aux','particles_charged demands iEE ne 0')
       endif

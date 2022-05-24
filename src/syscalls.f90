@@ -14,6 +14,7 @@ module Syscalls
   external sizeof_real_c
   external copy_addr_c
   external extract_string_c
+  external mem_usage_c
 !
   interface is_nan
     module procedure is_nan_0D
@@ -366,5 +367,22 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real
+!***********************************************************************
+    subroutine get_char_arr(strarr,strlen,arrlen)
+
+    integer :: strlen,arrlen
+    character(LEN=strlen), dimension(arrlen), intent(IN) :: strarr
+
+    !call get_char_arr_c(strarr,strlen,arrlen)
+
+    endsubroutine get_char_arr
+!***********************************************************************
+    integer function memusage()
+
+      integer :: mem_usage_c
+
+      memusage=mem_usage_c()
+
+    endfunction memusage
 !***********************************************************************
 endmodule Syscalls

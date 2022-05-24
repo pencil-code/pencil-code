@@ -90,7 +90,7 @@ module Special
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
-  character (len=labellen) :: aux_stress='stress', idelkt='jump'
+  character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
   real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
@@ -117,6 +117,7 @@ module Special
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
+  real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
@@ -124,6 +125,7 @@ module Special
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
+  integer :: itorder_GW=1
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -150,9 +152,10 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
+    ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lconstmod_in_stress, k_in_stress
+    lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -400,23 +403,31 @@ module Special
 !     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
 !         'cs0 should probably not be unity')
 !
-      if (.not.allocated(Tpq_re)) allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_re')
+      if (.not.allocated(Tpq_re)) then
+        allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_re')
+      endif
 !
-      if (.not.allocated(Tpq_im)) allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Tpq_im')
+      if (.not.allocated(Tpq_im)) then
+        allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_im')
+      endif
 !
 !  Allocate memory for nonlinear source
 !
       if (lnonlinear_source) then
-        if (.not.allocated(nonlinear_Tpq_re)) allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_re')
+        if (.not.allocated(nonlinear_Tpq_re)) then
+          allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
+          if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_re')
+        endif
 !
 !  Need imaginary part only if lnonlinear_Tpq_trans=T
 !
         if (lnonlinear_Tpq_trans) then
-          if (.not.allocated(nonlinear_Tpq_im)) allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
-          if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for nonlinear_Tpq_im')
+          if (.not.allocated(nonlinear_Tpq_im)) then
+            allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
+            if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_im')
+          endif
         endif
       endif
 !
@@ -570,54 +581,71 @@ module Special
       integer :: i, j, ij
       real :: fact
 !
+!  The following is only needed during the first of 3 substeps.
+!  So the gravitational waves (and the necessary stress) are
+!  calculated only in the beginning, because then the pencils
+!  p%uu and p%bb, needed for the stress, are available.
+!  This means that the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+      if (lfirst) then
+!
 !  Construct stress tensor; notice opposite signs for u and b.
 !
-      if (lgamma_factor) then
-        prefactor=fourthird_factor/(1.-p%u2)
-      else
-        prefactor=fourthird_factor
-      endif
+        if (lgamma_factor) then
+          prefactor=fourthird_factor/(1.-p%u2)
+        else
+          prefactor=fourthird_factor
+        endif
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
-      p%stress_ij=0.0
-      if (lstress) then
-        do j=1,3
-        do i=1,j
-          ij=ij_table(i,j)
-          if (lonly_mag) then
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-          else
-            if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
-            if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
-            if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-          endif
+        p%stress_ij=0.0
+        if (lstress) then
+          do j=1,3
+          do i=1,j
+            ij=ij_table(i,j)
+            if (lonly_mag) then
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+            else
+              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+              if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+            endif
 !
 !  Remove trace.
 !
-          if (i==j) then
-            if (lonly_mag) then  
-              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-            else
-              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
-              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
-              if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+            if (i==j) then
+              if (lonly_mag) then
+                if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+              else
+                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
+                if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+                if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
+              endif
             endif
-          endif
-        enddo
-        enddo
+          enddo
+          enddo
 !
 !  Possibility of gradually ramping up the stress on time scale tstress_ramp.
 !  Here, (t-tstart)/tstress_ramp increases linearly starting with tstart,
 !  which is always our initial time, until t-tstart=tstress_ramp.
 !  To turn off the stress at t=tturnoff, ..
 !
-        if (lstress_ramp) then
-          fact=min(real(t-tstart)/tstress_ramp, 1.)
-          p%stress_ij(:,:)=p%stress_ij(:,:)*fact
-        elseif (lturnoff) then
-          if (t>tturnoff) p%stress_ij(:,:)=0.
+          if (lstress_ramp) then
+            fact=min(real(t-tstart)/tstress_ramp, 1.)
+            p%stress_ij(:,:)=p%stress_ij(:,:)*fact
+          elseif (lturnoff) then
+            if (t>tturnoff) p%stress_ij(:,:)=0.
+          endif
         endif
+!
+!  endif of lfirst query
+!
       endif
 !
     endsubroutine calc_pencils_special
@@ -968,7 +996,7 @@ module Special
             endif
 !
 !  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
-!  for the Fortran index ik. Note, however, that 
+!  for the Fortran index ik. Note, however, that
 !
 !  set k vector
 !
@@ -1146,8 +1174,8 @@ module Special
               enddo
               enddo
             endif
-            
-          endif   
+
+          endif
         enddo
       enddo
     enddo
@@ -1174,11 +1202,11 @@ module Special
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
-      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
-      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
-      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0.
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case ('StT'); spectrum=real(spectra%complex_Str_T)
                     spectrum_hel=aimag(spectra%complex_Str_T)
@@ -1215,11 +1243,11 @@ module Special
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
-      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel 
-      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel 
-      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0. 
-      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0. 
-      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0. 
+      case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
+      case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
+      case ('SCL'); spectrum=spectra%SCL; spectrum_hel=0.
+      case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
+      case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
       case default; if (lroot) call warning('special_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
@@ -1250,9 +1278,11 @@ module Special
       real :: gamma_boost, k1_boost, k1sqr_boost, ksqr_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: cosot, sinot, sinot_minus, om12, om, om1, om2
+      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
+      real :: horndeski_alpT_eff
+      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
@@ -1392,10 +1422,10 @@ module Special
               hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
 !
 ! compute Hijk for nonlinear GW memory effect (still in Fourier space)
-!             
-              do i=1,3 
-              do j=1,6 
-                Hijkim(ikx,iky,ikz,i,j)=+kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre) 
+!
+              do i=1,3
+              do j=1,6
+                Hijkim(ikx,iky,ikz,i,j)=+kvec(i)*(e_T(j)*hhTre+e_X(j)*hhXre)
                 Hijkre(ikx,iky,ikz,i,j)=-kvec(i)*(e_T(j)*hhTim+e_X(j)*hhXim)
               enddo
               enddo
@@ -1499,10 +1529,22 @@ module Special
       endif
 !
 !  Horndeski preparations
+!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff
 !
       if (lhorndeski) then
         horndeski_alpM_eff=horndeski_alpM/scale_factor
         horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+        select case (ihorndeski_time)
+          case ('const')
+            horndeski_alpT_eff=horndeski_alpT
+          case ('tanh')
+            horndeski_alpT_eff=horndeski_alpT*(tanh(1.+(scale_factor/scale_factor0)**horndeski_alpT_exp)-1.)
+          case ('exp')
+            horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
+          case default
+            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
+                ,trim(idelkt))
+        endselect
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1562,7 +1604,7 @@ module Special
               else
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
-                    om2=(1.+horndeski_alpT)*ksqr+delkt**2-horndeski_alpM_eff2
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
                   else
@@ -1774,6 +1816,28 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=coefBim*cosot*om+coefAim*om*sinot_minus
+!
+!  Additional contribution from time derivative with respect to time,
+!  proportional to dS_T_re, dS_T_im, dS_X_re, and dS_X_im, which are propto difference.
+!
+                if (itorder_GW==2) then
+                  if (dt==0.) then
+                    dt1=0.
+                  else
+                    dt1=1./dt
+                  endif
+                  dS_T_re=S_T_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )
+                  dS_T_im=S_T_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                    +dS_T_re*om12*(1.-om1*dt1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                    +dS_T_im*om12*(1.-om1*dt1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                    +dS_T_re*om12*dt1*(1.-cosot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                    +dS_T_im*om12*dt1*(1.-cosot)
+                endif
+!
               endif
 !
 !  Debug output
@@ -1813,6 +1877,23 @@ module Special
                 f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikx,iky,ikz)
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=coefBre*cosot*om+coefAre*om*sinot_minus
                 f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=coefBim*cosot*om+coefAim*om*sinot_minus
+!
+!  Additional contribution from time derivative with respect to time,
+!  proportional to dS_T_re, dS_T_im, dS_X_re, and dS_X_im, which are propto difference.
+!
+                if (itorder_GW==2) then
+                  dS_X_re=S_X_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )
+                  dS_X_im=S_X_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                    +dS_X_re*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                    +dS_X_im*om12*(dt-om1*sinot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                    +dS_X_re*om12*(1.-cosot)
+                  f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                    +dS_X_im*om12*(1.-cosot)
+                endif
+!
               endif
             else
 !

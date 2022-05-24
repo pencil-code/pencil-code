@@ -101,6 +101,20 @@ module Param_IO
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, bc_slc_dir, &
+      vel_spec, mag_spec, &
+      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
+      uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
+      bb2_spec, jj2_spec, ele_spec, pot_spec, &
+      Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
+      SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
+      StT_spec, StX_spec, &
+      vel_phispec, mag_phispec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
+      nd_spec, ud_spec, &
+      TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
+      isaveglobal, lr_spec, r2u_spec, &
+      np_spec, np_ap_spec, rhop_spec, &
+      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, &
       xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, &
@@ -128,7 +142,8 @@ module Param_IO
       iwig, ldivu_perp, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
-      awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
+      awig, ialive, max_walltime, dtmax, ldt_paronly, &
+      lspec_start, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, pot_spec, &

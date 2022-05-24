@@ -65,25 +65,37 @@ Begin["`Private`"]
 
 
 pcLabelStyle=Directive[Thick,Black,14,FontFamily->"Times"];
-pcPlotStyle[]:={
-  Map[SetOptions[#,{
+pcPlotStyle[]:=Module[{setOps},
+  setOps[ops_List,funcs_List]:=Map[SetOptions[#,ops]&,funcs];
+  (*General options for all plots*)
+  setOps[{
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
-      FrameStyle->pcLabelStyle,ImageSize->{300,300/GoldenRatio}
-    }]&,{
+      FrameStyle->pcLabelStyle,ImageSize->{360,360/GoldenRatio},
+      ImagePadding->{{60,10},{60,10}}
+    },{
       Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
       ListDensityPlot,ListVectorPlot
-    }
-  ];
-  Map[SetOptions[#,{
+    }];
+  (*Options for 1D ListPlot's*)
+  setOps[{
+      Joined->True
+    },{
+      ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot
+    }];
+  (*Options for 2D plots*)
+  setOps[{
       PlotLegends->Automatic,ColorFunction->"Rainbow"
-    }]&,{DensityPlot,ListDensityPlot}
-  ];
-  Map[SetOptions[#,{
+    },{
+      DensityPlot,ListDensityPlot
+    }];
+  (*Options for ListDensity Plot*)
+  setOps[{
       InterpolationOrder->0
-    }]&,{ListDensityPlot}
-  ];
-}
+    },{
+      ListDensityPlot
+    }];
+]
 
 pcPopup[plot_]:=CreateDocument[plot,
   "CellInsertionPointCell"->Cell,ShowCellBracket->False,
@@ -119,7 +131,7 @@ spaceTimeDiag[sim_,sl_,var_,plotStyle___Rule]:=Module[{t,f,nt,nx,gf},
 showSlice[data_,var_String,{sp_String,loc_?NumericQ},plotStyle___Rule]:=
   Module[{f,x1,x2,x3,pos,plotData},
     f=data[var];
-      {x1,x2,x3}=data/@Switch[sp,
+    {x1,x2,x3}=data/@Switch[sp,
         "x",{"y","z","x"},"y",{"x","z","y"},"z",{"x","y","z"}
       ];
     pos=Nearest[x3->"Index",loc];

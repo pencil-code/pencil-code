@@ -31,6 +31,7 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
         Data directory.
         
     """
+    import re
 
     # open the destination file for writing
     fd = open(datadir + '/post_evaluation.dat', 'w')
@@ -65,7 +66,7 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
     
     for var_file in var_list:
         # read the var file
-        var = pc.read_var(varfile = var_file[:-1], datadir = datadir, quiet = True)
+        var = pc.read_var(varfile = re.sub(' .*\n$','',var_file), datadir = datadir, quiet = True)
         # the output string which will be written in the destination file
         out_string = '{0:1.9e}  '.format(np.float64(var.t))
         aa = var.aa[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]

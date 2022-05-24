@@ -139,6 +139,7 @@ module Pscalar
       endif
 !
       call put_shared_variable('pscalar_diff',pscalar_diff,caller='initialize_pscalar')
+      cc_spec=.false.
 !
     endsubroutine initialize_pscalar
 !***********************************************************************

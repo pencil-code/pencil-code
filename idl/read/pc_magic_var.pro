@@ -159,6 +159,12 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'divadvu', 'uij'
   pc_magic_var_dep, variables, tags, 'fvisc', 'uij'
   pc_magic_var_dep, variables, tags, 'fresi', 'bb'
+  pc_magic_var_dep, variables, tags, 'bb', 'aa'
+  pc_magic_var_dep, variables, tags, 'jj', 'aa'
+  pc_magic_var_dep, variables, tags, 'bij', 'aa'
+  pc_magic_var_dep, variables, tags, 'oo', 'uu'
+  pc_magic_var_dep, variables, tags, 'divu', 'uu'
+  pc_magic_var_dep, variables, tags, 'uij', 'uu'
 ;
 ;  Modules.
 ;

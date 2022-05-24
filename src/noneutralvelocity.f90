@@ -48,6 +48,8 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
+      oun_spec=.false.
+!
     endsubroutine initialize_neutralvelocity
 !***********************************************************************
     subroutine init_uun(f)

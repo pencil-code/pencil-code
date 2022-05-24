@@ -52,6 +52,7 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      ud_spec=.false.
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_dustvelocity

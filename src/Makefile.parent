@@ -93,7 +93,10 @@ read_all_videofiles read_videofiles combine_videofiles read_vectorfiles start ru
 fast: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ fast )
-
+helper_min:  Makefile_inc
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ helper_min )
+#
 # This should be triggered automatically, only if "pencil-code/src/Makefile.src" has changed, but is currently inactive:
 setupsrc_inc: $(PENCIL_HOME)/src/Makefile.src
 	pc_setupsrc

@@ -31,7 +31,7 @@
      endif
 
      fileb=issnap ? stem : stem+'.dat'
-     if arg_present(proc) then $
+     if is_defined(proc_) then $
        proc='proc'+strtrim(string(proc_),2) $
      else $
        proc='proc0'
@@ -42,7 +42,7 @@
        mt[2]=(file_info(datadir+'/allprocs/'+fileb)).mtime
      
      if max(mt,maxind) eq -1 then begin
-       message, 'pc_read: ERROR: No '+file5+' or '+fileb+' found. - Please either give a filename or open an HDF5 file!'
+       message, 'pc_read: ERROR: No '+file5+' or '+fileb+' found. - Please either give a filename or open an HDF5 file!', /cont
        return, ''
      endif else begin
        file = maxind eq 0 ? datadir+'/allprocs/'+file5 : (maxind eq 1 ? datadir+'/'+proc+'/'+fileb : datadir+'/allprocs/'+fileb)

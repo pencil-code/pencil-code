@@ -45,7 +45,7 @@ module Density
   real, pointer :: chi
 !
   include '../density.h'
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  !integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   integer :: iorder_z=4
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
