@@ -240,14 +240,16 @@ LuNspec[sim_,i_Integer:1,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lno
   If[!FileExistsQ[sim<>"/data/power_mag.dat"],Message[LuNspec::nofile,sim];Return[$Failed]];
   {t,spec}=read1D[sim,"power_mag.dat"];
   If[t[[1]]==0.,{t,spec}=Rest/@{t,spec}];
-  spec=Rest/@spec;
   Eb=2Total/@spec;
-  l=(Total[1/Range[spec//First//Length]*#]&/@spec)/Eb;
+  spec=Rest/@spec;
+  k=Range[Length[spec[[1]]]];
+  l=Total[1/k*#]/Total[#]&/@spec;
   
   {eta,n}=Switch[ires=readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
     "'eta-const'",  {readParamNml[sim,"run.in","ETA"],       2},
     "'eta-tdep'",   {readParamNml[sim,"run.in","ETA"],       2},
     "'hyper2'",     {readParamNml[sim,"run.in","ETA_HYPER2"],4},
+    "'hyper2-tdep'",{readParamNml[sim,"run.in","ETA"],4},
     "'hyper3'",     {readParamNml[sim,"run.in","ETA_HYPER3"],6},
     "'hyper3-tdep'",{readParamNml[sim,"run.in","ETA"],       6},
     _,               Message[LuNspec::nores,sim,ires];Return[$Failed]
