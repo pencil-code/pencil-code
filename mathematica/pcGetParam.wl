@@ -249,7 +249,7 @@ LuNspec[sim_,i_Integer:1,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lno
     "'eta-const'",  {readParamNml[sim,"run.in","ETA"],       2},
     "'eta-tdep'",   {readParamNml[sim,"run.in","ETA"],       2},
     "'hyper2'",     {readParamNml[sim,"run.in","ETA_HYPER2"],4},
-    "'hyper2-tdep'",{readParamNml[sim,"run.in","ETA"],4},
+    "'hyper2-tdep'",{readParamNml[sim,"run.in","ETA"],       4},
     "'hyper3'",     {readParamNml[sim,"run.in","ETA_HYPER3"],6},
     "'hyper3-tdep'",{readParamNml[sim,"run.in","ETA"],       6},
     _,               Message[LuNspec::nores,sim,ires];Return[$Failed]

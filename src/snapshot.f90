@@ -854,6 +854,7 @@ module Snapshot
         if (out_spec)   call power_cor(f,'out')
         if (uot_spec)   call power_cor(f,'uot')
 !
+        if (saffman_ub) call quadratic_invariants(f,'saffman_ub')
         if (saffman_mag) call quadratic_invariants(f,'saffman_mag')
         if (saffman_mag_c) call quadratic_invariants(f,'saffman_mag_c')
 !

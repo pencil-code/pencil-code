@@ -4592,7 +4592,18 @@ endsubroutine pdf
   !  loop over all the components
   !
   do ivec=1,3
-    if (sp=='saffman_mag') then
+    if (sp=='saffman_ub') then
+      if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      do n=n1,n2; do m=m1,m2
+        call curli(f,iaa,bbi,ivec)
+        im=m-nghost
+        in=n-nghost
+        b_re(:,im,in)=bbi  !  magnetic field
+      enddo; enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity field
+      h_re=h_re+a_re*b_re  !  cross helicity density
+      h_im=0.
+    elseif (sp=='saffman_mag') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
       do n=n1,n2; do m=m1,m2
         call curli(f,iaa,bbi,ivec)

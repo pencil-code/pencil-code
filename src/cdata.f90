@@ -600,7 +600,7 @@ module Cdata
   logical :: ou_polar=.false., ab_polar=.false., jb_polar=.false.
   logical :: uut_spec=.false., uut_polar=.false., ouout_spec=.false., ouout_polar=.false.
   logical :: out_spec=.false., uot_spec=.false.
-  logical :: saffman_mag=.false., saffman_mag_c=.false.
+  logical :: saffman_ub=.false., saffman_mag=.false., saffman_mag_c=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
