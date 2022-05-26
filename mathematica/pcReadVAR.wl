@@ -212,8 +212,10 @@ Options[readVARN]={"ltrim"->False,"lOnly"->False};
 readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
   ltrim=OptionValue["ltrim"],lonly=OptionValue["lOnly"],
   lVar,vars=varName[sim]//Keys,varPos,raw,
-  grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,oo,bb,jj},
+  grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,trimx,trimy,trimz,
+  oo,bb,jj},
   readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
+  readVARN::trimmore="Error: Cannot do ltrim=More because of insufficient inner grid cells.";
   
   (*If lOnly==True, we read only variables in addOn*)
   If[lonly,
@@ -249,11 +251,15 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
   If[MemberQ[addOn,"jj"],jj=curl2[values[[varPos/@{"aa1","aa2","aa3"}]],mx,my,mz,gh1,gh2,gh3,dx,dy,dz]];
   
   (*trim ghost zones*)
+  trimx=If[mx==1+2*gh1,1,gh1+1;;mx-gh1];
+  trimy=If[my==1+2*gh2,1,gh2+1;;my-gh2];
+  trimz=If[mz==1+2*gh3,1,gh3+1;;mz-gh3];
   trim[{}]={};
   trim[f_]:=Switch[ltrim,
     False,f,
-    True,  ArrayReshape[f,{mx,my,mz}][[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten,
-    "More",ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
+    True, ArrayReshape[f,{mx,my,mz}][[trimx,trimy,trimz]]//Flatten,
+    "More",If[(mx-2gh1)*(my-2gh2)*(mz-2gh3)<=0,Message[readVARN::trimmore];Return[$Failed]];
+           ArrayReshape[f,{mx,my,mz}][[2gh1+1;;mx-2gh1,2gh2+1;;my-2gh2,2gh3+1;;mz-2gh3]]//Flatten
   ];
   If[ltrim==False,Message[readVARN::ghvalues]];
   {grid,values,oo,bb,jj}=Map[trim,{grid,values,oo,bb,jj},{2}];
