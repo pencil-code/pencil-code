@@ -231,14 +231,14 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 
 
 Options[LuNspec]={"l1/n"->False};
-LuNspec[sim_,i_Integer:1,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
+LuNspec[sim_,i_Integer:1,f_:Identity,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
   (*error messages*)
   LuNspec::nofile="power_mag.dat not found from `1`.";
   LuNspec::nores="Unfamiliar iresistivity for `1`: `2`";
   
   (**)
   If[!FileExistsQ[sim<>"/data/power_mag.dat"],Message[LuNspec::nofile,sim];Return[$Failed]];
-  {t,spec}=read1D[sim,"power_mag.dat"];
+  {t,spec}=read1D[sim,"power_mag.dat"]//Transpose//f//Transpose;
   If[t[[1]]==0.,{t,spec}=Rest/@{t,spec}];
   Eb=2Total/@spec;
   spec=Rest/@spec;
