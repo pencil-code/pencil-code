@@ -847,9 +847,9 @@ module Boundcond
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('fg')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
-                  !  value at boundary, also mantaining the
-                  !  ghost zones at the initial coded value, i.e.,
-                  !  keep the gradient frozen as well
+                  ! BCX_DOC: value at boundary, also mantaining the
+                  ! BCX_DOC: ghost zones at the initial coded value, i.e.,
+                  ! BCX_DOC: keep the gradient frozen as well
                   call bc_freeze_var_x(topbot,j)
                 case ('1')
                   ! BCX_DOC: $f=1$ (for debugging)
