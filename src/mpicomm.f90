@@ -154,7 +154,7 @@ module Mpicomm
     integer, dimension(3) :: procnums
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
-    logical, dimension(3) :: lnproc_mismat
+    integer, dimension(3) :: proc_multis
     real, dimension(:), allocatable :: xgrid
     integer, dimension(:,:), allocatable :: xind_rng
     character(LEN=5) :: unit_system
@@ -10096,8 +10096,7 @@ endif
       real, dimension(6) :: floatbuf
       logical :: lok
       character(LEN=128) :: messg
-      integer :: ind,j,ll,name_len,nxgrid_foreign,ncpus_foreign, &
-                 il1,il2,lenx,px,tag,peer, multix, multiy, multiz
+      integer :: ind,j,ll,name_len,nxgrid_foreign,il1,il2,lenx,px,tag,peer
 
       if (lforeign) then
 
@@ -10132,39 +10131,25 @@ endif
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call stop_it('initialize_foreign_comm: communication with foreign code "'// &
                          trim(frgn_setup%name)//'" not supported')
-!print*, 'Received foreign name: ', name_len, trim(frgn_setup%name)
 !
 !  Receive processor numbers of foreign code.
 !      
           call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           
-          if ( frgn_setup%name=='MagIC' ) then
-          elseif ( frgn_setup%name=='EULAG' ) then
-!
-!  For the moment being.
-!
-!            if (any(intbuf(2:3)/=(/nprocy,nprocz/))) then 
-            if (any(intbuf(3)/=(/nprocz/))) then 
-              messg="EULAG z proc numbers don't match;"
-!              messg="EULAG y or z proc numbers don't match;"
-              lok=.false.
-            endif
-          elseif (any(intbuf/=(/nprocx,nprocy,nprocz/))) then
-            messg="foreign proc numbers don't match;"
-            lok=.false.
-          endif
+          frgn_setup%procnums=intbuf
           frgn_setup%ncpus=product(intbuf)
           !if (ncpus+frgn_setup%ncpus/=nprocs) &
           !  call fatal_error('initialize_hydro','no of processors '//trim(itoa(nprocs))// &
           !          ' /= no of own + no of foreign processors '//trim(itoa(ncpus+frgn_setup%ncpus)))
-
-          frgn_setup%procnums=intbuf
 !
 !	Calculate the multiplicity of processors
 !
-          multix = nprocx/frgn_setup%procnums(1)
-          multiy = nprocy/frgn_setup%procnums(2)
-          multiz = nprocz/frgn_setup%procnums(3)
+          frgn_setup%proc_multis = (/nprocx,nprocy,nprocz/)/frgn_setup%procnums
+print*, 'porc numbs=', intbuf,(/nprocx,nprocy,nprocz/)
+          if ( any(mod((/nprocx,nprocy,nprocz/),intbuf)/=0 ) ) then
+            messg="foreign proc numbers don't match;"
+            lok=.false.
+          endif
 !
 !  Receive gridpoint numbers of foreign code.
 !      
@@ -10236,10 +10221,11 @@ endif
 
         if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
-        call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
 !                                                                              
 !  Broadcast foreign processor numbers and grid size.                                                    
 !                                                                              
+        call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
+
         if (lfirst_proc_yz) then                                                 
           nxgrid_foreign=frgn_setup%dims(1)
           allocate(frgn_setup%xgrid(nxgrid_foreign))
@@ -10264,31 +10250,35 @@ endif
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
 !
-!  Send number of x- and y-procs to foreign.
+!  Send number of xyz-procs to foreign.
 !
           call mpisend_int(nprocx,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           call mpisend_int(nprocy,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+          call mpisend_int(nprocz,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
+
         call mpibcast_real(frgn_setup%renorm_L,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%renorm_t,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
 !       
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
-        ncpus_foreign=product(frgn_setup%procnums)
-        !!!frgn_setup%lnprocx_mismat(1) = frgn_setup%procnums(1)/=nprocx
-
+        call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)                       
+
         tag  = tag_foreign+iproc
-        if (frgn_setup%procnums(1)==1) then
+
+        if (frgn_setup%procnums(1)==1) then   !EULAG case
 !
-!	Here we check the peers using PENCIL. EVERYTHING HERE MUST BE PENCIL LIKE.
-!	IPZ, IPY, IPX are EULAG values(?)
+!	Determine the peer using EULAG proc grid conventions.
 !
-          frgn_setup%peer_rng = find_proc_general(ipz/multiz,ipy/multiy, ipx/multix, &
-                                frgn_setup%procnums(1), frgn_setup%procnums(2), frgn_setup%procnums(3),.true.)
-!print*,'PENCIL - ipy, ipz', iproc, ipy, ipz, peer, ncpus
+          frgn_setup%peer_rng = find_proc_general(ipz/frgn_setup%proc_multis(3), &
+                                                  ipy/frgn_setup%proc_multis(2), &
+                                                  ipx/frgn_setup%proc_multis(1), &
+                                frgn_setup%procnums(3), frgn_setup%procnums(2), frgn_setup%procnums(1),.true.)
+          peer=frgn_setup%peer_rng(1)
+print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
 
         endif
 !
@@ -10296,25 +10286,6 @@ endif
 !  proc. frgn_setup%xind_rng(-1,:) is overall index range.
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2))
-!
-!  Check mismatching existence in processors setup
-!
-        if (lfirst_proc_yz) &             ! on processors of first XBEAM
-          frgn_setup%lnproc_mismat(1) = frgn_setup%procnums(1)/=nprocx
-!        
-        call mpibcast_logical(frgn_setup%lnproc_mismat(1),comm=MPI_COMM_YZPLANE)
-!
-        if (lfirst_proc_xz) then             ! on processors of first YBEAM
-          frgn_setup%lnproc_mismat(2) = frgn_setup%procnums(2)/=nprocy
-        endif
-!
-        call mpibcast_logical(frgn_setup%lnproc_mismat(2),comm=MPI_COMM_XZPLANE)
-!
-        if (lfirst_proc_xy) then             ! on processors of first ZBEAM
-          frgn_setup%lnproc_mismat(3) = frgn_setup%procnums(3)/=nprocz
-        endif
-!
-        call mpibcast_logical(frgn_setup%lnproc_mismat(3),comm=MPI_COMM_XYPLANE)
 !
         if (lfirst_proc_yz) then             ! on processors of first XBEAM
 !                              
@@ -10332,7 +10303,7 @@ endif
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
 !print*, 'PENCIL: xindrng=', iproc, frgn_setup%xind_rng(-1,:)
 !
-          if (frgn_setup%lnproc_mismat(1)) then
+          if (frgn_setup%proc_multis(1)>1) then
 !
 !  When processor numbers in x-direction don't match, ask all foreign processors
 !  about their share in frgn_setup%xind_rng. No share: receive [0,0]
@@ -10341,7 +10312,7 @@ endif
               do px=0,frgn_setup%procnums(1)-1
 
                 call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,ncpus+px,tag_foreign+iproc, &
-                                     frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+ncpus_foreign+px,MPI_COMM_WORLD)
+                                     frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+frgn_setup%ncpus+px,MPI_COMM_WORLD)
                 if (frgn_setup%peer_rng(1)>0) then
                   if (frgn_setup%xind_rng(px,1)==0) frgn_setup%xind_rng(px,2)=px-1
                 else
@@ -10369,17 +10340,16 @@ endif
 
         call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
         lenx=min(nx,frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1)
-print*, "Pencil lenx", iproc, lenx
+!print*, "Pencil lenx", iproc, lenx
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
         allocate(frgn_buffer(lenx,ny,nz,3))
         if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
-        call mpibcast_logical(frgn_setup%lnproc_mismat(1),comm=MPI_COMM_PENCIL)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
 
       endif    ! if (lforeign)
-!print*, 'PENCIL initialize_foreign_comm: successful', iproc
-      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+print*, 'PENCIL initialize_foreign_comm: successful', iproc
+!      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
 !      call MPI_FINALIZE(mpierr)
 !stop
 
@@ -10400,12 +10370,11 @@ print*, "Pencil lenx", iproc, lenx
       double precision :: t2, t1
       double precision, save :: t0 = 0.0
       integer, save :: tcount = 0
-      integer :: istart,lenx_loc,ncpus_foreign,px,iv,peer
+      integer :: istart,lenx_loc,px,iv,peer
 
         if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
-        if (frgn_setup%lnproc_mismat(1)) then
+        if (frgn_setup%proc_multis(1)>1) then
 
-          ncpus_foreign=product(frgn_setup%procnums)
           do px=0,frgn_setup%procnums(1)-1
             if (frgn_setup%xind_rng(px,1)>0) then
               lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
@@ -10486,7 +10455,7 @@ print*, 'Pencil: successful', iproc
         endif
        
       else if (lfirst_proc_yz) then 
-        if (frgn_setup%lnproc_mismat(1)) then
+        if (frgn_setup%proc_multis(1)>1) then
           nvars=ivar2-ivar1+1
 
           do pz=0,nprocz-1
