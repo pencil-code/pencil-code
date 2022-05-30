@@ -37,7 +37,7 @@ module InitialCondition
   integer          :: nsteps = 100
   
   namelist /initial_condition_pars/ &
-       xmin,xmaxi,nsteps,rhoc,cs
+       xmin,xmax,nsteps,rhoc,cs
 !
   contains
 !***********************************************************************
@@ -92,25 +92,29 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       real :: lnrho_r, rgrid
+      !real, allocatable, intent(inout) :: rr(:), rho_be(:)
+      real, allocatable :: rr(:), rho_be(:)
 ! 
       integer :: ix,iy,iz
     
-! This call will return an array of rho as a function of radial distance r (in code units) 
+! This call will return an array of rho_be as a function of radial distance r (in code units) 
 ! The xmax and xmin give the extent of the Bonnor Ebert sphere in dimensionless units
 
-      call bonnor_ebert_sphere(xmin,xmax,nsteps,rr,rho)
+      if (.not.allocated(rho_be)) allocate(rho_be (1:nsteps))
+      if (.not.allocated(rr)) allocate(rr (1:nsteps))
+      call bonnor_ebert_sphere(xmin,xmax,nsteps,rr,rho_be)
 ! eva: not sure about xyz limits and where to get the xyz arrays
       do iz=1,mz
         do iy=1,my
            do ix=1,mx
              rgrid = sqrt(x(ix)**2+y(iy)**2+z(iz)**2)
-             if (r_mn.le.xmax*sqrt(4.*pi*rhoc)/cs) then
+             if (rgrid.le.xmax*sqrt(4.*pi*rhoc)/cs) then
                ! linear interpolation of rho to rgrid position
-               lnrho_r=interp1(rr,rho,nsteps,rgrid)
+               lnrho_r=interp1(rr,rho_be,nsteps,rgrid)
              else
-               lnrho_r=rho(nsteps)
+               lnrho_r=rho_be(nsteps)
              endif
-             f(l,m,n,ilnrho)=f(l,m,n,ilnrho)+lnrho_r
+             f(ix,iy,iz,ilnrho)=f(ix,iy,iz,ilnrho)+lnrho_r
            enddo
         enddo
       enddo
@@ -171,10 +175,11 @@ module InitialCondition
 
     implicit none
 
-!   rho here is actually rho/rho_c = exp(-ys(1))
+!   rho here is actually rho/rhoc = exp(-ys(1))
 !   it should be rescaled to whatever physical units we are using
 
-    real, allocatable, intent(out) :: rr(:), rho(:)
+!AXE!real, allocatable, intent(out) :: rr(:), rho(:)
+    real, intent(inout) :: rr(:), rho(:)
 
     integer             :: i 
     integer, intent(in) :: nsteps
@@ -184,8 +189,8 @@ module InitialCondition
     double precision    :: ys(nfunct), dys(nfunct)
 
     ! Initializations
-    if (.not.allocated(rho)) allocate(rho (1:nsteps))
-    if (.not.allocated(rr)) allocate(rr (1:nsteps))
+    !if (.not.allocated(rho)) allocate(rho (1:nsteps))
+    !if (.not.allocated(rr)) allocate(rr (1:nsteps))
     dx = ((xmax-xmin)/real(nsteps))
 
     xs     = xmin
@@ -196,9 +201,9 @@ module InitialCondition
     ! Actual integration
     do i=1,nsteps
       ! Here we need to turn ksi (xs) into r and potential (ys(1)) into
-      ! rho/rho_c: rho/rho_c = exp(-ys(1))
+      ! rho/rhoc: rho/rhoc = exp(-ys(1))
       rr(i)   = sqrt(4.*pi*rhoc)*xs/cs
-      rho(i) = rho_c*exp(-ys(1))
+      rho(i) = rhoc*exp(-ys(1))
       call lane_emden(xs,ys,dys)      ! derivatives     
       call rk4(ys, dys, nfunct, xs, dx, ys)
       xs   = xs + dx
@@ -265,8 +270,7 @@ module InitialCondition
  ! y(1) = phi(ksi)
  ! y(2) = dphi(ksi)/d ksi
 
- dyydxx(1) = yy(2)                     ! derivative of the potential -> will
-give the mass parameter
+ dyydxx(1) = yy(2)                     ! derivative of the potential -> will give the mass parameter
  dyydxx(2) = exp(-yy(1)) - 2*yy(2)/xx   ! potential -> will give the density
 
  end subroutine lane_emden
