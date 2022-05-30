@@ -100,7 +100,7 @@ module InitialCondition
 
       call bonnor_ebert_sphere(xmin,xmax,nsteps,rr,rho)
 ! eva: not sure about xyz limits and where to get the xyz arrays
-      do ix=1,mx
+      do iz=1,mz
         do iy=1,my
            do ix=1,mx
              rgrid = sqrt(x(ix)**2+y(iy)**2+z(iz)**2)
@@ -110,7 +110,7 @@ module InitialCondition
              else
                lnrho_r=rho(nsteps)
              endif
-             f(l,m,n,ilnrho)=lnrho_r
+             f(l,m,n,ilnrho)=f(l,m,n,ilnrho)+lnrho_r
            enddo
         enddo
       enddo
