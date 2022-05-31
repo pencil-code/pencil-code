@@ -709,6 +709,33 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp = (gamma/cp_SI) * (1/Temp) * (visc_heat + 2 * nu * sij2[l1:l2,m1:m2,n1:n2])
 		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+	if (strcmp (quantity, 'Heat_cool_conduction', /fold_case)) then begin
+		; Heating/cooling due to heat conduction  ;[J/m^3]
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		chi   = pc_get_parameter ('chi', label=quantity)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+		lnTT  = pc_compute_quantity (vars, index, 'ln_Temp')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
+			glnTT  = (grad (vars[*,*,*,index.lnTT]))[l1:l2,m1:m2,n1:n2,*] / unit.length
+		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
+			glnTT  = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*] / unit.length
+		end
+		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+			glnrho = (grad (vars[*,*,*,index.lnrho]))[l1:l2,m1:m2,n1:n2,*] / unit.length
+		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+			glnrho = (grad (alog (vars[*,*,*,index.rho])))[l1:l2,m1:m2,n1:n2,*] / unit.length
+		end
+		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
+			d2lnTT  = (del2 (vars[*,*,*,index.lnTT]))[l1:l2,m1:m2,n1:n2,*] / (unit.length^2)
+		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
+			d2lnTT  = (del2 (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*] / (unit.length^2)
+		end
+		g2  = dot(glnrho+glnTT,glnTT)
+		g2  = g2 + d2lnTT
+		tmp = gamma*(chi * (unit.length^2/unit.time))*g2
+		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
