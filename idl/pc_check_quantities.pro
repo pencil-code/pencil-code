@@ -236,7 +236,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		n_rho:'particle density',$
 		Heat_cool_compression: 'Heating / cooling due to compression',$
 		Heat_cool_visc: 'Heating / cooling due to viscous heating',$
-		Heat_cool_conduction: 'Heating / cooling due to heat conduction' $
+		Heat_cool_conduction: 'Heating / cooling due to heat conduction',$
+		Heat_cool_rad_loss: 'Heating / cooling due to radiative losses' $
 	}
 
 	; List of code variable aliases.
@@ -478,7 +479,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		origin_z:'' ,$
 		Heat_cool_compression:'uu',$
 		Heat_cool_visc:['Temp', 'uu'],$
-		Heat_cool_conduction:['Temp', 'rho'] $
+		Heat_cool_conduction:['Temp', 'rho'],$
+		Heat_cool_rad_loss:['Temp', 'rho'] $
 	}
 
 	if (num_species ge 1) then begin
