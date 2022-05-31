@@ -736,6 +736,46 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp = gamma*(chi * (unit.length^2/unit.time))*g2
 		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+	if (strcmp (quantity, 'Heat_cool_rad_loss', /fold_case)) then begin
+		; Heating/cooling due to radiative losses  ;[J/m^3]
+		intlnT = [ 8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, 15.6576, 69.0776 ]
+		intlnQ = [-93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, -79.6694, -79.2857, -79.0938, -79.1322, 				 -79.4776, -79.4776, -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, -81.9874, -82.2023, 				 -82.5093, -82.5477, -82.4172, -82.2637,-0.66650]
+		lnrho  = pc_compute_quantity (vars, index, 'ln_rho') 
+		lnTT   = pc_compute_quantity (vars, index, 'ln_Temp')
+		gamma  = pc_get_parameter ('isentropic_exponent', label=quantity)
+		cp_SI  = pc_get_parameter ('cp_SI', label=quantity)
+		lnneni = 2.*(lnrho + 61.4412)
+		lnQ    = dblarr(nx,ny,nz)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		for pz=0,nz-1 do begin
+			for py=0,ny-1 do begin
+				for px=0,nx-1 do begin
+					pos = pc_find_index (lnTT[px,py,pz],intlnT)
+					z_ref= floor(pos)
+					if (z_ref lt 0) then begin
+						lnQ[px,py,pz] = -1d300
+					endif else begin
+					if (z_ref ge 35) then z_ref = 35
+						frac = pos - z_ref
+						lnQ[px,py,pz] = intlnQ[z_ref] * (1.0-frac) + intlnQ[z_ref+1] * frac
+					end
+				end 
+			end
+		end
+		tmp                  = (gamma/cp_SI) * exp(lnQ + lnneni - lnTT - lnrho)
+		cool_RTV             = pc_get_parameter ('COOL_RTV', label=quantity)
+		tmp                  = tmp * cool_RTV 
+		t                    = pc_compute_quantity (vars, index, 'time')
+		init_time_fade_start = pc_get_parameter ('init_time_fade_start', label=quantity) * unit.time
+		init_time            = pc_get_parameter ('init_time', label=quantity) * unit.time
+		if (t ge init_time_fade_start + init_time) then begin
+			get_time_fade_fact = 1
+		end else begin
+			get_time_fade_fact = cubic_step (t - init_time_fade_start, init_time, init_time)
+		end
+		tmp = tmp * get_time_fade_fact * (1. - cubic_step(lnrho, -12., 3))
+		return, -(rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
