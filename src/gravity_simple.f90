@@ -186,6 +186,10 @@ module Gravity
       real, dimension (mz) :: prof
       real :: ztop
 !
+      character(len=*), parameter :: gravity_z_dat = 'prof_g.dat'
+      real, dimension(:), allocatable :: grav_init_z
+      integer :: alloc_err
+!
 !  Sanity check.
 !
       if (lrun) then
@@ -471,6 +475,20 @@ module Gravity
           gravz_zpencil = g_ref * (z-zref+sphere_rad) / sphere_rad
         end where
         potz_zpencil = -gravz_zpencil * (z - zinfty)
+!        
+      ! gravity profile provided as binary data
+      ! 'zref' determines the location of the sphere border relative to the lower box boundary.
+      ! 'g_ref' is the gravity acceleration at zref (implies the mass of the sphere).
+      case ('profile')
+        allocate(grav_init_z(mz), stat = alloc_err)
+        if (alloc_err > 0) call fatal_error ('initialize_gravity', &
+          'Could not allocate memory for gravity and gravity potential profiles', .true.)
+        call read_grav_profile(gravity_z_dat, grav_init_z, real(unit_length/(unit_time*unit_time)), .false.)
+        gravz_zpencil = grav_init_z
+        potz_zpencil = -gravz_zpencil * (z - zinfty)
+        gravz = grav_init_z(n1) !test code to use automatic calculation of hcond0 in boundcond.f90
+!	
+        deallocate(grav_init_z)
 !
       case ('spherical')
         nu_epicycle2=nu_epicycle**2
@@ -593,6 +611,128 @@ module Gravity
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_gravity
+!***********************************************************************
+    subroutine read_grav_profile(filename,profile,data_unit,llog)
+!
+!  Read vertical profile data.
+!  Values are expected in SI units.
+!
+!  15-sept-2010/Bourdin.KIS: coded
+!  17-feb-2021/joh-tsch: copied from solar_corona.f90
+!
+      use File_io, only: parallel_file_exists, file_size
+      use Mpicomm, only: mpibcast_int, mpibcast_real
+!
+      character(len=*), intent(in) :: filename
+      real, dimension(mz), intent(out) :: profile
+      real, intent(in) :: data_unit
+      logical, intent(in) :: llog
+!
+      real, dimension(:), allocatable :: data, data_z
+      integer :: n_data
+      integer :: iter
+!
+      integer, parameter :: unit=12
+      integer :: len_double
+!      
+      integer :: alloc_err
+!
+!
+      inquire (IOLENGTH=len_double) 1.0d0
+!
+      if (.not. parallel_file_exists (filename)) &
+          call fatal_error ('read_grav_profile', "can't find "//filename)
+      ! file access is only done on the MPI root rank
+      if (lroot) then
+        ! determine the number of data points in the profile
+        n_data = (file_size (filename) - 2*2*4) / (len_double * 2)
+      endif
+      call mpibcast_int (n_data)
+!
+      ! allocate memory
+      allocate (data(n_data), data_z(n_data), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('read_grav_profile', &
+          'Could not allocate memory for data and its z coordinate', .true.)
+!
+      if (lroot) then
+        ! read profile
+        open (unit, file=filename, form='unformatted', recl=len_double*n_data)
+        read (unit) data
+        read (unit) data_z
+        close (unit)
+!
+        if (llog) then
+          ! convert data from logarithmic SI to logarithmic Pencil units
+          data = data - alog (data_unit)
+        else
+          ! convert data from SI to Pencil units
+          data = data / data_unit
+        endif
+!
+        ! convert z coordinates from SI to Pencil units
+        data_z = data_z / unit_length
+      endif
+!
+      ! broadcast profile
+      call mpibcast_real (data, n_data)
+      call mpibcast_real (data_z, n_data)
+!
+      ! interpolate logarthmic data to Pencil grid profile
+      call interpolate_grav_profile (data, data_z, n_data, profile)
+!
+      deallocate (data, data_z)
+!
+    endsubroutine read_grav_profile
+!***********************************************************************
+    subroutine interpolate_grav_profile(data,data_z,n_data,profile)
+!
+!  Interpolate profile data to Pencil grid.
+!
+!  15-sept-2010/Bourdin.KIS: coded
+!  17-feb-2021/joh-tsch: copied from solar_corona.f90
+!
+      use General, only: itoa
+!
+      integer :: n_data
+      real, dimension(n_data), intent(in) :: data, data_z
+      real, dimension(mz), intent(out) :: profile
+!
+      integer :: i, j, num_over, num_below
+!
+!
+      ! linear interpolation of data
+      num_below = 0
+      num_over = 0
+      do j = 1, mz
+        if (z(j) < data_z(1) ) then
+          ! extrapolate linarily below bottom
+          num_below = num_below + 1
+          profile(j) = data(1) + (data(2)-data(1))/(data_z(2)-data_z(1)) * (z(j)-data_z(1))
+        elseif (z(j) >= data_z(n_data)) then
+          ! extrapolate linarily over top
+          num_over = num_over + 1
+          profile(j) = data(n_data) + (data(n_data)-data(n_data-1))/(data_z(n_data)-data_z(n_data-1)) * (z(j)-data_z(n_data))
+        else
+          do i = 1, n_data-1
+            if ((z(j) >= data_z(i)) .and. (z(j) < data_z(i+1))) then
+              ! y = m*(x-x1) + y1
+              profile(j) = (data(i+1)-data(i)) / (data_z(i+1)-data_z(i)) * (z(j)-data_z(i)) + data(i)
+              exit
+            endif
+          enddo
+        endif
+      enddo
+!
+      if (lfirst_proc_xy .and. (num_below > 0)) then
+        call warning ("interpolate_grav_profile", &
+            "extrapolated "//trim (itoa (num_below))//" grid points below bottom")
+      endif
+      if (lfirst_proc_xy .and. (num_over > 0)) then
+        call warning ("interpolate_grav_profile", &
+            "extrapolated "//trim (itoa (num_over))//" grid points over top")
+      endif
+!
+    endsubroutine interpolate_grav_profile
 !***********************************************************************
     subroutine gravity_sphersym(f)
 !
