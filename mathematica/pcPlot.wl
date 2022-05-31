@@ -52,12 +52,22 @@ Input:
 Output:
   A vector plot of var at location loc in the sp direction"
 
-pcPanelPlot::usage="pcPanelPlot[data,{m,n},style:{},Options] makes a plot of m times n panels,
+pcPanelDataPlot::usage="pcPanelDataPlot[data,{m,n},style:{},Options] makes a plot of m times n panels,
 with shared axes.
 Input:
   data: List. Each element should be a data set like {{x1,y1},{x2,y2},...}.
   {m,n}: m columns and n rows. Better to have m*n=Length[data].
   style: List. Optional. User-specified plot styles for all panels.
+Options:
+  \"ImageSize0\" by default 300. The ImageSize for each individual panel.
+  \"ImagePadding0\" by default 25. The ImagePadding for each individual panel.
+  \"Spacingx\" by default -2. The horizontal spacing between panels."
+
+pcPanelPlot::usage="pcPanelPlot[plots,{m,n},Options] makes a plot of m times n panels,
+with shared axes.
+Input:
+  plots: A List of plots. Can already have FrameTicks.
+  {m,n}: m columns and n rows. Better to have m*n=Length[plots].
 Options:
   \"ImageSize0\" by default 300. The ImageSize for each individual panel.
   \"ImagePadding0\" by default 25. The ImagePadding for each individual panel.
@@ -183,20 +193,20 @@ showSliceVector[data_Association,var_String,{sp_String,loc_?NumericQ},plotStyle_
 (*Plot multiple panels with common axes*)
 
 
-Options[pcPanelPlot]={"ImageSize0"->300,"ImagePadding0"->25,"Spacingx"->-2}
-pcPanelPlot[data_,{m_,n_},style_List:{},OptionsPattern[]]:=Module[{
+Options[pcPanelDataPlot]={"ImageSize0"->300,"ImagePadding0"->25,"Spacingx"->-2}
+pcPanelDataPlot[data_,{m_,n_},style_List:{},OptionsPattern[]]:=Module[{
   nData,lpos,shift,xRange,yRange,styleAll,
   tkStyle,imgPd,imgSz,imgSz0,imgPd0,spx},
-  pcPanelPlot::nonrect="Warning: The bottom ticks may show incorrectly.";
-  pcPanelPlot::insuffpanel="Error: Insufficient number of panels specified.";
+  pcPanelDataPlot::nonrect="Warning: The bottom ticks may show incorrectly.";
+  pcPanelDataPlot::insuffpanel="Error: Insufficient number of panels specified.";
   nData=Length[data];
-  If[m*n<nData,Message[pcPanelPlot::insuffpanel];Return[$Failed]];
-  If[m*n!=nData,Message[pcPanelPlot::nonrect]];
+  If[m*n<nData,Message[pcPanelDataPlot::insuffpanel];Return[$Failed]];
+  If[m*n!=nData,Message[pcPanelDataPlot::nonrect]];
   
   imgSz0=OptionValue["ImageSize0"];
   imgPd0=OptionValue["ImagePadding0"];
   spx=OptionValue["Spacingx"];
-  lpos[i_,ladd2_:False]:=List[
+  lpos[i_]:=List[
     (*left and right*)
     {MemberQ[Range[1,m*n,m],i],MemberQ[Range[m,m*n,m],i]},
     (*bottom and top*)
@@ -222,6 +232,38 @@ pcPanelPlot[data_,{m_,n_},style_List:{},OptionsPattern[]]:=Module[{
 ]
 
 
+Options[pcPanelPlot]={"ImageSize0"->300,"ImagePadding0"->25,"Spacingx"->-2}
+pcPanelPlot[plots_,{m_,n_},OptionsPattern[]]:=Module[{
+  nData,lpos,ladd,tkStyle,imgPd,imgSz,imgSz0,imgPd0,spx},
+  pcPanelPlot::insuffpanel="Error: Insufficient number of panels specified.";
+  nData=Length[plots];
+  If[m*n<nData,Message[pcPanelPlot::insuffpanel];Return[$Failed]];
+  ladd=If[m*n!=nData,True,False];
+  
+  imgSz0=OptionValue["ImageSize0"];
+  imgPd0=OptionValue["ImagePadding0"];
+  spx=OptionValue["Spacingx"];
+  lpos[i_]:=List[
+    (*left and right*)
+    {MemberQ[Range[1,m*n,m],i],MemberQ[Range[m,m*n,m],i]},
+    (*bottom and top*)
+    {MemberQ[Range[m*n-m+1,m*n],i]||And[ladd,MemberQ[Range[nData-m+1,m*(n-1)],i]],
+    (*MemberQ[Range[1,m],#]*)False}
+  ];
+  
+  (*individual plot styles*)
+  tkStyle[i_]:=(FrameTicksStyle->Map[Directive[FontOpacity->#]&,lpos[i]/.{True->1,False->0},{2}]);
+  imgPd[i_]:=(ImagePadding->(lpos[i]/.{True->imgPd0,False->1}));
+  imgSz[i_]:=Module[{w=imgSz0,h=imgSz0/GoldenRatio},
+    If[!lpos[i][[1,1]],w=w-imgPd0];If[!lpos[i][[1,2]],w=w-imgPd0];
+    If[!lpos[i][[2,1]],h=h-imgPd0];If[!lpos[i][[2,2]],h=h-imgPd0];
+    ImageSize->{w,h}
+  ];
+  
+  Table[Show[plots[[i]],tkStyle[i],imgPd[i],imgSz[i]],{i,nData}]//Partition[#,UpTo@m]&//Grid[#,Spacings->{spx,0.5},Alignment->Top]&
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -234,7 +276,7 @@ Protect[
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,
-  pcPanelPlot
+  pcPanelDataPlot,pcPanelPlot
 ]
 
 
