@@ -655,7 +655,20 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[*,*,*,2])
 		return, ((Rx > Ry) > Rz) / (nu * unit.length^2/unit.time)
 	end
-
+	if (strcmp (quantity, 'Heat_cool_compression', /fold_case)) then begin
+		; Heating/cooling due to compression  ;[J/m^3]
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+		lnTT  = pc_compute_quantity (vars, index, 'ln_Temp')
+		gamma_m1 = gamma-1
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		if (any (strcmp (sources, 'uu', /fold_case))) then begin
+			divu = (div(vars[*,*,*,index.uu]))
+			divu = divu  * unit.velocity  / unit.length
+		end
+		tmp = -(gamma_m1 * divu[l1:l2,m1:m2,n1:n2])
+		return,(rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
