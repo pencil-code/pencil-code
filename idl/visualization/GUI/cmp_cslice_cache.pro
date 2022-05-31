@@ -825,9 +825,17 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 			if (any (destretch)) then begin
 				plot, coord.y, data, xrange=minmax (coord.y), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, coord.y, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, coord.y, -data, color=220120
+					oplot, coord.y, -data, color=100200, psym=3
+				end
 			end else begin
 				plot, data, xrange=[0,num_y-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, -data, color=220120
+					oplot, -data, color=100200, psym=3
+				end
 			end
 			axis, 0, 0, xaxis=1, xstyle=1
 			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
@@ -872,9 +880,17 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 			if (any (destretch)) then begin
 				plot, coord.x, data, xrange=minmax (coord.x), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, coord.x, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, coord.x, -data, color=220120
+					oplot, coord.x, -data, color=100200, psym=3
+				end
 			end else begin
 				plot, data, xrange=[0,num_x-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, -data, color=220120
+					oplot, -data, color=100200, psym=3
+				end
 			end
 			axis, 0, 0, xaxis=1, xstyle=1
 			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
@@ -919,9 +935,17 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 			if (any (destretch)) then begin
 				plot, coord.z, data, xrange=minmax (coord.z), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, coord.z, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, coord.z, -data, color=220120
+					oplot, coord.z, -data, color=100200, psym=3
+				end
 			end else begin
 				plot, data, xrange=[0,num_z-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
+				if (log_plot) then begin
+					oplot, -data, color=220120
+					oplot, -data, color=100200, psym=3
+				end
 			end
 			axis, 0, 0, xaxis=1, xstyle=1
 			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
