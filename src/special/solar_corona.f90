@@ -49,7 +49,7 @@ module Special
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
   real :: init_time_fade_start=0.0, init_time_hcond_fade_start=0.0
-  real :: nc_z_max=0.0, nc_z_trans_width=0.0
+  real :: nc_z_max=0.0, nc_z_trans_width=0.0, nc_z_min=0.0, nc_z_min_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
@@ -99,7 +99,7 @@ module Special
       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
       iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
-      nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
+      nc_z_max,nc_z_min,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, nc_z_min_trans_width, &
       lnc_density_depend, lnc_intrin_energy_depend, &
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
@@ -2205,8 +2205,12 @@ module Special
           tmp_tau = nc_tau * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.5*nc_lnrho_trans_width, -1.0)
         endif
         ! Optional height dependant smooth cutoff
+        ! Maximum height where cooling acts
         if (nc_z_max /= 0.0) &
             tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.5*nc_z_trans_width, -1.0))
+        ! Minimum height where cooling acts
+        if (nc_z_min /= 0.0) &
+            tmp_tau = tmp_tau *  (sine_step (z(n), nc_z_min, 0.5*nc_z_min_trans_width, 1.0))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
       endif
