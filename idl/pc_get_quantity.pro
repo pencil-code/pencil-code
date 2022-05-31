@@ -669,6 +669,46 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp = -(gamma_m1 * divu[l1:l2,m1:m2,n1:n2])
 		return,(rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+	if (strcmp (quantity, 'Heat_cool_visc', /fold_case)) then begin
+		; Heating/cooling due to viscous heating  ;[J/m^3]
+		nu    = (pc_get_parameter ('nu', label=quantity))*(unit.length^2/unit.time)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		lnTT  = pc_compute_quantity (vars, index, 'ln_Temp')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		if (any (strcmp (sources, 'uu', /fold_case))) then begin
+			uij_PC = (gij(vars[*,*,*,index.uu]))
+			uij = (uij_PC) * unit.velocity/unit.length
+			divu_PC = (div(vars[*,*,*,index.uu]))
+			divu = (divu_PC) * unit.velocity/unit.length
+		end
+		oo = make_array ([ (size(uij, /dim))[0:2], 3], type=size (uij, /type))
+		oo[*,*,*,0]=uij[*,*,*,2,1]-uij[*,*,*,1,2]
+		oo[*,*,*,1]=uij[*,*,*,0,2]-uij[*,*,*,2,0]
+		oo[*,*,*,2]=uij[*,*,*,1,0]-uij[*,*,*,0,1]
+		o2   = oo[*,*,*,0]^2+oo[*,*,*,1]^2+oo[*,*,*,2]^2
+		visc_heat = nu * o2[l1:l2,m1:m2,n1:n2]
+
+		sij = make_array (size(uij, /dim), type=size (uij, /type))
+		for j=0,2 do begin
+			sij[*,*,*,j,j]=uij[*,*,*,j,j]-(1./3.)*divu
+			for i=j+1,2 do begin
+				sij[*,*,*,i,j]=.5*(uij[*,*,*,i,j]+uij[*,*,*,j,i])
+				sij[*,*,*,j,i]=sij[*,*,*,i,j]
+			endfor
+		endfor
+		sij2 = sij[*,*,*,1,1]^2
+		for i = 1, 2 do begin
+			sij2 = sij2 + sij[*,*,*,i,i]^2
+			for j = 0, i-1 do begin
+				sij2 = sij2 + 2 * sij[*,*,*,i,j]^2
+			endfor
+		endfor
+
+		tmp = (gamma/cp_SI) * (1/Temp) * (visc_heat + 2 * nu * sij2[l1:l2,m1:m2,n1:n2])
+		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
