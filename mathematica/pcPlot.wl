@@ -52,6 +52,17 @@ Input:
 Output:
   A vector plot of var at location loc in the sp direction"
 
+pcPanelPlot::usage="pcPanelPlot[data,{m,n},style:{},Options] makes a plot of m times n panels,
+with shared axes.
+Input:
+  data: List. Each element should be a data set like {{x1,y1},{x2,y2},...}.
+  {m,n}: m columns and n rows. Better to have m*n=Length[data].
+  style: List. Optional. User-specified plot styles for all panels.
+Options:
+  \"ImageSize0\" by default 300. The ImageSize for each individual panel.
+  \"ImagePadding0\" by default 25. The ImagePadding for each individual panel.
+  \"Spacingx\" by default -2. The horizontal spacing between panels."
+
 
 Begin["`Private`"]
 
@@ -168,6 +179,49 @@ showSliceVector[data_Association,var_String,{sp_String,loc_?NumericQ},plotStyle_
 ]
 
 
+(* ::Section:: *)
+(*Plot multiple panels with common axes*)
+
+
+Options[pcPanelPlot]={"ImageSize0"->300,"ImagePadding0"->25,"Spacingx"->-2}
+pcPanelPlot[data_,{m_,n_},style_List:{},OptionsPattern[]]:=Module[{
+  nData,lpos,shift,xRange,yRange,styleAll,
+  tkStyle,imgPd,imgSz,imgSz0,imgPd0,spx},
+  pcPanelPlot::nonrect="Warning: The bottom ticks may show incorrectly.";
+  pcPanelPlot::insuffpanel="Error: Insufficient number of panels specified.";
+  nData=Length[data];
+  If[m*n<nData,Message[pcPanelPlot::insuffpanel];Return[$Failed]];
+  If[m*n!=nData,Message[pcPanelPlot::nonrect]];
+  
+  imgSz0=OptionValue["ImageSize0"];
+  imgPd0=OptionValue["ImagePadding0"];
+  spx=OptionValue["Spacingx"];
+  lpos[i_,ladd2_:False]:=List[
+    (*left and right*)
+    {MemberQ[Range[1,m*n,m],i],MemberQ[Range[m,m*n,m],i]},
+    (*bottom and top*)
+    {MemberQ[Range[m*n-m+1,m*n],i],(*MemberQ[Range[1,m],#]*)False}
+  ];
+  
+  (*overall plot styles*)
+  shift[{x1_,x2_}]:={x1-0.1(x2-x1),x2+0.1(x2-x1)};
+  xRange=data[[;;,;;,1]]//Flatten//MinMax//shift;
+  yRange=data[[;;,;;,2]]//Flatten//MinMax//shift;
+  styleAll={style,ImageSize->imgSz0,PlotRange->{xRange,yRange},FrameTicks->True,FrameTicksStyle->pcLabelStyle};
+  
+  (*individual plot styles*)
+  tkStyle[i_]:=(FrameTicksStyle->Map[Directive[FontOpacity->#]&,lpos[i]/.{True->1,False->0},{2}]);
+  imgPd[i_]:=(ImagePadding->(lpos[i]/.{True->imgPd0,False->1}));
+  imgSz[i_]:=Module[{w=imgSz0,h=imgSz0/GoldenRatio},
+    If[!lpos[i][[1,1]],w=w-imgPd0];If[!lpos[i][[1,2]],w=w-imgPd0];
+    If[!lpos[i][[2,1]],h=h-imgPd0];If[!lpos[i][[2,2]],h=h-imgPd0];
+    ImageSize->{w,h}
+  ];
+  
+  Table[ListPlot[data[[i]],tkStyle[i],imgPd[i],imgSz[i],styleAll],{i,nData}]//Partition[#,UpTo@m]&//Grid[#,Spacings->{spx,0.5}]&
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -179,7 +233,8 @@ Protect[
   pcLabelStyle,pcPlotStyle,pcPopup,
   spaceTimeDiag,
   showVideo,
-  showSlice,showSliceVector
+  showSlice,showSliceVector,
+  pcPanelPlot
 ]
 
 
