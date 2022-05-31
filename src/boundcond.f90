@@ -839,7 +839,8 @@ module Boundcond
                   ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
                   if (j==iss) call bc_ss_a2stemp_x(f,topbot)
                 case ('db')
-                  ! BCX_DOC:
+                  ! BCX_DOC: low-order one-sided derivatives (``no boundary
+                  ! BCX_DOC: condition'') for density
                   call bc_db_x(f,topbot,j)
                 case ('f')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
@@ -1403,7 +1404,8 @@ module Boundcond
                 !  keep the gradient frozen as well
                 call bc_freeze_var_z(topbot,j)
               case ('c1')
-                ! BCZ_DOC: complex
+                ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$:
+                ! BCZ_DOC: constant heat flux through the boundary
                 if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
@@ -1506,12 +1508,13 @@ module Boundcond
                 ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
                 if (j==iss) call bc_ss_a2stemp_z(f,topbot)
               case ('c2')
-                ! BCZ_DOC: complex
-                ! BCZ_DOC:
+                ! BCZ_DOC: special boundary condition for s: constant
+                ! BCZ_DOC: temperature at the boundary --- requires
+                ! BCZ_DOC: boundary condition 'a2' for $\ln\rho$
                 if (j==iss) call bc_ss_temp_old(f,topbot)
               case ('db')
-                ! BCZ_DOC: complex
-                ! BCZ_DOC:
+                  ! BCZ_DOC: low-order one-sided derivatives (``no boundary
+                  ! BCZ_DOC: condition'') for density
                 call bc_db_z(f,topbot,j)
               case ('ce')
                 ! BCZ_DOC: complex
