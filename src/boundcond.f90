@@ -775,12 +775,12 @@ module Boundcond
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpc_x(f,topbot,j)
                 case ('cpp')
-                  ! BCX_DOC: cylindrical perfect conductor
-                  ! BCX_DOC: implies $f''+f'/R=0$
+                  ! BCX_DOC: cylindrical perfect conductor for Aphi
+                  ! BCX_DOC: implies $RA''+A'=0$
                   call bc_cpp_x(f,topbot,j)
                 case ('cpz')
-                  ! BCX_DOC: cylindrical perfect conductor
-                  ! BCX_DOC: implies $f''+f'/R=0$
+                  ! BCX_DOC: cylindrical perfect conductor for Az
+                  ! BCX_DOC: implies $R(RA)''-(RA)'=0$
                   call bc_cpz_x(f,topbot,j)
                 case ('spr')
                   ! BCX_DOC: spherical perfect conductor
