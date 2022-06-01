@@ -148,6 +148,19 @@ getParam[sim_,"kf"]:=kf[sim]
 getParam[sim_,"nu"]:=nu[sim]
 getParam[sim_,"eta"]:=eta[sim]
 
+(*hyper viscosity and hyper resistivity*)
+getParam[sim_,"neta",i_:1]:=Switch[readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
+  getParam::nores="Unknown iresistivity: `1`.";
+  "'eta-const'",  1,
+  "'eta-tdep'",   1,
+  "'hyper2'",     2,
+  "'hyper2-tdep'",2,
+  "'hyper3'",     3,
+  "'hyper3-tdep'",3,
+  _,              Message[getParam::nores,
+                    readParamNml[sim,"run.in","IRESISTIVITY"][[i]]];Return[$Failed]
+]
+
 (*dimensionless numbers*)
 getParam[sim_,"ReN"]:=urms[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReN",k2_]:=urms[sim]/k2/nu[sim] (*supply kf by hand*)
