@@ -43,7 +43,7 @@
 ; Update a list of given quantities.
 pro pc_select_files_update_list, list, all, indices, default=default, avail=avail_list
 
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost, skip_last, n_slice
 
 	if (not keyword_set (default)) then default = all
 
@@ -68,8 +68,8 @@ end
 ; Event handling of file dialog window
 pro select_files_event, event
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz, i_last, nf
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost, skip_last, n_slice
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -81,41 +81,56 @@ pro select_files_event, event
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = indgen (num_files)
 		num_selected = num_files
 		pc_select_files_update
+		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
 		break
 	end
 	'NONE': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = -1
 		num_selected = 0
 		pc_select_files_update
+		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
 		break
 	end
 	'SKIP': begin
 		skipping = event.value
 		if (skipping lt 0) then skipping = 0
-		if (skipping ge num_files) then skipping = num_files - 1
-		WIDGET_CONTROL, i_skip, SET_VALUE = skipping
-		if (stepping gt num_files - skipping) then begin
+		if (skipping ge num_files - skip_last) then skipping = num_files - skip_last - 1
+		if (stepping gt num_files - skipping - skip_last) then begin
 			stepping = num_files - skipping
 			WIDGET_CONTROL, i_step, SET_VALUE = stepping
 		end
+		WIDGET_CONTROL, i_skip, SET_VALUE = skipping
 		break
 	end
 	'STEP': begin
 		stepping = event.value
 		if (stepping lt 1) then stepping = 1
-		if (stepping gt num_files - skipping) then stepping = num_files - skipping
+		if (stepping gt num_files - skipping - skip_last) then stepping = num_files - skipping - skip_last
 		WIDGET_CONTROL, i_step, SET_VALUE = stepping
 		break
 	end
+	'SKIP_LAST': begin
+		skip_last = event.value
+		if (skip_last lt 0) then skip_last = 0
+		if (skip_last ge num_files - skipping) then skip_last = num_files - skipping - 1
+		if (stepping gt num_files - skipping - skip_last) then begin
+			stepping = num_files - skipping - skip_last
+			WIDGET_CONTROL, i_step, SET_VALUE = stepping
+		end
+		WIDGET_CONTROL, i_last, SET_VALUE = skip_last
+		break 
+	end
 	'APPLY': begin
 		selected = indgen (num_files)
-		selected = selected[skipping:*:stepping]
+		selected = selected[skipping:num_files - 1 - skip_last:stepping]
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = selected
+		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
 	end
 	'LIST': begin
 		selected = WIDGET_INFO (c_list, /LIST_SELECT)
 		if (any (selected ne -1)) then num_selected = n_elements (selected) else num_selected = 0
 		pc_select_files_update
+		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
 		break
 	end
 	'ADD': begin
@@ -132,9 +147,26 @@ pro select_files_event, event
 		if (slice ne event.index) then begin
 			slice = event.index
 			max_pos = -1
-			if (slice eq 1) then max_pos = nx-1
-			if (slice eq 2) then max_pos = ny-1
-			if (slice eq 3) then max_pos = nz-1
+			case n_slice of
+			2: begin
+				if (slice eq 1) and (nx gt 1) then max_pos = nx - 1
+				if (slice eq 1) and (ny gt 1) then max_pos = ny - 1
+				if (slice eq 1) and (nz gt 1) then max_pos = nz - 1
+			end
+			4: begin
+				if slice eq 1 and (nx GT 1) and (ny GT 1) then max_pos = nx - 1
+				if slice eq 2 and (nx GT 1) and (ny GT 1) then max_pos = ny - 1
+				if slice eq 1 and (nx GT 1) and (nz GT 1) then max_pos = nx - 1
+				if slice eq 2 and (nx GT 1) and (nz GT 1) then max_pos = nz - 1
+				if slice eq 1 and (ny GT 1) and (nz GT 1) then max_pos = ny - 1
+				if slice eq 2 and (ny GT 1) and (nz GT 1) then max_pos = nz - 1
+			end
+			5: begin
+				if (slice eq 1) then max_pos = nx-1
+				if (slice eq 2) then max_pos = ny-1
+				if (slice eq 3) then max_pos = nz-1
+			end
+			endcase
 			if (max_pos lt 1) then cut_pos = -1 else cut_pos = max_pos/2
 			WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos>0
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
@@ -142,15 +174,16 @@ pro select_files_event, event
 			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
 			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
 			WIDGET_CONTROL, cut_sl, SENSITIVE = (cut_pos ge 0)
-			WIDGET_CONTROL, sub_xs, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_xe, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_nx, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_ys, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_ye, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_ny, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_zs, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_ze, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, sub_nz, SENSITIVE = (slice eq 4)
+			WIDGET_CONTROL, sub_xs, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1)) 
+			WIDGET_CONTROL, sub_xe, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1))
+			WIDGET_CONTROL, sub_nx, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1))
+			WIDGET_CONTROL, sub_ys, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+			WIDGET_CONTROL, sub_ye, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+			WIDGET_CONTROL, sub_ny, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+			WIDGET_CONTROL, sub_zs, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
+			WIDGET_CONTROL, sub_ze, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
+			WIDGET_CONTROL, sub_nz, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
+
 			pc_select_files_update
 		end
 		break
@@ -386,8 +419,8 @@ end
 ; Update file size and memory consumption display.
 pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz, i_last, nf
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost, skip_last, n_slice
 
 	num = 0
 	for pos = 0, num_cont-1 do begin
@@ -428,8 +461,8 @@ end
 ; File selection dialog GUI.
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, start_param=start_param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, ys=ys, zs=zs, xe=xe, ye=ye, ze=ze, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz, i_last, nf
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost, skip_last, n_slice
 
 	; Default settings
 	@pc_gui_settings
@@ -445,6 +478,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	default, addfile, default_crashfile
 	default, skipping, 0
 	default, stepping, 10
+	default, skip_last, 0
 	default, cut_x, -1
 	default, cut_y, -1
 	default, cut_z, -1
@@ -502,7 +536,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
 	num_files = n_elements (files)
-	stepping = stepping < (num_files - skipping)
+	stepping = stepping < (num_files - skipping - skip_last)
 	for pos = 0, num_files - 1 do begin
 		cut = strpos (procdir, "/", /REVERSE_SEARCH)
 		if (strmid (files[pos], cut, 1) eq "/") then cut += 1
@@ -649,6 +683,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	EDIT	= WIDGET_BASE (CTRL, /col, xsize=100, /align_center, frame=1)
 	i_skip	= CW_FIELD (EDIT, title='skip first', /column, uvalue='SKIP', value=skipping, /integer, /return_events, xsize=8)
 	i_step	= CW_FIELD (EDIT, title='stepping', /column, uvalue='STEP', value=stepping, /integer, /return_events, xsize=8)
+	i_last  = CW_FIELD (EDIT, title='skip last', /column, uvalue='SKIP_LAST', value=skip_last, /integer, /return_events, xsize=8)
 	tmp	= WIDGET_BUTTON (EDIT, xsize=80, value='APPLY', uvalue='APPLY')
 
 	XTRA	= WIDGET_BASE (CTRL, /col, /align_center)
@@ -670,7 +705,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	tmp	= WIDGET_LABEL (SEL, value='Available snapshots:', frame=0)
 	c_list	= WIDGET_LIST (SEL, value=files, uvalue='LIST', YSIZE=(num_files<max_display)>min_display, /multiple)
-
+	tmp	= WIDGET_LABEL (SEL, value='Selceted snapshots:', frame=0)
+	nf	= CW_FIELD (SEL, title='', value=strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2), xsize=13, /noedit)
 	if (var_selected eq 1) then begin
 		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 		b_var	= CW_BGROUP (SEL, varfile+' ('+strtrim (var_time*unit.time, 2)+' s)', /nonexcl, uvalue='VAR', set_value=1)
@@ -699,21 +735,62 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (keyword_set (reduced)) then IO_scheme[allprocs] = "reduced files"
 	tmp	= WIDGET_LABEL (VC, value='Load '+IO_scheme[allprocs]+":", frame=0)
 	SEL	= WIDGET_BASE (VC, frame=1, /align_center, /col)
-	if (dimensionality eq 3) then begin
-		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice', '3D sub-volume']
-		tmp	= WIDGET_LABEL (SEL, value="From: "+procdir, frame=0)
-		d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
-		WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
-		cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value=cut_pos>0, /integer, /return_events, xsize=8)
-		WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
-		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
-	end else begin
-		if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
-		if (keyword_set (reduced)) then dir_str = "/reduced/"
-		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
-		tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
-	end
 
+	case dimensionality of 
+		1: begin
+			if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
+			if (keyword_set (reduced)) then dir_str = "/reduced/"
+			tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
+			tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
+			if nx gt 1 then begin
+				load_list = ['full 1D data', '1D sub-volume (x)']
+			endif	
+			if ny gt 1 then begin
+				load_list = ['full 1D data', '1D sub-volume (y)']
+			endif
+			if nz gt 1 then begin
+				load_list = ['full 1D data', '1D sub-volume (z)']
+			endif
+			n_slice = n_elements(load_list)
+			d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
+			WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
+			cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value=cut_pos>0, /integer, /return_events, xsize=8)
+			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
+			cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
+		   end
+		2: begin
+			if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
+			if (keyword_set (reduced)) then dir_str = "/reduced/"
+			if (nx GT 1) and (ny GT 1) then begin
+				load_list = ['full 2D data', 'y-slice', 'x-slice', '2D sub-volume']
+			endif 
+			if (nx GT 1) and (nz GT 1) then begin
+				load_list = ['full 2D data', 'z-slice', 'x-slice', '2D sub-volume']
+			endif 
+			if (ny GT 1) and (nz GT 1) then begin
+				load_list = ['full 2D data', 'z-slice', 'y-slice', '2D sub-volume']
+			endif 
+			n_slice = n_elements(load_list)
+			tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
+			tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)	
+			d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
+			WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
+			cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value=cut_pos>0, /integer, /return_events, xsize=8)
+			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
+			cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
+
+		   end
+		3: begin
+			load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice', '3D sub-volume']
+			n_slice = n_elements(load_list)
+			tmp	= WIDGET_LABEL (SEL, value="From: "+procdir, frame=0)
+			d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
+			WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
+			cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value=cut_pos>0, /integer, /return_events, xsize=8)
+			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
+			cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
+		   end
+	endcase
 	tmp	= WIDGET_LABEL (SEL, value='Sub-volume (start, end, size):', frame=0)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
 	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=subvol_xs, /integer, /return_events, xsize=5)
@@ -727,15 +804,15 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=subvol_zs, /integer, /return_events, xsize=5)
 	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=subvol_ze, /integer, /return_events, xsize=5)
 	sub_nz	= CW_FIELD (SUB, title='=', uvalue='SUB_NZ', value=subvol_nz, /integer, /return_events, xsize=5)
-	WIDGET_CONTROL, sub_xs, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_xe, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_ys, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_ye, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_zs, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_ze, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (slice eq 4)
+	WIDGET_CONTROL, sub_xs, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1)) 
+	WIDGET_CONTROL, sub_xe, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1))
+	WIDGET_CONTROL, sub_nx, SENSITIVE = ((slice eq n_slice-1) and (nx gt 1))
+	WIDGET_CONTROL, sub_ys, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+	WIDGET_CONTROL, sub_ye, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+	WIDGET_CONTROL, sub_ny, SENSITIVE = ((slice eq n_slice-1) and (ny gt 1))
+	WIDGET_CONTROL, sub_zs, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
+	WIDGET_CONTROL, sub_ze, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
+	WIDGET_CONTROL, sub_nz, SENSITIVE = ((slice eq n_slice-1) and (nz gt 1))
 
 	tmp	= WIDGET_LABEL (VC, value='Scaling factors (X,Y,Z):', frame=0)
 	SCA	= WIDGET_BASE (VC, frame=1, /align_center, /row)
@@ -807,30 +884,112 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	xe = nx-1
 	ye = ny-1
 	ze = nz-1
-	if (slice eq 1) then begin
-		cut_x = cut_pos
-		xs = cut_x
-		xe = cut_x
-	end
-	if (slice eq 2) then begin
-		cut_y = cut_pos
-		ys = cut_y
-		ye = cut_y
-	end
-	if (slice eq 3) then begin	
-		cut_z = cut_pos
-		zs = cut_z
-		ze = cut_z
-	end
-	if (slice eq 4) then begin
-		xs = subvol_xs
-		ys = subvol_ys
-		zs = subvol_zs
-		xe = subvol_xe
-		ye = subvol_ye
-		ze = subvol_ze
-	end
-
+	; selects the right xs, xe, ys, ye, zs, ze values in 1D and 2D case
+	case dimensionality of
+		1: begin
+			if (slice eq 1) then begin
+				if (nx gt 1) then begin
+					xs = subvol_xs
+					xe = subvol_xe
+				end
+				if (ny gt 1) then begin
+					ys = subvol_ys
+					ye = subvol_ye
+				end
+				if (nz gt 1) then begin
+					zs = subvol_zs
+					ze = subvol_ze
+				end
+			end
+		end
+		
+		2: begin
+			if (nx eq 1) then begin
+				if (slice eq 1) then begin
+					cut_y = cut_pos
+					ys = cut_y
+					ye = cut_y
+				end
+				
+				if (slice eq 2) then begin
+					cut_z = cut_pos
+					zs = cut_z
+					ze = cut_z
+				end
+				
+				if (slice eq 3) then begin
+					ys = subvol_ys
+					zs = subvol_zs
+					ye = subvol_ye
+					ze = subvol_ze
+				end
+			end
+			if (ny eq 1) then begin
+				if (slice eq 1) then begin
+					cut_x = cut_pos
+					xs = cut_x
+					xe = cut_x
+				end
+				
+				if (slice eq 2) then begin
+					cut_z = cut_pos
+					zs = cut_z
+					ze = cut_z
+				end
+				if (slice eq 3) then begin
+					xs = subvol_xs
+					zs = subvol_zs
+					xe = subvol_xe
+					ze = subvol_ze
+				end
+			end
+			if (nz eq 1) then begin
+				if (slice eq 1) then begin
+					cut_x = cut_pos
+					xs = cut_x
+					xe = cut_x
+				end
+				
+				if (slice eq 2) then begin
+					cut_y = cut_pos
+					ys = cut_y
+					ye = cut_y
+				end
+				if (slice eq 3) then begin
+					xs = subvol_xs
+					ys = subvol_ys
+					xe = subvol_xe
+					ye = subvol_ye
+				end
+			end
+		end
+		
+		3: begin
+			if (slice eq 1) then begin
+				cut_x = cut_pos
+				xs = cut_x
+				xe = cut_x
+			end
+			if (slice eq 2) then begin
+				cut_y = cut_pos
+				ys = cut_y
+				ye = cut_y
+			end
+			if (slice eq 3) then begin	
+				cut_z = cut_pos
+				zs = cut_z
+				ze = cut_z
+			end
+			if (slice eq 4) then begin
+				xs = subvol_xs
+				ys = subvol_ys
+				zs = subvol_zs
+				xe = subvol_xe
+				ye = subvol_ye
+				ze = subvol_ze
+			end
+		end
+	endcase
 	; Build scaling factors array
 	scaling = [ scaling_x, scaling_y, scaling_z ]
 
@@ -882,4 +1041,3 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	num = num_selected
 end
-
