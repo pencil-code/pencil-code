@@ -210,9 +210,9 @@ pro select_files_event, event
 		break
 	end
 	'SCAL_MINUS': begin
-		scaling_x /= 2
-		scaling_y /= 2
-		scaling_z /= 2
+		scaling_x /= 2.0
+		scaling_y /= 2.0
+		scaling_z /= 2.0
 		WIDGET_CONTROL, scal_x, SET_VALUE = scaling_x
 		WIDGET_CONTROL, scal_y, SET_VALUE = scaling_y
 		WIDGET_CONTROL, scal_z, SET_VALUE = scaling_z
