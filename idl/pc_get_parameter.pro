@@ -134,10 +134,10 @@ function pc_generate_parameter_abbreviation, param, label=label
 				zdep_profile = pc_get_parameter ('zdep_profile', label=label)
 				eta_z0 = pc_get_parameter ('eta_z0', label=label)
 				eta_jump = pc_get_parameter ('eta_jump', label=label)
-				eta_width = pc_get_parameter ('eta_width', label=label)
+				eta_zwidth = pc_get_parameter ('eta_zwidth', label=label)
 				if (strcmp (zdep_profile, 'cubic_step', /fold_case)) then begin
-					if (eta_width eq 0.0) then eta_width = 5 * mean (1.0 / dz_1)
-					eta_total += spread (eta + eta * (eta_jump - 1.) * cubic_step (z[n1:n2], eta_z0, -eta_width), [0, 1], [nx, ny])
+					if (eta_zwidth eq 0.0) then eta_zwidth = 5 * mean (1.0 / dz_1)
+					eta_total += spread (eta + eta * (eta_jump - 1.) * cubic_step (z[n1:n2], eta_z0, -eta_zwidth), [0, 1], [nx, ny])
 				end else begin
 					print, "WARNING: The zdep_profile '"+zdep_profile+"' is not yet implemented."
 					eta_found--

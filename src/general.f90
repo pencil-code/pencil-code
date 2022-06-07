@@ -218,7 +218,7 @@ module General
       logical, intent(in) :: lprocz_slowest
 !
       if (lprocz_slowest) then
-        find_proc_general = ipx * nprocx*nprocy + ipy * nprocx + ipz
+        find_proc_general = ipz * nprocx*nprocy + ipy * nprocx + ipx
       else
         find_proc_general = ipy * nprocx*nprocz + ipz * nprocx + ipx
       endif

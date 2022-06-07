@@ -10321,8 +10321,8 @@ print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
               enddo
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
-!print*, 'PENCIL: iproc, peer, tag=', iproc, peer, tag_foreign+iproc
-              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,tag_foreign+iproc,MPI_COMM_WORLD,mpierr)
+print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_foreign
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
             endif
           else
             if (frgn_setup%procnums(1)>1) then
@@ -10333,7 +10333,7 @@ print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,frgn_setup%peer_rng(1),tag_foreign+iproc,MPI_COMM_WORLD)
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
-              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer,peer-ncpus,MPI_COMM_WORLD,mpierr)
+              call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
             endif
           endif
         endif  ! lfirst_proc_yz
@@ -10348,7 +10348,6 @@ print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
 
       endif    ! if (lforeign)
-print*, 'PENCIL initialize_foreign_comm: successful', iproc
 !      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
 !      call MPI_FINALIZE(mpierr)
 !stop

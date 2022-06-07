@@ -397,10 +397,10 @@ pro cslice_event, event
 		end
 		WIDGET_CONTROL, prev, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
-		WIDGET_CONTROL, var_val, SET_VALUE = cube[px,py,pz]
 		cslice_prepare_set, selected_snapshot
 		cslice_prepare_cube, -1
 		cslice_prepare_overplot
+		WIDGET_CONTROL, var_val, SET_VALUE = cube[px,py,pz]		
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -412,10 +412,10 @@ pro cslice_event, event
 		end
 		WIDGET_CONTROL, next, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
-		WIDGET_CONTROL, var_val, SET_VALUE = cube[px,py,pz]
 		cslice_prepare_set, selected_snapshot
 		cslice_prepare_cube, -1
 		cslice_prepare_overplot
+		WIDGET_CONTROL, var_val, SET_VALUE = cube[px,py,pz]
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end

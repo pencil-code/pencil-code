@@ -99,7 +99,7 @@ module Energy
   real :: zheat_uniform_range=0.
   real :: peh_factor=1., heat_ceiling=-1.0
   real :: Pr_smag1=1.
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
+  real :: cs2top_ini=impossible, dcs2top_ini=impossible, TTbot_factor=1.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -240,7 +240,7 @@ module Energy
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
-      kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss
+      kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -1330,6 +1330,13 @@ module Energy
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
+!
+!  Allow for possibility to enhance/diminish bottom temperature by a factor
+!
+      if (TTbot_factor/=1.) then
+        if (lroot) print*,'cs2bot,TTbot_factor=', cs2bot, TTbot_factor
+        cs2bot=cs2bot*TTbot_factor
+      endif
 !
     endsubroutine initialize_energy
 !***********************************************************************

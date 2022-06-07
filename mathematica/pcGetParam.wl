@@ -24,7 +24,7 @@ Input:
 Example:
   getParam[dir,\"ReN\"] returns the Reynolds number.";
 
-LuNspec::usage="LuNspec[sim] computes time-dependent Lundquist numbers from power_mag.dat.
+LuNspec::usage="LuNspec[sim,i:1,m:All,Options] computes time-dependent Lundquist numbers from power_mag.dat.
 The definition B*l^(n-1)/eta(t), where:
 B is the rms magnetic energy exlucding the k=0 mode;
 The length scale l is the energy-weighted value of 1/k;
@@ -32,6 +32,10 @@ n is the power in the diffusion operator del^n (normal diffusion n=2).
 eta(t) is the time-dependent resistivity.
 Input:
   sim: String. Directory of the simulation folder
+  i: Integer. Optional. Specify to use the ith IRESISTIVITY.
+  m: Optional. Take only the first m snapshots.
+Options:
+  \"l1/n\": By default ->False. If ->True, then compute Lu^(1/n).
 Output:
   A time series of the Lundquist number."
 
@@ -148,6 +152,19 @@ getParam[sim_,"kf"]:=kf[sim]
 getParam[sim_,"nu"]:=nu[sim]
 getParam[sim_,"eta"]:=eta[sim]
 
+(*hyper viscosity and hyper resistivity*)
+getParam[sim_,"neta",i_:1]:=Switch[readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
+  getParam::nores="Unknown iresistivity: `1`.";
+  "'eta-const'",  1,
+  "'eta-tdep'",   1,
+  "'hyper2'",     2,
+  "'hyper2-tdep'",2,
+  "'hyper3'",     3,
+  "'hyper3-tdep'",3,
+  _,              Message[getParam::nores,
+                    readParamNml[sim,"run.in","IRESISTIVITY"][[i]]];Return[$Failed]
+]
+
 (*dimensionless numbers*)
 getParam[sim_,"ReN"]:=urms[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReN",k2_]:=urms[sim]/k2/nu[sim] (*supply kf by hand*)
@@ -231,15 +248,14 @@ getParam[sim_,"kRo",k2_]:=If[omega[sim]==0,"No rotation",k2*getParam[sim,"Ro"]^(
 
 
 Options[LuNspec]={"l1/n"->False};
-LuNspec[sim_,i_Integer:1,f_:Identity,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
+LuNspec[sim_,i_Integer:1,m_:All,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,eta,ires,lnorm,toffset,t0,exp},
   (*error messages*)
   LuNspec::nofile="power_mag.dat not found from `1`.";
   LuNspec::nores="Unfamiliar iresistivity for `1`: `2`";
   
   (**)
   If[!FileExistsQ[sim<>"/data/power_mag.dat"],Message[LuNspec::nofile,sim];Return[$Failed]];
-  {t,spec}=read1D[sim,"power_mag.dat"]//Transpose//f//Transpose;
-  If[t[[1]]==0.,{t,spec}=Rest/@{t,spec}];
+  {t,spec}=Take[#,m]&/@read1D[sim,"power_mag.dat"];
   Eb=2Total/@spec;
   spec=Rest/@spec;
   k=Range[Length[spec[[1]]]];
@@ -259,7 +275,7 @@ LuNspec[sim_,i_Integer:1,f_:Identity,OptionsPattern[]]:=Module[{t,spec,Eb,k,l,n,
   toffset=readParamNml[sim,"run.in","ETA_TDEP_TOFFSET"];
   t0=readParamNml[sim,"run.in","ETA_TDEP_T0"];
   exp=readParamNml[sim,"run.in","ETA_TDEP_EXPONENT"];
-  eta=eta*If[lnorm,Max[(t-toffset)/t0,1]^exp,Max[#-toffset,t0]^exp&/@t];
+  eta=eta*If[lnorm,Max[(#-toffset)/t0,1]^exp&,Max[#-toffset,t0]^exp&]/@t;
   
   If[OptionValue["l1/n"],
     {t,(Sqrt[Eb]*l^(n-1)/eta)^(1/n)}//Transpose,

@@ -32,7 +32,8 @@
   \var{n1s}       & onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point \\
   \var{a1s}       & special for perfect conductor with const alpha and etaT when A considered as B; one-sided for 1st and 2nd derivative in two first inner points \\
   \var{fg}        & ``freeze'' value, i.e. maintain initial \\
-  \var{c1}        & complex \\
+  \var{c1}        & special boundary condition for $\ln\rho$ and $s$:
+                    constant heat flux through the boundary \\
   \var{c1s}       & complex \\
   \var{Fgs}       & Fconv = - chi_t*rho*T*grad(s) \\
   \var{Fct}       & Fbot = - K*grad(T) - chi_t*rho*T*grad(s) \\
@@ -61,10 +62,11 @@
                     matching fluctuating boundary value,
                     $T_{N-i}=T_{N}=$;
                     implies $T'(x_N)=T'(x_0)=0$ \\
-  \var{c2}        & complex
-                     \\
-  \var{db}        & complex
-                     \\
+  \var{c2}        & special boundary condition for s: constant
+                    temperature at the boundary --- requires
+                    boundary condition 'a2' for $\ln\rho$ \\
+  \var{db}        & low-order one-sided derivatives (``no boundary
+                    condition'') for density \\
   \var{ce}        & complex
                      \\
   \var{e1}        & extrapolation \\
