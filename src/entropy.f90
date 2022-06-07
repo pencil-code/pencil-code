@@ -79,6 +79,8 @@ module Energy
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
   real :: heat_gaussianz=0.0, heat_gaussianz_sigma=0.0
+  real, dimension(3) :: heat_gaussianblob_r0=0.0
+  real :: heat_gaussianblob=0.0, heat_gaussianblob_sigma=1.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, r_bcz=0.0
@@ -214,6 +216,7 @@ module Energy
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_gaussianz, heat_gaussianz_sigma, cs2top_ini, dcs2top_ini, &
+      heat_gaussianblob, heat_gaussianblob_r0, heat_gaussianblob_sigma, &
       chi_jump_shock, xchi_shock, widthchi_shock, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
@@ -2727,7 +2730,8 @@ module Energy
       if (luminosity/=0 .or. cool/=0 .or. tau_cor/=0 .or. &
           tauheat_buffer/=0 .or. heat_uniform/=0 .or. &
           cool_uniform/=0 .or. cool_newton/=0 .or. &
-          (cool_ext/=0 .and. cool_int /= 0) .or. lturbulent_heat) then
+          (cool_ext/=0 .and. cool_int /= 0) .or. &
+          heat_gaussianblob/=0.0 .or. lturbulent_heat ) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT1)=.true.
       endif
@@ -3405,9 +3409,10 @@ module Energy
 !
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
-          heat_uniform/=0.0 .or. heat_gaussianz/=0.0 .or. tau_cool/=0.0 .or. &
-          tau_cool_ss/=0.0 .or. tau_relax_ss/=0.0 .or. cool_uniform/=0.0 .or. &
-          cool_newton/=0.0 .or. &
+          heat_uniform/=0.0 .or. heat_gaussianz/=0.0 .or. &
+          heat_gaussianblob/=0.0 .or. tau_cool/=0.0 .or. &
+          tau_cool_ss/=0.0 .or. tau_relax_ss/=0.0 .or. &
+          cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
           (tau_cool2 /=0) .or. lheat_cool_gravz) &
           call calc_heat_cool(df,p,Hmax)
@@ -5825,7 +5830,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Hmax
+      real, dimension (nx) :: Hmax, tmp
 !
       real, dimension (nx) :: heat, TT_drive, prof
       real :: profile_buffer
@@ -5878,11 +5883,20 @@ module Energy
 !
       if (lconvection_gravx) call get_heat_cool_gravx_cartesian(heat,p)
 !
-!  Add heating with Gaussian profile.
+!  Add heating with Gaussian (in z) profile.
 !
       if (heat_gaussianz/=0.0) then
         heat=heat+heat_gaussianz*exp(-.5*z(n)**2/heat_gaussianz_sigma**2)/ &
           (sqrt(2*pi)*heat_gaussianz_sigma)
+      endif
+!
+!  Add heating in a Gaussian (spherical) blob.
+!
+      if (heat_gaussianblob/=0.0) then
+        tmp = (x(l1:l2)-heat_gaussianblob_r0(1))**2 + (y(m)-heat_gaussianblob_r0(2))**2 &
+          + (z(n)-heat_gaussianblob_r0(3))**2
+        heat=heat+heat_gaussianblob*exp(-.5*tmp/heat_gaussianblob_sigma**2)/ &
+          (sqrt(2*pi)*heat_gaussianblob_sigma)**3
       endif
 !
 !  Add spatially uniform heating.
