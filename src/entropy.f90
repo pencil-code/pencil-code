@@ -2731,7 +2731,8 @@ module Energy
           tauheat_buffer/=0 .or. heat_uniform/=0 .or. &
           cool_uniform/=0 .or. cool_newton/=0 .or. &
           (cool_ext/=0 .and. cool_int /= 0) .or. &
-          heat_gaussianblob/=0.0 .or. lturbulent_heat ) then
+          heat_gaussianblob/=0.0 .or. heat_gaussianz/=0 .or. &
+          lturbulent_heat ) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT1)=.true.
       endif
