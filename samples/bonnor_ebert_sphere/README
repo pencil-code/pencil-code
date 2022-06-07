@@ -1,0 +1,11 @@
+Maintainer:
+    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+Added:
+    2011-May-13
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    256x256x128 
+Comments:
+    Fiducial 3D non-magnetic baroclinic run of Lyra & Klahr 2011, A&A, 527, 138
+

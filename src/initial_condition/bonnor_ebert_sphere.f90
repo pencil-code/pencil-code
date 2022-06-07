@@ -21,11 +21,12 @@ module InitialCondition
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+  !use Selfgravity, only: gravitational_const
 
 !
   implicit none
 !
-  include '../initial_condition.h'
+  include 'initial_condition.h'
 !
 ! Bonnor Ebert sphere initial condition
 ! xmin and xmax are the min and max values of the dimensionles xi parameter
@@ -91,7 +92,8 @@ module InitialCondition
       use Sub, only: interp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
-      real :: lnrho_r, rgrid
+      real :: lnrho_r, rgrid, Gnewton
+      real, pointer :: Gnewton_ptr
       !real, allocatable, intent(inout) :: rr(:), rho_be(:)
       real, allocatable :: rr(:), rho_be(:)
 ! 
@@ -100,15 +102,16 @@ module InitialCondition
 ! This call will return an array of rho_be as a function of radial distance r (in code units) 
 ! The xmax and xmin give the extent of the Bonnor Ebert sphere in dimensionless units
 
+      call get_shared_variable('gravitational_const',Gnewton_ptr)
+      Gnewton = Gnewton_ptr
       if (.not.allocated(rho_be)) allocate(rho_be (1:nsteps))
       if (.not.allocated(rr)) allocate(rr (1:nsteps))
       call bonnor_ebert_sphere(xmin,xmax,nsteps,rr,rho_be)
-! eva: not sure about xyz limits and where to get the xyz arrays
       do iz=1,mz
         do iy=1,my
            do ix=1,mx
              rgrid = sqrt(x(ix)**2+y(iy)**2+z(iz)**2)
-             if (rgrid.le.xmax*sqrt(4.*pi*rhoc)/cs) then
+             if (rgrid.le.xmax*sqrt(4.*pi*Gnewton*rhoc)/cs) then
                ! linear interpolation of rho to rgrid position
                lnrho_r=interp1(rr,rho_be,nsteps,rgrid)
              else
@@ -173,6 +176,7 @@ module InitialCondition
     ! The integration will be done using a fourth-order runge-kutta.
     !==========================================================================
 
+    use SharedVariables
     implicit none
 
 !   rho here is actually rho/rhoc = exp(-ys(1))
@@ -187,6 +191,8 @@ module InitialCondition
     integer, parameter  :: nfunct=2                     !Number of functions to integrate
     double precision    :: y0, dx, xs, mass
     double precision    :: ys(nfunct), dys(nfunct)
+    real, pointer :: Gnewton_ptr
+    real :: Gnewton
 
     ! Initializations
     !if (.not.allocated(rho)) allocate(rho (1:nsteps))
@@ -199,10 +205,12 @@ module InitialCondition
     call initial_condition(xs,ys)
 
     ! Actual integration
+    call get_shared_variable('gravitational_const',Gnewton_ptr)
+    Gnewton=Gnewton_ptr
     do i=1,nsteps
       ! Here we need to turn ksi (xs) into r and potential (ys(1)) into
       ! rho/rhoc: rho/rhoc = exp(-ys(1))
-      rr(i)   = sqrt(4.*pi*rhoc)*xs/cs
+      rr(i)   = sqrt(4.*pi*Gnewton*rhoc)*xs/cs
       rho(i) = rhoc*exp(-ys(1))
       call lane_emden(xs,ys,dys)      ! derivatives     
       call rk4(ys, dys, nfunct, xs, dx, ys)
@@ -297,6 +305,6 @@ module InitialCondition
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include '../initial_condition_dummies.inc'
+    include 'initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition

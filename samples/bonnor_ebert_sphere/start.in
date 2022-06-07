@@ -1,0 +1,24 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+/
+&initial_condition_pars
+ xmin=1.e-5,xmax=1.,nsteps=1000,rhoc=5.0,cs=1.0
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='gaussian-noise',ampllnrho=1e-1
+/
+&selfgrav_init_pars
+/
+&poisson_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise',amplaa=1e-5
+/
+

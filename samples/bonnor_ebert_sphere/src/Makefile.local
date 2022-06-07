@@ -1,0 +1,25 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+
+GRAVITY   = nogravity
+SELFGRAVITY  = selfgravity
+EOS       = noeos
+HYDRO     =   hydro
+DENSITY   =   density
+MAGNETIC  = magnetic
+POISSON  = poisson
+
+# so that it outputs power spectra
+POWER = power_spectrum
+FORCING   = noforcing
+
+INITIAL_CONDITION = bonnor_ebert_sphere
+
+REAL_PRECISION = double
+FOURIER = fourier_fftpack
+

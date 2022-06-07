@@ -1,0 +1,32 @@
+!                          -*-f90-*- (for Emacs)
+!
+!  Run parameters for MRI turbulence
+!
+! dspec is the frequency of spectra output (magn and ekin by default)
+! set ou_spec=T and ab_spec=T for kinetic and magnetic helicity spectra
+!
+&run_pars
+  nt=500, it1=10, cdt=0.3, cdtv=0.3, isave=10, itorder=3,
+  dsnap=0.1,dspec=0.1, dtmin=1.0e-7, dvid=1.0
+  tmax=6300.,dvid=0.05,slice_position=m
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/
+&magnetic_run_pars
+  eta=1.e-2
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+   nu=1.e-2
+/
+
+&power_spectrum_run_pars
+/
