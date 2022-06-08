@@ -734,6 +734,7 @@ module Snapshot
         !if (smu_spec) call powerscl(f,'mu',lsqrt)
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
+        if (b2_spec)  call powerscl(f,'b2')
         if (oned) then
           if (vel_spec) call power_1d(f,'u',1)
           if (mag_spec) call power_1d(f,'b',1)

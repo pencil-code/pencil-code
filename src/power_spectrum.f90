@@ -2717,6 +2717,19 @@ module power_spectrum
       enddo
     enddo
     a_im=0.
+  elseif (sp=='b2') then  !  Sp(B^2)
+    a_re=0.
+    do m=m1,m2
+      do n=n1,n2
+        do ivec=1,3
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=a_re(:,im,in)+bbi**2
+        enddo
+      enddo
+    enddo
+    a_im=0.
   elseif (sp=='ha') then
     a_re=0.
     do m=m1,m2
