@@ -5583,6 +5583,7 @@ module Hydro
         idiag_ruxuzmx = 0
         idiag_ruyuzmx = 0
         idiag_u2mz=0
+        idiag_o2mz=0
         idiag_ruxmz=0
         idiag_ruymz=0
         idiag_ruzmz=0
