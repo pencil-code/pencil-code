@@ -124,7 +124,7 @@ Options[pcWriteTexTable]={"lAlignment"->"c"};
 pcWriteTexTable[file_,head_,content_,OptionsPattern[]]:=Module[{a},
   pcWriteTexTable::badalign="The given alignment `1` is not compatible with the header.";
   a=Switch[OptionValue["lAlignment"],
-    "c",StringJoin[ConstantArray["a",Length[head]]],
+    "c",StringJoin[ConstantArray["c",Length[head]]],
     "l",StringJoin[ConstantArray["l",Length[head]]],
     _,OptionValue["lAlignment"]];
   If[StringLength[a]!=Length[head],
