@@ -122,6 +122,7 @@ module Special
   real :: test_sphere_radius = 0.
   real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
+  real :: phase_gpe=0.
   real :: del2prefactor=1., fact_potself=1., xslope_gpe=0.
   real, dimension(ninit) :: ampl_gpe=0., width_gpe=0.
   real, dimension(ninit) :: xpos_gpe=0., ypos_gpe=0., zpos_gpe=0.
@@ -133,7 +134,7 @@ module Special
 ! input parameters
   namelist /special_init_pars/ initgpe, vortex_spacing, ampl_gpe, &
     width_gpe, xpos_gpe, ypos_gpe, zpos_gpe, &
-    nvortices, vortex_quantization, &
+    nvortices, vortex_quantization, phase_gpe, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
     V0_gpe, n_gpe, eps_gpe, radius_gpe, xslope_gpe, &
     test_sphere_radius
@@ -315,6 +316,9 @@ module Special
               xpos_gpe(j),ypos_gpe(j),zpos_gpe(j),prefac='cosx',slope=xslope_gpe)
             call gaussianpos(ampl_gpe(j),f,ipsi_imag,width_gpe(j), &
               xpos_gpe(j),ypos_gpe(j),zpos_gpe(j),prefac='sinx',slope=xslope_gpe)
+          case ('coswave-phase')
+            call coswave_phase(f,ipsi_real,ampl_gpe(j),kx_gpe,ky_gpe,kz_gpe,phase_gpe)
+            call sinwave_phase(f,ipsi_imag,ampl_gpe(j),kx_gpe,ky_gpe,kz_gpe,phase_gpe)
           case ('constant', '0');
             !f(:,:,:,ipsi_real) = 1./sqrt(2.)
             !f(:,:,:,ipsi_imag) = 1./sqrt(2.)
