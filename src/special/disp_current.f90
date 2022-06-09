@@ -6,7 +6,7 @@
 !  25-feb-07/axel: adapted from nospecial.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of disp_current_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED e2; el(3); a0; ga0(3)
 !***************************************************************
 !
-module disp_current
+module Special
 !
   use Cparam
   use Cdata
@@ -42,7 +42,7 @@ module disp_current
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true.
   character(len=50) :: initee='zero'
-  namelist /disp_current_init_pars/ &
+  namelist /special_init_pars/ &
     initee, alpf, &
     ampl_ex, ampl_ey, ampl_ez, &
     kx_ex, kx_ey, kx_ez, &
@@ -54,7 +54,7 @@ module disp_current
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
 !
   ! run parameters
-  namelist /disp_current_run_pars/ &
+  namelist /special_run_pars/ &
     alpf, llorenz_gauge_disp
 !
 ! Declare any index variables necessary for main or
@@ -177,8 +177,8 @@ module disp_current
       lpenc_requested(i_aa)=.true.
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_infl_dphi)=.true.
-        lpenc_requested(i_infl_a2)=.true.
+  !     lpenc_requested(i_infl_dphi)=.true.
+  !     lpenc_requested(i_infl_a2)=.true.
       endif
       lpenc_requested(i_el)=.true.
       lpenc_requested(i_ga0)=.true.
@@ -272,6 +272,8 @@ module disp_current
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*p%curlb
 !
+!  if particles, would add J=sum(qi*Vi*ni)
+!
 !  A0 equation: 3 terms
 !  dA0/dt = divA
 !  dAA/dt = ... + gradA0
@@ -287,8 +289,8 @@ module disp_current
         if (alpf/=0.) then
           call grad(f,iinfl_phi,gphi)
           call cross(gphi,p%el,gtmp)
-          call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+    !     call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+    !     df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
         endif
       endif
 !
@@ -317,7 +319,7 @@ module disp_current
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=disp_current_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -325,7 +327,7 @@ module disp_current
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=disp_current_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -335,7 +337,7 @@ module disp_current
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=disp_current_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -343,7 +345,7 @@ module disp_current
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=disp_current_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -435,7 +437,7 @@ module disp_current
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../disp_current_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 !
-endmodule disp_current
+endmodule Special
