@@ -4544,7 +4544,7 @@ module Hydro
         if (t>t_vart) then
           lreset_vart=.true.
           t_cor=t
-          call put_shared_variable('t_cor',t_cor)
+          call put_shared_variable('t_cor',t_cor,caller='time_integrals_hydro')
 !
 !  If uut and oot are updated, write t to file and advance t_var.
 !  These only happen at the last point in the mn loop.
