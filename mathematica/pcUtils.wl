@@ -47,11 +47,15 @@ with n-digit precision, and then converts it into a Tex-form string.
 Example:
   pcNumberToTex[0.12345,2]=\"$1.2\\times 10^{-1}$\"."
 
-pcWriteTexTable::usage="pcWriteTexTable[file,head,content] writes into file a Tex-form table.
+pcWriteTexTable::usage="pcWriteTexTable[file,head,content,Options] writes into file a Tex-form table.
 Input:
   file: If already exists, will overwrite it.
   head: A List of Strings. Must be in Tex-form.
   content: A nested List. Must be in Tex-form.
+Options:
+  \"lAlignment\": By default ->\"c\", center-aligned. Can also be \"l\", left-aligned.
+                  Otherwise, can be a String like \"lccc\", whose length must match that
+                  of the header.
 Output:
   The output file reads something like this:
 \begin{tabular}{cc}
@@ -116,14 +120,23 @@ pcNumberToTex[x_,n_:1]:=StringJoin[
   "$"
 ]
 
-pcWriteTexTable[file_,head_,content_]:=Module[{},
+Options[pcWriteTexTable]={"lAlignment"->"c"};
+pcWriteTexTable[file_,head_,content_,OptionsPattern[]]:=Module[{a},
+  pcWriteTexTable::badalign="The given alignment `1` is not compatible with the header.";
+  a=Switch[OptionValue["lAlignment"],
+    "c",StringJoin[ConstantArray["a",Length[head]]],
+    "l",StringJoin[ConstantArray["l",Length[head]]],
+    _,OptionValue["lAlignment"]];
+  If[StringLength[a]!=Length[head],
+    Message[pcWriteTexTable::badalign,a];Return[$Failed]];
+  
   Print["Overwriting ",file];
   If[FileExistsQ[file],DeleteFile[file]];
   CreateFile[file];
   
   (*start table*)
   WriteString[file,"\\begin{tabular}{"];
-  WriteString[file,StringJoin[ConstantArray["c",Length[head]]]];
+  WriteString[file,a];
   WriteString[file,"}\n\\hline\n"];
   
   (*headings line*)
