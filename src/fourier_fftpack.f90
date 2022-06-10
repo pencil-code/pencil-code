@@ -2985,7 +2985,9 @@ module Fourier
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im)
+        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im)
+!AB: Philippe, could you please heck whether this "correction" is correct?
+        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im)
         return
       endif
 !
