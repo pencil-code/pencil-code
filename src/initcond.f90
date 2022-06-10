@@ -5052,7 +5052,8 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
-      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp)
+      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
+      lno_noise)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2, 
@@ -5079,7 +5080,7 @@ module Initcond
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
-      logical, intent(in), optional :: lpower_profile_file
+      logical, intent(in), optional :: lpower_profile_file, lno_noise
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
       logical :: lskip_projection
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
@@ -5172,6 +5173,8 @@ module Initcond
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !
+!  Note: for multiple processors, there may still be a problem n 1-D
+!
 !  In 2-D
         if (nz==1) then
           ikz=1
@@ -5196,11 +5199,16 @@ module Initcond
 !
         if (present(qexp)) then
           if (qexp==0.) then
-            do i=1,i2-i1+1
-              call random_number_wrapper(r)
-              u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-              u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-            enddo !i
+            if (lno_noise) then
+              u_re=ampl
+              u_im=0.
+            else
+              do i=1,i2-i1+1
+                call random_number_wrapper(r)
+                u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+                u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+              enddo
+            endif
           else
 !
 !  Random nongaussian amplitudes for other values of q with exponential
@@ -5220,11 +5228,16 @@ module Initcond
             enddo !i
           endif
         else
-          do i=1,i2-i1+1
-            call random_number_wrapper(r)
-            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-          enddo !i
+          if (lno_noise) then
+            u_re=ampl
+            u_im=0.
+          else
+            do i=1,i2-i1+1
+              call random_number_wrapper(r)
+              u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+              u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+            enddo !i
+          endif
         endif
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
