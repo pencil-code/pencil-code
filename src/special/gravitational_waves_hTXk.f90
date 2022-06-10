@@ -113,6 +113,7 @@ module Special
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
+  logical :: lno_noise_GW=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
@@ -135,7 +136,7 @@ module Special
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag, &
-    lggTX_as_aux_boost, lhhTX_as_aux_boost
+    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -493,12 +494,12 @@ module Special
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true.)
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
           call power_randomphase_hel(amplGW,initpower_GW+2.,initpower2_GW+2., &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true.)
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
