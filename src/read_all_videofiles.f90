@@ -638,7 +638,6 @@ program rvid_box
             else
               if (allocated(r_loc)) deallocate(r_loc)
               allocate(r_loc(ith_min:ith_max,iph_min:iph_max))
-
               if (allocated(phinds)) deallocate(phinds)
               allocate (phinds(iph_min:iph_max))
 

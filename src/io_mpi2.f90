@@ -1166,7 +1166,6 @@ module Io
       endif
 !
       init_write_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_write_persist
 !***********************************************************************

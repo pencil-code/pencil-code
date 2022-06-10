@@ -4354,11 +4354,11 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i1,i2
 !
-      real, dimension (mx) :: r,p,tmp
-      integer :: i
-!
       intent(in)    :: ampl,i1,i2
       intent(inout) :: f
+!
+      real, dimension (mx) :: r,p,tmp
+      integer :: i,n,m
 !
 !  set gaussian random noise vector
 !

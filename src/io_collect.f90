@@ -417,6 +417,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
+
         if (lwrite_2d) then
           io_size=mxgrid*io_len
         else
@@ -540,6 +541,7 @@ module Io
       character (len=*), optional, intent(in) :: label
 !
       call fatal_error ('input_part_snap', 'not implemented for "io_collect"', .true.)
+      ipar(1)=0; nv=0; npar_total=0; ap(1,1)=0.
 !
     endsubroutine input_part_snap
 !***********************************************************************
@@ -555,6 +557,7 @@ module Io
       real, dimension (mv,nc), intent(out) :: fq
 !
       call fatal_error ('input_pointmass', 'not implemented for "io_collect"', .true.)
+      fq(1,1)=0.
 !
     endsubroutine input_pointmass
 !***********************************************************************
