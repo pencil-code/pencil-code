@@ -343,6 +343,7 @@ module Testfield
       real :: ktestfield_effective
       integer :: jtest, nscal
       real, pointer :: rhoref
+      real, target :: rhoref_=impossible
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -363,7 +364,7 @@ module Testfield
         if (rhoref==impossible) &
           call warning('initialize_testfield','rhoref in magnetic = impossible')
       else
-        if (.not.associated(rhoref)) allocate(rhoref); rhoref=impossible
+        if (.not.associated(rhoref)) rhoref => rhoref_ 
       endif
 !
       if (rho0test==0.) then
