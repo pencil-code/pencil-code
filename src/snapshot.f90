@@ -859,6 +859,21 @@ module Snapshot
         if (saffman_mag) call quadratic_invariants(f,'saffman_mag')
         if (saffman_mag_c) call quadratic_invariants(f,'saffman_mag_c')
 !
+!  3D or 2D Fourier modes
+!
+        if (uu_fft3d)  call power_fft3d_vec(f,'uu','kxyz')
+        if (uu_xkyz)   call power_fft3d_vec(f,'uu','xkyz')
+        if (uu_kx0z)   call power_fft3d_vec(f,'uu','kx0z')
+        if (oo_fft3d)  call power_fft3d_vec(f,'oo','kxyz')
+        if (oo_xkyz)   call power_fft3d_vec(f,'oo','xkyz')
+        if (oo_kx0z)   call power_fft3d_vec(f,'oo','kx0z')
+        if (bb_fft3d)  call power_fft3d_vec(f,'bb','kxyz')
+        if (bb_xkyz)   call power_fft3d_vec(f,'bb','xkyz')
+        if (bb_kx0z)   call power_fft3d_vec(f,'bb','kx0z')
+        if (jj_fft3d)  call power_fft3d_vec(f,'jj','kxyz')
+        if (jj_xkyz)   call power_fft3d_vec(f,'jj','xkyz')
+        if (jj_kx0z)   call power_fft3d_vec(f,'jj','kx0z')
+!
         lspec=.false.
       endif
 !

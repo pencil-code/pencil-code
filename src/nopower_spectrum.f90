@@ -250,4 +250,16 @@ module power_spectrum
 !
   endsubroutine quadratic_invariants
 !***********************************************************************
+  subroutine power_fft3d_vec(f,sp,sp2)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=2) :: sp
+      character (len=4) :: sp2
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(sp2)
+!
+  endsubroutine power_fft3d_vec
+!***********************************************************************
 endmodule power_spectrum

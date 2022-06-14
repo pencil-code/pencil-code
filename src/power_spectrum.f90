@@ -47,13 +47,15 @@ module power_spectrum
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
   integer :: inz=0, n_segment_x=1
+  integer :: kout_max=0
+  real :: tout_min=0., tout_max=0.
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
-      power_format
+      power_format, kout_max, tout_min, tout_max
 !
   contains
 !***********************************************************************
@@ -4741,5 +4743,167 @@ endsubroutine pdf
   endif
   !
   endsubroutine quadratic_invariants
+!***********************************************************************
+  subroutine power_fft3d_vec(f,sp,sp2)
+!
+!  This subroutine outputs 3D Fourier modes of a vector field,
+!  in the time range tout_min <= t <= tout_max.
+!  Depending on sp2:
+!    'kxyz': output in the k range -kout_max <= kx, ky, kz <= kout_max
+!    'xkyz': only do Fourier transformation in y and z directions, and
+!            output fft(x,ky,kz), in the range -kout_max <= kyz <= kout_max,
+!            and for the centermost 2kout_max+1 grids in the x direction
+!    'kx0z': at ky=0, output in the k range -kout_max <= kxz <= kout_max,
+!            and therefore the output is really 2D data
+!  It is also possible to do a shear-frame transformation.
+!  There will be 6 output files: real and imaginary parts for each of
+!  the three components of the vector field.
+!
+!   14-jun-22/hongzhe: coded
+!
+    use Fourier
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Shear, only: shear_frame_transform
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=2) :: sp
+  character (len=4) :: sp2
+!
+  integer :: i,ivec,ikx,iky,ikz,jkx,jky,jkz
+  integer :: kkout,kkouty
+  real, dimension(nx,ny,nz) :: a_re,a_im
+  real, dimension(nx) :: bbi
+  real, allocatable, dimension(:,:,:,:) :: fft,fft_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=1) :: spxyz
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  kkout=2*kout_max+1
+  select case (sp2)
+    case ('kxyz'); kkouty=kkout
+    case ('xkyz'); kkouty=kkout
+    case ('kx0z'); kkouty=1
+  end select
+  !
+  allocate( fft(2,kkout,kkouty,kkout) )
+  allocate( fft_sum(2,kkout,kkouty,kkout) )
+  !
+  !  loop over all components
+  !
+  do ivec=1,3
+    !
+    !  initialize fft(real/imaginary,kx,ky,kz)
+    !
+    fft=0.
+    fft_sum=0.
+    !
+    if (sp=='uu') then
+      if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+      a_im=0.
+    elseif (sp=='oo') then
+      if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      do n=n1,n2; do m=m1,m2
+        call curli(f,iuu,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=bbi
+      enddo; enddo
+      a_im=0.
+    elseif (sp=='bb') then
+      if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      do n=n1,n2; do m=m1,m2
+        call curli(f,iaa,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=bbi
+      enddo; enddo
+      a_im=0.
+    elseif (sp=='jj') then
+      if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      do n=n1,n2; do m=m1,m2
+        call del2vi_etc(f,iaa,ivec,curlcurl=bbi)
+        a_re(:,m-nghost,n-nghost)=bbi
+      enddo; enddo
+      a_im=0.
+    endif
+    !
+    !  shear-frame transformation
+    !
+    if (lshear_frame_correlation) then
+      if (.not. lshear) call fatal_error('power_fft3d_vec',&
+          'lshear=F; cannot do frame transform')
+      call shear_frame_transform(a_re)
+    endif
+    !
+    !  Fourier transformation
+    !
+    if (sp2=='xkyz') then
+      call fft_y_parallel(a_re,a_im)
+      call fft_z_parallel(a_re,a_im)
+    else
+      call fft_xyz_parallel(a_re,a_im)
+    endif
+    !
+    do ikz=1,nz
+      jkz=nint(kz(ikz+ipz*nz))+kout_max+1
+      if ( jkz>=1 .and. jkz<=kkout ) then
+        do iky=1,ny
+          jky=nint(ky(iky+ipy*ny))+(kkouty-1)/2+1;
+          if ( jky>=1 .and. jky<=kkouty ) then
+            do ikx=1,nx
+              if (sp2=='xkyz') then
+                jkx=ikx+ipx*nx-nxgrid/2+kout_max+1
+              else
+                jkx=nint(kx(ikx+ipx*nx))+kout_max+1
+              endif
+              if ( jkx>=1 .and. jkx<=kkout ) then
+                fft(1,jkx,jky,jkz) = fft(1,jkx,jky,jkz) + a_re(ikx,iky,ikz)
+                fft(2,jkx,jky,jkz) = fft(2,jkx,jky,jkz) + a_im(ikx,iky,ikz)
+              endif
+            enddo
+          endif
+        enddo
+      endif
+    enddo
+    !
+    !  Summing up the results from the different processors.
+    !
+    call mpireduce_sum(fft,fft_sum,(/2,kkout,kkouty,kkout/))
+    !
+    !  append to diagnostics file
+    !
+    select case (ivec)
+      case (1); spxyz='x'
+      case (2); spxyz='y'
+      case (3); spxyz='z'
+    end select
+    !
+    if (lroot .and. t>=tout_min .and. t<=tout_max) then
+      open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_re.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') fft_sum(1,:,:,:)
+      close(1)
+      open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_im.dat',position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') fft_sum(2,:,:,:)
+      close(1)
+    endif
+    !
+  enddo  ! ivec
+  !
+  deallocate(fft,fft_sum)
+  !
+  endsubroutine power_fft3d_vec
 !***********************************************************************
 endmodule power_spectrum
