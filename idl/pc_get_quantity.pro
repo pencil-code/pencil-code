@@ -775,7 +775,21 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 		tmp = tmp * get_time_fade_fact * (1. - cubic_step(lnrho, -12., 3))
 		return, -(rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
-	end 
+	end
+	if (strcmp (quantity, 'Heat_cool_part', /fold_case)) then begin
+		; Heating/cooling per particle  ;[J/m^3]
+		z_SI               = pc_compute_quantity (vars, index, 'z')
+		lnTT               = pc_compute_quantity (vars, index, 'ln_Temp')
+		deltaH_part_init_z = spread (read_profile('prof_deltaH_part.dat', z_SI), [0,1], [nx,ny])
+		heat_cool          = pc_get_parameter ('heat_cool', label=quantity)
+		cp_SI              = pc_get_parameter ('cp_SI', label=quantity)
+		gamma              = pc_get_parameter ('isentropic_exponent', label=quantity)
+		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		tmp = heat_cool *  (1/Temp) * (1/rho) * (1/cp_SI) * gamma * deltaH_part_init_z* n_rho
+		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
