@@ -854,6 +854,7 @@ module Magnetic
   integer :: idiag_jxbrxmz=0    ! XYAVG_DOC:
   integer :: idiag_jxbrymz=0    ! XYAVG_DOC:
   integer :: idiag_jxbrzmz=0    ! XYAVG_DOC:
+  integer :: idiag_a2mz=0       ! XYAVG_DOC: $\left<\Av^2\right>_{xy}$
   integer :: idiag_b2mz=0       ! XYAVG_DOC: $\left<\Bv^2\right>_{xy}$
   integer :: idiag_bf2mz=0      ! XYAVG_DOC: $\left<\Bv'^2\right>_{xy}$
   integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
@@ -2899,6 +2900,7 @@ module Magnetic
 !
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0 &
          ) lpenc_diagnos(i_diva)=.true.
+      if (idiag_a2mz/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_b4m/=0 .or. idiag_b6m/=0 .or. &
           idiag_b12m/=0 .or. idiag_bm2/=0 .or. idiag_EEM/=0 .or. &
@@ -6352,6 +6354,7 @@ module Magnetic
         call xysum_mn_name_z(p%jxbr(:,1),idiag_jxbrxmz)
         call xysum_mn_name_z(p%jxbr(:,2),idiag_jxbrymz)
         call xysum_mn_name_z(p%jxbr(:,3),idiag_jxbrzmz)
+        call xysum_mn_name_z(p%a2,idiag_a2mz)
         call xysum_mn_name_z(p%b2,idiag_b2mz)
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
@@ -9464,7 +9467,7 @@ module Magnetic
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0
-        idiag_b2mx=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
+        idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_uamz=0
         idiag_bzdivamz=0; idiag_divamz=0; idiag_d6abmz=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
@@ -9971,6 +9974,7 @@ module Magnetic
             'bxbzmz',idiag_bxbzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'bybzmz',idiag_bybzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'a2mz',idiag_a2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bf2mz',idiag_bf2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'j2mz',idiag_j2mz)
