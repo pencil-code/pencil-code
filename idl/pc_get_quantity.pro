@@ -790,6 +790,28 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp = heat_cool *  (1/Temp) * (1/rho) * (1/cp_SI) * gamma * deltaH_part_init_z* n_rho
 		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+	if (strcmp (quantity, 'Heat_cool_newton', /fold_case)) then begin
+		; Heating/cooling due to newton cooling  ;[J/m^3]
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho') 
+		cp_SI                = pc_get_parameter ('cp_SI', label=quantity)
+		gamma                = pc_get_parameter ('isentropic_exponent', label=quantity)
+		nc_lnrho_num_magn    = pc_get_parameter ('nc_lnrho_num_magn', label=quantity)
+		nc_lnrho_trans_width = pc_get_parameter ('nc_lnrho_trans_width', label=quantity)
+		nc_z_max             = pc_get_parameter ('nc_z_max', label=quantity) * unit.length
+		nc_z_trans_width     = pc_get_parameter ('nc_z_trans_width', label=quantity) * unit.length
+		nc_tau               = pc_get_parameter ('nc_tau', label=quantity) / unit.time
+		z_SI                 = pc_compute_quantity (vars, index, 'z')
+		lnrho                = pc_compute_quantity (vars, index, 'ln_rho')
+		lnTT                 = pc_compute_quantity (vars, index, 'ln_Temp')
+		lnrho0               = alog(rho[0,0,0])
+		print, "Routine Heat_cool_newton_cool is only correct if lnrho dosen't change at lower boundary."
+		lnTT_init_z          = spread (read_profile('prof_lnT.dat', z_SI), [0,1], [nx,ny])
+		newton               = exp (lnTT_init_z - lnTT) - 1.0 
+		tmp_tau              = nc_tau * sine_step (lnrho , lnrho0-nc_lnrho_num_magn , 0.5 *  nc_lnrho_trans_width,  shift = -1.0)
+		tmp_tau              = tmp_tau * spread (1.0 - sine_step (z_SI, nc_z_max , 0.5 * nc_z_trans_width, shift = -1.0), [0,1], [nx,ny])
+		tmp                  = newton * tmp_tau
+		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
