@@ -58,14 +58,14 @@ Options:
                   of the header.
 Output:
   The output file reads something like this:
-\begin{tabular}{cc}
-\hline
+\\begin{tabular}{cc}
+\\hline
 % head1 & head2\\
-\hline
+\\hline
 % tb11 & tb12 \\
 % tb21 & tb22 \\
-\hline
-\end{tabular}"
+\\hline
+\\end{tabular}"
 
 
 Begin["`Private`"]
