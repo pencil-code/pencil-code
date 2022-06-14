@@ -15,11 +15,33 @@ BeginPackage["pcReadVAR`","pcReadBasic`","pcDerivative`"]
 (*Usage messages*)
 
 
+readVARNProc::usage="readVARNProc[sim,iproc,iVAR,nVar,lVar:{},lshear,Options] reads a VAR file
+from a single processor.
+Input:
+  sim: String. Directory of the run.
+  iproc: Index of the processor, starting from 0.
+  iVAR: Integer. Index of the VARN file, starting from 0. If iVAR==-1 then will read var.dat,
+        i.e., the last snapshot.
+  nVAR: Usually Length[varName[sim]].
+  lVar: Optional. By default {}. One can put in integers like varName[sim][\"lnrho\"].
+        This will instruct to only read certain variables. For the moment does
+        not support magic variables like \"oo1\" or \"bb1\".
+  lshear: True for a shear run, and false for a non-shear run.
+Options:
+  \"lnoghost\": By default ->True. Will remove all the *inner* ghost zones. The ones at the
+                outermost region of the simulation region will not be removed.
+Output:
+  An Association. Use Keys to extract its keys.
+Example:
+  readVARNProc[sim,1,2,7,{\"lnrho\"},False] will read the \"lnrho\" variable in proc1/VAR2 for
+  a non-shear run. The inner ghost zones will be removed but not the outermost ones."
+
 readVARN::usage="readVARN[sim,iVAR,addOn,\"ltrim\"->False,\"lOnly\"->False] reads the iVARth VARN file
 from all processors. Works for io_dist. For io_hdf5, simply use Import[\".../VAR1.h5\"].
 Input:
   sim: String. Directory of the run
-  iVAR: Integer. Index of the VARN file, starting from 0
+  iVAR: Integer. Index of the VARN file, starting from 0. If iVAR==-1 then will read var.dat,
+        i.e., the last snapshot.
   addOn: List. Optional. Specifies magical variables need to be computed; e.g., {\"oo\",\"bb\"}.
          Magical variables in the result are assigned with long names, e.g., \"ooo1\" and \"bbb1\"
          to avoid shadowing the written auxiliaries.
@@ -120,7 +142,10 @@ readVARNProc[sim_String,iproc_Integer,iVAR_Integer,nVar_Integer,lVar_List:{},lsh
     
     {pre,mx,my,mz,gh1,gh2,gh3,ipx,ipy,ipz}=readDim[sim,iproc]/@{"precision","mx","my","mz","gh1","gh2","gh3","ipx","ipy","ipz"};
     nproc=nProc[sim];
-    file=StringJoin[sim,"/data/proc",ToString@iproc,"/VAR",ToString@iVAR];
+    file=If[iVAR==-1,
+      StringJoin[sim,"/data/proc",ToString@iproc,"/var.dat"],
+      StringJoin[sim,"/data/proc",ToString@iproc,"/VAR",ToString@iVAR]
+    ];
     Close[file]//Quiet;
     stream=OpenRead[file,BinaryFormat->True];
     If[lVar=={},
@@ -285,7 +310,7 @@ End[]
 
 
 Protect[
-  readVARN,tSnap
+  readVARNProc,readVARN,tSnap
 ]
 
 
