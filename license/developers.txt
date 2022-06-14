@@ -61,6 +61,7 @@ Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 7
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
 Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          ,            NTNU, Silesian University of Technology
+Vartika Pandey,       vartika.pandey/uni-graz.at,    VartikaPandey97,      ,                  ,                         ,            University of Graz
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
