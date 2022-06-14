@@ -238,7 +238,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Heat_cool_visc: 'Heating / cooling due to viscous heating', $
 		Heat_cool_conduction: 'Heating / cooling due to heat conduction', $
 		Heat_cool_rad_loss: 'Heating / cooling due to radiative losses', $
-		Heat_cool_part: 'Heating / cooling per particle' $
+		Heat_cool_part: 'Heating / cooling per particle', $
+		Heat_cool_newton: 'Heating / cooling due to newton cooling' $
 	}
 
 	; List of code variable aliases.
@@ -482,7 +483,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Heat_cool_visc:['Temp', 'uu'],$
 		Heat_cool_conduction:['Temp', 'rho'],$
 		Heat_cool_rad_loss:['Temp', 'rho'],$
-		Heat_cool_part:['Temp', 'rho','n_rho'] $
+		Heat_cool_part:['Temp', 'rho','n_rho'],$
+		Heat_cool_newton:['Temp', 'rho'] $
 	}
 
 	if (num_species ge 1) then begin
