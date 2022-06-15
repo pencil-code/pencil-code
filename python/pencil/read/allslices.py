@@ -410,13 +410,13 @@ class SliceSeries(object):
                     if extension == "xy" or extension == "Xy" or extension == "xy2" or extension == "xy3" or extension == "xy4":
                         hsize = dim.nx
                         vsize = dim.ny
-                    if extension == "xz":
+                    elif extension == "xz":
                         hsize = dim.nx
                         vsize = dim.nz
-                    if extension == "yz":
+                    elif extension == "yz":
                         hsize = dim.ny
                         vsize = dim.nz
-                    if extension == "r":
+                    elif extension == "r":
                         # Read grid size of radial slices by iterating to the last
                         # line of slice_position.dat. This will break if/when there
                         # are changes to slice_position.dat!
@@ -428,6 +428,8 @@ class SliceSeries(object):
                         hsize = int(pars[1])
                         vsize = int(pars[2])
                         slicepos.close()
+                    else:
+                        raise ValueError("Unknown extension: {}".format(extension))
 
                     try:
                         infile = FortranFile(file_name)
