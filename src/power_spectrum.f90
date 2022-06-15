@@ -4979,6 +4979,8 @@ endsubroutine pdf
 !            and for the centermost 2kout_max+1 grids in the x direction
 !    'kx0z': at ky=0, output in the k range -kout_max <= kxz <= kout_max,
 !            and therefore the output is really 2D data
+!    'k00z': at kx=ky=0, output -kout_max <= kz <= kout_max,
+!            and therefore the output is really 1D data
 !  It is also possible to do a shear-frame transformation.
 !  There will be 6 output files: real and imaginary parts for each of
 !  the three components of the vector field.
@@ -4995,7 +4997,7 @@ endsubroutine pdf
   character (len=4) :: sp2
 !
   integer :: i,ivec,ikx,iky,ikz,jkx,jky,jkz
-  integer :: kkout,kkouty
+  integer :: kkout,kkoutx,kkouty,kkoutz
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nx) :: bbi
   real, allocatable, dimension(:,:,:,:) :: fft,fft_sum
@@ -5018,13 +5020,14 @@ endsubroutine pdf
   !
   kkout=2*kout_max+1
   select case (sp2)
-    case ('kxyz'); kkouty=kkout
-    case ('xkyz'); kkouty=kkout
-    case ('kx0z'); kkouty=1
+    case ('kxyz'); kkoutx=kkout; kkouty=kkout; kkoutz=kkout
+    case ('xkyz'); kkoutx=kkout; kkouty=kkout; kkoutz=kkout
+    case ('kx0z'); kkoutx=kkout; kkouty=1;     kkoutz=kkout
+    case ('k00z'); kkoutx=1;     kkouty=1;     kkoutz=kkout
   end select
   !
-  allocate( fft(2,kkout,kkouty,kkout) )
-  allocate( fft_sum(2,kkout,kkouty,kkout) )
+  allocate( fft(2,kkoutx,kkouty,kkoutz) )
+  allocate( fft_sum(2,kkoutx,kkouty,kkoutz) )
   !
   !  loop over all components
   !
@@ -5060,6 +5063,10 @@ endsubroutine pdf
         a_re(:,m-nghost,n-nghost)=bbi
       enddo; enddo
       a_im=0.
+    elseif (sp=='ee') then
+      if (iee==0) call fatal_error('power_fft3d_vec','iee=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
+      a_im=0.
     endif
     !
     !  shear-frame transformation
@@ -5080,18 +5087,18 @@ endsubroutine pdf
     endif
     !
     do ikz=1,nz
-      jkz=nint(kz(ikz+ipz*nz))+kout_max+1
-      if ( jkz>=1 .and. jkz<=kkout ) then
+      jkz=nint(kz(ikz+ipz*nz))+(kkoutz-1)/2+1
+      if ( jkz>=1 .and. jkz<=kkoutz ) then
         do iky=1,ny
           jky=nint(ky(iky+ipy*ny))+(kkouty-1)/2+1;
           if ( jky>=1 .and. jky<=kkouty ) then
             do ikx=1,nx
               if (sp2=='xkyz') then
-                jkx=ikx+ipx*nx-nxgrid/2+kout_max+1
+                jkx=ikx+ipx*nx-nxgrid/2+(kkoutx-1)/2+1
               else
-                jkx=nint(kx(ikx+ipx*nx))+kout_max+1
+                jkx=nint(kx(ikx+ipx*nx))+(kkoutx-1)/2+1
               endif
-              if ( jkx>=1 .and. jkx<=kkout ) then
+              if ( jkx>=1 .and. jkx<=kkoutx ) then
                 fft(1,jkx,jky,jkz) = fft(1,jkx,jky,jkz) + a_re(ikx,iky,ikz)
                 fft(2,jkx,jky,jkz) = fft(2,jkx,jky,jkz) + a_im(ikx,iky,ikz)
               endif
@@ -5103,7 +5110,7 @@ endsubroutine pdf
     !
     !  Summing up the results from the different processors.
     !
-    call mpireduce_sum(fft,fft_sum,(/2,kkout,kkouty,kkout/))
+    call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/))
     !
     !  append to diagnostics file
     !
