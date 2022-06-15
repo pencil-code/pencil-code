@@ -851,9 +851,9 @@ module Snapshot
 !  spectra of two-time correlations
 !
         if (uut_spec)   call power_cor(f,'uut')
-        if (ouout_spec) call power_cor(f,'ouout')
         if (out_spec)   call power_cor(f,'out')
         if (uot_spec)   call power_cor(f,'uot')
+        if (ouout_spec) call power_cor_scl(f,'ouout')
 !
         if (saffman_ub) call quadratic_invariants(f,'saffman_ub')
         if (saffman_mag) call quadratic_invariants(f,'saffman_mag')

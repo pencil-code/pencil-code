@@ -240,6 +240,16 @@ module power_spectrum
 !
   endsubroutine power_cor
 !***********************************************************************
+  subroutine power_cor_scl(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power_cor_scl
+!***********************************************************************
   subroutine quadratic_invariants(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f

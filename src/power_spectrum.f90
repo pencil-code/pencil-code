@@ -4297,44 +4297,6 @@ endsubroutine pdf
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)
       a_im=0.
-    !
-    !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
-    !  Because uut has been transformed to the shear frame,
-    !  we have to use oot instead of curl(uut)
-    !
-    elseif (sp=='ouout') then
-      if (iuu==0)  call fatal_error('power_cor','iuu=0')
-      if (iuut==0) call fatal_error('power_cor','iuut=0')
-      if (ioo==0)  call fatal_error('power_cor','ioo=0')
-      if (ioot==0) call fatal_error('power_cor','ioot=0')
-      h_re=0.
-      ht_re=0.
-      !  helicity or helicity density is a scalar and only computed at ivec=1
-      if (ivec==1) then
-        do jvec=1,3
-          a_re=f(l1:l2,m1:m2,n1:n2,ioo+jvec-1)  !(this corresponds to vorticity)
-          b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
-          do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-            h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
-                a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-          enddo; enddo; enddo
-        enddo
-        do jvec=1,3
-          a_re=f(l1:l2,m1:m2,n1:n2,ioot+jvec-1)  !(this corresponds to vorticity)
-          b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
-          do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-            ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
-                a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-          enddo; enddo; enddo
-        enddo
-        a_re=ht_re
-        b_re=h_re
-      else
-        a_re=0.
-        b_re=0.
-      endif
-      a_im=0.
-      b_im=0.
     endif
 !
 !  Transform a and b to the shear frame.
@@ -4546,6 +4508,209 @@ endsubroutine pdf
   endif
   !
   endsubroutine power_cor
+!***********************************************************************
+  subroutine power_cor_scl(f,sp)
+!
+!  Calculate power spectra (on spherical shells) of two-time correlations
+!  of a scalar variable specified by `sp', e.g., kinetic helicity.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   15-jun-22/hongzhe: carved out from power_cor
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Shear, only: shear_frame_transform
+    use SharedVariables, only: get_shared_variable
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=*) :: sp
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
+  real :: k2
+  real, pointer :: t_cor
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,ny,nz) :: h_re,ht_re
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: correlation,correlation_sum
+  real, dimension(nxgrid) :: correlationhel,correlationhel_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize
+  !
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  correlation=0.
+  correlation_sum=0.
+  correlationhel=0.
+  correlationhel_sum=0.
+  !
+  if (lcylindrical_spectra) then
+    cyl_spectrum=0.
+    cyl_spectrum_sum=0.
+    cyl_spectrumhel=0.
+    cyl_spectrumhel_sum=0.
+  endif
+  !
+  if (sp=='ouout') then
+    !
+    !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
+    !  Because uut has been transformed to the shear frame,
+    !  we have to use oot rather than curl(uut)
+    !
+    if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
+    if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
+    if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
+    if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
+    !
+    h_re=0.
+    ht_re=0.
+    !
+    do ivec=1,3
+      !
+      a_re = f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)  !  vorticity
+      b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity
+      h_re = h_re + a_re*b_re                 !  kinetic helicity density
+      !
+      a_re = f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)  !  vorticity at t'
+      b_re = f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)  !  velocity at t'
+      ht_re = ht_re + a_re*b_re                        !  kinetic helicity density at t'
+      !
+    enddo  !  ivec
+    !
+    a_re = ht_re
+    a_im = 0.
+    b_re = h_re
+    b_im = 0.
+  endif  !  sp
+  !
+  !  transform to the shear frame.
+  !
+  if (lshear_frame_correlation) then
+    call get_shared_variable('t_cor',t_cor)
+    if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
+    call shear_frame_transform(a_re,t_cor)
+    call shear_frame_transform(b_re)
+  endif
+  !
+  !  before doing fft, compute real-space correlation
+  !
+  do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+    jkx=ikx+ipx*nx
+    correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+    correlationhel(jkx)= correlationhel(jkx) +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+  enddo; enddo; enddo
+  !
+  !  Doing the Fourier transform
+  !
+  call fft_xyz_parallel(a_re,a_im)
+  call fft_xyz_parallel(b_re,b_im)
+  !
+  !  shell-integrated correlation
+  !
+  do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+    k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+    k=nint(sqrt(k2))
+    if (k>=0 .and. k<=(nk-1)) then
+      spectrum(k+1)=spectrum(k+1)+b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+      spectrumhel(k+1)=spectrumhel(k+1)+a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+          +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+    endif
+  enddo; enddo; enddo
+  !
+  !  azimuthally integrated correlation
+  !
+  if (lcylindrical_spectra) then
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+      jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+      k=nint(sqrt(k2))
+      if (k>=0 .and. k<=(nk-1)) then
+        cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+            +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+        cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+      endif
+    enddo; enddo; enddo
+  endif
+  !
+  !  Summing up the results from the different processors.
+  !  The result is available only on root.
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  !  real-space correlation
+  call mpireduce_sum(correlation,correlation_sum,nxgrid)
+  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid)
+  !
+  if (lcylindrical_spectra) then
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+  endif
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    !
+    open(1,file=trim(datadir)//'/powercor_scl_auto_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) spectrum_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powercor_scl_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) spectrumhel_sum
+    close(1)
+    !
+    !  real-space correlation
+    !
+    open(1,file=trim(datadir)//'/correlation_scl_auto_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) correlation_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/correlation_scl_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) correlationhel_sum
+    close(1)
+    !
+    if (lcylindrical_spectra) then
+      !
+      open(1,file=trim(datadir)//'/cyl_powercor_scl_auto_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) cyl_spectrum_sum
+      close(1)
+      !
+      open(1,file=trim(datadir)//'/cyl_powercor_scl_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+    write(1,power_format) cyl_spectrumhel_sum
+      close(1)
+    endif
+  endif
+  !
+  endsubroutine power_cor_scl
 !***********************************************************************
    subroutine quadratic_invariants(f,sp)
 !
