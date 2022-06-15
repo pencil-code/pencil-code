@@ -598,7 +598,7 @@ module Cdata
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
   logical :: ou_omega=.false., cor_uu=.false., ab_kzspec=.false.,ou_kzspec=.false.
   logical :: ou_polar=.false., ab_polar=.false., jb_polar=.false.
-  logical :: uut_spec=.false., uut_polar=.false., ouout_spec=.false., ouout_polar=.false.
+  logical :: uut_spec=.false., uut_polar=.false., ouout_spec=.false.,ouout2_spec=.false.,ouout_polar=.false.
   logical :: out_spec=.false., uot_spec=.false.
   logical :: saffman_ub=.false., saffman_mag=.false., saffman_mag_c=.false.
   logical :: uu_fft3d=.false., oo_fft3d=.false., bb_fft3d=.false., jj_fft3d=.false.

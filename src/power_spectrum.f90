@@ -4531,7 +4531,7 @@ endsubroutine pdf
   real :: k2
   real, pointer :: t_cor
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz) :: h_re,ht_re
+  real, dimension(nx,ny,nz) :: h_re,ht_re,h_im,ht_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
@@ -4541,6 +4541,7 @@ endsubroutine pdf
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
+  logical :: lnoshear_transform=.false.
   !
   !  identify version
   !
@@ -4572,6 +4573,11 @@ endsubroutine pdf
     cyl_spectrumhel_sum=0.
   endif
   !
+  h_re=0.
+  ht_re=0.
+  h_im=0.
+  ht_im=0.
+  !
   if (sp=='ouout') then
     !
     !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
@@ -4583,11 +4589,7 @@ endsubroutine pdf
     if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
     if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
     !
-    h_re=0.
-    ht_re=0.
-    !
     do ivec=1,3
-      !
       a_re = f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)  !  vorticity
       b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity
       h_re = h_re + a_re*b_re                 !  kinetic helicity density
@@ -4595,18 +4597,70 @@ endsubroutine pdf
       a_re = f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)  !  vorticity at t'
       b_re = f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)  !  velocity at t'
       ht_re = ht_re + a_re*b_re                        !  kinetic helicity density at t'
-      !
-    enddo  !  ivec
+    enddo
     !
     a_re = ht_re
     a_im = 0.
     b_re = h_re
     b_im = 0.
+  elseif (sp=='ouout2') then
+    lnoshear_transform=.true.
+    !
+    !  spectrum of g.gt, and g(k)=omega^*(k).u(k), the
+    !  helicity density in the Fourier space
+    !
+    if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
+    if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
+    if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
+    if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
+    !
+    do ivec=1,3
+      a_re = f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)  !  vorticity
+      b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity
+      a_im = 0.
+      b_im = 0.
+      !  Need convolution between a_re and b_re in the shear frame; do via FFT
+      if (lshear_frame_correlation) then
+        if (.not. lshear) call fatal_error( &
+            'power_cor','lshear=F; cannot do frame transform')
+        call shear_frame_transform(a_re)
+        call shear_frame_transform(b_re)
+      endif
+      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(b_re,b_im)
+      h_re = h_re + a_re*b_re + a_im*b_im
+      h_im = h_im + a_im*b_re - a_re*b_im
+    enddo
+    call fft_xyz_parallel(h_re,h_im,linv=.true.)
+    !
+    do ivec=1,3
+      a_re = f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)  !  vorticity at t'
+      b_re = f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)  !  velocity at t'
+      a_im = 0.
+      b_im = 0.
+      !  Need convolution between a_re and b_re in the shear frame; do via FFT
+      if (lshear_frame_correlation) then
+        if (.not. lshear) call fatal_error( &
+            'power_cor','lshear=F; cannot do frame transform')
+        call shear_frame_transform(a_re,t_cor)
+        call shear_frame_transform(b_re,t_cor)
+      endif
+      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(b_re,b_im)
+      ht_re = ht_re + a_re*b_re + a_im*b_im
+      ht_im = ht_im + a_im*b_re - a_re*b_im
+    enddo
+    call fft_xyz_parallel(ht_re,ht_im,linv=.true.)
+    !
+    a_re = ht_re
+    a_im = ht_im  !  ht_im should =0
+    b_re = h_re
+    b_im = h_im  !  h_im should =0
   endif  !  sp
   !
   !  transform to the shear frame.
   !
-  if (lshear_frame_correlation) then
+  if ((.not.lnoshear_transform).and.lshear_frame_correlation) then
     call get_shared_variable('t_cor',t_cor)
     if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
     call shear_frame_transform(a_re,t_cor)
