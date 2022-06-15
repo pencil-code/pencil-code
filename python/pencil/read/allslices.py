@@ -407,7 +407,7 @@ class SliceSeries(object):
                         read_precision = "f"
 
                     # Set up slice plane.
-                    if extension == "xy" or extension == "Xy" or extension == "xy2":
+                    if extension == "xy" or extension == "Xy" or extension == "xy2" or extension == "xy3" or extension == "xy4":
                         hsize = dim.nx
                         vsize = dim.ny
                     if extension == "xz":
