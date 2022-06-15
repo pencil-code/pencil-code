@@ -4527,6 +4527,7 @@ endsubroutine pdf
   character (len=*) :: sp
 !
   integer, parameter :: nk=nxgrid/2
+  integer :: ivar1,ivar2,ivar1t,ivar2t
   integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
   real :: k2
   real, pointer :: t_cor
@@ -4541,7 +4542,7 @@ endsubroutine pdf
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  logical :: lnoshear_transform=.false.
+  logical :: lconvol
   !
   !  identify version
   !
@@ -4578,45 +4579,58 @@ endsubroutine pdf
   h_im=0.
   ht_im=0.
   !
-  if (sp=='ouout') then
-    !
-    !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
-    !  Because uut has been transformed to the shear frame,
-    !  we have to use oot rather than curl(uut)
-    !
-    if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
-    if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
-    if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
-    if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
-    !
-    do ivec=1,3
-      a_re = f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)  !  vorticity
-      b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity
-      h_re = h_re + a_re*b_re                 !  kinetic helicity density
+  select case (sp)
+    case ('ouout')
       !
-      a_re = f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)  !  vorticity at t'
-      b_re = f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)  !  velocity at t'
-      ht_re = ht_re + a_re*b_re                        !  kinetic helicity density at t'
+      !  Spectrum of h.ht; h=u.curl(u) and ht=uut.oot
+      !  Because uut has been transformed to the shear frame,
+      !  we have to use oot rather than curl(uut)
+      !
+      if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
+      if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
+      if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
+      if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
+      ivar1=iuu; ivar1t=iuut;
+      ivar2=ioo; ivar2t=ioot;
+      lconvol=.false.
+    case ('ouout2')
+      !
+      !  spectrum of g.gt, and g(k)=omega^*(k).u(k), the
+      !  helicity density in the Fourier space
+      !
+      if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
+      if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
+      if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
+      if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
+      ivar1=iuu; ivar1t=iuut;
+      ivar2=ioo; ivar2t=ioot;
+      lconvol=.true.
+  end select
+  !
+  if (.not.lconvol) then
+    do ivec=1,3
+      a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
+      b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
+      h_re = h_re + a_re*b_re
+      !
+      a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
+      b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
+      ht_re = ht_re + a_re*b_re
     enddo
     !
-    a_re = ht_re
-    a_im = 0.
-    b_re = h_re
-    b_im = 0.
-  elseif (sp=='ouout2') then
-    lnoshear_transform=.true.
+    !  transform to the shear frame.
     !
-    !  spectrum of g.gt, and g(k)=omega^*(k).u(k), the
-    !  helicity density in the Fourier space
-    !
-    if (iuu==0)  call fatal_error('power_cor_scl','iuu=0')
-    if (iuut==0) call fatal_error('power_cor_scl','iuut=0')
-    if (ioo==0)  call fatal_error('power_cor_scl','ioo=0')
-    if (ioot==0) call fatal_error('power_cor_scl','ioot=0')
-    !
+    if (lshear_frame_correlation) then
+      call get_shared_variable('t_cor',t_cor)
+      if (.not. lshear) call fatal_error('power_cor_scl',&
+          'lshear=F; cannot do frame transform')
+      call shear_frame_transform(ht_re,t_cor)
+      call shear_frame_transform(h_re)
+    endif
+  else
     do ivec=1,3
-      a_re = f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)  !  vorticity
-      b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity
+      a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
+      b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
       a_im = 0.
       b_im = 0.
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
@@ -4634,8 +4648,8 @@ endsubroutine pdf
     call fft_xyz_parallel(h_re,h_im,linv=.true.)
     !
     do ivec=1,3
-      a_re = f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)  !  vorticity at t'
-      b_re = f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)  !  velocity at t'
+      a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
+      b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
       a_im = 0.
       b_im = 0.
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
@@ -4652,20 +4666,11 @@ endsubroutine pdf
     enddo
     call fft_xyz_parallel(ht_re,ht_im,linv=.true.)
     !
-    a_re = ht_re
-    a_im = ht_im  !  ht_im should =0
-    b_re = h_re
-    b_im = h_im  !  h_im should =0
-  endif  !  sp
-  !
-  !  transform to the shear frame.
-  !
-  if ((.not.lnoshear_transform).and.lshear_frame_correlation) then
-    call get_shared_variable('t_cor',t_cor)
-    if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
-    call shear_frame_transform(a_re,t_cor)
-    call shear_frame_transform(b_re)
-  endif
+  endif  !  lconvol
+  a_re = ht_re
+  a_im = ht_im
+  b_re = h_re
+  b_im = h_im
   !
   !  before doing fft, compute real-space correlation
   !
