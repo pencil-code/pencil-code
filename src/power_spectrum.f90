@@ -4322,8 +4322,8 @@ endsubroutine pdf
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+    call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
 !
 !  integration over shells
 !
@@ -4640,12 +4640,12 @@ endsubroutine pdf
         call shear_frame_transform(a_re)
         call shear_frame_transform(b_re)
       endif
-      call fft_xyz_parallel(a_re,a_im)
-      call fft_xyz_parallel(b_re,b_im)
+      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
       h_re = h_re + a_re*b_re + a_im*b_im
       h_im = h_im + a_im*b_re - a_re*b_im
     enddo
-    call fft_xyz_parallel(h_re,h_im,linv=.true.)
+    call fft_xyz_parallel(h_re,h_im,linv=.true.,lignore_shear=lshear_frame_correlation)
     !
     do ivec=1,3
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
@@ -4659,12 +4659,12 @@ endsubroutine pdf
         call shear_frame_transform(a_re,t_cor)
         call shear_frame_transform(b_re,t_cor)
       endif
-      call fft_xyz_parallel(a_re,a_im)
-      call fft_xyz_parallel(b_re,b_im)
+      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
       ht_re = ht_re + a_re*b_re + a_im*b_im
       ht_im = ht_im + a_im*b_re - a_re*b_im
     enddo
-    call fft_xyz_parallel(ht_re,ht_im,linv=.true.)
+    call fft_xyz_parallel(ht_re,ht_im,linv=.true.,lignore_shear=lshear_frame_correlation)
     !
   endif  !  lconvol
   a_re = ht_re
@@ -4682,8 +4682,8 @@ endsubroutine pdf
   !
   !  Doing the Fourier transform
   !
-  call fft_xyz_parallel(a_re,a_im)
-  call fft_xyz_parallel(b_re,b_im)
+  call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+  call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
   !
   !  shell-integrated correlation
   !
@@ -5080,10 +5080,10 @@ endsubroutine pdf
     !  Fourier transformation
     !
     if (sp2=='xkyz') then
-      call fft_y_parallel(a_re,a_im)
-      call fft_z_parallel(a_re,a_im)
+      call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
     else
-      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
     endif
     !
     do ikz=1,nz
