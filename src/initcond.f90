@@ -5199,7 +5199,7 @@ module Initcond
 !
         if (present(qexp)) then
           if (qexp==0.) then
-            if (lno_noise) then
+            if (present(lno_noise) .and. lno_noise) then
               u_re=ampl
               u_im=0.
             else
