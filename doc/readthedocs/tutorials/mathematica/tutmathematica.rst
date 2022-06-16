@@ -18,11 +18,12 @@ First, type
   FileNameJoin[{$UserBaseDirectory, "Kernel", "init.m"}]
 
 in Mathematica to locate this ``init.m`` file.
-Then, add line
+Then, add lines
 
 .. code::
 
   AppendTo[$Path, "your/pencil/home/mathematica"]
+  AppendTo[$Path, "your/pencil/home/mathematica/special"]
 
 in this file and save it. In general the path will be ``$PENCIL_HOME/mathematica/``, but of course you may put it somewhere else.
 Mathematica will not search in subdirectories, so make sure the package in right in the folder.

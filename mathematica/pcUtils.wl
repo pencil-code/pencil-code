@@ -67,6 +67,8 @@ Output:
 \\hline
 \\end{tabular}"
 
+pcPkgDir::usage="pcPkgDir[] opens the directory of this package."
+
 
 Begin["`Private`"]
 
@@ -108,6 +110,9 @@ pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,
   minmax=MinMax[data[[;;,1]]]*fact[[1;;2]];
   Table[{x,fact[[3]]*model},{x,Subdivide[Sequence@@minmax,32]}]
 ]
+
+pkgDir=$InputFileName//DirectoryName;
+pcPkgDir[]:=(Run@StringJoin["open ",pkgDir];)
 
 
 (* ::Section:: *)
@@ -165,6 +170,7 @@ End[]
 
 Protect[
   pcAround,pcDivide,pcDifferences,pcFit,
+  pkgDir,
   pcNumberToTex,pcWriteTexTable
 ]
 
