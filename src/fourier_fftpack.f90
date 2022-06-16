@@ -1340,7 +1340,7 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fft_x_parallel_1D(a_re,a_im,linv,lneed_im)
+    subroutine fft_x_parallel_1D(a_re,a_im,linv,lneed_im,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 1D data in the x-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1354,17 +1354,20 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_x, unmap_from_pencil_x
 !
       real, dimension (:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       real, dimension (:), allocatable :: p_re, p_im   ! data in pencil shape
       integer :: stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       if (size (a_re, 1) /= nx) &
@@ -1376,7 +1379,7 @@ module Fourier
       allocate (p_re(nxgrid), p_im(nxgrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_x_parallel_1D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call fatal_error ('fft_x_parallel_1D', 'Shearing is not implemented!', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 
@@ -1431,7 +1434,7 @@ module Fourier
 !
     endsubroutine fft_x_parallel_1D
 !***********************************************************************
-    subroutine fft_x_parallel_2D(a_re,a_im,linv,lneed_im)
+    subroutine fft_x_parallel_2D(a_re,a_im,linv,lneed_im, lignore_shear)
 !
 !  Subroutine to do FFT of distributed 2D data in the x-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1447,7 +1450,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1455,13 +1458,16 @@ module Fourier
       real, dimension (:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
 !
       integer :: m, stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       if (mod (nxgrid, nprocxy) /= 0) &
@@ -1473,7 +1479,7 @@ module Fourier
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
       if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) call fatal_error ('fft_x_parallel_2D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call fatal_error ('fft_x_parallel_2D', 'Shearing is not implemented!', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1531,7 +1537,7 @@ module Fourier
 !
     endsubroutine fft_x_parallel_2D
 !***********************************************************************
-    subroutine fft_x_parallel_3D(a_re,a_im,linv,lneed_im)
+    subroutine fft_x_parallel_3D(a_re,a_im,linv,lneed_im,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 3D data in the x-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1547,7 +1553,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1555,13 +1561,16 @@ module Fourier
       real, dimension (:,:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
       integer :: inz ! size of the third dimension
       integer :: m, stat, pos_z
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inz = size (a_re, 3)
@@ -1583,7 +1592,7 @@ module Fourier
       allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
       if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) call fatal_error ('fft_x_parallel_3D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call fatal_error ('fft_x_parallel_3D', 'Shearing is not implemented!', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1645,7 +1654,7 @@ module Fourier
 !
     endsubroutine fft_x_parallel_3D
 !***********************************************************************
-    subroutine fft_x_parallel_4D(a_re,a_im,linv,lneed_im)
+    subroutine fft_x_parallel_4D(a_re,a_im,linv,lneed_im,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the x-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1661,7 +1670,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1669,13 +1678,16 @@ module Fourier
       real, dimension (:,:,:,:), allocatable :: t_re, t_im ! data in transposed pencil shape
       integer :: inz, ina ! size of the third and fourth dimension
       integer :: m, stat, pos_z, pos_a
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inz = size (a_re, 3)
@@ -1700,7 +1712,7 @@ module Fourier
       allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) call fatal_error ('fft_x_parallel_4D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call fatal_error ('fft_x_parallel_4D', 'Shearing is not implemented!', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1766,7 +1778,7 @@ module Fourier
 !
     endsubroutine fft_x_parallel_4D
 !***********************************************************************
-    subroutine fft_y_parallel_1D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_y_parallel_1D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 1D data in the y-direction.
 !  For y-parallelization the calculation will be done under
@@ -1780,13 +1792,13 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
 !
       real, dimension (:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, optional :: shift_y
       real :: dshift_y
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: stat
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -1796,6 +1808,9 @@ module Fourier
 !
       lshift = .false.
       if (present (shift_y)) lshift = .true.
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       if (size (a_re, 1) /= ny) &
@@ -1807,7 +1822,7 @@ module Fourier
       allocate (p_re(nygrid), p_im(nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented for 1D data!', lfirst_proc_y)
+      if (lshear_loc) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented for 1D data!', lfirst_proc_y)
       if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
@@ -1863,7 +1878,7 @@ module Fourier
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
-    subroutine fft_y_parallel_2D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_y_parallel_2D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 2D data in the y-direction.
 !  For y-parallelization the calculation will be done under
@@ -1877,7 +1892,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
@@ -1885,7 +1900,7 @@ module Fourier
       real, dimension (nx) :: dshift_y
 !
       integer :: l, stat
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -1896,12 +1911,15 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
+!
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,nygrid), p_im(nx,nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
@@ -1922,7 +1940,7 @@ module Fourier
         do l = 1, nx
           ay = cmplx (p_re(l,:), p_im(l,:))
           call cfftf (nygrid, ay, wsavey)
-          if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+          if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
           if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
           p_re(l,:) = real (ay)
           p_im(l,:) = aimag (ay)
@@ -1947,7 +1965,7 @@ module Fourier
         ! Transform y-direction back.
         do l = 1, nx
           ay = cmplx (p_re(l,:), p_im(l,:))
-          if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+          if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
           call cfftb (nygrid, ay, wsavey)
           p_re(l,:) = real (ay)
           p_im(l,:) = aimag (ay)
@@ -1963,7 +1981,7 @@ module Fourier
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
-    subroutine fft_y_parallel_3D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_y_parallel_3D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 3D data in the y-direction.
 !  For y-parallelization the calculation will be done under
@@ -1977,7 +1995,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
@@ -1986,7 +2004,7 @@ module Fourier
       real, dimension (nx) :: dshift_y
 !
       integer :: l, stat, pos_z
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -1996,6 +2014,9 @@ module Fourier
 !
       lshift = .false.
       if (present (shift_y)) lshift = .true.
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inz = size (a_re, 3)
@@ -2012,7 +2033,7 @@ module Fourier
       allocate (p_re(nx,nygrid,inz), p_im(nx,nygrid,inz), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
@@ -2034,7 +2055,7 @@ module Fourier
           do l = 1, nx
             ay = cmplx (p_re(l,:,pos_z), p_im(l,:,pos_z))
             call cfftf (nygrid, ay, wsavey)
-            if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+            if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
             if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
             p_re(l,:,pos_z) = real (ay)
             p_im(l,:,pos_z) = aimag (ay)
@@ -2061,7 +2082,7 @@ module Fourier
         do pos_z = 1, inz
           do l = 1, nx
             ay = cmplx (p_re(l,:,pos_z), p_im(l,:,pos_z))
-            if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+            if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
             call cfftb (nygrid, ay, wsavey)
             p_re(l,:,pos_z) = real (ay)
             p_im(l,:,pos_z) = aimag (ay)
@@ -2078,7 +2099,7 @@ module Fourier
 !
     endsubroutine fft_y_parallel_3D
 !***********************************************************************
-    subroutine fft_y_parallel_4D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_y_parallel_4D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the y-direction.
 !  For y-parallelization the calculation will be done under
@@ -2092,7 +2113,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
@@ -2101,7 +2122,7 @@ module Fourier
       real, dimension (nx) :: dshift_y
 !
       integer :: l, stat, pos_z, pos_a
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
@@ -2111,6 +2132,9 @@ module Fourier
 !
       lshift = .false.
       if (present (shift_y)) lshift = .true.
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inz = size (a_re, 3)
@@ -2130,7 +2154,7 @@ module Fourier
       allocate (p_re(nx,nygrid,inz,ina), p_im(nx,nygrid,inz,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
@@ -2153,7 +2177,7 @@ module Fourier
             do l = 1, nx
               ay = cmplx (p_re(l,:,pos_z,pos_a), p_im(l,:,pos_z,pos_a))
               call cfftf (nygrid, ay, wsavey)
-              if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+              if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
               if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
               p_re(l,:,pos_z,pos_a) = real (ay)
               p_im(l,:,pos_z,pos_a) = aimag (ay)
@@ -2182,7 +2206,7 @@ module Fourier
           do pos_z = 1, inz
             do l = 1, nx
               ay = cmplx (p_re(l,:,pos_z,pos_a), p_im(l,:,pos_z,pos_a))
-              if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+              if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
               call cfftb (nygrid, ay, wsavey)
               p_re(l,:,pos_z,pos_a) = real (ay)
               p_im(l,:,pos_z,pos_a) = aimag (ay)
@@ -2200,7 +2224,7 @@ module Fourier
 !
     endsubroutine fft_y_parallel_4D
 !***********************************************************************
-    subroutine fft_z_parallel_1D(a_re,a_im,linv,lneed_im,shift_z)
+    subroutine fft_z_parallel_1D(a_re,a_im,linv,lneed_im,shift_z,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 1D data in the z-direction.
 !  For z-parallelization the calculation will be done under
@@ -2214,13 +2238,13 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_z, unmap_from_pencil_z
 !
       real, dimension (:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, optional :: shift_z
       real :: dshift_z
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: stat
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -2230,6 +2254,9 @@ module Fourier
 !
       lshift = .false.
       if (present (shift_z)) lshift = .true.
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       if (size (a_re, 1) /= nz) &
@@ -2241,7 +2268,7 @@ module Fourier
       allocate (p_re(nzgrid), p_im(nzgrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_z_parallel_1D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call fatal_error ('fft_z_parallel_1D', 'Shearing is not implemented!', lfirst_proc_z)
 !
       if (lshift) dshift_z = shift_z
 !
@@ -2298,7 +2325,7 @@ module Fourier
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
-    subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im,shift_z)
+    subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im,shift_z,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 2D data in the z-direction.
 !  The z-component is expected to be in the first dimension.
@@ -2313,7 +2340,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_z, unmap_from_pencil_z
 !
       real, dimension (:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (:), optional :: shift_z
       real, dimension (:), allocatable :: dshift_z
 !
@@ -2321,7 +2348,7 @@ module Fourier
 !
       integer :: inz, ina ! size of the first and second dimension
       integer :: pos_a, stat
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -2331,6 +2358,9 @@ module Fourier
 !
       lshift = .false.
       if (present (shift_z)) lshift = .true.
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inz = size (a_re, 1)
@@ -2347,7 +2377,7 @@ module Fourier
       allocate (p_re(nzgrid,ina), p_im(nzgrid,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
 !
       if (lshift) then
         allocate (dshift_z(ina), stat=stat)
@@ -2413,7 +2443,7 @@ module Fourier
 !
     endsubroutine fft_z_parallel_2D
 !***********************************************************************
-    subroutine fft_z_parallel_3D(a_re,a_im,linv,lneed_im)
+    subroutine fft_z_parallel_3D(a_re,a_im,linv,lneed_im,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 3D data in the z-direction.
 !  The z-component is expected to be in the third dimension.
@@ -2428,18 +2458,21 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_z, unmap_from_pencil_z
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
       integer :: inx, iny ! size of the third dimension
       integer :: l, m, stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inx = size (a_re, 1)
@@ -2456,7 +2489,7 @@ module Fourier
       allocate (p_re(inx,iny,nzgrid), p_im(inx,iny,nzgrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2518,7 +2551,7 @@ module Fourier
 !
     endsubroutine fft_z_parallel_3D
 !***********************************************************************
-    subroutine fft_z_parallel_4D(a_re,a_im,linv,lneed_im)
+    subroutine fft_z_parallel_4D(a_re,a_im,linv,lneed_im,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the z-direction.
 !  The z-component is expected to be in the third dimension.
@@ -2533,18 +2566,21 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_z, unmap_from_pencil_z
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
 !
       real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: inx, iny, ina ! size of the third and fourth dimension
       integer :: l, m, stat, pos_a
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
       inx = size (a_re, 1)
@@ -2564,7 +2600,7 @@ module Fourier
       allocate (p_re(inx,iny,nzgrid,ina), p_im(inx,iny,nzgrid,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate memory for p', .true.)
 !
-      if (lshear) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2630,7 +2666,7 @@ module Fourier
 !
     endsubroutine fft_z_parallel_4D
 !***********************************************************************
-    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -2647,7 +2683,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
@@ -2658,7 +2694,7 @@ module Fourier
       real, dimension (tny) :: dshift_y
 !
       integer :: l, m, stat, x_offset
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lnoshear, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -2669,18 +2705,24 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
+!
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
         if (lshift) then
-          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y(1))
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y(1), lignore_shear=lnoshear)
         else
-          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im)
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re(:,1), a_im(:,1), .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1), a_im(:,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
 !
@@ -2693,7 +2735,7 @@ module Fourier
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
       if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) then
+      if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
         deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
@@ -2725,7 +2767,7 @@ module Fourier
         do l = 1, tny
           ay = cmplx (t_re(:,l), t_im(:,l))
           call cfftf(nygrid, ay, wsavey)
-          if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+          if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
           if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
           t_re(:,l) = real (ay)
           t_im(:,l) = aimag (ay)
@@ -2772,7 +2814,7 @@ module Fourier
         do l = 1, tny
           ! Transform y-direction back.
           ay = cmplx (t_re(:,l), t_im(:,l))
-          if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+          if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
           call cfftb (nygrid, ay, wsavey)
           t_re(:,l) = real (ay)
           if (lcompute_im) t_im(:,l) = aimag (ay)
@@ -2791,7 +2833,7 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
-    subroutine fft_xy_parallel_2D_other(a_re,a_im,linv)
+    subroutine fft_xy_parallel_2D_other(a_re,a_im,linv,lignore_shear)
 !
 !  For x- and/or y-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the corresponding xy-plane.
@@ -2806,7 +2848,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy_2D_other, transp_pencil_xy, unmap_from_pencil_xy_2D_other
 !
       real, dimension (:,:) :: a_re, a_im
-      logical, optional :: linv
+      logical, optional :: linv, lignore_shear
 !
       integer :: pnx,pny,tnx,tny,nx_other,ny_other,nxgrid_other,nygrid_other
       real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
@@ -2818,7 +2860,7 @@ module Fourier
       real, dimension (4*nprocy*size(a_re,2)+15) :: wsavey_other
 
       integer :: l, m, stat
-      logical :: lforward
+      logical :: lforward, lnoshear
 !
 ! pencil shaped data sizes
 !
@@ -2837,13 +2879,16 @@ module Fourier
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
       ! Check for degenerate cases.
       if (nxgrid == 1) then
-        call fft_y_parallel(a_re(1,:),a_im(1,:),.not.lforward)
+        call fft_y_parallel(a_re(1,:),a_im(1,:),.not.lforward,lignore_shear=lnoshear)
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel(a_re(:,1), a_im(:,1),.not.lforward)
+        call fft_x_parallel(a_re(:,1), a_im(:,1),.not.lforward,lignore_shear=lnoshear)
         return
       endif
 !
@@ -2939,7 +2984,7 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_2D_other
 !***********************************************************************
-    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 3D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -2955,7 +3000,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
@@ -2967,7 +3012,7 @@ module Fourier
       real, dimension (tny) :: dshift_y
 !
       integer :: l, m, stat, pos_z, x_offset
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lnoshear, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -2978,16 +3023,22 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
+!
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
-        call fft_y_parallel (a_re(1,:,:), a_im(1,:,:), .not. lforward, lcompute_im)
+        call fft_y_parallel (a_re(1,:,:), a_im(1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
       if (nygrid == 1) then
-        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im)
+        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
 !AB: Philippe, could you please heck whether this "correction" is correct?
-        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
 !
@@ -3010,7 +3061,7 @@ module Fourier
       allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
       if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) then
+      if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
         deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
@@ -3043,7 +3094,7 @@ module Fourier
             ! Transform y-direction.
             ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
             call cfftf (nygrid, ay, wsavey)
-            if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+            if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
             if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
             t_re(:,l,pos_z) = real (ay)
             t_im(:,l,pos_z) = aimag (ay)
@@ -3096,7 +3147,7 @@ module Fourier
           do l = 1, tny
             ! Transform y-direction back.
             ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
-            if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+            if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
             call cfftb (nygrid, ay, wsavey)
             t_re(:,l,pos_z) = real (ay)
             if (lcompute_im) t_im(:,l,pos_z) = aimag (ay)
@@ -3116,7 +3167,7 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_3D
 !***********************************************************************
-    subroutine fft_xy_parallel_4D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xy_parallel_4D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -3132,7 +3183,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
@@ -3144,7 +3195,7 @@ module Fourier
       real, dimension (tny) :: dshift_y
 !
       integer :: l, m, stat, pos_z, pos_a, x_offset
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lnoshear, lshear_loc
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -3155,14 +3206,20 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
+      lshear_loc = lshear
+      if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
+!
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
-        call fft_y_parallel (a_re(1,:,:,:), a_im(1,:,:,:), .not. lforward, lcompute_im)
+        call fft_y_parallel (a_re(1,:,:,:), a_im(1,:,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re(:,1,:,:), a_im(:,1,:,:), .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1,:,:), a_im(:,1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
 !
@@ -3188,7 +3245,7 @@ module Fourier
       allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p/t', .true.)
 !
-      if (lshear) then
+      if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
         deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
@@ -3222,7 +3279,7 @@ module Fourier
               ! Transform y-direction.
               ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
               call cfftf (nygrid, ay, wsavey)
-              if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+              if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
               if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
               t_re(:,l,pos_z,pos_a) = real (ay)
               t_im(:,l,pos_z,pos_a) = aimag (ay)
@@ -3281,7 +3338,7 @@ module Fourier
             do l = 1, tny
               ! Transform y-direction back.
               ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
-              if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+              if (lshear_loc) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
               call cfftb (nygrid, ay, wsavey)
               t_re(:,l,pos_z,pos_a) = real (ay)
               if (lcompute_im) t_im(:,l,pos_z,pos_a) = aimag (ay)
@@ -3302,7 +3359,7 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_4D
 !***********************************************************************
-    subroutine fft_xyz_parallel_3D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xyz_parallel_3D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 3D data in the x-, y- and z-direction.
 !  For the x- and y-direction, the subroutine 'fft_xy_parallel' is used.
@@ -3317,14 +3374,14 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pny=ny/nprocz, pnz=nzgrid    ! z-pencil shaped data sizes
       real, dimension (:,:,:), allocatable :: p_re, p_im ! data in pencil shape
 !
       integer :: l, m, stat
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lnoshear
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -3335,18 +3392,21 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
 !
       ! Check for degenerate cases.
       if (nzgrid == 1) then
         if (lshift) then
-          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
         return
       endif
       if ((nxgrid == 1) .and. (nygrid == 1)) then
-        call fft_z_parallel (a_re(1,1,:), a_im(1,1,:), .not. lforward, lcompute_im)
+        call fft_z_parallel (a_re(1,1,:), a_im(1,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
 !
@@ -3369,9 +3429,9 @@ module Fourier
 !  Forward FFT:
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
 !
         ! Remap the data we need into z-pencil shape.
@@ -3419,9 +3479,9 @@ module Fourier
         call unmap_from_pencil_yz (p_im, a_im)
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
 !
       endif
@@ -3430,7 +3490,7 @@ module Fourier
 !
     endsubroutine fft_xyz_parallel_3D
 !***********************************************************************
-    subroutine fft_xyz_parallel_4D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xyz_parallel_4D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
 !  For the x- and y-direction, the subroutine 'fft_xy_parallel' is used.
@@ -3446,7 +3506,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pny=ny/nprocz, pnz=nzgrid      ! z-pencil shaped data sizes
@@ -3454,7 +3514,7 @@ module Fourier
       integer :: ina ! size of the fourth dimension
 !
       integer :: l, m, stat, pos_a
-      logical :: lforward, lcompute_im, lshift
+      logical :: lforward, lcompute_im, lshift, lnoshear
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -3465,18 +3525,21 @@ module Fourier
       lshift = .false.
       if (present (shift_y)) lshift = .true.
 !
+      lnoshear = .false.
+      if (present (lignore_shear)) lnoshear = lignore_shear
+!
 !
       ! Check for degenerate cases.
       if (nzgrid == 1) then
         if (lshift) then
-          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
         return
       endif
       if ((nxgrid == 1) .and. (nygrid == 1)) then
-        call fft_z_parallel (a_re(1,1,:,:), a_im(1,1,:,:), .not. lforward, lcompute_im)
+        call fft_z_parallel (a_re(1,1,:,:), a_im(1,1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
 !
@@ -3501,9 +3564,9 @@ module Fourier
 !  Forward FFT:
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
 !
         ! Remap the data we need into z-pencil shape.
@@ -3555,9 +3618,9 @@ module Fourier
         call unmap_from_pencil_yz (p_im, a_im)
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
 !
       endif
