@@ -170,10 +170,16 @@ getParam[sim_,"ReN"]:=urms[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReN",k2_]:=urms[sim]/k2/nu[sim] (*supply kf by hand*)
 getParam[sim_,"ReNkf"]:=urmskf[sim]/kf[sim]/nu[sim]
 
+getParam[sim_,"ReN2"]:=urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","NU_HYPER2"]
+getParam[sim_,"ReN3"]:=urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","NU_HYPER3"]
+
 getParam[sim_,"ReM"]:=urms[sim]/kf[sim]/eta[sim]
 getParam[sim_,"ReM",k2_]:=urms[sim]/k2/eta[sim] (*supply kf by hand*)
 getParam[sim_,"PrM"]:=PrM[sim]
 getParam[sim_,"PrMTFM"]:=nu[sim]/etaTFM[sim]
+
+getParam[sim_,"ReM2"]:=urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","ETA_HYPER2"]
+getParam[sim_,"ReM3"]:=urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","ETA_HYPER3"]
 
 getParam[sim_,"Ro"]:=If[omega[sim]==0,"No rotation",kf[sim]*urms[sim]/2/omega[sim]]
 getParam[sim_,"Ro",k2_]:=If[omega[sim]==0,"No rotation",k2*urms[sim]/2/omega[sim]]
