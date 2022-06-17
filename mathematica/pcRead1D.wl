@@ -85,26 +85,33 @@ Begin["`Private`"]
 (*Time series*)
 
 
+Options[readTS]={"lRest"->True}
+readTS[sim_,All,OptionsPattern[]]:=Module[{file,ts,head,pos},
+  readTS::badform="`1`: Inconsistent number of columns in ts.";
+  file=sim<>"/data/time_series.dat";
+  ts=DeleteCases[Import[file],x_/;Length[x]==1];
+  If[Not[Equal@@(Length/@ts)],
+    Message[readTS::badform,sim];Return["BadTsFormat"]];
+  head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
+  If[Length[ts[[1]]]!=Length[head],
+    Message[readTS::badform,sim];Return[$Failed]];
+  If[OptionValue["lRest"],ts=Rest[ts]];
+  AssociationThread[head->Transpose[ts]]
+]
 readTS[sim_,vars__]:=Module[{file,ts,head,pos},
   readTS::badform="`1`: Inconsistent number of columns in ts.";
   readTS::novar="`1`: Variable `2` not found in ts.";
   file=sim<>"/data/time_series.dat";
   ts=DeleteCases[Import[file],x_/;Length[x]==1];
   If[Not[Equal@@(Length/@ts)],
-    Message[readTS::badform,sim];
-    Return["BadTsFormat"]
-  ];
+    Message[readTS::badform,sim];Return["BadTsFormat"]];
   head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
   If[vars=="HEAD",Return[head]];
   If[Length[ts[[1]]]!=Length[head],
-    Message[readTS::badform,sim];
-    Return[$Failed]
-  ];
+    Message[readTS::badform,sim];Return[$Failed]];
   Table[
     If[(pos=Position[head,var])=={},
-      Message[readTS::novar,sim,var];
-      ConstantArray[$Failed,ts//Length],
-      (*else*)
+      Message[readTS::novar,sim,var];ConstantArray[$Failed,ts//Length],
       ts[[;;,pos[[1,1]]]]
     ],
     {var,{vars}}
