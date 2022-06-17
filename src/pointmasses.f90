@@ -1721,15 +1721,15 @@ module PointMasses
 !
 !  Potential of a Plummer sphere
 !
-          if (ks==iprimary) call warning("get_total_gravity",&
-               "The primary is not newtonian, make sure you know what you are doing.")
+          if (ks==iprimary .and. headtt) call warning("get_total_gravity",&
+                  "The primary is not newtonian, make sure you know what you are doing.")
           Omega2_pm =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
 !
         case ('boley')
 !
 !  Correct potential outside Hill sphere
 !
-          if (ks==iprimary) call warning("get_total_gravity",&
+          if (ks==iprimary .and. headtt) call warning("get_total_gravity",&
                "The primary is not newtonian, make sure you know what you are doing.")
           do i=1,mx
             if (rrp(i) .gt. rhill) then
