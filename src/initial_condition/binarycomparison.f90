@@ -80,12 +80,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: g0=1.,v0=1d-4, npot=4.0, Omegab=1.0
+  real :: g0=1.,u0=1d-4, npot=4.0, Omegab=1.0
   real :: Rcav = 2.5, density_floor = 1d-5, Rout=10.0
   real :: temperature_power_law=1.0
 !
   namelist /initial_condition_pars/ g0, Rcav, density_floor, &
-       Rout, npot, Omegab, v0, temperature_power_law
+       Rout, npot, Omegab, u0, temperature_power_law
 !
   contains
 !***********************************************************************
@@ -132,7 +132,7 @@ module InitialCondition
       use Sub,     only: get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rr_cyl,rr_sph,OO,Omega0,vphi,vr
+      real, dimension (nx) :: rr_cyl,rr_sph,OO,Omega0,uphi,ur
       real, dimension (nx) :: cosp,sinp
 !
       if (lroot) &
@@ -146,16 +146,16 @@ module InitialCondition
           cosp = x(l1:l2)/rr_cyl
           sinp = y(  m  )/rr_cyl
 !        
-          vr = v0*sinp*rr_cyl * exp(-(rr_cyl/3.5)**6)
+          ur = u0*sinp*rr_cyl * exp(-(rr_cyl/3.5)**6)
 !        
           Omega0 = sqrt(g0/rr_cyl**3 * (1-cs0**2))
         
           OO = (Omega0**(-npot) + Omegab**(-npot))**(-1.0/npot)
 !        
-          vphi = rr_cyl*OO
+          uphi = rr_cyl*OO
 !
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + vr*cosp - vphi*sinp
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + vr*sinp + vphi*cosp
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + ur*cosp - uphi*sinp
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + ur*sinp + uphi*cosp
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
 !
         enddo
@@ -176,8 +176,8 @@ module InitialCondition
       use EquationOfState, only: rho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: strat,tmp1,tmp2,cs2
-      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lgSigma,fr,cavity
+      real, dimension (mx)   :: strat,tmp1,tmp2,cs2,rr_sph,rr,rr_cyl
+      real, dimension (mx)   :: Sigma,fr,cavity,argcavity
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader
@@ -201,11 +201,12 @@ module InitialCondition
             rr=rr_sph
           endif
 !
-          fr = 1 - 1/(1+exp(-2*(rr_cyl-Rout)))
-          cavity = (Rcav/rr_cyl)**12
-          lgSigma = log(rho0) - cavity + log(fr)
+          fr = 1. - 1./(1.+exp(-2*(rr-Rout)))
+          argcavity = max(-((Rcav/rr)**12.),log(0.1*density_floor))
+          cavity = (1.-density_floor)*exp(argcavity) + density_floor
+          Sigma = rho0*cavity*fr
 !        
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + max(lgSigma,log(density_floor))
+          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + log(Sigma)
         enddo
       enddo
 !
