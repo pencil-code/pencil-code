@@ -4977,13 +4977,20 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpifinalize
 !
+!  Send stop signal to foreign code.
+!
+      if (lforeign.and.lroot) &
+        call MPI_SEND(.true.,1,MPI_LOGICAL,frgn_setup%root,tag_foreign,MPI_COMM_WORLD,mpierr)
+      if (lforeign.and.lroot) print*, 'PENCIL: to,tag=', frgn_setup%root,tag_foreign
+
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-
-      !if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
-      !if (allocated(frgn_setup%xgrid)) deallocate(frgn_setup%xgrid)
-      !if (allocated(frgn_setup%xind_rng)) deallocate(frgn_setup%xind_rng)
-
       call MPI_FINALIZE(mpierr)
+!
+      if (lforeign) then
+        if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
+        if (allocated(frgn_setup%xgrid)) deallocate(frgn_setup%xgrid)
+        if (allocated(frgn_setup%xind_rng)) deallocate(frgn_setup%xind_rng)
+      endif
 !
     endsubroutine mpifinalize
 !***********************************************************************
@@ -10371,34 +10378,30 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
       integer, save :: tcount = 0
       integer :: istart,lenx_loc,px,iv,peer
 
-        if (lroot.and.tcount.eq.0) t0 = MPI_WTIME()
-        if (frgn_setup%proc_multis(1)>1) then
-
-          do px=0,frgn_setup%procnums(1)-1
-            if (frgn_setup%xind_rng(px,1)>0) then
-              lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
-              istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
-              if (loptest(lnonblock)) then
-                peer=frgn_setup%peer_rng(1)
-                do iv=1,nvars
-                  call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
-                                    (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
-                enddo
-              else       ! blocking case
-                peer=frgn_setup%peer_rng(1)
+      do px=0,frgn_setup%procnums(1)-1
+        if (frgn_setup%xind_rng(px,1)>0) then
+          lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
+          istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
+          if (loptest(lnonblock)) then
+            peer=frgn_setup%peer_rng(1)
+            do iv=1,nvars
+              call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+            enddo
+          else       ! blocking case
+            peer=frgn_setup%peer_rng(1)
 !print*, 'PENCIL recv: iproc,peer,tag=', iproc,peer,peer-ncpus
-                do iv=1,nvars
-                  call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
-                                    (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD)
-!                  if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
-!                  if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
-!                  if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
+            do iv=1,nvars
+              call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
+                                (/lenx_loc,ny,nz/),peer+ncpus,peer,MPI_COMM_WORLD)
+!              if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
+!              if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
+!              if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
 !print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
-                enddo
-              endif
-            endif
-          enddo
+            enddo
+          endif
         endif
+      enddo
 !if (lroot) then
 !  t2 = MPI_WTIME()
 !  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
@@ -10412,9 +10415,8 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
 print*, 'PENCIL get_foreign_snap_initiate: successful', iproc
 !print *, 'PENCIL - MIN MAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
-print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
+!print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
 
-print*, 'Pencil: successful', iproc
 !call mpibarrier(MPI_COMM_WORLD)
 !call MPI_FINALIZE(mpierr)
 !stop
