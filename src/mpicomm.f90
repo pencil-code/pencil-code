@@ -10152,7 +10152,6 @@ endif
 !	Calculate the multiplicity of processors
 !
           frgn_setup%proc_multis = (/nprocx,nprocy,nprocz/)/frgn_setup%procnums
-print*, 'porc numbs=', intbuf,(/nprocx,nprocy,nprocz/)
           if ( any(mod((/nprocx,nprocy,nprocz/),intbuf)/=0 ) ) then
             messg="foreign proc numbers don't match;"
             lok=.false.
@@ -10208,7 +10207,6 @@ print*, 'porc numbs=', intbuf,(/nprocx,nprocy,nprocz/)
             endif
             ind=ind+2
           enddo
-!print*, 'PENCIL: foreign dims=', floatbuf
 !
 !  Receive output timestep of foreign code.
 !      
@@ -10280,12 +10278,15 @@ print*, 'porc numbs=', intbuf,(/nprocx,nprocy,nprocz/)
 !
 !	Determine the peer using EULAG proc grid conventions.
 !
+!print*, 'PENCIL: frgn_setup%proc_multis=', frgn_setup%proc_multis
+
           frgn_setup%peer_rng = find_proc_general(ipz/frgn_setup%proc_multis(3), &
                                                   ipy/frgn_setup%proc_multis(2), &
                                                   ipx/frgn_setup%proc_multis(1), &
                                 frgn_setup%procnums(3), frgn_setup%procnums(2), frgn_setup%procnums(1),.true.)
           peer=frgn_setup%peer_rng(1)
-print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
+!print*,'PENCIL - peer=', iproc, frgn_setup%peer_rng(1), &
+!ipz/frgn_setup%proc_multis(3), ipy/frgn_setup%proc_multis(2), ipx/frgn_setup%proc_multis(1)
 
         endif
 !
@@ -10304,6 +10305,8 @@ print*,'PENCIL - peer=', frgn_setup%peer_rng(1), iproc, ipx, ipy, ipz
 !  processors in x direction.
 !
           call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2)
+!print*,'PENCIL: frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2=', &
+!frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2
           if (.not.lfirst_proc_x) il1=il1-1
           if (.not.llast_proc_x) il2=il2+1
 !
@@ -10373,8 +10376,6 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
       real, dimension(:,:,:,:) :: frgn_buffer
       integer :: nvars
       logical, optional :: lnonblock
-      double precision :: t2, t1
-      double precision, save :: t0 = 0.0
       integer, save :: tcount = 0
       integer :: istart,lenx_loc,px,iv,peer
 
@@ -10390,7 +10391,7 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
             enddo
           else       ! blocking case
             peer=frgn_setup%peer_rng(1)
-!print*, 'PENCIL recv: iproc,peer,tag=', iproc,peer,peer-ncpus
+!print*, 'PENCIL recv: iproc,peer,tag=', iproc,peer+ncpus,peer
             do iv=1,nvars
               call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                 (/lenx_loc,ny,nz/),peer+ncpus,peer,MPI_COMM_WORLD)
