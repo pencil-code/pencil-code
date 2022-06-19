@@ -36,7 +36,7 @@ module General
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: compress, fcompress
-  public :: quick_sort, binary_search
+  public :: quick_sort, binary_search, safe_sum
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
@@ -1344,7 +1344,7 @@ module General
       intent(in)  :: aa,naa,aa1,aa2
       intent(out) :: ii1,ii2
 !
-!  If not extent in this direction, set indices to interior values.
+!  If zero extent in this direction, set indices to interior values.
 !
       if (naa==2*nghost+1) then
         ii1=nghost+1
@@ -1356,7 +1356,7 @@ module General
 !
       ii1=naa
       do ii=1,naa
-        if (aa(ii)>=aa1) then
+        if (aa(ii)-aa1>=-eps) then
           ii1=ii
           exit
         endif
@@ -5813,7 +5813,8 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
 
-      character(LEN=256) :: cmd, res
+      character(LEN=256) :: cmd
+      character(LEN=128) :: res
 
       cmd="grep -i '"//trim(name)//" *=' "//trim(coptest(nml,'data/param2.nml'))//" | sed -e's/^.*"//trim(name)//" *= *//'" &
           //" -e's/^.*"//upper_case(trim(name))//" *= *//'"
@@ -5834,8 +5835,8 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       logical,          optional :: lvec
       character(LEN=128) :: res,string
       
-      string=extract_from_nml(name,nml,lvec)
-      read(string,'(a)') res
+      res=extract_from_nml(name,nml,lvec)
+      !read(string,'(a)') res
 
     endfunction get_from_nml_str
 !***********************************************************************
@@ -6076,5 +6077,17 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       endif
 
     endfunction qualify_position_bilin
+!***********************************************************************
+    function safe_sum(arr) result(res)
+   
+    real, dimension(:) :: arr 
+    real :: res
+
+    real(KIND=rkind16), dimension(size(arr)) :: arrq 
+
+    arrq=arr
+    res=sum(arrq)
+  
+    endfunction safe_sum
 !***********************************************************************
   endmodule General
