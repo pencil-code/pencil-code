@@ -1539,7 +1539,7 @@ module Special
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
           case ('tanh')
-            horndeski_alpT_eff=horndeski_alpT*(tanh(1.+(scale_factor/scale_factor0)**horndeski_alpT_exp)-1.)
+            horndeski_alpT_eff=horndeski_alpT*tanh(1.-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('exp')
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case default
