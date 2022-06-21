@@ -94,7 +94,10 @@ corrFunc[t_,f1_,f2_]:=Module[{a,b,corr},
 
 autoCor[ts_]:=Module[{t,f,fft,ac},
   {t,f}=Transpose[ts];
-  f=Transpose[Transpose[f]-Mean[f]];
+  If[Depth[f]==2,
+    f=f-Mean[f],
+    f=Transpose[Transpose[f]-Mean[f]]
+  ];
   fft=If[Depth[f]==2,Fourier[f],Transpose[Fourier/@Transpose[f]]];
   ac=Re@InverseFourier[Total/@(Conjugate[fft]*fft)];
   {t-t[[1]],ac}//Transpose//Take[#,Length[t]/2//Floor]&
