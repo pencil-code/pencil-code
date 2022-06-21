@@ -93,7 +93,8 @@ module Special
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
   real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
-  real :: nscale_factor_conformal=1., tshift=0.
+  real :: nscale_factor_conformal=1., tshift=0. 
+  real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
@@ -106,7 +107,7 @@ module Special
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
-  logical :: linflation=.false., lreheating_GW=.false.
+  logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false.
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
@@ -135,7 +136,7 @@ module Special
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lonly_mag, &
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, lonly_mag, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
 !
 ! run parameters
@@ -144,6 +145,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     lswitch_sign_e_X_boost, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
+    t_equality, t_acceleration, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
@@ -151,7 +153,7 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
-    lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, &
+    lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
@@ -696,6 +698,10 @@ module Special
 !
       if (lreheating_GW) then
         scale_factor=.25*(t+1.)**2
+      elseif (lmatter_GW) then
+        scale_factor=t**2/t_equality
+      elseif (ldark_energy_GW) then
+        scale_factor=t_acceleration**3/(t*t_equality)
       else
         if (t+tshift==0.) then
           scale_factor=1.
@@ -1600,6 +1606,10 @@ module Special
                 om=sqrt(abs(om2))
               elseif (lreheating_GW) then
                 om2=ksqr-2./(t+1.)**2
+                lsign_om2=(om2 >= 0.)
+                om=sqrt(abs(om2))
+	      elseif (lmatter_GW. .or. .ldark_energy_GW) then
+                om2=ksqr-2./t**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
               else
