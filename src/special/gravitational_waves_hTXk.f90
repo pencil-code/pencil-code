@@ -1608,7 +1608,7 @@ module Special
                 om2=ksqr-2./(t+1.)**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
-	      elseif (lmatter_GW. .or. .ldark_energy_GW) then
+	      elseif (lmatter_GW .or. ldark_energy_GW) then
                 om2=ksqr-2./t**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
