@@ -231,7 +231,9 @@ indices_aux = [ $
   { name:'ifgx', label:'Gas terms for stiff drag forces', dims:3 }, $
   { name:'ipviscx', label:'Particle viscosity field', dims:3 }, $
   { name:'ipotself', label:'Self gravity potential', dims:1 }, $
-  { name:'igpotselfx', label:'Gradient of self gravity potential', dims:3 }, $
+  { name:'igpotselfx', label:'x-der of self gravity potential', dims:1 }, $
+  { name:'igpotselfy', label:'y-der of self gravity potential', dims:1 }, $
+  { name:'igpotselfz', label:'z-der of self gravity potential', dims:1 }, $
   { name:'ivisc_heat', label:'Viscous dissipation', dims:1 }, $
   { name:'ivisc_forc', label:'Viscous force (acceleration)', dims:3 }, $
   { name:'ihypvis', label:'Hyperviscosity', dims:3 }, $
