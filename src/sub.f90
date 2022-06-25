@@ -67,7 +67,7 @@ module Sub
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn, multsv_mn_add
   public :: multvs, multvv_mat, multvv_smat, multvv_smat_add
-  public :: multmm_sc
+  public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp
   public :: mult_matrix
@@ -1305,6 +1305,27 @@ module Sub
       enddo
 !
     endsubroutine multvs_mn
+!***********************************************************************
+    subroutine multsm_mn(a,b,c)
+!
+!  Matrix multiplied with scalar, gives matrix.
+!
+!  25-jun-22/axel: adapted from multsv_mn
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      real, dimension (nx,3,3) :: b,c
+      real, dimension (nx) :: a
+      integer :: i,j
+!
+      do j=1,3
+      do i=1,3
+        c(:,i,j)=a*b(:,i,j)
+      enddo
+      enddo
+!
+    endsubroutine multsm_mn
 !***********************************************************************
     subroutine cross_mn(a,b,c)
 !
