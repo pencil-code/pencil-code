@@ -4621,9 +4621,9 @@ endsubroutine pdf
     !  transform to the shear frame.
     !
     if (lshear_frame_correlation) then
-      call get_shared_variable('t_cor',t_cor)
       if (.not. lshear) call fatal_error('power_cor_scl',&
           'lshear=F; cannot do frame transform')
+      call get_shared_variable('t_cor',t_cor)
       call shear_frame_transform(ht_re,t_cor)
       call shear_frame_transform(h_re)
     endif
@@ -4656,6 +4656,7 @@ endsubroutine pdf
       if (lshear_frame_correlation) then
         if (.not. lshear) call fatal_error( &
             'power_cor','lshear=F; cannot do frame transform')
+        call get_shared_variable('t_cor',t_cor)
         call shear_frame_transform(a_re,t_cor)
         call shear_frame_transform(b_re,t_cor)
       endif

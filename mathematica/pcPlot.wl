@@ -73,7 +73,7 @@ Input:
 Options:
   \"ImageSize0\" by default 300. The ImageSize for each individual panel.
   \"ImagePadding0\" by default 25. The ImagePadding for each individual panel.
-  \"Spacingx\" by default -2. The horizontal spacing between panels."
+  \"Spacing\" by default {0.2,0.5}. The horizontal and vertical spacings between panels."
 
 
 Begin["`Private`"]

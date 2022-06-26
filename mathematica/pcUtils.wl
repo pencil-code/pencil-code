@@ -28,6 +28,7 @@ pcDifferences::usage="pcDifferences[l] returns
 
 pcFit::usage="pcFit[data,sp,fact:{1,1,1},\"lEcho\"->False] fits the data with 
 some model specified by sp, prints out the result, and returns a the fitted curve.
+One can also use Reap[pcFit[...]] to get the fitting parameters.
 Inputs:
   data: A List of the form {{x1,y1},{x2,y2},...,{xn,yn}.
   sp: Either a String that matches the implemented models, or simply an expression
@@ -98,6 +99,7 @@ pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,
     "Exp+C",a[1]+a[2]*Exp[a[3]*x],
     _,sp/.{"x"->x,"a"->a}
   ];
+  Sow[model/.{a[i_]:>("a["<>ToString@i<>"]"),x->"x"}];
   If[llog,
     sol=FindFit[Log@data,model,a/@Range[10],x];
     model=Exp[model/.x->Log[x]/.sol],
@@ -105,6 +107,7 @@ pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,
     sol=FindFit[Log@data,model,a/@Range[10],x];
     model=model/.sol
   ];
+  Sow[sol/.a[i_]:>("a["<>ToString@i<>"]")];
   Print["Fit result: ",model/.x->"x"];
   If[OptionValue["lEcho"],data//Return];
   minmax=MinMax[data[[;;,1]]]*fact[[1;;2]];
