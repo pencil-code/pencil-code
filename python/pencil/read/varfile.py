@@ -519,6 +519,8 @@ class DataCube(object):
                     z = z_loc
 
         if magic is not None:
+            if not np.all(param.lequidist):
+                raise NotImplementedError("Magic functions are only implemented for equidistant grids.")
             if "bb" in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = self.f[index.ax - 1 : index.az, ...]
