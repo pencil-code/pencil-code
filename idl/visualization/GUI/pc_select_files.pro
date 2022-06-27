@@ -56,7 +56,7 @@ pro pc_select_files_update_list, list, all, indices, default=default, avail=avai
 
 	tags = tag_names (all)
 	num = n_elements (avail)
-	for pos = 0, num-1 do begin
+	for pos = 0L, num-1 do begin
 		avail_list[avail[pos]] = all.(avail[pos])
 		if (has_tag (default, tags[avail[pos]])) then indices = [ indices, avail[pos] ]
 	end
@@ -78,7 +78,7 @@ pro select_files_event, event
 
 	SWITCH eventval of
 	'ALL': begin
-		WIDGET_CONTROL, c_list, SET_LIST_SELECT = indgen (num_files)
+		WIDGET_CONTROL, c_list, SET_LIST_SELECT = lindgen (num_files)
 		num_selected = num_files
 		pc_select_files_update
 		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
@@ -86,7 +86,7 @@ pro select_files_event, event
 	end
 	'NONE': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = -1
-		num_selected = 0
+		num_selected = 0L
 		pc_select_files_update
 		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
 		break
@@ -121,7 +121,7 @@ pro select_files_event, event
 		break 
 	end
 	'APPLY': begin
-		selected = indgen (num_files)
+		selected = lindgen (num_files)
 		selected = selected[skipping:num_files - 1 - skip_last:stepping]
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = selected
 		WIDGET_CONTROL, nf, SET_VALUE = strtrim(string(num_selected),2) + ' / ' + strtrim(string(num_files),2)
@@ -436,12 +436,13 @@ pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_t, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz, i_last, nf
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_t, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost, skip_last, n_slice
 
-	num = 0
-	for pos = 0, num_cont-1 do begin
+	num = 0L
+	for pos = 0L, num_cont-1 do begin
 		if (not any (pos eq cont_selected)) then continue
 		if (any (strcmp (sources[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
 	end
 	cont_corr = num / float (num_cont)
+
 
 	if ((slice ge 1) and (slice le 3)) then begin
 		subvol_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
@@ -515,7 +516,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		quant = quantities
 		if (size (quantities, /type) eq 7) then begin
 			num = n_elements (quantities)
-			for pos = 0, num-1 do begin
+			for pos = 0L, num-1 do begin
 				if (pos eq 0) then begin
 					quant = create_struct (quantities[pos], quantities[pos])
 				end else begin
@@ -552,20 +553,20 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	files = file_search (procdir, pattern)
 	num_files = n_elements (files)
 	stepping = stepping < (num_files - skipping - skip_last)
-	for pos = 0, num_files - 1 do begin
+	for pos = 0L, num_files - 1 do begin
 		cut = strpos (procdir, "/", /REVERSE_SEARCH)
 		if (strmid (files[pos], cut, 1) eq "/") then cut += 1
 		files[pos] = strmid (files[pos], cut)
 	end
 	sorted = files
 	sorted[*] = ""
-	target = 0
+	target = 0L
 	for len = min (strlen (files)), max (strlen (files)) do begin
 		indices = where (strlen (files) eq len, num_match)
 		if (num_match ge 1) then begin
 			sub = files[indices]
 			reorder = sort (sub)
-			for pos = 0, num_match-1 do begin
+			for pos = 0L, num_match-1 do begin
 				sorted[target] = sub[reorder[pos]]
 				target += 1
 			end
@@ -584,7 +585,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	; Preselected snapshots and additional snapshots to be loaded
 	selected = -1
-	num_selected = 0
+	num_selected = 0L
 	if ((addfile ne "") and file_test (procdir+addfile)) then add_selected = 1 else add_selected = 0
 	if ((varfile ne "") and file_test (procdir+varfile)) then var_selected = 1 else var_selected = 0
 
@@ -660,9 +661,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	indices = where (content ne "UNKNOWN")
 	if (any (indices ne -1)) then content = content[indices]
 	num_content = n_elements (content)
-	cont_selected = indgen (num_content)
+	cont_selected = lindgen (num_content)
 	if (n_elements (var_list) gt 0) then begin
-		for pos = 0, num_content-1 do begin
+		for pos = 0L, num_content-1 do begin
 			if (not any (strcmp (sources[pos], var_list, /fold_case))) then cont_selected[pos] = -1
 		end
 		indices = where (cont_selected ge 0)
@@ -673,14 +674,14 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	num_all_quant = n_tags (all_quant)
 	quant_list = strarr (num_all_quant)
 	num_quant = n_tags (quant)
-	for pos = 0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
+	for pos = 0L, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
 	pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 
 	; Pre-defined overplot settings
 	num_all_over = n_tags (all_over)
 	over_list = strarr (num_all_over)
 	num_over = n_tags (over)
-	for pos = 0, num_all_over-1 do over_list[pos] = all_over.(pos)
+	for pos = 0L, num_all_over-1 do over_list[pos] = all_over.(pos)
 	pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 
 
@@ -1013,7 +1014,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (any (quant_selected ge 0)) then begin
 		num = n_elements (quant_selected)
 		tags = tag_names (all_quant)
-		for pos=0, num-1 do begin
+		for pos=0L, num-1 do begin
 			tag = tags[quant_selected[pos]]
 			if (pos eq 0) then begin
 				quantities = create_struct (tag, all_quant.(quant_selected[pos]))
@@ -1030,7 +1031,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (any (over_selected ge 0)) then begin
 		num = n_elements (over_selected)
 		tags = tag_names (all_over)
-		for pos=0, num-1 do begin
+		for pos=0L, num-1 do begin
 			tag = tags[over_selected[pos]]
 			if (pos eq 0) then begin
 				overplots = create_struct (tag, all_over.(over_selected[pos]))
