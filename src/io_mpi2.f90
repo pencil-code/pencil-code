@@ -683,7 +683,7 @@ module Io
 !
       integer, dimension(ncpus) :: npar_proc
       character(len=fnlen) :: fpath
-      integer :: handle, ftype, npar_tot, ip0
+      integer :: handle, ftype, npar_tot, ip0, nv1
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
       if (present(ltruncate)) call keep_compiler_quiet(ltruncate)
@@ -712,7 +712,8 @@ module Io
 !  Write particle IDs.
 !
       ip0 = sum(npar_proc(:iproc))
-      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv /), (/ ip0 /), order, MPI_INTEGER, ftype, mpi_err)
+      nv1 = max(nv, 1)
+      call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv1 /), (/ ip0 /), order, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
@@ -729,7 +730,7 @@ module Io
 !
 !  Write particle data.
 !
-      call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv, mparray /), (/ ip0, 0 /), &
+      call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv1, mparray /), (/ ip0, 0 /), &
                                     order, mpi_precision, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
