@@ -1100,6 +1100,32 @@ print*, 'Pencil successful', iproc
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Drobyshevski-Yuferev (1974) flow
+!
+      case ('DY74')
+        if (headtt) print*,'Drobyshevski-Yuferev flow; kx,ky,kz=',kx_uukin,ky_uukin,kz_uukin
+        fac=ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=-fac*sin(kx_uukin*x(l1:l2))*(1.+.5*cos(ky_uukin*y(m)))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-fac*(1.+.5*cos(kx_uukin*x(l1:l2)))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)=fac*((1.+cos(kx_uukin*x(l1:l2)))*(1.+cos(ky_uukin*y(m)))-1.)*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Chandrasekhar, Chap2 (1961) flow
+!
+      case ('Cha61')
+        if (headtt) print*,'Chandrasekhar, Chap2 flow; kx,ky,kz=',kx_uukin,ky_uukin,kz_uukin
+        fac=ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=-fac*.5*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-fac*.5*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)= fac*   cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Sound wave: 1D velocity field, superposition of waves traveling in positive and 
 !  negative x directions, modulated by a slow spatial variability with wavenumber K0
 !  u = cos[k1x-w1ct][1+cos(K0x-Omega0t)] + cos[k1x+w1ct][1-cos(K0x+Omega0t)]

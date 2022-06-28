@@ -5081,7 +5081,7 @@ module Initcond
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
       logical, intent(in), optional :: lpower_profile_file, lno_noise
-      logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1
+      logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp
@@ -5108,6 +5108,14 @@ module Initcond
         lremain_in_fourier1 = lremain_in_fourier
       else
         lremain_in_fourier1 = .false.
+      endif
+!
+!  Check whether we want no_noise or not
+!
+      if (present(lno_noise)) then
+        lno_noise1 = lno_noise
+      else
+        lno_noise1 = .false.
       endif
 !
 !  Allocate memory for arrays.
@@ -5170,13 +5178,19 @@ module Initcond
         if (.not.lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
 !
-!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
-!  the full nx extent (which, currently, must be equal to nxgrid).
+!  Set k^2 array.
 !
 !  Note: for multiple processors, there may still be a problem n 1-D
 !
+!  In 1-D
+        if (nzgrid==1.and.nygrid==1) then
+          ikz=1
+          iky=1
+          do ikx=1,nx
+            k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2
+          enddo
 !  In 2-D
-        if (nz==1) then
+        elseif (nzgrid==1) then
           ikz=1
           do iky=1,ny
             do ikx=1,nx
@@ -5199,7 +5213,7 @@ module Initcond
 !
         if (present(qexp)) then
           if (qexp==0.) then
-            if (present(lno_noise) .and. lno_noise) then
+            if (lno_noise1) then
               u_re=ampl
               u_im=0.
             else
@@ -5228,7 +5242,7 @@ module Initcond
             enddo !i
           endif
         else
-          if (lno_noise) then
+          if (lno_noise1) then
             u_re=ampl
             u_im=0.
           else
@@ -5241,10 +5255,11 @@ module Initcond
         endif
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
-!  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
+!  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
+!  In general, E(k) ~ u^2 k^(D-1), so we have n=2m+D-1, so m=(n-D+1)/2
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
-        mhalf=.5*(.5*initpower-1)
+        mhalf=.25*(initpower-dimensionality+1)
 !
 !  generate all 3 velocity components separately
 !  generate k^n spectrum with random phase (between -pi and pi)

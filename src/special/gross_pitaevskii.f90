@@ -116,6 +116,9 @@ module Special
 !
   logical :: ltest_sphere = .false.
   logical :: limag_time = .false.
+  logical :: lscale_tobox=.true., lno_noise_gpe=.false.
+  logical :: lskip_projection_gpe=.false., lvectorpotential=.false.
+  real :: ncutoff_gpe=1.
   real :: diff_boundary = 0.000
   real :: vortex_spacing = 12.000
   real :: frame_Ux = 0.
@@ -124,6 +127,8 @@ module Special
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
   real :: phase_gpe=0.
   real :: del2prefactor=1., fact_potself=1., xslope_gpe=0.
+  real :: initpower_gpe=4.,  cutoff_gpe=0.,  initpower2_gpe=-5./3.
+  real :: kgaussian_gpe=0.,kpeak_gpe=1., relhel_gpe=0.
   real, dimension(ninit) :: ampl_gpe=0., width_gpe=0.
   real, dimension(ninit) :: xpos_gpe=0., ypos_gpe=0., zpos_gpe=0.
   real, dimension(nx) :: cx_gpe
@@ -137,6 +142,8 @@ module Special
     nvortices, vortex_quantization, phase_gpe, &
     mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
     V0_gpe, n_gpe, eps_gpe, radius_gpe, xslope_gpe, &
+    initpower_gpe, cutoff_gpe, initpower2_gpe, &
+    kgaussian_gpe,kpeak_gpe, relhel_gpe, lno_noise_gpe, &
     test_sphere_radius
 !
 ! run parameters
@@ -380,6 +387,17 @@ module Special
                 + vortex_ring(vr1)
             enddo; enddo
           case ('gaussian-noise'); call gaunoise(ampl_gpe(j),f,ipsi_imag,ipsi_imag)
+!
+          case ('gpe_power_randomphase')
+            call power_randomphase_hel(ampl_gpe(j),initpower_gpe,initpower2_gpe, &
+              cutoff_gpe,ncutoff_gpe,kpeak_gpe,f,ipsi_real,ipsi_real, &
+              relhel_gpe,kgaussian_gpe, lskip_projection_gpe, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_gpe)
+            call power_randomphase_hel(ampl_gpe(j),initpower_gpe,initpower2_gpe, &
+              cutoff_gpe,ncutoff_gpe,kpeak_gpe,f,ipsi_imag,ipsi_imag, &
+              relhel_gpe,kgaussian_gpe, lskip_projection_gpe, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_gpe)
+!
           case default
             !
             !  Catch unknown values
@@ -674,7 +692,7 @@ module Special
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='psi2') cformv='DEFINED'
+        where(cnamev=='psi2' .or. cnamev=='psi_real' .or. cnamev=='psi_imag') cformv='DEFINED'
       endif
 !
 !  write column where which magnetic variable is stored
@@ -718,6 +736,24 @@ module Special
                                           +f(l1:l2,m1:m2,iz4_loc,ipsi_imag)**2
           if (lwrite_slice_xz2) slices%xz=f(l1:l2,iy2_loc,n1:n2,ipsi_real)**2 &
                                          +f(l1:l2,iy2_loc,n1:n2,ipsi_imag)**2
+          slices%ready = .true.
+!
+!  psi_real - Real part of the wave function
+!
+        case ('psi_real')
+          if (lwrite_slice_xy) slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi_real)
+          if (lwrite_slice_xz) slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi_real)
+          if (lwrite_slice_yz) slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi_real)
+          if (lwrite_slice_xy2) slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi_real)
+          slices%ready = .true.
+!
+!  psi_imag - Imaginary part of the wave function
+!
+        case ('psi_imag')
+          if (lwrite_slice_xy) slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi_imag)
+          if (lwrite_slice_xz) slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi_imag)
+          if (lwrite_slice_yz) slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi_imag)
+          if (lwrite_slice_xy2) slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi_imag)
           slices%ready = .true.
 !
       endselect
