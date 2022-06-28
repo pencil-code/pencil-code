@@ -93,6 +93,14 @@ endif
     $add_cmd $add_data_opt *power*.dat
   endif
 #
+#  add Saffman invariants, if they exist
+#  (for the time being, test existence only on a few such files)
+#
+  \ls | egrep 'Iv.*\.dat' >/dev/null
+  if ( ! $status ) then
+    $add_cmd $add_data_opt Iv*.dat
+  endif
+#
 #  add structure functions, if they exist
 #  (for the time being, test existence only on a few such files)
 #
