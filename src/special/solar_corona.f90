@@ -74,7 +74,8 @@ module Special
   character(len=labellen) :: prof_type='nothing'
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
-  real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z, deltaH_part_init_z
+  real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z, deltaH_part_init_z, &
+                                     deltaH_vol_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
   logical :: lheatcond_cutoff=.false.
 !
@@ -432,7 +433,7 @@ module Special
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho, &
-          lread_prof_E,lread_prof_deltaH_part
+          lread_prof_E,lread_prof_deltaH_part, lread_prof_deltaH_vol
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -442,6 +443,7 @@ module Special
       character(len=*), parameter :: deltaT_dat = 'driver/prof_deltaT.dat'
       character(len=*), parameter :: deltaE_dat = 'driver/prof_deltaE.dat'
       character(len=*), parameter :: deltaH_part_dat = 'driver/prof_deltaH_part.dat'
+      character(len=*), parameter :: deltaH_vol_dat = 'driver/prof_deltaH_vol.dat'
       character(len=*), parameter :: E_dat = 'driver/prof_E.dat'
       character(len=*), parameter :: deltarho_dat = 'driver/prof_deltarho.dat'
 !
@@ -453,6 +455,7 @@ module Special
       lread_prof_deltaT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaT') > 0)
       lread_prof_deltaE = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaE') > 0)
       lread_prof_deltaH_part = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaH_part') > 0)
+      lread_prof_deltaH_vol = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaH_vol') > 0)
       lread_prof_E = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_E') > 0)
       lread_prof_deltarho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltarho') > 0)
 !
@@ -486,7 +489,7 @@ module Special
         deallocate (prof_lnTT, prof_lnrho, prof_z)
 !
       elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT .or. lread_prof_deltaT &
-          .or. lread_prof_deltaE .or. lread_prof_deltarho .or. lread_prof_deltaH_part) then
+          .or. lread_prof_deltaE .or. lread_prof_deltarho .or. lread_prof_deltaH_part .or. lread_prof_deltaH_vol) then
 !
         ! read vertical velocity profile for interpolation
         if (lread_prof_uu) &
@@ -523,6 +526,13 @@ module Special
           allocate (deltaH_part_init_z(mz))
           call read_profile (deltaH_part_dat, deltaH_part_init_z, real(unit_energy/unit_time), .false.)
         endif
+!
+        ! read heating per particle differences profile
+        if (lread_prof_deltaH_vol) then
+          allocate (deltaH_vol_init_z(mz))
+          call read_profile (deltaH_vol_dat, deltaH_vol_init_z, real(unit_energy/unit_time), .false.)
+        endif
+!
         ! read density differences profile
         if (lread_prof_deltarho) then
           allocate (deltarho_init_z(mz))
@@ -679,7 +689,6 @@ module Special
         lprof_deltaH_part = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaH_part') > 0)
         if (lprof_deltaH_part) then
           lpenc_requested(i_TT1) = .true.
-!         lpenc_requested(i_glnrho) = .true.
         endif
       endif
 !
@@ -2690,6 +2699,7 @@ module Special
       if (allocated (deltaT_init_z)) call calc_heat_cool_deltaT(df,p)
       if (allocated (deltaE_init_z)) call calc_heat_cool_deltaE(df,p)
       if (allocated (deltaH_part_init_z)) call calc_heat_cool_H_part(df,p)
+      if (allocated (deltaH_vol_init_z)) call calc_heat_cool_H_vol(df,p)
       if (allocated (E_init_z)) call calc_heat_cool_E(df,p)
 !
     endsubroutine calc_heat_cool
@@ -2824,6 +2834,49 @@ subroutine calc_heat_cool_H_part(df,p)
       endif
 !
     endsubroutine calc_heat_cool_H_part
+!***********************************************************************
+
+subroutine calc_heat_cool_H_vol(df,p)
+!
+!  Apply external heating and cooling profile for heating per particle.
+!
+      use Diagnostics,     only: max_mn_name
+      use EquationOfState, only: gamma
+      use Mpicomm,         only: stop_it
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: tmp
+!
+      if (ltemperature .and. ltemperature_nolog) then
+        tmp =heat_cool * p%rho1 * p%cp1 * gamma * deltaH_vol_init_z(n) 
+        if ((mod (it, 1000) == 1) .and. (nghost+n+ipz*nz == 215)) then
+          write (300+iproc,*) n , tmp
+         endif 
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp
+        tmp = alog (1 + tmp)
+      elseif (ltemperature) then
+        tmp =heat_cool *  p%TT1 * p%rho1 * p%cp1 * gamma * deltaH_vol_init_z(n) 
+        if ((mod (it, 1000) == 1) .and. (nghost+n+ipz*nz == 215)) then
+          write (300+iproc,*) n , tmp
+         endif 
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool_deltaH_vol:lentropy=not implemented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        tmp = tmp / cdts
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
+          itype_name(idiag_dtradloss) = ilabel_max_dt
+          call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
+        endif
+        dt1_max = max(dt1_max, tmp)
+      endif
+!
+    endsubroutine calc_heat_cool_H_vol
 !***********************************************************************
     subroutine calc_heat_cool_E(df,p)
 !
