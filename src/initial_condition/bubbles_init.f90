@@ -199,7 +199,7 @@ module InitialCondition
             if (R .le. r_b) then
               ! Define the primary fields g(\alpha r) and g'(\alpha, r)
               gg = (R/r_b)**2 - 3/(tau*sin(tau))*(sin(R/r_b*tau)/(R/r_b*tau) - cos(R/r_b*tau))
-              gg_p = 2*R/r_b**2/tau - 3/(tau*sin(tau))*(-sin(R/r_b*tau)/(R/r_b*tau)**2 + &
+              gg_p = 2*R/r_b/tau - 3/(tau*sin(tau))*(-sin(R/r_b*tau)/(R/r_b*tau)**2 + &
                      cos(R/r_b*tau)/(R/r_b*tau) + sin(R/r_b*tau))
 
               ! Construct the magnetic field.
