@@ -19,6 +19,8 @@ pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
 pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up window."
 
+pcTicks::usage="Frame ticks in convenient forms."
+
 spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
 Input:
   sim: String. Directory of the simulation.
@@ -125,6 +127,9 @@ pcPopup[plot_]:=CreateDocument[plot,
   WindowElements->{},WindowFrame->"Generic",WindowSize->All,
   WindowTitle->None,WindowToolbars->{}
 ]
+
+pcTicks["10^i",max_:99]:=Table[{10^i,Superscript["10",ToString@i]},{i,-max,max}]
+pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
 
 
 (* ::Section:: *)
@@ -274,7 +279,7 @@ End[]
 
 
 Protect[
-  pcLabelStyle,pcPlotStyle,pcPopup,
+  pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,

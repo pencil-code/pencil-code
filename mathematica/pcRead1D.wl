@@ -36,7 +36,8 @@ Output:
 read1D::usage="read1D[sim,file,l] reads 1D data.
 Input:
   sim: String. Directory of the simulation folder
-  file: String. Name of the data file, including .dat
+  file: String. Name of the data file, including .dat.
+        Can also be multiple Strings; then the file name will be str1<>str2<>... .
   l:  Integer. Optional. If exists then specifies the length of the 1D data.
 Output:
   {{t1,t2,...},{{data at t1},{data at t2},...}}"
@@ -130,17 +131,18 @@ a[1]/.FindFit[Transpose[{t,Log[f]}],a[1]*tt+a[2],{a[1],a[2]},tt]
 (*Spectra-like files*)
 
 
-read1D[sim_,file_]:=Module[{data,pos},
-  data=Import[sim<>"/data/"<>file];
+read1D[sim_,file__String]:=Module[{data,pos},
+  data=Import@StringJoin[sim,"/data/",file];
   pos=Flatten@Position[data,x_/;Length[x]==1];
   data=Flatten/@Partition[data,pos[[2]]-pos[[1]]];
   {First/@data,Rest/@data}
 ]
-read1D[sim_,file_,l_]:=Module[{data},
-  data=Import[sim<>"/data/"<>file]//Flatten;
+read1D[sim_,file__String,l_Integer]:=Module[{data},
+  data=Import@StringJoin[sim,"/data/",file]//Flatten;
   data=Partition[data,l+1];
   {First/@data,Rest/@data}
 ]
+
 
 read1DSigned[sim_,file_,l_Integer:0,testF_:Positive]:=Module[{t,spec},
   {t,spec}=If[l<=0,read1D[sim,file],read1D[sim,file,l]];

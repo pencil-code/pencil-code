@@ -432,6 +432,7 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_gLamam=0     ! DIAG_DOC: $\left<\nabla\Lambda\cdot\Av\right>$
   integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\nabla\Lambda\cdot\Bv\right>$
   integer :: idiag_abumx=0      ! DIAG_DOC: $\left<u_x\Av\cdot\Bv\right>$
   integer :: idiag_abumy=0      ! DIAG_DOC: $\left<u_y\Av\cdot\Bv\right>$
@@ -3457,7 +3458,7 @@ module Magnetic
 !
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
 !  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
-!  <A.B>_C = <A.B>_W - gLambm.
+!  <A.B>_C = <A.B>_W - gLambm, <A.A>_C = <A.A>_W - gLamam.
 !
           if (lcoulomb) then
             if (.not.lpoisson) call fatal_error('magnetic_before_boundary',&
@@ -5616,7 +5617,7 @@ module Magnetic
       real, dimension (nx,3,3) :: bhatij
       real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
-      real, dimension (nx) :: jxb_dotB0,uxb_dotB0, gLamb
+      real, dimension (nx) :: jxb_dotB0,uxb_dotB0, gLama, gLamb
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: aj, tmp, tmp1, fres2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
@@ -5718,6 +5719,11 @@ module Magnetic
       if (idiag_aybym2/=0) &
           call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
+      if (idiag_gLamam/=0) then
+        call grad(f,iLam,gLam)
+        call dot(gLam,p%aa,gLama)
+        call sum_mn_name(gLama,idiag_gLamam)
+      endif
       if (idiag_gLambm/=0) then
         call grad(f,iLam,gLam)
         call dot(gLam,p%bb,gLamb)
@@ -9439,7 +9445,7 @@ module Magnetic
         idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0; idiag_b6m=0; idiag_b12m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
-        idiag_gLambm=0; idiag_a2b2m=0; idiag_j2b2m=0
+        idiag_gLamam=0; idiag_gLambm=0; idiag_a2b2m=0; idiag_j2b2m=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
@@ -9588,6 +9594,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
         call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'gLamam',idiag_gLamam)
         call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'a2b2m',idiag_a2b2m)
         call parse_name(iname,cname(iname),cform(iname),'j2b2m',idiag_j2b2m)

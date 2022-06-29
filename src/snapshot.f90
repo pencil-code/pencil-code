@@ -856,9 +856,12 @@ module Snapshot
         if (ouout_spec) call power_cor_scl(f,'ouout')
         if (ouout2_spec) call power_cor_scl(f,'ouout2')
 !
-        if (saffman_ub) call quadratic_invariants(f,'saffman_ub')
-        if (saffman_mag) call quadratic_invariants(f,'saffman_mag')
+        if (saffman_ub)    call quadratic_invariants(f,'saffman_ub')
+        if (saffman_mag)   call quadratic_invariants(f,'saffman_mag')
         if (saffman_mag_c) call quadratic_invariants(f,'saffman_mag_c')
+        if (saffman_aa)    call quadratic_invariants(f,'saffman_aa')
+        if (saffman_aa_c)  call quadratic_invariants(f,'saffman_aa_c')
+        if (saffman_bb)    call quadratic_invariants(f,'saffman_bb')
 !
 !  output Fourier modes
 !
