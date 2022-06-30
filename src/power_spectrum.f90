@@ -3193,7 +3193,7 @@ endsubroutine pdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
   real :: k2,ang
   real, dimension(nx,ny,nz,3) :: a_re,b_re,a_im,b_im
-  real, dimension(nx,ny,nz) :: ak_re,ak_im,bk_re,bk_im
+  real, dimension(nx,ny,nz) :: gk,ak_re,ak_im,bk_re,bk_im
   real, dimension(nx,ny,nz) :: aa,bb,ab
   real, dimension(nx,3) :: bbi
   real, dimension(nxgrid) :: kx
@@ -3241,23 +3241,26 @@ endsubroutine pdf
     !  initialize a.a, b.b, and a.b, for filtered fields
     !
     aa=0.; bb=0.; ab=0.
+    !
+    !  find the filtering kernel
+    !
+    gk=0.
+    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+      if (kr==nint(sqrt(k2))) gk(ikx,iky,ikz)=1.
+    enddo; enddo; enddo
+    !
+    !  obtain filtered fields ak and bk
+    !
     do ivec=1,3
-      !
-      !  obtain filtered fields ak and bk
-      !
       call fft_xyz_parallel(a_re(:,:,:,ivec),a_im(:,:,:,ivec))
       call fft_xyz_parallel(b_re(:,:,:,ivec),b_im(:,:,:,ivec))
       !
-      ak_re=0.; ak_im=0.; bk_re=0.; bk_im=0.
-      do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-        if (kr==nint(sqrt(k2))) then
-          ak_re(ikx,iky,ikz)=a_re(ikx,iky,ikz,ivec)
-          ak_im(ikx,iky,ikz)=a_im(ikx,iky,ikz,ivec)
-          bk_re(ikx,iky,ikz)=b_re(ikx,iky,ikz,ivec)
-          bk_im(ikx,iky,ikz)=b_im(ikx,iky,ikz,ivec)
-        endif
-      enddo; enddo; enddo
+      ak_re(:,:,:) = gk(:,:,:)*a_re(:,:,:,ivec)
+      ak_im(:,:,:) = gk(:,:,:)*a_im(:,:,:,ivec)
+      bk_re(:,:,:) = gk(:,:,:)*b_re(:,:,:,ivec)
+      bk_im(:,:,:) = gk(:,:,:)*b_im(:,:,:,ivec)
+      !
       call fft_xyz_parallel(ak_re,ak_im,linv=.true.,lneed_im=.false.)
       call fft_xyz_parallel(bk_re,bk_im,linv=.true.,lneed_im=.false.)
       !
