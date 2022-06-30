@@ -610,7 +610,7 @@ module Energy
 !
       real, dimension (nz) :: tmpz
       real :: beta1, cp1, beta0, TT_bcz, star_cte
-      integer :: i, j, q, n, m, stat
+      integer :: i, j, n, m, stat
       logical :: lnothing, exist
       real, pointer :: gravx
 !
@@ -3247,7 +3247,6 @@ module Energy
 !   2-feb-03/axel: added possibility of ionization
 ! 
       use Diagnostics
-      use EquationOfState, only: gamma1
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -3261,8 +3260,8 @@ module Energy
       intent(inout) :: df
 !
       real :: ztop,xi,profile_cor
-      real, dimension(nx) :: uduu,tmp1
-      integer :: j,i
+      real, dimension(nx) :: tmp1
+      integer :: j
 !
       Hmax = 0.
 !

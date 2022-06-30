@@ -935,7 +935,7 @@ module Grid
       use General, only: indgen, itoa, find_proc
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
-      integer :: xj,yj,zj,itheta,nphi_max,nphi,na,ne,mm,nn,nni
+      integer :: xj,yj,zj,itheta,nphi,na,ne,mm,nn,nni
       integer, dimension(3) :: idzl,idzr
 !
       call construct_serial_arrays

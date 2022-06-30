@@ -238,7 +238,7 @@ module General
 !
       use Cdata, only: mm,nn,imn_array,necessary,necessary_imn,lroot,ip, &
                        lyinyang,lcutoff_corners,nycut,nzcut, &
-                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z, iproc
+                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -679,8 +679,6 @@ module General
 !  Same as mars_ran, but with another seed (for now)
 !
 !   8-nov-19/nils+axel: adapted from mars_ran
-!
-      use Cdata, only: iproc
 !
       implicit none
 !
@@ -4954,7 +4952,7 @@ endfunction
 ! 10-sep-18/MR: added parameters ith_shift_,iph_shift_ for creating slanted strips
 ! 25-oct-18/PABourdin: entry yy_transform_strip_other removed and simplified code
 !
-      use Cdata, only: costh,sinth,cosph,sinph, y, z
+      use Cdata, only: y, z
 
       real, dimension(:),    intent(IN) :: th,ph
       real, dimension(:,:,:),intent(OUT):: thphprime
@@ -5833,10 +5831,9 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       character(LEN=*)           :: name
       character(LEN=*), optional :: nml
       logical,          optional :: lvec
-      character(LEN=128) :: res,string
+      character(LEN=128) :: res
       
       res=extract_from_nml(name,nml,lvec)
-      !read(string,'(a)') res
 
     endfunction get_from_nml_str
 !***********************************************************************

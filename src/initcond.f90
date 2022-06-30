@@ -1778,7 +1778,7 @@ module Initcond
 !
 !  16-apr-21/axel: coded
 !
-      integer :: i,j,l,m,n
+      integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: kx, ky, kz
       real :: ampl, phase

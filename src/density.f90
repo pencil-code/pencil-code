@@ -1654,10 +1654,7 @@ module Density
       intent(inout) :: f
 !
       real :: fact,cur_mass
-      real, dimension (nx,3) :: gradlnrho
       real, dimension (nx) :: tmp
-!
-      integer :: j
 !
       if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
           f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))

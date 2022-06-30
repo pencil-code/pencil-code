@@ -9,6 +9,9 @@ module Syscalls
   implicit none
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  external directory_exists_c
+  external get_PID_c
+  external get_env_var_c
   external is_nan_c
   external system_c
   external sizeof_real_c

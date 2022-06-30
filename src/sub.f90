@@ -7333,7 +7333,7 @@ nameloop: do
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cmax_im12,cmax_ip12
-      integer :: k, ii
+      integer :: k
       logical :: ldiv_4th
 !
       real, dimension (nx), optional, intent(out) :: cmax_imm12,cmax_ipp12
@@ -8549,7 +8549,6 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real :: Omega
       real, dimension(nx,3) :: vel
 
-      integer :: j
       real :: theta, phi
       real, dimension(nx,3) :: points
       real, dimension(nx) :: pom, arg

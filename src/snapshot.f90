@@ -249,7 +249,6 @@ module Snapshot
       integer, intent(in), optional :: nv1
 !
       real, save :: tsnap
-      real :: time1
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file
@@ -343,7 +342,6 @@ module Snapshot
 !
       integer :: ivar
       real, dimension(:,:), pointer :: reference_state
-      real :: time1
 !
       if (ip<=6.and.lroot) print*,'reading var files'
 !

@@ -138,7 +138,7 @@ module Gravity
       real, dimension (nx,3) :: gg_mn=0.0
       real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,pot
       logical :: lpade=.true. ! set to false for 1/r potential
-      integer :: j,ierr
+      integer :: j
 !
 !  Pre-calculate the angular frequency of the rotating frame in the case a
 !  secondary stationary body is added to the simulation.
@@ -1100,7 +1100,7 @@ module Gravity
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rhill,rhill1,g2
+      real :: g2
       integer :: i
 !
       if (lcylindrical_coords) then

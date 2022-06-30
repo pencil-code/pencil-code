@@ -1210,7 +1210,7 @@ module Viscosity
       intent(inout) :: f,p
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,tmp5,pnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
@@ -2300,8 +2300,6 @@ module Viscosity
 
       real, dimension(mx,my,mz,mfarray) :: f
 
-      integer :: j,k
-      real, dimension(nx,3) :: gr, guj
       real, dimension(nx) :: rho, tmp
       logical, pointer :: lshear_rateofstrain
 

@@ -1422,7 +1422,6 @@ module Hydro
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
       real, dimension (:,:,:), allocatable :: buffer
-      real, dimension (3) :: uum0
       real :: fact
       integer :: j,nnz,l,m,n
 !
@@ -2804,12 +2803,10 @@ module Hydro
       use WENO_transport
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp4
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, sqrt_ss_term, ratio_mom2en
-      real, dimension (nx,3,3) :: tmp6
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
@@ -4529,7 +4526,6 @@ module Hydro
       intent(inout) :: f
       intent(in) :: p
 !
-      integer :: ikx, nshear, iky
       real :: fact_cos,fact_sin,t_cor=0.
       logical :: lreset_vart=.false.
 !
