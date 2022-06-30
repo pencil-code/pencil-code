@@ -829,6 +829,11 @@ module Snapshot
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf) call pdf(f,'special',0.,1.)
 !
+!  Do k-dependent pdf
+!
+        if (ang_jb_pdf1d) call pdf1d_ang(f,'jb')
+        if (ang_ub_pdf1d) call pdf1d_ang(f,'ub')
+!
 !  Do pdf for the magnetic field
 !
 !       if (uuBB_pdf) call pdf(f,'uuBB',-1.,1.)

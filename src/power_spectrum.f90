@@ -3172,6 +3172,130 @@ module power_spectrum
 11 format(8i10)
 endsubroutine pdf
 !***********************************************************************
+  subroutine pdf1d_ang(f,sp)
+!
+!  Computes scale-by-scale pdfs of the cosine of the angle between
+!  two vector fields in the configuration space. The last column of
+!  the pdf counts the places where one or both of the two fields
+!  vanishes.
+!
+!   30-jun-22/hongzhe: coded
+!
+    use Fourier
+    use Mpicomm, only: mpireduce_sum_int
+    use Sub, only: del2v_etc, curl
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=*) :: sp
+!
+  integer, parameter :: nk=nxgrid/2, npdf=130
+  integer :: i,ivec,ikx,iky,ikz,kr,ipdf
+  integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
+  real :: k2,ang
+  real, dimension(nx,ny,nz,3) :: a_re,b_re,a_im,b_im
+  real, dimension(nx,ny,nz) :: ak_re,ak_im,bk_re,bk_im
+  real, dimension(nx,ny,nz) :: aa,bb,ab
+  real, dimension(nx,3) :: bbi
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  Obtain vector fields
+  !
+  if (sp=='jb') then
+    if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    do n=n1,n2; do m=m1,m2
+      call curl(f,iaa,bbi)
+      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
+      call del2v_etc(f,iaa,curlcurl=bbi)
+      a_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  current density
+    enddo; enddo
+    a_im=0.; b_im=0.
+  elseif (sp=='ub') then
+    if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    do n=n1,n2; do m=m1,m2
+      call curl(f,iaa,bbi)
+      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
+    enddo; enddo
+    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    a_im=0.; b_im=0.
+  endif  !  sp
+  !
+  !  compute kr-dependent pdf
+  !
+  pdf_ang=0
+  do kr=1,nk-1
+    !
+    !  initialize a.a, b.b, and a.b, for filtered fields
+    !
+    aa=0.; bb=0.; ab=0.
+    do ivec=1,3
+      !
+      !  obtain filtered fields ak and bk
+      !
+      call fft_xyz_parallel(a_re(:,:,:,ivec),a_im(:,:,:,ivec))
+      call fft_xyz_parallel(b_re(:,:,:,ivec),b_im(:,:,:,ivec))
+      !
+      ak_re=0.; ak_im=0.; bk_re=0.; bk_im=0.
+      do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        if (kr==nint(sqrt(k2))) then
+          ak_re(ikx,iky,ikz)=a_re(ikx,iky,ikz,ivec)
+          ak_im(ikx,iky,ikz)=a_im(ikx,iky,ikz,ivec)
+          bk_re(ikx,iky,ikz)=b_re(ikx,iky,ikz,ivec)
+          bk_im(ikx,iky,ikz)=b_im(ikx,iky,ikz,ivec)
+        endif
+      enddo; enddo; enddo
+      call fft_xyz_parallel(ak_re,ak_im,linv=.true.,lneed_im=.false.)
+      call fft_xyz_parallel(bk_re,bk_im,linv=.true.,lneed_im=.false.)
+      !
+      !  dot products
+      !
+      aa = aa+ak_re**2
+      bb = bb+bk_re**2
+      ab = ab+ak_re*bk_re
+    enddo
+    !
+    !  compute pdf
+    !
+    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
+      if (aa(ikx,iky,ikz)==0. .or. bb(ikx,iky,ikz)==0.) then
+        pdf_ang(kr,npdf) = pdf_ang(kr,npdf)+1
+      else
+        ang = ab(ikx,iky,ikz)/sqrt(aa(ikx,iky,ikz))/sqrt(bb(ikx,iky,ikz))
+        ipdf = nint( (ang+1)/2*(npdf-2)+1)
+        pdf_ang(kr,ipdf) = pdf_ang(kr,ipdf)+1
+      endif
+    enddo; enddo; enddo
+  enddo  !  kr
+  !
+  !  sum over processors
+  !
+  call mpireduce_sum_int(pdf_ang,pdf_ang_sum,(/nk-1,npdf/))
+  !
+  !  write to file
+  !
+  if (lroot) then
+    open(1,file=trim(datadir)//'/pdf1d_ang_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) pdf_ang_sum
+    close(1)
+  endif
+  !
+  endsubroutine pdf1d_ang
+!***********************************************************************
     subroutine power_phi(f,sp)
 !
 ! Power spectra in phi direction in spherical coordinates:

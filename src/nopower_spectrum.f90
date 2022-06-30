@@ -180,6 +180,16 @@ module power_spectrum
 !
     endsubroutine pdf
 !***********************************************************************
+    subroutine pdf1d_ang(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine pdf1d_ang
+!***********************************************************************
     subroutine power_phi(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
