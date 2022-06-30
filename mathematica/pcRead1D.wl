@@ -146,7 +146,6 @@ read1D[sim_,file__String,l_Integer]:=Module[{data},
 
 read1DSigned[sim_,file_,l_Integer:0,testF_:Positive]:=Module[{t,spec},
   {t,spec}=If[l<=0,read1D[sim,file],read1D[sim,file,l]];
-  spec=Rest/@spec;
   {t,spec/.x_?(!testF[#]&)->0,spec/.x_?testF->0}
 ]
 
