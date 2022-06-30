@@ -6107,7 +6107,7 @@ module Magnetic
       if (idiag_bij2m/=0) then
         quench = 1.0/max(tini,sqrt(p%b2))
         call multsm_mn(quench,p%bij,bhatij)
-        call multvv_smat_add(quench**3,p%bb,p%gb22,bhatij)
+        call multvv_smat_add(-quench**3,p%bb,p%gb22,bhatij)
         call multm2_mn(bhatij,tmp)
         call sum_mn_name(tmp,idiag_bij2m)
       endif
