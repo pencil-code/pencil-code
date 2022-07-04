@@ -18,7 +18,7 @@
 &hydro_init_pars
 /
 &density_init_pars
-ldensity_nolog=F
+  ldensity_nolog=F
 /
 &entropy_init_pars
 /
@@ -31,7 +31,7 @@ ldensity_nolog=F
   init_x2= 0.02
   lchemistry_diag=F
 /
-&jet_init_pars
+&special_init_pars
 /
 &NSCBC_init_pars
   nscbc_bc = ':part_ref_outlet','',''

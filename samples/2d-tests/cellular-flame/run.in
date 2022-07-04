@@ -3,8 +3,8 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.3 2009-03-17 10:59:27 nbabkovs Exp $',
-  nt=1000000, it1=20, cdtv=0.4, isave=100, itorder=3
-  dsnap=5e-4, dvid=5e-6, dtmin=1e-30, dt=1e-8
+  nt=1000, it1=10, cdtv=0.4, isave=100, itorder=3
+  dsnap=5e-4, dvid=5e-6, dtmin=1e-30, dt=2e-9
   lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
 /
 &eos_run_pars
@@ -23,7 +23,7 @@
 &viscosity_run_pars
  ivisc='nu-mixture'
 /
-&jet_run_pars
+&special_run_pars
 /
 &NSCBC_run_pars
   notransveral_terms=T
